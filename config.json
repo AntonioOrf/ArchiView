@@ -1,0 +1,12 @@
+{
+  "name": "archivium-manuscriptorum",
+  "version": "1.0.0",
+  "description": "Gestionale per manoscritti medievali",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^29.0.0"
+  }
+}

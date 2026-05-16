@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivium Manuscriptorum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Georgia', serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hidden-tab { display: none !important; }
+        .card-bg { background-color: #fcfaf5; }
+        /* Scrollbar personalizzata per la sidebar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #d6d3d1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800 min-h-screen p-4 md:p-6 flex flex-col h-screen overflow-hidden">
+
+    <!-- Modal Immagini -->
+    <div id="image-modal" class="fixed inset-0 bg-black/90 z-50 hidden-tab flex justify-center items-center p-4 backdrop-blur-sm">
+        <button onclick="chiudiModal()" class="absolute top-6 right-6 text-stone-300 hover:text-white bg-black/50 p-2 rounded-full">
+            <i data-lucide="x" class="w-8 h-8"></i>
+        </button>
+        <img id="modal-img" class="max-w-full max-h-[90vh] rounded-md object-contain border border-stone-700">
+    </div>
+
+    <!-- Header Fisso In Alto -->
+    <header class="shrink-0 mb-6 flex flex-col md:flex-row items-center justify-between border-b-2 border-amber-700/20 pb-4">
+        <div>
+            <h1 class="text-3xl font-bold text-amber-900 flex items-center justify-center md:justify-start gap-3">
+                <i data-lucide="book-open" class="w-8 h-8 text-amber-700"></i>
+                Archivium Manuscriptorum
+            </h1>
+            <p class="text-stone-500 mt-1 italic text-sm">Organizzazione ad albero & Allegati</p>
+        </div>
+        
+        <nav class="flex gap-2 mt-4 md:mt-0 bg-stone-200 p-1 rounded-lg shadow-inner">
+            <button id="btn-tab-list" onclick="switchTab('list')" class="flex items-center gap-2 px-4 py-2 rounded-md transition-all bg-amber-700 text-white shadow-md">
+                <i data-lucide="library" class="w-4 h-4"></i>
+                <span class="hidden md:inline">Archivio</span>
+            </button>
+            <button id="btn-tab-add" onclick="switchTab('add')" class="flex items-center gap-2 px-4 py-2 rounded-md transition-all hover:bg-stone-300">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span id="testo-btn-add" class="hidden md:inline">Nuova Scheda</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Layout a due colonne -->
+    <div class="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+        
+        <!-- SIDEBAR: Albero Cartelle -->
+        <aside class="w-full md:w-72 shrink-0 bg-white/90 backdrop-blur-md shadow-xl border border-stone-200/50 rounded-xl flex flex-col h-full overflow-hidden">
+            <div class="p-4 border-b border-stone-200 bg-stone-50 flex justify-between items-center">
+                <h2 class="font-bold text-stone-700 flex items-center gap-2">
+                    <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> Struttura
+                </h2>
+                <button onclick="aggiungiCartella()" class="text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 p-1.5 rounded transition-colors" title="Crea nuova cartella">
+                    <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div id="folder-list" class="flex-1 p-3 overflow-y-auto custom-scroll space-y-1">
+                <!-- Le cartelle verranno generate qui dal JS -->
+            </div>
+        </aside>
+
+        <!-- MAIN AREA: Contenuto Principale -->
+        <main class="flex-1 bg-white/90 backdrop-blur-md shadow-xl border border-stone-200/50 rounded-xl p-6 h-full overflow-y-auto custom-scroll">
+            
+            <!-- VISTA: LISTA MANOSCRITTI -->
+            <div id="view-list" class="fade-in h-full flex flex-col">
+                
+                <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-stone-200 pb-4 mb-4 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-amber-800 flex items-center gap-2">
+                            <i data-lucide="folder-open" class="w-6 h-6"></i>
+                            <span id="titolo-cartella-attuale">Generale</span>
+                        </h2>
+                        <span id="counter-results" class="text-sm text-stone-500 font-medium mt-1 block">Caricamento...</span>
+                    </div>
+                    
+                    <div class="w-full max-w-sm relative">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 text-stone-400 w-4 h-4"></i>
+                        <input type="text" id="search-input" placeholder="Cerca in questa cartella..." class="w-full pl-9 pr-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-stone-50">
+                    </div>
+                </div>
+                
+                <!-- Griglia -->
+                <div id="manoscritti-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-5 pb-10"></div>
+
+                <!-- Stato Vuoto -->
+                <div id="empty-state" class="hidden text-center py-16 mt-10 bg-stone-50 rounded-lg border border-dashed border-stone-300">
+                    <i data-lucide="file-box" class="w-12 h-12 text-stone-300 mx-auto mb-3"></i>
+                    <p class="text-stone-500 italic text-lg mb-4">La cartella è vuota.</p>
+                    <button onclick="eliminaCartellaAttuale()" id="btn-delete-folder" class="hidden items-center gap-2 text-red-600 hover:text-red-800 mx-auto text-sm font-medium">
+                        <i data-lucide="trash" class="w-4 h-4"></i> Elimina questa cartella
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA: FORM COMPILAZIONE -->
+            <div id="view-add" class="hidden-tab fade-in max-w-2xl mx-auto pb-10">
+                <div class="flex justify-between items-center border-b border-stone-200 pb-2 mb-6">
+                    <h2 id="form-title" class="text-2xl font-semibold text-amber-800">Compila Nuova Scheda</h2>
+                    <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-sm text-stone-500 hover:text-amber-700 underline">Annulla modifica</button>
+                </div>
+                
+                <form id="manoscritto-form" class="space-y-5 bg-stone-50 p-6 rounded-xl border border-stone-200 shadow-inner">
+                    <input type="hidden" id="form-id">
+                    <input type="hidden" id="form-allegato-nome"> 
+                    <input type="hidden" id="form-allegato-tipo"> 
+                    
+                    <!-- Selezione Cartella -->
+                    <div class="bg-amber-100/50 p-3 rounded-lg border border-amber-200 mb-4">
+                        <label class="text-sm font-bold text-amber-900 flex items-center gap-1 mb-1">
+                            <i data-lucide="folder" class="w-4 h-4"></i> Salva nella cartella:
+                        </label>
+                        <select id="form-cartella" class="w-full p-2 border border-amber-300 rounded-md bg-white text-stone-800 font-medium focus:ring-2 focus:ring-amber-500">
+                            <!-- Popolato da JS -->
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-1">
+                            <label class="text-sm font-semibold text-stone-700 flex items-center gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-700"></i> Segnatura *</label>
+                            <input required id="form-segnatura" placeholder="es. Plut. 40.1" class="w-full p-2 border border-stone-300 rounded-md bg-white">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm font-semibold text-stone-700 flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5 text-amber-700"></i> Autore</label>
+                            <input id="form-autore" placeholder="es. Anonimo" class="w-full p-2 border border-stone-300 rounded-md bg-white">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-sm font-semibold text-stone-700 flex items-center gap-1"><i data-lucide="book" class="w-3.5 h-3.5 text-amber-700"></i> Titolo / Contenuto</label>
+                        <input id="form-titolo" placeholder="Titolo dell'opera" class="w-full p-2 border border-stone-300 rounded-md bg-white">
+                    </div>
+
+                    <!-- Allegati -->
+                    <div class="space-y-1 border-t border-b border-stone-200 py-4 my-2 bg-stone-100/50 px-3 rounded-lg">
+                        <label class="text-sm font-semibold text-stone-800 flex items-center gap-2"><i data-lucide="paperclip" class="w-4 h-4 text-amber-700"></i> Allega Documento (Foto o PDF)</label>
+                        <input type="file" id="form-allegato" accept="image/*,.pdf" class="w-full p-2 border border-stone-300 rounded-md bg-white file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 cursor-pointer">
+                        
+                        <img id="preview-immagine" class="mt-3 max-h-48 hidden rounded-md shadow-sm border border-stone-300 object-cover">
+                        <div id="preview-pdf" class="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800 hidden">
+                            <i data-lucide="file-text" class="w-6 h-6 shrink-0"></i>
+                            <div>
+                                <p class="text-xs font-semibold">PDF pronto per l'archiviazione</p>
+                                <p id="pdf-nome-file" class="text-[10px] text-stone-500 truncate max-w-[200px]"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-sm font-semibold text-stone-700">Note Testuali / Codicologiche</label>
+                        <textarea id="form-note" rows="3" class="w-full p-2 border border-stone-300 rounded-md bg-white"></textarea>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" id="btn-submit-form" class="w-full bg-amber-700 hover:bg-amber-800 text-white font-bold py-3 px-4 rounded-md flex justify-center items-center gap-2 text-lg">
+                            <i data-lucide="save" class="w-5 h-5"></i> <span id="testo-btn-submit">Salva Scheda</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- STRUTTURA DATI AGGIORNATA ---
+        let appData = {
+            cartelle: ['Generale'], 
+            manoscritti: []
+        };
+        let cartellaAttuale = 'Generale';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            await initData();
+            
+            document.getElementById('search-input').addEventListener('input', renderMain);
+            document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
+            
+            // Gestione Anteprime file
+            document.getElementById('form-allegato').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const previewImg = document.getElementById('preview-immagine');
+                const previewPdf = document.getElementById('preview-pdf');
+                previewImg.classList.add('hidden'); previewPdf.classList.add('hidden');
+                
+                if (file) {
+                    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                        document.getElementById('pdf-nome-file').textContent = file.name;
+                        previewPdf.classList.remove('hidden');
+                    } else {
+                        const reader = new FileReader();
+                        reader.onload = (e) => { previewImg.src = e.target.result; previewImg.classList.remove('hidden'); }
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+        });
+
+        // --- GESTIONE DATI E MIGRAZIONE ---
+        async function initData() {
+            if (window.apiBrowser) {
+                const datiSalvati = await window.apiBrowser.leggiDati();
+                if (datiSalvati) {
+                    // Migrazione: Se il file vecchio era solo un array (lista piatta), lo converte nel nuovo formato
+                    if (Array.isArray(datiSalvati)) {
+                        appData.manoscritti = datiSalvati.map(m => ({...m, cartella: 'Generale'}));
+                        await window.apiBrowser.salvaDati(appData); // Salva subito il nuovo formato
+                    } else {
+                        // Formato già corretto
+                        appData = datiSalvati; 
+                    }
+                }
+            }
+            // Assicuriamoci che esista sempre almeno la cartella Generale
+            if (!appData.cartelle.includes('Generale')) appData.cartelle.push('Generale');
+            
+            renderSidebar();
+            renderMain();
+            aggiornaSelectCartelle();
+        }
+
+        async function salvaTutto() {
+            if (window.apiBrowser) {
+                await window.apiBrowser.salvaDati(appData);
+            }
+        }
+
+        // --- LOGICA CARTELLE E SIDEBAR ---
+        function renderSidebar() {
+            const container = document.getElementById('folder-list');
+            container.innerHTML = '';
+            
+            // Ordina alfabeticamente per creare l'albero
+            const cartelleOrdinate = [...appData.cartelle].sort();
+
+            cartelleOrdinate.forEach(percorso => {
+                const parti = percorso.split('/');
+                const nomeCartella = parti[parti.length - 1]; // Prende l'ultima parola
+                const profondita = parti.length - 1; // Calcola il livello per l'indentazione
+
+                const div = document.createElement('div');
+                const isAttuale = percorso === cartellaAttuale;
+                
+                // Stile dell'elemento (cambia se è selezionato)
+                div.className = `flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors text-sm ${isAttuale ? 'bg-amber-100/80 text-amber-900 font-bold border border-amber-200' : 'text-stone-600 hover:bg-stone-200 hover:text-stone-900'}`;
+                
+                // Crea l'effetto "albero" (sottocartelle spostate a destra)
+                div.style.marginLeft = `${profondita * 1.25}rem`;
+                
+                // Icona aperta se selezionata
+                const icona = isAttuale ? 'folder-open' : 'folder';
+                
+                div.innerHTML = `<i data-lucide="${icona}" class="w-4 h-4 shrink-0 ${isAttuale ? 'text-amber-600' : 'text-stone-400'}"></i> <span class="truncate">${nomeCartella}</span>`;
+                
+                div.onclick = () => {
+                    cartellaAttuale = percorso;
+                    document.getElementById('search-input').value = ''; // Resetta la ricerca
+                    switchTab('list');
+                    renderSidebar(); // Ridisegna per aggiornare i colori
+                    renderMain();
+                };
+                
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function aggiungiCartella() {
+            const nome = prompt("Nome della nuova cartella:\n(Consiglio: per creare una sottocartella usa la barra, es. 'Fondo Latino/Secolo XII')");
+            if (nome && nome.trim() !== '') {
+                const percorsoPulito = nome.trim();
+                if (!appData.cartelle.includes(percorsoPulito)) {
+                    appData.cartelle.push(percorsoPulito);
+                    salvaTutto();
+                    renderSidebar();
+                    aggiornaSelectCartelle();
+                } else {
+                    alert("Questa cartella esiste già.");
+                }
+            }
+        }
+
+        async function eliminaCartellaAttuale() {
+            if (cartellaAttuale === 'Generale') {
+                alert("La cartella 'Generale' non può essere eliminata.");
+                return;
+            }
+            
+            // Controlla se ci sono manoscritti dentro
+            const haManoscritti = appData.manoscritti.some(m => m.cartella === cartellaAttuale);
+            if (haManoscritti) return; // Il bottone sarà già nascosto, ma sicurezza extra
+
+            if(confirm(`Sei sicuro di voler eliminare la cartella "${cartellaAttuale}"?`)) {
+                appData.cartelle = appData.cartelle.filter(c => c !== cartellaAttuale);
+                cartellaAttuale = 'Generale';
+                await salvaTutto();
+                renderSidebar();
+                renderMain();
+                aggiornaSelectCartelle();
+            }
+        }
+
+        function aggiornaSelectCartelle() {
+            const select = document.getElementById('form-cartella');
+            select.innerHTML = '';
+            [...appData.cartelle].sort().forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                // Sostituisce la barra con una freccia per estetica nel menu a tendina
+                opt.textContent = c.replace(/\//g, ' ⮞ '); 
+                if (c === cartellaAttuale) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        // --- MAIN AREA E FORM ---
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            let nomeAllegato = document.getElementById('form-allegato-nome').value;
+            let tipoAllegato = document.getElementById('form-allegato-tipo').value;
+            const fileInput = document.getElementById('form-allegato');
+            
+            if (fileInput.files.length > 0 && window.apiBrowser) {
+                const filePath = fileInput.files[0].path;
+                const risultato = await window.apiBrowser.salvaAllegato(filePath);
+                if (risultato) {
+                    nomeAllegato = risultato.fileName;
+                    tipoAllegato = risultato.ext === '.pdf' ? 'pdf' : 'immagine';
+                }
+            }
+
+            const idCorrente = document.getElementById('form-id').value;
+            const cartellaScelta = document.getElementById('form-cartella').value;
+
+            const newData = {
+                id: idCorrente || Date.now().toString(),
+                cartella: cartellaScelta, // <--- Salviamo il percorso della cartella!
+                segnatura: document.getElementById('form-segnatura').value,
+                titolo: document.getElementById('form-titolo').value,
+                autore: document.getElementById('form-autore').value,
+                note: document.getElementById('form-note').value,
+                allegato: nomeAllegato,
+                allegatoTipo: tipoAllegato
+            };
+
+            if (idCorrente) {
+                const index = appData.manoscritti.findIndex(m => m.id === idCorrente);
+                if (index !== -1) appData.manoscritti[index] = newData;
+            } else {
+                appData.manoscritti.push(newData);
+            }
+
+            await salvaTutto();
+            
+            // Imposta la vista sulla cartella in cui abbiamo appena salvato
+            cartellaAttuale = cartellaScelta; 
+            renderSidebar();
+            
+            resetForm();
+            switchTab('list');
+            renderMain();
+        }
+
+        async function renderMain() {
+            // Aggiorna intestazione
+            const partiTitolo = cartellaAttuale.split('/');
+            document.getElementById('titolo-cartella-attuale').textContent = partiTitolo[partiTitolo.length - 1];
+
+            const grid = document.getElementById('manoscritti-grid');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            
+            // Doppio Filtro: per Cartella E per Ricerca testo
+            const filtered = appData.manoscritti.filter(m => {
+                const matchCartella = m.cartella === cartellaAttuale;
+                const matchSearch = (m.segnatura||'').toLowerCase().includes(search) || (m.titolo||'').toLowerCase().includes(search);
+                return matchCartella && matchSearch;
+            });
+
+            document.getElementById('counter-results').textContent = `Documenti: ${filtered.length}`;
+            grid.innerHTML = '';
+            
+            const btnDeleteFolder = document.getElementById('btn-delete-folder');
+            
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+                
+                // Se la cartella è vuota (ignorando la ricerca) e NON è "Generale", mostra il bottone Elimina
+                const manoscrittiTotaliInCartella = appData.manoscritti.filter(m => m.cartella === cartellaAttuale).length;
+                if (manoscrittiTotaliInCartella === 0 && cartellaAttuale !== 'Generale' && search === '') {
+                    btnDeleteFolder.classList.remove('hidden');
+                    btnDeleteFolder.classList.add('flex');
+                } else {
+                    btnDeleteFolder.classList.add('hidden');
+                    btnDeleteFolder.classList.remove('flex');
+                }
+            } else {
+                grid.classList.remove('hidden');
+                document.getElementById('empty-state').classList.add('hidden');
+                
+                // Creazione Card (uguale a prima ma stilizzata per griglia più compatta)
+                for (const m of filtered) {
+                    const div = document.createElement('div');
+                    div.className = "card-bg rounded-xl p-4 border border-amber-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow";
+                    
+                    let allegatoHTML = '';
+                    if (m.allegato && window.apiBrowser) {
+                        if (m.allegatoTipo === 'pdf') {
+                            allegatoHTML = `
+                                <div onclick="window.apiBrowser.apriPdfEsterno('${m.allegato}')" class="mt-3 p-2 bg-stone-100 hover:bg-amber-50 border border-stone-300 rounded flex items-center justify-between cursor-pointer group">
+                                    <div class="flex items-center gap-2 text-stone-700"><i data-lucide="file-text" class="w-5 h-5 text-red-600"></i><span class="text-xs font-semibold">Apri PDF</span></div>
+                                </div>`;
+                        } else {
+                            const base64Data = await window.apiBrowser.leggiImmagine(m.allegato);
+                            if (base64Data) {
+                                allegatoHTML = `
+                                    <div onclick="apriModal('${base64Data}')" class="mt-3 overflow-hidden rounded border border-stone-300 cursor-pointer relative group h-32">
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex justify-center items-center text-white"><i data-lucide="zoom-in"></i></div>
+                                        <img class="w-full h-full object-cover" src="${base64Data}" />
+                                    </div>`;
+                            }
+                        }
+                    }
+
+                    div.innerHTML = `
+                        <div>
+                            <h3 class="text-lg font-bold text-stone-800 mb-2 truncate" title="${m.segnatura}">${m.segnatura}</h3>
+                            <div class="space-y-1 text-sm">
+                                ${m.titolo ? `<p class="truncate"><b>Titolo:</b> <i>${m.titolo}</i></p>` : ''}
+                                ${m.autore ? `<p class="truncate"><b>Autore:</b> ${m.autore}</p>` : ''}
+                            </div>
+                            ${allegatoHTML}
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end gap-1">
+                            <button onclick="editItem('${m.id}')" class="p-1.5 text-stone-500 hover:text-amber-700 bg-stone-100 rounded" title="Modifica"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button onclick="deleteItem('${m.id}')" class="p-1.5 text-stone-500 hover:text-red-600 bg-stone-100 rounded" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                }
+            }
+            lucide.createIcons();
+        }
+
+        // --- UTILS ---
+        function apriModal(b64) { document.getElementById('modal-img').src = b64; document.getElementById('image-modal').classList.remove('hidden-tab'); }
+        function chiudiModal() { document.getElementById('image-modal').classList.add('hidden-tab'); }
+
+        async function editItem(id) {
+            const m = appData.manoscritti.find(x => x.id === id);
+            document.getElementById('form-id').value = m.id;
+            document.getElementById('form-cartella').value = m.cartella || 'Generale';
+            document.getElementById('form-segnatura').value = m.segnatura || '';
+            document.getElementById('form-titolo').value = m.titolo || '';
+            document.getElementById('form-autore').value = m.autore || '';
+            document.getElementById('form-note').value = m.note || '';
+            document.getElementById('form-allegato-nome').value = m.allegato || '';
+            document.getElementById('form-allegato-tipo').value = m.allegatoTipo || '';
+            
+            const pImg = document.getElementById('preview-immagine');
+            const pPdf = document.getElementById('preview-pdf');
+            pImg.classList.add('hidden'); pPdf.classList.add('hidden');
+            
+            if (m.allegato && window.apiBrowser) {
+                if (m.allegatoTipo === 'pdf') {
+                    document.getElementById('pdf-nome-file').textContent = "File in archivio";
+                    pPdf.classList.remove('hidden');
+                } else {
+                    const b64 = await window.apiBrowser.leggiImmagine(m.allegato);
+                    if (b64) { pImg.src = b64; pImg.classList.remove('hidden'); }
+                }
+            }
+
+            document.getElementById('form-title').textContent = "Modifica Scheda";
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            switchTab('add');
+        }
+
+        async function deleteItem(id) {
+            if (confirm('Vuoi eliminare questa scheda? (L\'allegato rimarrà in cartella)')) {
+                appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
+                await salvaTutto();
+                renderMain();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('manoscritto-form').reset();
+            document.getElementById('form-id').value = '';
+            document.getElementById('form-allegato-nome').value = '';
+            document.getElementById('form-allegato-tipo').value = '';
+            // Reimposta la select sulla cartella in cui si stava navigando
+            document.getElementById('form-cartella').value = cartellaAttuale;
+            document.getElementById('preview-immagine').classList.add('hidden');
+            document.getElementById('preview-pdf').classList.add('hidden');
+            document.getElementById('form-title').textContent = "Compila Nuova Scheda";
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+        }
+
+        function cancelEdit() { resetForm(); switchTab('list'); }
+
+        function switchTab(tab) {
+            const vList = document.getElementById('view-list');
+            const vAdd = document.getElementById('view-add');
+            
+            if (tab === 'list') {
+                vList.classList.remove('hidden-tab'); vAdd.classList.add('hidden-tab');
+                resetForm(); renderMain();
+            } else {
+                vAdd.classList.remove('hidden-tab'); vList.classList.add('hidden-tab');
+                aggiornaSelectCartelle();
+            }
+        }
+    </script>
+</body>
+</html>
