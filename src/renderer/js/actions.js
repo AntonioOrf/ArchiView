@@ -101,21 +101,26 @@ async function eliminaCartellaAttuale() {
 async function handleFormSubmit(e) {
     e.preventDefault();
     
-    let nomeAllegato = document.getElementById('form-allegato-nome').value;
-    let tipoAllegato = document.getElementById('form-allegato-tipo').value;
+    let allegatiCorrenti = JSON.parse(document.getElementById('form-allegati').value || '[]');
     const fileInput = document.getElementById('form-allegato');
     
     if (fileInput.files.length > 0 && window.apiBrowser) {
-        try {
-            const filePath = fileInput.files[0].path;
-            const risultato = await window.apiBrowser.salvaAllegato(filePath);
-            if (risultato) {
-                nomeAllegato = risultato.fileName;
-                tipoAllegato = risultato.ext === '.pdf' ? 'pdf' : 'immagine';
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const file = fileInput.files[i];
+            try {
+                const filePath = file.path;
+                const risultato = await window.apiBrowser.salvaAllegato(filePath);
+                if (risultato) {
+                    allegatiCorrenti.push({
+                        nome: risultato.fileName,
+                        tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
+                        originalName: file.name
+                    });
+                }
+            } catch (error) {
+                console.error("Errore durante il salvataggio dell'allegato:", error);
+                mostraMessaggio("Errore nel salvataggio di un file.", "error");
             }
-        } catch (error) {
-            console.error("Errore durante il salvataggio dell'allegato:", error);
-            mostraMessaggio("Errore nel salvataggio del file. La scheda verrà salvata senza allegato.", "error");
         }
     }
 
@@ -130,6 +135,9 @@ async function handleFormSubmit(e) {
         if (el) dynamicData[campoId] = el.value;
     });
 
+    let nomeAllegato = allegatiCorrenti.length > 0 ? allegatiCorrenti[0].nome : '';
+    let tipoAllegato = allegatiCorrenti.length > 0 ? allegatiCorrenti[0].tipo : '';
+
     const newData = {
         id: idCorrente || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
         cartella: cartellaScelta,
@@ -138,6 +146,7 @@ async function handleFormSubmit(e) {
         tags: document.getElementById('form-tags').value,
         allegato: nomeAllegato,
         allegatoTipo: tipoAllegato,
+        allegati: allegatiCorrenti,
         ...dynamicData // Include i campi personalizzati (dataCronica, prezzo, ecc.)
     };
     
@@ -165,6 +174,8 @@ async function handleFormSubmit(e) {
 }
 
 async function editItem(id) {
+    switchTab('add');
+
     const m = appData.manoscritti.find(x => x.id === id);
     document.getElementById('form-id').value = m.id;
     document.getElementById('form-cartella').value = m.cartella || 'Generale';
@@ -174,40 +185,42 @@ async function editItem(id) {
     
     document.getElementById('form-segnatura').value = m.segnatura || '';
     document.getElementById('form-tags').value = m.tags || '';
-    document.getElementById('form-allegato-nome').value = m.allegato || '';
-    document.getElementById('form-allegato-tipo').value = m.allegatoTipo || '';
+    
+    let allegatiList = [];
+    if (m.allegati) {
+        allegatiList = [...m.allegati];
+    } else if (m.allegato) {
+        allegatiList.push({ nome: m.allegato, tipo: m.allegatoTipo });
+    }
+    document.getElementById('form-allegati').value = JSON.stringify(allegatiList);
+    if(window.renderAllegatiForm) window.renderAllegatiForm(allegatiList);
     
     const tipo = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto')) || appData.tipiDocumento[0];
     tipo.campi.forEach(campoId => {
         const el = document.getElementById('dyn-' + campoId.replace(/\s+/g, '_'));
         if (el) el.value = m[campoId] || '';
     });
-    
-    const pImg = document.getElementById('preview-immagine');
-    const pPdf = document.getElementById('preview-pdf');
-    pImg.classList.add('hidden'); pPdf.classList.add('hidden');
-    
-    if (m.allegato && window.apiBrowser) {
-        if (m.allegatoTipo === 'pdf') {
-            document.getElementById('pdf-nome-file').textContent = "File in archivio";
-            pPdf.classList.remove('hidden');
-        } else {
-            const b64 = await window.apiBrowser.leggiImmagine(m.allegato);
-            if (b64) { pImg.src = b64; pImg.classList.remove('hidden'); }
-        }
-    }
 
     document.getElementById('form-title').textContent = "Modifica Scheda";
     document.getElementById('btn-cancel-edit').classList.remove('hidden');
-    switchTab('add');
 }
 
-async function deleteItem(id) {
-    if (confirm('Vuoi eliminare questa scheda? (L\'allegato rimarrà in cartella)')) {
-        appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
-        await salvaTutto();
-        renderMain();
-    }
+function deleteItem(id) {
+    document.getElementById('delete-item-id').value = id;
+    document.getElementById('delete-modal').classList.remove('hidden-tab');
+}
+
+function chiudiDeleteModal() {
+    document.getElementById('delete-modal').classList.add('hidden-tab');
+}
+
+async function confermaEliminazione() {
+    const id = document.getElementById('delete-item-id').value;
+    appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
+    await salvaTutto();
+    renderMain();
+    chiudiDeleteModal();
+    mostraMessaggio("Scheda eliminata.", "success");
 }
 
 function cancelEdit() { resetForm(); switchTab('list'); }
@@ -225,7 +238,10 @@ async function apriTrascrizione(id) {
     document.getElementById('trascrizione-editor').innerHTML = m.trascrizione || '<p><br></p>';
     
     const panelAllegato = document.getElementById('trascrizione-allegato-panel');
+    const resizer = document.getElementById('trascrizione-resizer');
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
     const btnCarica = document.getElementById('btn-carica-allegato-trasc');
+    const btnCollapse = document.getElementById('btn-collapse-editor');
     
     const imgPreview = document.getElementById('trasc-img-preview');
     const pdfPreview = document.getElementById('trasc-pdf-preview');
@@ -237,37 +253,259 @@ async function apriTrascrizione(id) {
     imgPreview.src = '';
     pdfPreview.src = '';
     
-    if (m.allegato && window.apiBrowser) {
-        // Mostra il pannello diviso
+    const thumbContainer = document.getElementById('trascrizione-thumbnails');
+    if (thumbContainer) thumbContainer.innerHTML = '';
+    
+    // Usa helper condiviso per normalizzare la lista allegati
+    const allegatiM = normalizzaAllegati(m);
+    
+    if (allegatiM.length > 0 && window.apiBrowser) {
         panelAllegato.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (editorPanel) {
+            editorPanel.classList.remove('hidden');
+            editorPanel.style.width = appData.trascrizioneEditorWidth || '50%';
+        }
         btnCarica.classList.add('hidden');
+        if (btnCollapse) {
+            btnCollapse.classList.remove('hidden');
+            btnCollapse.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnCollapse.title = "Collassa Editor";
+        }
         
-        if (m.allegatoTipo === 'pdf') {
-            const filePath = await window.apiBrowser.getAllegatoPath(m.allegato);
-            pdfPreview.src = 'file:///' + filePath.replace(/\\/g, '/');
-            pdfPreview.classList.remove('hidden');
-        } else {
-            const b64 = await window.apiBrowser.leggiImmagine(m.allegato);
-            if (b64) {
-                imgPreview.src = b64;
-                imgPreview.classList.remove('hidden');
-            } else {
-                noAllegato.classList.remove('hidden');
-            }
+        window.renderThumbnailsTrascrizione(m.id);
+        
+        if (window.cambiaAllegatoTrascrizione) {
+            window.cambiaAllegatoTrascrizione(m.allegati[0].nome, m.allegati[0].tipo, 0);
         }
     } else {
-        // Nasconde il pannello destro, l'editor va a tutto schermo
         panelAllegato.classList.add('hidden');
+        if (resizer) resizer.classList.add('hidden');
+        if (editorPanel) {
+            editorPanel.style.width = '100%';
+            editorPanel.classList.remove('hidden');
+        }
         btnCarica.classList.remove('hidden'); 
-        btnCarica.style.display = 'flex'; // override eventuale stile
+        btnCarica.style.display = 'flex'; 
+        if (btnCollapse) btnCollapse.classList.add('hidden');
     }
     
     switchTab('trascrizione');
 }
 
+window.renderThumbnailsTrascrizione = function(id) {
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m) return;
+    const thumbContainer = document.getElementById('trascrizione-thumbnails');
+    if (!thumbContainer) return;
+    
+    thumbContainer.innerHTML = '';
+    // Usa helper condiviso per normalizzare la lista allegati
+    normalizzaAllegati(m);
+    
+    if (m.allegati.length > 1) {
+        thumbContainer.classList.remove('hidden');
+        for (let i = 0; i < m.allegati.length; i++) {
+            const al = m.allegati[i];
+            
+            const wrapper = document.createElement('div');
+          wrapper.className = "flex items-center bg-white border border-stone-300 rounded-sm shadow-sm overflow-hidden shrink-0 cursor-grab active:cursor-grabbing transition-transform";
+            
+            const btn = document.createElement('button');
+            btn.className = "btn btn-ghost rounded-none allegato-btn px-3 py-1 text-xs whitespace-nowrap truncate max-w-[150px] border-r border-stone-200";
+            btn.title = al.originalName || `Allegato ${i+1}`;
+            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${al.originalName || 'PDF ' + (i+1)}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${al.originalName || 'Immagine ' + (i+1)}`;
+            btn.onclick = () => window.cambiaAllegatoTrascrizione(al.nome, al.tipo, i);
+            
+            const btnEdit = document.createElement('button');
+            btnEdit.className = "btn btn-ghost btn-icon rounded-none px-2 py-1";
+            btnEdit.title = "Rinomina";
+            btnEdit.innerHTML = '<i data-lucide="pencil" class="w-3 h-3"></i>';
+            btnEdit.onclick = (e) => {
+                e.stopPropagation();
+                window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
+                    m.allegati[i].originalName = nuovoNome;
+                    await salvaTutto();
+                    if(typeof renderMain === 'function') renderMain();
+                    window.renderThumbnailsTrascrizione(id);
+                    window.cambiaAllegatoTrascrizione(m.allegati[window.currentAllegatoIndex || 0].nome, m.allegati[window.currentAllegatoIndex || 0].tipo, window.currentAllegatoIndex || 0);
+                });
+            };
+
+            // Drag and Drop
+            wrapper.draggable = true;
+            wrapper.ondragstart = (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', i.toString());
+                setTimeout(() => wrapper.classList.add('opacity-40'), 0);
+                window._draggedTrascThumbIndex = i;
+            };
+            wrapper.ondragend = (e) => {
+                wrapper.classList.remove('opacity-40');
+                window._draggedTrascThumbIndex = null;
+                document.querySelectorAll('#trascrizione-thumbnails > div').forEach(p => p.style.transform = '');
+            };
+            wrapper.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = wrapper.getBoundingClientRect();
+                const mid = rect.left + rect.width / 2;
+                document.querySelectorAll('#trascrizione-thumbnails > div').forEach(p => {
+                    if (p !== wrapper && window._draggedTrascThumbIndex !== i) p.style.transform = '';
+                });
+                if (window._draggedTrascThumbIndex !== null && window._draggedTrascThumbIndex !== i) {
+                    wrapper.style.transform = e.clientX < mid ? 'translateX(10px)' : 'translateX(-10px)';
+                }
+            };
+            wrapper.ondragleave = (e) => wrapper.style.transform = '';
+            wrapper.ondrop = async (e) => {
+                e.preventDefault();
+                wrapper.style.transform = '';
+                const dragIndex = window._draggedTrascThumbIndex;
+                if (dragIndex !== null && dragIndex !== i) {
+                    const item = m.allegati.splice(dragIndex, 1)[0];
+                    let targetIndex = i;
+                    const rect = wrapper.getBoundingClientRect();
+                    const mid = rect.left + rect.width / 2;
+                    if (e.clientX > mid) targetIndex++;
+                    if (dragIndex < targetIndex) targetIndex--; 
+                    m.allegati.splice(targetIndex, 0, item);
+                    await salvaTutto();
+                    if(typeof renderMain === 'function') renderMain();
+                    window.renderThumbnailsTrascrizione(id);
+                }
+            };
+
+            wrapper.appendChild(btn);
+            wrapper.appendChild(btnEdit);
+            thumbContainer.appendChild(wrapper);
+        }
+    // Aggiorna le icone Lucide solo nel thumbnail container
+    if (window.lucide) lucide.createIcons({ nodes: [thumbContainer] });
+    } else {
+        thumbContainer.classList.add('hidden');
+    }
+};
+
+window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
+    window.currentAllegatoIndex = index;
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (m) {
+        let allegatiRender = m.allegati || [];
+        const btnPrev = document.getElementById('btn-prev-allegato');
+        const btnNext = document.getElementById('btn-next-allegato');
+        if (btnPrev && btnNext) {
+            if (allegatiRender.length > 1) {
+                btnPrev.classList.remove('hidden');
+                btnNext.classList.remove('hidden');
+                btnPrev.style.display = index > 0 ? 'block' : 'none';
+                btnNext.style.display = index < allegatiRender.length - 1 ? 'block' : 'none';
+            } else {
+                btnPrev.classList.add('hidden');
+                btnNext.classList.add('hidden');
+            }
+        }
+        
+        const thumbBtns = document.querySelectorAll('#trascrizione-thumbnails .allegato-btn');
+        thumbBtns.forEach((btn, i) => {
+            if (i === index) {
+                btn.classList.add('bg-amber-100', 'text-amber-900', 'border-amber-300');
+                btn.classList.remove('hover:bg-stone-50', 'bg-white');
+            } else {
+                btn.classList.remove('bg-amber-100', 'text-amber-900', 'border-amber-300');
+                btn.classList.add('hover:bg-stone-50', 'bg-white');
+            }
+        });
+    }
+
+    const imgPreview = document.getElementById('trasc-img-preview');
+    const pdfPreview = document.getElementById('trasc-pdf-preview');
+    const noAllegato = document.getElementById('trasc-no-allegato');
+    
+    imgPreview.classList.add('hidden');
+    pdfPreview.classList.add('hidden');
+    noAllegato.classList.add('hidden');
+    imgPreview.src = '';
+    pdfPreview.src = '';
+    
+    if (tipo === 'pdf') {
+        const filePath = await window.apiBrowser.getAllegatoPath(nome);
+        pdfPreview.src = 'file:///' + filePath.replace(/\\/g, '/');
+        pdfPreview.classList.remove('hidden');
+    } else {
+        const b64 = await window.apiBrowser.leggiImmagine(nome);
+        if (b64) {
+            imgPreview.src = b64;
+            imgPreview.classList.remove('hidden');
+        } else {
+            noAllegato.classList.remove('hidden');
+        }
+    }
+};
+
+window.cambiaAllegatoRelativo = function(dir) {
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m) return;
+    
+    let allegatiRender = m.allegati || [];
+    let newIndex = (window.currentAllegatoIndex || 0) + dir;
+    if (newIndex >= 0 && newIndex < allegatiRender.length) {
+        const al = allegatiRender[newIndex];
+        window.cambiaAllegatoTrascrizione(al.nome, al.tipo, newIndex);
+    }
+};
+
+window.toggleFullscreenAllegato = function() {
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
+    const btnToggle = document.getElementById('btn-toggle-fullscreen');
+    const resizer = document.getElementById('trascrizione-resizer');
+    const panelAllegato = document.getElementById('trascrizione-allegato-panel');
+    
+    if (!editorPanel) return;
+    if (panelAllegato && panelAllegato.classList.contains('hidden')) {
+        return; // Impossibile collassare se non c'è l'allegato
+    }
+
+    if (editorPanel.classList.contains('hidden')) {
+        editorPanel.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (btnToggle) {
+            btnToggle.innerHTML = '<i data-lucide="maximize" class="w-5 h-5"></i>';
+            btnToggle.title = "Espandi Allegato";
+            btnToggle.classList.add('opacity-0', 'group-hover:opacity-100');
+        }
+    } else {
+        editorPanel.classList.add('hidden');
+        if (resizer) resizer.classList.add('hidden');
+        if (btnToggle) {
+            btnToggle.innerHTML = '<i data-lucide="minimize" class="w-5 h-5"></i>';
+            btnToggle.title = "Riduci Allegato";
+            btnToggle.classList.remove('opacity-0', 'group-hover:opacity-100');
+        }
+    }
+    if (window.lucide) lucide.createIcons();
+};
+
 function chiudiTrascrizione() {
     // Prima di chiudere fermiamo l'iframe
     document.getElementById('trasc-pdf-preview').src = '';
+    
+    // Resetta l'espansione dell'editor prima di tornare indietro
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
+    const btnToggle = document.getElementById('btn-toggle-fullscreen');
+    const resizer = document.getElementById('trascrizione-resizer');
+    if (editorPanel && editorPanel.classList.contains('hidden')) {
+        editorPanel.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (btnToggle) {
+            btnToggle.innerHTML = '<i data-lucide="maximize" class="w-5 h-5"></i>';
+            btnToggle.title = "Espandi Allegato";
+            btnToggle.classList.add('opacity-0', 'group-hover:opacity-100');
+        }
+    }
+    
     switchTab('list');
 }
 
@@ -297,8 +535,18 @@ async function caricaAllegatoTrascrizione(e) {
         const filePath = file.path;
         const risultato = await window.apiBrowser.salvaAllegato(filePath);
         if (risultato) {
+            if (!m.allegati) m.allegati = [];
+            if (m.allegato && m.allegati.length === 0) {
+                m.allegati.push({ nome: m.allegato, tipo: m.allegatoTipo, originalName: 'Allegato' });
+            }
+            m.allegati.push({
+                nome: risultato.fileName,
+                tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
+                originalName: file.name
+            });
             m.allegato = risultato.fileName;
             m.allegatoTipo = risultato.ext === '.pdf' ? 'pdf' : 'immagine';
+
             await salvaTutto();
             
             // Ricarica la vista trascrizione per mostrare il nuovo file
@@ -440,7 +688,7 @@ function aggiungiPill(val, label, isBase) {
         <button type="button" onclick="rimuoviPillDalPulsante(this, '${val.replace(/'/g, "\\'")}')" class="text-stone-400 hover:text-red-600 focus:outline-none ml-1 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
     `;
     list.appendChild(pill);
-    if(window.lucide) lucide.createIcons();
+    if (window.lucide) lucide.createIcons({ nodes: [pill] });
     
     if (isBase) {
         const cb = document.querySelector(`.custom-type-field[value="${val}"]`);
@@ -494,4 +742,35 @@ function confermaCreaTipo() {
     salvaTutto();
     aggiornaSelectTipiDocumento();
     chiudiNewTypeModal();
+    mostraMessaggio("Nuovo tipo di documento creato con successo.", "success");
+}
+
+window.apriImpostazioni = async function() {
+    document.getElementById('settings-modal').classList.remove('hidden-tab');
+    if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
+        const p = await window.apiBrowser.getWorkspacePath();
+        document.getElementById('settings-workspace-path').textContent = p || 'Nessuna cartella impostata';
+    }
+}
+
+window.esportaBackupZip = async function() {
+    if (window.apiBrowser && window.apiBrowser.exportWorkspaceZip) {
+        mostraMessaggio("Creazione del backup in corso... Potrebbe volerci qualche minuto.", "info");
+        const result = await window.apiBrowser.exportWorkspaceZip();
+        if (result.success) {
+            mostraMessaggio("Backup esportato con successo!", "success");
+        } else if (!result.canceled) {
+            mostraMessaggio("Errore durante l'esportazione: " + result.error, "error");
+        }
+    }
+}
+
+window.chiudiImpostazioni = function() {
+    document.getElementById('settings-modal').classList.add('hidden-tab');
+}
+
+window.cambiaCartellaLavoro = async function() {
+    if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
+        await window.apiBrowser.changeWorkspace();
+    }
 }

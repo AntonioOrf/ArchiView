@@ -3,7 +3,8 @@ let appData = {
     manoscritti: [],
     tipiDocumento: [
         { id: 'manoscritto', nome: 'Manoscritto', campi: ['autore', 'titolo', 'note'] }
-    ]
+    ],
+    trascrizioneEditorWidth: '50%'
 };
 let cartellaAttuale = 'Generale';
 
@@ -32,6 +33,8 @@ async function initData() {
     appData.manoscritti.forEach(m => {
         if (!m.tipoDocumento) m.tipoDocumento = 'manoscritto';
     });
+    
+    if (!appData.trascrizioneEditorWidth) appData.trascrizioneEditorWidth = '50%';
 }
 
 async function salvaTutto() {

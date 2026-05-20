@@ -8,5 +8,9 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     salvaAllegato: (filePath) => ipcRenderer.invoke('salva-allegato', filePath),
     leggiImmagine: (fileName) => ipcRenderer.invoke('leggi-immagine', fileName),
     apriPdfEsterno: (fileName) => ipcRenderer.invoke('apri-pdf-esterno', fileName),
-    getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName)
+    getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
+    
+    getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
+    changeWorkspace: () => ipcRenderer.invoke('change-workspace'),
+    exportWorkspaceZip: () => ipcRenderer.invoke('export-workspace-zip')
 });
