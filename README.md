@@ -11,7 +11,7 @@
 - **Backup in ZIP**: Funzione integrata per esportare in un solo clic l'intero archivio (database e allegati) in un comodo file ZIP di backup.
 
 ## Download e Installazione:
-Il modo più semplice per utilizzare **Schedatore** è scaricare l'ultima versione pre-compilata. **Non è necessario installare nulla tramite terminale**:
+Il modo più semplice per utilizzare **Schedatore** è scaricare l'ultima versione pre-compilata:
 1. Vai alla pagina [Releases](https://github.com/AntonioOrf/Schedatore/releases) del progetto su GitHub.
 2. Scarica il file eseguibile per il tuo sistema operativo (es. il pacchetto `.exe` "Portable" per Windows).
 3. Avvia direttamente il file scaricato. L'applicazione è autonoma e non richiede un processo di installazione nel sistema.
