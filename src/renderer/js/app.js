@@ -58,6 +58,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resizer = document.getElementById('trascrizione-resizer');
     const leftPanel = document.getElementById('trascrizione-editor-panel');
     const container = document.getElementById('trascrizione-container');
+
+    // Chiusura automatica modali cliccando sullo sfondo
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            e.target.classList.add('hidden-tab');
+            // Gestione specifica per reset stato se necessario
+            if (e.target.id === 'new-type-modal' && typeof editingTypeId !== 'undefined') {
+                editingTypeId = null;
+            }
+        }
+    });
+
     let isResizing = false;
 
     if (resizer && leftPanel && container) {
@@ -96,3 +108,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
+
+// Theme Selection Logic
+window.applicaTema = function(theme) {
+    let activeTheme = theme;
+    if (theme === 'system') {
+        activeTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    if (activeTheme === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+    } else {
+        document.documentElement.classList.remove('dark-theme');
+    }
+};
+
+window.cambiaTemaSelezionato = function(theme) {
+    localStorage.setItem('theme', theme);
+    window.applicaTema(theme);
+};
+
+// Initialize Theme
+(function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'system';
+    
+    // Set the select element if it's already in the DOM (unlikely since it's in a modal, but safe)
+    const sel = document.getElementById('settings-theme');
+    if (sel) sel.value = savedTheme;
+    
+    window.applicaTema(savedTheme);
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        const currentPref = localStorage.getItem('theme') || 'system';
+        if (currentPref === 'system') {
+            window.applicaTema('system');
+        }
+    });
+})();
+

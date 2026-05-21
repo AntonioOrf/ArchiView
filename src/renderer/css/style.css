@@ -1,26 +1,113 @@
-/* --- TEMA E COLORI GLOBALI --- */
 :root {
-    --color-primary: #b45309; /* amber-700 */
-    --color-primary-hover: #92400e; /* amber-800 */
-    --color-primary-light: #fef3c7; /* amber-100 */
-    --color-primary-border: #fcd34d; /* amber-300 */
+    --color-primary: #b45309;
+    --color-primary-hover: #92400e;
+    --color-primary-light: #fef3c7; 
+    --color-primary-border: #fcd34d; 
     
-    --color-bg-base: #f5f5f4; /* stone-100 */
-    --color-bg-panel: #ffffff; /* white */
+    --color-bg-base: #f5f5f4;
+    --color-bg-panel: #ffffff;
     --color-bg-panel-transparent: rgba(255, 255, 255, 0.9);
-    --color-bg-hover: #e7e5e4; /* stone-200 */
+    --color-bg-hover: #e7e5e4; 
     
-    --color-text-main: #292524; /* stone-800 */
-    --color-text-muted: #78716c; /* stone-500 */
+    --color-text-main: #292524;
+    --color-text-muted: #78716c;
     
-    --color-border: #d6d3d1; /* stone-300 */
-    --color-border-light: #e7e5e4; /* stone-200 */
+    --color-border: #d6d3d1;
+    --color-border-light: #e7e5e4;
     
-    --color-danger: #dc2626; /* red-600 */
-    --color-danger-hover: #b91c1c; /* red-700 */
-    --color-danger-light: #fef2f2; /* red-50 */
-    
+    --color-danger: #dc2626;
+    --color-danger-hover: #b91c1c;
+    --color-danger-light: #fef2f2; 
     --radius-sm: 0.125rem;
+}
+
+:root.dark-theme {
+    --color-primary: #d97706;
+    --color-primary-hover: #f59e0b;
+    --color-primary-light: rgba(217, 119, 6, 0.15);
+    --color-primary-border: rgba(217, 119, 6, 0.3);
+    
+    --color-bg-base: #1e1e1e;
+    --color-bg-panel: #282828;
+    --color-bg-panel-transparent: rgba(40, 40, 40, 0.98);
+    --color-bg-hover: #363636;
+    
+    --color-text-main: #dcddde;
+    --color-text-muted: #8e9092;
+    
+    --color-border: #404040;
+    --color-border-light: #333333;
+    
+    --color-danger: #ef4444;
+    --color-danger-hover: #f87171;
+    --color-danger-light: rgba(239, 68, 68, 0.15);
+}
+
+/* Modifiche Layout Flat per ENTRAMBI i temi */
+body {
+    padding: 0 !important;
+}
+.gap-6 {
+    gap: 0 !important;
+}
+.mb-6 {
+    margin-bottom: 0 !important;
+}
+.panel-glass, .panel-solid, .modal-window, .card-scheda {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+#sidebar {
+    border-right: 1px solid var(--color-border) !important;
+}
+header {
+    border-bottom: 1px solid var(--color-border) !important;
+}
+.panel-glass {
+    backdrop-filter: none;
+    border-color: var(--color-border);
+}
+:root.dark-theme .panel-glass {
+    background-color: var(--color-bg-panel);
+}
+
+/* Override Tailwind hardcoded colors for dark mode */
+:root.dark-theme .bg-stone-50,
+:root.dark-theme .bg-stone-100,
+:root.dark-theme .bg-white {
+    background-color: var(--color-bg-panel) !important;
+}
+:root.dark-theme .bg-stone-200,
+:root.dark-theme .bg-amber-50 {
+    background-color: var(--color-bg-hover) !important;
+}
+:root.dark-theme .bg-amber-100,
+:root.dark-theme .peer:checked ~ .peer-checked\:bg-amber-100 {
+    background-color: var(--color-primary-light) !important;
+}
+:root.dark-theme .peer:checked ~ .peer-checked\:text-amber-900 {
+    color: var(--color-primary-hover) !important;
+}
+:root.dark-theme .peer:checked ~ .peer-checked\:border-amber-400 {
+    border-color: var(--color-primary) !important;
+}
+:root.dark-theme .text-stone-800,
+:root.dark-theme .text-stone-700,
+:root.dark-theme .text-stone-600 {
+    color: var(--color-text-main) !important;
+}
+:root.dark-theme .text-stone-500,
+:root.dark-theme .text-stone-400 {
+    color: var(--color-text-muted) !important;
+}
+:root.dark-theme .text-amber-800,
+:root.dark-theme .text-amber-900 {
+    color: var(--color-primary) !important;
+}
+:root.dark-theme .border-stone-200,
+:root.dark-theme .border-stone-300,
+:root.dark-theme .border-amber-200 {
+    border-color: var(--color-border) !important;
 }
 
 body {
@@ -28,6 +115,12 @@ body {
     color: var(--color-text-main);
     font-family: 'Georgia', serif;
 }
+
+/* Transizione fluida globale per il tema */
+body, .panel-glass, .panel-solid, .card-scheda, button, input, select, textarea, div, span, p, h1, h2, h3, h4, i {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, opacity 0.2s;
+}
+
 
 .fade-in { animation: fadeIn 0.3s ease-in; }
 @keyframes fadeIn {
@@ -205,6 +298,14 @@ body {
 }
 .card-scheda:hover {
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+:root.dark-theme .card-scheda {
+    background-color: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+}
+:root.dark-theme .card-scheda:hover {
+    border-color: var(--color-primary-border);
+    background-color: var(--color-bg-hover);
 }
 .card-title {
     font-size: 1.125rem;

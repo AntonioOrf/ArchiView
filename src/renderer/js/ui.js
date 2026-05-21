@@ -7,7 +7,22 @@ const CONFIG_CAMPI = {
     autore: { label: 'Autore/i', placeholder: 'Es. Anonimo / Notaio', type: 'text' },
     titolo: { label: 'Titolo / Contenuto', placeholder: 'Titolo o descrizione sintetica', type: 'text' },
     note: { label: 'Note', placeholder: 'Note testuali o codicologiche', type: 'textarea' },
-    prezzo: { label: 'Prezzo', placeholder: 'Es. 12 fiorini', type: 'text' }
+    prezzo: { label: 'Prezzo', placeholder: 'Es. 12 fiorini', type: 'text' },
+    Marginalia: { label: 'Marginalia', placeholder: 'Note marginali...', type: 'textarea' },
+    Notaio: { label: 'Notaio', placeholder: 'Nome del notaio', type: 'text' },
+    tipo_di_atto: { label: 'Tipo di Atto', placeholder: 'Es. matrimonio, vendita, testamento...', type: 'text' },
+    oggetto: { label: 'Oggetto', placeholder: 'Oggetto del documento', type: 'textarea' },
+    elementi_economici: { label: 'Elementi Economici', placeholder: 'Dettagli economici...', type: 'textarea' },
+    magistratura: { label: 'Magistratura', placeholder: 'Es. Podestà, Capitano del Popolo...', type: 'text' },
+    tipo_di_atto_giur: { label: 'Tipo di Atto', placeholder: 'Es. accusa, inquisitione, testimoni, altro', type: 'text' },
+    motivazione_processo: { label: 'Motivazione del Processo', placeholder: 'Causa e ragioni del processo...', type: 'textarea' },
+    condanne: { label: 'Condanne', placeholder: 'Eventuali condanne, assoluzioni o pene...', type: 'textarea' },
+    attori_dinamici: { label: 'Persone / Attori', type: 'dynamic_list', keyPlaceholder: 'Ruolo (es. Venditore)', valPlaceholder: 'Nome della persona' },
+    dichiarante: { label: 'Dichiarante', placeholder: 'Es. famiglia, istituzione...', type: 'text' },
+    beni_dinamici: { label: 'Beni (Proprietà)', type: 'dynamic_list', keyPlaceholder: 'Bene (es. Casa, Terreno)', valPlaceholder: 'Valore (es. 10 fiorini)' },
+    debiti_dinamici: { label: 'Debiti', type: 'dynamic_list', keyPlaceholder: 'Creditore / Motivo', valPlaceholder: 'Ammontare' },
+    crediti_dinamici: { label: 'Crediti', type: 'dynamic_list', keyPlaceholder: 'Debitore / Motivo', valPlaceholder: 'Ammontare' },
+    famiglia_dinamici: { label: 'Familiari', type: 'dynamic_list', keyPlaceholder: 'Parentela (es. Figlio, Moglie)', valPlaceholder: 'Nome' }
 };
 
 // --- UTILITY CONDIVISE ---
@@ -231,18 +246,73 @@ function renderDynamicFields() {
         const label = document.createElement('label');
         label.className = 'form-label';
         label.textContent = conf.label;
-        div.appendChild(label);
-
-        const el = document.createElement(conf.type === 'textarea' ? 'textarea' : 'input');
-        el.id = 'dyn-' + campoId.replace(/\s+/g, '_');
-        if (conf.type === 'textarea') el.rows = 3;
-        else el.type = 'text';
-        el.className = 'form-input';
-        el.placeholder = conf.placeholder;
-        div.appendChild(el);
+        
+        if (conf.type === 'dynamic_list') {
+            div.appendChild(label);
+            const listContainer = document.createElement('div');
+            listContainer.id = 'container-' + campoId;
+            listContainer.className = 'space-y-2 mb-2 dynamic-list-container';
+            div.appendChild(listContainer);
+            
+            const btnAdd = document.createElement('button');
+            btnAdd.type = 'button';
+            btnAdd.className = 'btn btn-secondary text-sm';
+            btnAdd.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Aggiungi ' + conf.label;
+            btnAdd.onclick = () => window.aggiungiElementoDinamico(campoId, conf.keyPlaceholder, conf.valPlaceholder, '', '');
+            div.appendChild(btnAdd);
+            
+        } else {
+            div.appendChild(label);
+            const el = document.createElement(conf.type === 'textarea' ? 'textarea' : 'input');
+            el.id = 'dyn-' + campoId.replace(/\s+/g, '_');
+            if (conf.type === 'textarea') el.rows = 3;
+            else el.type = 'text';
+            el.className = 'form-input';
+            el.placeholder = conf.placeholder || '';
+            div.appendChild(el);
+        }
+        
         container.appendChild(div);
     });
 }
+
+window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderVal, valKey = '', valVal = '') {
+    const listContainer = document.getElementById('container-' + campoId);
+    if (!listContainer) return;
+    
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center dynamic-list-row';
+    
+    const inputKey = document.createElement('input');
+    inputKey.type = 'text';
+    inputKey.className = 'form-input w-1/3 list-key';
+    inputKey.placeholder = placeholderKey || 'Chiave';
+    inputKey.value = valKey;
+    
+    const inputVal = document.createElement('input');
+    inputVal.type = 'text';
+    inputVal.className = 'form-input flex-1 list-val';
+    inputVal.placeholder = placeholderVal || 'Valore';
+    inputVal.value = valVal;
+    
+    const btnRemove = document.createElement('button');
+    btnRemove.type = 'button';
+    btnRemove.className = 'btn btn-ghost btn-icon text-red-500 hover:bg-red-50 hover:text-red-700';
+    btnRemove.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
+    btnRemove.onclick = () => row.remove();
+    
+    row.appendChild(inputKey);
+    row.appendChild(inputVal);
+    row.appendChild(btnRemove);
+    
+    listContainer.appendChild(row);
+    if (window.lucide) lucide.createIcons({ nodes: [row] });
+};
+
+// Retrocompatibilità per appData (se qualche vecchio file chiama aggiungiAttoreDinamico, dirotta qua)
+window.aggiungiAttoreDinamico = function(ruoloVal = 'Attore', nomeVal = '') {
+    window.aggiungiElementoDinamico('attori_dinamici', 'Ruolo', 'Nome', ruoloVal, nomeVal);
+};
 
 // renderMain è sincrona: non usa await, non deve essere async
 function renderMain() {
@@ -344,10 +414,25 @@ function renderMain() {
             const campiPossibili = tipoDoc ? tipoDoc.campi : ['titolo', 'autore', 'note'];
             campiPossibili.forEach(campo => {
                 if (m[campo]) {
-                    const label = (CONFIG_CAMPI[campo] || {}).label || campo;
-                    if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${m.note.replace(/"/g, '&quot;')}">${m.note}</p>`;
-                    else if (campo === 'titolo') infoHTML += `<p class="truncate"><b>${label}:</b> <i>${m.titolo}</i></p>`;
-                    else infoHTML += `<p class="truncate"><b>${label}:</b> ${m[campo]}</p>`;
+                    let conf = CONFIG_CAMPI[campo] || { type: 'text' };
+                    if (conf.type === 'dynamic_list' && Array.isArray(m[campo])) {
+                        if (m[campo].length > 0) {
+                            const labelStr = conf.label || campo;
+                            infoHTML += `<div class="mt-3 mb-1"><span class="font-bold text-xs uppercase tracking-wider opacity-70 border-b border-stone-200/50 pb-1">${labelStr}</span></div>`;
+                            m[campo].forEach(item => {
+                                const k = item.k || item.ruolo || '';
+                                const v = item.v || item.nome || '';
+                                if (k || v) {
+                                    infoHTML += `<p class="truncate pl-2 border-l-2 border-amber-200/50 mb-0.5"><b>${k}:</b> ${v}</p>`;
+                                }
+                            });
+                        }
+                    } else {
+                        const label = conf.label || campo;
+                        if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${m.note.replace(/"/g, '&quot;')}">${m.note}</p>`;
+                        else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${label}:</b> <i>${m.titolo}</i></p>`;
+                        else infoHTML += `<p class="truncate mt-1"><b>${label}:</b> ${m[campo]}</p>`;
+                    }
                 }
             });
 

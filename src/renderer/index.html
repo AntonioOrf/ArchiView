@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedatore</title>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset:; connect-src 'self' https://api.github.com;">
-    <script src="vendor/tailwind.min.js"></script>
+    <link rel="stylesheet" href="css/tailwind.css">
     <script src="vendor/lucide.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -107,10 +107,31 @@
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" onclick="chiudiNewTypeModal()" class="btn btn-ghost">Annulla</button>
-                    <button type="button" onclick="confermaCreaTipo()" class="btn btn-primary">Crea</button>
+                <div class="modal-footer flex justify-between">
+                    <button type="button" onclick="apriManageTypesModal()" class="btn btn-secondary text-sm">Gestisci Modelli</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="chiudiNewTypeModal()" class="btn btn-ghost">Annulla</button>
+                        <button type="button" onclick="confermaCreaTipo()" class="btn btn-primary" id="btn-salva-tipo">Crea</button>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gestione Modelli Esistenti -->
+    <div id="manage-types-modal" class="modal-overlay hidden-tab z-[60]">
+        <div class="modal-window max-w-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">Gestisci Modelli</h3>
+                <button type="button" onclick="chiudiManageTypesModal()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="manage-types-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    <!-- Lista popolata da JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="chiudiManageTypesModal()" class="btn btn-primary">Chiudi</button>
             </div>
         </div>
     </div>
@@ -198,9 +219,20 @@
                     <div class="border-t border-stone-200 pt-6">
                         <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> Backup Dati</h4>
                         <p class="text-sm text-stone-600 mb-3">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>
-                        <button onclick="esportaBackupZip()" class="btn" style="background-color: var(--color-text-main); color: white;">
+                        <button onclick="esportaBackupZip()" class="btn w-full justify-center shadow-sm" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
                             <i data-lucide="file-archive" class="w-4 h-4"></i> Esporta Backup in ZIP
                         </button>
+                    </div>
+
+                    <!-- Sezione Aspetto -->
+                    <div class="border-t border-stone-200 pt-6">
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="moon" class="w-4 h-4 text-amber-700"></i> Tema / Aspetto</h4>
+                        <p class="text-sm text-stone-600 mb-3">Scegli il tema dell'applicazione.</p>
+                        <select id="settings-theme" onchange="cambiaTemaSelezionato(this.value)" class="form-input">
+                            <option value="system">Sistema (Predefinito)</option>
+                            <option value="light">Chiaro</option>
+                            <option value="dark">Scuro (Flat Obsidian)</option>
+                        </select>
                     </div>
 
                     <!-- Sezione Aggiornamenti -->
@@ -214,7 +246,7 @@
                 </div>
             </div>
             <div class="modal-header shrink-0 justify-end" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
-                <button onclick="chiudiImpostazioni()" class="btn" style="background-color: var(--color-text-main); color: white;">Chiudi</button>
+                <button onclick="chiudiImpostazioni()" class="btn" style="background-color: var(--color-text-main); color: var(--color-bg-base);">Chiudi</button>
             </div>
         </div>
     </div>
@@ -463,7 +495,7 @@
                     <div class="flex-1"></div>
                     
                     <!-- Pulsante Carica Immagine (visibile solo se manca l'allegato) -->
-                    <button id="btn-carica-allegato-trasc" onclick="document.getElementById('trasc-file-input').click()" class="btn hidden border border-amber-300" style="background-color: var(--color-primary-light); color: var(--color-primary-hover);">
+                    <button id="btn-carica-allegato-trasc" onclick="document.getElementById('trasc-file-input').click()" class="btn hidden btn-secondary border border-amber-300/50">
                         <i data-lucide="upload" class="w-4 h-4"></i> Aggiungi Immagine/PDF
                     </button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" onchange="caricaAllegatoTrascrizione(event)">
