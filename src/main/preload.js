@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('apiBrowser', {
     leggiDati: () => ipcRenderer.invoke('leggi-dati'),
@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     salvaAllegato: (filePath) => ipcRenderer.invoke('salva-allegato', filePath),
     apriPdfEsterno: (fileName) => ipcRenderer.invoke('apri-pdf-esterno', fileName),
     getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
+    getPathForFile: (file) => webUtils.getPathForFile(file),
     
     getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
     changeWorkspace: () => ipcRenderer.invoke('change-workspace'),

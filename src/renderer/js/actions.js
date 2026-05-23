@@ -108,7 +108,7 @@ async function handleFormSubmit(e) {
         for (let i = 0; i < fileInput.files.length; i++) {
             const file = fileInput.files[i];
             try {
-                const filePath = file.path;
+                const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
                 const risultato = await window.apiBrowser.salvaAllegato(filePath);
                 if (risultato) {
                     allegatiCorrenti.push({
@@ -556,7 +556,7 @@ async function caricaAllegatoTrascrizione(e) {
     if (!m) return;
     
     try {
-        const filePath = file.path;
+        const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
         const risultato = await window.apiBrowser.salvaAllegato(filePath);
         if (risultato) {
             if (!m.allegati) m.allegati = [];

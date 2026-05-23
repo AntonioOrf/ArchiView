@@ -1,14 +1,16 @@
 {
   "name": "Schedatore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Gestionale per manoscritti medievali",
   "main": "src/main/main.js",
   "scripts": {
     "build-css": "npx @tailwindcss/cli -i ./src/renderer/css/input.css -o ./src/renderer/css/tailwind.css --minify",
     "start": "npm run build-css && electron .",
-    "pack": "npm run build-css && electron-builder --win"
+    "pack": "npm run build-css && electron-builder --win",
+    "publish-app": "npm run build-css && electron-builder --win -p always"
   },
   "build": {
+    "generateUpdatesFilesForAllChannels": true,
     "appId": "com.antonioorf.Schedatore",
     "productName": "Schedatore",
     "directories": {
