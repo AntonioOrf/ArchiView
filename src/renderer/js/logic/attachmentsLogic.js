@@ -258,14 +258,14 @@ window.toggleFullscreenAllegato = function() {
     if (window.lucide) lucide.createIcons();
 };
 
-function chiudiTrascrizione() {
-    if (window.trascrizioneNonSalvata) {
-        if (!confirm("Attenzione: ci sono modifiche non salvate in questa trascrizione.\nSei sicuro di voler uscire e perdere le modifiche?")) {
-            return;
-        }
-    }
-    window.trascrizioneNonSalvata = false;
+window.chiudiUnsavedModal = function() {
+    document.getElementById('unsaved-modal').classList.add('hidden-tab');
+}
 
+window.confermaUscitaTrascrizione = function() {
+    document.getElementById('unsaved-modal').classList.add('hidden-tab');
+    window.trascrizioneNonSalvata = false;
+    
     // Prima di chiudere fermiamo l'iframe
     document.getElementById('trasc-pdf-preview').src = '';
     
@@ -283,6 +283,14 @@ function chiudiTrascrizione() {
     }
     
     switchTab('list');
+}
+
+function chiudiTrascrizione() {
+    if (window.trascrizioneNonSalvata) {
+        document.getElementById('unsaved-modal').classList.remove('hidden-tab');
+        return;
+    }
+    window.confermaUscitaTrascrizione();
 }
 
 async function salvaTrascrizione() {
