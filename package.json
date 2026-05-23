@@ -1,7 +1,12 @@
 {
   "name": "archiview",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Gestionale per manoscritti medievali",
+  "author": "Antonio Orf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AntonioOrf/ArchiView.git"
+  },
   "main": "src/main/main.js",
   "scripts": {
     "build-css": "npx @tailwindcss/cli -i ./src/renderer/css/input.css -o ./src/renderer/css/tailwind.css --minify",
@@ -24,7 +29,7 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "${productName}-Setup.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "publish": [
       {

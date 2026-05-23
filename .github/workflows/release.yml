@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: windows-latest # Compila su un server Windows
+    permissions:
+      contents: write
 
     steps:
       - name: Check out Git repository
