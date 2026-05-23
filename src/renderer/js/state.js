@@ -3,8 +3,8 @@ let appData = {
     manoscritti: [],
     tipiDocumento: [
         { id: 'imbreviature', nome: 'Imbreviature Notarili', campi: ['Marginalia', 'Notaio', 'dataCronica', 'dataTopica', 'attori_dinamici', 'tipo_di_atto', 'oggetto', 'elementi_economici'] },
-        { id: 'atti', nome: 'Atti Giudiziari', campi: ['dataCronica', 'dataTopica', 'titolo', 'note'] },
-        { id: 'fiscali', nome: 'Documenti Fiscali', campi: ['dataCronica', 'dataTopica', 'prezzo', 'note'] }
+        { id: 'atti', nome: 'Atti Giudiziari', campi: ['dataCronica', 'magistratura', 'attori_dinamici', 'tipo_di_atto_giur', 'motivazione_processo', 'condanne', 'note'] },
+        { id: 'fiscali', nome: 'Documenti Fiscali', campi: ['dichiarante', 'beni_dinamici', 'debiti_dinamici', 'crediti_dinamici', 'famiglia_dinamici', 'note'] }
     ],
     trascrizioneEditorWidth: '50%'
 };
@@ -41,8 +41,12 @@ async function initData() {
     ];
     
     predefiniti.forEach(pref => {
-        if (!appData.tipiDocumento.some(t => t.id === pref.id)) {
+        const index = appData.tipiDocumento.findIndex(t => t.id === pref.id);
+        if (index === -1) {
             appData.tipiDocumento.unshift(pref); // Aggiunge all'inizio se mancante
+        } else {
+            // Forza l'aggiornamento dei campi per i modelli predefiniti (che non sono modificabili dall'utente)
+            appData.tipiDocumento[index].campi = pref.campi;
         }
     });
 

@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Gestionale per manoscritti medievali",
   "main": "src/main/main.js",
   "scripts": {
@@ -20,9 +20,8 @@
       "target": "nsis"
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "${productName}-Setup.${ext}"

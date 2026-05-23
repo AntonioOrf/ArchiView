@@ -1,0 +1,334 @@
+async function apriTrascrizione(id) {
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m) return;
+    
+    document.getElementById('trascrizione-id').value = m.id;
+    document.getElementById('trascrizione-subtitle').textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
+    
+    // Carica il testo precedente (se esiste, altrimenti inizializza con un paragrafo vuoto cliccabile)
+    document.getElementById('trascrizione-editor').innerHTML = m.trascrizione || '<p><br></p>';
+    
+    const panelAllegato = document.getElementById('trascrizione-allegato-panel');
+    const resizer = document.getElementById('trascrizione-resizer');
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
+    const btnCarica = document.getElementById('btn-carica-allegato-trasc');
+    const btnCollapse = document.getElementById('btn-collapse-editor');
+    
+    const imgPreview = document.getElementById('trasc-img-preview');
+    const pdfPreview = document.getElementById('trasc-pdf-preview');
+    const noAllegato = document.getElementById('trasc-no-allegato');
+    
+    imgPreview.classList.add('hidden');
+    pdfPreview.classList.add('hidden');
+    noAllegato.classList.add('hidden');
+    imgPreview.src = '';
+    pdfPreview.src = '';
+    
+    const thumbContainer = document.getElementById('trascrizione-thumbnails');
+    if (thumbContainer) thumbContainer.innerHTML = '';
+    
+    // Usa helper condiviso per normalizzare la lista allegati
+    const allegatiM = normalizzaAllegati(m);
+    
+    if (allegatiM.length > 0 && window.apiBrowser) {
+        panelAllegato.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (editorPanel) {
+            editorPanel.classList.remove('hidden');
+            editorPanel.style.width = appData.trascrizioneEditorWidth || '50%';
+        }
+        btnCarica.classList.add('hidden');
+        if (btnCollapse) {
+            btnCollapse.classList.remove('hidden');
+            btnCollapse.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnCollapse.title = "Collassa Editor";
+        }
+        
+        window.renderThumbnailsTrascrizione(m.id);
+        
+        if (window.cambiaAllegatoTrascrizione) {
+            window.cambiaAllegatoTrascrizione(m.allegati[0].nome, m.allegati[0].tipo, 0);
+        }
+    } else {
+        panelAllegato.classList.add('hidden');
+        if (resizer) resizer.classList.add('hidden');
+        if (editorPanel) {
+            editorPanel.style.width = '100%';
+            editorPanel.classList.remove('hidden');
+        }
+        btnCarica.classList.remove('hidden'); 
+        btnCarica.style.display = 'flex'; 
+        if (btnCollapse) btnCollapse.classList.add('hidden');
+    }
+    
+    switchTab('trascrizione');
+}
+
+window.renderThumbnailsTrascrizione = function(id) {
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m) return;
+    const thumbContainer = document.getElementById('trascrizione-thumbnails');
+    if (!thumbContainer) return;
+    
+    thumbContainer.innerHTML = '';
+    // Usa helper condiviso per normalizzare la lista allegati
+    normalizzaAllegati(m);
+    
+    if (m.allegati.length > 1) {
+        thumbContainer.classList.remove('hidden');
+        for (let i = 0; i < m.allegati.length; i++) {
+            const al = m.allegati[i];
+            
+            const wrapper = document.createElement('div');
+          wrapper.className = "flex items-center bg-white border border-stone-300 rounded-sm shadow-sm overflow-hidden shrink-0 cursor-grab active:cursor-grabbing transition-transform";
+            
+            const btn = document.createElement('button');
+            btn.className = "btn btn-ghost rounded-none allegato-btn px-3 py-1 text-xs whitespace-nowrap truncate max-w-[150px] border-r border-stone-200";
+            btn.title = al.originalName || `Allegato ${i+1}`;
+            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${al.originalName || 'PDF ' + (i+1)}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${al.originalName || 'Immagine ' + (i+1)}`;
+            btn.onclick = () => window.cambiaAllegatoTrascrizione(al.nome, al.tipo, i);
+            
+            const btnEdit = document.createElement('button');
+            btnEdit.className = "btn btn-ghost btn-icon rounded-none px-2 py-1";
+            btnEdit.title = "Rinomina";
+            btnEdit.innerHTML = '<i data-lucide="pencil" class="w-3 h-3"></i>';
+            btnEdit.onclick = (e) => {
+                e.stopPropagation();
+                window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
+                    m.allegati[i].originalName = nuovoNome;
+                    await salvaTutto();
+                    if(typeof renderMain === 'function') renderMain();
+                    window.renderThumbnailsTrascrizione(id);
+                    window.cambiaAllegatoTrascrizione(m.allegati[window.currentAllegatoIndex || 0].nome, m.allegati[window.currentAllegatoIndex || 0].tipo, window.currentAllegatoIndex || 0);
+                });
+            };
+
+            // Drag and Drop
+            wrapper.draggable = true;
+            wrapper.ondragstart = (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', i.toString());
+                setTimeout(() => wrapper.classList.add('opacity-40'), 0);
+                window._draggedTrascThumbIndex = i;
+            };
+            wrapper.ondragend = (e) => {
+                wrapper.classList.remove('opacity-40');
+                window._draggedTrascThumbIndex = null;
+                document.querySelectorAll('#trascrizione-thumbnails > div').forEach(p => p.style.transform = '');
+            };
+            wrapper.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = wrapper.getBoundingClientRect();
+                const mid = rect.left + rect.width / 2;
+                document.querySelectorAll('#trascrizione-thumbnails > div').forEach(p => {
+                    if (p !== wrapper && window._draggedTrascThumbIndex !== i) p.style.transform = '';
+                });
+                if (window._draggedTrascThumbIndex !== null && window._draggedTrascThumbIndex !== i) {
+                    wrapper.style.transform = e.clientX < mid ? 'translateX(10px)' : 'translateX(-10px)';
+                }
+            };
+            wrapper.ondragleave = (e) => wrapper.style.transform = '';
+            wrapper.ondrop = async (e) => {
+                e.preventDefault();
+                wrapper.style.transform = '';
+                const dragIndex = window._draggedTrascThumbIndex;
+                if (dragIndex !== null && dragIndex !== i) {
+                    const item = m.allegati.splice(dragIndex, 1)[0];
+                    let targetIndex = i;
+                    const rect = wrapper.getBoundingClientRect();
+                    const mid = rect.left + rect.width / 2;
+                    if (e.clientX > mid) targetIndex++;
+                    if (dragIndex < targetIndex) targetIndex--; 
+                    m.allegati.splice(targetIndex, 0, item);
+                    await salvaTutto();
+                    if(typeof renderMain === 'function') renderMain();
+                    window.renderThumbnailsTrascrizione(id);
+                }
+            };
+
+            wrapper.appendChild(btn);
+            wrapper.appendChild(btnEdit);
+            thumbContainer.appendChild(wrapper);
+        }
+    // Aggiorna le icone Lucide solo nel thumbnail container
+    if (window.lucide) lucide.createIcons({ nodes: [thumbContainer] });
+    } else {
+        thumbContainer.classList.add('hidden');
+    }
+};
+
+window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
+    window.currentAllegatoIndex = index;
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (m) {
+        let allegatiRender = m.allegati || [];
+        const btnPrev = document.getElementById('btn-prev-allegato');
+        const btnNext = document.getElementById('btn-next-allegato');
+        if (btnPrev && btnNext) {
+            if (allegatiRender.length > 1) {
+                btnPrev.classList.remove('hidden');
+                btnNext.classList.remove('hidden');
+                btnPrev.style.display = index > 0 ? 'block' : 'none';
+                btnNext.style.display = index < allegatiRender.length - 1 ? 'block' : 'none';
+            } else {
+                btnPrev.classList.add('hidden');
+                btnNext.classList.add('hidden');
+            }
+        }
+        
+        const thumbBtns = document.querySelectorAll('#trascrizione-thumbnails .allegato-btn');
+        thumbBtns.forEach((btn, i) => {
+            if (i === index) {
+                btn.classList.add('bg-amber-100', 'text-amber-900', 'border-amber-300');
+                btn.classList.remove('hover:bg-stone-50', 'bg-white');
+            } else {
+                btn.classList.remove('bg-amber-100', 'text-amber-900', 'border-amber-300');
+                btn.classList.add('hover:bg-stone-50', 'bg-white');
+            }
+        });
+    }
+
+    const imgPreview = document.getElementById('trasc-img-preview');
+    const pdfPreview = document.getElementById('trasc-pdf-preview');
+    const noAllegato = document.getElementById('trasc-no-allegato');
+    
+    imgPreview.classList.add('hidden');
+    pdfPreview.classList.add('hidden');
+    noAllegato.classList.add('hidden');
+    imgPreview.src = '';
+    pdfPreview.src = '';
+    
+    if (!nome) {
+        noAllegato.classList.remove('hidden');
+        return;
+    }
+
+    if (tipo === 'pdf') {
+        pdfPreview.src = 'local-asset://' + encodeURIComponent(nome);
+        pdfPreview.classList.remove('hidden');
+    } else {
+        imgPreview.src = 'local-asset://' + encodeURIComponent(nome);
+        imgPreview.classList.remove('hidden');
+    }
+};
+
+window.cambiaAllegatoRelativo = function(dir) {
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m) return;
+    
+    let allegatiRender = m.allegati || [];
+    let newIndex = (window.currentAllegatoIndex || 0) + dir;
+    if (newIndex >= 0 && newIndex < allegatiRender.length) {
+        const al = allegatiRender[newIndex];
+        window.cambiaAllegatoTrascrizione(al.nome, al.tipo, newIndex);
+    }
+};
+
+window.toggleFullscreenAllegato = function() {
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
+    const btnToggle = document.getElementById('btn-toggle-fullscreen');
+    const resizer = document.getElementById('trascrizione-resizer');
+    const panelAllegato = document.getElementById('trascrizione-allegato-panel');
+    
+    if (!editorPanel) return;
+    if (panelAllegato && panelAllegato.classList.contains('hidden')) {
+        return; // Impossibile collassare se non c'è l'allegato
+    }
+
+    if (editorPanel.classList.contains('hidden')) {
+        editorPanel.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (btnToggle) {
+            btnToggle.innerHTML = '<i data-lucide="maximize" class="w-5 h-5"></i>';
+            btnToggle.title = "Espandi Allegato";
+            btnToggle.classList.add('opacity-0', 'group-hover:opacity-100');
+        }
+    } else {
+        editorPanel.classList.add('hidden');
+        if (resizer) resizer.classList.add('hidden');
+        if (btnToggle) {
+            btnToggle.innerHTML = '<i data-lucide="minimize" class="w-5 h-5"></i>';
+            btnToggle.title = "Riduci Allegato";
+            btnToggle.classList.remove('opacity-0', 'group-hover:opacity-100');
+        }
+    }
+    if (window.lucide) lucide.createIcons();
+};
+
+function chiudiTrascrizione() {
+    // Prima di chiudere fermiamo l'iframe
+    document.getElementById('trasc-pdf-preview').src = '';
+    
+    // Resetta l'espansione dell'editor prima di tornare indietro
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
+    const btnToggle = document.getElementById('btn-toggle-fullscreen');
+    const resizer = document.getElementById('trascrizione-resizer');
+    if (editorPanel && editorPanel.classList.contains('hidden')) {
+        editorPanel.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (btnToggle) {
+            btnToggle.innerHTML = '<i data-lucide="maximize" class="w-5 h-5"></i>';
+            btnToggle.title = "Espandi Allegato";
+            btnToggle.classList.add('opacity-0', 'group-hover:opacity-100');
+        }
+    }
+    
+    switchTab('list');
+}
+
+async function salvaTrascrizione() {
+    const id = document.getElementById('trascrizione-id').value;
+    const editor = document.getElementById('trascrizione-editor');
+    const testo = editor.innerHTML;
+    
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (m) {
+        m.trascrizione = testo;
+        await salvaTutto();
+        mostraMessaggio("Trascrizione salvata con successo!", "success");
+        editor.focus();
+    }
+}
+
+async function caricaAllegatoTrascrizione(e) {
+    const file = e.target.files[0];
+    if (!file || !window.apiBrowser) return;
+    
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m) return;
+    
+    try {
+        const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
+        const risultato = await window.apiBrowser.salvaAllegato(filePath);
+        if (risultato) {
+            if (!m.allegati) m.allegati = [];
+            if (m.allegato && m.allegati.length === 0) {
+                m.allegati.push({ nome: m.allegato, tipo: m.allegatoTipo, originalName: 'Allegato' });
+            }
+            m.allegati.push({
+                nome: risultato.fileName,
+                tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
+                originalName: file.name
+            });
+            m.allegato = risultato.fileName;
+            m.allegatoTipo = risultato.ext === '.pdf' ? 'pdf' : 'immagine';
+
+            await salvaTutto();
+            
+            // Ricarica la vista trascrizione per mostrare il nuovo file
+            apriTrascrizione(id);
+        }
+    } catch (error) {
+        console.error("Errore caricamento da trascrizione:", error);
+        mostraMessaggio("Errore nel salvataggio dell'allegato.", "error");
+    }
+    
+    // Resetta l'input
+    e.target.value = '';
+}
+
+
