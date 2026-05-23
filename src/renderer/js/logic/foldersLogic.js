@@ -68,7 +68,7 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
 
 
 async function eliminaCartellaAttuale() {
-    window.eliminaCartellaDaSidebar(cartellaAttuale);
+    window.eliminaCartellaDaSidebar(window.cartellaAttuale);
 }
 
 window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
@@ -91,8 +91,8 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
         // Elimina anche tutte le sottocartelle
         appData.cartelle = appData.cartelle.filter(c => c !== pathDaEliminare && !c.startsWith(prefix));
         
-        if (cartellaAttuale === pathDaEliminare || cartellaAttuale.startsWith(prefix)) {
-            cartellaAttuale = appData.cartelle[0] || 'Generale';
+        if (window.cartellaAttuale === pathDaEliminare || window.cartellaAttuale.startsWith(prefix)) {
+            window.cartellaAttuale = appData.cartelle[0] || 'Generale';
             switchTab('list');
         }
         await salvaTutto();
@@ -140,9 +140,9 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
             }
         });
 
-        if (cartellaAttuale === vecchioPath) cartellaAttuale = nuovoPath;
-        else if (cartellaAttuale.startsWith(prefixVecchia)) {
-            cartellaAttuale = cartellaAttuale.replace(vecchioPath, nuovoPath);
+        if (window.cartellaAttuale === vecchioPath) window.cartellaAttuale = nuovoPath;
+        else if (window.cartellaAttuale.startsWith(prefixVecchia)) {
+            window.cartellaAttuale = window.cartellaAttuale.replace(vecchioPath, nuovoPath);
         }
         
         // Aggiorna espansione

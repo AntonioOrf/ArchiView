@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ArchiView</title>
+    <!-- Inizializzazione immediata del tema per evitare il flash bianco -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || 'system';
+                const isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (isDark) document.documentElement.classList.add('dark-theme');
+            } catch (e) {}
+        })();
+    </script>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset:; connect-src 'self' https://api.github.com;">
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="vendor/lucide.min.js"></script>
@@ -499,21 +509,21 @@
     </div>
 
     <!-- VISTA: TRASCRIZIONE (A SCHERMO INTERO) -->
-    <div id="view-trascrizione" class="fixed inset-0 bg-stone-100 z-40 hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden">
+    <div id="view-trascrizione" class="fixed inset-0 z-40 hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden" style="background-color: var(--color-bg-base);">
         <!-- Header Trascrizione -->
-        <header class="shrink-0 mb-4 flex items-center justify-between border-b-2 border-amber-700/20 pb-4 bg-white/50 backdrop-blur-md p-3 rounded-sm shadow-sm">
+        <header class="shrink-0 mb-4 flex items-center justify-between pb-4 p-3 panel-glass">
             <div class="flex items-center gap-4">
-                <button onclick="chiudiTrascrizione()" class="btn btn-ghost btn-icon bg-stone-200">
+                <button onclick="chiudiTrascrizione()" class="btn btn-secondary btn-icon">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </button>
-                <button id="btn-collapse-editor" onmousedown="event.preventDefault()" onclick="toggleFullscreenAllegato()" class="btn btn-primary btn-icon shadow-sm" style="background-color: var(--color-primary-light); color: var(--color-primary);" title="Collassa Editor">
+                <button id="btn-collapse-editor" onmousedown="event.preventDefault()" onclick="toggleFullscreenAllegato()" class="btn btn-secondary btn-icon shadow-sm" title="Collassa Editor">
                     <i data-lucide="panel-left-close" class="w-5 h-5"></i>
                 </button>
                 <div>
-                    <h2 id="trascrizione-title" class="text-2xl font-bold text-amber-900 flex items-center gap-2">
+                    <h2 id="trascrizione-title" class="text-2xl font-bold flex items-center gap-2" style="color: var(--color-primary);">
                         Trascrizione
                     </h2>
-                    <p id="trascrizione-subtitle" class="text-stone-500 text-sm italic"></p>
+                    <p id="trascrizione-subtitle" class="text-sm italic" style="color: var(--color-text-muted);"></p>
                 </div>
             </div>
             

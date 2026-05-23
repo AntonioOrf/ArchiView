@@ -120,7 +120,7 @@ function resetForm() {
     if (dynContainer) dynContainer.querySelectorAll('input, textarea').forEach(el => el.value = '');
 
     // Reimposta la select sulla cartella in cui si stava navigando
-    document.getElementById('form-cartella').value = cartellaAttuale;
+    document.getElementById('form-cartella').value = window.cartellaAttuale;
     document.getElementById('form-title').textContent = "Compila Nuova Scheda";
     document.getElementById('btn-cancel-edit').classList.add('hidden');
 }

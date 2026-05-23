@@ -89,7 +89,7 @@ async function handleFormSubmit(e) {
     await salvaTutto();
     
     // Imposta la vista sulla cartella in cui abbiamo appena salvato
-    cartellaAttuale = cartellaScelta; 
+    window.cartellaAttuale = cartellaScelta; 
     renderSidebar();
     
     resetForm();

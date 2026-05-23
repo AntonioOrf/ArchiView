@@ -9,13 +9,13 @@ function renderMain() {
     if (isGlobalSearch) {
         document.getElementById('titolo-cartella-attuale').textContent = "Risultati Ricerca Globale";
     } else {
-        const partiTitolo = cartellaAttuale.split('/');
+        const partiTitolo = window.cartellaAttuale.split('/');
         document.getElementById('titolo-cartella-attuale').textContent = partiTitolo[partiTitolo.length - 1];
     }
 
     // Filtro per Cartella (se non globale) E per Ricerca E per Tag
     const filtered = appData.manoscritti.filter(m => {
-        const matchCartella = isGlobalSearch ? true : m.cartella === cartellaAttuale;
+        const matchCartella = isGlobalSearch ? true : m.cartella === window.cartellaAttuale;
 
         const tipoDoc = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
         const campiPossibili = tipoDoc ? tipoDoc.campi : ['titolo', 'autore', 'note'];
@@ -36,8 +36,8 @@ function renderMain() {
         grid.classList.add('hidden');
         document.getElementById('empty-state').classList.remove('hidden');
 
-        const manoscrittiTotaliInCartella = appData.manoscritti.filter(m => m.cartella === cartellaAttuale).length;
-        if (manoscrittiTotaliInCartella === 0 && cartellaAttuale !== 'Generale' && search === '') {
+        const manoscrittiTotaliInCartella = appData.manoscritti.filter(m => m.cartella === window.cartellaAttuale).length;
+        if (manoscrittiTotaliInCartella === 0 && window.cartellaAttuale !== 'Generale' && search === '') {
             btnDeleteFolder.classList.remove('hidden');
             btnDeleteFolder.classList.add('flex');
         } else {
@@ -165,6 +165,8 @@ function switchTab(tab) {
     } else if (tab === 'trascrizione') {
         if (vTrascrizione) vTrascrizione.classList.remove('hidden-tab');
     }
+    
+    if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 }
 
 function renderSearchSuggestions() {

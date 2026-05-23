@@ -23,10 +23,10 @@ function renderSidebar() {
     function renderNode(nodeName, nodeObj, parentEl, profondita) {
         const fullPath = nodeObj.path;
         const hasChildren = Object.keys(nodeObj.children).length > 0;
-        const isAttuale = fullPath === cartellaAttuale;
+        const isAttuale = fullPath === window.cartellaAttuale;
 
         // Mantieni espanso se è attuale o genitore dell'attuale
-        if (cartellaAttuale.startsWith(fullPath)) {
+        if (window.cartellaAttuale.startsWith(fullPath)) {
             window.cartelleEspanse.add(fullPath);
         }
 
@@ -76,6 +76,7 @@ function renderSidebar() {
                 if (isExpanded) window.cartelleEspanse.delete(fullPath);
                 else window.cartelleEspanse.add(fullPath);
                 renderSidebar();
+                if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
             };
         }
 
@@ -116,7 +117,7 @@ function renderSidebar() {
         riga.appendChild(actionContainer);
 
         riga.onclick = () => {
-            cartellaAttuale = fullPath;
+            window.cartellaAttuale = fullPath;
             window.cartelleEspanse.add(fullPath);
             document.getElementById('search-input').value = '';
             switchTab('list');
@@ -167,7 +168,7 @@ function aggiornaSelectCartelle() {
         opt.value = c;
         // Sostituisce la barra con una freccia per estetica nel menu a tendina
         opt.textContent = c.replace(/\//g, ' ⮞ ');
-        if (c === cartellaAttuale) opt.selected = true;
+        if (c === window.cartellaAttuale) opt.selected = true;
         select.appendChild(opt);
     });
 }

@@ -1,5 +1,5 @@
 async function apriTrascrizione(id) {
-    const m = appData.manoscritti.find(x => x.id === id);
+    const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m) return;
     
     document.getElementById('trascrizione-id').value = m.id;
@@ -62,6 +62,7 @@ async function apriTrascrizione(id) {
     }
     
     switchTab('trascrizione');
+    if (window.lucide) lucide.createIcons();
 }
 
 window.renderThumbnailsTrascrizione = function(id) {
@@ -229,7 +230,7 @@ window.cambiaAllegatoRelativo = function(dir) {
 
 window.toggleFullscreenAllegato = function() {
     const editorPanel = document.getElementById('trascrizione-editor-panel');
-    const btnToggle = document.getElementById('btn-toggle-fullscreen');
+    const btnToggle = document.getElementById('btn-collapse-editor');
     const resizer = document.getElementById('trascrizione-resizer');
     const panelAllegato = document.getElementById('trascrizione-allegato-panel');
     
@@ -242,17 +243,15 @@ window.toggleFullscreenAllegato = function() {
         editorPanel.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = '<i data-lucide="maximize" class="w-5 h-5"></i>';
-            btnToggle.title = "Espandi Allegato";
-            btnToggle.classList.add('opacity-0', 'group-hover:opacity-100');
+            btnToggle.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnToggle.title = "Collassa Editor";
         }
     } else {
         editorPanel.classList.add('hidden');
         if (resizer) resizer.classList.add('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = '<i data-lucide="minimize" class="w-5 h-5"></i>';
-            btnToggle.title = "Riduci Allegato";
-            btnToggle.classList.remove('opacity-0', 'group-hover:opacity-100');
+            btnToggle.innerHTML = '<i data-lucide="panel-left-open" class="w-5 h-5"></i>';
+            btnToggle.title = "Espandi Editor";
         }
     }
     if (window.lucide) lucide.createIcons();
@@ -264,15 +263,14 @@ function chiudiTrascrizione() {
     
     // Resetta l'espansione dell'editor prima di tornare indietro
     const editorPanel = document.getElementById('trascrizione-editor-panel');
-    const btnToggle = document.getElementById('btn-toggle-fullscreen');
+    const btnToggle = document.getElementById('btn-collapse-editor');
     const resizer = document.getElementById('trascrizione-resizer');
     if (editorPanel && editorPanel.classList.contains('hidden')) {
         editorPanel.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = '<i data-lucide="maximize" class="w-5 h-5"></i>';
-            btnToggle.title = "Espandi Allegato";
-            btnToggle.classList.add('opacity-0', 'group-hover:opacity-100');
+            btnToggle.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnToggle.title = "Collassa Editor";
         }
     }
     

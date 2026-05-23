@@ -8,7 +8,7 @@ let appData = {
     ],
     trascrizioneEditorWidth: '50%'
 };
-let cartellaAttuale = 'Generale';
+window.cartellaAttuale = 'Generale';
 
 async function initData() {
     if (window.apiBrowser) {

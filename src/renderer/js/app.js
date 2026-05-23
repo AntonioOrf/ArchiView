@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        try { if (window.lucide) lucide.createIcons(); } catch (e) { console.warn(e); }
-
         if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
             const workspace = await window.apiBrowser.getWorkspacePath();
             
@@ -34,10 +32,39 @@ window.selezionaCartellaIniziale = async function() {
 async function avviaApp() {
     await initData();
 
+    const statoSalvato = localStorage.getItem('archiview_stato');
+    if (statoSalvato) {
+        try {
+            const stato = JSON.parse(statoSalvato);
+            if (stato.cartella) {
+                window.cartellaAttuale = stato.cartella;
+            }
+            if (stato.cartelleEspanse) {
+                window.cartelleEspanse = new Set(stato.cartelleEspanse);
+            }
+            window.statoIniziale = stato;
+        } catch (e) {}
+    }
+
     // Primo render per popolare l'interfaccia all'avvio
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
     renderSidebar();
     renderMain();
+    
+    // Inizializza tutte le icone statiche dell'HTML
+    if (window.lucide) lucide.createIcons();
+
+    if (window.statoIniziale) {
+        if (window.statoIniziale.tab === 'add') {
+            switchTab('add');
+        } else if (window.statoIniziale.tab === 'trascrizione' && window.statoIniziale.trascrizioneId) {
+            if (typeof apriTrascrizione === 'function') apriTrascrizione(window.statoIniziale.trascrizioneId);
+        } else {
+            switchTab('list');
+        }
+    } else {
+        switchTab('list');
+    }
 
     // Debounce sulla ricerca: renderMain e renderSearchSuggestions vengono
     // chiamate max 1 volta ogni 150ms invece che ad ogni singolo tasto

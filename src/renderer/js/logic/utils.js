@@ -1,6 +1,22 @@
 // Stato globale per le cartelle espansive
 window.cartelleEspanse = window.cartelleEspanse || new Set(['Generale']);
 
+window.salvaStatoPosizione = function() {
+    const vAdd = document.getElementById('view-add');
+    const vTrasc = document.getElementById('view-trascrizione');
+    let tabAttuale = 'list';
+    if (vAdd && !vAdd.classList.contains('hidden-tab')) tabAttuale = 'add';
+    else if (vTrasc && !vTrasc.classList.contains('hidden-tab')) tabAttuale = 'trascrizione';
+
+    const stato = {
+        cartella: typeof window.cartellaAttuale !== 'undefined' ? window.cartellaAttuale : 'Generale',
+        tab: tabAttuale,
+        trascrizioneId: document.getElementById('trascrizione-id') ? document.getElementById('trascrizione-id').value : null,
+        cartelleEspanse: Array.from(window.cartelleEspanse)
+    };
+    localStorage.setItem('archiview_stato', JSON.stringify(stato));
+};
+
 const CONFIG_CAMPI = {
     dataCronica: { label: 'Data Cronica', placeholder: 'Es. 12 Maggio 1340', type: 'text' },
     dataTopica: { label: 'Data Topica', placeholder: 'Es. Firenze', type: 'text' },
