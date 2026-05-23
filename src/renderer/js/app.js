@@ -1,5 +1,37 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    if (window.lucide) lucide.createIcons();
+    try {
+        try { if (window.lucide) lucide.createIcons(); } catch (e) { console.warn(e); }
+
+        if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
+            const workspace = await window.apiBrowser.getWorkspacePath();
+            
+            if (!workspace) {
+                const modal = document.getElementById('welcome-modal');
+                if (modal) {
+                    modal.classList.remove('hidden-tab');
+                    modal.style.setProperty('display', 'flex', 'important');
+                }
+                return;
+            }
+        }
+        
+        await avviaApp();
+    } catch (error) {
+        console.error("FATAL ERROR", error);
+    }
+});
+
+window.selezionaCartellaIniziale = async function() {
+    if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
+        const newPath = await window.apiBrowser.changeWorkspace();
+        if (newPath) {
+            document.getElementById('welcome-modal').classList.add('hidden-tab');
+            await avviaApp();
+        }
+    }
+};
+
+async function avviaApp() {
     await initData();
 
     // Primo render per popolare l'interfaccia all'avvio
@@ -107,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-});
+}
 
 // Theme Selection Logic
 window.applicaTema = function(theme) {

@@ -1,6 +1,6 @@
 {
-  "name": "Schedatore",
-  "version": "1.0.1",
+  "name": "archiview",
+  "version": "1.0.2",
   "description": "Gestionale per manoscritti medievali",
   "main": "src/main/main.js",
   "scripts": {
@@ -11,8 +11,8 @@
   },
   "build": {
     "generateUpdatesFilesForAllChannels": true,
-    "appId": "com.antonioorf.Schedatore",
-    "productName": "Schedatore",
+    "appId": "com.antonioorf.archiview",
+    "productName": "ArchiView",
     "directories": {
       "output": "dist"
     },
@@ -31,7 +31,7 @@
       {
         "provider": "github",
         "owner": "AntonioOrf",
-        "repo": "Schedatore"
+        "repo": "ArchiView"
       }
     ]
   },

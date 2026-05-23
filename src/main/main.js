@@ -44,7 +44,7 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: "Schedatore",
+    title: "ArchiView",
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true, 
@@ -59,6 +59,10 @@ function createWindow () {
   // Sicurezza: blocca la navigazione interna
   mainWindow.webContents.on('will-navigate', (event, url) => {
     event.preventDefault();
+  });
+
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[RENDERER] ${message} (${sourceId}:${line})`);
   });
 
   // Sicurezza: blocca l'apertura di finestre popup
@@ -79,23 +83,9 @@ app.whenReady().then(() => {
 
   let savedWorkspace = loadWorkspace();
   
-  if (!savedWorkspace) {
-    const result = dialog.showOpenDialogSync({
-      title: "Seleziona la cartella di lavoro per l'Archivio",
-      message: "Scegli o crea una cartella dove salvare il database e tutti gli allegati",
-      properties: ['openDirectory', 'createDirectory']
-    });
-    
-    if (result && result.length > 0) {
-      savedWorkspace = result[0];
-    } else {
-      dialog.showErrorBox("Selezione Annullata", "È necessario selezionare una cartella di lavoro per poter avviare Schedatore.");
-      app.quit();
-      return;
-    }
+  if (savedWorkspace) {
+    initWorkspace(savedWorkspace);
   }
-  
-  initWorkspace(savedWorkspace);
 
   createWindow();
   app.on('activate', () => {
