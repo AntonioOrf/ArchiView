@@ -179,3 +179,11 @@ window.cambiaTemaSelezionato = function(theme) {
     });
 })();
 
+// Controlla aggiornamenti all'avvio (silenzioso)
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (window.controllaAggiornamenti) {
+            window.controllaAggiornamenti(false);
+        }
+    }, 3000);
+});

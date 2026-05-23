@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Gestionale per manoscritti medievali",
   "main": "src/main/main.js",
   "scripts": {
