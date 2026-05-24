@@ -142,7 +142,7 @@ window.apriModalDocumenti = async function(id) {
             ${previewHtml}
             <div class="w-full flex items-center justify-between gap-1 mt-auto pt-2">
                 <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-300 shrink-0"></i>
-                <span class="text-sm font-semibold text-stone-700 truncate flex-1 text-left" title="${defaultName}">${defaultName}</span>
+                <span class="text-sm font-semibold text-stone-700 truncate flex-1 text-left" title="${escapeHTML(defaultName)}">${escapeHTML(defaultName)}</span>
                 <button type="button" onclick="rinominaAllegatoDaModal('${id}', ${i})" class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0" title="Rinomina">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>

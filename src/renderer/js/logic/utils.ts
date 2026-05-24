@@ -2,6 +2,16 @@
 // Stato globale per le cartelle espansive
 window.cartelleEspanse = window.cartelleEspanse || new Set(['Generale']);
 
+window.escapeHTML = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+};
+
 window.salvaStatoPosizione = function() {
     const vAdd = document.getElementById('view-add');
     const vTrasc = document.getElementById('view-trascrizione');

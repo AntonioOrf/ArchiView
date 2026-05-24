@@ -85,7 +85,7 @@ function renderSidebar() {
         const icona = isAttuale ? 'folder-open' : 'folder';
         const testo = document.createElement('span');
         testo.className = "truncate flex items-center gap-1.5 flex-1 select-none";
-        testo.innerHTML = `<i data-lucide="${icona}" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${nodeName}`;
+        testo.innerHTML = `<i data-lucide="${icona}" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${escapeHTML(nodeName)}`;
 
         riga.appendChild(spanToggle);
         riga.appendChild(testo);
@@ -253,9 +253,8 @@ function renderTagList() {
             renderMain();
             renderTagList();
         };
-        btn.innerHTML = `<span>#${tag}</span>`;
+        btn.innerHTML = `<span>#${escapeHTML(tag)}</span>`;
         fragment.appendChild(btn);
     });
     container.appendChild(fragment);
 }
-

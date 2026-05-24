@@ -11,7 +11,7 @@ window.mostraMessaggio = function(testo, tipo = 'info') {
     if (tipo === 'success') icon = 'check-circle';
     if (tipo === 'error') icon = 'alert-triangle';
 
-    toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i> <span>${testo}</span>`;
+    toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i> <span>${escapeHTML(testo)}</span>`;
     container.appendChild(toast);
     if (window.lucide) lucide.createIcons({ nodes: [toast] });
 

@@ -149,7 +149,7 @@ function renderMain(resetPage = true) {
             if (m.tags) {
                 const tagsList = m.tags.split(',').map(t => t.trim()).filter(t => t);
                 if (tagsList.length > 0) {
-                    tagsHTML = '<div class="flex flex-wrap gap-1 mt-2">' + tagsList.map(t => `<span class="card-tag">${t}</span>`).join('') + '</div>';
+                    tagsHTML = '<div class="flex flex-wrap gap-1 mt-2">' + tagsList.map(t => `<span class="card-tag">${escapeHTML(t)}</span>`).join('') + '</div>';
                 }
             }
 
@@ -167,15 +167,15 @@ function renderMain(resetPage = true) {
                                 const k = item.k || item.ruolo || '';
                                 const v = item.v || item.nome || '';
                                 if (k || v) {
-                                    infoHTML += `<p class="truncate pl-2 border-l-2 border-amber-200/50 mb-0.5"><b>${k}:</b> ${v}</p>`;
+                                    infoHTML += `<p class="truncate pl-2 border-l-2 border-amber-200/50 mb-0.5"><b>${escapeHTML(k)}:</b> ${escapeHTML(v)}</p>`;
                                 }
                             });
                         }
                     } else {
                         const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || campo);
-                        if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${m.note.replace(/"/g, '&quot;')}">${m.note}</p>`;
-                        else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${label}:</b> <i>${m.titolo}</i></p>`;
-                        else infoHTML += `<p class="truncate mt-1"><b>${label}:</b> ${m[campo]}</p>`;
+                        if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
+                        else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <i>${escapeHTML(m.titolo)}</i></p>`;
+                        else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
                     }
                 }
             });
@@ -183,8 +183,8 @@ function renderMain(resetPage = true) {
             div.innerHTML = `
                 <div>
                     <div class="flex justify-between items-start gap-2 mb-2">
-                        <h3 class="card-title mb-0" title="${m.segnatura}">${m.segnatura}</h3>
-                        <span class="card-badge shrink-0 mt-0">${tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento'}</span>
+                        <h3 class="card-title mb-0" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
+                        <span class="card-badge shrink-0 mt-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
                     </div>
                     <div class="space-y-1 text-sm">
                         ${infoHTML}
@@ -234,9 +234,8 @@ function extractSnippet(val, search) {
     const strVal = val.toString();
     
     // Rimuovi tag HTML per sicurezza
-    const temp = document.createElement('div');
-    temp.innerHTML = strVal;
-    const cleanText = temp.textContent || temp.innerText || "";
+    const doc = new DOMParser().parseFromString(strVal, 'text/html');
+    const cleanText = doc.body.textContent || doc.body.innerText || "";
     
     const lowerStr = cleanText.toLowerCase();
     const idx = lowerStr.indexOf(search);
@@ -325,9 +324,9 @@ function renderSearchSuggestions() {
             }
         };
         div.innerHTML = `
-            <div class="text-xs font-bold text-stone-800 truncate mb-1">${match.item.segnatura || match.item.titolo || 'Senza Titolo'}</div>
+            <div class="text-xs font-bold text-stone-800 truncate mb-1">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
             <div class="text-[10px] text-stone-600 leading-tight">
-                <span class="font-semibold text-amber-700 capitalize">${match.key}:</span> ${match.snippet}
+                <span class="font-semibold text-amber-700 capitalize">${escapeHTML(match.key)}:</span> ${escapeHTML(match.snippet)}
             </div>
         `;
         fragment.appendChild(div);

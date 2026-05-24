@@ -88,7 +88,7 @@ window.renderThumbnailsTrascrizione = function(id) {
             const btn = document.createElement('button');
             btn.className = "btn btn-ghost rounded-none allegato-btn px-3 py-1 text-xs whitespace-nowrap truncate max-w-[150px] border-r border-stone-200";
             btn.title = al.originalName || `Allegato ${i+1}`;
-            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${al.originalName || 'PDF ' + (i+1)}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${al.originalName || 'Immagine ' + (i+1)}`;
+            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || 'PDF ' + (i+1))}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || 'Immagine ' + (i+1))}`;
             btn.onclick = () => window.cambiaAllegatoTrascrizione(al.nome, al.tipo, i);
             
             const btnEdit = document.createElement('button');

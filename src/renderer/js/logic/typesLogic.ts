@@ -136,8 +136,8 @@ function aggiungiPill(val, label, isBase) {
 
     pill.innerHTML = `
         <i data-lucide="grip-horizontal" class="w-3 h-3 text-stone-400 mr-1"></i>
-        <span>${finalLabel}</span>
-        <button type="button" onclick="rimuoviPillDalPulsante(this, '${val.replace(/'/g, "\\'")}')" class="text-stone-400 hover:text-red-600 focus:outline-none ml-1 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
+        <span>${escapeHTML(finalLabel)}</span>
+        <button type="button" onclick="rimuoviPillDalPulsante(this, '${escapeHTML(val).replace(/'/g, "\\'")}')" class="text-stone-400 hover:text-red-600 focus:outline-none ml-1 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
     `;
     list.appendChild(pill);
     if (window.lucide) lucide.createIcons({ nodes: [pill] });
@@ -239,7 +239,7 @@ function apriManageTypesModal() {
 
         div.innerHTML = `
             <div class="flex items-center">
-                <span class="font-medium text-stone-800">${window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome}</span>
+                <span class="font-medium text-stone-800">${escapeHTML(window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome)}</span>
                 ${defaultBadge}
                 ${inUsoBadge}
             </div>

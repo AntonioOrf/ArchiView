@@ -47,6 +47,12 @@ async function avviaApp() {
         } catch (e) {}
     }
 
+    // Allinea il menu a tendina delle impostazioni lingua con la lingua caricata
+    const langSelect = document.getElementById('settings-language');
+    if (langSelect && window.linguaAttuale) {
+        langSelect.value = window.linguaAttuale;
+    }
+
     // Primo render per popolare l'interfaccia all'avvio
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
     renderSidebar();
