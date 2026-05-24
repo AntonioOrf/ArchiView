@@ -94,10 +94,10 @@ function renderMain() {
             let allegatoHTML = '';
             const btnTrascriviModifica = `
                 <button onclick="editItem('${m.id}')" class="btn btn-secondary flex-1 text-xs uppercase tracking-wider">
-                    <span class="text-xs font-bold uppercase tracking-wider">Modifica</span>
+                    <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_edit') || 'Modifica'}</span>
                 </button>
                 <button onclick="apriTrascrizione('${m.id}')" class="btn flex-1 text-xs uppercase tracking-wider" style="background-color: var(--color-primary-light); color: var(--color-primary-hover); border: 1px solid var(--color-primary-border);">
-                    <span class="text-xs font-bold uppercase tracking-wider">Trascrivi</span>
+                    <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_transcribe') || 'Trascrivi'}</span>
                 </button>
             `;
 
@@ -126,7 +126,7 @@ function renderMain() {
                     let conf = CONFIG_CAMPI[campo] || { type: 'text' };
                     if (conf.type === 'dynamic_list' && Array.isArray(m[campo])) {
                         if (m[campo].length > 0) {
-                            const labelStr = conf.label || campo;
+                            const labelStr = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || campo);
                             infoHTML += `<div class="mt-3 mb-1"><span class="font-bold text-xs uppercase tracking-wider opacity-70 border-b border-stone-200/50 pb-1">${labelStr}</span></div>`;
                             m[campo].forEach(item => {
                                 const k = item.k || item.ruolo || '';
@@ -137,7 +137,7 @@ function renderMain() {
                             });
                         }
                     } else {
-                        const label = conf.label || campo;
+                        const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || campo);
                         if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${m.note.replace(/"/g, '&quot;')}">${m.note}</p>`;
                         else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${label}:</b> <i>${m.titolo}</i></p>`;
                         else infoHTML += `<p class="truncate mt-1"><b>${label}:</b> ${m[campo]}</p>`;
@@ -149,7 +149,7 @@ function renderMain() {
                 <div>
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <h3 class="card-title mb-0" title="${m.segnatura}">${m.segnatura}</h3>
-                        <span class="card-badge shrink-0 mt-0">${tipoDoc ? tipoDoc.nome : 'Documento'}</span>
+                        <span class="card-badge shrink-0 mt-0">${tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento'}</span>
                     </div>
                     <div class="space-y-1 text-sm">
                         ${infoHTML}
@@ -263,7 +263,7 @@ function renderSearchSuggestions() {
     }
 
     if (matches.length === 0) {
-        container.innerHTML = '<div class="p-4 text-xs text-stone-400 italic text-center">Nessun match trovato nel database.</div>';
+        container.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_search_match')}</div>`;
         return;
     }
 

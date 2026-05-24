@@ -15,7 +15,7 @@ function confermaAggiungiCartella() {
         const percorsoPulito = nome.trim().replace(/\/+$/, "");
         
         if (percorsoPulito === '') {
-            mostraMessaggio("Il nome della cartella non può essere vuoto.", "error");
+            mostraMessaggio(window.t("msg_folder_name_empty"), "error");
             return;
         }
 
@@ -26,7 +26,7 @@ function confermaAggiungiCartella() {
             aggiornaSelectCartelle();
             chiudiFolderModal();
         } else {
-            mostraMessaggio("Questa cartella esiste già.", "error");
+            mostraMessaggio(window.t("msg_folder_exists"), "error");
         }
     }
 }
@@ -43,7 +43,7 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
     const nuovoPath = pathDestinazioneBase === 'ROOT' ? nomeCartella : `${pathDestinazioneBase}/${nomeCartella}`;
     
     if (appData.cartelle.includes(nuovoPath)) {
-        mostraMessaggio("Esiste già una cartella con questo nome nella destinazione.", "error");
+        mostraMessaggio(window.t("msg_folder_exists_dest"), "error");
         return;
     }
 
@@ -74,7 +74,7 @@ async function eliminaCartellaAttuale() {
 
 window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
     if (appData.cartelle.length <= 1) {
-        mostraMessaggio("Impossibile eliminare l'unica cartella rimasta nell'archivio.", "error");
+        mostraMessaggio(window.t("msg_cannot_delete_last_folder"), "error");
         return;
     }
     
@@ -82,7 +82,7 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
     const prefix = pathDaEliminare + '/';
     const haManoscritti = appData.manoscritti.some(m => m.cartella === pathDaEliminare || (m.cartella && m.cartella.startsWith(prefix)));
     if (haManoscritti) {
-        mostraMessaggio(`Impossibile eliminare: la cartella "${pathDaEliminare}" (o le sue sottocartelle) contiene ancora dei documenti.`, "error");
+        mostraMessaggio(window.t("msg_cannot_delete_not_empty"), "error");
         return;
     }
 
@@ -100,7 +100,7 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
         renderSidebar();
         renderMain();
         aggiornaSelectCartelle();
-        mostraMessaggio("Cartella eliminata.", "success");
+        mostraMessaggio(window.t("msg_folder_deleted"), "success");
     }, 'delete_folder');
 }
 
@@ -110,14 +110,14 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
     
     window.apriRenameModal(nomeAttuale, async (nuovoNome) => {
         if (!nuovoNome || nuovoNome.trim() === '' || nuovoNome.includes('/')) {
-            mostraMessaggio("Nome cartella non valido (non può contenere '/').", "error");
+            mostraMessaggio(window.t("msg_folder_invalid_name"), "error");
             return;
         }
         
         const nuovoPath = basePath ? `${basePath}/${nuovoNome}` : nuovoNome;
         
         if (appData.cartelle.includes(nuovoPath) && nuovoPath !== vecchioPath) {
-            mostraMessaggio("Esiste già una cartella con questo nome in questa posizione.", "error");
+            mostraMessaggio(window.t("msg_folder_exists_dest"), "error");
             return;
         }
         
@@ -156,7 +156,7 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
         renderSidebar();
         renderMain();
         aggiornaSelectCartelle();
-        mostraMessaggio("Cartella rinominata.", "success");
+        mostraMessaggio(window.t("msg_folder_renamed"), "success");
     });
 }
 

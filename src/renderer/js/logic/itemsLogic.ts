@@ -30,7 +30,7 @@ async function handleFormSubmit(e) {
                 }
             } catch (error) {
                 console.error("Errore durante il salvataggio dell'allegato:", error);
-                mostraMessaggio("Errore nel salvataggio di un file.", "error");
+                mostraMessaggio(window.t("msg_file_save_error"), "error");
             }
         }
     }
@@ -158,7 +158,7 @@ async function confermaEliminazione() {
     await salvaTutto();
     renderMain();
     chiudiDeleteModal();
-    mostraMessaggio("Scheda eliminata.", "success");
+    mostraMessaggio(window.t("msg_record_deleted"), "success");
 }
 
 

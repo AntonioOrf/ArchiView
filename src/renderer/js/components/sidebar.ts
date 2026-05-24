@@ -145,7 +145,7 @@ function renderSidebar() {
     // Area di drop speciale per spostare alla root (Generale)
     const dropRoot = document.createElement('div');
     dropRoot.className = "p-4 text-center text-xs text-stone-400 border-2 border-dashed border-transparent hover:border-stone-300 rounded mt-4 transition-colors select-none";
-    dropRoot.textContent = "Trascina qui per spostare in radice";
+    dropRoot.textContent = window.t('drag_to_root');
     dropRoot.ondragover = (e) => { e.preventDefault(); dropRoot.classList.add('border-amber-400', 'bg-amber-50'); };
     dropRoot.ondragleave = () => { dropRoot.classList.remove('border-amber-400', 'bg-amber-50'); };
     dropRoot.ondrop = (e) => {
@@ -217,7 +217,7 @@ function renderTagList() {
     const sortedTags = Object.keys(tagCount).sort();
 
     if (sortedTags.length === 0) {
-        container.innerHTML = '<div class="p-4 text-xs text-stone-400 italic text-center">Nessun tag utilizzato nel database.</div>';
+        container.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`;
         return;
     }
 

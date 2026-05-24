@@ -1,0 +1,779 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-05-24 17:20+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: it\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_updates"
+msgstr "Aggiornamenti"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_add_dynamic"
+msgstr "Aggiungi"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_add_image_pdf"
+msgstr "Aggiungi Immagine/PDF"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_attachments"
+msgstr "Allega Documenti (Foto o PDF)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_val_debiti_dinamici"
+msgstr "Ammontare"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_val_crediti_dinamici"
+msgstr "Ammontare"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_cancel"
+msgstr "Annulla"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_cancel_edit"
+msgstr "Annulla modifica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_folders"
+msgstr "Apri Cartelle"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_autore"
+msgstr "Autore/i"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_backup"
+msgstr "Backup Dati"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_key_beni_dinamici"
+msgstr "Bene (es. Casa, Terreno)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_beni_dinamici"
+msgstr "Beni (Proprietà)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "welcome_title"
+msgstr "Benvenuto in ArchiView"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_change_folder"
+msgstr "Cambia Cartella..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_custom_fields"
+msgstr "Campi aggiuntivi personalizzati"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_base_fields"
+msgstr "Campi di base"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_selected_fields"
+msgstr "Campi selezionati (trascina per riordinare)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_workspace"
+msgstr "Cartella di Lavoro (Archivio)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_folder"
+msgstr "Cartella:"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_motivazione_processo"
+msgstr "Causa e ragioni del processo..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_search"
+msgstr "Cerca in tutte le schede..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "theme_light"
+msgstr "Chiaro"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_close"
+msgstr "Chiudi"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "unsaved_prompt"
+msgstr "Ci sono modifiche non salvate in questa trascrizione."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_collapse"
+msgstr "Collassa Editor"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_new_record"
+msgstr "Compila Nuova Scheda"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_condanne"
+msgstr "Condanne"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_confirm_action"
+msgstr "Conferma Azione"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_confirm_delete"
+msgstr "Conferma Eliminazione"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "hint_folder_name"
+msgstr "Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_continue_writing"
+msgstr "Continua a scrivere"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_check_updates"
+msgstr "Controlla Aggiornamenti"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_updates_desc"
+msgstr "Controlla se è disponibile una nuova versione del programma su GitHub."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_italic"
+msgstr "Corsivo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_create"
+msgstr "Crea"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_create_folder"
+msgstr "Crea Cartella"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_create_type"
+msgstr "Crea Tipo Documento"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_backup_desc"
+msgstr "Crea un file compresso contenente l'intero archivio e tutti gli allegati."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_crediti_dinamici"
+msgstr "Crediti"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_key_debiti_dinamici"
+msgstr "Creditore / Motivo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_data_cronica"
+msgstr "Data cronica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_dataCronica"
+msgstr "Data Cronica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_data_topica"
+msgstr "Data topica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_dataTopica"
+msgstr "Data Topica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_debiti_dinamici"
+msgstr "Debiti"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_key_crediti_dinamici"
+msgstr "Debitore / Motivo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_elementi_economici"
+msgstr "Dettagli economici..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_dichiarante"
+msgstr "Dichiarante"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "update_available"
+msgstr "È disponibile un nuovo aggiornamento!"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_elementi_economici"
+msgstr "Elementi Economici"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_ol"
+msgstr "Elenco numerato"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_ul"
+msgstr "Elenco puntato"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_delete"
+msgstr "Elimina"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_delete_folder"
+msgstr "Elimina questa cartella"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_prezzo"
+msgstr "Es. 12 fiorini"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_dataCronica"
+msgstr "Es. 12 Maggio 1340"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_tipo_di_atto_giur"
+msgstr "Es. accusa, inquisitione, testimoni, altro"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_autore"
+msgstr "Es. Anonimo / Notaio"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_dichiarante"
+msgstr "Es. famiglia, istituzione..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_dataTopica"
+msgstr "Es. Firenze"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_tipo_di_atto"
+msgstr "Es. matrimonio, vendita, testamento..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_tags_input"
+msgstr "es. miniatura, secolo XII, pergamenaceo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_identifier"
+msgstr "Es. Plut. 40.1 o Atto 12"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_magistratura"
+msgstr "Es. Podestà, Capitano del Popolo..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_custom_field"
+msgstr "Es. Supporto, Filigrana..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_exit_without_saving"
+msgstr "Esci senza salvare"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_export_zip"
+msgstr "Esporta Backup in ZIP"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_condanne"
+msgstr "Eventuali condanne, assoluzioni o pene..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_famiglia_dinamici"
+msgstr "Familiari"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_tags_btn"
+msgstr "Filtra per Tag"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_tags"
+msgstr "Filtro Tag"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_manage_models"
+msgstr "Gestisci Modelli"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_manage_models"
+msgstr "Gestisci Modelli"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_bold"
+msgstr "Grassetto"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_identifier"
+msgstr "Identificativo / Segnatura *"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_settings"
+msgstr "Impostazioni"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_workspace_restart"
+msgstr "L'app verrà riavviata se cambi la cartella."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "delete_item_hint"
+msgstr "L'eventuale allegato (immagine o PDF) non verrà rimosso dall'archivio."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "folder_empty"
+msgstr "La cartella è vuota."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_lang"
+msgstr "Lingua / Language"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_magistratura"
+msgstr "Magistratura"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_Marginalia"
+msgstr "Marginalia"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_new_model"
+msgstr "Modello"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "model_atti"
+msgstr "Modello: Atti giudiziari"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "model_fiscali"
+msgstr "Modello: Documenti fiscali"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "model_imbreviature"
+msgstr "Modello: Imbreviature notarili"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_edit"
+msgstr "Modifica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_unsaved_changes"
+msgstr "Modifiche non salvate"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_sidebar"
+msgstr "Mostra/Nascondi Struttura"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_motivazione_processo"
+msgstr "Motivazione del Processo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "no_attachment"
+msgstr "Nessun allegato disponibile per questa scheda."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "no_search_match"
+msgstr "Nessun match trovato nel database."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_val_famiglia_dinamici"
+msgstr "Nome"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_Notaio"
+msgstr "Nome del notaio"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_type_name"
+msgstr "Nome del nuovo tipo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_folder_name"
+msgstr "Nome della cartella o percorso"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_val_attori_dinamici"
+msgstr "Nome della persona"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "dont_ask_again"
+msgstr "Non chiederlo più"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_Notaio"
+msgstr "Notaio"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_note"
+msgstr "Note"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_Marginalia"
+msgstr "Note marginali..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_note"
+msgstr "Note testuali o codicologiche"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_new_folder"
+msgstr "Nuova Cartella"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_new_record"
+msgstr "Nuova Scheda"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "model_custom"
+msgstr "Nuovo documento vuoto"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_new_filename"
+msgstr "Nuovo nome del file"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_new_type"
+msgstr "Nuovo Tipo Documento"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_oggetto"
+msgstr "Oggetto"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_oggetto"
+msgstr "Oggetto del documento"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_key_famiglia_dinamici"
+msgstr "Parentela (es. Figlio, Moglie)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "welcome_desc"
+msgstr "Per iniziare, è necessario creare o selezionare una <strong>Cartella di lavoro</strong>.<br><br>In questa cartella verranno salvati in automatico tutti i dati (il database) e gli allegati (come i PDF e le foto). Ti consigliamo di creare una cartella dedicata (ad esempio in \"Documenti\") per tenere tutto in ordine e al sicuro."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_attori_dinamici"
+msgstr "Persone / Attori"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_prev"
+msgstr "Precedente (Alt + Freccia Sinistra)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_prezzo"
+msgstr "Prezzo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_workspace_desc"
+msgstr "Questa cartella contiene il tuo database e tutti gli allegati copiati."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_search_btn"
+msgstr "Ricerca"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_search"
+msgstr "Ricerca Globale"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_clear_tags"
+msgstr "Rimuovi filtri tag"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_rename"
+msgstr "Rinomina Allegato"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_key_attori_dinamici"
+msgstr "Ruolo (es. Venditore)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_save"
+msgstr "Salva"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_save_record"
+msgstr "Salva Scheda"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_save_transcription"
+msgstr "Salva Trascrizione"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_download_github"
+msgstr "Scarica da GitHub"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_theme_desc"
+msgstr "Scegli il tema dell'applicazione."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_lang_desc"
+msgstr "Scegli la lingua dell'applicazione."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_choose_folder"
+msgstr "Scegli o crea cartella"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "theme_dark"
+msgstr "Scuro (Flat Obsidian)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "delete_item_prompt"
+msgstr "Sei sicuro di voler eliminare questa scheda?"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "unsaved_hint"
+msgstr "Sei sicuro di voler uscire e perdere le modifiche?"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "confirm_prompt_default"
+msgstr "Sei sicuro?"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_select_model"
+msgstr "Seleziona modello o creane uno nuovo"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_empty_fields"
+msgstr "Seleziona o aggiungi dei campi..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_tags"
+msgstr "Seleziona tag..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_yes_proceed"
+msgstr "Sì, procedi"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "theme_system"
+msgstr "Sistema (Predefinito)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_underline"
+msgstr "Sottolineato"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "drag_to_root"
+msgstr "Sposta alla radice"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_structure"
+msgstr "Struttura"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "tooltip_next"
+msgstr "Successivo (Alt + Freccia Destra)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_suggestions"
+msgstr "SUGGERIMENTI"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_available_tags"
+msgstr "TAG DISPONIBILI"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_tags"
+msgstr "Tags (separati da virgola)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "settings_theme"
+msgstr "Tema / Aspetto"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_tipo_di_atto"
+msgstr "Tipo di Atto"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_tipo_di_atto_giur"
+msgstr "Tipo di Atto (Giur.)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "label_doc_type"
+msgstr "Tipo Documento:"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "field_titolo"
+msgstr "Titolo / Cont."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_titolo"
+msgstr "Titolo o descrizione sintetica"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_transcribe"
+msgstr "Trascrivi"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "title_transcription"
+msgstr "Trascrizione"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "placeholder_val_beni_dinamici"
+msgstr "Valore (es. 10 fiorini)"

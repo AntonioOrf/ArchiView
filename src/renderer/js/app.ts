@@ -100,7 +100,7 @@ async function avviaApp() {
     document.addEventListener('keydown', function(e) {
         const vTrascrizione = document.getElementById('view-trascrizione');
         
-        // Salva trascrizione con Ctrl+S
+        // Salva trascrizione con Ctrl+S o sfoglia
         if (vTrascrizione && !vTrascrizione.classList.contains('hidden-tab')) {
             if (e.altKey && e.key === 'ArrowLeft') {
                 e.preventDefault();
@@ -115,6 +115,68 @@ async function avviaApp() {
             if (e.altKey && e.key === 'f') {
                 e.preventDefault();
                 if (typeof toggleFullscreenAllegato === 'function') toggleFullscreenAllegato();
+            }
+            return; // Interrompe qui se siamo in modalità trascrizione
+        }
+
+        // --- SCORCIATOIE GLOBALI ---
+        // Ctrl+F -> Cerca
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                if (typeof switchTab === 'function') switchTab('list');
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+        
+        // Ctrl+N -> Nuovo Documento
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+            e.preventDefault();
+            if (typeof switchTab === 'function') switchTab('add');
+            const segInput = document.getElementById('form-segnatura');
+            if (segInput) segInput.focus();
+        }
+
+        // Ctrl+S -> Salva Scheda (se siamo nel tab di inserimento)
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            const vAdd = document.getElementById('view-add');
+            if (vAdd && !vAdd.classList.contains('hidden-tab')) {
+                e.preventDefault();
+                // trigger form submit per sfruttare la validazione
+                const form = document.getElementById('manoscritto-form');
+                if (form) {
+                    const event = new Event('submit', { cancelable: true });
+                    form.dispatchEvent(event);
+                }
+            }
+        }
+
+        // Esc -> Chiudi modali aperte, o esci da trascrizione/modifica, o pulisci la barra di ricerca
+        if (e.key === 'Escape') {
+            const modals = document.querySelectorAll('.modal-overlay:not(.hidden-tab)');
+            if (modals.length > 0) {
+                modals.forEach(m => m.classList.add('hidden-tab'));
+                // Eventuali cleanup
+                if (typeof editingTypeId !== 'undefined') editingTypeId = null;
+            } else {
+                const vTrascrizione = document.getElementById('view-trascrizione');
+                const vAdd = document.getElementById('view-add');
+                
+                if (vTrascrizione && !vTrascrizione.classList.contains('hidden-tab')) {
+                    if (typeof chiudiTrascrizione === 'function') chiudiTrascrizione();
+                } else if (vAdd && !vAdd.classList.contains('hidden-tab')) {
+                    if (typeof cancelEdit === 'function') cancelEdit();
+                } else {
+                    const searchInput = document.getElementById('search-input');
+                    if (searchInput && document.activeElement === searchInput) {
+                        searchInput.value = '';
+                        searchInput.blur();
+                        if (typeof renderMain === 'function') renderMain();
+                        if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
+                    }
+                }
             }
         }
     });

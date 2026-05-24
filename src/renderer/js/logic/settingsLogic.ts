@@ -3,13 +3,13 @@ window.apriImpostazioni = async function() {
     document.getElementById('settings-modal').classList.remove('hidden-tab');
     if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
         const p = await window.apiBrowser.getWorkspacePath();
-        document.getElementById('settings-workspace-path').textContent = p || 'Nessuna cartella impostata';
+        document.getElementById('settings-workspace-path').textContent = p || window.t('no_workspace_set');
     }
 }
 
 window.esportaBackupZip = async function() {
     if (window.apiBrowser && window.apiBrowser.exportWorkspaceZip) {
-        mostraMessaggio("Inizializzazione backup...", "info");
+        mostraMessaggio(window.t("msg_backup_init"), "info");
         
         const progDiv = document.createElement('div');
         progDiv.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-4 rounded-sm shadow-2xl z-50 min-w-[300px] border border-stone-700 text-center flex flex-col gap-2';
@@ -37,13 +37,18 @@ window.esportaBackupZip = async function() {
             window._exportProgressListener = true;
         }
 
-        const result = await window.apiBrowser.exportWorkspaceZip();
-        progDiv.remove();
+        try {
+            const result = await window.apiBrowser.invoke('export-workspace-zip', window.t('btn_export_zip'));
+            progDiv.remove();
 
-        if (result.success) {
-            mostraMessaggio("Backup esportato con successo!", "success");
-        } else if (!result.canceled) {
-            mostraMessaggio("Errore durante l'esportazione: " + result.error, "error");
+            if (result.success) {
+                mostraMessaggio(window.t("msg_backup_success"), "success");
+            } else if (!result.canceled) {
+                mostraMessaggio(window.t("msg_backup_error") + result.error, "error");
+            }
+        } catch (e) {
+            progDiv.remove();
+            mostraMessaggio(window.t("msg_backup_error") + e.message, "error");
         }
     }
 }
@@ -54,18 +59,18 @@ window.chiudiImpostazioni = function() {
 
 window.cambiaCartellaLavoro = async function() {
     if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
-        await window.apiBrowser.changeWorkspace();
+        await window.apiBrowser.changeWorkspace(window.t('modal_new_folder'));
     }
 }
 
 window.controllaAggiornamenti = async function(mostraAvvisi = true) {
     if (window.apiBrowser && window.apiBrowser.checkForUpdates) {
-        if (mostraAvvisi) mostraMessaggio("Controllo aggiornamenti in corso...", "info");
+        if (mostraAvvisi) mostraMessaggio(window.t("msg_check_updates"), "info");
         
         const result = await window.apiBrowser.checkForUpdates();
 
         if (result.error) {
-            if (mostraAvvisi) mostraMessaggio("Errore: " + result.error, "error");
+            if (mostraAvvisi) mostraMessaggio(window.t("msg_update_error") + result.error, "error");
         } else if (result.updateAvailable) {
             // Mostra il banner non-intrusivo
             const banner = document.getElementById('update-banner');
@@ -82,7 +87,7 @@ window.controllaAggiornamenti = async function(mostraAvvisi = true) {
                 const res = await window.apiBrowser.downloadUpdate();
                 if (res && !res.success) {
                     btn.textContent = "Errore Download";
-                    mostraMessaggio("Errore: " + res.error, "error");
+                    mostraMessaggio(window.t("msg_update_error") + res.error, "error");
                 }
             };
             
@@ -107,7 +112,7 @@ window.controllaAggiornamenti = async function(mostraAvvisi = true) {
             
             banner.classList.remove('hidden');
         } else {
-            if (mostraAvvisi) mostraMessaggio(`Hai già l'ultima versione (${result.currentVersion}).`, "success");
+            if (mostraAvvisi) mostraMessaggio(`${window.t("msg_up_to_date")} (${result.currentVersion}).`, "success");
         }
     }
 }

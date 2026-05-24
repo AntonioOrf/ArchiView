@@ -29,15 +29,13 @@
                     <i data-lucide="folder-open" class="w-8 h-8"></i>
                 </div>
             </div>
-            <h2 class="text-2xl font-serif text-stone-800 mb-4">Benvenuto in ArchiView</h2>
+            <h2 class="text-2xl font-serif text-stone-800 mb-4" data-i18n="welcome_title">Benvenuto in ArchiView</h2>
             <p class="text-stone-600 mb-6 leading-relaxed">
-                Per iniziare, è necessario creare o selezionare una <strong>Cartella di lavoro</strong>.
-                <br><br>
-                In questa cartella verranno salvati in automatico tutti i dati (il database) e gli allegati (come i PDF e le foto). Ti consigliamo di creare una cartella dedicata (ad esempio in "Documenti") per tenere tutto in ordine e al sicuro.
+                <span data-i18n="welcome_desc">Per iniziare, è necessario creare o selezionare una <strong>Cartella di lavoro</strong>.<br><br>In questa cartella verranno salvati in automatico tutti i dati (il database) e gli allegati (come i PDF e le foto). Ti consigliamo di creare una cartella dedicata (ad esempio in "Documenti") per tenere tutto in ordine e al sicuro.</span>
             </p>
             <button onclick="selezionaCartellaIniziale()" class="btn btn-primary w-full justify-center py-3 text-lg font-medium shadow-md">
                 <i data-lucide="folder" class="w-5 h-5 mr-2"></i>
-                Scegli o crea cartella
+                <span data-i18n="btn_choose_folder">Scegli o crea cartella</span>
             </button>
         </div>
     </div>
@@ -55,17 +53,15 @@
     <div id="folder-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-md">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    Nuova Cartella
-                </h3>
+                <h3 class="modal-title" data-i18n="modal_new_folder">Nuova Cartella</h3>
             </div>
             <div class="modal-body">
-                <label class="form-label">Nome della cartella o percorso</label>
-                <input type="text" id="folder-name-input" placeholder="Es. Fondo Latino/Secolo XII" class="form-input">
-                <p class="text-xs text-stone-500 mt-2 italic">Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle.</p>
+                <label class="form-label" data-i18n="label_folder_name">Nome della cartella o percorso</label>
+                <input type="text" id="folder-name-input" data-i18n-placeholder="label_folder_name" class="form-input">
+                <p class="text-xs text-stone-500 mt-2 italic" data-i18n="hint_folder_name">Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle.</p>
                 <div class="modal-footer">
-                    <button onclick="chiudiFolderModal()" class="btn btn-ghost">Annulla</button>
-                    <button onclick="confermaAggiungiCartella()" class="btn btn-primary">Crea Cartella</button>
+                    <button onclick="chiudiFolderModal()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
+                    <button onclick="confermaAggiungiCartella()" class="btn btn-primary" data-i18n="btn_create_folder">Crea Cartella</button>
                 </div>
             </div>
         </div>
@@ -75,74 +71,72 @@
     <div id="new-type-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-lg">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    Crea Tipo Documento
-                </h3>
+                <h3 class="modal-title" data-i18n="modal_create_type">Crea Tipo Documento</h3>
                 <button type="button" onclick="chiudiNewTypeModal()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="modal-body">
-                <label class="form-label">Seleziona modello o creane uno nuovo</label>
+                <label class="form-label" data-i18n="label_select_model">Seleziona modello o creane uno nuovo</label>
                 <select id="new-type-select" onchange="applicaModello()" class="form-input mb-4">
-                    <option value="custom">Nuovo documento vuoto</option>
-                    <option value="imbreviature">Modello: Imbreviature notarili</option>
-                    <option value="atti">Modello: Atti giudiziari</option>
-                    <option value="fiscali">Modello: Documenti fiscali</option>
+                    <option value="custom" data-i18n="model_custom">Nuovo documento vuoto</option>
+                    <option value="imbreviature" data-i18n="model_imbreviature">Modello: Imbreviature notarili</option>
+                    <option value="atti" data-i18n="model_atti">Modello: Atti giudiziari</option>
+                    <option value="fiscali" data-i18n="model_fiscali">Modello: Documenti fiscali</option>
                 </select>
 
                 <div id="custom-type-container" class="space-y-4">
                     <div>
-                        <label class="form-label">Nome del nuovo tipo</label>
-                        <input type="text" id="custom-type-name" placeholder="Es. Lettera" class="form-input">
+                        <label class="form-label" data-i18n="label_type_name">Nome del nuovo tipo</label>
+                        <input type="text" id="custom-type-name" data-i18n-placeholder="label_type_name" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Campi di base</label>
+                        <label class="form-label" data-i18n="label_base_fields">Campi di base</label>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                             <label class="cursor-pointer">
                                 <input type="checkbox" value="dataCronica" data-label="Data cronica" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
-                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none">Data cronica</div>
+                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_data_cronica">Data cronica</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="checkbox" value="dataTopica" data-label="Data topica" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
-                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none">Data topica</div>
+                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_data_topica">Data topica</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="checkbox" value="autore" data-label="Autore/i" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
-                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none">Autore/i</div>
+                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_autore">Autore/i</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="checkbox" value="titolo" data-label="Titolo / Cont." onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
-                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none">Titolo / Cont.</div>
+                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_titolo">Titolo / Cont.</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="checkbox" value="note" data-label="Note" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
-                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none">Note</div>
+                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_note">Note</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="checkbox" value="prezzo" data-label="Prezzo" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
-                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none">Prezzo</div>
+                                <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_prezzo">Prezzo</div>
                             </label>
                         </div>
                     </div>
                     <div>
-                        <label class="form-label">Campi aggiuntivi personalizzati</label>
+                        <label class="form-label" data-i18n="label_custom_fields">Campi aggiuntivi personalizzati</label>
                         <div class="flex gap-2 mb-2">
-                            <input type="text" id="custom-type-extra-input" placeholder="Es. Supporto, Filigrana..." class="form-input flex-1" onkeydown="if(event.key === 'Enter') { event.preventDefault(); aggiungiCampoCustom(); }">
+                            <input type="text" id="custom-type-extra-input" data-i18n-placeholder="placeholder_custom_field" class="form-input flex-1" onkeydown="if(event.key === 'Enter') { event.preventDefault(); aggiungiCampoCustom(); }">
                             <button type="button" onclick="aggiungiCampoCustom()" class="btn btn-secondary btn-icon"><i data-lucide="plus" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                     <div>
-                        <label class="form-label">Campi selezionati (trascina per riordinare)</label>
+                        <label class="form-label" data-i18n="label_selected_fields">Campi selezionati (trascina per riordinare)</label>
                         <div id="custom-fields-list" class="flex flex-wrap gap-2 min-h-[3.5rem] p-3 bg-stone-50 border border-stone-200 rounded-sm items-center shadow-inner">
-                            <span class="text-xs text-stone-400 italic" id="empty-fields-placeholder">Seleziona o aggiungi dei campi...</span>
+                            <span class="text-xs text-stone-400 italic" id="empty-fields-placeholder" data-i18n="placeholder_empty_fields">Seleziona o aggiungi dei campi...</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-footer flex justify-between">
-                    <button type="button" onclick="apriManageTypesModal()" class="btn btn-secondary text-sm">Gestisci Modelli</button>
+                    <button type="button" onclick="apriManageTypesModal()" class="btn btn-secondary text-sm" data-i18n="btn_manage_models">Gestisci Modelli</button>
                     <div class="flex gap-2">
                         <button type="button" onclick="chiudiNewTypeModal()" class="btn btn-ghost">Annulla</button>
-                        <button type="button" onclick="confermaCreaTipo()" class="btn btn-primary" id="btn-salva-tipo">Crea</button>
+                        <button type="button" onclick="confermaCreaTipo()" class="btn btn-primary" id="btn-salva-tipo" data-i18n="btn_create">Crea</button>
                     </div>
                 </div>
             </div>
@@ -153,7 +147,7 @@
     <div id="manage-types-modal" class="modal-overlay hidden-tab z-[60]">
         <div class="modal-window max-w-lg">
             <div class="modal-header">
-                <h3 class="modal-title">Gestisci Modelli</h3>
+                <h3 class="modal-title" data-i18n="modal_manage_models">Gestisci Modelli</h3>
                 <button type="button" onclick="chiudiManageTypesModal()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="modal-body">
@@ -162,7 +156,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" onclick="chiudiManageTypesModal()" class="btn btn-primary">Chiudi</button>
+                <button type="button" onclick="chiudiManageTypesModal()" class="btn btn-primary" data-i18n="btn_close">Chiudi</button>
             </div>
         </div>
     </div>
@@ -172,17 +166,15 @@
         <div class="modal-window max-w-md">
             <div class="modal-header" style="background-color: var(--color-danger-light); border-color: #fca5a5;">
                 <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
-                <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;">
-                    Conferma Eliminazione
-                </h3>
+                <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;" data-i18n="modal_confirm_delete">Conferma Eliminazione</h3>
             </div>
             <div class="modal-body">
-                <p class="font-medium mb-2">Sei sicuro di voler eliminare questa scheda?</p>
-                <p class="text-sm text-stone-500 mb-4">L'eventuale allegato (immagine o PDF) non verrà rimosso dall'archivio.</p>
+                <p class="font-medium mb-2" data-i18n="delete_item_prompt">Sei sicuro di voler eliminare questa scheda?</p>
+                <p class="text-sm text-stone-500 mb-4" data-i18n="delete_item_hint">L'eventuale allegato (immagine o PDF) non verrà rimosso dall'archivio.</p>
                 <input type="hidden" id="delete-item-id">
                 <div class="modal-footer">
                     <button onclick="chiudiDeleteModal()" class="btn btn-ghost">Annulla</button>
-                    <button onclick="confermaEliminazione()" class="btn btn-danger"><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina</button>
+                    <button onclick="confermaEliminazione()" class="btn btn-danger"><i data-lucide="trash-2" class="w-4 h-4"></i> <span data-i18n="btn_delete">Elimina</span></button>
                 </div>
             </div>
         </div>
@@ -193,16 +185,14 @@
         <div class="modal-window max-w-md">
             <div class="modal-header" style="background-color: var(--color-danger-light); border-color: #fca5a5;">
                 <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
-                <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;">
-                    Modifiche non salvate
-                </h3>
+                <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;" data-i18n="modal_unsaved_changes">Modifiche non salvate</h3>
             </div>
             <div class="modal-body">
-                <p class="font-medium mb-2">Ci sono modifiche non salvate in questa trascrizione.</p>
-                <p class="text-sm text-stone-500 mb-4">Sei sicuro di voler uscire e perdere le modifiche?</p>
+                <p class="font-medium mb-2" data-i18n="unsaved_prompt">Ci sono modifiche non salvate in questa trascrizione.</p>
+                <p class="text-sm text-stone-500 mb-4" data-i18n="unsaved_hint">Sei sicuro di voler uscire e perdere le modifiche?</p>
                 <div class="modal-footer">
-                    <button onclick="chiudiUnsavedModal()" class="btn btn-primary">Continua a scrivere</button>
-                    <button onclick="confermaUscitaTrascrizione()" class="btn btn-ghost text-red-600 hover:bg-red-50">Esci senza salvare</button>
+                    <button onclick="chiudiUnsavedModal()" class="btn btn-primary" data-i18n="btn_continue_writing">Continua a scrivere</button>
+                    <button onclick="confermaUscitaTrascrizione()" class="btn btn-ghost text-red-600 hover:bg-red-50" data-i18n="btn_exit_without_saving">Esci senza salvare</button>
                 </div>
             </div>
         </div>
@@ -212,16 +202,14 @@
     <div id="rename-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-sm">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    Rinomina Allegato
-                </h3>
+                <h3 class="modal-title" data-i18n="modal_rename">Rinomina Allegato</h3>
             </div>
             <div class="modal-body">
-                <label class="form-label">Nuovo nome del file</label>
+                <label class="form-label" data-i18n="label_new_filename">Nuovo nome del file</label>
                 <input type="text" id="rename-input" class="form-input" onkeydown="if(event.key === 'Enter') { event.preventDefault(); confermaRinomina(); }">
                 <div class="modal-footer">
                     <button onclick="chiudiRenameModal()" class="btn btn-ghost">Annulla</button>
-                    <button onclick="confermaRinomina()" class="btn btn-primary">Salva</button>
+                    <button onclick="confermaRinomina()" class="btn btn-primary" data-i18n="btn_save">Salva</button>
                 </div>
             </div>
         </div>
@@ -246,39 +234,35 @@
     <div id="settings-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-lg max-h-full">
             <div class="modal-header shrink-0">
-                <h3 class="modal-title text-stone-800">
-                    <i data-lucide="settings" class="w-5 h-5 text-stone-600"></i> Impostazioni
-                </h3>
+                <h3 class="modal-title text-stone-800"><i data-lucide="settings" class="w-5 h-5 text-stone-600"></i> <span data-i18n="modal_settings">Impostazioni</span></h3>
                 <button type="button" onclick="chiudiImpostazioni()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="modal-body">
                 <div class="space-y-6">
                     <!-- Sezione Workspace -->
                     <div>
-                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="folder-tree" class="w-4 h-4 text-amber-700"></i> Cartella di Lavoro (Archivio)</h4>
-                        <p class="text-sm text-stone-600 mb-3">Questa cartella contiene il tuo database e tutti gli allegati copiati.</p>
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="folder-tree" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_workspace">Cartella di Lavoro (Archivio)</span></h4>
+                        <p class="text-sm text-stone-600 mb-3" data-i18n="settings_workspace_desc">Questa cartella contiene il tuo database e tutti gli allegati copiati.</p>
                         <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-workspace-path">
                             Caricamento...
                         </div>
                         <button onclick="cambiaCartellaLavoro()" class="btn btn-secondary mt-3">
-                            <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> Cambia Cartella...
-                        </button>
-                        <p class="text-xs text-amber-700 mt-2 font-medium flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> L'app verrà riavviata se cambi la cartella.</p>
+                            <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_change_folder">Cambia Cartella...</span></button>
+                        <p class="text-xs text-amber-700 mt-2 font-medium flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> <span data-i18n="settings_workspace_restart">L'app verrà riavviata se cambi la cartella.</span></p>
                     </div>
 
                     <!-- Sezione Backup -->
                     <div class="border-t border-stone-200 pt-6">
-                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> Backup Dati</h4>
-                        <p class="text-sm text-stone-600 mb-3">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>
-                        <button onclick="esportaBackupZip()" class="btn w-full justify-center shadow-sm" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
-                            <i data-lucide="file-archive" class="w-4 h-4"></i> Esporta Backup in ZIP
-                        </button>
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_backup">Backup Dati</span></h4>
+                        <p class="text-sm text-stone-600 mb-3" data-i18n="settings_backup_desc">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>
+                    <button onclick="esportaBackupZip()" class="btn w-full justify-center shadow-sm" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
+                            <i data-lucide="file-archive" class="w-4 h-4"></i> <span data-i18n="btn_export_zip">Esporta Backup in ZIP</span></button>
                     </div>
 
                     <!-- Sezione Aspetto -->
                     <div class="border-t border-stone-200 pt-6">
-                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="moon" class="w-4 h-4 text-amber-700"></i> Tema / Aspetto</h4>
-                        <p class="text-sm text-stone-600 mb-3">Scegli il tema dell'applicazione.</p>
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="moon" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_theme">Tema / Aspetto</span></h4>
+                        <p class="text-sm text-stone-600 mb-3" data-i18n="settings_theme_desc">Scegli il tema dell'applicazione.</p>
                         <select id="settings-theme" onchange="cambiaTemaSelezionato(this.value)" class="form-input">
                             <option value="system">Sistema (Predefinito)</option>
                             <option value="light">Chiaro</option>
@@ -286,13 +270,22 @@
                         </select>
                     </div>
 
+                    <!-- Sezione Lingua -->
+                    <div class="border-t border-stone-200 pt-6">
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_lang">Lingua / Language</span></h4>
+                        <p class="text-sm text-stone-600 mb-3" data-i18n="settings_lang_desc">Scegli la lingua dell'applicazione.</p>
+                        <select id="settings-language" onchange="cambiaLingua(this.value)" class="form-input">
+                            <option value="it">Italiano</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+
                     <!-- Sezione Aggiornamenti -->
                     <div class="border-t border-stone-200 pt-6">
-                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-amber-700"></i> Aggiornamenti</h4>
-                        <p class="text-sm text-stone-600 mb-3">Controlla se è disponibile una nuova versione del programma su GitHub.</p>
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_updates">Aggiornamenti</span></h4>
+                        <p class="text-sm text-stone-600 mb-3" data-i18n="settings_updates_desc">Controlla se è disponibile una nuova versione del programma su GitHub.</p>
                         <button onclick="controllaAggiornamenti(true)" class="btn btn-secondary">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Controlla Aggiornamenti
-                        </button>
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_check_updates">Controlla Aggiornamenti</span></button>
                     </div>
                 </div>
             </div>
@@ -306,10 +299,10 @@
     <div id="update-banner" class="hidden w-full bg-sky-600 text-white px-4 py-3 flex items-center justify-between shadow-md z-50 shrink-0 mb-6 rounded-sm border border-sky-700">
         <div class="flex items-center gap-2 text-sm font-medium">
             <i data-lucide="download-cloud" class="w-5 h-5"></i>
-            <span id="update-banner-text">È disponibile un nuovo aggiornamento!</span>
+            <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
         </div>
         <div class="flex gap-2 shrink-0">
-            <button id="btn-scarica-aggiornamento" class="bg-white text-sky-700 hover:bg-sky-50 px-3 py-1.5 rounded-sm text-xs font-bold transition-colors shadow-sm">Scarica da GitHub</button>
+            <button id="btn-scarica-aggiornamento" class="bg-white text-sky-700 hover:bg-sky-50 px-3 py-1.5 rounded-sm text-xs font-bold transition-colors shadow-sm" data-i18n="btn_download_github">Scarica da GitHub</button>
             <button onclick="nascondiBannerAggiornamento()" class="text-sky-100 hover:text-white px-2 py-1.5 transition-colors rounded-sm hover:bg-sky-700"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
     </div>
@@ -319,19 +312,17 @@
         <div class="modal-window max-w-sm">
             <div class="modal-header" style="background-color: var(--color-danger-light); border-color: #fca5a5;">
                 <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
-                <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;">
-                    Conferma Azione
-                </h3>
+                <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;" data-i18n="modal_confirm_action">Conferma Azione</h3>
             </div>
             <div class="modal-body">
-                <p id="bottom-confirm-text" class="font-medium mb-4 text-center">Sei sicuro?</p>
+                <p id="bottom-confirm-text" class="font-medium mb-4 text-center" data-i18n="confirm_prompt_default">Sei sicuro?</p>
                 <div id="bottom-confirm-checkbox-container" class="mb-4 flex items-center justify-center gap-2 hidden">
                     <input type="checkbox" id="bottom-confirm-skip" class="w-4 h-4 text-amber-600 border-stone-300 rounded focus:ring-amber-500">
-                    <label for="bottom-confirm-skip" class="text-sm text-stone-600 cursor-pointer select-none">Non chiederlo più</label>
+                    <label for="bottom-confirm-skip" class="text-sm text-stone-600 cursor-pointer select-none" data-i18n="dont_ask_again">Non chiederlo più</label>
                 </div>
                 <div class="modal-footer justify-center mt-2">
                     <button onclick="window.chiudiBottomConfirm()" class="btn btn-ghost text-sm">Annulla</button>
-                    <button id="btn-bottom-confirm-yes" class="btn btn-danger text-sm shadow-md">Sì, procedi</button>
+                    <button id="btn-bottom-confirm-yes" class="btn btn-danger text-sm shadow-md" data-i18n="btn_yes_proceed">Sì, procedi</button>
                 </div>
             </div>
         </div>
@@ -340,28 +331,28 @@
 
     <!-- Header Fisso In Alto -->
     <header class="panel-glass shrink-0 mb-6 flex flex-wrap items-center gap-2 p-2">
-        <button onclick="toggleSidebar()" class="btn btn-ghost btn-icon" title="Mostra/Nascondi Struttura">
+        <button onclick="toggleSidebar()" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_sidebar">
             <i data-lucide="panel-left" class="w-5 h-5"></i>
         </button>
-        <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" title="Apri Cartelle">
+        <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_folders">
             <i data-lucide="folder" class="w-5 h-5"></i>
         </button>
         
-        <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" title="Ricerca">
+        <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_search_btn">
             <i data-lucide="search" class="w-5 h-5"></i>
         </button>
 
-        <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" title="Filtra per Tag">
+        <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_tags_btn">
             <i data-lucide="bookmark" class="w-5 h-5"></i>
         </button>
 
-        <div class="flex-1"></div>
+                <div class="flex-1"></div>
 
-        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" title="Nuova Scheda">
+        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record">
             <i data-lucide="plus" class="w-5 h-5"></i>
         </button>
-        <button onclick="apriNewTypeModal()" class="btn btn-secondary text-sm" title="Nuovo Tipo Documento">
-            <i data-lucide="file-plus-2" class="w-4 h-4"></i> Tipo
+        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm ml-2">
+            <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span data-i18n="btn_new_model">Modello</span>
         </button>
     </header>
 
@@ -378,8 +369,7 @@
             <div id="sidebar-folders" class="flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 flex justify-between items-center shrink-0">
                     <h2 class="font-bold flex items-center gap-2">
-                        <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> Struttura
-                    </h2>
+                        <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span></h2>
                     <button onclick="aggiungiCartella()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" title="Crea nuova cartella">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i>
                     </button>
@@ -393,14 +383,13 @@
             <div id="sidebar-search" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="search" class="w-5 h-5 text-amber-700"></i> Ricerca Globale
-                    </h2>
+                        <i data-lucide="search" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_search">Ricerca Globale</span></h2>
                     <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
                         <i data-lucide="search" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="search-input" placeholder="Cerca in tutte le schede..." class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
+                        <input type="text" id="search-input" data-i18n-placeholder="placeholder_search" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
                     </div>
                 </div>
-                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0">SUGGERIMENTI</div>
+                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_suggestions">SUGGERIMENTI</div>
                 <div id="search-suggestions" class="flex-1 overflow-y-auto custom-scroll">
                     <!-- Suggerimenti dinamici -->
                 </div>
@@ -410,15 +399,14 @@
             <div id="sidebar-tags" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> Filtro Tag
-                    </h2>
+                        <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span></h2>
                     <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
                         <i data-lucide="bookmark" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="global-tag-search" placeholder="Seleziona tag..." class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;" readonly>
+                        <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;" readonly>
                     </div>
-                    <button onclick="if(window.activeTags) window.activeTags.clear(); renderMain(); renderTagList();" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag">Rimuovi filtri tag</button>
+                    <button onclick="if(window.activeTags) window.activeTags.clear(); renderMain(); renderTagList();" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
                 </div>
-                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0">TAG DISPONIBILI</div>
+                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_available_tags">TAG DISPONIBILI</div>
                 <div id="tag-list" class="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
                     <!-- Lista Tag dinamica -->
                 </div>
@@ -427,8 +415,7 @@
             <!-- FOOTER IMPOSTAZIONI -->
             <div class="panel-header p-2 shrink-0 mt-auto" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
                 <button onclick="apriImpostazioni()" class="btn btn-ghost w-full justify-center">
-                    <i data-lucide="settings" class="w-4 h-4"></i> Impostazioni
-                </button>
+                    <i data-lucide="settings" class="w-4 h-4"></i> <span data-i18n="modal_settings">Impostazioni</span></button>
             </div>
 
         </aside>
@@ -455,18 +442,17 @@
                 <!-- Stato Vuoto -->
                 <div id="empty-state" class="hidden text-center py-16 mt-10 bg-stone-50 rounded-sm border border-dashed border-stone-300">
                     <i data-lucide="file-box" class="w-12 h-12 text-stone-300 mx-auto mb-3"></i>
-                    <p class="text-stone-500 italic text-lg mb-4">La cartella è vuota.</p>
+                    <p class="text-stone-500 italic text-lg mb-4" data-i18n="folder_empty">La cartella è vuota.</p>
                     <button onclick="eliminaCartellaAttuale()" id="btn-delete-folder" class="hidden btn btn-ghost text-red-600 hover:text-red-800 mx-auto text-sm">
-                        <i data-lucide="trash" class="w-4 h-4"></i> Elimina questa cartella
-                    </button>
+                        <i data-lucide="trash" class="w-4 h-4"></i> <span data-i18n="btn_delete_folder">Elimina questa cartella</span></button>
                 </div>
             </div>
 
             <!-- VISTA: FORM COMPILAZIONE -->
             <div id="view-add" class="hidden-tab fade-in max-w-2xl mx-auto pb-10">
                 <div class="flex justify-between items-center border-b border-stone-200 pb-2 mb-6">
-                    <h2 id="form-title" class="text-2xl font-semibold text-amber-800">Compila Nuova Scheda</h2>
-                    <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-sm text-stone-500 hover:text-amber-700 underline">Annulla modifica</button>
+                    <h2 id="form-title" class="text-2xl font-semibold text-amber-800" data-i18n="title_new_record">Compila Nuova Scheda</h2>
+                    <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-sm text-stone-500 hover:text-amber-700 underline" data-i18n="btn_cancel_edit">Annulla modifica</button>
                 </div>
                 
                 <form id="manoscritto-form" class="space-y-5 panel-solid p-6 shadow-inner" style="background-color: var(--color-bg-base);">
@@ -476,7 +462,7 @@
                         <!-- Selezione Cartella -->
                         <div class="p-3 panel-solid" style="background-color: var(--color-primary-light); border-color: var(--color-primary-border);">
                             <label class="form-label text-amber-900">
-                                <i data-lucide="folder" class="w-4 h-4"></i> Cartella:
+                                <i data-lucide="folder" class="w-4 h-4"></i> <span data-i18n="label_folder">Cartella:</span>
                             </label>
                             <select id="form-cartella" class="form-input" style="border-color: var(--color-primary-border);">
                                 <!-- Popolato da JS -->
@@ -486,7 +472,7 @@
                         <!-- Selezione Tipo Documento -->
                         <div class="p-3 panel-solid">
                             <label class="form-label">
-                                <i data-lucide="file-type" class="w-4 h-4"></i> Tipo Documento:
+                                <i data-lucide="file-type" class="w-4 h-4"></i> <span data-i18n="label_doc_type">Tipo Documento:</span>
                             </label>
                             <select id="form-tipo-documento" onchange="renderDynamicFields()" class="form-input"></select>
                         </div>
@@ -494,8 +480,8 @@
 
                     <!-- Identificativo Fisso -->
                     <div class="form-group">
-                        <label class="form-label">Identificativo / Segnatura *</label>
-                        <input required id="form-segnatura" placeholder="Es. Plut. 40.1 o Atto 12" class="form-input">
+                        <label class="form-label" data-i18n="label_identifier">Identificativo / Segnatura *</label>
+                        <input required id="form-segnatura" data-i18n-placeholder="placeholder_identifier" class="form-input">
                     </div>
 
                     <!-- Container Campi Dinamici -->
@@ -505,7 +491,7 @@
 
                     <!-- Allegati -->
                     <div class="space-y-1 border-t border-b border-stone-200 py-4 my-2 bg-stone-100/50 px-3 rounded-sm">
-                        <label class="form-label">Allega Documenti (Foto o PDF)</label>
+                        <label class="form-label" data-i18n="label_attachments">Allega Documenti (Foto o PDF)</label>
                         <input type="file" id="form-allegato" accept="image/*,.pdf" multiple class="form-input file:mr-4 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 cursor-pointer p-1">
                         <input type="hidden" id="form-allegati" value="[]">
                         
@@ -514,13 +500,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Tags (separati da virgola)</label>
-                        <input id="form-tags" placeholder="es. miniatura, secolo XII, pergamenaceo" class="form-input">
+                        <label class="form-label" data-i18n="label_tags">Tags (separati da virgola)</label>
+                        <input id="form-tags" data-i18n-placeholder="placeholder_tags_input" class="form-input">
                     </div>
 
                     <div class="pt-4">
                         <button type="submit" id="btn-submit-form" class="btn btn-primary w-full py-3 text-lg">
-                            <span id="testo-btn-submit">Salva Scheda</span>
+                            <span id="testo-btn-submit" data-i18n="btn_save_record">Salva Scheda</span>
                         </button>
                     </div>
                 </form>
@@ -536,19 +522,17 @@
                 <button onclick="chiudiTrascrizione()" class="btn btn-secondary btn-icon">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </button>
-                <button id="btn-collapse-editor" onmousedown="event.preventDefault()" onclick="toggleFullscreenAllegato()" class="btn btn-secondary btn-icon shadow-sm" title="Collassa Editor">
+                <button id="btn-collapse-editor" onmousedown="event.preventDefault()" onclick="toggleFullscreenAllegato()" class="btn btn-secondary btn-icon shadow-sm" data-i18n-title="tooltip_collapse">
                     <i data-lucide="panel-left-close" class="w-5 h-5"></i>
                 </button>
                 <div>
-                    <h2 id="trascrizione-title" class="text-2xl font-bold flex items-center gap-2" style="color: var(--color-primary);">
-                        Trascrizione
-                    </h2>
+                    <h2 id="trascrizione-title" class="text-2xl font-bold flex items-center gap-2" style="color: var(--color-primary);"> <span data-i18n="title_transcription">Trascrizione</span></h2>
                     <p id="trascrizione-subtitle" class="text-sm italic" style="color: var(--color-text-muted);"></p>
                 </div>
             </div>
             
-            <button onmousedown="event.preventDefault()" onclick="salvaTrascrizione()" title="Salva (Ctrl + S)" class="btn btn-primary px-6 py-2 shadow-md text-lg">
-                <span>Salva Trascrizione</span>
+            <button onmousedown="event.preventDefault()" onclick="salvaTrascrizione()" data-i18n-title="btn_save" class="btn btn-primary px-6 py-2 shadow-md text-lg">
+                <span data-i18n="btn_save_transcription">Salva Trascrizione</span>
             </button>
         </header>
 
@@ -559,19 +543,18 @@
             <div id="trascrizione-editor-panel" style="width: 50%;" class="flex flex-col bg-white shadow-xl border border-stone-200/50 rounded-sm overflow-hidden transition-all duration-300 shrink-0 min-w-[250px]">
                 <!-- Toolbar -->
                 <div class="bg-stone-100 border-b border-stone-200 p-2 flex flex-wrap gap-2 items-center">
-                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('bold', false, null)" class="btn btn-ghost btn-icon rounded" title="Grassetto"><i data-lucide="bold" class="w-4 h-4"></i></button>
-                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('italic', false, null)" class="btn btn-ghost btn-icon rounded" title="Corsivo"><i data-lucide="italic" class="w-4 h-4"></i></button>
-                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline', false, null)" class="btn btn-ghost btn-icon rounded" title="Sottolineato"><i data-lucide="underline" class="w-4 h-4"></i></button>
+                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('bold', false, null)" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_bold"><i data-lucide="bold" class="w-4 h-4"></i></button>
+                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('italic', false, null)" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_italic"><i data-lucide="italic" class="w-4 h-4"></i></button>
+                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline', false, null)" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_underline"><i data-lucide="underline" class="w-4 h-4"></i></button>
                     <div class="w-px h-6 bg-stone-300 mx-1"></div>
-                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList', false, null)" class="btn btn-ghost btn-icon rounded" title="Elenco puntato"><i data-lucide="list" class="w-4 h-4"></i></button>
-                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertOrderedList', false, null)" class="btn btn-ghost btn-icon rounded" title="Elenco numerato"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList', false, null)" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ul"><i data-lucide="list" class="w-4 h-4"></i></button>
+                    <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertOrderedList', false, null)" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ol"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
                     
                     <div class="flex-1"></div>
                     
                     <!-- Pulsante Carica Immagine (visibile solo se manca l'allegato) -->
                     <button id="btn-carica-allegato-trasc" onclick="document.getElementById('trasc-file-input').click()" class="btn hidden btn-secondary border border-amber-300/50">
-                        <i data-lucide="upload" class="w-4 h-4"></i> Aggiungi Immagine/PDF
-                    </button>
+                        <i data-lucide="upload" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" onchange="caricaAllegatoTrascrizione(event)">
                 </div>
                 <!-- Area di Testo -->
@@ -589,13 +572,13 @@
             <div id="trascrizione-allegato-panel" class="flex-1 bg-stone-200/50 shadow-inner border border-stone-300/50 rounded-sm overflow-hidden relative flex flex-col transition-all duration-300 hidden min-w-[250px]">
                 <div id="trascrizione-thumbnails" class="flex gap-2 p-2 bg-stone-100 border-b border-stone-300 overflow-x-auto hidden shrink-0"></div>
                 <div class="flex-1 relative flex justify-center items-center overflow-hidden group">
-                    <button id="btn-prev-allegato" onclick="cambiaAllegatoRelativo(-1)" title="Precedente (Alt + Freccia Sinistra)" class="btn btn-icon absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                    <button id="btn-prev-allegato" onclick="cambiaAllegatoRelativo(-1)" data-i18n-title="tooltip_prev" class="btn btn-icon absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                     <img id="trasc-img-preview" class="max-w-full max-h-full object-contain hidden" />
                     <iframe id="trasc-pdf-preview" class="w-full h-full bg-white hidden" src=""></iframe>
-                    <button id="btn-next-allegato" onclick="cambiaAllegatoRelativo(1)" title="Successivo (Alt + Freccia Destra)" class="btn btn-icon absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                    <button id="btn-next-allegato" onclick="cambiaAllegatoRelativo(1)" data-i18n-title="tooltip_next" class="btn btn-icon absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
                     <div id="trasc-no-allegato" class="text-center p-8 hidden">
                         <i data-lucide="image-off" class="w-16 h-16 mx-auto text-stone-400 mb-4"></i>
-                        <p class="text-stone-500 font-medium">Nessun allegato disponibile per questa scheda.</p>
+                        <p class="text-stone-500 font-medium" data-i18n="no_attachment">Nessun allegato disponibile per questa scheda.</p>
                     </div>
                 </div>
             </div>
@@ -605,6 +588,7 @@
     </div>
 
     <!-- Script Application -->
+    <script src="js/logic/i18n.js"></script>
     <script src="js/state.js"></script>
     <!-- Logic -->
     <script src="js/logic/utils.js"></script>

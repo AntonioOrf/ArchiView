@@ -42,7 +42,8 @@ function applicaModello() {
     // Seleziona campi in base al modello
     if (sel !== 'custom') {
         const modello = MODELLI_PREDEFINITI[sel];
-        nameInput.value = modello.nome;
+        const tNome = window.t('model_' + sel);
+        nameInput.value = tNome !== 'model_' + sel ? tNome : modello.nome;
         modello.campi.forEach(campoId => {
             const cb = document.querySelector(`.custom-type-field[value="${campoId}"]`);
             if (cb) {
@@ -79,6 +80,13 @@ function aggiungiPill(val, label, isBase) {
     const list = document.getElementById('custom-fields-list');
     const placeholder = document.getElementById('empty-fields-placeholder');
     if (placeholder) placeholder.classList.add('hidden');
+
+    let finalLabel = label;
+    if (window.t('field_' + val) !== 'field_' + val) {
+        finalLabel = window.t('field_' + val);
+    } else if (CONFIG_CAMPI[val]) {
+        finalLabel = CONFIG_CAMPI[val].label;
+    }
 
     const pill = document.createElement('div');
     pill.className = "custom-field-item flex items-center gap-1 px-2 py-1.5 bg-white border border-stone-300 text-stone-800 rounded-sm text-sm font-medium shadow-sm cursor-grab active:cursor-grabbing transition-transform";
@@ -128,7 +136,7 @@ function aggiungiPill(val, label, isBase) {
 
     pill.innerHTML = `
         <i data-lucide="grip-horizontal" class="w-3 h-3 text-stone-400 mr-1"></i>
-        <span>${label}</span>
+        <span>${finalLabel}</span>
         <button type="button" onclick="rimuoviPillDalPulsante(this, '${val.replace(/'/g, "\\'")}')" class="text-stone-400 hover:text-red-600 focus:outline-none ml-1 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
     `;
     list.appendChild(pill);
@@ -164,7 +172,7 @@ function rimuoviPill(val) {
 function confermaCreaTipo() {
     const nome = document.getElementById('custom-type-name').value.trim();
     if (!nome) { 
-        mostraMessaggio("Inserisci un nome per il tipo di documento.", "error"); 
+        mostraMessaggio(window.t("msg_insert_type_name"), "error"); 
         return; 
     }
     
@@ -174,7 +182,7 @@ function confermaCreaTipo() {
     });
     
     if (campi.length === 0) {
-        mostraMessaggio("Aggiungi almeno un campo alla scheda.", "error");
+        mostraMessaggio(window.t("msg_add_one_field"), "error");
         return;
     }
 
@@ -187,7 +195,7 @@ function confermaCreaTipo() {
             salvaTutto();
             aggiornaSelectTipiDocumento();
             chiudiNewTypeModal();
-            mostraMessaggio("Tipo di documento aggiornato con successo.", "success");
+            mostraMessaggio(window.t("msg_type_updated"), "success");
         }
     } else {
         // Crea nuovo tipo
@@ -199,7 +207,7 @@ function confermaCreaTipo() {
         salvaTutto();
         aggiornaSelectTipiDocumento();
         chiudiNewTypeModal();
-        mostraMessaggio("Nuovo tipo di documento creato con successo.", "success");
+        mostraMessaggio(window.t("msg_type_created"), "success");
     }
 }
 
@@ -231,7 +239,7 @@ function apriManageTypesModal() {
 
         div.innerHTML = `
             <div class="flex items-center">
-                <span class="font-medium text-stone-800">${tipo.nome}</span>
+                <span class="font-medium text-stone-800">${window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome}</span>
                 ${defaultBadge}
                 ${inUsoBadge}
             </div>
@@ -253,7 +261,7 @@ function chiudiManageTypesModal() {
 window.eliminaTipoDocumento = function(id) {
     const inUso = appData.manoscritti.some(m => m.tipoDocumento === id);
     if (inUso) {
-        mostraMessaggio("Non puoi eliminare questo modello perché ci sono schede che lo utilizzano.", "error");
+        mostraMessaggio(window.t("msg_type_in_use"), "error");
         return;
     }
     
@@ -262,7 +270,7 @@ window.eliminaTipoDocumento = function(id) {
         await salvaTutto();
         aggiornaSelectTipiDocumento();
         apriManageTypesModal(); // Ricarica la lista
-        mostraMessaggio("Modello eliminato con successo.", "success");
+        mostraMessaggio(window.t("msg_type_deleted"), "success");
     }, 'delete_type');
 };
 
@@ -294,7 +302,9 @@ window.modificaTipoDocumento = function(id) {
         } else {
             // Campo custom
             let label = campoId;
-            if (CONFIG_CAMPI[campoId]) label = CONFIG_CAMPI[campoId].label;
+            if (CONFIG_CAMPI[campoId]) {
+                label = window.t('field_' + campoId) !== 'field_' + campoId ? window.t('field_' + campoId) : CONFIG_CAMPI[campoId].label;
+            }
             aggiungiPill(campoId, label);
         }
     });

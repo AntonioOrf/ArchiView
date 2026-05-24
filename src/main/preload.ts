@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     getPathForFile: (file) => webUtils.getPathForFile(file),
     
     getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
-    changeWorkspace: () => ipcRenderer.invoke('change-workspace'),
-    exportWorkspaceZip: () => ipcRenderer.invoke('export-workspace-zip'),
+    changeWorkspace: (title) => ipcRenderer.invoke('change-workspace', title),
+    exportWorkspaceZip: (title) => ipcRenderer.invoke('export-workspace-zip', title),
     
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
     apriLinkEsterno: (url) => ipcRenderer.invoke('apri-link-esterno', url),

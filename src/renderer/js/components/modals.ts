@@ -64,7 +64,7 @@ window.apriModalDocumenti = async function(id) {
     container.innerHTML = '';
 
     if (allegatiRender.length === 0) {
-        container.innerHTML = '<div class="col-span-full text-center text-stone-500 py-10">Nessun documento allegato.</div>';
+        container.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">${window.t('no_attached_docs')}</div>`;
         return;
     }
 

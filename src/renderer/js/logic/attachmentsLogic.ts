@@ -304,7 +304,7 @@ async function salvaTrascrizione() {
         m.trascrizione = testo;
         await salvaTutto();
         window.trascrizioneNonSalvata = false;
-        mostraMessaggio("Trascrizione salvata con successo!", "success");
+        mostraMessaggio(window.t("msg_transcription_saved"), "success");
         editor.focus();
     }
 }
@@ -340,7 +340,7 @@ async function caricaAllegatoTrascrizione(e) {
         }
     } catch (error) {
         console.error("Errore caricamento da trascrizione:", error);
-        mostraMessaggio("Errore nel salvataggio dell'allegato.", "error");
+        mostraMessaggio(window.t("msg_attachment_error"), "error");
     }
     
     // Resetta l'input

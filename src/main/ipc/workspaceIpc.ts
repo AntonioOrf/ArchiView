@@ -8,9 +8,9 @@ function setupWorkspaceIpc() {
     return state.workspacePath;
   });
 
-  ipcMain.handle('change-workspace', async (event) => {
+  ipcMain.handle('change-workspace', async (event, titleDialog) => {
     const result = await dialog.showOpenDialog({
-      title: "Seleziona la nuova cartella di lavoro",
+      title: titleDialog || "Seleziona la nuova cartella di lavoro",
       properties: ['openDirectory', 'createDirectory']
     });
     
@@ -24,9 +24,9 @@ function setupWorkspaceIpc() {
     return false;
   });
 
-  ipcMain.handle('export-workspace-zip', async (event) => {
+  ipcMain.handle('export-workspace-zip', async (event, titleDialog) => {
     const result = await dialog.showSaveDialog({
-      title: 'Esporta Backup in ZIP',
+      title: titleDialog || 'Esporta Backup in ZIP',
       defaultPath: path.join(app.getPath('downloads'), `Backup_Archivio_${Date.now()}.zip`),
       filters: [{ name: 'File ZIP', extensions: ['zip'] }]
     });
