@@ -47,12 +47,6 @@ async function avviaApp() {
         } catch (e) {}
     }
 
-    // Allinea il menu a tendina delle impostazioni lingua con la lingua caricata
-    const langSelect = document.getElementById('settings-language');
-    if (langSelect && window.linguaAttuale) {
-        langSelect.value = window.linguaAttuale;
-    }
-
     // Primo render per popolare l'interfaccia all'avvio
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
     renderSidebar();
@@ -105,7 +99,7 @@ async function avviaApp() {
     // Scorciatoie da tastiera
     document.addEventListener('keydown', function(e) {
         const vTrascrizione = document.getElementById('view-trascrizione');
-        
+
         // Salva trascrizione con Ctrl+S o sfoglia
         if (vTrascrizione && !vTrascrizione.classList.contains('hidden-tab')) {
             if (e.altKey && e.key === 'ArrowLeft') {
@@ -159,7 +153,7 @@ async function avviaApp() {
             }
         }
 
-        // Esc -> Chiudi modali aperte, o esci da trascrizione/modifica, o pulisci la barra di ricerca
+        // Esc -> Chiudi modali aperte o pulisci la barra di ricerca
         if (e.key === 'Escape') {
             const modals = document.querySelectorAll('.modal-overlay:not(.hidden-tab)');
             if (modals.length > 0) {
@@ -167,21 +161,12 @@ async function avviaApp() {
                 // Eventuali cleanup
                 if (typeof editingTypeId !== 'undefined') editingTypeId = null;
             } else {
-                const vTrascrizione = document.getElementById('view-trascrizione');
-                const vAdd = document.getElementById('view-add');
-                
-                if (vTrascrizione && !vTrascrizione.classList.contains('hidden-tab')) {
-                    if (typeof chiudiTrascrizione === 'function') chiudiTrascrizione();
-                } else if (vAdd && !vAdd.classList.contains('hidden-tab')) {
-                    if (typeof cancelEdit === 'function') cancelEdit();
-                } else {
-                    const searchInput = document.getElementById('search-input');
-                    if (searchInput && document.activeElement === searchInput) {
-                        searchInput.value = '';
-                        searchInput.blur();
-                        if (typeof renderMain === 'function') renderMain();
-                        if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
-                    }
+                const searchInput = document.getElementById('search-input');
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.value = '';
+                    searchInput.blur();
+                    if (typeof renderMain === 'function') renderMain();
+                    if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
                 }
             }
         }
