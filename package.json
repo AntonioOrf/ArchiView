@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@lingui/cli": "^6.1.0",
+    "@lingui/conf": "^6.1.0",
     "@lingui/format-po": "^6.1.0",
     "@tailwindcss/cli": "^4.3.0",
     "@types/archiver": "^7.0.0",
