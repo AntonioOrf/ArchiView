@@ -23,13 +23,16 @@ function renderSidebar() {
     // Funzione ricorsiva per renderizzare
     function renderNode(nodeName, nodeObj, parentEl, profondita) {
         const fullPath = nodeObj.path;
-        const hasChildren = Object.keys(nodeObj.children).length > 0;
+        const filesInFolder = appData.manoscritti.filter(m => m.cartella === fullPath);
+        filesInFolder.sort((a, b) => {
+            const valA = a.segnatura || a.titolo || '';
+            const valB = b.segnatura || b.titolo || '';
+            return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+        const hasChildren = Object.keys(nodeObj.children).length > 0 || filesInFolder.length > 0;
         const isAttuale = fullPath === window.cartellaAttuale;
 
-        // Mantieni espanso se è attuale o genitore dell'attuale
-        if (window.cartellaAttuale.startsWith(fullPath)) {
-            window.cartelleEspanse.add(fullPath);
-        }
+        // Rimosso il force-expand per permettere di collassare la cartella attuale
 
         const div = document.createElement('div');
         div.className = "flex flex-col";
@@ -134,6 +137,54 @@ function renderSidebar() {
             Object.keys(nodeObj.children).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(childName => {
                 renderNode(childName, nodeObj.children[childName], childContainer, profondita + 1);
             });
+
+            // Render dei file
+            filesInFolder.forEach(m => {
+                const fileRow = document.createElement('div');
+                fileRow.className = `group flex items-center gap-1.5 p-1 rounded-sm cursor-pointer transition-colors text-xs text-stone-600 hover:bg-stone-100 hover:text-stone-900`;
+                fileRow.style.paddingLeft = `${(profondita + 1) * 1.25 + 1.25}rem`;
+                
+                fileRow.onclick = (e) => {
+                    e.stopPropagation();
+                    if (window.cartellaAttuale !== fullPath) {
+                        window.cartellaAttuale = fullPath;
+                    }
+                    if (typeof switchTab === 'function') switchTab('list');
+                    renderSidebar();
+                    if (typeof renderMain === 'function') renderMain();
+                    
+                    setTimeout(() => {
+                        const targetCard = document.getElementById('card-' + m.id);
+                        if (targetCard) {
+                            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            targetCard.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
+                            const oldShadow = targetCard.style.boxShadow;
+                            const oldBorder = targetCard.style.borderColor;
+                            targetCard.style.boxShadow = "0 0 0 4px rgba(251, 191, 36, 0.4)";
+                            targetCard.style.borderColor = "#f59e0b";
+                            setTimeout(() => {
+                                targetCard.style.boxShadow = oldShadow;
+                                targetCard.style.borderColor = oldBorder;
+                            }, 1500);
+                        }
+                    }, 50);
+                };
+
+                const iconaFile = 'file-text';
+                const titoloFile = escapeHTML(m.segnatura || m.titolo || 'Senza Titolo');
+                
+                fileRow.draggable = true;
+                fileRow.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'manoscritto', id: m.id }));
+                    e.dataTransfer.effectAllowed = 'move';
+                    fileRow.classList.add('opacity-50');
+                };
+                fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
+
+                fileRow.innerHTML = `<i data-lucide="${iconaFile}" class="w-3.5 h-3.5 shrink-0 opacity-60"></i><span class="truncate">${titoloFile}</span>`;
+                childContainer.appendChild(fileRow);
+            });
+
             div.appendChild(childContainer);
         }
 

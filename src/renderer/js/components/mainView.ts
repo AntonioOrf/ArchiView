@@ -249,8 +249,11 @@ function extractSnippet(val, search) {
         if (start > 0) snippet = '...' + snippet;
         if (end < cleanText.length) snippet = snippet + '...';
 
+        snippet = escapeHTML(snippet);
+        const escapedSearch = escapeHTML(search);
+
         // Evidenzia la parola trovata
-        const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, 'gi');
+        const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
         snippet = snippet.replace(regex, '<span class="bg-amber-200 text-amber-900 font-bold px-0.5 rounded">$1</span>');
         return snippet;
     }
@@ -326,7 +329,7 @@ function renderSearchSuggestions() {
         div.innerHTML = `
             <div class="text-xs font-bold text-stone-800 truncate mb-1">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
             <div class="text-[10px] text-stone-600 leading-tight">
-                <span class="font-semibold text-amber-700 capitalize">${escapeHTML(match.key)}:</span> ${escapeHTML(match.snippet)}
+                <span class="font-semibold text-amber-700 capitalize">${escapeHTML(match.key)}:</span> ${match.snippet}
             </div>
         `;
         fragment.appendChild(div);

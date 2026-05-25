@@ -19,10 +19,29 @@
                 <i data-lucide="folder" class="w-5 h-5 mr-2"></i>
                 <span data-i18n="btn_choose_folder">Scegli o crea cartella</span>
             </button>
+            
+            <div class="mt-6 pt-4 border-t border-stone-200 text-left flex items-center justify-between">
+                <div class="flex items-center gap-2 text-stone-600 text-sm font-semibold">
+                    <i data-lucide="globe" class="w-4 h-4 text-amber-700"></i>
+                    <span data-i18n="settings_lang">Lingua / Language</span>
+                </div>
+                <select id="welcome-language" onchange="cambiaLingua(this.value)" class="form-input w-40 py-1 text-sm">
+                    <option value="it">Italiano</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </div>
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            
+            // Sincronizza la lingua nel menu a tendina
+            setTimeout(() => {
+                const langSel = document.getElementById('welcome-language');
+                if (langSel && window.linguaAttuale) {
+                    langSel.value = window.linguaAttuale;
+                }
+            }, 100);
         }
     });
 })();

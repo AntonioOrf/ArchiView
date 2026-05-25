@@ -1,8 +1,17 @@
 // @ts-nocheck
 function aggiungiCartella() {
-    document.getElementById('folder-name-input').value = '';
+    const input = document.getElementById('folder-name-input');
+    if (window.cartellaAttuale && window.cartellaAttuale !== 'Generale') {
+        input.value = window.cartellaAttuale + '/';
+    } else {
+        input.value = '';
+    }
     document.getElementById('folder-modal').classList.remove('hidden-tab');
-    setTimeout(() => document.getElementById('folder-name-input').focus(), 100);
+    setTimeout(() => {
+        input.focus();
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+    }, 100);
 }
 
 function chiudiFolderModal() {
