@@ -15,6 +15,18 @@
                         </h2>
                         <span id="counter-results" class="text-sm text-stone-500 font-medium mt-1 block">Caricamento...</span>
                     </div>
+                    <!-- Widget Hub -->
+                    <div id="hub-sync-widget" class="hidden flex items-center gap-2.5 p-2 bg-amber-50/50 border border-amber-200 rounded-sm text-sm">
+                        <span class="flex items-center gap-1 font-medium text-stone-700">
+                            <i data-lucide="cloud" class="w-4 h-4 text-amber-700"></i>
+                            <span>Hub:</span>
+                            <b id="hub-repo-name" class="text-amber-800">Connesso</b>
+                        </span>
+                        <button onclick="window.sincronizzaConHub()" class="btn btn-secondary py-1.5 px-3 text-xs bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            <span>Sincronizza</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="manoscritti-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-5 pb-6"></div>

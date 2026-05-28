@@ -59,10 +59,93 @@ async function initData() {
     });
     
     if (!appData.trascrizioneEditorWidth) appData.trascrizioneEditorWidth = '50%';
+    
+    window.ultimoCaricamento = Date.now();
 }
 
 async function salvaTutto() {
     if (window.apiBrowser) {
+        window.ultimoCaricamento = Date.now();
         await window.apiBrowser.salvaDati(appData);
     }
 }
+
+window.sincronizzaEUnisciDati = async function(nuovoDati) {
+    if (!nuovoDati) return;
+    
+    const loadedAt = window.ultimoCaricamento || 0;
+    
+    // 1. Fondi le cartelle
+    const cartelleSet = new Set([...(appData.cartelle || []), ...(nuovoDati.cartelle || [])]);
+    appData.cartelle = Array.from(cartelleSet).sort();
+    
+    // 2. Fondi i tipiDocumento
+    const tipiMap = new Map();
+    (nuovoDati.tipiDocumento || []).forEach(t => tipiMap.set(t.id, t));
+    (appData.tipiDocumento || []).forEach(t => {
+        if (!tipiMap.has(t.id)) tipiMap.set(t.id, t);
+    });
+    appData.tipiDocumento = Array.from(tipiMap.values());
+    
+    // 3. Fondi i manoscritti (schede)
+    const localMap = new Map((appData.manoscritti || []).map(m => [m.id, m]));
+    const externalMap = new Map((nuovoDati.manoscritti || []).map(m => [m.id, m]));
+    
+    const mergedManoscritti = [];
+    const tuttiIds = new Set([...localMap.keys(), ...externalMap.keys()]);
+    
+    const idInModifica = document.getElementById('form-id')?.value;
+    const idInTrascrizione = document.getElementById('trascrizione-id')?.value;
+    const isAddingViewVisible = document.getElementById('view-add') && !document.getElementById('view-add').classList.contains('hidden-tab');
+    
+    for (const id of tuttiIds) {
+        const local = localMap.get(id);
+        const external = externalMap.get(id);
+        
+        if (local && external) {
+            const tLocal = local.lastModified || 0;
+            const tExternal = external.lastModified || 0;
+            
+            if (tLocal >= tExternal) {
+                mergedManoscritti.push(local);
+            } else {
+                if (id === idInModifica && isAddingViewVisible) {
+                    mergedManoscritti.push(local);
+                } else if (id === idInTrascrizione && window.trascrizioneNonSalvata) {
+                    mergedManoscritti.push(local);
+                } else {
+                    mergedManoscritti.push(external);
+                }
+            }
+        } else if (local) {
+            const tLocal = local.lastModified || 0;
+            if (tLocal > loadedAt) {
+                mergedManoscritti.push(local);
+            }
+        } else if (external) {
+            const tExternal = external.lastModified || 0;
+            if (tExternal > loadedAt || loadedAt === 0) {
+                mergedManoscritti.push(external);
+            }
+        }
+    }
+    
+    appData.manoscritti = mergedManoscritti;
+    window.ultimoCaricamento = Date.now();
+    
+    // Aggiorna l'interfaccia
+    if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
+    if (typeof renderSidebar === 'function') renderSidebar();
+    if (typeof renderMain === 'function') renderMain();
+    
+    // Se l'utente è nella vista trascrizione e non ha modifiche pendenti, ricarica
+    if (idInTrascrizione && !window.trascrizioneNonSalvata) {
+        const checkEsiste = appData.manoscritti.some(x => String(x.id) === String(idInTrascrizione));
+        if (checkEsiste) {
+            if (typeof apriTrascrizione === 'function') apriTrascrizione(idInTrascrizione);
+        } else {
+            mostraMessaggio("Il documento corrente è stato eliminato da un altro utente.", "warning");
+            switchTab('list');
+        }
+    }
+};

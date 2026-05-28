@@ -112,6 +112,12 @@ window.apriModalDocumenti = async function(id) {
                 if (e.clientX > mid) targetIndex++;
                 if (dragIndex < targetIndex) targetIndex--;
                 m.allegati.splice(targetIndex, 0, item);
+                
+                const settings = await window.apiSettings.get();
+                const username = settings.username || 'Anonimo';
+                m.lastModified = Date.now();
+                m.modificatoDa = username;
+
                 await salvaTutto();
                 if (typeof renderMain === 'function') renderMain();
                 window.apriModalDocumenti(id);
@@ -168,6 +174,12 @@ window.rinominaAllegatoDaModal = function(id, index) {
     window.apriRenameModal(nomeAttuale, async (nuovoNome) => {
         allegatiRender[index].originalName = nuovoNome;
         m.allegati = allegatiRender;
+        
+        const settings = await window.apiSettings.get();
+        const username = settings.username || 'Anonimo';
+        m.lastModified = Date.now();
+        m.modificatoDa = username;
+
         await salvaTutto();
         if (typeof renderMain === 'function') renderMain();
         window.apriModalDocumenti(id);

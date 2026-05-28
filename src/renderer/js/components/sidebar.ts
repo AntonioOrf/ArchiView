@@ -309,3 +309,70 @@ function renderTagList() {
     });
     container.appendChild(fragment);
 }
+
+// --- VAULT SWITCHER ---
+
+window.toggleVaultSwitcher = function(e) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    const popover = document.getElementById('vault-switcher-popover');
+    if (popover) {
+        popover.classList.toggle('hidden-tab');
+        if (!popover.classList.contains('hidden-tab')) {
+            window.aggiornaListaVault();
+        }
+    }
+};
+
+window.aggiornaListaVault = async function() {
+    if (window.apiBrowser && window.apiBrowser.getRecentWorkspaces) {
+        const recents = await window.apiBrowser.getRecentWorkspaces();
+        const currentPath = await window.apiBrowser.getWorkspacePath();
+        const list = document.getElementById('vault-switcher-list');
+        if (list) {
+            list.innerHTML = '';
+            if (recents && recents.length > 0) {
+                recents.forEach(path => {
+                    const name = path.split(/[\/\\]/).pop();
+                    const isCurrent = path === currentPath;
+                    const btn = document.createElement('button');
+                    btn.className = `w-full text-left px-3 py-2 text-sm rounded flex items-center justify-between transition-colors ${isCurrent ? 'bg-amber-50 text-amber-900 font-semibold cursor-default' : 'text-stone-700 hover:bg-stone-100 hover:text-stone-900'}`;
+                    
+                    if (!isCurrent) {
+                        btn.onclick = () => {
+                            window.apiBrowser.openRecentWorkspace(path);
+                        };
+                    } else {
+                        btn.onclick = (e) => { e.stopPropagation(); }; // Non fa nulla
+                    }
+                    
+                    btn.innerHTML = `
+                        <span class="truncate pr-2" title="${path}">${escapeHTML(name)}</span>
+                        ${isCurrent ? '<i data-lucide="check" class="w-4 h-4 text-amber-600 shrink-0"></i>' : ''}
+                    `;
+                    list.appendChild(btn);
+                });
+                if (window.lucide) lucide.createIcons({ nodes: [list] });
+            }
+        }
+        
+        // Aggiorna anche il nome nel pulsante
+        const nameEl = document.getElementById('current-vault-name');
+        if (nameEl && currentPath) {
+            nameEl.textContent = currentPath.split(/[\/\\]/).pop();
+            nameEl.title = currentPath;
+        }
+    }
+};
+
+document.addEventListener('click', function(e) {
+    const popover = document.getElementById('vault-switcher-popover');
+    if (popover && !popover.classList.contains('hidden-tab')) {
+        // Chiudi se clicchi fuori
+        if (!e.target.closest('#vault-switcher-popover') && !e.target.closest('.btn-ghost.w-full.justify-between')) {
+            popover.classList.add('hidden-tab');
+        }
+    }
+});

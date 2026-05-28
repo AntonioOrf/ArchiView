@@ -1,11 +1,91 @@
 // @ts-nocheck
 window.apriImpostazioni = async function() {
     document.getElementById('settings-modal').classList.remove('hidden-tab');
-    if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
+    if (window.apiBrowser && window.apiBrowser.getWorkspacePath && window.apiSettings) {
         const p = await window.apiBrowser.getWorkspacePath();
         document.getElementById('settings-workspace-path').textContent = p || window.t('no_workspace_set');
+        
+        const settings = await window.apiSettings.get();
+        
+        // Popola Nome Collaboratore
+        const usernameInput = document.getElementById('settings-username');
+        if (usernameInput) {
+            usernameInput.value = settings.username || '';
+            if (!usernameInput.dataset.listenerSetup) {
+                usernameInput.addEventListener('change', async (e) => {
+                    if (window.apiSettings) {
+                        const currentSettings = await window.apiSettings.get();
+                        currentSettings.username = e.target.value.trim();
+                        await window.apiSettings.save(currentSettings);
+                        mostraMessaggio("Nome collaboratore salvato.", "success");
+                    }
+                });
+                usernameInput.dataset.listenerSetup = 'true';
+            }
+        }
+        
+        // Aggiorna percorso allegati
+        const attachmentsPathDiv = document.getElementById('settings-attachments-path');
+        const btnRestore = document.getElementById('btn-restore-attachments');
+        if (attachmentsPathDiv) {
+            if (settings.customAttachmentsPath) {
+                attachmentsPathDiv.textContent = settings.customAttachmentsPath;
+                if (btnRestore) btnRestore.classList.remove('hidden');
+            } else {
+                attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
+                if (btnRestore) btnRestore.classList.add('hidden');
+            }
+        }
+        
+        // Aggiorna sezione Hub
+        const hubSection = document.getElementById('settings-hub-section');
+        if (hubSection) {
+            if (window.hubConfig) {
+                document.getElementById('settings-hub-url').textContent = window.hubConfig.hubUrl;
+                document.getElementById('settings-hub-repoid').textContent = window.hubConfig.repoId;
+                document.getElementById('settings-hub-key').textContent = window.hubConfig.repoKey;
+                hubSection.classList.remove('hidden');
+            } else {
+                hubSection.classList.add('hidden');
+            }
+        }
     }
 }
+
+window.cambiaCartellaAllegati = async function() {
+    if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiSettings) {
+        const path = await window.apiBrowser.selectBaseDirectory();
+        if (path) {
+            const settings = await window.apiSettings.get();
+            settings.customAttachmentsPath = path;
+            await window.apiSettings.save(settings);
+            
+            // Aggiorna la visualizzazione
+            const attachmentsPathDiv = document.getElementById('settings-attachments-path');
+            const btnRestore = document.getElementById('btn-restore-attachments');
+            if (attachmentsPathDiv) attachmentsPathDiv.textContent = path;
+            if (btnRestore) btnRestore.classList.remove('hidden');
+            
+            mostraMessaggio("Cartella allegati locale configurata con successo.", "success");
+        }
+    }
+};
+
+window.ripristinaCartellaAllegatiPredefinita = async function() {
+    if (window.apiSettings && window.apiBrowser) {
+        const settings = await window.apiSettings.get();
+        delete settings.customAttachmentsPath;
+        await window.apiSettings.save(settings);
+        
+        const p = await window.apiBrowser.getWorkspacePath();
+        const attachmentsPathDiv = document.getElementById('settings-attachments-path');
+        const btnRestore = document.getElementById('btn-restore-attachments');
+        if (attachmentsPathDiv) attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
+        if (btnRestore) btnRestore.classList.add('hidden');
+        
+        mostraMessaggio("Cartella allegati ripristinata al percorso di default (interna al vault).", "success");
+    }
+};
 
 window.esportaBackupZip = async function() {
     if (window.apiBrowser && window.apiBrowser.exportWorkspaceZip) {
@@ -58,7 +138,10 @@ window.chiudiImpostazioni = function() {
 }
 
 window.cambiaCartellaLavoro = async function() {
-    if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
+    if (typeof mostraWelcomeModal === 'function') {
+        window.chiudiImpostazioni();
+        await mostraWelcomeModal();
+    } else if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
         await window.apiBrowser.changeWorkspace(window.t('modal_new_folder'));
     }
 }

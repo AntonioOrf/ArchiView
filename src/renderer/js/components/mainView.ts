@@ -180,6 +180,28 @@ function renderMain(resetPage = true) {
                 }
             });
 
+            let authorHTML = '';
+            if (m.creatoDa || m.modificatoDa) {
+                let infoMeta = '';
+                if (m.creatoDa) {
+                    infoMeta += `<span title="Autore" class="flex items-center gap-0.5"><i data-lucide="user" class="w-3 h-3 text-stone-400"></i><b>${escapeHTML(m.creatoDa)}</b></span>`;
+                }
+                if (m.modificatoDa && m.modificatoDa !== m.creatoDa) {
+                    infoMeta += `<span title="Modificatore" class="flex items-center gap-0.5 ml-2 border-l border-stone-200 pl-2"><i data-lucide="pencil" class="w-3 h-3 text-stone-400"></i><b>${escapeHTML(m.modificatoDa)}</b></span>`;
+                }
+                if (m.lastModified) {
+                    const dataFormat = new Date(m.lastModified).toLocaleDateString('it-IT', { 
+                        day: '2-digit', month: '2-digit', year: 'numeric', 
+                        hour: '2-digit', minute: '2-digit' 
+                    });
+                    infoMeta += `<span class="ml-auto text-[9px] text-stone-400 font-mono">${dataFormat}</span>`;
+                }
+                
+                authorHTML = `<div class="text-[10px] text-stone-500 mt-2.5 pt-2 border-t border-dashed border-stone-200/50 flex items-center">
+                    ${infoMeta}
+                </div>`;
+            }
+
             div.innerHTML = `
                 <div>
                     <div class="flex justify-between items-start gap-2 mb-2">
@@ -191,6 +213,7 @@ function renderMain(resetPage = true) {
                         ${tagsHTML}
                     </div>
                     ${allegatoHTML}
+                    ${authorHTML}
                 </div>
                 <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end gap-2">
                     ${btnVediPdfPiccolo}

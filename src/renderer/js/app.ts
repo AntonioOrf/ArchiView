@@ -9,12 +9,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const workspace = await window.apiBrowser.getWorkspacePath();
             
             if (!workspace) {
-                const modal = document.getElementById('welcome-modal');
-                if (modal) {
-                    modal.classList.remove('hidden-tab');
-                    modal.style.setProperty('display', 'flex', 'important');
+                if (typeof mostraWelcomeModal === 'function') {
+                    await mostraWelcomeModal();
+                } else {
+                    const modal = document.getElementById('welcome-modal');
+                    if (modal) {
+                        modal.classList.remove('hidden-tab');
+                        modal.style.setProperty('display', 'flex', 'important');
+                    }
                 }
                 return;
+            } else {
+                if (typeof aggiornaListaVault === 'function') {
+                    aggiornaListaVault();
+                }
             }
         }
         
@@ -39,6 +47,16 @@ window.selezionaCartellaIniziale = async function() {
 
 async function avviaApp() {
     await initData();
+
+    if (window.apiBrowser && window.apiBrowser.onDatabaseModificatoEsterno) {
+        window.apiBrowser.onDatabaseModificatoEsterno(async () => {
+            const nuovoDati = await window.apiBrowser.leggiDati();
+            if (nuovoDati) {
+                await window.sincronizzaEUnisciDati(nuovoDati);
+                mostraMessaggio("L'archivio è stato sincronizzato in tempo reale.", "info");
+            }
+        });
+    }
 
     const settings = await window.apiSettings.get();
     const statoSalvato = settings.appState;

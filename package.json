@@ -66,6 +66,8 @@
   "dependencies": {
     "@lingui/core": "^6.1.0",
     "archiver": "^8.0.0",
-    "electron-updater": "^6.8.3"
+    "cors": "^2.8.6",
+    "electron-updater": "^6.8.3",
+    "express": "^5.2.1"
   }
 }

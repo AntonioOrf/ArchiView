@@ -13,23 +13,7 @@
             } catch (e) {}
         })();
     </script>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset:; connect-src 'self' https://api.github.com;">
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArchiView</title>
-    <script>
-        (function() {
-            try {
-                const savedTheme = localStorage.getItem('theme') || 'system';
-                const isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                if (isDark) document.documentElement.classList.add('dark-theme');
-            } catch (e) {}
-        })();
-    </script>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset:; connect-src 'self' https://api.github.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset:; connect-src 'self' https://api.github.com http: https: ws: wss:;">
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="vendor/lucide.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
@@ -111,13 +95,35 @@
                 </div>
             </div>
 
-            <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
-                <button onclick="apriImpostazioni()" class="btn btn-ghost w-full justify-center">
-                    <i data-lucide="settings" class="w-4 h-4"></i> <span data-i18n="modal_settings">Impostazioni</span>
+            <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5 relative" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
+                
+                <button onclick="toggleVaultSwitcher(event)" class="btn btn-ghost w-full justify-between hover:bg-stone-200">
+                    <div class="flex items-center gap-2 truncate text-sm">
+                        <i data-lucide="archive" class="w-4 h-4 text-amber-700 shrink-0"></i>
+                        <span id="current-vault-name" class="font-bold truncate text-stone-800">...</span>
+                    </div>
+                    <i data-lucide="chevrons-up-down" class="w-4 h-4 text-stone-400 shrink-0"></i>
                 </button>
-                <button onclick="apriIssueModal()" class="btn btn-ghost w-full justify-center text-red-600 dark:text-red-400">
-                    <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 dark:text-red-400"></i> <span data-i18n="btn_report_issue">Segnala problema</span>
-                </button>
+                
+                <div class="w-full h-px bg-stone-200 my-1"></div>
+
+                <div class="flex items-center justify-center gap-1 w-full">
+                    <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue">
+                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
+                    </button>
+                </div>
+
+                <!-- Popover Vault Switcher -->
+                <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white rounded-md shadow-2xl border border-stone-200 p-1.5 z-50 flex flex-col max-h-64">
+                    <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
+                    <div class="w-full h-px bg-stone-200 my-1.5"></div>
+                    <button onclick="mostraWelcomeModal(); toggleVaultSwitcher(new Event('click'));" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
+                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> Gestisci vault...
+                    </button>
+                </div>
             </div>
 
         </aside>
@@ -137,6 +143,7 @@
     <script src="js/components/modals/renameModal.js"></script>
     <script src="js/components/modals/docsModal.js"></script>
     <script src="js/components/modals/settingsModal.js"></script>
+    <script src="js/components/modals/mergeConflictModal.js"></script>
     
     <!-- Nuovi componenti Viste e Banners -->
     <script src="js/components/banners.js"></script>
@@ -154,6 +161,8 @@
     <script src="js/logic/attachmentsLogic.js"></script>
     <script src="js/logic/typesLogic.js"></script>
     <script src="js/logic/settingsLogic.js"></script>
+    <script src="js/logic/diffMergeLogic.js"></script>
+    <script src="js/logic/hubLogic.js"></script>
 
     <script src="js/components/toasts.js"></script>
     <script src="js/components/modals.js"></script>

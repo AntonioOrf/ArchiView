@@ -1,11 +1,34 @@
 const { ipcMain, dialog, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { state, initWorkspace } = require('../workspaceManager');
+const { state, initWorkspace, getAllSettings, saveHubConfig, loadHubConfig } = require('../workspaceManager');
 
 function setupWorkspaceIpc() {
+  ipcMain.handle('save-hub-config', (event, config) => {
+    return saveHubConfig(config);
+  });
+
+  ipcMain.handle('load-hub-config', () => {
+    return loadHubConfig();
+  });
+
   ipcMain.handle('get-workspace-path', () => {
     return state.workspacePath;
+  });
+
+  ipcMain.handle('get-recent-workspaces', () => {
+    const settings = getAllSettings();
+    return settings.recentWorkspaces || [];
+  });
+
+  ipcMain.handle('open-recent-workspace', (event, folderPath) => {
+    if (fs.existsSync(folderPath)) {
+      initWorkspace(folderPath);
+      app.relaunch();
+      app.quit();
+      return true;
+    }
+    return false;
   });
 
   ipcMain.handle('change-workspace', async (event, titleDialog) => {
@@ -22,6 +45,63 @@ function setupWorkspaceIpc() {
       return true;
     }
     return false;
+  });
+
+  ipcMain.handle('get-documents-path', () => {
+    return app.getPath('documents');
+  });
+
+  ipcMain.handle('select-base-directory', async () => {
+    const result = await dialog.showOpenDialog({
+      title: "Seleziona la posizione per la nuova cartella",
+      properties: ['openDirectory']
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0];
+    }
+    return null;
+  });
+
+  ipcMain.handle('create-workspace-in-path', async (event, basePath, folderName) => {
+    const newPath = path.join(basePath, folderName);
+    if (!fs.existsSync(newPath)) {
+      fs.mkdirSync(newPath, { recursive: true });
+    }
+    initWorkspace(newPath);
+    app.relaunch();
+    app.quit();
+    return true;
+  });
+
+  ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, hubConfig, database) => {
+    try {
+      const newPath = path.join(basePath, folderName);
+      if (!fs.existsSync(newPath)) {
+        fs.mkdirSync(newPath, { recursive: true });
+      }
+      
+      // Scrivi config dell'Hub
+      const configPath = path.join(newPath, '.archiview-hub.json');
+      fs.writeFileSync(configPath, JSON.stringify(hubConfig, null, 2), 'utf8');
+
+      // Scrivi database JSON
+      const dbPath = path.join(newPath, 'database_manoscritti.json');
+      fs.writeFileSync(dbPath, JSON.stringify(database, null, 2), 'utf8');
+
+      // Crea cartella allegati vuota
+      const attPath = path.join(newPath, 'allegati_manoscritti');
+      if (!fs.existsSync(attPath)) {
+        fs.mkdirSync(attPath, { recursive: true });
+      }
+
+      initWorkspace(newPath);
+      app.relaunch();
+      app.quit();
+      return true;
+    } catch (e) {
+      console.error("Errore clonazione workspace Hub:", e);
+      return false;
+    }
   });
 
   ipcMain.handle('export-workspace-zip', async (event, titleDialog) => {

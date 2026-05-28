@@ -208,6 +208,42 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
         return;
     }
 
+    let expectedHash = null;
+    if (m && m.allegati && m.allegati[index]) {
+        expectedHash = m.allegati[index].hash;
+    }
+
+    if (expectedHash && window.apiBrowser && window.apiBrowser.verificaHashAllegato) {
+        const result = await window.apiBrowser.verificaHashAllegato(nome, expectedHash);
+        if (result.status === 'missing') {
+            noAllegato.innerHTML = `
+                <div class="text-stone-400 mb-3"><i data-lucide="file-warning" class="w-12 h-12 mx-auto text-amber-500"></i></div>
+                <h3 class="text-lg font-medium text-stone-300">Allegato non presente in locale</h3>
+                <p class="text-sm text-stone-400 mt-2 max-w-md mx-auto">
+                    Questo vault è condiviso. Il file dell'allegato non è ancora presente sul tuo PC.
+                </p>
+                <div class="mt-4 p-3 bg-stone-900 border border-stone-800 rounded-sm text-xs font-mono text-stone-300 select-all break-all max-w-md mx-auto">
+                    File da inserire: ${nome}
+                </div>
+                <p class="text-xs text-stone-500 mt-3">
+                    Copia il file nella tua cartella allegati:<br>
+                    <span class="font-mono text-[10px] break-all select-all text-amber-600">${result.path}</span>
+                </p>
+            `;
+            noAllegato.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+            return;
+        } else if (result.status === 'corrupted') {
+            mostraMessaggio("Attenzione: l'allegato potrebbe essere corrotto o modificato (Hash non corrispondente).", "error");
+            noAllegato.innerHTML = `<div class="text-stone-400 mb-2"><i data-lucide="shield-alert" class="w-12 h-12 mx-auto text-red-500"></i></div><h3 class="text-lg font-medium text-stone-300">File non sicuro</h3><p class="text-sm text-stone-500 mt-1">L'hash del file non corrisponde a quello salvato nel cloud.</p>`;
+            noAllegato.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+            return;
+        } else {
+            noAllegato.innerHTML = '<div class="text-stone-400 mb-2"><i data-lucide="image-off" class="w-12 h-12 mx-auto"></i></div><h3 class="text-lg font-medium text-stone-300" data-i18n="no_attachment">Nessun allegato disponibile per questa scheda.</h3>';
+        }
+    }
+
     if (tipo === 'pdf') {
         pdfPreview.src = 'local-asset://' + encodeURIComponent(nome);
         pdfPreview.classList.remove('hidden');
@@ -299,9 +335,14 @@ async function salvaTrascrizione() {
     const editor = document.getElementById('trascrizione-editor');
     const testo = editor.innerHTML;
     
+    const settings = await window.apiSettings.get();
+    const username = settings.username || 'Anonimo';
+    
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (m) {
         m.trascrizione = testo;
+        m.lastModified = Date.now();
+        m.modificatoDa = username;
         await salvaTutto();
         window.trascrizioneNonSalvata = false;
         mostraMessaggio(window.t("msg_transcription_saved"), "success");
@@ -318,8 +359,11 @@ async function caricaAllegatoTrascrizione(e) {
     if (!m) return;
     
     try {
+        const settings = await window.apiSettings.get();
+        const username = settings.username || 'Anonimo';
+        
         const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
-        const risultato = await window.apiBrowser.salvaAllegato(filePath);
+        const risultato = await window.apiBrowser.salvaAllegato(filePath, id);
         if (risultato) {
             if (!m.allegati) m.allegati = [];
             if (m.allegato && m.allegati.length === 0) {
@@ -328,10 +372,13 @@ async function caricaAllegatoTrascrizione(e) {
             m.allegati.push({
                 nome: risultato.fileName,
                 tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
-                originalName: file.name
+                originalName: file.name,
+                hash: risultato.hash
             });
             m.allegato = risultato.fileName;
             m.allegatoTipo = risultato.ext === '.pdf' ? 'pdf' : 'immagine';
+            m.lastModified = Date.now();
+            m.modificatoDa = username;
 
             await salvaTutto();
             

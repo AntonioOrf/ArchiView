@@ -24,6 +24,38 @@
                     </div>
 
                     <div class="border-t border-stone-200 pt-6">
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-amber-700"></i> <span>Nome Collaboratore / Utente</span></h4>
+                        <p class="text-sm text-stone-600 mb-3">Imposta il tuo nome per identificare chi inserisce o modifica le schede ed i testi.</p>
+                        <input type="text" id="settings-username" placeholder="Es. Antonio" class="form-input w-full p-2 bg-stone-50 border border-stone-200 rounded-sm text-stone-800 focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div class="border-t border-stone-200 pt-6">
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-amber-700"></i> <span>Cartella Allegati Locale (Opzionale)</span></h4>
+                        <p class="text-sm text-stone-600 mb-3">Consente di salvare le immagini localmente sul PC, escludendole dal cloud condiviso per risparmiare spazio.</p>
+                        <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-attachments-path">
+                            Caricamento...
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="cambiaCartellaAllegati()" class="btn btn-secondary">
+                                <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span>Seleziona Cartella...</span>
+                            </button>
+                            <button onclick="ripristinaCartellaAllegatiPredefinita()" id="btn-restore-attachments" class="btn btn-ghost text-red-500 hover:bg-red-50 hover:text-red-700 flex items-center gap-1 hidden">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span>Ripristina di default</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-stone-200 pt-6 hidden" id="settings-hub-section">
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4 text-amber-700"></i> <span>Stato Collegamento Hub</span></h4>
+                        <p class="text-sm text-stone-600 mb-3">Questo vault locale è collegato ad un repository condiviso online.</p>
+                        <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-xs font-mono text-stone-700 break-all">
+                            <div><b>URL Server:</b> <span id="settings-hub-url">Non definito</span></div>
+                            <div><b>ID Repository:</b> <span id="settings-hub-repoid">Non definito</span></div>
+                            <div><b>Chiave di Scrittura:</b> <span id="settings-hub-key">Non definita</span></div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-stone-200 pt-6">
                         <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_backup">Backup Dati</span></h4>
                         <p class="text-sm text-stone-600 mb-3" data-i18n="settings_backup_desc">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>
                     <button onclick="esportaBackupZip()" class="btn w-full justify-center shadow-sm" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
