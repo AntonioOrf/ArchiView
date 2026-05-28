@@ -48,10 +48,26 @@
                     <div class="border-t border-stone-200 pt-6 hidden" id="settings-hub-section">
                         <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4 text-amber-700"></i> <span>Stato Collegamento Hub</span></h4>
                         <p class="text-sm text-stone-600 mb-3">Questo vault locale è collegato ad un repository condiviso online.</p>
-                        <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-xs font-mono text-stone-700 break-all">
+                        <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-xs font-mono text-stone-700 break-all mb-4">
                             <div><b>URL Server:</b> <span id="settings-hub-url">Non definito</span></div>
                             <div><b>ID Repository:</b> <span id="settings-hub-repoid">Non definito</span></div>
                             <div><b>Chiave di Scrittura:</b> <span id="settings-hub-key">Non definita</span></div>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="settings-hub-autofetch" onchange="salvaImpostazioniHub()" class="form-checkbox text-amber-600 rounded border-stone-300 focus:ring-amber-500">
+                                <span class="text-sm font-medium text-stone-800">Sincronizzazione Automatica (Autofetch)</span>
+                            </label>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm text-stone-600">Intervallo di controllo:</span>
+                                <select id="settings-hub-autofetch-interval" onchange="salvaImpostazioniHub()" class="form-input text-sm py-1">
+                                    <option value="1">1 minuto</option>
+                                    <option value="5">5 minuti</option>
+                                    <option value="10">10 minuti</option>
+                                    <option value="30">30 minuti</option>
+                                </select>
+                            </div>
+                            <p class="text-xs text-stone-500">Se attivato, l'app controllerà in background se ci sono nuove modifiche dal server e le scaricherà automaticamente.</p>
                         </div>
                     </div>
 

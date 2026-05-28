@@ -22,10 +22,16 @@
                             <span>Hub:</span>
                             <b id="hub-repo-name" class="text-amber-800">Connesso</b>
                         </span>
-                        <button onclick="window.sincronizzaConHub()" class="btn btn-secondary py-1.5 px-3 text-xs bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 flex items-center gap-1">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                            <span>Sincronizza</span>
-                        </button>
+                        <div class="flex gap-1.5 ml-2">
+                            <button onclick="window.riceviModificheHub()" class="btn btn-secondary py-1.5 px-3 text-xs bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 flex items-center gap-1" data-i18n-title="btn_pull">
+                                <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                                <span>Ricevi</span>
+                            </button>
+                            <button onclick="window.inviaModificheHub()" class="btn btn-secondary py-1.5 px-3 text-xs bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 flex items-center gap-1" data-i18n-title="btn_push">
+                                <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                                <span>Invia</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 

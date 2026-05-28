@@ -44,10 +44,38 @@ window.apriImpostazioni = async function() {
                 document.getElementById('settings-hub-url').textContent = window.hubConfig.hubUrl;
                 document.getElementById('settings-hub-repoid').textContent = window.hubConfig.repoId;
                 document.getElementById('settings-hub-key').textContent = window.hubConfig.repoKey;
+                
+                const cbAutofetch = document.getElementById('settings-hub-autofetch');
+                const selInterval = document.getElementById('settings-hub-autofetch-interval');
+                if (cbAutofetch) {
+                    cbAutofetch.checked = settings.autofetchEnabled !== false; // Abilitato di default
+                }
+                if (selInterval) {
+                    selInterval.value = settings.autofetchInterval || "5"; // 5 min default
+                }
+                
                 hubSection.classList.remove('hidden');
             } else {
                 hubSection.classList.add('hidden');
             }
+        }
+    }
+}
+
+window.salvaImpostazioniHub = async function() {
+    if (window.apiSettings) {
+        const settings = await window.apiSettings.get();
+        const cbAutofetch = document.getElementById('settings-hub-autofetch');
+        const selInterval = document.getElementById('settings-hub-autofetch-interval');
+        
+        if (cbAutofetch) settings.autofetchEnabled = cbAutofetch.checked;
+        if (selInterval) settings.autofetchInterval = parseInt(selInterval.value, 10);
+        
+        await window.apiSettings.save(settings);
+        
+        // Riavvia il timer di autofetch se la funzione esiste
+        if (typeof window.avviaAutofetchHub === 'function') {
+            window.avviaAutofetchHub();
         }
     }
 }
