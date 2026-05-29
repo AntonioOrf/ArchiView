@@ -39,7 +39,36 @@
             <i data-lucide="bookmark" class="w-5 h-5"></i>
         </button>
 
-                <div class="flex-1"></div>
+        <button onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" title="Controllo Modifiche (Source Control)">
+            <i data-lucide="git-pull-request" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex-1"></div>
+        
+        <!-- Indicatore aggiornamenti in entrata (da remoto) -->
+        <div id="incoming-updates-indicator" class="hidden items-center gap-1 mr-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 border border-blue-200 dark:border-blue-800" title="Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica.">
+            <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i> In Entrata
+        </div>
+
+        <!-- Indicatore modifiche pendenti -->
+        <div id="pending-changes-indicator" class="hidden items-center gap-1 mr-3 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 border border-amber-200 dark:border-amber-800" title="Hai modifiche locali non ancora sincronizzate con il Cloud">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Modifiche Pendenti
+        </div>
+
+        <!-- Bottoni Cloud (Push / Pull / Fetch) -->
+        <div class="hidden md:flex items-center gap-1 mr-2 bg-stone-100 dark:bg-stone-800 rounded-none p-1 border border-stone-200 dark:border-stone-700">
+            <button onclick="controllaModificheInEntrata()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Controlla se ci sono aggiornamenti dal Cloud">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Fetch
+            </button>
+            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
+            <button onclick="scaricaDalCloud()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Scarica le ultime modifiche dal Cloud">
+                <i data-lucide="cloud-download" class="w-4 h-4"></i> Scarica
+            </button>
+            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
+            <button onclick="caricaSulCloud()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Carica le modifiche locali sul Cloud">
+                <i data-lucide="cloud-upload" class="w-4 h-4"></i> Carica
+            </button>
+        </div>
 
         <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record">
             <i data-lucide="plus" class="w-5 h-5"></i>
@@ -112,6 +141,9 @@
                     <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
+                    <button onclick="apriCloudModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" title="Cloud & Sincronizzazione">
+                        <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    </button>
                     <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue">
                         <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
                     </button>
@@ -146,6 +178,7 @@
     <script src="js/components/modals/settingsModal.js"></script>
     <script src="js/components/modals/mergeConflictModal.js"></script>
     <script src="js/components/modals/deletionConflictModal.js"></script>
+    <script src="js/components/modals/cloudModal.js"></script>
     
     <!-- Nuovi componenti Viste e Banners -->
     <script src="js/components/banners.js"></script>

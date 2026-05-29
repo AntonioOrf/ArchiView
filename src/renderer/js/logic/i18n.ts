@@ -8,6 +8,10 @@ i18n.load({
   it: itMessages
 });
 
+// Attiva un locale di default subito per evitare errori Lingui
+// prima che initLang() venga chiamato dall'app
+i18n.activate('it');
+
 window.initLang = async function() {
     const settings = await window.apiSettings.get();
     window.linguaAttuale = settings.lang || 'it';

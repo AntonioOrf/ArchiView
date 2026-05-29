@@ -18,7 +18,18 @@ function setupWorkspaceIpc() {
 
   ipcMain.handle('get-recent-workspaces', () => {
     const settings = getAllSettings();
-    return settings.recentWorkspaces || [];
+    const recents = settings.recentWorkspaces || [];
+    return recents.map((folderPath: string) => {
+      let isShared = false;
+      try {
+        const vaultSettingsPath = path.join(folderPath, 'settings.json');
+        if (fs.existsSync(vaultSettingsPath)) {
+          const vaultSettings = JSON.parse(fs.readFileSync(vaultSettingsPath, 'utf8'));
+          isShared = !!vaultSettings.isSharedVault;
+        }
+      } catch (e) {}
+      return { path: folderPath, isShared };
+    });
   });
 
   ipcMain.handle('open-recent-workspace', (event, folderPath) => {
@@ -39,6 +50,17 @@ function setupWorkspaceIpc() {
     
     if (!result.canceled && result.filePaths.length > 0) {
       const newPath = result.filePaths[0];
+      
+      if (state.workspacePath && path.resolve(newPath) === path.resolve(state.workspacePath)) {
+          dialog.showMessageBoxSync({
+              type: 'warning',
+              title: 'Attenzione',
+              message: 'Hai selezionato la cartella in cui ti trovi attualmente.',
+              buttons: ['OK']
+          });
+          return false;
+      }
+      
       initWorkspace(newPath);
       app.relaunch();
       app.quit();
@@ -73,6 +95,20 @@ function setupWorkspaceIpc() {
     return true;
   });
 
+  ipcMain.handle('delete-vault-local', async (event, pathToRemove) => {
+    try {
+        if (fs.existsSync(pathToRemove)) {
+            const { shell } = require('electron');
+            await shell.trashItem(pathToRemove);
+            return { success: true };
+        }
+        return { success: false, error: 'Path not found' };
+    } catch(e) {
+        console.error("Errore cancellazione vault:", e);
+        return { success: false, error: e.message };
+    }
+  });
+
   ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, hubConfig, database) => {
     try {
       const newPath = path.join(basePath, folderName);
@@ -80,9 +116,20 @@ function setupWorkspaceIpc() {
         fs.mkdirSync(newPath, { recursive: true });
       }
       
-      // Scrivi config dell'Hub
-      const configPath = path.join(newPath, '.archiview-hub.json');
-      fs.writeFileSync(configPath, JSON.stringify(hubConfig, null, 2), 'utf8');
+      // Scrivi config dell'Hub (se presente e valido)
+      if (hubConfig && hubConfig.hubUrl) {
+          const configPath = path.join(newPath, '.archiview-hub.json');
+          fs.writeFileSync(configPath, JSON.stringify(hubConfig, null, 2), 'utf8');
+      }
+
+      // Se hubConfig contiene dati Drive (è stato "abusato" per passare impostazioni Drive)
+      if (hubConfig && hubConfig.isSharedVault) {
+          const settingsPath = path.join(newPath, 'settings.json');
+          fs.writeFileSync(settingsPath, JSON.stringify({
+              isSharedVault: hubConfig.isSharedVault,
+              sharedVaultId: hubConfig.sharedVaultId
+          }, null, 2), 'utf8');
+      }
 
       // Scrivi database JSON
       const dbPath = path.join(newPath, 'database_manoscritti.json');

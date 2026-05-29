@@ -71,51 +71,7 @@
                         </div>
                     </div>
 
-                    <div class="border-t border-stone-200 pt-6" id="settings-drive-section">
-                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4 text-amber-700"></i> <span>Google Drive Sync</span></h4>
-                        <p class="text-sm text-stone-600 mb-3">Sincronizza il tuo database JSON su Google Drive. Gli allegati pesanti rimarranno memorizzati solo localmente e validati tramite hash per massimizzare l'efficienza dello spazio cloud.</p>
-                        
-                        <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 mb-4" id="settings-drive-status">
-                            <span class="text-stone-500">Controllo stato...</span>
-                        </div>
-                        
-                        <div class="flex gap-2 mb-6">
-                            <button onclick="loginGoogleDrive()" id="btn-drive-login" class="btn btn-secondary flex-1 justify-center">
-                                <i data-lucide="log-in" class="w-4 h-4"></i> Accedi a Google Drive
-                            </button>
-                            <button onclick="logoutGoogleDrive()" id="btn-drive-logout" class="btn btn-ghost text-red-500 hover:bg-red-50 hover:text-red-700 hidden">
-                                <i data-lucide="log-out" class="w-4 h-4"></i> Esci
-                            </button>
-                            <button onclick="sincronizzaGoogleDrive()" id="btn-drive-sync" class="btn btn-primary flex-1 justify-center hidden" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
-                                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sincronizza Ora
-                            </button>
-                        </div>
-                        
-                        <div class="space-y-4 border border-stone-200 p-4 rounded bg-stone-50">
-                            <h5 class="font-semibold text-sm flex items-center gap-2"><i data-lucide="bell-ring" class="w-4 h-4 text-amber-600"></i> Campanello Real-Time (Opzionale)</h5>
-                            <p class="text-xs text-stone-600">Inserisci le chiavi del tuo progetto Pusher e l'URL Vercel per avvisare in tempo reale gli altri PC connessi quando salvi una modifica.</p>
-                            
-                            <label class="flex items-center gap-2 cursor-pointer mb-2">
-                                <input type="checkbox" id="settings-drive-autofetch" onchange="salvaImpostazioniDrive()" class="form-checkbox text-amber-600 rounded border-stone-300 focus:ring-amber-500">
-                                <span class="text-sm font-medium text-stone-800">Abilita Sincronizzazione in Background</span>
-                            </label>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs text-stone-500 mb-1">Pusher App Key (Pubblica)</label>
-                                    <input type="text" id="settings-pusher-key" onchange="salvaImpostazioniDrive()" placeholder="es. abc123def456" class="form-input w-full p-2 bg-white border border-stone-200 rounded-sm text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-stone-500 mb-1">Pusher Cluster</label>
-                                    <input type="text" id="settings-pusher-cluster" onchange="salvaImpostazioniDrive()" placeholder="es. eu" class="form-input w-full p-2 bg-white border border-stone-200 rounded-sm text-sm">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-stone-500 mb-1">Webhook URL (Vercel Serverless)</label>
-                                <input type="text" id="settings-pusher-webhook" onchange="salvaImpostazioniDrive()" placeholder="https://tuo-progetto.vercel.app/api/ping" class="form-input w-full p-2 bg-white border border-stone-200 rounded-sm text-sm">
-                            </div>
-                        </div>
-                    </div>
+
 
                     <div class="border-t border-stone-200 pt-6">
                         <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_backup">Backup Dati</span></h4>

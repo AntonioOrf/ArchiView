@@ -1,10 +1,91 @@
 // @ts-nocheck
-
 window.driveStatus = { isAuthenticated: false, user: null };
+window.autofetchIntervalId = null;
+
+window.impostaModificheInEntrata = function(stato) {
+    const ind = document.getElementById('incoming-updates-indicator');
+    if (ind) {
+        if (stato) ind.classList.remove('hidden');
+        else ind.classList.add('hidden');
+        ind.classList.add('flex');
+        if (!stato) ind.classList.remove('flex');
+    }
+};
+
+window.controllaModificheInEntrata = async function() {
+    if (window.apiDrive && window.driveStatus && window.driveStatus.isAuthenticated) {
+        try {
+            const remoteModifiedTime = await window.apiDrive.checkUpdates();
+            if (remoteModifiedTime && remoteModifiedTime > (window.ultimoCaricamento || 0)) {
+                // Ci sono aggiornamenti sul server più recenti dell'ultimo nostro pull
+                window.impostaModificheInEntrata(true);
+            } else {
+                window.impostaModificheInEntrata(false);
+            }
+        } catch (e) {
+            console.error("Errore controllo aggiornamenti in entrata", e);
+        }
+    }
+};
+
+window.avviaAutofetchDrive = async function() {
+    if (window.autofetchIntervalId) clearInterval(window.autofetchIntervalId);
+    
+    // Esegue il controllo (solo notifica) ogni 5 minuti (300000 ms)
+    window.autofetchIntervalId = setInterval(() => {
+        window.controllaModificheInEntrata();
+    }, 300000);
+    
+    // Fai un controllo iniziale dopo 5 secondi
+    setTimeout(() => window.controllaModificheInEntrata(), 5000);
+};
+
+window.checkDriveStatusVisual = async function() {
+    if (window.apiDrive) {
+        // Usa i nuovi ID del Cloud Modal
+        const statusText = document.getElementById('cloud-drive-status');
+        const btnLogin = document.getElementById('btn-cloud-drive-login');
+        const btnLogout = document.getElementById('btn-cloud-drive-logout');
+        const btnSync = document.getElementById('btn-cloud-drive-sync');
+
+        if (!statusText) return;
+
+        try {
+            const statusResult = await window.apiDrive.status();
+            const isAuth = statusResult?.isAuthenticated || false;
+            if (isAuth) {
+                statusText.innerHTML = '<span class="text-green-600 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Connesso al Cloud</span>';
+                if(btnLogin) btnLogin.classList.add('hidden');
+                if(btnLogout) btnLogout.classList.remove('hidden');
+                if(btnSync) btnSync.classList.remove('hidden');
+            } else {
+                statusText.innerHTML = '<span class="text-stone-500 flex items-center gap-2"><i data-lucide="cloud-off" class="w-4 h-4"></i> Non Connesso</span>';
+                if(btnLogin) btnLogin.classList.remove('hidden');
+                if(btnLogout) btnLogout.classList.add('hidden');
+                if(btnSync) btnSync.classList.add('hidden');
+            }
+            if (window.lucide) lucide.createIcons();
+        } catch (e) {
+            statusText.textContent = "Errore di controllo stato";
+        }
+    }
+};
 
 async function aggiornaStatoDrive() {
     if (window.apiDrive) {
-        window.driveStatus = await window.apiDrive.status();
+        const statusResult = await window.apiDrive.status();
+        window.driveStatus = {
+            isAuthenticated: statusResult?.isAuthenticated || false,
+            user: statusResult?.user || null
+        };
+        if (typeof checkDriveStatusVisual === 'function') {
+            checkDriveStatusVisual();
+        }
+        
+        if (window.driveStatus.isAuthenticated) {
+            if (typeof window.avviaAutofetchDrive === 'function') window.avviaAutofetchDrive();
+        }
+
         const section = document.getElementById('settings-drive-section');
         const statusText = document.getElementById('settings-drive-status');
         const loginBtn = document.getElementById('btn-drive-login');
@@ -63,18 +144,17 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             // 1. Scarica da Drive (se esiste)
             const driveData = await window.apiDrive.pull();
             if (driveData && driveData.database) {
-                // Esegue il merge sfruttando la logica già presente in state.ts
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
-                    // Imposta temporaneamente l'ultimo caricamento per far vincere i record più recenti
-                    const oldLastLoaded = window.ultimoCaricamento;
-                    window.ultimoCaricamento = driveData.driveModifiedTime;
                     await window.sincronizzaEUnisciDati(driveData.database);
-                    window.ultimoCaricamento = oldLastLoaded;
                 }
+                window.ultimoCaricamento = Date.now();
+                if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
             }
 
             // 2. Carica le modifiche locali unite (upload)
             await window.apiDrive.sync();
+            
+            if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione completata con successo!", "success");
             
@@ -85,6 +165,54 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la sincronizzazione: " + e.message, "error");
         } finally {
             if (btn) btn.disabled = false;
+        }
+    }
+};
+
+window.scaricaDalCloud = async function(silent = false) {
+    if (window.apiDrive) {
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Scaricamento dal Cloud in corso...", "info");
+        try {
+            const driveData = await window.apiDrive.pull();
+            if (driveData && driveData.database) {
+                if (typeof window.sincronizzaEUnisciDati === 'function') {
+                    await window.sincronizzaEUnisciDati(driveData.database);
+                }
+                window.ultimoCaricamento = Date.now();
+                if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+            }
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Scaricamento completato!", "success");
+        } catch (e) {
+            console.error(e);
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante lo scaricamento: " + e.message, "error");
+        }
+    }
+};
+
+window.caricaSulCloud = async function(silent = false) {
+    if (window.apiDrive) {
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Caricamento sul Cloud in corso...", "info");
+        try {
+            // Per evitare sovrascritture cieche, prima scarichiamo e uniamo eventuali modifiche remote!
+            const driveData = await window.apiDrive.pull();
+            if (driveData && driveData.database) {
+                if (typeof window.sincronizzaEUnisciDati === 'function') {
+                    await window.sincronizzaEUnisciDati(driveData.database);
+                }
+                window.ultimoCaricamento = Date.now();
+                if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+            }
+
+            // Ora carichiamo il risultato del merge
+            await window.apiDrive.sync();
+            
+            if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
+            
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Caricamento completato in sicurezza!", "success");
+            inviaPingPusher();
+        } catch (e) {
+            console.error(e);
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il caricamento: " + e.message, "error");
         }
     }
 };

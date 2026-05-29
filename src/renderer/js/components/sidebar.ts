@@ -52,12 +52,17 @@ function renderSidebar() {
 
         riga.ondragover = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             e.dataTransfer.dropEffect = 'move';
             riga.classList.add('ring-2', 'ring-amber-500', 'bg-amber-50');
         };
-        riga.ondragleave = () => riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
+        riga.ondragleave = (e) => {
+            e.stopPropagation();
+            riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
+        };
         riga.ondrop = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
             try {
                 const data = JSON.parse(e.dataTransfer.getData('text/plain'));
@@ -197,23 +202,20 @@ function renderSidebar() {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     }).forEach(k => renderNode(k, root[k], container, 0));
 
-    // Area di drop speciale per spostare alla root (Generale)
-    const dropRoot = document.createElement('div');
-    dropRoot.className = "p-4 text-center text-xs text-stone-400 border-2 border-dashed border-transparent hover:border-stone-300 rounded mt-4 transition-colors select-none";
-    dropRoot.textContent = window.t('drag_to_root');
-    dropRoot.ondragover = (e) => { e.preventDefault(); dropRoot.classList.add('border-amber-400', 'bg-amber-50'); };
-    dropRoot.ondragleave = () => { dropRoot.classList.remove('border-amber-400', 'bg-amber-50'); };
-    dropRoot.ondrop = (e) => {
+    // Imposta l'intera zona del container come drop per il root
+    container.ondragover = (e) => { e.preventDefault(); container.classList.add('bg-stone-100'); };
+    container.ondragleave = () => { container.classList.remove('bg-stone-100'); };
+    container.ondrop = (e) => {
         e.preventDefault();
-        dropRoot.classList.remove('border-amber-400', 'bg-amber-50');
+        container.classList.remove('bg-stone-100');
         try {
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
             if (data.type === 'folder' && typeof spostaCartella !== 'undefined') spostaCartella(data.path, 'ROOT');
         } catch(err) {}
     };
-    container.appendChild(dropRoot);
 
     if (window.lucide) lucide.createIcons({ nodes: [container] });
+    if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
 }
 
 function aggiornaSelectCartelle() {
@@ -245,6 +247,8 @@ function switchSidebarTab(tabName) {
     document.getElementById('sidebar-folders').classList.add('hidden-tab');
     document.getElementById('sidebar-search').classList.add('hidden-tab');
     document.getElementById('sidebar-tags').classList.add('hidden-tab');
+    const sourceControl = document.getElementById('sidebar-source-control');
+    if (sourceControl) sourceControl.classList.add('hidden-tab');
 
     if (tabName === 'folders') document.getElementById('sidebar-folders').classList.remove('hidden-tab');
     if (tabName === 'search') {
@@ -256,7 +260,63 @@ function switchSidebarTab(tabName) {
         document.getElementById('sidebar-tags').classList.remove('hidden-tab');
         renderTagList();
     }
+    if (tabName === 'source-control') {
+        if (sourceControl) {
+            sourceControl.classList.remove('hidden-tab');
+            if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+        }
+    }
 }
+
+window.renderSourceControl = function() {
+    const list = document.getElementById('source-control-list');
+    const countLabel = document.getElementById('source-control-count');
+    if (!list || !countLabel) return;
+
+    list.innerHTML = '';
+    
+    const loadedAt = window.ultimoCaricamento || 0;
+    const modificati = appData.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
+
+    countLabel.textContent = modificati.length.toString();
+
+    if (modificati.length === 0) {
+        list.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">Nessuna modifica pendente</div>`;
+        return;
+    }
+
+    // Ordina per ultimo modificato decrescente
+    modificati.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
+
+    modificati.forEach(m => {
+        const isNew = m.lastModified === m.createdAt || (!m.createdAt && m.lastModified > loadedAt); // Approssimazione
+        const iconLetter = isNew ? 'A' : 'M';
+        const colorClass = isNew ? 'text-green-500 bg-green-50 dark:bg-green-900/20' : 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+
+        const li = document.createElement('li');
+        li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer border-b border-stone-100 dark:border-stone-800/50 last:border-0";
+        li.onclick = () => {
+            if (typeof apriForm === 'function') apriForm(m.id);
+        };
+
+        const leftDiv = document.createElement('div');
+        leftDiv.className = "flex items-center gap-2 overflow-hidden";
+        
+        const badge = document.createElement('span');
+        badge.className = `shrink-0 flex items-center justify-center w-4 h-4 rounded-sm text-[9px] font-bold ${colorClass}`;
+        badge.textContent = iconLetter;
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.className = "truncate text-stone-700 dark:text-stone-300";
+        titleSpan.textContent = m.titolo || m.segnatura || 'Senza Titolo';
+
+        leftDiv.appendChild(badge);
+        leftDiv.appendChild(titleSpan);
+
+        li.appendChild(leftDiv);
+        list.appendChild(li);
+    });
+};
 
 function renderTagList() {
     const container = document.getElementById('tag-list');
@@ -329,6 +389,18 @@ window.toggleVaultSwitcher = function(e) {
 window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     event.stopPropagation();
     event.preventDefault();
+    
+    // Popup nativo:
+    const msg = "Vuoi solo rimuovere il Vault '" + pathToRemove.split(/[\/\\]/).pop() + "' dall'elenco o eliminare definitivamente anche tutti i suoi file dal computer?\n\n- Premi 'OK' per ELIMINARE I FILE.\n- Premi 'Annulla' per rimuoverlo solo dall'elenco.";
+    const deleteFiles = window.confirm(msg);
+    
+    if (deleteFiles) {
+        // Usa l'IPC per eliminare fisicamente
+        if (window.apiBrowser && window.apiBrowser.deleteVaultLocal) {
+            await window.apiBrowser.deleteVaultLocal(pathToRemove);
+        }
+    }
+    
     const settings = await window.apiSettings.get();
     if (settings.recentWorkspaces) {
         settings.recentWorkspaces = settings.recentWorkspaces.filter(p => p !== pathToRemove);
@@ -345,7 +417,9 @@ window.aggiornaListaVault = async function() {
         if (list) {
             list.innerHTML = '';
             if (recents && recents.length > 0) {
-                recents.forEach(path => {
+                recents.forEach(item => {
+                    const path = item.path || item;
+                    const isShared = item.isShared || false;
                     const name = path.split(/[\/\\]/).pop();
                     const isCurrent = path === currentPath;
                     
@@ -361,9 +435,15 @@ window.aggiornaListaVault = async function() {
                     }
                     
                     const nameSpan = document.createElement('span');
-                    nameSpan.className = 'truncate pr-2 flex-1';
+                    nameSpan.className = 'truncate pr-2 flex-1 flex items-center gap-1.5';
                     nameSpan.title = path;
-                    nameSpan.textContent = name;
+                    
+                    if (isShared) {
+                        nameSpan.innerHTML = `<i data-lucide="users" class="w-3.5 h-3.5 text-blue-600 shrink-0" title="Vault Condiviso"></i> <span>${name}</span>`;
+                    } else {
+                        nameSpan.textContent = name;
+                    }
+                    
                     divContainer.appendChild(nameSpan);
 
                     if (isCurrent) {

@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     createWorkspaceInPath: (basePath, name) => ipcRenderer.invoke('create-workspace-in-path', basePath, name),
     cloneWorkspaceHub: (basePath, folderName, hubConfig, database) => ipcRenderer.invoke('clone-workspace-hub', basePath, folderName, hubConfig, database),
     exportWorkspaceZip: (title) => ipcRenderer.invoke('export-workspace-zip', title),
+    deleteVaultLocal: (path) => ipcRenderer.invoke('delete-vault-local', path),
     
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
     apriLinkEsterno: (url) => ipcRenderer.invoke('apri-link-esterno', url),
@@ -44,7 +45,11 @@ contextBridge.exposeInMainWorld('apiDrive', {
     auth: () => ipcRenderer.invoke('drive-auth'),
     logout: () => ipcRenderer.invoke('drive-logout'),
     status: () => ipcRenderer.invoke('drive-status'),
-    pull: () => ipcRenderer.invoke('drive-pull'),
-    sync: () => ipcRenderer.invoke('drive-sync')
+    listVaults: () => ipcRenderer.invoke('drive-list-vaults'),
+    pull: (vaultId) => ipcRenderer.invoke('drive-pull', vaultId),
+    sync: () => ipcRenderer.invoke('drive-sync'),
+    checkUpdates: () => ipcRenderer.invoke('drive-check-updates'),
+    generateInvite: () => ipcRenderer.invoke('drive-generate-invite'),
+    joinInvite: (code, basePath, name) => ipcRenderer.invoke('drive-join-invite', code, basePath, name)
 });
 export {};

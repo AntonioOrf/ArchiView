@@ -85,7 +85,13 @@ async function avviaApp() {
         if (window.statoIniziale.tab === 'add') {
             switchTab('add');
         } else if (window.statoIniziale.tab === 'trascrizione' && window.statoIniziale.trascrizioneId) {
-            if (typeof apriTrascrizione === 'function') apriTrascrizione(window.statoIniziale.trascrizioneId);
+            // Verifica che il manoscritto esista ancora prima di aprire la trascrizione
+            const esiste = appData.manoscritti.some(m => String(m.id) === String(window.statoIniziale.trascrizioneId));
+            if (esiste && typeof apriTrascrizione === 'function') {
+                apriTrascrizione(window.statoIniziale.trascrizioneId);
+            } else {
+                switchTab('list');
+            }
         } else {
             switchTab('list');
         }

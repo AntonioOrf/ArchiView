@@ -46,9 +46,9 @@ async function inizializzaRealTime() {
             return;
         }
 
-        // Avvia il sync in background
-        if (typeof window.sincronizzaGoogleDriveBackground === 'function') {
-            window.sincronizzaGoogleDriveBackground();
+        // Invece di eseguire il merge automatico invasivo, controlla e accende la notifica "In Entrata"
+        if (typeof window.controllaModificheInEntrata === 'function') {
+            window.controllaModificheInEntrata();
         }
     });
 }
@@ -64,37 +64,47 @@ document.addEventListener('DOMContentLoaded', () => {
 // Funzione chiamata da settingsModal.ts quando vengono salvate le impostazioni
 window.salvaImpostazioniDrive = async function() {
     if (!window.apiSettings) return;
-    const settings = await window.apiSettings.get();
+    const settings = await window.apiSettings.get() || {};
     
-    settings.driveAutofetch = document.getElementById('settings-drive-autofetch').checked;
-    settings.pusherKey = document.getElementById('settings-pusher-key').value;
-    settings.pusherCluster = document.getElementById('settings-pusher-cluster').value;
-    settings.pusherWebhook = document.getElementById('settings-pusher-webhook').value;
+    const syncAtt = document.getElementById('cloud-drive-sync-attachments');
+    
+    settings.driveAutofetch = document.getElementById('cloud-drive-autofetch').checked;
+    if (syncAtt) settings.syncAttachments = syncAtt.checked;
+    settings.pusherKey = document.getElementById('cloud-pusher-key').value;
+    settings.pusherCluster = document.getElementById('cloud-pusher-cluster').value;
+    settings.pusherWebhook = document.getElementById('cloud-pusher-webhook').value;
     
     await window.apiSettings.save(settings);
     
-    // Riavvia il listener
-    inizializzaRealTime();
-    
-    if (typeof mostraMessaggio === 'function') {
-        mostraMessaggio("Impostazioni salvate", "success");
+    // Riavvia Realtime
+    if(settings.driveAutofetch) {
+        avviaPusherRealtime();
+    } else {
+        if(window.pusherInstance) {
+            window.pusherInstance.disconnect();
+            window.pusherInstance = null;
+            console.log("Pusher disconnesso (Auto-Sync disattivato)");
+        }
     }
+    
+    mostraMessaggio("Impostazioni Cloud Salvate", "success");
 };
 
-window.popolaImpostazioniDrive = async function() {
+// Popola i campi all'avvio
+window.caricaImpostazioniDriveUI = async function() {
     if (!window.apiSettings) return;
-    const settings = await window.apiSettings.get();
+    const settings = await window.apiSettings.get() || {};
     
-    const checkAutofetch = document.getElementById('settings-drive-autofetch');
+    const checkAutofetch = document.getElementById('cloud-drive-autofetch');
     if(checkAutofetch) checkAutofetch.checked = !!settings.driveAutofetch;
     
-    const inputKey = document.getElementById('settings-pusher-key');
+    const inputKey = document.getElementById('cloud-pusher-key');
     if(inputKey) inputKey.value = settings.pusherKey || "";
     
-    const inputCluster = document.getElementById('settings-pusher-cluster');
+    const inputCluster = document.getElementById('cloud-pusher-cluster');
     if(inputCluster) inputCluster.value = settings.pusherCluster || "";
     
-    const inputWebhook = document.getElementById('settings-pusher-webhook');
+    const inputWebhook = document.getElementById('cloud-pusher-webhook');
     if(inputWebhook) inputWebhook.value = settings.pusherWebhook || "";
 };
 

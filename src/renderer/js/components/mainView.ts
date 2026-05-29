@@ -180,40 +180,42 @@ function renderMain(resetPage = true) {
                 }
             });
 
-            let authorHTML = '';
+            let authorBadgeHTML = '';
             if (m.creatoDa || m.modificatoDa) {
-                let infoMeta = '';
-                if (m.creatoDa) {
-                    infoMeta += `<span title="Autore" class="flex items-center gap-0.5"><i data-lucide="user" class="w-3 h-3 text-stone-400"></i><b>${escapeHTML(m.creatoDa)}</b></span>`;
-                }
-                if (m.modificatoDa && m.modificatoDa !== m.creatoDa) {
-                    infoMeta += `<span title="Modificatore" class="flex items-center gap-0.5 ml-2 border-l border-stone-200 pl-2"><i data-lucide="pencil" class="w-3 h-3 text-stone-400"></i><b>${escapeHTML(m.modificatoDa)}</b></span>`;
-                }
-                if (m.lastModified) {
-                    const dataFormat = new Date(m.lastModified).toLocaleDateString('it-IT', { 
-                        day: '2-digit', month: '2-digit', year: 'numeric', 
-                        hour: '2-digit', minute: '2-digit' 
-                    });
-                    infoMeta += `<span class="ml-auto text-[9px] text-stone-400 font-mono">${dataFormat}</span>`;
-                }
-                
-                authorHTML = `<div class="text-[10px] text-stone-500 mt-2.5 pt-2 border-t border-dashed border-stone-200/50 flex items-center">
-                    ${infoMeta}
-                </div>`;
+                const autore = m.modificatoDa || m.creatoDa; // Mostriamo chi ha fatto l'ultima azione
+                const titoloMeta = m.modificatoDa && m.creatoDa && m.modificatoDa !== m.creatoDa 
+                    ? `Creato da ${escapeHTML(m.creatoDa)} - Modificato da ${escapeHTML(m.modificatoDa)}` 
+                    : `Autore: ${escapeHTML(autore)}`;
+
+                authorBadgeHTML = `<span title="${titoloMeta}" class="flex items-center gap-1 text-[10px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
+                    <i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(autore)}
+                </span>`;
+            }
+
+            let dateHTML = '';
+            if (m.lastModified) {
+                const dataFormat = new Date(m.lastModified).toLocaleDateString('it-IT', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric', 
+                    hour: '2-digit', minute: '2-digit' 
+                });
+                dateHTML = `<div class="text-[9px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
             }
 
             div.innerHTML = `
                 <div>
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <h3 class="card-title mb-0" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
-                        <span class="card-badge shrink-0 mt-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
+                        <div class="flex items-center gap-1.5 shrink-0 mt-0">
+                            ${authorBadgeHTML}
+                            <span class="card-badge shrink-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
+                        </div>
                     </div>
                     <div class="space-y-1 text-sm">
                         ${infoHTML}
                         ${tagsHTML}
                     </div>
                     ${allegatoHTML}
-                    ${authorHTML}
+                    ${dateHTML}
                 </div>
                 <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end gap-2">
                     ${btnVediPdfPiccolo}

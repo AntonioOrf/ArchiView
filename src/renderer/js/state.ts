@@ -63,10 +63,28 @@ async function initData() {
     window.ultimoCaricamento = Date.now();
 }
 
+window.impostaModifichePendenti = function(stato) {
+    window.modificheLocaliPendenti = stato;
+    const ind = document.getElementById('pending-changes-indicator');
+    if (ind) {
+        if (stato) ind.classList.remove('hidden');
+        else ind.classList.add('hidden');
+        ind.classList.add('flex'); // Assicura che diventi flex se visibile
+        if (!stato) ind.classList.remove('flex'); // Rimuove flex se nascosto
+    }
+};
+
 async function salvaTutto() {
     if (window.apiBrowser) {
         window.ultimoCaricamento = Date.now();
         await window.apiBrowser.salvaDati(appData);
+        
+        // Segnala modifiche pendenti se siamo connessi al cloud
+        if (window.driveStatus && window.driveStatus.isAuthenticated) {
+            if (typeof window.impostaModifichePendenti === 'function') {
+                window.impostaModifichePendenti(true);
+            }
+        }
         
         // Sincronizzazione automatica su Drive se abilitata
         if (window.apiSettings && typeof window.sincronizzaGoogleDrive === 'function') {
@@ -142,13 +160,22 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
     appData.manoscritti = mergedManoscritti;
     window.ultimoCaricamento = Date.now();
     
+    // Salva il risultato del merge su disco (senza passare per salvaTutto
+    // che triggererebbe un'auto-sync e creerebbe un loop infinito)
+    if (window.apiBrowser) {
+        await window.apiBrowser.salvaDati(appData);
+    }
+    
     // Aggiorna l'interfaccia
     if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
     if (typeof renderSidebar === 'function') renderSidebar();
     if (typeof renderMain === 'function') renderMain();
     
+    const vTrasc = document.getElementById('view-trascrizione');
+    const isTrascrizioneOpen = vTrasc && !vTrasc.classList.contains('hidden-tab');
+    
     // Se l'utente è nella vista trascrizione e non ha modifiche pendenti, ricarica
-    if (idInTrascrizione && !window.trascrizioneNonSalvata) {
+    if (isTrascrizioneOpen && idInTrascrizione && !window.trascrizioneNonSalvata) {
         const checkEsiste = appData.manoscritti.some(x => String(x.id) === String(idInTrascrizione));
         if (checkEsiste) {
             if (typeof apriTrascrizione === 'function') apriTrascrizione(idInTrascrizione);
