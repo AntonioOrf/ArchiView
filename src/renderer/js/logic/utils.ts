@@ -57,6 +57,8 @@ const CONFIG_CAMPI = {
     famiglia_dinamici: { label: 'Familiari', type: 'dynamic_list', keyPlaceholder: 'Parentela (es. Figlio, Moglie)', valPlaceholder: 'Nome' }
 };
 
+window.CONFIG_CAMPI = CONFIG_CAMPI;
+
 // --- UTILITY CONDIVISE ---
 
 /**

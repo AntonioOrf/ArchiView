@@ -277,27 +277,35 @@ window.renderSourceControl = function() {
     
     const loadedAt = window.ultimoCaricamento || 0;
     const modificati = appData.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
+    const incoming = window.incomingChanges || [];
 
-    countLabel.textContent = modificati.length.toString();
+    countLabel.textContent = (modificati.length + incoming.length).toString();
 
-    if (modificati.length === 0) {
+    if (modificati.length === 0 && incoming.length === 0) {
         list.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">Nessuna modifica pendente</div>`;
         return;
     }
 
-    // Ordina per ultimo modificato decrescente
-    modificati.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
-
-    modificati.forEach(m => {
-        const isNew = m.lastModified === m.createdAt || (!m.createdAt && m.lastModified > loadedAt); // Approssimazione
-        const iconLetter = isNew ? 'A' : 'M';
-        const colorClass = isNew ? 'text-green-500 bg-green-50 dark:bg-green-900/20' : 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+    const renderItem = (m, isIncoming) => {
+        const isNew = m.lastModified === m.createdAt || (!m.createdAt && m.lastModified > loadedAt);
+        let iconLetter = isNew ? 'A' : 'M';
+        let colorClass = isNew ? 'text-green-500 bg-green-50 dark:bg-green-900/20' : 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+        
+        if (isIncoming) {
+            iconLetter = '↓';
+            colorClass = 'text-blue-500 bg-blue-50 dark:bg-blue-900/20';
+        }
 
         const li = document.createElement('li');
         li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer border-b border-stone-100 dark:border-stone-800/50 last:border-0";
-        li.onclick = () => {
-            if (typeof apriForm === 'function') apriForm(m.id);
-        };
+        if (!isIncoming) {
+            li.onclick = () => {
+                if (typeof apriForm === 'function') apriForm(m.id);
+            };
+        } else {
+            li.title = "Modifica dal Cloud. Fai un Fetch/Scarica per vederla nel dettaglio.";
+            li.classList.add('opacity-80');
+        }
 
         const leftDiv = document.createElement('div');
         leftDiv.className = "flex items-center gap-2 overflow-hidden";
@@ -315,7 +323,28 @@ window.renderSourceControl = function() {
 
         li.appendChild(leftDiv);
         list.appendChild(li);
-    });
+    };
+
+    if (incoming.length > 0) {
+        const header = document.createElement('div');
+        header.className = "px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 text-[10px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800";
+        header.textContent = "IN ENTRATA (CLOUD)";
+        list.appendChild(header);
+        
+        incoming.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
+        incoming.forEach(m => renderItem(m, true));
+    }
+
+    if (modificati.length > 0) {
+        if (incoming.length > 0) {
+            const header = document.createElement('div');
+            header.className = "px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 text-[10px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-700 mt-2";
+            header.textContent = "LOCALE";
+            list.appendChild(header);
+        }
+        modificati.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
+        modificati.forEach(m => renderItem(m, false));
+    }
 };
 
 function renderTagList() {
@@ -390,23 +419,60 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     event.stopPropagation();
     event.preventDefault();
     
-    // Popup nativo:
-    const msg = "Vuoi solo rimuovere il Vault '" + pathToRemove.split(/[\/\\]/).pop() + "' dall'elenco o eliminare definitivamente anche tutti i suoi file dal computer?\n\n- Premi 'OK' per ELIMINARE I FILE.\n- Premi 'Annulla' per rimuoverlo solo dall'elenco.";
-    const deleteFiles = window.confirm(msg);
+    const vaultName = pathToRemove.split(/[\\/\\\\]/).pop();
     
-    if (deleteFiles) {
-        // Usa l'IPC per eliminare fisicamente
-        if (window.apiBrowser && window.apiBrowser.deleteVaultLocal) {
-            await window.apiBrowser.deleteVaultLocal(pathToRemove);
-        }
-    }
+    const modalHtml = `
+        <div id="vault-delete-modal" class="modal-overlay z-[150] flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+            <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl">
+                <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">Rimuovi Vault</h3>
+                <p class="text-sm text-stone-600 mb-6">
+                    Vuoi solo rimuovere il Vault <strong>${vaultName}</strong> dall'elenco o eliminare definitivamente tutti i suoi file dal computer?
+                </p>
+                <div class="flex flex-col gap-2">
+                    <button id="btn-delete-files" class="btn btn-danger w-full justify-center">Sì, elimina anche i file</button>
+                    <button id="btn-remove-list" class="btn btn-secondary w-full justify-center">Rimuovi solo dall'elenco</button>
+                    <button id="btn-cancel-delete" class="btn btn-ghost w-full justify-center mt-2">Annulla</button>
+                </div>
+            </div>
+        </div>
+    `;
     
-    const settings = await window.apiSettings.get();
-    if (settings.recentWorkspaces) {
-        settings.recentWorkspaces = settings.recentWorkspaces.filter(p => p !== pathToRemove);
-        await window.apiSettings.save(settings);
-        window.aggiornaListaVault();
-    }
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.lucide) lucide.createIcons();
+    
+    const modal = document.getElementById('vault-delete-modal');
+    
+    return new Promise((resolve) => {
+        const finishRemoval = async () => {
+            const settings = await window.apiSettings.get();
+            if (settings.recentWorkspaces) {
+                settings.recentWorkspaces = settings.recentWorkspaces.filter(p => p !== pathToRemove);
+                await window.apiSettings.save(settings);
+                window.aggiornaListaVault();
+            }
+        };
+
+        document.getElementById('btn-delete-files').onclick = async () => {
+            modal.remove();
+            if (window.apiBrowser && window.apiBrowser.deleteVaultLocal) {
+                await window.apiBrowser.deleteVaultLocal(pathToRemove);
+            }
+            await finishRemoval();
+            resolve();
+        };
+        
+        document.getElementById('btn-remove-list').onclick = async () => {
+            modal.remove();
+            await finishRemoval();
+            resolve();
+        };
+        
+        document.getElementById('btn-cancel-delete').onclick = () => {
+            modal.remove();
+            resolve();
+        };
+    });
 };
 
 window.aggiornaListaVault = async function() {
@@ -439,7 +505,7 @@ window.aggiornaListaVault = async function() {
                     nameSpan.title = path;
                     
                     if (isShared) {
-                        nameSpan.innerHTML = `<i data-lucide="users" class="w-3.5 h-3.5 text-blue-600 shrink-0" title="Vault Condiviso"></i> <span>${name}</span>`;
+                        nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Vault Condiviso"></i> <span>${name}</span>`;
                     } else {
                         nameSpan.textContent = name;
                     }
@@ -468,7 +534,16 @@ window.aggiornaListaVault = async function() {
         // Aggiorna anche il nome nel pulsante
         const nameEl = document.getElementById('current-vault-name');
         if (nameEl && currentPath) {
-            nameEl.textContent = currentPath.split(/[\/\\]/).pop();
+            const vaultName = currentPath.split(/[\\/\\\\]/).pop();
+            const currentVaultInfo = recents ? recents.find(r => r.path === currentPath || r === currentPath) : null;
+            const isCurrentShared = currentVaultInfo && currentVaultInfo.isShared;
+            
+            if (isCurrentShared) {
+                nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${vaultName}</span></div>`;
+                if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
+            } else {
+                nameEl.textContent = vaultName;
+            }
             nameEl.title = currentPath;
         }
     }

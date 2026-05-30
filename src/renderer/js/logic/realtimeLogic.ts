@@ -98,6 +98,9 @@ window.caricaImpostazioniDriveUI = async function() {
     const checkAutofetch = document.getElementById('cloud-drive-autofetch');
     if(checkAutofetch) checkAutofetch.checked = !!settings.driveAutofetch;
     
+    const syncAtt = document.getElementById('cloud-drive-sync-attachments');
+    if(syncAtt) syncAtt.checked = !!settings.syncAttachments;
+    
     const inputKey = document.getElementById('cloud-pusher-key');
     if(inputKey) inputKey.value = settings.pusherKey || "";
     

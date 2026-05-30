@@ -12,18 +12,87 @@ window.impostaModificheInEntrata = function(stato) {
     }
 };
 
-window.controllaModificheInEntrata = async function() {
+window.toggleSyncProgress = function(show, titleKey = 'sync_in_progress') {
+    const barContainer = document.getElementById('sync-progress-container');
+    const textContainer = document.getElementById('sync-progress-text');
+    const bar = document.getElementById('sync-progress-bar');
+    const title = document.getElementById('sync-progress-title');
+    
+    if (barContainer) {
+        if (show) {
+            barContainer.classList.remove('hidden');
+            barContainer.classList.add('flex');
+            if(textContainer) textContainer.classList.remove('hidden');
+            if (bar) bar.style.width = '0%';
+            if (textContainer) textContainer.textContent = '...';
+            if (title) title.textContent = window.t(titleKey);
+        } else {
+            barContainer.classList.add('hidden');
+            barContainer.classList.remove('flex');
+            if(textContainer) textContainer.classList.add('hidden');
+            if (bar) bar.style.width = '0%';
+        }
+    }
+};
+
+window.updateSyncProgress = function(percent, text) {
+    const bar = document.getElementById('sync-progress-bar');
+    const textContainer = document.getElementById('sync-progress-text');
+    if (bar) {
+        bar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+    }
+    if (textContainer && text) {
+        textContainer.textContent = text;
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Inizializza lo stato all'avvio
+    aggiornaStatoDrive();
+    
+    // Ascolta eventi di progresso sincrono (se l'IPC lo espone)
+    if (window.apiDrive && window.apiDrive.onSyncProgress) {
+        window.apiDrive.onSyncProgress((data) => {
+            if (data.percent !== undefined) {
+                window.updateSyncProgress(data.percent, data.message);
+            }
+        });
+    }
+});
+
+window.controllaModificheInEntrata = async function(manual = false) {
     if (window.apiDrive && window.driveStatus && window.driveStatus.isAuthenticated) {
+        if (manual && typeof mostraMessaggio === 'function') {
+            mostraMessaggio("Controllo aggiornamenti dal Cloud...", "info");
+            window.toggleSyncProgress(true);
+        }
         try {
             const remoteModifiedTime = await window.apiDrive.checkUpdates();
             if (remoteModifiedTime && remoteModifiedTime > (window.ultimoCaricamento || 0)) {
                 // Ci sono aggiornamenti sul server più recenti dell'ultimo nostro pull
                 window.impostaModificheInEntrata(true);
+                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Ci sono nuovi aggiornamenti da scaricare!", "success");
+                
+                try {
+                    const peekData = await window.apiDrive.peekDb();
+                    if (peekData && peekData.database && peekData.database.manoscritti) {
+                        const loadedAt = window.ultimoCaricamento || 0;
+                        window.incomingChanges = peekData.database.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
+                        if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+                    }
+                } catch(e) { console.error("Errore peek", e); }
+                
             } else {
                 window.impostaModificheInEntrata(false);
+                window.incomingChanges = [];
+                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Nessun nuovo aggiornamento trovato.", "info");
             }
         } catch (e) {
             console.error("Errore controllo aggiornamenti in entrata", e);
+            if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il fetch: " + e.message, "error");
+        } finally {
+            if (manual) window.toggleSyncProgress(false);
         }
     }
 };
@@ -138,7 +207,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
     if (window.apiDrive) {
         const btn = document.getElementById('btn-drive-sync');
         if (btn) btn.disabled = true;
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione su Google Drive in corso...", "info");
+        window.toggleSyncProgress(true, 'sync_in_progress');
         
         try {
             // 1. Scarica da Drive (se esiste)
@@ -149,6 +218,8 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                 }
                 window.ultimoCaricamento = Date.now();
                 if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+                window.incomingChanges = [];
+                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
 
             // 2. Carica le modifiche locali unite (upload)
@@ -165,13 +236,14 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la sincronizzazione: " + e.message, "error");
         } finally {
             if (btn) btn.disabled = false;
+            window.toggleSyncProgress(false);
         }
     }
 };
 
 window.scaricaDalCloud = async function(silent = false) {
     if (window.apiDrive) {
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Scaricamento dal Cloud in corso...", "info");
+        window.toggleSyncProgress(true, 'download_in_progress');
         try {
             const driveData = await window.apiDrive.pull();
             if (driveData && driveData.database) {
@@ -180,18 +252,22 @@ window.scaricaDalCloud = async function(silent = false) {
                 }
                 window.ultimoCaricamento = Date.now();
                 if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+                window.incomingChanges = [];
+                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Scaricamento completato!", "success");
         } catch (e) {
             console.error(e);
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante lo scaricamento: " + e.message, "error");
+        } finally {
+            window.toggleSyncProgress(false);
         }
     }
 };
 
 window.caricaSulCloud = async function(silent = false) {
     if (window.apiDrive) {
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Caricamento sul Cloud in corso...", "info");
+        window.toggleSyncProgress(true, 'upload_in_progress');
         try {
             // Per evitare sovrascritture cieche, prima scarichiamo e uniamo eventuali modifiche remote!
             const driveData = await window.apiDrive.pull();
@@ -201,6 +277,8 @@ window.caricaSulCloud = async function(silent = false) {
                 }
                 window.ultimoCaricamento = Date.now();
                 if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+                window.incomingChanges = [];
+                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
 
             // Ora carichiamo il risultato del merge
@@ -213,6 +291,8 @@ window.caricaSulCloud = async function(silent = false) {
         } catch (e) {
             console.error(e);
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il caricamento: " + e.message, "error");
+        } finally {
+            window.toggleSyncProgress(false);
         }
     }
 };
@@ -251,7 +331,45 @@ async function inviaPingPusher() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Inizializza lo stato all'avvio
-    aggiornaStatoDrive();
-});
+window.trasformaInCondiviso = async function() {
+    const btn = document.getElementById('btn-trasforma-condiviso');
+    const status = document.getElementById('cloud-transform-status');
+    if(btn) btn.disabled = true;
+    if(status) {
+        status.classList.remove('hidden');
+        status.textContent = "Autenticazione con Google Drive in corso...";
+    }
+
+    try {
+        if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
+            await window.apiDrive.auth();
+            await aggiornaStatoDrive();
+        }
+
+        if(status) status.textContent = "Impostazione Vault come condiviso...";
+        if (window.apiSettings) {
+            const settings = await window.apiSettings.get();
+            settings.isSharedVault = true;
+            settings.driveAutofetch = true;
+            await window.apiSettings.save(settings);
+        }
+
+        if(status) status.textContent = "Prima sincronizzazione in corso (potrebbe volerci un po')...";
+        await window.sincronizzaGoogleDrive(true);
+        
+        if(status) status.textContent = "Fatto! Generazione codice...";
+        // Ricarichiamo il modal per mostrare la UI Condiviso
+        if (typeof apriCloudModal === 'function') {
+            apriCloudModal();
+        }
+    } catch(e) {
+        mostraMessaggio("Errore: " + e.message, "error");
+        if(status) {
+            status.textContent = "Si è verificato un errore.";
+            status.classList.replace('text-blue-600', 'text-red-600');
+        }
+        if(btn) btn.disabled = false;
+    }
+}
+
+

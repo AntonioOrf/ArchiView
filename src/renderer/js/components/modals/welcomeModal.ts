@@ -22,19 +22,23 @@
             <div class="flex flex-col gap-3" id="welcome-buttons">
                 <button onclick="selezionaCartellaIniziale()" class="btn btn-primary w-full justify-center py-3 text-lg font-medium shadow-md">
                     <i data-lucide="folder-open" class="w-5 h-5 mr-2"></i>
-                    Seleziona Cartella Locale
+                    Apri Cartella Locale
                 </button>
-                <button onclick="mostraInputNuovaCartella()" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
+                <button onclick="mostraInputNuovaCartella(false)" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
                     <i data-lucide="folder-plus" class="w-5 h-5 mr-2"></i>
-                    Crea Nuova Cartella
+                    Crea Nuova Cartella Locale
                 </button>
-                <button onclick="mostraCloudExplorer()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-blue-900 border border-blue-300 hover:bg-blue-50" style="background-color: #eff6ff;">
-                    <i data-lucide="cloud-download" class="w-5 h-5 mr-2"></i>
-                    Ripristina da Google Drive (Cloud)
+                <div class="h-px bg-stone-200 my-1 w-full"></div>
+                <button onclick="mostraInputNuovaCartella(true)" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-blue-900 border border-blue-300 hover:bg-blue-50" style="background-color: #eff6ff;">
+                    <i data-lucide="cloud-upload" class="w-5 h-5 mr-2"></i>
+                    Crea un Vault Condiviso
                 </button>
-                <button onclick="mostraJoinForm()" class="btn w-full justify-center py-2 text-md font-medium shadow-sm text-amber-900 border border-amber-300 hover:bg-amber-50" style="background-color: #fffbeb;">
-                    <i data-lucide="key" class="w-5 h-5 mr-2"></i>
-                    Unisciti a un Vault con Codice
+                <button onclick="mostraJoinForm()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 border border-amber-300 hover:bg-amber-50" style="background-color: #fffbeb;">
+                    <i data-lucide="users" class="w-5 h-5 mr-2"></i>
+                    Unisciti a un Vault Condiviso
+                </button>
+                <button onclick="mostraCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 mt-1 hover:text-stone-700 w-full justify-center">
+                    Ripristina da Google Drive...
                 </button>
             </div>
 
@@ -72,9 +76,15 @@
                     <label class="form-label font-medium mb-1 block text-sm">Codice di Invito</label>
                     <textarea id="welcome-join-code" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-all text-xs font-mono h-24" placeholder="Incolla qui il codice..."></textarea>
                 </div>
+                <div id="welcome-join-vault-info" class="hidden-tab mb-3 p-3 bg-stone-100 border border-stone-200 rounded text-sm text-stone-700 flex items-center gap-2">
+                    <i data-lucide="folder-check" class="w-5 h-5 text-emerald-600"></i>
+                    <div>
+                        <span class="font-semibold">Nome Vault:</span>
+                        <span id="welcome-join-vault-name" class="font-mono text-emerald-700"></span>
+                    </div>
+                </div>
                 <div class="mb-3">
-                    <label class="form-label font-medium mb-1 block text-sm">Nome locale per questo Vault</label>
-                    <input type="text" id="welcome-join-folder-name" class="form-input w-full text-sm mb-2" placeholder="Es. Vault_Condiviso">
+                    <label class="form-label font-medium mb-1 block text-sm">Posizione cartella locale</label>
                     <div class="flex gap-2 mt-1">
                         <input type="text" id="welcome-join-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
                         <button onclick="selezionaPercorsoBaseJoin()" class="btn btn-secondary px-3 py-1 text-sm">Sfoglia...</button>
@@ -107,10 +117,35 @@
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+
+            const joinCodeTextarea = document.getElementById('welcome-join-code');
+            if (joinCodeTextarea) {
+                joinCodeTextarea.addEventListener('input', async () => {
+                    const code = joinCodeTextarea.value.trim();
+                    const infoDiv = document.getElementById('welcome-join-vault-info');
+                    const nameSpan = document.getElementById('welcome-join-vault-name');
+                    if (!code) {
+                        if (infoDiv) infoDiv.classList.add('hidden-tab');
+                        return;
+                    }
+                    try {
+                        if (window.apiDrive && window.apiDrive.decodeInvite) {
+                            const result = await window.apiDrive.decodeInvite(code);
+                            if (result && result.vaultName) {
+                                if (nameSpan) nameSpan.textContent = result.vaultName;
+                                if (infoDiv) infoDiv.classList.remove('hidden-tab');
+                                return;
+                            }
+                        }
+                    } catch (e) {}
+                    if (infoDiv) infoDiv.classList.add('hidden-tab');
+                });
+            }
         }
     });
 
-    window.mostraInputNuovaCartella = async function() {
+    window.mostraInputNuovaCartella = async function(isShared = false) {
+        window.creazioneVaultCondiviso = isShared;
         document.getElementById('welcome-buttons').classList.add('hidden-tab');
         document.getElementById('welcome-create-form').classList.remove('hidden-tab');
         if (window.apiBrowser && window.apiBrowser.getDocumentsPath) {
@@ -150,12 +185,16 @@
                     const div = document.createElement('div');
                     div.className = "p-3 bg-white border border-stone-200 rounded cursor-pointer hover:border-amber-400 hover:shadow-md transition-all flex justify-between items-center";
                     const dateStr = new Date(v.modifiedTime).toLocaleDateString();
-                    // escapeHTML assuming it's available or simple textContent
+                    
+                    const escapedName = v.name.replace(/[&<>'"]/g, tag => ({
+                        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+                    }[tag] || tag));
+
                     div.innerHTML = `
                         <div class="flex items-center gap-3">
                             <i data-lucide="folder-cloud" class="w-5 h-5 text-blue-600"></i>
                             <div>
-                                <div class="font-medium text-stone-800">${v.name}</div>
+                                <div class="font-medium text-stone-800">${escapedName}</div>
                                 <div class="text-xs text-stone-500">Modificato: ${dateStr}</div>
                             </div>
                         </div>
@@ -204,17 +243,21 @@
 
     window.eseguiJoinVault = async function() {
         const code = document.getElementById('welcome-join-code').value.trim();
-        const name = document.getElementById('welcome-join-folder-name').value.trim();
         const basePath = document.getElementById('welcome-join-folder-path').value.trim();
         
-        if(!code || !name || !basePath) {
+        if(!code || !basePath) {
             mostraMessaggio("Compila tutti i campi.", "warning");
             return;
         }
 
         try {
             mostraMessaggio("Connessione al Vault in corso...", "info");
-            await window.apiDrive.joinInvite(code, basePath, name);
+            const result = await window.apiDrive.decodeInvite(code);
+            if (!result || !result.vaultName) {
+                throw new Error("Codice invito non valido o impossibile recuperare il nome del Vault.");
+            }
+            
+            await window.apiDrive.joinInvite(code, basePath, result.vaultName);
             document.getElementById('welcome-modal').classList.add('hidden-tab');
             mostraMessaggio("Connesso con successo! Riavvio in corso...", "success");
             if (typeof avviaApp === 'function') await avviaApp();
@@ -278,6 +321,13 @@
             if (success) {
                 document.getElementById('welcome-modal').classList.add('hidden-tab');
                 if (typeof avviaApp === 'function') await avviaApp();
+                
+                if (window.creazioneVaultCondiviso) {
+                    setTimeout(() => {
+                        if (typeof apriCloudModal === 'function') apriCloudModal();
+                        if (typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
+                    }, 1000);
+                }
             }
         }
     };

@@ -1013,3 +1013,13 @@ msgstr "Describe the problem, how to reproduce it, or what you expect to happen.
 msgid "btn_submit_issue"
 msgstr "Open on GitHub"
 
+
+ m s g i d   " s y n c _ i n _ p r o g r e s s " 
+ m s g s t r   " S y n c i n g "  
+ 
+ m s g i d   " u p l o a d _ i n _ p r o g r e s s " 
+ m s g s t r   " U p l o a d i n g "  
+ 
+ m s g i d   " d o w n l o a d _ i n _ p r o g r e s s " 
+ m s g s t r   " D o w n l o a d i n g "  
+ 

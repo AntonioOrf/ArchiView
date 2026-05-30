@@ -15,108 +15,56 @@
             </div>
             <div class="modal-body p-6 flex-1 overflow-y-auto custom-scroll min-h-0">
                 
-                <!-- BANNER MULTI-DRIVE -->
-                <div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
-                    <i data-lucide="info" class="w-5 h-5 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400"></i>
-                    <p>Ogni Vault ha il proprio Cloud indipendente. L'account Google Drive collegato qui vale <strong>solo per questo Vault</strong>.</p>
-                </div>
-
-                <!-- AVVISO VAULT CONDIVISO (Nascosto di default) -->
-                <div id="cloud-shared-warning" class="hidden mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3 text-sm text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                    <i data-lucide="users" class="w-5 h-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400"></i>
-                    <div>
-                        <p class="font-semibold mb-1">Stai partecipando a un Vault Condiviso</p>
-                        <p>Stai sincronizzando i dati sul Google Drive del proprietario originale. Le opzioni di Login sono state disabilitate per non scollegarti dalla sessione condivisa.</p>
+                <!-- SEZIONE VAULT LOCALE (Non Condiviso) -->
+                <div id="cloud-local-section" class="flex flex-col items-center text-center p-6 border border-stone-200 dark:border-stone-700 rounded-md bg-stone-50 dark:bg-stone-900/50">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="cloud-upload" class="w-8 h-8"></i>
                     </div>
+                    <h3 class="text-xl font-semibold mb-2">Trasforma in Vault Condiviso</h3>
+                    <p class="text-sm text-stone-600 dark:text-stone-400 mb-6 max-w-md">
+                        Questo Vault è attualmente salvato solo sul tuo PC. Trasformalo in un Vault Condiviso per sincronizzarlo in sicurezza sul tuo Google Drive e ottenere un codice d'invito per i tuoi collaboratori.
+                    </p>
+                    <button onclick="trasformaInCondiviso()" id="btn-trasforma-condiviso" class="btn btn-primary py-3 px-6 text-lg shadow-md w-full max-w-sm">
+                        <i data-lucide="zap" class="w-5 h-5 mr-2"></i> Trasforma in Vault Condiviso
+                    </button>
+                    <div id="cloud-transform-status" class="mt-4 text-sm font-medium text-blue-600 hidden">Operazione in corso...</div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- SEZIONE VAULT CONDIVISO -->
+                <div id="cloud-shared-section" class="hidden flex flex-col items-center text-center p-6 border border-amber-200 dark:border-amber-700/50 rounded-md bg-amber-50/50 dark:bg-amber-900/20">
+                    <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Vault Condiviso Attivo</h3>
+                    <p class="text-sm text-amber-800 dark:text-amber-300 mb-6 max-w-md">
+                        Questo Vault è sincronizzato sul Cloud. Condividi il codice sottostante con i tuoi collaboratori per farli accedere immediatamente.
+                    </p>
                     
-                    <!-- Sezione Google Drive (Manuale) -->
-                    <div class="panel-glass p-4 flex flex-col border border-stone-200 dark:border-stone-700">
-                        <div class="flex items-center gap-2 mb-4">
-                            <i data-lucide="hard-drive" class="w-5 h-5 text-blue-500"></i>
-                            <h3 class="font-bold text-lg">Google Drive</h3>
-                        </div>
-                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-4 flex-1">
-                            Sincronizza l'intero database sul tuo Google Drive personale in modo sicuro e privato.
-                        </p>
-                        
-                        <div id="cloud-drive-status" class="mb-4 text-sm font-medium p-2 bg-stone-100 dark:bg-stone-900 rounded border border-stone-200 dark:border-stone-700">
-                            <span class="text-stone-500 dark:text-stone-400">Controllo stato...</span>
-                        </div>
-                        
-                        <!-- Toggle Allegati -->
-                        <label class="flex items-start gap-2 cursor-pointer mb-4 p-2 bg-stone-50 dark:bg-stone-900/50 rounded border border-stone-200 dark:border-stone-700">
-                            <input type="checkbox" id="cloud-drive-sync-attachments" onchange="salvaImpostazioniDrive()" class="form-checkbox mt-1 text-blue-600 rounded border-stone-300 dark:border-stone-600 dark:bg-stone-900 focus:ring-blue-500">
-                            <div>
-                                <span class="text-sm font-medium text-stone-800 dark:text-stone-200 block">Sincronizza anche le immagini</span>
-                                <span class="text-xs text-stone-500 dark:text-stone-400">Attenzione: consumerà più spazio su Drive</span>
-                            </div>
-                        </label>
-
-                        <div id="cloud-drive-buttons" class="flex flex-wrap gap-2 mt-auto">
-                            <button onclick="loginGoogleDrive()" id="btn-cloud-drive-login" class="btn btn-secondary flex-1 justify-center py-2 min-w-[100px]">
-                                <i data-lucide="log-in" class="w-4 h-4 shrink-0"></i> Accedi
-                            </button>
-                            <button onclick="logoutGoogleDrive()" id="btn-cloud-drive-logout" class="btn btn-ghost text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 hidden shrink-0">
-                                <i data-lucide="log-out" class="w-4 h-4 shrink-0"></i> Esci
-                            </button>
-                            <button onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary flex-1 justify-center hidden min-w-[120px]">
-                                <i data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i> Sincronizza
+                    <div class="w-full max-w-md space-y-4">
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="cloud-invite-code" class="form-input flex-1 font-mono text-sm bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-md p-3 text-center" readonly onclick="this.select()">
+                            <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary py-3 px-4 shrink-0">
+                                <i data-lucide="copy" class="w-4 h-4"></i> Copia
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Sezione Realtime (Pusher) -->
-                    <div class="panel-glass p-4 flex flex-col border border-stone-200 dark:border-stone-700">
-                        <div class="flex items-center gap-2 mb-4">
-                            <i data-lucide="zap" class="w-5 h-5 text-amber-500"></i>
-                            <h3 class="font-bold text-lg">Auto-Sync (Realtime)</h3>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary flex-1 justify-center py-2">
+                                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> Sincronizza Ora
+                            </button>
                         </div>
-                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">
-                            Scarica automaticamente le modifiche quando gli altri collaboratori salvano. Richiede configurazione Pusher.
-                        </p>
                         
-                        <label class="flex items-center gap-2 cursor-pointer mb-3">
-                            <input type="checkbox" id="cloud-drive-autofetch" onchange="salvaImpostazioniDrive()" class="form-checkbox text-amber-600 rounded border-stone-300 dark:border-stone-600 dark:bg-stone-900 focus:ring-amber-500">
-                            <span class="text-sm font-medium text-stone-800 dark:text-stone-200">Abilita Auto-Sync</span>
-                        </label>
-                        
-                        <div class="space-y-2 mt-auto">
-                            <div>
-                                <label class="block text-[10px] uppercase text-stone-500 dark:text-stone-400 mb-1 font-bold">Pusher App Key</label>
-                                <input type="text" id="cloud-pusher-key" onchange="salvaImpostazioniDrive()" placeholder="es. abc123def456" class="form-input w-full p-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs dark:text-stone-200">
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-[10px] uppercase text-stone-500 dark:text-stone-400 mb-1 font-bold">Cluster</label>
-                                    <input type="text" id="cloud-pusher-cluster" onchange="salvaImpostazioniDrive()" placeholder="es. eu" class="form-input w-full p-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs dark:text-stone-200">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] uppercase text-stone-500 dark:text-stone-400 mb-1 font-bold">Webhook</label>
-                                    <input type="text" id="cloud-pusher-webhook" onchange="salvaImpostazioniDrive()" placeholder="https://..." class="form-input w-full p-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs dark:text-stone-200">
-                                </div>
-                            </div>
+                        <div class="flex items-center gap-2 pt-2 justify-center border-t border-amber-200/50 dark:border-amber-700/30">
+                            <input type="checkbox" id="cloud-sync-attachments" onchange="toggleSyncAttachments(this.checked)" class="w-4 h-4 text-amber-600 rounded border-stone-300">
+                            <label for="cloud-sync-attachments" class="text-sm text-stone-700 dark:text-stone-300 cursor-pointer">Sincronizza automaticamente allegati (PDF/Immagini)</label>
+                        </div>
+                        <div class="flex items-center gap-2 pt-2 justify-center border-t border-amber-200/50 dark:border-amber-700/30">
+                            <button onclick="pulisciAllegatiOrfani()" id="btn-cloud-clean-orphans" class="btn btn-outline flex-1 justify-center py-2 text-sm text-stone-600 dark:text-stone-300 hover:text-red-600 hover:border-red-600">
+                                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Pulisci File Inutilizzati
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Sezione P2P / Condivisione Vault -->
-                <div class="mt-6 border border-amber-200 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-md">
-                    <h4 class="font-semibold text-amber-900 dark:text-amber-400 mb-2 flex items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5 shrink-0"></i> Condivisione Vault Rapida
-                    </h4>
-                    <p class="text-sm text-amber-800 dark:text-amber-300 mb-4">Genera un codice per permettere ai tuoi collaboratori di connettersi istantaneamente a questo Vault e a Google Drive senza dover configurare nulla manualmente.</p>
-                    <div class="flex gap-2 items-center flex-wrap">
-                        <button onclick="generaCodiceInvito()" class="btn btn-primary text-sm shadow-sm px-4 py-2 shrink-0 whitespace-nowrap">
-                            <i data-lucide="key" class="w-4 h-4 mr-2 shrink-0"></i> Genera Codice Invito
-                        </button>
-                        <input type="text" id="cloud-invite-code" class="form-input flex-1 min-w-[150px] font-mono text-xs bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hidden border border-stone-200 dark:border-stone-700 rounded-md p-2" readonly onclick="this.select()">
-                        <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary text-sm hidden shrink-0">Copia</button>
-                    </div>
-                </div>
-
             </div>
             <div class="modal-header shrink-0 justify-end border-t border-stone-200 dark:border-stone-700">
                 <button onclick="chiudiCloudModal()" class="btn btn-primary">Chiudi</button>
@@ -129,56 +77,37 @@
     });
 
     window.apriCloudModal = function() {
-        // Popola i campi
         if (window.apiSettings) {
             window.apiSettings.get().then(settings => {
-                const autofetch = document.getElementById('cloud-drive-autofetch');
-                const syncAttachments = document.getElementById('cloud-drive-sync-attachments');
-                const pKey = document.getElementById('cloud-pusher-key');
-                const pCluster = document.getElementById('cloud-pusher-cluster');
-                const pWebhook = document.getElementById('cloud-pusher-webhook');
-                const sharedWarning = document.getElementById('cloud-shared-warning');
-                const driveButtons = document.getElementById('cloud-drive-buttons');
-                const btnSync = document.getElementById('btn-cloud-drive-sync');
+                const localSection = document.getElementById('cloud-local-section');
+                const sharedSection = document.getElementById('cloud-shared-section');
                 
-                if(autofetch) autofetch.checked = !!settings.driveAutofetch;
-                if(syncAttachments) syncAttachments.checked = !!settings.syncAttachments;
-                if(pKey) pKey.value = settings.pusherKey || "";
-                if(pCluster) pCluster.value = settings.pusherCluster || "";
-                if(pWebhook) pWebhook.value = settings.pusherWebhook || "";
-                
-                // Gestione UI per Vault Condiviso
                 if (settings.isSharedVault) {
-                    if (sharedWarning) sharedWarning.classList.remove('hidden');
+                    if (localSection) localSection.classList.add('hidden');
+                    if (sharedSection) sharedSection.classList.remove('hidden');
+                    // Genera subito il codice per mostrarlo
+                    generaCodiceInvito();
                     
-                    // Nascondi Login/Logout per non far sovrascrivere il token
-                    const btnLogin = document.getElementById('btn-cloud-drive-login');
-                    const btnLogout = document.getElementById('btn-cloud-drive-logout');
-                    if (btnLogin) btnLogin.style.display = 'none';
-                    if (btnLogout) btnLogout.style.display = 'none';
-                    
-                    // Mostra sempre il tasto Sincronizza per i condivisi
-                    if (btnSync) btnSync.classList.remove('hidden');
-                    
-                    // Mostra uno stato fake di "Connesso come Collaboratore" in driveLogic se non c'è user
+                    const cbAttachments = document.getElementById('cloud-sync-attachments');
+                    if (cbAttachments) cbAttachments.checked = settings.syncAttachments !== false; // Default true
                 } else {
-                    if (sharedWarning) sharedWarning.classList.add('hidden');
-                    const btnLogin = document.getElementById('btn-cloud-drive-login');
-                    const btnLogout = document.getElementById('btn-cloud-drive-logout');
-                    if (btnLogin) btnLogin.style.display = '';
-                    if (btnLogout) btnLogout.style.display = '';
+                    if (localSection) localSection.classList.remove('hidden');
+                    if (sharedSection) sharedSection.classList.add('hidden');
                 }
             });
         }
         
-        // Controlla stato drive per l'UI
-        if (typeof checkDriveStatusVisual === 'function') {
-            checkDriveStatusVisual();
-        }
-
         const modal = document.getElementById('cloud-modal');
         modal.classList.remove('hidden-tab');
         if (window.lucide) lucide.createIcons({ nodes: [modal] });
+    };
+
+    window.toggleSyncAttachments = async function(checked) {
+        if (window.apiSettings) {
+            const settings = await window.apiSettings.get();
+            settings.syncAttachments = checked;
+            await window.apiSettings.save(settings);
+        }
     };
 
     window.chiudiCloudModal = function() {
@@ -204,6 +133,31 @@
         input.select();
         document.execCommand("copy");
         mostraMessaggio("Codice copiato negli appunti!", "success");
+    };
+
+    window.pulisciAllegatiOrfani = async function() {
+        if (!confirm("Questa operazione eliminerà definitivamente dal PC e da Google Drive tutti gli allegati che non sono più associati a nessuna scheda nel database corrente. Vuoi procedere?")) {
+            return;
+        }
+        
+        const btn = document.getElementById('btn-cloud-clean-orphans');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="w-4 h-4 mr-2">⏳</i> Pulizia in corso...';
+        
+        try {
+            if (!window.apiDrive || !window.apiDrive.pulisciAllegatiOrfani) {
+                throw new Error("Funzione non disponibile.");
+            }
+            const result = await window.apiDrive.pulisciAllegatiOrfani();
+            mostraMessaggio(`Pulizia completata! File rimossi: ${result.deletedLocal} in locale, ${result.deletedDrive} su Drive.`, "success");
+        } catch(e) {
+            mostraMessaggio("Errore durante la pulizia: " + e.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            if (window.lucide) window.lucide.createIcons({ nodes: [btn] });
+        }
     };
 
 })();

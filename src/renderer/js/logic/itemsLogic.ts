@@ -5,6 +5,7 @@ async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
         m.cartella = nuovoPathCartella;
         await salvaTutto();
         renderMain();
+        if (typeof renderSidebar === 'function') renderSidebar();
     }
 }
 
@@ -167,6 +168,11 @@ function chiudiDeleteModal() {
 async function confermaEliminazione() {
     const id = document.getElementById('delete-item-id').value;
     appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
+    
+    // Tombstone: memorizziamo l'ID eliminato per dirlo agli altri client
+    if (!appData.deletedIds) appData.deletedIds = [];
+    if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+    
     await salvaTutto();
     renderMain();
     chiudiDeleteModal();
@@ -177,4 +183,3 @@ async function confermaEliminazione() {
 function cancelEdit() { resetForm(); switchTab('list'); }
 
 // --- LOGICA TRASCRIZIONE ---
-

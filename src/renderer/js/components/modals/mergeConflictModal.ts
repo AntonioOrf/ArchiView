@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 (function() {
-    document.addEventListener('DOMContentLoaded', () => {
+    function initMergeConflictModal() {
         if (!document.getElementById('merge-conflict-modal')) {
             const html = `
     <div id="merge-conflict-modal" class="modal-overlay hidden-tab z-80 bg-stone-900/80 backdrop-blur-sm flex justify-center items-center">
@@ -33,7 +33,13 @@
             `;
             document.body.insertAdjacentHTML('beforeend', html);
         }
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMergeConflictModal);
+    } else {
+        initMergeConflictModal();
+    }
 
     let activeConflicts = [];
     let currentConflictIndex = 0;
@@ -230,22 +236,17 @@
     window.concludiRisoluzioneConflitti = function() {
         document.getElementById('merge-conflict-modal').classList.add('hidden-tab');
         
-        // Costruisci il database finale con le schede risolte inserite al posto di quelle vecchie
-        const finalCards = [...appData.manoscritti];
+        const resolvedCards = [];
         
         activeConflicts.forEach(c => {
-            const index = finalCards.findIndex(x => x.id === c.id);
-            if (index !== -1) {
-                // Impostiamo il timestamp ad adesso e segnamo che è stato modificato da noi
-                const resolvedCard = resolutions[c.id];
-                resolvedCard.lastModified = Date.now();
-                
-                finalCards[index] = resolvedCard;
-            }
+            // Impostiamo il timestamp ad adesso e segnamo che è stato modificato da noi
+            const resolvedCard = resolutions[c.id];
+            resolvedCard.lastModified = Date.now();
+            resolvedCards.push(resolvedCard);
         });
 
         if (onResolvedCallback) {
-            onResolvedCallback(finalCards);
+            onResolvedCallback(resolvedCards);
         }
     };
 })();

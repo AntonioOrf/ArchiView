@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     
     // Funzioni aggiornate per gestire qualsiasi tipo di allegato
     salvaAllegato: (filePath, documentoId) => ipcRenderer.invoke('salva-allegato', filePath, documentoId),
+    onAllegatoScaricato: (callback) => ipcRenderer.on('allegato-scaricato', (event, fileName) => callback(fileName)),
     verificaHashAllegato: (fileName, expectedHash) => ipcRenderer.invoke('verifica-hash-allegato', fileName, expectedHash),
     apriPdfEsterno: (fileName) => ipcRenderer.invoke('apri-pdf-esterno', fileName),
     getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
@@ -50,6 +51,10 @@ contextBridge.exposeInMainWorld('apiDrive', {
     sync: () => ipcRenderer.invoke('drive-sync'),
     checkUpdates: () => ipcRenderer.invoke('drive-check-updates'),
     generateInvite: () => ipcRenderer.invoke('drive-generate-invite'),
-    joinInvite: (code, basePath, name) => ipcRenderer.invoke('drive-join-invite', code, basePath, name)
+    joinInvite: (code, basePath, name) => ipcRenderer.invoke('drive-join-invite', code, basePath, name),
+    decodeInvite: (code) => ipcRenderer.invoke('drive-decode-invite', code),
+    onSyncProgress: (callback) => ipcRenderer.on('sync-progress', (event, data) => callback(data)),
+    pulisciAllegatiOrfani: () => ipcRenderer.invoke('drive-clean-orphans'),
+    peekDb: (vaultId) => ipcRenderer.invoke('drive-peek-db', vaultId)
 });
 export {};
