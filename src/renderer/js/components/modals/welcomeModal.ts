@@ -317,17 +317,11 @@
         if (!name || !basePath) return;
         
         if (window.apiBrowser && window.apiBrowser.createWorkspaceInPath) {
-            const success = await window.apiBrowser.createWorkspaceInPath(basePath, name);
+            const config = window.creazioneVaultCondiviso ? { autoStartTrasformaCondiviso: true } : null;
+            const success = await window.apiBrowser.createWorkspaceInPath(basePath, name, config);
             if (success) {
                 document.getElementById('welcome-modal').classList.add('hidden-tab');
                 if (typeof avviaApp === 'function') await avviaApp();
-                
-                if (window.creazioneVaultCondiviso) {
-                    setTimeout(() => {
-                        if (typeof apriCloudModal === 'function') apriCloudModal();
-                        if (typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
-                    }, 1000);
-                }
             }
         }
     };

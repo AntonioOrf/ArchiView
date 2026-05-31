@@ -385,3 +385,36 @@ body, .panel-glass, .panel-solid, .card-scheda, button, input, select, textarea,
     color: var(--color-danger);
     background-color: var(--color-danger-light);
 }
+
+/* Activity Bar */
+.activity-bar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    position: relative;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+.activity-bar-btn:hover {
+    color: var(--color-text-main);
+    background-color: var(--color-bg-hover);
+}
+.activity-bar-btn.active {
+    color: var(--color-text-main);
+}
+.activity-bar-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 25%;
+    height: 50%;
+    width: 3px;
+    background-color: var(--color-primary);
+    border-radius: 0 2px 2px 0;
+}

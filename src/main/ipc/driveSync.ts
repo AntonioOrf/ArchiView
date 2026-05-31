@@ -167,6 +167,7 @@ async function getOrCreateFolder(folderName, parentId = null) {
 
   const folder = await drive.files.create({
     resource: fileMetadata,
+    requestBody: fileMetadata,
     fields: 'id'
   });
   return folder.data.id;
@@ -191,6 +192,10 @@ async function uploadFile(localPath, driveFileName, parentId, skipIfExist = fals
     const media = { mimeType: mimeType, body: fs.createReadStream(localPath) };
     await drive.files.create({
       resource: {
+        name: driveFileName,
+        parents: [parentId]
+      },
+      requestBody: {
         name: driveFileName,
         parents: [parentId]
       },
@@ -391,6 +396,14 @@ async function syncToDrive() {
       const rootFolderId = await getOrCreateFolder('ArchiView');
       const projectName = path.basename(state.workspacePath);
       projectFolderId = await getOrCreateFolder(projectName, rootFolderId);
+      
+      try {
+          const s = getAllSettings();
+          if (s.isSharedVault) {
+              s.sharedVaultId = projectFolderId;
+              saveAllSettings(s);
+          }
+      } catch(e) {}
   }
   
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
@@ -498,7 +511,7 @@ async function cleanOrphanedAttachments() {
       for (const f of resAll.data.files) {
           if (!usedAttachments.has(f.name)) {
               try {
-                  await drive.files.update({ fileId: f.id, resource: { trashed: true } });
+                  await drive.files.update({ fileId: f.id, resource: { trashed: true }, requestBody: { trashed: true } });
                   deletedDrive++;
               } catch(e) { console.error("Errore spostamento nel cestino Drive:", e); }
           }
@@ -555,9 +568,31 @@ function setupDriveIpc() {
         } catch(e) {}
         
         // Recupera l'ID univoco della cartella di questo Vault su Google Drive
-        const rootFolderId = await getOrCreateFolder('ArchiView');
+        let vaultFolderId = settings.sharedVaultId;
         const projectName = path.basename(state.workspacePath);
-        const vaultFolderId = await getOrCreateFolder(projectName, rootFolderId);
+        
+        if (!vaultFolderId) {
+            const rootFolderId = await getOrCreateFolder('ArchiView');
+            vaultFolderId = await getOrCreateFolder(projectName, rootFolderId);
+            settings.sharedVaultId = vaultFolderId;
+            saveAllSettings(settings);
+        }
+        
+        try {
+            await drive.permissions.create({
+                fileId: vaultFolderId,
+                resource: {
+                    role: 'writer',
+                    type: 'anyone'
+                },
+                requestBody: {
+                    role: 'writer',
+                    type: 'anyone'
+                }
+            });
+        } catch (permErr) {
+            console.error("Errore durante l'impostazione dei permessi della cartella condivisa:", permErr);
+        }
         
         let creds: any = {};
         try {
@@ -571,8 +606,8 @@ function setupDriveIpc() {
             k: settings.pusherKey || creds.PUSHER_KEY || "",
             c: settings.pusherCluster || creds.PUSHER_CLUSTER || "",
             w: settings.pusherWebhook || creds.PUSHER_WEBHOOK || "",
-            a: settings.driveAutofetch ? 1 : 1, // Di default autofetch attivo per condivisi
-            v: settings.sharedVaultId || vaultFolderId,
+            a: settings.driveAutofetch ? 1 : 1,
+            v: vaultFolderId,
             n: projectName
         };
         

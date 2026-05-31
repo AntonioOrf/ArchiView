@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     changeWorkspace: (title) => ipcRenderer.invoke('change-workspace', title),
     getDocumentsPath: () => ipcRenderer.invoke('get-documents-path'),
     selectBaseDirectory: () => ipcRenderer.invoke('select-base-directory'),
-    createWorkspaceInPath: (basePath, name) => ipcRenderer.invoke('create-workspace-in-path', basePath, name),
+    createWorkspaceInPath: (basePath, name, config) => ipcRenderer.invoke('create-workspace-in-path', basePath, name, config),
     cloneWorkspaceHub: (basePath, folderName, hubConfig, database) => ipcRenderer.invoke('clone-workspace-hub', basePath, folderName, hubConfig, database),
     exportWorkspaceZip: (title) => ipcRenderer.invoke('export-workspace-zip', title),
     deleteVaultLocal: (path) => ipcRenderer.invoke('delete-vault-local', path),

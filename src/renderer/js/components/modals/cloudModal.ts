@@ -76,7 +76,51 @@
         }
     });
 
-    window.apriCloudModal = function() {
+    function chiediConfermaAccessoCloud() {
+        return new Promise((resolve) => {
+            const html = `
+                <div id="cloud-auth-modal" class="modal-overlay z-[150] flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+                    <div class="modal-window p-6 text-center max-w-sm bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl">
+                        <i data-lucide="cloud" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2 text-stone-800 dark:text-stone-100">Accesso Richiesto</h3>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-6">
+                            Per usare o gestire le funzioni Cloud è necessario accedere con Google Drive.<br><br>Vuoi aprire il browser adesso per effettuare l'accesso?
+                        </p>
+                        <div class="flex flex-col gap-2">
+                            <button id="btn-cloud-auth-yes" class="btn btn-primary w-full justify-center">Apri Browser e Accedi</button>
+                            <button id="btn-cloud-auth-no" class="btn btn-ghost w-full justify-center">Annulla</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('cloud-auth-modal')] });
+
+            const modal = document.getElementById('cloud-auth-modal');
+            document.getElementById('btn-cloud-auth-yes').onclick = () => {
+                modal.remove();
+                resolve(true);
+            };
+            document.getElementById('btn-cloud-auth-no').onclick = () => {
+                modal.remove();
+                resolve(false);
+            };
+        });
+    }
+
+    window.apriCloudModal = async function() {
+        if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
+            const procedi = await chiediConfermaAccessoCloud();
+            if (procedi) {
+                await window.loginGoogleDrive();
+                if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
+                    return; // L'utente non ha completato l'accesso
+                }
+            } else {
+                return; // L'utente ha annullato
+            }
+        }
+
         if (window.apiSettings) {
             window.apiSettings.get().then(settings => {
                 const localSection = document.getElementById('cloud-local-section');

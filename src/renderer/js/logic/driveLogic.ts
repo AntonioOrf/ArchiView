@@ -216,14 +216,20 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
-                window.ultimoCaricamento = Date.now();
-                if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-                window.incomingChanges = [];
-                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
 
             // 2. Carica le modifiche locali unite (upload)
             await window.apiDrive.sync();
+            
+            window.ultimoCaricamento = Date.now();
+            if (window.apiSettings) {
+                const settings = await window.apiSettings.get();
+                settings.lastSyncTime = window.ultimoCaricamento;
+                await window.apiSettings.save(settings);
+            }
+            if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+            window.incomingChanges = [];
+            if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
@@ -251,6 +257,11 @@ window.scaricaDalCloud = async function(silent = false) {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
                 window.ultimoCaricamento = Date.now();
+                if (window.apiSettings) {
+                    const settings = await window.apiSettings.get();
+                    settings.lastSyncTime = window.ultimoCaricamento;
+                    await window.apiSettings.save(settings);
+                }
                 if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
                 window.incomingChanges = [];
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
@@ -275,15 +286,21 @@ window.caricaSulCloud = async function(silent = false) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
-                window.ultimoCaricamento = Date.now();
-                if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-                window.incomingChanges = [];
-                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
 
             // Ora carichiamo il risultato del merge
             await window.apiDrive.sync();
             
+            window.ultimoCaricamento = Date.now();
+            if (window.apiSettings) {
+                const settings = await window.apiSettings.get();
+                settings.lastSyncTime = window.ultimoCaricamento;
+                await window.apiSettings.save(settings);
+            }
+            if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+            window.incomingChanges = [];
+            if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Caricamento completato in sicurezza!", "success");

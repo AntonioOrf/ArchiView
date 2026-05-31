@@ -74,6 +74,20 @@ async function avviaApp() {
     }
 
     // Primo render per popolare l'interfaccia all'avvio
+    
+    if (settings && settings.autoStartTrasformaCondiviso) {
+        delete settings.autoStartTrasformaCondiviso;
+        await window.apiSettings.save(settings);
+        setTimeout(async () => {
+            if (typeof apriCloudModal === 'function') {
+                await apriCloudModal();
+            }
+            if (window.driveStatus && window.driveStatus.isAuthenticated) {
+                if (typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
+            }
+        }, 1500);
+    }
+
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
     renderSidebar();
     renderMain();

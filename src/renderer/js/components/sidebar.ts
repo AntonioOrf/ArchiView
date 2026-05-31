@@ -196,11 +196,14 @@ function renderSidebar() {
         parentEl.appendChild(div);
     }
 
+    const fragment = document.createDocumentFragment();
     Object.keys(root).sort((a, b) => {
         if (a === 'Generale') return -1;
         if (b === 'Generale') return 1;
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    }).forEach(k => renderNode(k, root[k], container, 0));
+    }).forEach(k => renderNode(k, root[k], fragment, 0));
+    
+    container.appendChild(fragment);
 
     // Imposta l'intera zona del container come drop per il root
     container.ondragover = (e) => { e.preventDefault(); container.classList.add('bg-stone-100'); };
@@ -214,7 +217,9 @@ function renderSidebar() {
         } catch(err) {}
     };
 
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
+    requestAnimationFrame(() => {
+        if (window.lucide) lucide.createIcons({ nodes: [container] });
+    });
     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
 }
 
@@ -235,14 +240,26 @@ function aggiornaSelectCartelle() {
     });
 }
 
+let _currentSidebarTab = 'folders';
+
 function toggleSidebar() {
-    // classList.toggle elimina il check ridondante contains+add/remove
-    document.getElementById('sidebar').classList.toggle('hidden-tab');
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('hidden-tab');
 }
 
 function switchSidebarTab(tabName) {
     const sidebar = document.getElementById('sidebar');
+    const isCurrentlyHidden = sidebar.classList.contains('hidden-tab');
+
+    // Se clicco la stessa tab e la sidebar è aperta, la chiudo
+    if (tabName === _currentSidebarTab && !isCurrentlyHidden) {
+        sidebar.classList.add('hidden-tab');
+        return;
+    }
+
+    // Altrimenti apro la sidebar e cambio tab
     sidebar.classList.remove('hidden-tab');
+    _currentSidebarTab = tabName;
 
     document.getElementById('sidebar-folders').classList.add('hidden-tab');
     document.getElementById('sidebar-search').classList.add('hidden-tab');
@@ -286,6 +303,8 @@ window.renderSourceControl = function() {
         return;
     }
 
+    const fragment = document.createDocumentFragment();
+
     const renderItem = (m, isIncoming) => {
         const isNew = m.lastModified === m.createdAt || (!m.createdAt && m.lastModified > loadedAt);
         let iconLetter = isNew ? 'A' : 'M';
@@ -322,14 +341,14 @@ window.renderSourceControl = function() {
         leftDiv.appendChild(titleSpan);
 
         li.appendChild(leftDiv);
-        list.appendChild(li);
+        fragment.appendChild(li);
     };
 
     if (incoming.length > 0) {
         const header = document.createElement('div');
         header.className = "px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 text-[10px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800";
         header.textContent = "IN ENTRATA (CLOUD)";
-        list.appendChild(header);
+        fragment.appendChild(header);
         
         incoming.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
         incoming.forEach(m => renderItem(m, true));
@@ -340,11 +359,13 @@ window.renderSourceControl = function() {
             const header = document.createElement('div');
             header.className = "px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 text-[10px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-700 mt-2";
             header.textContent = "LOCALE";
-            list.appendChild(header);
+            fragment.appendChild(header);
         }
         modificati.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
         modificati.forEach(m => renderItem(m, false));
     }
+    
+    list.appendChild(fragment);
 };
 
 function renderTagList() {

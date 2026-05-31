@@ -24,22 +24,19 @@
 
 
     <header class="panel-glass shrink-0 mb-6 flex flex-wrap items-center gap-2 p-2">
-        <button onclick="toggleSidebar()" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_sidebar">
-            <i data-lucide="panel-left" class="w-5 h-5"></i>
-        </button>
-        <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_folders">
+        <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders">
             <i data-lucide="folder" class="w-5 h-5"></i>
         </button>
         
-        <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_search_btn">
+        <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-i18n-title="tooltip_search_btn">
             <i data-lucide="search" class="w-5 h-5"></i>
         </button>
 
-        <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_tags_btn">
+        <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn">
             <i data-lucide="bookmark" class="w-5 h-5"></i>
         </button>
 
-        <button onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" title="Controllo Modifiche (Source Control)">
+        <button onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" title="Controllo Modifiche (Source Control)">
             <i data-lucide="git-pull-request" class="w-5 h-5"></i>
         </button>
 

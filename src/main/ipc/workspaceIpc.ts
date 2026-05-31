@@ -84,10 +84,14 @@ function setupWorkspaceIpc() {
     return null;
   });
 
-  ipcMain.handle('create-workspace-in-path', async (event, basePath, folderName) => {
+  ipcMain.handle('create-workspace-in-path', async (event, basePath, folderName, config) => {
     const newPath = path.join(basePath, folderName);
     if (!fs.existsSync(newPath)) {
       fs.mkdirSync(newPath, { recursive: true });
+    }
+    if (config) {
+      const settingsPath = path.join(newPath, 'settings.json');
+      fs.writeFileSync(settingsPath, JSON.stringify(config, null, 2), 'utf8');
     }
     initWorkspace(newPath);
     app.relaunch();
