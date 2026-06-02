@@ -77,6 +77,11 @@ Choose an empty and safe directory on your hard drive: inside it, the app will a
 - [Tailwind CSS](https://tailwindcss.com/) for UI styling.
 - [Lucide Icons](https://lucide.dev/) for icons.
 
+## Legal & Privacy
+
+- [Privacy Policy](PRIVACY_POLICY.md)
+- [Terms of Service](TERMS_OF_SERVICE.md)
+
 ## License
 
 See the [LICENSE](LICENSE) file for more information on the terms of use.

@@ -22,10 +22,11 @@ Il cuore dell'applicazione si basa su un sistema di modelli di documento complet
 
 ## Ulteriori Caratteristiche
 
+- **Sincronizzazione Cloud e Vault Condivisi (Novità della 2.0)**: Sincronizza automaticamente la tua cartella di lavoro su Google Drive. Crea "Vault Condivisi" per collaborare con altri utenti in tempo reale, risolvendo i conflitti istantaneamente tramite un server Hub dedicato.
 - **Organizzazione a Cartelle**: Gestisci i tuoi archivi in una struttura gerarchica di cartelle e sottocartelle per un ordine perfetto.
 - **Gestione Allegati**: Allega e visualizza direttamente nell'applicazione scansioni, fotografie o file PDF associati alle tue schede.
 - **Ricerca Avanzata e Tag**: Trova rapidamente qualsiasi scheda attraverso la ricerca globale testuale o filtrando l'archivio tramite i tag associati.
-- **Formato Dati Aperto e Indipendente**: Nessun database proprietario o cloud bloccante (no vendor lock-in). Tutto il ciclo di vita dei dati avviene offline sul tuo dispositivo. I documenti vengono salvati all'interno della cartella di lavoro (Workspace) in un formato JSON strutturato, chiaro, ispezionabile e facilmente manipolabile anche all'esterno dell'applicazione.
+- **Formato Dati Aperto e Indipendente**: Nessun database proprietario o cloud bloccante (no vendor lock-in). Tutto il ciclo di vita dei dati avviene offline sul tuo dispositivo o sul tuo Cloud personale in sicurezza. I documenti vengono salvati all'interno della cartella di lavoro (Workspace) in un formato JSON strutturato, chiaro, ispezionabile e facilmente manipolabile anche all'esterno dell'applicazione.
 - **Esportabilità e Backup Immediato**: Hai il controllo totale e materiale dei tuoi dati. È sufficiente copiare la tua cartella Workspace su una chiavetta per trasferire l'intero progetto su un altro computer. Inoltre, è integrata una funzione nativa per generare in un solo clic l'intero archivio (database JSON e file allegati) in un pratico file ZIP di backup.
 
 ## Download e Installazione:
@@ -77,6 +78,11 @@ Scegli una directory vuota e sicura sul tuo disco fisso: al suo interno l'app cr
 - [Electron](https://www.electronjs.org/) per il framework desktop.
 - [Tailwind CSS](https://tailwindcss.com/) per lo styling dell'interfaccia.
 - [Lucide Icons](https://lucide.dev/) per le icone.
+
+## Privacy & Termini di Servizio
+
+- [Privacy Policy](PRIVACY_POLICY.md)
+- [Terms of Service](TERMS_OF_SERVICE.md)
 
 ## Licenza
 
