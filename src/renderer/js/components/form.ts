@@ -112,6 +112,7 @@ window.aggiungiAttoreDinamico = function(ruoloVal = 'Attore', nomeVal = '') {
 };
 
 function resetForm() {
+    window.isFormDirty = false;
     document.getElementById('form-segnatura').value = '';
     document.getElementById('form-tags').value = '';
     document.getElementById('form-allegato').value = '';
@@ -138,6 +139,7 @@ function resetForm() {
 }
 
 window.rimuoviAllegatoForm = function(index) {
+    window.isFormDirty = true;
     let allegatiList = JSON.parse(document.getElementById('form-allegati').value || '[]');
     allegatiList.splice(index, 1);
     document.getElementById('form-allegati').value = JSON.stringify(allegatiList);
@@ -149,6 +151,7 @@ window.rinominaAllegatoForm = function(index) {
     let nomeAttuale = allegatiList[index].originalName || '';
 
     window.apriRenameModal(nomeAttuale, (nuovoNome) => {
+        window.isFormDirty = true;
         allegatiList[index].originalName = nuovoNome;
         document.getElementById('form-allegati').value = JSON.stringify(allegatiList);
         window.renderAllegatiForm(allegatiList);
@@ -207,6 +210,7 @@ window.renderAllegatiForm = async function(allegatiList) {
                 if (dragIndex < targetIndex) targetIndex--;
 
                 currentList.splice(targetIndex, 0, item);
+                window.isFormDirty = true;
                 document.getElementById('form-allegati').value = JSON.stringify(currentList);
                 window.renderAllegatiForm(currentList);
             }
@@ -215,7 +219,7 @@ window.renderAllegatiForm = async function(allegatiList) {
         let content = '';
         if (al.tipo === 'pdf') {
             content = `
-                <div class="flex items-center gap-2 truncate cursor-pointer hover:text-red-700 flex-1" onclick="apriPdfInterno('${escapeHTML(al.nome)}'">
+                <div class="flex items-center gap-2 truncate cursor-pointer hover:text-red-700 flex-1" onclick="apriPdfInterno('${escapeHTML(al.nome)}')">
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
                     <i data-lucide="file-text" class="w-6 h-6 text-red-600 shrink-0"></i>
                     <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || 'PDF')}</span>

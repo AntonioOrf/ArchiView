@@ -1,3 +1,5 @@
+hub-server/
+hub-server
 node_modules/
 dist/
 build/
@@ -14,7 +16,16 @@ electron.exe
 *.dll
 *.so
 *.dylib
-
-
+TODO
+Agent.md
 # File temporanei di sistema
 Thumbs.db
+profilo_test/
+test-cloud.bat
+scratch-test.js
+
+# Credenziali Cloud e Configurazione locale
+src/main/ipc/cloudCredentials.ts
+src/main/ipc/cloudCredentials.js
+vercel-hub/node_modules/
+vercel-hub/.env

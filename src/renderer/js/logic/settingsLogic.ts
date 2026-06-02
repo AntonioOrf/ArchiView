@@ -1,11 +1,153 @@
 // @ts-nocheck
 window.apriImpostazioni = async function() {
     document.getElementById('settings-modal').classList.remove('hidden-tab');
-    if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
+    if (window.apiBrowser && window.apiBrowser.getWorkspacePath && window.apiSettings) {
         const p = await window.apiBrowser.getWorkspacePath();
         document.getElementById('settings-workspace-path').textContent = p || window.t('no_workspace_set');
+        
+        const settings = await window.apiSettings.get();
+        
+        // Popola Nome Collaboratore
+        const usernameInput = document.getElementById('settings-username');
+        if (usernameInput) {
+            usernameInput.value = settings.username || '';
+            if (!usernameInput.dataset.listenerSetup) {
+                usernameInput.addEventListener('change', async (e) => {
+                    if (window.apiSettings) {
+                        const currentSettings = await window.apiSettings.get();
+                        currentSettings.username = e.target.value.trim();
+                        await window.apiSettings.save(currentSettings);
+                        mostraMessaggio("Nome collaboratore salvato.", "success");
+                    }
+                });
+                usernameInput.dataset.listenerSetup = 'true';
+            }
+        }
+        
+        // Aggiorna percorso allegati
+        const attachmentsPathDiv = document.getElementById('settings-attachments-path');
+        const btnRestore = document.getElementById('btn-restore-attachments');
+        if (attachmentsPathDiv) {
+            if (settings.customAttachmentsPath) {
+                attachmentsPathDiv.textContent = settings.customAttachmentsPath;
+                if (btnRestore) btnRestore.classList.remove('hidden-tab');
+            } else {
+                attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
+                if (btnRestore) btnRestore.classList.add('hidden-tab');
+            }
+        }
+        
+        // Aggiorna sezione Hub & Drive
+        const hubSection = document.getElementById('settings-hub-section');
+        const driveSection = document.getElementById('settings-drive-section');
+        const disabledText = document.getElementById('settings-hub-disabled');
+
+        let isAnySyncActive = false;
+
+        if (hubSection) {
+            if (window.hubConfig) {
+                document.getElementById('settings-hub-url').textContent = window.hubConfig.hubUrl;
+                document.getElementById('settings-hub-repoid').textContent = window.hubConfig.repoId;
+                document.getElementById('settings-hub-key').textContent = window.hubConfig.repoKey;
+                
+                const cbAutofetch = document.getElementById('settings-hub-autofetch');
+                const selInterval = document.getElementById('settings-hub-autofetch-interval');
+                if (cbAutofetch) {
+                    cbAutofetch.checked = settings.autofetchEnabled !== false; // Abilitato di default
+                }
+                if (selInterval) {
+                    selInterval.value = settings.autofetchInterval || "5"; // 5 min default
+                }
+                
+                hubSection.classList.remove('hidden');
+                isAnySyncActive = true;
+            } else {
+                hubSection.classList.add('hidden');
+            }
+        }
+        
+        if (driveSection) {
+            if (settings.isSharedVault || settings.isPersonalCloud) {
+                driveSection.classList.remove('hidden');
+                isAnySyncActive = true;
+                
+                const driveTitle = document.getElementById('settings-drive-title');
+                const driveDesc = document.getElementById('settings-drive-desc');
+                
+                if (settings.isPersonalCloud) {
+                    if (driveTitle) driveTitle.textContent = "Backup su Cloud Personale";
+                    if (driveDesc) driveDesc.textContent = "Questo vault locale è sincronizzato privatamente come backup sul tuo Google Drive.";
+                } else {
+                    if (driveTitle) driveTitle.textContent = "Sincronizzazione Google Drive";
+                    if (driveDesc) driveDesc.textContent = "Questo vault locale è configurato come Vault Condiviso tramite Google Drive.";
+                }
+            } else {
+                driveSection.classList.add('hidden');
+            }
+        }
+
+        if (disabledText) {
+            if (isAnySyncActive) {
+                disabledText.classList.add('hidden');
+            } else {
+                disabledText.classList.remove('hidden');
+            }
+        }
     }
 }
+
+window.salvaImpostazioniHub = async function() {
+    if (window.apiSettings) {
+        const settings = await window.apiSettings.get();
+        const cbAutofetch = document.getElementById('settings-hub-autofetch');
+        const selInterval = document.getElementById('settings-hub-autofetch-interval');
+        
+        if (cbAutofetch) settings.autofetchEnabled = cbAutofetch.checked;
+        if (selInterval) settings.autofetchInterval = parseInt(selInterval.value, 10);
+        
+        await window.apiSettings.save(settings);
+        
+        // Riavvia il timer di autofetch se la funzione esiste
+        if (typeof window.avviaAutofetchHub === 'function') {
+            window.avviaAutofetchHub();
+        }
+    }
+}
+
+window.cambiaCartellaAllegati = async function() {
+    if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiSettings) {
+        const path = await window.apiBrowser.selectBaseDirectory();
+        if (path) {
+            const settings = await window.apiSettings.get();
+            settings.customAttachmentsPath = path;
+            await window.apiSettings.save(settings);
+            
+            // Aggiorna la visualizzazione
+            const attachmentsPathDiv = document.getElementById('settings-attachments-path');
+            const btnRestore = document.getElementById('btn-restore-attachments');
+            if (attachmentsPathDiv) attachmentsPathDiv.textContent = path;
+            if (btnRestore) btnRestore.classList.remove('hidden-tab');
+            
+            mostraMessaggio("Cartella allegati locale configurata con successo.", "success");
+        }
+    }
+};
+
+window.ripristinaCartellaAllegatiPredefinita = async function() {
+    if (window.apiSettings && window.apiBrowser) {
+        const settings = await window.apiSettings.get();
+        delete settings.customAttachmentsPath;
+        await window.apiSettings.save(settings);
+        
+        const p = await window.apiBrowser.getWorkspacePath();
+        const attachmentsPathDiv = document.getElementById('settings-attachments-path');
+        const btnRestore = document.getElementById('btn-restore-attachments');
+        if (attachmentsPathDiv) attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
+        if (btnRestore) btnRestore.classList.add('hidden-tab');
+        
+        mostraMessaggio("Cartella allegati ripristinata al percorso di default (interna al vault).", "success");
+    }
+};
 
 window.esportaBackupZip = async function() {
     if (window.apiBrowser && window.apiBrowser.exportWorkspaceZip) {
@@ -58,7 +200,10 @@ window.chiudiImpostazioni = function() {
 }
 
 window.cambiaCartellaLavoro = async function() {
-    if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
+    if (typeof mostraWelcomeModal === 'function') {
+        window.chiudiImpostazioni();
+        await mostraWelcomeModal();
+    } else if (window.apiBrowser && window.apiBrowser.changeWorkspace) {
         await window.apiBrowser.changeWorkspace(window.t('modal_new_folder'));
     }
 }

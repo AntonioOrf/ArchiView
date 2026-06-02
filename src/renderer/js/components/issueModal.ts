@@ -36,7 +36,7 @@
                                 </div>
                                 <div class="modal-footer mt-4">
                                     <button type="button" onclick="chiudiIssueModal()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
-                                    <button type="submit" class="btn btn-primary" data-i18n="btn_submit_issue">Apri su GitHub</button>
+                                    <button type="submit" class="btn btn-primary">Invia via Email</button>
                                 </div>
                             </form>
                         </div>
@@ -86,16 +86,42 @@
             feedback: 'Feedback 💬'
         };
 
-        const body = `### Tipo di Segnalazione\n${typeLabels[type] || type}\n\n### Descrizione\n${description}\n\n---\n### Dettagli di Sistema\n- **Versione App**: 1.1.2\n- **Piattaforma**: ${navigator.userAgent}`;
+        const button = event.target.querySelector('button[type="submit"]');
+        const oldText = button.textContent;
+        button.textContent = 'Invio in corso...';
+        button.disabled = true;
 
-        const url = `https://github.com/AntonioOrf/ArchiView/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+        const payload = {
+            _subject: "ArchiView: " + title,
+            _template: "table",
+            Tipo: typeLabels[type] || type,
+            Titolo: title,
+            Descrizione: description,
+            Piattaforma: navigator.userAgent
+        };
 
-        if (window.apiBrowser && window.apiBrowser.apriLinkEsterno) {
-            window.apiBrowser.apriLinkEsterno(url);
+        if (window.apiBrowser && window.apiBrowser.inviaSegnalazione) {
+            window.apiBrowser.inviaSegnalazione(payload).then(response => {
+                if(response.ok) {
+                    if (window.mostraMessaggio) window.mostraMessaggio("Segnalazione inviata con successo!", "success");
+                } else {
+                    console.error("Errore FormSubmit:", response);
+                    if (window.mostraMessaggio) window.mostraMessaggio("Errore durante l'invio della segnalazione.", "error");
+                }
+            }).catch(err => {
+                console.error(err);
+                if (window.mostraMessaggio) window.mostraMessaggio("Errore di rete durante l'invio.", "error");
+            }).finally(() => {
+                button.textContent = oldText;
+                button.disabled = false;
+                window.chiudiIssueModal();
+            });
         } else {
-            window.open(url, '_blank');
+            // Fallback
+            button.textContent = oldText;
+            button.disabled = false;
+            window.chiudiIssueModal();
+            if (window.mostraMessaggio) window.mostraMessaggio("Funzionalità non disponibile", "error");
         }
-
-        window.chiudiIssueModal();
     };
 })();

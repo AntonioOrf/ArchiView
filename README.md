@@ -20,10 +20,11 @@ The core of the application relies on a fully dynamic document template system. 
 
 ## Additional Features
 
+- **Cloud Sync & Shared Vaults (New in 2.0)**: Automatically synchronize your workspace to Google Drive. Create "Shared Vaults" to collaborate with other users in real-time, resolving conflicts instantly via a dedicated Hub server.
 - **Folder Organization**: Manage your archives in a hierarchical structure of folders and subfolders for perfect organization.
 - **Attachment Management**: Attach and view scans, photographs, or PDF files associated with your records directly within the application.
 - **Advanced Search and Tags**: Quickly find any record through global text search or by filtering the archive via associated tags.
-- **Open and Independent Data Format**: No proprietary databases or cloud lock-in (no vendor lock-in). The entire data lifecycle takes place offline on your device. Documents are saved within your Workspace folder in a structured JSON format, which is clear, inspectable, and easily manipulable even outside the application.
+- **Open and Independent Data Format**: No proprietary databases or cloud lock-in (no vendor lock-in). The entire data lifecycle takes place offline on your device, or securely on your own personal Google Drive. Documents are saved within your Workspace folder in a structured JSON format, which is clear, inspectable, and easily manipulable even outside the application.
 - **Portability and Instant Backup**: You have total and material control over your data. Simply copy your Workspace folder to a USB drive to transfer the entire project to another computer. Additionally, a native feature is integrated to generate your entire archive (JSON database and attached files) into a convenient backup ZIP file with a single click.
 
 ## Download and Installation:

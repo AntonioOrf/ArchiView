@@ -1,4 +1,4 @@
-﻿interface Window {
+interface Window {
   [key: string]: any;
 }
 interface HTMLElement {
@@ -21,6 +21,9 @@ interface EventTarget {
 }
 
 declare var lucide: any;
+declare var DOMPurify: any;
+declare var sanitizeHTML: any;
+declare var escapeHTML: any;
 declare var mostraMessaggio: any;
 declare var controllaAggiornamenti: any;
 declare var cambiaAllegatoRelativo: any;

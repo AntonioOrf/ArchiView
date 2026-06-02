@@ -12,6 +12,13 @@ window.escapeHTML = function(str) {
          .replace(/'/g, "&#039;");
 };
 
+window.sanitizeHTML = function(html) {
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|file|archiview|local-asset):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });
+    }
+    return window.escapeHTML(html); // Fallback to escape if DOMPurify is not loaded
+};
+
 window.salvaStatoPosizione = async function() {
     const vAdd = document.getElementById('view-add');
     const vTrasc = document.getElementById('view-trascrizione');
@@ -56,6 +63,8 @@ const CONFIG_CAMPI = {
     crediti_dinamici: { label: 'Crediti', type: 'dynamic_list', keyPlaceholder: 'Debitore / Motivo', valPlaceholder: 'Ammontare' },
     famiglia_dinamici: { label: 'Familiari', type: 'dynamic_list', keyPlaceholder: 'Parentela (es. Figlio, Moglie)', valPlaceholder: 'Nome' }
 };
+
+window.CONFIG_CAMPI = CONFIG_CAMPI;
 
 // --- UTILITY CONDIVISE ---
 

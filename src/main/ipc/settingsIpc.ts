@@ -12,3 +12,4 @@ function setupSettingsIpc() {
 }
 
 module.exports = { setupSettingsIpc };
+export {};

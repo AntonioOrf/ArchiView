@@ -8,6 +8,10 @@ i18n.load({
   it: itMessages
 });
 
+// Attiva un locale di default subito per evitare errori Lingui
+// prima che initLang() venga chiamato dall'app
+i18n.activate('it');
+
 window.initLang = async function() {
     const settings = await window.apiSettings.get();
     window.linguaAttuale = settings.lang || 'it';
@@ -230,6 +234,9 @@ function _linguiExtraction() {
     i18n._({ id: "issue_description", message: "Descrizione dettagliata *" });
     i18n._({ id: "placeholder_issue_desc", message: "Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada..." });
     i18n._({ id: "btn_submit_issue", message: "Apri su GitHub" });
+    i18n._({ id: "sync_in_progress", message: "Sincronizzazione" });
+    i18n._({ id: "upload_in_progress", message: "Caricamento" });
+    i18n._({ id: "download_in_progress", message: "Scaricamento" });
 }
 
 // Wrapper per compatibilità con il codice esistente

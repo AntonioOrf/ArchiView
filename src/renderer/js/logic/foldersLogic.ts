@@ -48,6 +48,9 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
         return;
     }
 
+    const settings = await window.apiSettings.get();
+    const username = settings.username || 'Anonimo';
+
     const nomeCartella = pathSorgente.split('/').pop();
     const nuovoPath = pathDestinazioneBase === 'ROOT' ? nomeCartella : `${pathDestinazioneBase}/${nomeCartella}`;
     
@@ -66,8 +69,15 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
 
     // Aggiorna manoscritti
     appData.manoscritti.forEach(m => {
-        if (m.cartella === pathSorgente) m.cartella = nuovoPath;
-        else if (m.cartella && m.cartella.startsWith(prefix)) m.cartella = m.cartella.replace(pathSorgente, nuovoPath);
+        if (m.cartella === pathSorgente) {
+            m.cartella = nuovoPath;
+            m.lastModified = Date.now();
+            m.modificatoDa = username;
+        } else if (m.cartella && m.cartella.startsWith(prefix)) {
+            m.cartella = m.cartella.replace(pathSorgente, nuovoPath);
+            m.lastModified = Date.now();
+            m.modificatoDa = username;
+        }
     });
 
     await salvaTutto();
@@ -135,6 +145,9 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
         const prefixVecchia = vecchioPath + '/';
         const prefixNuova = nuovoPath + '/';
 
+        const settings = await window.apiSettings.get();
+        const username = settings.username || 'Anonimo';
+
         // Aggiorna cartelle
         appData.cartelle = appData.cartelle.map(c => {
             if (c === vecchioPath) return nuovoPath;
@@ -144,9 +157,14 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
 
         // Aggiorna manoscritti
         appData.manoscritti.forEach(m => {
-            if (m.cartella === vecchioPath) m.cartella = nuovoPath;
-            else if (m.cartella && m.cartella.startsWith(prefixVecchia)) {
+            if (m.cartella === vecchioPath) {
+                m.cartella = nuovoPath;
+                m.lastModified = Date.now();
+                m.modificatoDa = username;
+            } else if (m.cartella && m.cartella.startsWith(prefixVecchia)) {
                 m.cartella = m.cartella.replace(vecchioPath, nuovoPath);
+                m.lastModified = Date.now();
+                m.modificatoDa = username;
             }
         });
 

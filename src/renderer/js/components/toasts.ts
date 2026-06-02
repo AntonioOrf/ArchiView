@@ -2,6 +2,11 @@
 // Il container toast è già in HTML: niente check dinamico
 window.mostraMessaggio = function(testo, tipo = 'info') {
     const container = document.getElementById('toast-container');
+    
+    // Non far apparire più di 3 messaggi identici
+    const existingToasts = Array.from(container.children);
+    const ugualiCount = existingToasts.filter(t => t.innerText.trim() === testo.trim()).length;
+    if (ugualiCount >= 3) return;
 
     const toast = document.createElement('div');
     const bgClass = tipo === 'error' ? 'bg-red-600' : (tipo === 'success' ? 'bg-green-600' : 'bg-stone-800');

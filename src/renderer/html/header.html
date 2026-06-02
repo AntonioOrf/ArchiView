@@ -1,0 +1,51 @@
+    <header class="panel-glass shrink-0 mb-6 flex flex-wrap items-center gap-2 p-2">
+        <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders">
+            <i data-lucide="folder" class="w-5 h-5"></i>
+        </button>
+        
+        <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-i18n-title="tooltip_search_btn">
+            <i data-lucide="search" class="w-5 h-5"></i>
+        </button>
+
+        <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn">
+            <i data-lucide="bookmark" class="w-5 h-5"></i>
+        </button>
+
+        <button onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" title="Controllo Modifiche (Source Control)">
+            <i data-lucide="git-pull-request" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex-1 relative flex justify-end items-center h-8">
+            <!-- Indicatore aggiornamenti in entrata (da remoto) -->
+            <div id="incoming-updates-indicator" class="hidden items-center gap-1 mr-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 border border-blue-200 dark:border-blue-800" title="Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica.">
+                <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i> In Entrata
+            </div>
+
+            <!-- Indicatore modifiche pendenti -->
+            <div id="pending-changes-indicator" class="hidden items-center gap-1 mr-3 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 border border-amber-200 dark:border-amber-800" title="Hai modifiche locali non ancora sincronizzate con il Cloud">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Modifiche Pendenti
+            </div>
+        </div>
+
+        <!-- Bottoni Cloud (Push / Pull / Fetch) -->
+        <div class="hidden md:flex items-center gap-1 mr-2 rounded-none p-1" style="background-color: var(--color-bg-hover); border: 1px solid var(--color-border);">
+            <button onclick="controllaModificheInEntrata(true)" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Controlla se ci sono aggiornamenti dal Cloud">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Fetch
+            </button>
+            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
+            <button onclick="scaricaDalCloud()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Scarica le ultime modifiche dal Cloud">
+                <i data-lucide="cloud-download" class="w-4 h-4"></i> Scarica
+            </button>
+            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
+            <button onclick="caricaSulCloud()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Carica le modifiche locali sul Cloud">
+                <i data-lucide="cloud-upload" class="w-4 h-4"></i> Carica
+            </button>
+        </div>
+
+        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+        </button>
+        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm ml-2">
+            <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span data-i18n="btn_new_model">Modello</span>
+        </button>
+    </header>

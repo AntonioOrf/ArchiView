@@ -5,6 +5,7 @@ async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
         m.cartella = nuovoPathCartella;
         await salvaTutto();
         renderMain();
+        if (typeof renderSidebar === 'function') renderSidebar();
     }
 }
 
@@ -12,6 +13,12 @@ async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
 async function handleFormSubmit(e) {
     e.preventDefault();
     
+    const settings = await window.apiSettings.get();
+    const username = settings.username || 'Anonimo';
+
+    const idCorrente = document.getElementById('form-id').value;
+    const documentoId = idCorrente || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString());
+
     let allegatiCorrenti = JSON.parse(document.getElementById('form-allegati').value || '[]');
     const fileInput = document.getElementById('form-allegato');
     
@@ -20,12 +27,13 @@ async function handleFormSubmit(e) {
             const file = fileInput.files[i];
             try {
                 const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
-                const risultato = await window.apiBrowser.salvaAllegato(filePath);
+                const risultato = await window.apiBrowser.salvaAllegato(filePath, documentoId);
                 if (risultato) {
                     allegatiCorrenti.push({
                         nome: risultato.fileName,
                         tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
-                        originalName: file.name
+                        originalName: file.name,
+                        hash: risultato.hash
                     });
                 }
             } catch (error) {
@@ -35,7 +43,6 @@ async function handleFormSubmit(e) {
         }
     }
 
-    const idCorrente = document.getElementById('form-id').value;
     const cartellaScelta = document.getElementById('form-cartella').value;
     const tipoId = document.getElementById('form-tipo-documento').value;
     
@@ -63,8 +70,11 @@ async function handleFormSubmit(e) {
     let nomeAllegato = allegatiCorrenti.length > 0 ? allegatiCorrenti[0].nome : '';
     let tipoAllegato = allegatiCorrenti.length > 0 ? allegatiCorrenti[0].tipo : '';
 
+    const mVecchio = idCorrente ? appData.manoscritti.find(x => x.id === idCorrente) : null;
+    const creatoDa = mVecchio && mVecchio.creatoDa ? mVecchio.creatoDa : username;
+
     const newData = {
-        id: idCorrente || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+        id: documentoId,
         cartella: cartellaScelta,
         tipoDocumento: tipoId,
         segnatura: document.getElementById('form-segnatura').value,
@@ -72,6 +82,9 @@ async function handleFormSubmit(e) {
         allegato: nomeAllegato,
         allegatoTipo: tipoAllegato,
         allegati: allegatiCorrenti,
+        lastModified: Date.now(),
+        creatoDa: creatoDa,
+        modificatoDa: username,
         ...dynamicData // Include i campi personalizzati (dataCronica, prezzo, ecc.)
     };
     
@@ -91,8 +104,9 @@ async function handleFormSubmit(e) {
     
     // Imposta la vista sulla cartella in cui abbiamo appena salvato
     window.cartellaAttuale = cartellaScelta; 
-    renderSidebar();
-    
+    await salvaTutto();
+
+    window.isFormDirty = false;
     resetForm();
     switchTab('list');
     renderMain();
@@ -155,6 +169,11 @@ function chiudiDeleteModal() {
 async function confermaEliminazione() {
     const id = document.getElementById('delete-item-id').value;
     appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
+    
+    // Tombstone: memorizziamo l'ID eliminato per dirlo agli altri client
+    if (!appData.deletedIds) appData.deletedIds = [];
+    if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+    
     await salvaTutto();
     renderMain();
     chiudiDeleteModal();
@@ -162,7 +181,6 @@ async function confermaEliminazione() {
 }
 
 
-function cancelEdit() { resetForm(); switchTab('list'); }
+function cancelEdit() { switchTab('list'); }
 
 // --- LOGICA TRASCRIZIONE ---
-

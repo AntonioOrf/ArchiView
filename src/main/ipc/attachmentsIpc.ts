@@ -3,20 +3,57 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
+const crypto = require('crypto');
 
 function setupAttachmentsIpc() {
-  ipcMain.handle('salva-allegato', async (event, sourcePath) => {
+  ipcMain.handle('salva-allegato', async (event, sourcePath, documentoId) => {
     try {
       if (!state.attachmentsDirPath) throw new Error("Cartella allegati non definita");
       const ext = path.extname(sourcePath).toLowerCase();
-      const fileName = `doc_${Date.now()}${ext}`;
+      
+      const cleanOriginalName = path.basename(sourcePath, ext)
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .substring(0, 50);
+        
+      const prefix = documentoId ? `${documentoId}_` : `doc_${Date.now()}_`;
+      const fileName = `${prefix}${cleanOriginalName}${ext}`;
       const destPath = path.join(state.attachmentsDirPath, fileName);
       
       await fsp.copyFile(sourcePath, destPath);
-      return { fileName, ext }; 
+      
+      const fileBuffer = await fsp.readFile(destPath);
+      const hashSum = crypto.createHash('sha256');
+      hashSum.update(fileBuffer);
+      const hash = hashSum.digest('hex');
+
+      return { fileName, ext, hash }; 
     } catch (error) {
       console.error("Errore copia allegato:", error);
       return null;
+    }
+  });
+
+  ipcMain.handle('verifica-hash-allegato', async (event, fileName, expectedHash) => {
+    try {
+      if (!state.attachmentsDirPath || !fileName || !expectedHash) return { status: 'missing', path: '' };
+      const destPath = path.join(state.attachmentsDirPath, fileName);
+      if (!fs.existsSync(destPath)) {
+        return { status: 'missing', path: state.attachmentsDirPath };
+      }
+      
+      const fileBuffer = await fsp.readFile(destPath);
+      const hashSum = crypto.createHash('sha256');
+      hashSum.update(fileBuffer);
+      const hash = hashSum.digest('hex');
+      
+      if (hash === expectedHash) {
+        return { status: 'ok' };
+      } else {
+        return { status: 'corrupted' };
+      }
+    } catch (error) {
+      console.error("Errore verifica hash allegato:", error);
+      return { status: 'error', message: error.message };
     }
   });
 
@@ -30,6 +67,20 @@ function setupAttachmentsIpc() {
       }
     } catch (error) { 
       console.error("Errore apertura PDF:", error); 
+    }
+    return false;
+  });
+
+  ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {
+    try {
+      if (!state.attachmentsDirPath) return false;
+      const p = path.join(state.attachmentsDirPath, fileName);
+      if (fs.existsSync(p)) {
+        shell.showItemInFolder(p); 
+        return true;
+      }
+    } catch (error) { 
+      console.error("Errore mostra cartella:", error); 
     }
     return false;
   });

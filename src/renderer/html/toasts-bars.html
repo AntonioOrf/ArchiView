@@ -1,0 +1,28 @@
+    <!-- Sync Progress Toast (Bottom Right) -->
+    <div id="sync-progress-container" class="hidden fixed bottom-4 right-4 z-50 items-center gap-3 bg-blue-50 dark:bg-blue-900/90 p-4 border border-blue-200 dark:border-blue-800 rounded-lg shadow-xl w-72 pointer-events-none transform transition-all duration-300 translate-y-0">
+        <i data-lucide="refresh-cw" class="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin shrink-0"></i>
+        <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+            <div class="flex justify-between items-center w-full min-w-0">
+                <span id="sync-progress-title" class="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider truncate mr-1" data-i18n="sync_in_progress">Sincronizzazione</span>
+                <span id="sync-progress-text" class="text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0"></span>
+            </div>
+            <div class="w-full bg-blue-200 dark:bg-blue-800/50 h-1.5 rounded-full overflow-hidden shrink-0">
+                <div id="sync-progress-bar" class="h-full bg-blue-600 dark:bg-blue-400 w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container for normal Toasts -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Floating Selection Bar -->
+    <div id="selection-bar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-4 bg-stone-900 text-stone-100 px-6 py-3 rounded-full shadow-2xl transition-all duration-300">
+        <span id="selection-count" class="font-semibold text-sm">0 selezionati</span>
+        <div class="w-px h-5 bg-stone-700"></div>
+        <button onclick="esportaSelezionati()" class="text-sm font-medium hover:text-amber-400 flex items-center gap-1.5 transition-colors"><i data-lucide="download" class="w-4 h-4"></i> Esporta</button>
+        <button onclick="copiaSelezionati()" class="text-sm font-medium hover:text-blue-400 flex items-center gap-1.5 transition-colors"><i data-lucide="copy" class="w-4 h-4"></i> Copia</button>
+        <button onclick="tagliaSelezionati()" class="text-sm font-medium hover:text-purple-400 flex items-center gap-1.5 transition-colors"><i data-lucide="scissors" class="w-4 h-4"></i> Taglia</button>
+        <button onclick="eliminaSelezionati()" class="text-sm font-medium hover:text-red-400 flex items-center gap-1.5 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina</button>
+        <div class="w-px h-5 bg-stone-700"></div>
+        <button onclick="toggleSelectionMode()" class="text-sm font-medium text-stone-400 hover:text-stone-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
