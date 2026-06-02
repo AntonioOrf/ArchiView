@@ -53,7 +53,6 @@ window.selezionaCartellaIniziale = async function() {
         const newPath = await window.apiBrowser.changeWorkspace();
         if (newPath) {
             document.getElementById('welcome-modal').classList.add('hidden-tab');
-            await avviaApp();
         }
     }
 };
@@ -92,6 +91,9 @@ async function avviaApp() {
         delete settings.autoStartTrasformaCondiviso;
         await window.apiSettings.save(settings);
         setTimeout(async () => {
+            if (window.driveAuthPromise) {
+                try { await window.driveAuthPromise; } catch (e) { console.error(e); }
+            }
             if (typeof apriCloudModal === 'function') {
                 await apriCloudModal();
             }

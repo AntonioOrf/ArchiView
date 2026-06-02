@@ -113,7 +113,7 @@
 
 :root.amber-dark-theme {
     /* Accenti primari - Ambra chiara su sfondo scuro */
-    --color-primary: #fbbf24;
+    --color-primary: #9b6f00;
     --color-primary-hover: #f59e0b;
     --color-primary-light: rgba(251, 191, 36, 0.12);
     --color-primary-border: rgba(251, 191, 36, 0.25);
@@ -121,7 +121,7 @@
     /* Sfondi - profondità con livelli distinti */
     --color-bg-base: #141412;
     --color-bg-panel: #1f1e1b;
-    --color-bg-panel-transparent: rgba(31, 30, 27, 0.98);
+    --color-bg-panel-transparent: rgba(245, 188, 17, 0.98);
     --color-bg-hover: #2d2b26;
     --color-bg-sidebar: #191815;
 

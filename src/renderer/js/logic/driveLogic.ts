@@ -48,7 +48,7 @@ window.updateSyncProgress = function(percent, text) {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Inizializza lo stato all'avvio
-    aggiornaStatoDrive();
+    window.driveAuthPromise = aggiornaStatoDrive();
     
     // Ascolta eventi di progresso sincrono (se l'IPC lo espone)
     if (window.apiDrive && window.apiDrive.onSyncProgress) {

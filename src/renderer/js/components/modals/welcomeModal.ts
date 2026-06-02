@@ -280,7 +280,6 @@
             await window.apiDrive.joinInvite(code, basePath, result.vaultName);
             document.getElementById('welcome-modal').classList.add('hidden-tab');
             mostraMessaggio("Connesso con successo! Riavvio in corso...", "success");
-            if (typeof avviaApp === 'function') await avviaApp();
         } catch(e) {
             mostraMessaggio(e.message, "error");
         }
@@ -317,7 +316,6 @@
                     if (success) {
                         document.getElementById('welcome-modal').classList.add('hidden-tab');
                         mostraMessaggio("Archivio ripristinato con successo! Riavvio in corso...", "success");
-                        if (typeof avviaApp === 'function') await avviaApp();
                     } else {
                         throw new Error("Errore durante la creazione dei file locali.");
                     }
@@ -353,7 +351,6 @@
             const success = await window.apiBrowser.createWorkspaceInPath(basePath, name, config);
             if (success) {
                 document.getElementById('welcome-modal').classList.add('hidden-tab');
-                if (typeof avviaApp === 'function') await avviaApp();
             }
         }
     };
