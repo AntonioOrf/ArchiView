@@ -9,10 +9,12 @@ const REDIRECT_URI = 'http://localhost:3456/oauth2callback';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 
-function getTokenPath() {
-  if (!state.workspacePath) {
-    return path.join(app.getPath('userData'), 'google-drive-tokens-global.json');
-  }
+function getGlobalTokenPath() {
+  return path.join(app.getPath('userData'), 'google-drive-tokens-global.json');
+}
+
+function getLocalTokenPath() {
+  if (!state.workspacePath) return null;
   return path.join(state.workspacePath, '.drive-tokens.json');
 }
 
@@ -53,8 +55,12 @@ function loadSavedTokens() {
     return false;
   }
   
-  const tokenPath = getTokenPath();
-  if (fs.existsSync(tokenPath)) {
+  let tokenPath = getLocalTokenPath();
+  if (!tokenPath || !fs.existsSync(tokenPath)) {
+      tokenPath = getGlobalTokenPath();
+  }
+  
+  if (tokenPath && fs.existsSync(tokenPath)) {
     try {
       const tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
       oauth2Client.setCredentials(tokens);
@@ -66,20 +72,33 @@ function loadSavedTokens() {
   return false;
 }
 
-async function authenticateDrive() {
-  return new Promise((resolve, reject) => {
-    if (loadSavedTokens()) {
-      return resolve(true);
+async function authenticateDrive(forceLocal = false) {
+  return new Promise(async (resolve, reject) => {
+    if (!forceLocal && loadSavedTokens()) {
+      try {
+        const res = await drive.about.get({ fields: 'user' });
+        if (res.data.user) return resolve(true);
+      } catch (e) {
+        console.warn("Token caricato ma non valido. Procedo con nuova autenticazione.");
+        const localPath = getLocalTokenPath();
+        if (localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
+        const globalPath = getGlobalTokenPath();
+        if (globalPath && fs.existsSync(globalPath)) fs.unlinkSync(globalPath);
+      }
     }
 
     if (!oauth2Client) {
-      return reject(new Error("Credenziali Google Drive mancanti. Il file cloudCredentials.ts non è configurato."));
+      // Initialize oauth2client if it hasn't been initialized
+      try { initGoogle(); } catch(e) { return reject(e); }
+      if (!oauth2Client) {
+        return reject(new Error("Credenziali Google Drive mancanti. Il file cloudCredentials.ts non è configurato."));
+      }
     }
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
-      prompt: 'consent'
+      prompt: 'select_account consent'
     });
 
     if (localServer) localServer.close();
@@ -90,21 +109,74 @@ async function authenticateDrive() {
         const code = urlObj.searchParams.get('code');
         
         if (code) {
-          res.end('<h1>Autenticazione completata!</h1><p>Puoi chiudere questa scheda e tornare ad ArchiView.</p><script>window.close()</script>');
+          const successHtml = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autenticazione Completata - ArchiView</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #fafaf9; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #1c1917; }
+    .card { background: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); padding: 40px; max-width: 400px; text-align: center; border: 1px solid #e7e5e4; }
+    .icon { width: 64px; height: 64px; background-color: #dcfce7; color: #166534; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 24px; }
+    .icon svg { width: 32px; height: 32px; }
+    h1 { font-size: 1.5rem; margin: 0 0 12px; font-weight: 600; }
+    p { color: #57534e; margin: 0 0 24px; line-height: 1.5; }
+    .btn { display: inline-block; background-color: #1c1917; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500; transition: background-color 0.2s; cursor: pointer; border: none; font-size: 1rem; }
+    .btn:hover { background-color: #44403c; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h1>Autenticazione Completata</h1>
+    <p>Ti sei autenticato correttamente con Google Drive. Puoi chiudere questa scheda e tornare ad ArchiView.</p>
+    <button class="btn" id="closeBtn" onclick="tryClose()">Chiudi Scheda</button>
+    <p id="closeMsg" style="display:none; color: #dc2626; font-size: 0.9rem; margin-top: 16px;">Il tuo browser blocca la chiusura automatica. Puoi chiudere liberamente questa scheda dalla "X" in alto.</p>
+  </div>
+  <script>
+    function tryClose() {
+      window.close();
+      setTimeout(() => {
+        document.getElementById('closeMsg').style.display = 'block';
+        document.getElementById('closeBtn').style.display = 'none';
+      }, 300);
+    }
+    setTimeout(tryClose, 3000);
+  </script>
+</body>
+</html>`;
+          res.end(successHtml);
           localServer.close();
           localServer = null;
           
           const { tokens } = await oauth2Client.getToken(code);
           oauth2Client.setCredentials(tokens);
-          fs.writeFileSync(getTokenPath(), JSON.stringify(tokens));
+          
+          if (forceLocal && getLocalTokenPath()) {
+              fs.writeFileSync(getLocalTokenPath(), JSON.stringify(tokens));
+          } else {
+              fs.writeFileSync(getGlobalTokenPath(), JSON.stringify(tokens));
+          }
+          
           resolve(true);
         } else {
-          res.end('In attesa di autenticazione...');
+          const waitHtml = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>In Attesa - ArchiView</title><style>body { margin: 0; font-family: sans-serif; background-color: #fafaf9; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #1c1917; } .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e7e5e4; }</style></head><body><div class="card"><h2>In attesa di autenticazione...</h2><p>Completa il login su Google per continuare.</p></div></body></html>`;
+          res.end(waitHtml);
         }
       } catch (e) {
-        res.end('Errore durante l\'autenticazione.');
+        const errHtml = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Errore - ArchiView</title><style>body { margin: 0; font-family: sans-serif; background-color: #fafaf9; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #1c1917; } .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e7e5e4; } h2 { color: #dc2626; margin-top:0; }</style></head><body><div class="card"><h2>Errore di Autenticazione</h2><p>Si è verificato un errore durante il login. Chiudi la scheda e riprova da ArchiView.</p></div></body></html>`;
+        res.end(errHtml);
         reject(e);
       }
+    }).on('error', (err) => {
+      console.error("Errore server locale:", err);
+      reject(new Error("Impossibile avviare il server locale per l'autenticazione. Riprova."));
     }).listen(3456, () => {
       shell.openExternal(authUrl);
     });
@@ -112,11 +184,17 @@ async function authenticateDrive() {
 }
 
 async function logoutDrive() {
-  const tokenPath = getTokenPath();
-  if (fs.existsSync(tokenPath)) {
-    fs.unlinkSync(tokenPath);
+  const localTokenPath = getLocalTokenPath();
+  const globalTokenPath = getGlobalTokenPath();
+  
+  if (localTokenPath && fs.existsSync(localTokenPath)) {
+    fs.unlinkSync(localTokenPath);
   }
-  oauth2Client.setCredentials(null);
+  if (globalTokenPath && fs.existsSync(globalTokenPath)) {
+    fs.unlinkSync(globalTokenPath);
+  }
+  
+  if (oauth2Client) oauth2Client.setCredentials(null);
   return true;
 }
 
@@ -234,7 +312,7 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
   if (!actualVaultFolderId && state.workspacePath) {
       try {
           const s = getAllSettings();
-          if (s.isSharedVault && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
+          if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
       } catch(e) {}
   }
 
@@ -243,13 +321,9 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
       let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime)' });
       if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
   } else if (state.workspacePath) {
-      const rootFolderId = await getOrCreateFolder('ArchiView');
-      const projectName = path.basename(state.workspacePath);
-      actualVaultFolderId = await getOrCreateFolder(projectName, rootFolderId);
-      
-      let q = `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime)' });
-      if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
+      // Se non abbiamo un actualVaultFolderId per questo workspace, significa che non è mai stato sincronizzato.
+      // Non dobbiamo cercare cartelle per nome, altrimenti becchiamo i vecchi vault!
+      return null;
   }
 
   if (!driveModifiedTime) {
@@ -278,7 +352,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
   if (!actualVaultFolderId && state.workspacePath) {
       try {
           const s = getAllSettings();
-          if (s.isSharedVault && s.sharedVaultId) {
+          if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
               actualVaultFolderId = s.sharedVaultId;
           }
       } catch(e) {}
@@ -294,25 +368,14 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
           if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
       }
   } 
-  // 2. Altrimenti, se siamo in un workspace, cerchiamo nella sua cartella specifica
+  // 2. Altrimenti, se siamo in un workspace senza ID salvato, NON dobbiamo tirare giù dati a caso.
+  // Significa che questo vault non è mai stato sincronizzato o è stato appena scollegato.
   else if (state.workspacePath) {
-      const rootFolderId = await getOrCreateFolder('ArchiView');
-      const projectName = path.basename(state.workspacePath);
-      actualVaultFolderId = await getOrCreateFolder(projectName, rootFolderId);
-      
-      let q = `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime, parents)' });
-      
-      if (res.data.files.length > 0) {
-          fileId = res.data.files[0].id;
-          driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
-          if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
-      }
+      return null;
   }
 
-  // 3. Se non l'abbiamo trovato o se non c'è workspace (es. Ripristino Iniziale),
-  // cerchiamo globalmente il database_manoscritti.json più recente
-  if (!fileId) {
+  // 3. Ripristino Iniziale (quando non c'è workspacePath e stiamo sfogliando cloud in generale)
+  if (!fileId && !state.workspacePath) {
       let q = `name='database_manoscritti.json' and trashed=false`;
       let res = await drive.files.list({ q, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents)' });
       
@@ -387,7 +450,7 @@ async function syncToDrive() {
   let projectFolderId;
   try {
       const s = getAllSettings();
-      if (s.isSharedVault && s.sharedVaultId) {
+      if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
           projectFolderId = s.sharedVaultId;
       }
   } catch(e) {}
@@ -395,11 +458,23 @@ async function syncToDrive() {
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
       const projectName = path.basename(state.workspacePath);
-      projectFolderId = await getOrCreateFolder(projectName, rootFolderId);
+      
+      // Creiamo una cartella nuova in modo incondizionato per evitare collisioni con vecchi vault aventi lo stesso nome
+      const fileMetadata = {
+          name: projectName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [rootFolderId]
+      };
+      const folder = await drive.files.create({
+          resource: fileMetadata,
+          requestBody: fileMetadata,
+          fields: 'id'
+      });
+      projectFolderId = folder.data.id;
       
       try {
           const s = getAllSettings();
-          if (s.isSharedVault) {
+          if (s.isSharedVault || s.isPersonalCloud) {
               s.sharedVaultId = projectFolderId;
               saveAllSettings(s);
           }
@@ -457,7 +532,7 @@ async function cleanOrphanedAttachments() {
   let projectFolderId;
   try {
       const s = getAllSettings();
-      if (s.isSharedVault && s.sharedVaultId) {
+      if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
           projectFolderId = s.sharedVaultId;
       }
   } catch(e) {}
@@ -524,8 +599,8 @@ async function cleanOrphanedAttachments() {
 }
 
 function setupDriveIpc() {
-  ipcMain.handle('drive-auth', async () => {
-    return await authenticateDrive();
+  ipcMain.handle('drive-auth', async (event, forceLocal) => {
+    return await authenticateDrive(forceLocal);
   });
   ipcMain.handle('drive-logout', async () => {
     return await logoutDrive();
@@ -555,7 +630,10 @@ function setupDriveIpc() {
   ipcMain.handle('drive-generate-invite', async () => {
     try {
         await authenticateDrive(); // Necessario per ottenere l'ID della cartella
-        const tokenPath = getTokenPath();
+        let tokenPath = getLocalTokenPath();
+        if (!tokenPath || !fs.existsSync(tokenPath)) {
+            tokenPath = getGlobalTokenPath();
+        }
         let refreshToken = "";
         if (fs.existsSync(tokenPath)) {
             const tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
@@ -709,13 +787,88 @@ function setupDriveIpc() {
                 // Non lanciamo l'errore per non bloccare l'unione, ma l'utente dovrà sincronizzare manualmente.
             }
         }
-        
-        app.relaunch();
-        app.quit();
+        if (state.mainWindow) {
+            state.mainWindow.reload();
+        }
         
         return true;
     } catch(e) {
         throw new Error("Codice invito non valido o errore nella creazione: " + e.message);
+    }
+  });
+  
+  ipcMain.handle('drive-share-vault', async (event, email) => {
+    try {
+        await authenticateDrive();
+        let settings: any = {};
+        try { settings = getAllSettings(); } catch(e) {}
+        
+        let vaultFolderId = settings.sharedVaultId;
+        if (!vaultFolderId) throw new Error("ID del Vault non trovato. Assicurati che sia un Vault Condiviso.");
+        
+        await drive.permissions.create({
+            fileId: vaultFolderId,
+            sendNotificationEmail: true,
+            resource: { role: 'writer', type: 'user', emailAddress: email },
+            requestBody: { role: 'writer', type: 'user', emailAddress: email }
+        });
+        return true;
+    } catch(e) {
+        throw new Error("Errore durante la condivisione: " + e.message);
+    }
+  });
+
+  ipcMain.handle('drive-get-token', async () => {
+    if (!oauth2Client) return null;
+    try {
+        const { token } = await oauth2Client.getAccessToken();
+        return token;
+    } catch(e) {
+        return null;
+    }
+  });
+
+  ipcMain.handle('drive-get-client-id', async () => {
+    try {
+        const creds = require('./cloudCredentials');
+        const clientId = creds.GOOGLE_CLIENT_ID;
+        const appId = clientId ? clientId.split('-')[0] : '';
+        return { clientId, appId };
+    } catch(e) {
+        return { clientId: '', appId: '' };
+    }
+  });
+
+  ipcMain.handle('drive-join-folder-id', async (event, vaultId, vaultName, basePath) => {
+    try {
+        const name = vaultName || "Vault_Condiviso";
+        const newPath = path.join(basePath, name);
+        if (fs.existsSync(newPath)) {
+            throw new Error(`La cartella "${name}" esiste già. Rinominala o scegli un'altra posizione.`);
+        }
+        fs.mkdirSync(newPath, { recursive: true });
+        
+        let settingsToSave: any = { isSharedVault: true, sharedVaultId: vaultId };
+        initWorkspace(newPath);
+        saveAllSettings(settingsToSave);
+        
+        if (vaultId) {
+            try {
+                const driveData = await pullFromDrive(vaultId);
+                if (driveData && driveData.database) {
+                    const dbPath = path.join(newPath, 'database_manoscritti.json');
+                    let dbContent = driveData.database;
+                    if (typeof dbContent !== 'string') {
+                        dbContent = JSON.stringify(dbContent, null, 2);
+                    }
+                    fs.writeFileSync(dbPath, dbContent, 'utf8');
+                }
+            } catch (syncErr) {}
+        }
+        if (state.mainWindow) state.mainWindow.reload();
+        return true;
+    } catch(e) {
+        throw new Error("Errore connessione vault: " + e.message);
     }
   });
 }

@@ -41,6 +41,13 @@ function renderSidebar() {
         riga.className = `group flex items-center gap-1 p-1.5 rounded-sm cursor-pointer transition-colors text-sm sidebar-row ${isAttuale ? 'active' : ''}`;
         riga.style.paddingLeft = `${profondita * 1.25 + 0.25}rem`;
 
+        // Context Menu for Pasting
+        riga.oncontextmenu = (e) => {
+            if (typeof window.showSidebarFolderContextMenu === 'function') {
+                window.showSidebarFolderContextMenu(e, fullPath);
+            }
+        };
+
         // Drag and Drop Logic
         riga.draggable = true;
         riga.ondragstart = (e) => {
@@ -125,13 +132,19 @@ function renderSidebar() {
         
         riga.appendChild(actionContainer);
 
-        riga.onclick = () => {
+        riga.ondblclick = () => {
             window.cartellaAttuale = fullPath;
             window.cartelleEspanse.add(fullPath);
             document.getElementById('search-input').value = '';
             switchTab('list');
             renderSidebar();
             renderMain();
+        };
+
+        // Rimuoviamo l'onclick che navigava, lasciamo solo ondblclick e la logica di espansione (sul chevron)
+        riga.onclick = (e) => {
+            // Se si fa click sulla cartella (non sul chevron) potremmo eventualmente selezionarla.
+            // Per ora non facciamo nulla.
         };
 
         div.appendChild(riga);
@@ -146,33 +159,44 @@ function renderSidebar() {
             // Render dei file
             filesInFolder.forEach(m => {
                 const fileRow = document.createElement('div');
-                fileRow.className = `group flex items-center gap-1.5 p-1 rounded-sm cursor-pointer transition-colors text-xs text-stone-600 hover:bg-stone-100 hover:text-stone-900`;
+                const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
+                
+                fileRow.className = `group flex items-center gap-1.5 p-1 rounded-sm cursor-pointer transition-colors text-xs ${isSelected ? 'bg-amber-100 text-amber-900 font-semibold' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'}`;
                 fileRow.style.paddingLeft = `${(profondita + 1) * 1.25 + 1.25}rem`;
                 
+                fileRow.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!window.selectedRecords.includes(m.id)) {
+                        window.selectItem(m.id, e);
+                    }
+                    if (typeof showRecordContextMenu === 'function') {
+                        showRecordContextMenu(e, m.id);
+                    }
+                };
+
                 fileRow.onclick = (e) => {
                     e.stopPropagation();
                     if (window.cartellaAttuale !== fullPath) {
                         window.cartellaAttuale = fullPath;
+                        if (typeof switchTab === 'function') switchTab('list');
                     }
-                    if (typeof switchTab === 'function') switchTab('list');
-                    renderSidebar();
-                    if (typeof renderMain === 'function') renderMain();
-                    
-                    setTimeout(() => {
-                        const targetCard = document.getElementById('card-' + m.id);
-                        if (targetCard) {
-                            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            targetCard.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
-                            const oldShadow = targetCard.style.boxShadow;
-                            const oldBorder = targetCard.style.borderColor;
-                            targetCard.style.boxShadow = "0 0 0 4px rgba(251, 191, 36, 0.4)";
-                            targetCard.style.borderColor = "#f59e0b";
-                            setTimeout(() => {
-                                targetCard.style.boxShadow = oldShadow;
-                                targetCard.style.borderColor = oldBorder;
-                            }, 1500);
-                        }
-                    }, 50);
+                    if (typeof window.selectItem === 'function') {
+                        window.selectItem(m.id, e);
+                    }
+                };
+                
+                fileRow.ondblclick = (e) => {
+                    e.stopPropagation();
+                    if (document.selection && document.selection.empty) {
+                        document.selection.empty();
+                    } else if (window.getSelection) {
+                        var sel = window.getSelection();
+                        sel.removeAllRanges();
+                    }
+                    if (typeof editItem === 'function') {
+                        editItem(m.id);
+                    }
                 };
 
                 const iconaFile = 'file-text';
@@ -186,7 +210,7 @@ function renderSidebar() {
                 };
                 fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
 
-                fileRow.innerHTML = `<i data-lucide="${iconaFile}" class="w-3.5 h-3.5 shrink-0 opacity-60"></i><span class="truncate">${titoloFile}</span>`;
+                fileRow.innerHTML = `<i data-lucide="${iconaFile}" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i><span class="truncate">${titoloFile}</span>`;
                 childContainer.appendChild(fileRow);
             });
 
@@ -507,6 +531,7 @@ window.aggiornaListaVault = async function() {
                 recents.forEach(item => {
                     const path = item.path || item;
                     const isShared = item.isShared || false;
+                    const isPersonal = item.isPersonal || false;
                     const name = path.split(/[\/\\]/).pop();
                     const isCurrent = path === currentPath;
                     
@@ -527,8 +552,10 @@ window.aggiornaListaVault = async function() {
                     
                     if (isShared) {
                         nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Vault Condiviso"></i> <span>${name}</span>`;
+                    } else if (isPersonal) {
+                        nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="Backup Personale"></i> <span>${name}</span>`;
                     } else {
-                        nameSpan.textContent = name;
+                        nameSpan.innerHTML = `<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="Solo Locale"></i> <span>${name}</span>`;
                     }
                     
                     divContainer.appendChild(nameSpan);
@@ -558,12 +585,17 @@ window.aggiornaListaVault = async function() {
             const vaultName = currentPath.split(/[\\/\\\\]/).pop();
             const currentVaultInfo = recents ? recents.find(r => r.path === currentPath || r === currentPath) : null;
             const isCurrentShared = currentVaultInfo && currentVaultInfo.isShared;
+            const isCurrentPersonal = currentVaultInfo && currentVaultInfo.isPersonal;
             
             if (isCurrentShared) {
                 nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${vaultName}</span></div>`;
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
+            } else if (isCurrentPersonal) {
+                nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${vaultName}</span></div>`;
+                if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else {
-                nameEl.textContent = vaultName;
+                nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0"></i> <span>${vaultName}</span></div>`;
+                if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             }
             nameEl.title = currentPath;
         }

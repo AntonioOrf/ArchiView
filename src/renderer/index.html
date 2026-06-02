@@ -13,9 +13,10 @@
             } catch (e) {}
         })();
     </script>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.pusher.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset:; connect-src 'self' https://api.github.com http: https: ws: wss:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.pusher.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset:; frame-src 'self' local-asset: https://docs.google.com https://apis.google.com; connect-src 'self' https://api.github.com http: https: ws: wss:;">
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="vendor/lucide.min.js"></script>
+    <script src="vendor/purify.min.js"></script>
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -23,172 +24,11 @@
 
 
 
-    <header class="panel-glass shrink-0 mb-6 flex flex-wrap items-center gap-2 p-2">
-        <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders">
-            <i data-lucide="folder" class="w-5 h-5"></i>
-        </button>
-        
-        <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-i18n-title="tooltip_search_btn">
-            <i data-lucide="search" class="w-5 h-5"></i>
-        </button>
-
-        <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn">
-            <i data-lucide="bookmark" class="w-5 h-5"></i>
-        </button>
-
-        <button onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" title="Controllo Modifiche (Source Control)">
-            <i data-lucide="git-pull-request" class="w-5 h-5"></i>
-        </button>
-
-        <div class="flex-1 relative flex justify-end items-center h-8">
-            <!-- Indicatore aggiornamenti in entrata (da remoto) -->
-            <div id="incoming-updates-indicator" class="hidden items-center gap-1 mr-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 border border-blue-200 dark:border-blue-800" title="Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica.">
-                <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i> In Entrata
-            </div>
-
-            <!-- Indicatore modifiche pendenti -->
-            <div id="pending-changes-indicator" class="hidden items-center gap-1 mr-3 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 border border-amber-200 dark:border-amber-800" title="Hai modifiche locali non ancora sincronizzate con il Cloud">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Modifiche Pendenti
-            </div>
-        </div>
-
-        <!-- Bottoni Cloud (Push / Pull / Fetch) -->
-        <div class="hidden md:flex items-center gap-1 mr-2 bg-stone-100 dark:bg-stone-800 rounded-none p-1 border border-stone-200 dark:border-stone-700">
-            <button onclick="controllaModificheInEntrata(true)" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Controlla se ci sono aggiornamenti dal Cloud">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Fetch
-            </button>
-            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
-            <button onclick="scaricaDalCloud()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Scarica le ultime modifiche dal Cloud">
-                <i data-lucide="cloud-download" class="w-4 h-4"></i> Scarica
-            </button>
-            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
-            <button onclick="caricaSulCloud()" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" title="Carica le modifiche locali sul Cloud">
-                <i data-lucide="cloud-upload" class="w-4 h-4"></i> Carica
-            </button>
-        </div>
-
-        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record">
-            <i data-lucide="plus" class="w-5 h-5"></i>
-        </button>
-        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm ml-2">
-            <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span data-i18n="btn_new_model">Modello</span>
-        </button>
-        
-    </header>
-
-    <!-- Sync Progress Toast (Bottom Right) -->
-    <div id="sync-progress-container" class="hidden fixed bottom-4 right-4 z-50 items-center gap-3 bg-blue-50 dark:bg-blue-900/90 p-4 border border-blue-200 dark:border-blue-800 rounded-lg shadow-xl w-72 pointer-events-none transform transition-all duration-300 translate-y-0">
-        <i data-lucide="refresh-cw" class="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin shrink-0"></i>
-        <div class="flex flex-col gap-1.5 flex-1 min-w-0">
-            <div class="flex justify-between items-center w-full min-w-0">
-                <span id="sync-progress-title" class="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider truncate mr-1" data-i18n="sync_in_progress">Sincronizzazione</span>
-                <span id="sync-progress-text" class="text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0"></span>
-            </div>
-            <div class="w-full bg-blue-200 dark:bg-blue-800/50 h-1.5 rounded-full overflow-hidden shrink-0">
-                <div id="sync-progress-bar" class="h-full bg-blue-600 dark:bg-blue-400 w-0 transition-all duration-300"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Container for normal Toasts -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <!-- @include 'html/header.html' -->
+    <!-- @include 'html/toasts-bars.html' -->
 
     <div class="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
-        
-        <aside id="sidebar" class="w-full md:w-72 shrink-0 panel-glass flex flex-col h-full overflow-hidden transition-all duration-300">
-            
-            <div id="sidebar-folders" class="flex flex-col flex-1 min-h-0">
-                <div class="panel-header p-4 flex justify-between items-center shrink-0">
-                    <h2 class="font-bold flex items-center gap-2">
-                        <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span></h2>
-                    <button onclick="aggiungiCartella()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" title="Crea nuova cartella">
-                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <div id="folder-list" class="flex-1 p-3 overflow-y-auto custom-scroll space-y-1">
-                </div>
-            </div>
-
-            <div id="sidebar-search" class="hidden-tab flex flex-col flex-1 min-h-0">
-                <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="search" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_search">Ricerca Globale</span></h2>
-                    <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
-                        <i data-lucide="search" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="search-input" data-i18n-placeholder="placeholder_search" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
-                    </div>
-                </div>
-                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_suggestions">SUGGERIMENTI</div>
-                <div id="search-suggestions" class="flex-1 overflow-y-auto custom-scroll">
-                </div>
-            </div>
-
-            <div id="sidebar-tags" class="hidden-tab flex flex-col flex-1 min-h-0">
-                <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span></h2>
-                    <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
-                        <i data-lucide="bookmark" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;" readonly>
-                    </div>
-                    <button onclick="if(window.activeTags) window.activeTags.clear(); renderMain(); renderTagList();" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
-                </div>
-                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_available_tags">TAG DISPONIBILI</div>
-                <div id="tag-list" class="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
-                </div>
-            </div>
-
-            <div id="sidebar-source-control" class="hidden-tab flex flex-col flex-1 min-h-0">
-                <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-1">
-                        <i data-lucide="git-pull-request" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_source_control">Controllo Modifiche</span>
-                    </h2>
-                    <p class="text-xs text-stone-500 dark:text-stone-400">Modifiche locali non ancora inviate al Cloud</p>
-                </div>
-                <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
-                    <span>MODIFICHE PENDENTI</span>
-                    <span id="source-control-count" class="bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 px-2 py-0.5 rounded-full text-[10px]">0</span>
-                </div>
-                <ul id="source-control-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col">
-                </ul>
-            </div>
-
-            <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5 relative" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
-                
-                <button onclick="toggleVaultSwitcher(event)" class="btn btn-ghost w-full justify-between hover:bg-stone-200">
-                    <div class="flex items-center gap-2 truncate text-sm">
-                        <i data-lucide="archive" class="w-4 h-4 text-amber-700 shrink-0"></i>
-                        <span id="current-vault-name" class="font-bold truncate text-stone-800">...</span>
-                    </div>
-                    <i data-lucide="chevrons-up-down" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                </button>
-                
-                <div class="w-full h-px bg-stone-200 my-1"></div>
-
-                <div class="flex items-center justify-center gap-1 w-full">
-                    <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings">
-                        <i data-lucide="settings" class="w-5 h-5"></i>
-                    </button>
-                    <button onclick="apriCloudModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" title="Cloud & Sincronizzazione">
-                        <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
-                    </button>
-                    <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue">
-                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
-                    </button>
-                </div>
-
-                <!-- Popover Vault Switcher -->
-                <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white rounded-md shadow-2xl border border-stone-200 p-1.5 z-50 flex flex-col max-h-64">
-                    <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
-                    <div class="w-full h-px bg-stone-200 my-1.5"></div>
-                    <button onclick="mostraWelcomeModal(); toggleVaultSwitcher(new Event('click'));" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
-                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> Gestisci vault...
-                    </button>
-                </div>
-            </div>
-
-        </aside>
-
+        <!-- @include 'html/sidebar.html' -->
         <main class="flex-1 panel-glass p-6 h-full overflow-y-auto custom-scroll">
         </main>
     </div>
@@ -207,6 +47,7 @@
     <script src="js/components/modals/mergeConflictModal.js"></script>
     <script src="js/components/modals/deletionConflictModal.js"></script>
     <script src="js/components/modals/cloudModal.js"></script>
+    <script src="js/components/modals/changelogModal.js"></script>
     
     <!-- Nuovi componenti Viste e Banners -->
     <script src="js/components/banners.js"></script>

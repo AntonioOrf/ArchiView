@@ -76,6 +76,7 @@
                     <label class="form-label font-medium mb-1 block text-sm">Codice di Invito</label>
                     <textarea id="welcome-join-code" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-all text-xs font-mono h-24" placeholder="Incolla qui il codice..."></textarea>
                 </div>
+
                 <div id="welcome-join-vault-info" class="hidden-tab mb-3 p-3 bg-stone-100 border border-stone-200 rounded text-sm text-stone-700 flex items-center gap-2">
                     <i data-lucide="folder-check" class="w-5 h-5 text-emerald-600"></i>
                     <div>
@@ -121,7 +122,10 @@
             const joinCodeTextarea = document.getElementById('welcome-join-code');
             if (joinCodeTextarea) {
                 joinCodeTextarea.addEventListener('input', async () => {
-                    const code = joinCodeTextarea.value.trim();
+                    let code = joinCodeTextarea.value.trim();
+                    if (code.startsWith('archiview://join/')) {
+                        code = code.substring(17);
+                    }
                     const infoDiv = document.getElementById('welcome-join-vault-info');
                     const nameSpan = document.getElementById('welcome-join-vault-name');
                     if (!code) {
@@ -149,10 +153,14 @@
         document.getElementById('welcome-buttons').classList.add('hidden-tab');
         document.getElementById('welcome-create-form').classList.remove('hidden-tab');
         if (window.apiBrowser && window.apiBrowser.getDocumentsPath) {
-            const docsPath = await window.apiBrowser.getDocumentsPath();
+            let initialPath = await window.apiBrowser.getDocumentsPath();
+            if (window.apiSettings) {
+                const settings = await window.apiSettings.get();
+                if (settings.lastVaultBasePath) initialPath = settings.lastVaultBasePath;
+            }
             const pathInput = document.getElementById('welcome-new-folder-path');
             if (pathInput && !pathInput.value) {
-                pathInput.value = docsPath;
+                pathInput.value = initialPath;
             }
         }
         setTimeout(() => document.getElementById('welcome-new-folder-name').focus(), 100);
@@ -219,10 +227,14 @@
         document.getElementById('welcome-buttons').classList.add('hidden-tab');
         document.getElementById('welcome-join-form').classList.remove('hidden-tab');
         if (window.apiBrowser && window.apiBrowser.getDocumentsPath) {
-            const docsPath = await window.apiBrowser.getDocumentsPath();
+            let initialPath = await window.apiBrowser.getDocumentsPath();
+            if (window.apiSettings) {
+                const settings = await window.apiSettings.get();
+                if (settings.lastVaultBasePath) initialPath = settings.lastVaultBasePath;
+            }
             const pathInput = document.getElementById('welcome-join-folder-path');
             if (pathInput && !pathInput.value) {
-                pathInput.value = docsPath;
+                pathInput.value = initialPath;
             }
         }
     };
@@ -237,12 +249,20 @@
             const basePath = await window.apiBrowser.selectBaseDirectory();
             if (basePath) {
                 document.getElementById('welcome-join-folder-path').value = basePath;
+                if (window.apiSettings) {
+                    const settings = await window.apiSettings.get();
+                    settings.lastVaultBasePath = basePath;
+                    await window.apiSettings.save(settings);
+                }
             }
         }
     };
 
     window.eseguiJoinVault = async function() {
-        const code = document.getElementById('welcome-join-code').value.trim();
+        let code = document.getElementById('welcome-join-code').value.trim();
+        if (code.startsWith('archiview://join/')) {
+            code = code.substring(17);
+        }
         const basePath = document.getElementById('welcome-join-folder-path').value.trim();
         
         if(!code || !basePath) {
@@ -266,6 +286,8 @@
         }
     };
 
+
+
     window.eseguiRipristinoCloudGlobale = async function() {
         await eseguiRipristinoCloud(null, 'Vault_Recuperato');
     };
@@ -285,6 +307,11 @@
             if (window.apiBrowser && window.apiBrowser.selectBaseDirectory) {
                 const basePath = await window.apiBrowser.selectBaseDirectory();
                 if (basePath) {
+                    if (window.apiSettings) {
+                        const settings = await window.apiSettings.get();
+                        settings.lastVaultBasePath = basePath;
+                        await window.apiSettings.save(settings);
+                    }
                     const driveConfig = vaultId ? { isSharedVault: true, sharedVaultId: vaultId } : null;
                     const success = await window.apiBrowser.cloneWorkspaceHub(basePath, defaultName, driveConfig, driveData.database);
                     if (success) {
@@ -307,6 +334,11 @@
             const basePath = await window.apiBrowser.selectBaseDirectory();
             if (basePath) {
                 document.getElementById('welcome-new-folder-path').value = basePath;
+                if (window.apiSettings) {
+                    const settings = await window.apiSettings.get();
+                    settings.lastVaultBasePath = basePath;
+                    await window.apiSettings.save(settings);
+                }
             }
         }
     };

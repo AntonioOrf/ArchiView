@@ -104,8 +104,9 @@ async function handleFormSubmit(e) {
     
     // Imposta la vista sulla cartella in cui abbiamo appena salvato
     window.cartellaAttuale = cartellaScelta; 
-    renderSidebar();
-    
+    await salvaTutto();
+
+    window.isFormDirty = false;
     resetForm();
     switchTab('list');
     renderMain();
@@ -180,6 +181,6 @@ async function confermaEliminazione() {
 }
 
 
-function cancelEdit() { resetForm(); switchTab('list'); }
+function cancelEdit() { switchTab('list'); }
 
 // --- LOGICA TRASCRIZIONE ---

@@ -71,6 +71,20 @@ function setupAttachmentsIpc() {
     return false;
   });
 
+  ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {
+    try {
+      if (!state.attachmentsDirPath) return false;
+      const p = path.join(state.attachmentsDirPath, fileName);
+      if (fs.existsSync(p)) {
+        shell.showItemInFolder(p); 
+        return true;
+      }
+    } catch (error) { 
+      console.error("Errore mostra cartella:", error); 
+    }
+    return false;
+  });
+
   ipcMain.handle('get-allegato-path', (event, fileName) => {
     if (!state.attachmentsDirPath) return '';
     return path.join(state.attachmentsDirPath, fileName);

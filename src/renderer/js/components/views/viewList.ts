@@ -5,7 +5,7 @@
         const mainElement = document.querySelector('main');
         if (mainElement && !document.getElementById('view-list')) {
             const html = `
-            <div id="view-list" class="fade-in h-full flex flex-col">
+            <div id="view-list" class="fade-in h-full flex flex-col" oncontextmenu="if(typeof showFolderContextMenu==='function') showFolderContextMenu(event)">
                 
                 <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-stone-200 pb-4 mb-4 shrink-0">
                     <div>
@@ -13,7 +13,12 @@
                             <i data-lucide="folder-open" class="w-6 h-6"></i>
                             <span id="titolo-cartella-attuale">Generale</span>
                         </h2>
-                        <span id="counter-results" class="text-sm text-stone-500 font-medium mt-1 block">Caricamento...</span>
+                        <div class="flex items-center gap-3 mt-1">
+                            <span id="counter-results" class="text-sm text-stone-500 font-medium">Caricamento...</span>
+                            <button onclick="esportaCartellaAttuale()" class="btn btn-ghost text-xs py-0.5 px-2 text-stone-500 hover:text-amber-700 border border-stone-200">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Esporta Cartella
+                            </button>
+                        </div>
                     </div>
                     <!-- Widget Hub -->
                     <div id="hub-sync-widget" class="hidden flex items-center gap-2.5 p-2 bg-amber-50/50 border border-amber-200 rounded-sm text-sm">

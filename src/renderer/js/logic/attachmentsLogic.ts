@@ -245,7 +245,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     }
 
     if (tipo === 'pdf') {
-        pdfPreview.src = 'local-asset://' + encodeURIComponent(nome);
+        pdfPreview.src = 'local-asset://' + encodeURIComponent(nome) + '#pagemode=none';
         pdfPreview.classList.remove('hidden');
     } else {
         imgPreview.src = 'local-asset://' + encodeURIComponent(nome);

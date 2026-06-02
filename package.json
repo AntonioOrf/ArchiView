@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "1.1.6",
+  "version": "2.0.0",
   "description": "Gestionale per manoscritti medievali",
   "author": "Antonio Orf",
   "repository": {
@@ -10,7 +10,7 @@
   "main": "out/main/main.js",
   "scripts": {
     "build-css": "npx @tailwindcss/cli -i ./src/renderer/css/input.css -o ./src/renderer/css/tailwind.css --minify",
-    "copy-assets": "shx mkdir -p out/renderer && shx cp -r src/renderer/index.html src/renderer/css src/renderer/vendor out/renderer/",
+    "copy-assets": "shx mkdir -p out/renderer && node scripts/build-html.js && shx cp -r src/renderer/css src/renderer/vendor out/renderer/",
     "extract": "lingui extract",
     "compile": "lingui compile",
     "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets",
@@ -57,6 +57,7 @@
     "@lingui/format-po": "^6.1.0",
     "@tailwindcss/cli": "^4.3.0",
     "@types/archiver": "^7.0.0",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^25.9.1",
     "electron": "39.8.5",
     "electron-builder": "^26.8.1",
@@ -67,11 +68,13 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.2.2",
     "@lingui/core": "^6.1.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "adm-zip": "^0.5.17",
     "archiver": "^8.0.0",
-    "cors": "^2.8.6",
+    "dompurify": "^3.4.7",
     "electron-updater": "^6.8.3",
-    "express": "^5.2.1",
     "googleapis": "^173.0.0"
   }
 }

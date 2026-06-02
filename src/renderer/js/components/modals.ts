@@ -1,7 +1,7 @@
 // @ts-nocheck
 window.apriPdfInterno = async function(fileName) {
     if (window.apiBrowser) {
-        apriModal('local-asset://' + encodeURIComponent(fileName), 'pdf');
+        apriModal('local-asset://' + encodeURIComponent(fileName) + '#pagemode=none', 'pdf');
     }
 }
 

@@ -60,21 +60,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.getApiCloud = async function() {
+    if (!window.apiSettings) return window.apiDrive;
+    const settings = await window.apiSettings.get();
+    if (settings.cloudProvider === 'microsoft' && window.apiMicrosoft) {
+        return window.apiMicrosoft;
+    }
+    return window.apiDrive;
+};
+
 window.controllaModificheInEntrata = async function(manual = false) {
-    if (window.apiDrive && window.driveStatus && window.driveStatus.isAuthenticated) {
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud && window.driveStatus && window.driveStatus.isAuthenticated) {
         if (manual && typeof mostraMessaggio === 'function') {
             mostraMessaggio("Controllo aggiornamenti dal Cloud...", "info");
             window.toggleSyncProgress(true);
         }
         try {
-            const remoteModifiedTime = await window.apiDrive.checkUpdates();
+            const remoteModifiedTime = await apiCloud.checkUpdates();
             if (remoteModifiedTime && remoteModifiedTime > (window.ultimoCaricamento || 0)) {
                 // Ci sono aggiornamenti sul server più recenti dell'ultimo nostro pull
                 window.impostaModificheInEntrata(true);
                 if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Ci sono nuovi aggiornamenti da scaricare!", "success");
                 
                 try {
-                    const peekData = await window.apiDrive.peekDb();
+                    const peekData = await apiCloud.peekDb();
                     if (peekData && peekData.database && peekData.database.manoscritti) {
                         const loadedAt = window.ultimoCaricamento || 0;
                         window.incomingChanges = peekData.database.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
@@ -110,7 +120,8 @@ window.avviaAutofetchDrive = async function() {
 };
 
 window.checkDriveStatusVisual = async function() {
-    if (window.apiDrive) {
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud) {
         // Usa i nuovi ID del Cloud Modal
         const statusText = document.getElementById('cloud-drive-status');
         const btnLogin = document.getElementById('btn-cloud-drive-login');
@@ -120,7 +131,7 @@ window.checkDriveStatusVisual = async function() {
         if (!statusText) return;
 
         try {
-            const statusResult = await window.apiDrive.status();
+            const statusResult = await apiCloud.status();
             const isAuth = statusResult?.isAuthenticated || false;
             if (isAuth) {
                 statusText.innerHTML = '<span class="text-green-600 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Connesso al Cloud</span>';
@@ -141,8 +152,10 @@ window.checkDriveStatusVisual = async function() {
 };
 
 async function aggiornaStatoDrive() {
-    if (window.apiDrive) {
-        const statusResult = await window.apiDrive.status();
+    window.aggiornaStatoDrive = aggiornaStatoDrive;
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud) {
+        const statusResult = await apiCloud.status();
         window.driveStatus = {
             isAuthenticated: statusResult?.isAuthenticated || false,
             user: statusResult?.user || null
@@ -177,13 +190,14 @@ async function aggiornaStatoDrive() {
     }
 }
 
-window.loginGoogleDrive = async function() {
-    if (window.apiDrive) {
+window.loginCloud = async function(provider, forceLocal = false) {
+    const api = provider === 'microsoft' ? window.apiMicrosoft : window.apiDrive;
+    if (api) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio("Apri il browser per completare l'accesso...", "info");
         try {
-            await window.apiDrive.auth();
+            await api.auth(forceLocal);
             await aggiornaStatoDrive();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Autenticazione a Google Drive completata!", "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio("Autenticazione completata!", "success");
         } catch (e) {
             console.error(e);
             if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante l'autenticazione", "error");
@@ -191,10 +205,15 @@ window.loginGoogleDrive = async function() {
     }
 };
 
+window.loginGoogleDrive = async function(forceLocal = false) {
+    await window.loginCloud('google', forceLocal);
+};
+
 window.logoutGoogleDrive = async function() {
-    if (window.apiDrive) {
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud) {
         try {
-            await window.apiDrive.logout();
+            await apiCloud.logout();
             await aggiornaStatoDrive();
             if (typeof mostraMessaggio === 'function') mostraMessaggio("Disconnesso da Google Drive.", "info");
         } catch (e) {
@@ -204,14 +223,15 @@ window.logoutGoogleDrive = async function() {
 };
 
 window.sincronizzaGoogleDrive = async function(silent = false) {
-    if (window.apiDrive) {
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud) {
         const btn = document.getElementById('btn-drive-sync');
         if (btn) btn.disabled = true;
         window.toggleSyncProgress(true, 'sync_in_progress');
         
         try {
             // 1. Scarica da Drive (se esiste)
-            const driveData = await window.apiDrive.pull();
+            const driveData = await apiCloud.pull();
             if (driveData && driveData.database) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
@@ -219,7 +239,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             }
 
             // 2. Carica le modifiche locali unite (upload)
-            await window.apiDrive.sync();
+            await apiCloud.sync();
             
             window.ultimoCaricamento = Date.now();
             if (window.apiSettings) {
@@ -248,10 +268,11 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
 };
 
 window.scaricaDalCloud = async function(silent = false) {
-    if (window.apiDrive) {
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud) {
         window.toggleSyncProgress(true, 'download_in_progress');
         try {
-            const driveData = await window.apiDrive.pull();
+            const driveData = await apiCloud.pull();
             if (driveData && driveData.database) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
@@ -277,11 +298,12 @@ window.scaricaDalCloud = async function(silent = false) {
 };
 
 window.caricaSulCloud = async function(silent = false) {
-    if (window.apiDrive) {
+    const apiCloud = await window.getApiCloud();
+    if (apiCloud) {
         window.toggleSyncProgress(true, 'upload_in_progress');
         try {
             // Per evitare sovrascritture cieche, prima scarichiamo e uniamo eventuali modifiche remote!
-            const driveData = await window.apiDrive.pull();
+            const driveData = await apiCloud.pull();
             if (driveData && driveData.database) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
@@ -289,7 +311,7 @@ window.caricaSulCloud = async function(silent = false) {
             }
 
             // Ora carichiamo il risultato del merge
-            await window.apiDrive.sync();
+            await apiCloud.sync();
             
             window.ultimoCaricamento = Date.now();
             if (window.apiSettings) {
@@ -350,43 +372,158 @@ async function inviaPingPusher() {
 
 window.trasformaInCondiviso = async function() {
     const btn = document.getElementById('btn-trasforma-condiviso');
-    const status = document.getElementById('cloud-transform-status');
     if(btn) btn.disabled = true;
-    if(status) {
-        status.classList.remove('hidden');
-        status.textContent = "Autenticazione con Google Drive in corso...";
+    
+    if (typeof mostraProgressoCloud === 'function') {
+        mostraProgressoCloud("Preparazione in corso", "Autenticazione con Google Drive in corso...");
     }
 
     try {
+        const apiCloud = await window.getApiCloud();
         if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
-            await window.apiDrive.auth();
+            await apiCloud.auth();
             await aggiornaStatoDrive();
         }
 
-        if(status) status.textContent = "Impostazione Vault come condiviso...";
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud("Configurazione in corso", "Impostazione Vault come condiviso...");
+        }
+        
         if (window.apiSettings) {
             const settings = await window.apiSettings.get();
+            if (!settings.isSharedVault && !settings.isPersonalCloud) {
+                settings.sharedVaultId = null;
+            }
             settings.isSharedVault = true;
+            settings.isPersonalCloud = false;
             settings.driveAutofetch = true;
             await window.apiSettings.save(settings);
         }
 
-        if(status) status.textContent = "Prima sincronizzazione in corso (potrebbe volerci un po')...";
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud("Sincronizzazione in corso", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po')...");
+        }
         await window.sincronizzaGoogleDrive(true);
         
-        if(status) status.textContent = "Fatto! Generazione codice...";
-        // Ricarichiamo il modal per mostrare la UI Condiviso
         if (typeof apriCloudModal === 'function') {
             apriCloudModal();
         }
     } catch(e) {
         mostraMessaggio("Errore: " + e.message, "error");
-        if(status) {
-            status.textContent = "Si è verificato un errore.";
-            status.classList.replace('text-blue-600', 'text-red-600');
-        }
         if(btn) btn.disabled = false;
+    } finally {
+        if (typeof nascondiProgressoCloud === 'function') {
+            nascondiProgressoCloud();
+        }
     }
 }
+window.trasformaInPersonale = async function() {
+    const btn = document.getElementById('btn-trasforma-personale');
+    if(btn) btn.disabled = true;
+    
+    if (typeof mostraProgressoCloud === 'function') {
+        mostraProgressoCloud("Preparazione in corso", "Autenticazione con Google Drive in corso...");
+    }
+
+    try {
+        const apiCloud = await window.getApiCloud();
+        if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
+            await apiCloud.auth();
+            await aggiornaStatoDrive();
+        }
+
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud("Configurazione in corso", "Impostazione Backup Personale...");
+        }
+        
+        if (window.apiSettings) {
+            const settings = await window.apiSettings.get();
+            if (!settings.isSharedVault && !settings.isPersonalCloud) {
+                settings.sharedVaultId = null;
+            }
+            settings.isPersonalCloud = true;
+            settings.isSharedVault = false; // Ensures it's not both
+            settings.driveAutofetch = true;
+            await window.apiSettings.save(settings);
+        }
+
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud("Sincronizzazione in corso", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po')...");
+        }
+        await window.sincronizzaGoogleDrive(true);
+        
+        if (typeof apriCloudModal === 'function') {
+            apriCloudModal();
+        }
+    } catch(e) {
+        mostraMessaggio("Errore: " + e.message, "error");
+        if(btn) btn.disabled = false;
+    } finally {
+        if (typeof nascondiProgressoCloud === 'function') {
+            nascondiProgressoCloud();
+        }
+    }
+}
+
+window.scollegaCloud = async function() {
+    if (typeof mostraBottomConfirm === 'function') {
+        mostraBottomConfirm(
+            "Vuoi davvero scollegare questo Vault dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.",
+            async () => {
+                if (typeof mostraProgressoCloud === 'function') {
+                    mostraProgressoCloud("Scollegamento", "Disattivazione della sincronizzazione Cloud...");
+                }
+                try {
+                    if (window.apiSettings) {
+                        const settings = await window.apiSettings.get();
+                        settings.isSharedVault = false;
+                        settings.isPersonalCloud = false;
+                        settings.driveAutofetch = false;
+                        settings.sharedVaultId = null;
+                        await window.apiSettings.save(settings);
+                        
+                        mostraMessaggio("Il Vault è ora scollegato ed è solo locale.", "success");
+                        
+                        if (typeof apriCloudModal === 'function') {
+                            apriCloudModal();
+                        }
+                    }
+                } catch(e) {
+                    mostraMessaggio("Errore: " + e.message, "error");
+                } finally {
+                    if (typeof nascondiProgressoCloud === 'function') {
+                        nascondiProgressoCloud();
+                    }
+                }
+            }
+        );
+    } else if (confirm("Vuoi davvero scollegare questo Vault dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.")) {
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud("Scollegamento", "Disattivazione della sincronizzazione Cloud...");
+        }
+        try {
+            if (window.apiSettings) {
+                const settings = await window.apiSettings.get();
+                settings.isSharedVault = false;
+                settings.isPersonalCloud = false;
+                settings.driveAutofetch = false;
+                await window.apiSettings.save(settings);
+                
+                mostraMessaggio("Il Vault è ora scollegato ed è solo locale.", "success");
+                
+                if (typeof apriCloudModal === 'function') {
+                    apriCloudModal();
+                }
+            }
+        } catch(e) {
+            mostraMessaggio("Errore durante la disconnessione dal cloud: " + e.message, "error");
+        } finally {
+            if (typeof nascondiProgressoCloud === 'function') {
+                nascondiProgressoCloud();
+            }
+        }
+    }
+}
+
 
 

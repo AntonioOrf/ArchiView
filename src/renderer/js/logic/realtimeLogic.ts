@@ -115,5 +115,11 @@ window.caricaImpostazioniDriveUI = async function() {
 const originalApriImpostazioni = window.apriImpostazioni;
 window.apriImpostazioni = function() {
     if (typeof originalApriImpostazioni === 'function') originalApriImpostazioni();
-    setTimeout(window.popolaImpostazioniDrive, 100);
+    setTimeout(() => {
+        if (typeof window.popolaImpostazioniDrive === 'function') {
+            window.popolaImpostazioniDrive();
+        } else if (typeof window.caricaImpostazioniDriveUI === 'function') {
+            window.caricaImpostazioniDriveUI();
+        }
+    }, 100);
 };

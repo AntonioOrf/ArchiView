@@ -21,22 +21,44 @@ function setupWorkspaceIpc() {
     const recents = settings.recentWorkspaces || [];
     return recents.map((folderPath: string) => {
       let isShared = false;
+      let isPersonal = false;
+
+      // The global settings might have isSharedVault = true or isPersonalCloud = true for the current active workspace
+      if (settings.workspacePath === folderPath) {
+        if (settings.isSharedVault) isShared = true;
+        if (settings.isPersonalCloud) isPersonal = true;
+      }
+
       try {
+        const driveSettingsPath = path.join(folderPath, '.archiview-drive.json');
+        if (fs.existsSync(driveSettingsPath)) {
+          const driveSettings = JSON.parse(fs.readFileSync(driveSettingsPath, 'utf8'));
+          if (driveSettings.isSharedVault) isShared = true;
+          if (driveSettings.isPersonalCloud) isPersonal = true;
+        }
+        
         const vaultSettingsPath = path.join(folderPath, 'settings.json');
         if (fs.existsSync(vaultSettingsPath)) {
           const vaultSettings = JSON.parse(fs.readFileSync(vaultSettingsPath, 'utf8'));
-          isShared = !!vaultSettings.isSharedVault;
+          if (vaultSettings.isSharedVault) isShared = true;
+          if (vaultSettings.isPersonalCloud) isPersonal = true;
+        }
+        
+        const hubConfigPath = path.join(folderPath, '.archiview-hub.json');
+        if (fs.existsSync(hubConfigPath)) {
+          isShared = true;
         }
       } catch (e) {}
-      return { path: folderPath, isShared };
+      return { path: folderPath, isShared, isPersonal };
     });
   });
 
   ipcMain.handle('open-recent-workspace', (event, folderPath) => {
     if (fs.existsSync(folderPath)) {
       initWorkspace(folderPath);
-      app.relaunch();
-      app.quit();
+      if (state.mainWindow) {
+          state.mainWindow.reload();
+      }
       return true;
     }
     return false;
@@ -62,8 +84,9 @@ function setupWorkspaceIpc() {
       }
       
       initWorkspace(newPath);
-      app.relaunch();
-      app.quit();
+      if (state.mainWindow) {
+          state.mainWindow.reload();
+      }
       return true;
     }
     return false;
@@ -94,8 +117,9 @@ function setupWorkspaceIpc() {
       fs.writeFileSync(settingsPath, JSON.stringify(config, null, 2), 'utf8');
     }
     initWorkspace(newPath);
-    app.relaunch();
-    app.quit();
+    if (state.mainWindow) {
+        state.mainWindow.reload();
+    }
     return true;
   });
 
@@ -146,8 +170,9 @@ function setupWorkspaceIpc() {
       }
 
       initWorkspace(newPath);
-      app.relaunch();
-      app.quit();
+      if (state.mainWindow) {
+          state.mainWindow.reload();
+      }
       return true;
     } catch (e) {
       console.error("Errore clonazione workspace Hub:", e);

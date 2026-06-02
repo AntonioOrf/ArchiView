@@ -111,9 +111,30 @@ function renderMain(resetPage = true) {
         const fragment = document.createDocumentFragment();
 
         for (const m of paginated) {
+            const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
+            const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
             const div = document.createElement('div');
-            div.className = "card-scheda";
+            div.className = `card-scheda bg-white p-4 relative flex flex-col justify-between cursor-pointer group ${isSelected ? 'ring-2 ring-amber-500 bg-amber-50/20' : ''}`;
             div.id = 'card-' + m.id;
+            
+            div.onclick = (e) => {
+                if (e.target.closest('button') || e.target.closest('a') || e.target.tagName.toLowerCase() === 'input') return;
+                if (typeof window.selectItem === 'function') {
+                    window.selectItem(m.id, e);
+                }
+            };
+
+            div.ondblclick = (e) => {
+                if (e.target.closest('button') || e.target.closest('a') || e.target.tagName.toLowerCase() === 'input') return;
+                // prevent selection when double clicking
+                if (document.selection && document.selection.empty) {
+                    document.selection.empty();
+                } else if (window.getSelection) {
+                    var sel = window.getSelection();
+                    sel.removeAllRanges();
+                }
+                editItem(m.id);
+            };
 
             // Logica Drag and Drop
             div.draggable = true;
@@ -123,6 +144,15 @@ function renderMain(resetPage = true) {
                 div.classList.add('opacity-50');
             };
             div.ondragend = () => div.classList.remove('opacity-50');
+            
+            // Context menu per Copia/Incolla
+            div.oncontextmenu = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof showRecordContextMenu === 'function') {
+                    showRecordContextMenu(e, m.id);
+                }
+            };
 
             const allegatiRender = normalizzaAllegati(m);
 
@@ -138,8 +168,9 @@ function renderMain(resetPage = true) {
 
             let btnVediPdfPiccolo = '';
 
-            if (allegatiRender.length > 0 && window.apiBrowser) {
-                btnVediPdfPiccolo = `<button onclick="apriModalDocumenti('${m.id}')" class="btn btn-ghost text-xs uppercase tracking-wider"> Mostra Documenti (${allegatiRender.length})</button>`;
+            if (allegatiRender.length > 0) {
+                const textAllegati = allegatiRender.length === 1 ? '1 documento allegato' : `${allegatiRender.length} documenti allegati`;
+                btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}</span>`;
                 allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
             } else {
                 allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
@@ -201,8 +232,19 @@ function renderMain(resetPage = true) {
                 dateHTML = `<div class="text-[9px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
             }
 
+            // Checkbox di selezione (visibile quando c'è almeno un record selezionato)
+            const checkboxHTML = hasSelection ? `
+                <div class="absolute top-2 left-2 z-10" onclick="event.stopPropagation(); window.selectItem('${m.id}', event)">
+                    <div class="flex items-center justify-center w-5 h-5 rounded border-2 shadow-sm cursor-pointer transition-all duration-150
+                        ${isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white/90 border-stone-300 text-transparent hover:border-amber-400'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                </div>
+            ` : '';
+
             div.innerHTML = `
-                <div>
+                ${checkboxHTML}
+                <div class="px-1 ${hasSelection ? 'pl-7' : ''}">
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <h3 class="card-title mb-0" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
                         <div class="flex items-center gap-1.5 shrink-0 mt-0">
@@ -219,6 +261,7 @@ function renderMain(resetPage = true) {
                 </div>
                 <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end gap-2">
                     ${btnVediPdfPiccolo}
+                    <button onclick="esportaManoscritto('${m.id}')" class="btn btn-ghost btn-icon" title="Esporta"><i data-lucide="download" class="w-4 h-4"></i></button>
                     <button onclick="deleteItem('${m.id}')" class="btn btn-ghost btn-icon" style="color: var(--color-danger);"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `;
@@ -231,9 +274,22 @@ function renderMain(resetPage = true) {
     if (window.lucide) lucide.createIcons({ nodes: [grid] });
 }
 
+window.pendingTabSwitch = null;
+
 function switchTab(tab) {
-    const vList = document.getElementById('view-list');
     const vAdd = document.getElementById('view-add');
+    if (!vAdd.classList.contains('hidden-tab') && window.isFormDirty && tab !== 'add') {
+        window.pendingTabSwitch = tab;
+        if (window.mostraBottomConfirm) {
+            window.mostraBottomConfirm(window.t('unsaved_prompt') || "Ci sono modifiche non salvate alla scheda. Sei sicuro di voler uscire perdendo le modifiche?", () => {
+                window.isFormDirty = false;
+                switchTab(window.pendingTabSwitch);
+            });
+            return;
+        }
+    }
+
+    const vList = document.getElementById('view-list');
     const vTrascrizione = document.getElementById('view-trascrizione');
 
     vList.classList.add('hidden-tab');

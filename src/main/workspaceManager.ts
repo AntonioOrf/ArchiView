@@ -38,6 +38,21 @@ function saveAllSettings(newSettings) {
     if (!fs.existsSync(state.attachmentsDirPath)) {
       fs.mkdirSync(state.attachmentsDirPath, { recursive: true });
     }
+    
+    // Save drive settings locally to the workspace so they don't bleed into other workspaces
+    const driveSettingsPath = path.join(state.workspacePath, '.archiview-drive.json');
+    const driveSettings = {
+        isSharedVault: updated.isSharedVault || false,
+        isPersonalCloud: updated.isPersonalCloud || false,
+        sharedVaultId: updated.sharedVaultId || null,
+        pusherKey: updated.pusherKey || null,
+        pusherCluster: updated.pusherCluster || null,
+        pusherWebhook: updated.pusherWebhook || null,
+        driveAutofetch: updated.driveAutofetch || false
+    };
+    try {
+        fs.writeFileSync(driveSettingsPath, JSON.stringify(driveSettings, null, 2));
+    } catch(e) {}
   }
 
   return updated;
@@ -76,7 +91,50 @@ function initWorkspace(folderPath) {
   // Tieni gli ultimi 5
   recentWorkspaces = recentWorkspaces.slice(0, 5);
 
-  saveAllSettings({ workspacePath: folderPath, recentWorkspaces });
+  // Load drive settings specific to this workspace
+  const driveSettingsPath = path.join(folderPath, '.archiview-drive.json');
+  let workspaceDriveSettings = {
+      isSharedVault: false,
+      isPersonalCloud: false,
+      sharedVaultId: null,
+      pusherKey: null,
+      pusherCluster: null,
+      pusherWebhook: null,
+      driveAutofetch: false
+  };
+  
+  if (fs.existsSync(driveSettingsPath)) {
+      try {
+          workspaceDriveSettings = JSON.parse(fs.readFileSync(driveSettingsPath, 'utf8'));
+      } catch(e) {}
+  } else {
+      // If no local config exists, but this is the SAME workspace as the global one, migrate global settings to local
+      if (currentSettings.workspacePath === folderPath && (currentSettings.isSharedVault || currentSettings.isPersonalCloud)) {
+          workspaceDriveSettings = {
+              isSharedVault: currentSettings.isSharedVault || false,
+              isPersonalCloud: currentSettings.isPersonalCloud || false,
+              sharedVaultId: currentSettings.sharedVaultId || null,
+              pusherKey: currentSettings.pusherKey || null,
+              pusherCluster: currentSettings.pusherCluster || null,
+              pusherWebhook: currentSettings.pusherWebhook || null,
+              driveAutofetch: currentSettings.driveAutofetch || false
+          };
+          try {
+              fs.writeFileSync(driveSettingsPath, JSON.stringify(workspaceDriveSettings, null, 2));
+          } catch(e) {}
+      }
+  }
+
+  // We do NOT call saveAllSettings here for the drive settings because saveAllSettings would write them back to .archiview-drive.json
+  // Instead, we just update the global settings file directly with the merged config
+  const updatedGlobal = { 
+      ...currentSettings, 
+      workspacePath: folderPath, 
+      recentWorkspaces,
+      ...workspaceDriveSettings
+  };
+  
+  fs.writeFileSync(settingsPath, JSON.stringify(updatedGlobal, null, 2));
 }
 
 function saveHubConfig(config) {

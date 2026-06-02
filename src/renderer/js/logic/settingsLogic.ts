@@ -30,15 +30,20 @@ window.apriImpostazioni = async function() {
         if (attachmentsPathDiv) {
             if (settings.customAttachmentsPath) {
                 attachmentsPathDiv.textContent = settings.customAttachmentsPath;
-                if (btnRestore) btnRestore.classList.remove('hidden');
+                if (btnRestore) btnRestore.classList.remove('hidden-tab');
             } else {
                 attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
-                if (btnRestore) btnRestore.classList.add('hidden');
+                if (btnRestore) btnRestore.classList.add('hidden-tab');
             }
         }
         
-        // Aggiorna sezione Hub
+        // Aggiorna sezione Hub & Drive
         const hubSection = document.getElementById('settings-hub-section');
+        const driveSection = document.getElementById('settings-drive-section');
+        const disabledText = document.getElementById('settings-hub-disabled');
+
+        let isAnySyncActive = false;
+
         if (hubSection) {
             if (window.hubConfig) {
                 document.getElementById('settings-hub-url').textContent = window.hubConfig.hubUrl;
@@ -55,8 +60,37 @@ window.apriImpostazioni = async function() {
                 }
                 
                 hubSection.classList.remove('hidden');
+                isAnySyncActive = true;
             } else {
                 hubSection.classList.add('hidden');
+            }
+        }
+        
+        if (driveSection) {
+            if (settings.isSharedVault || settings.isPersonalCloud) {
+                driveSection.classList.remove('hidden');
+                isAnySyncActive = true;
+                
+                const driveTitle = document.getElementById('settings-drive-title');
+                const driveDesc = document.getElementById('settings-drive-desc');
+                
+                if (settings.isPersonalCloud) {
+                    if (driveTitle) driveTitle.textContent = "Backup su Cloud Personale";
+                    if (driveDesc) driveDesc.textContent = "Questo vault locale è sincronizzato privatamente come backup sul tuo Google Drive.";
+                } else {
+                    if (driveTitle) driveTitle.textContent = "Sincronizzazione Google Drive";
+                    if (driveDesc) driveDesc.textContent = "Questo vault locale è configurato come Vault Condiviso tramite Google Drive.";
+                }
+            } else {
+                driveSection.classList.add('hidden');
+            }
+        }
+
+        if (disabledText) {
+            if (isAnySyncActive) {
+                disabledText.classList.add('hidden');
+            } else {
+                disabledText.classList.remove('hidden');
             }
         }
     }
@@ -92,7 +126,7 @@ window.cambiaCartellaAllegati = async function() {
             const attachmentsPathDiv = document.getElementById('settings-attachments-path');
             const btnRestore = document.getElementById('btn-restore-attachments');
             if (attachmentsPathDiv) attachmentsPathDiv.textContent = path;
-            if (btnRestore) btnRestore.classList.remove('hidden');
+            if (btnRestore) btnRestore.classList.remove('hidden-tab');
             
             mostraMessaggio("Cartella allegati locale configurata con successo.", "success");
         }
@@ -109,7 +143,7 @@ window.ripristinaCartellaAllegatiPredefinita = async function() {
         const attachmentsPathDiv = document.getElementById('settings-attachments-path');
         const btnRestore = document.getElementById('btn-restore-attachments');
         if (attachmentsPathDiv) attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
-        if (btnRestore) btnRestore.classList.add('hidden');
+        if (btnRestore) btnRestore.classList.add('hidden-tab');
         
         mostraMessaggio("Cartella allegati ripristinata al percorso di default (interna al vault).", "success");
     }
