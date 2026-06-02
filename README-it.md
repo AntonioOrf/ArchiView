@@ -1,4 +1,4 @@
-*Leggi in [Inglese](README-en.md)*
+*Leggi in [Inglese](README.md)*
 
 <img padding=20i width="1920" height="1280" alt="914_1x_shots_so" src="https://github.com/user-attachments/assets/973bffbb-f596-47ad-97d3-151f5f10075b" />
 
