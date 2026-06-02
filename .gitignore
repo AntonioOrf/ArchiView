@@ -2,7 +2,8 @@ hub-server/
 hub-server
 node_modules/
 dist/
-build/
+build/*
+!build/license.txt
 out/
 .env
 .DS_Store

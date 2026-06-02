@@ -1,0 +1,22 @@
+CONDIZIONI DI UTILIZZO DI ARCHIVIEW
+
+1. ACCETTAZIONE DEI TERMINI
+Scaricando, installando o utilizzando l'applicazione ArchiView ("Applicazione"), l'utente accetta di essere vincolato dai presenti Termini e Condizioni ("Termini"). Se l'utente non accetta i Termini, non dovrà installare né utilizzare l'Applicazione.
+
+2. LICENZA E UTILIZZO
+ArchiView è un software gestionale open-source. Viene concesso il diritto non esclusivo e revocabile di utilizzare l'Applicazione secondo i termini della licenza in cui è distribuita.
+
+3. PRIVACY E GESTIONE DATI (LOCALI E CLOUD)
+I dati generati (inclusi manoscritti, schede, allegati) risiedono e sono archiviati primariamente in locale sul computer dell'utente. Se l'utente decide di utilizzare funzionalità avanzate come:
+- Sincronizzazione via Google Drive
+- Sistema in Tempo Reale tramite Pusher
+- Condivisione P2P Vault
+L'utente è consapevole che i dati di testo (file JSON e credenziali) verranno elaborati e trasmessi tramite tali servizi terzi. L'utente si assume ogni responsabilità in merito alle informazioni caricate o sincronizzate sul cloud. Lo sviluppatore di ArchiView non ha alcun accesso ai dati dell'utente, i quali rimangono di esclusiva proprietà dell'utente stesso o gestiti tramite le chiavi crittografiche o API inserite dall'utente.
+
+4. LIMITAZIONE DI RESPONSABILITÀ
+L'Applicazione viene fornita "così com'è" senza garanzie di alcun tipo. Lo sviluppatore non è in alcun caso responsabile per la perdita di dati, difetti o danni accidentali derivanti dall'utilizzo o dall'impossibilità di utilizzo del software. È fortemente raccomandato all'utente di effettuare backup regolari della cartella di lavoro in proprio possesso, sfruttando le funzionalità di backup locale o remoto fornite.
+
+5. AGGIORNAMENTI E FUNZIONALITÀ
+L'Applicazione può ricevere aggiornamenti automatici (tramite GitHub o altri provider impostati) senza preavviso. Le funzionalità, incluse quelle sperimentali (come Live Sync e Cloud), possono cambiare, subire interruzioni o essere modificate in qualsiasi momento.
+
+Procedendo con l'installazione, dichiari di aver letto e accettato i suddetti termini e sei consapevole del funzionamento della gestione dati.
