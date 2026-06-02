@@ -124,17 +124,7 @@ function renderMain(resetPage = true) {
                 }
             };
 
-            div.ondblclick = (e) => {
-                if (e.target.closest('button') || e.target.closest('a') || e.target.tagName.toLowerCase() === 'input') return;
-                // prevent selection when double clicking
-                if (document.selection && document.selection.empty) {
-                    document.selection.empty();
-                } else if (window.getSelection) {
-                    var sel = window.getSelection();
-                    sel.removeAllRanges();
-                }
-                editItem(m.id);
-            };
+
 
             // Logica Drag and Drop
             div.draggable = true;

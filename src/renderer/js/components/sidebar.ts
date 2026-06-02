@@ -132,19 +132,13 @@ function renderSidebar() {
         
         riga.appendChild(actionContainer);
 
-        riga.ondblclick = () => {
+        riga.onclick = () => {
             window.cartellaAttuale = fullPath;
             window.cartelleEspanse.add(fullPath);
             document.getElementById('search-input').value = '';
             switchTab('list');
             renderSidebar();
             renderMain();
-        };
-
-        // Rimuoviamo l'onclick che navigava, lasciamo solo ondblclick e la logica di espansione (sul chevron)
-        riga.onclick = (e) => {
-            // Se si fa click sulla cartella (non sul chevron) potremmo eventualmente selezionarla.
-            // Per ora non facciamo nulla.
         };
 
         div.appendChild(riga);
@@ -186,18 +180,7 @@ function renderSidebar() {
                     }
                 };
                 
-                fileRow.ondblclick = (e) => {
-                    e.stopPropagation();
-                    if (document.selection && document.selection.empty) {
-                        document.selection.empty();
-                    } else if (window.getSelection) {
-                        var sel = window.getSelection();
-                        sel.removeAllRanges();
-                    }
-                    if (typeof editItem === 'function') {
-                        editItem(m.id);
-                    }
-                };
+
 
                 const iconaFile = 'file-text';
                 const titoloFile = escapeHTML(m.segnatura || m.titolo || 'Senza Titolo');
