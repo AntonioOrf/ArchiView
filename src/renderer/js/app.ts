@@ -97,9 +97,7 @@ async function avviaApp() {
             if (typeof apriCloudModal === 'function') {
                 await apriCloudModal();
             }
-            if (window.driveStatus && window.driveStatus.isAuthenticated) {
-                if (typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
-            }
+            if (typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
         }, 1500);
     }
 
