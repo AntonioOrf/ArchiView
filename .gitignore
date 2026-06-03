@@ -30,7 +30,7 @@ src/main/ipc/cloudCredentials.ts
 src/main/ipc/cloudCredentials.js
 vercel-hub/node_modules/
 vercel-hub/.env
-
+src/main/ipc/cloudCredentials.ts
 # File generati e di sistema
 *.tsbuildinfo
 .vscode/
