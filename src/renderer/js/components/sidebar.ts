@@ -450,7 +450,7 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     const vaultName = pathToRemove.split(/[\\/\\\\]/).pop();
     
     const modalHtml = `
-        <div id="vault-delete-modal" class="modal-overlay z-[150] flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        <div id="vault-delete-modal" class="modal-overlay z-150 flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
             <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl">
                 <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
                 <h3 class="text-xl font-bold mb-2">Rimuovi Vault</h3>

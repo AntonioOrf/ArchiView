@@ -13,10 +13,10 @@
     </div>
 
     <!-- Container for normal Toasts -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-100 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Floating Selection Bar -->
-    <div id="selection-bar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-4 bg-stone-900 text-stone-100 px-6 py-3 rounded-full shadow-2xl transition-all duration-300">
+    <div id="selection-bar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 items-center gap-4 bg-stone-900 text-stone-100 px-6 py-3 rounded-full shadow-2xl transition-all duration-300">
         <span id="selection-count" class="font-semibold text-sm">0 selezionati</span>
         <div class="w-px h-5 bg-stone-700"></div>
         <button onclick="esportaSelezionati()" class="text-sm font-medium hover:text-amber-400 flex items-center gap-1.5 transition-colors"><i data-lucide="download" class="w-4 h-4"></i> Esporta</button>

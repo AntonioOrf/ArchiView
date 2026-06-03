@@ -97,7 +97,7 @@
     </div>
     
     <!-- OVERLAY PROGRESSO CLOUD -->
-    <div id="cloud-progress-overlay" class="modal-overlay hidden-tab z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div id="cloud-progress-overlay" class="modal-overlay hidden-tab z-200 flex items-center justify-center bg-black/50 backdrop-blur-sm">
         <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-2xl p-6 text-center max-w-sm w-full">
             <svg class="animate-spin w-12 h-12 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -115,7 +115,7 @@
     function chiediConfermaAccessoCloud() {
         return new Promise((resolve) => {
             const html = `
-                <div id="cloud-auth-modal" class="modal-overlay z-[150] flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+                <div id="cloud-auth-modal" class="modal-overlay z-150 flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
                     <div class="modal-window p-6 text-center max-w-sm bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl">
                         <i data-lucide="cloud" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
                         <h3 class="text-xl font-bold mb-2 text-stone-800 dark:text-stone-100">Autenticazione Cloud</h3>
@@ -152,7 +152,7 @@
         return new Promise((resolve) => {
             const id = 'confirm-modal-' + Date.now();
             const html = `
-                <div id="${id}" class="modal-overlay z-[250] flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0">
+                <div id="${id}" class="modal-overlay z-250 flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0">
                     <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-2xl p-6 w-full max-w-md">
                         <h3 class="text-lg font-bold mb-2 text-stone-800 dark:text-stone-100 flex items-center gap-2">
                             <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i> ${titolo}
@@ -335,7 +335,7 @@
     window.invitaTramiteEmail = async function() {
         const email = await new Promise((resolve) => {
             const html = `
-                <div id="email-prompt-modal" class="modal-overlay z-[250] flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0">
+                <div id="email-prompt-modal" class="modal-overlay z-250 flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0">
                     <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-2xl p-6 w-full max-w-md">
                         <h3 class="text-lg font-bold mb-2 text-stone-800 dark:text-stone-100 flex items-center gap-2">
                             <i data-lucide="mail" class="w-5 h-5 text-blue-500"></i> Indirizzo Email

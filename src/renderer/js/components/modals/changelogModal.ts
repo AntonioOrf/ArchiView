@@ -4,7 +4,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('changelog-modal')) {
             const html = `
-                <div id="changelog-modal" class="modal-overlay hidden-tab z-[200]">
+                <div id="changelog-modal" class="modal-overlay hidden-tab z-200">
                     <div class="modal-window max-w-2xl bg-white dark:bg-stone-900 overflow-hidden flex flex-col h-[80vh]">
                         <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-800">
                             <h3 class="modal-title">

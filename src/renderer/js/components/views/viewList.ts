@@ -21,7 +21,7 @@
                         </div>
                     </div>
                     <!-- Widget Hub -->
-                    <div id="hub-sync-widget" class="hidden flex items-center gap-2.5 p-2 bg-amber-50/50 border border-amber-200 rounded-sm text-sm">
+                    <div id="hub-sync-widget" class="hidden items-center gap-2.5 p-2 bg-amber-50/50 border border-amber-200 rounded-sm text-sm">
                         <span class="flex items-center gap-1 font-medium text-stone-700">
                             <i data-lucide="cloud" class="w-4 h-4 text-amber-700"></i>
                             <span>Hub:</span>
