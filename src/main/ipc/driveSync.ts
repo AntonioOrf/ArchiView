@@ -244,7 +244,6 @@ async function getOrCreateFolder(folderName, parentId = null) {
   };
 
   const folder = await drive.files.create({
-    resource: fileMetadata,
     requestBody: fileMetadata,
     fields: 'id'
   });
@@ -269,10 +268,6 @@ async function uploadFile(localPath, driveFileName, parentId, skipIfExist = fals
   } else {
     const media = { mimeType: mimeType, body: fs.createReadStream(localPath) };
     await drive.files.create({
-      resource: {
-        name: driveFileName,
-        parents: [parentId]
-      },
       requestBody: {
         name: driveFileName,
         parents: [parentId]
@@ -466,7 +461,6 @@ async function syncToDrive() {
           parents: [rootFolderId]
       };
       const folder = await drive.files.create({
-          resource: fileMetadata,
           requestBody: fileMetadata,
           fields: 'id'
       });
@@ -586,7 +580,7 @@ async function cleanOrphanedAttachments() {
       for (const f of resAll.data.files) {
           if (!usedAttachments.has(f.name)) {
               try {
-                  await drive.files.update({ fileId: f.id, resource: { trashed: true }, requestBody: { trashed: true } });
+                  await drive.files.update({ fileId: f.id, requestBody: { trashed: true } });
                   deletedDrive++;
               } catch(e) { console.error("Errore spostamento nel cestino Drive:", e); }
           }
@@ -659,10 +653,6 @@ function setupDriveIpc() {
         try {
             await drive.permissions.create({
                 fileId: vaultFolderId,
-                resource: {
-                    role: 'writer',
-                    type: 'anyone'
-                },
                 requestBody: {
                     role: 'writer',
                     type: 'anyone'
@@ -809,8 +799,7 @@ function setupDriveIpc() {
         await drive.permissions.create({
             fileId: vaultFolderId,
             sendNotificationEmail: true,
-            resource: { role: 'writer', type: 'user', emailAddress: email },
-            requestBody: { role: 'writer', type: 'user', emailAddress: email }
+            requestBody: { role: 'writer', type: 'user', emailAddress: email },
         });
         return true;
     } catch(e) {
