@@ -111,29 +111,6 @@
     --color-border-light: #c9c2ba;
 }
 
-:root.amber-dark-theme {
-    /* Accenti primari - Ambra chiara su sfondo scuro */
-    --color-primary: #9b6f00;
-    --color-primary-hover: #f59e0b;
-    --color-primary-light: rgba(251, 191, 36, 0.12);
-    --color-primary-border: rgba(251, 191, 36, 0.25);
-
-    /* Sfondi - profondità con livelli distinti */
-    --color-bg-base: #141412;
-    --color-bg-panel: #1f1e1b;
-    --color-bg-panel-transparent: rgba(245, 188, 17, 0.98);
-    --color-bg-hover: #2d2b26;
-    --color-bg-sidebar: #191815;
-
-    /* Testi */
-    --color-text-main: #f0ece6;
-    --color-text-secondary: #d4cfc8;
-    --color-text-muted: #8a8078;
-
-    /* Bordi */
-    --color-border: #3a3830;
-    --color-border-light: #2a2924;
-}
 
 /* Modifiche Layout Flat per ENTRAMBI i temi */
 body {

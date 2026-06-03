@@ -126,6 +126,8 @@ function resetForm() {
 
     const newPreview = document.getElementById('form-allegati-new-preview');
     if (newPreview) newPreview.classList.add('hidden');
+    window.pendingFilesToUpload = [];
+    if (window.renderPendingFiles) window.renderPendingFiles();
 
     const dynContainer = document.getElementById('form-dynamic-fields');
     if (dynContainer) dynContainer.querySelectorAll('input, textarea').forEach(el => el.value = '');

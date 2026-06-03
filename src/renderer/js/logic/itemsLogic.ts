@@ -22,9 +22,9 @@ async function handleFormSubmit(e) {
     let allegatiCorrenti = JSON.parse(document.getElementById('form-allegati').value || '[]');
     const fileInput = document.getElementById('form-allegato');
     
-    if (fileInput.files.length > 0 && window.apiBrowser) {
-        for (let i = 0; i < fileInput.files.length; i++) {
-            const file = fileInput.files[i];
+    if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0 && window.apiBrowser) {
+        for (let i = 0; i < window.pendingFilesToUpload.length; i++) {
+            const file = window.pendingFilesToUpload[i];
             try {
                 const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
                 const risultato = await window.apiBrowser.salvaAllegato(filePath, documentoId);

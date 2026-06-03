@@ -148,17 +148,53 @@ async function avviaApp() {
     document.getElementById('manoscritto-form').addEventListener('change', () => { window.isFormDirty = true; });
 
     // Gestione Anteprime file
+    window.pendingFilesToUpload = window.pendingFilesToUpload || [];
+    
+    window.renderPendingFiles = function() {
+        const previewNew = document.getElementById('form-allegati-new-preview');
+        if (!previewNew) return;
+        
+        if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0) {
+            previewNew.classList.remove('hidden');
+            let html = '<div class="text-xs text-amber-700 font-medium mb-2">File pronti per il caricamento:</div>';
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+            window.pendingFilesToUpload.forEach((file, index) => {
+                html += `
+                    <div class="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-sm">
+                        <span class="text-xs truncate text-amber-900 font-semibold" title="${escapeHTML(file.name)}">
+                            <i data-lucide="file" class="w-3 h-3 inline-block mr-1"></i>${escapeHTML(file.name)}
+                        </span>
+                        <button type="button" onclick="window.rimuoviPendingFile(${index})" class="text-amber-600 hover:text-red-600 p-1 bg-white border border-amber-200 rounded shadow-sm">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            previewNew.innerHTML = html;
+            if (window.lucide) lucide.createIcons({ nodes: [previewNew] });
+        } else {
+            previewNew.classList.add('hidden');
+            previewNew.innerHTML = '';
+        }
+    };
+
+    window.rimuoviPendingFile = function(index) {
+        if (window.pendingFilesToUpload) {
+            window.pendingFilesToUpload.splice(index, 1);
+            window.renderPendingFiles();
+        }
+    };
+
     document.getElementById('form-allegato').addEventListener('change', function(e) {
         const fileList = e.target.files;
-        const previewNew = document.getElementById('form-allegati-new-preview');
-        if (previewNew) {
-            if (fileList.length > 0) {
-                previewNew.textContent = `${fileList.length} nuovi file pronti per il salvataggio.`;
-                previewNew.classList.remove('hidden');
-            } else {
-                previewNew.classList.add('hidden');
+        if (fileList.length > 0) {
+            for (let i = 0; i < fileList.length; i++) {
+                window.pendingFilesToUpload.push(fileList[i]);
             }
         }
+        e.target.value = ''; // Reset per poter selezionare di nuovo
+        window.renderPendingFiles();
     });
 
     // Scorciatoie da tastiera
@@ -315,14 +351,12 @@ window.applicaTema = function(theme) {
         activeTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     
-    document.documentElement.classList.remove('dark-theme', 'amber-light-theme', 'amber-dark-theme', 'blue-dark-theme');
+    document.documentElement.classList.remove('dark-theme', 'amber-light-theme', 'blue-dark-theme');
     
     if (activeTheme === 'dark') {
         document.documentElement.classList.add('dark-theme');
     } else if (activeTheme === 'amber-light') {
         document.documentElement.classList.add('amber-light-theme');
-    } else if (activeTheme === 'amber-dark') {
-        document.documentElement.classList.add('amber-dark-theme');
     } else if (activeTheme === 'blue-dark') {
         document.documentElement.classList.add('blue-dark-theme');
     }
@@ -541,14 +575,20 @@ window.esportaSelezionati = async function() {
 window.eliminaSelezionati = async function() {
     if (window.selectedRecords.length === 0) return;
     const count = window.selectedRecords.length;
-    if (confirm(`Sei sicuro di voler eliminare ${count} record selezionati? L'operazione è irreversibile.`)) {
+    
+    const procediEliminazione = async () => {
         appData.manoscritti = appData.manoscritti.filter(m => !window.selectedRecords.includes(m.id));
         await window.apiBrowser.salvaDati(appData);
         window.selectedRecords = [];
         window.aggiornaSelectionBar();
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(`Eliminati ${count} record.`, "success");
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
+    };
+
+    if (typeof window.mostraBottomConfirm === 'function') {
+        window.mostraBottomConfirm(`Sei sicuro di voler eliminare ${count} record selezionati? L'operazione è irreversibile.`, procediEliminazione);
+    } else {
+        await procediEliminazione();
     }
 };
 
@@ -586,7 +626,7 @@ function getOrCreateContextMenu() {
     if (!menu) {
         menu = document.createElement('div');
         menu.id = 'custom-context-menu';
-        menu.className = 'fixed bg-white border border-stone-200 shadow-xl rounded-md py-1 z-[9999] min-w-[150px] text-sm hidden';
+        menu.className = 'fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-[9999] min-w-[150px] text-sm hidden text-stone-800 dark:text-stone-100';
         document.body.appendChild(menu);
         
         // Chiudi click fuori
@@ -612,11 +652,11 @@ window.showRecordContextMenu = function(e, id) {
     const label = selCount > 1 ? ` (${selCount})` : '';
 
     menu.innerHTML = `
-        <button onclick="window.copiaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia${label}</button>
-        <button onclick="window.tagliaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 flex items-center gap-2"><i data-lucide="scissors" class="w-4 h-4"></i> Taglia${label}</button>
-        <button onclick="window.esportaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Esporta${label}</button>
-        <div class="h-px bg-stone-200 my-1"></div>
-        <button onclick="window.eliminaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina${label}</button>
+        <button onclick="window.copiaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia${label}</button>
+        <button onclick="window.tagliaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="scissors" class="w-4 h-4"></i> Taglia${label}</button>
+        <button onclick="window.esportaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Esporta${label}</button>
+        <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
+        <button onclick="window.eliminaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina${label}</button>
     `;
     if (window.lucide) lucide.createIcons({ nodes: [menu] });
     
@@ -637,7 +677,7 @@ window.showFolderContextMenu = function(e) {
         e.preventDefault();
         const menu = getOrCreateContextMenu();
         menu.innerHTML = `
-            <button onclick="window.incollaRecord()" class="w-full text-left px-4 py-2 hover:bg-stone-100 flex items-center gap-2 ${isMoving ? 'text-amber-600' : 'text-blue-600'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Incolla (${countToPaste})</button>
+            <button onclick="window.incollaRecord()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Incolla (${countToPaste})</button>
         `;
         if (window.lucide) lucide.createIcons({ nodes: [menu] });
         menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
@@ -655,12 +695,12 @@ window.showSidebarFolderContextMenu = function(e, folderPath) {
     const menu = getOrCreateContextMenu();
     const escFolder = folderPath.replace(/'/g, "\\'");
     
-    let html = `<button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Cartella</button>`;
+    let html = `<button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Cartella</button>`;
     
     if (countToPaste > 0) {
         html += `
-            <div class="h-px bg-stone-200 my-1"></div>
-            <button onclick="window.incollaRecord('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 flex items-center gap-2 ${isMoving ? 'text-amber-600' : 'text-blue-600'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Incolla qui (${countToPaste})</button>
+            <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
+            <button onclick="window.incollaRecord('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Incolla qui (${countToPaste})</button>
         `;
     }
     

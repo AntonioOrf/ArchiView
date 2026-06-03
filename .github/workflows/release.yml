@@ -25,6 +25,17 @@ jobs:
       - name: Installa le dipendenze
         run: npm install
 
+      - name: Crea file cloudCredentials.ts
+        shell: bash
+        run: |
+          cat <<EOF > src/main/ipc/cloudCredentials.ts
+          export const GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";
+          export const GOOGLE_CLIENT_SECRET = "${{ secrets.GOOGLE_CLIENT_SECRET }}";
+          export const PUSHER_KEY = "${{ secrets.PUSHER_KEY }}";
+          export const PUSHER_CLUSTER = "${{ secrets.PUSHER_CLUSTER }}";
+          export const PUSHER_WEBHOOK = "${{ secrets.PUSHER_WEBHOOK }}";
+          EOF
+
       - name: Costruisci e pubblica la Release
         run: npm run publish-app
         env:

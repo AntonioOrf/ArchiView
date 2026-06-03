@@ -64,7 +64,6 @@
                                 <optgroup label="Temi Scuri">
                                     <option value="dark">Obsidian Orange</option>
                                     <option value="blue-dark">Midnight Blue</option>
-                                    <option value="amber-dark">Classic Amber</option>
                                 </optgroup>
                             </select>
                         </div>
