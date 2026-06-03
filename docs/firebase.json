@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "archiview",
     "public": "public",
     "ignore": [
       "firebase.json",
