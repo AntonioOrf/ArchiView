@@ -36,5 +36,6 @@ vercel-hub/.env
 .vscode/
 .idea/
 
-# Token Google Drive locali (se il workspace è nel progetto)
+# Token Google Drive locali (se il workspace Ã¨ nel progetto)
 .drive-tokens.json
+node_modules/
