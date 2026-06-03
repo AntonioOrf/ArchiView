@@ -222,7 +222,7 @@ async function getOrCreateFolder(folderName, parentId = null) {
   }
 
   // Eseguiamo la ricerca
-  let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, name)' });
+  let res = await drive.files.list({ q, fields: 'files(id, name)' });
   
   // Se non la trova, riproviamo cercando esplicitamente nei file condivisi con l'utente (utile se un altro account ha condiviso la cartella)
   if (res.data.files.length === 0 && !parentId) {
@@ -255,7 +255,7 @@ async function uploadFile(localPath, driveFileName, parentId, skipIfExist = fals
   
   // Controlla se il file esiste
   const q = `name='${escapeDriveQuery(driveFileName)}' and '${parentId}' in parents and trashed=false`;
-  const res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id)' });
+  const res = await drive.files.list({ q, fields: 'files(id)' });
   
   if (res.data.files.length > 0) {
     if (skipIfExist) return; // Ottimizzazione: non ricaricare allegati già presenti
@@ -313,7 +313,7 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
 
   if (actualVaultFolderId) {
       let q = `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime)' });
+      const res = await drive.files.list({ q, fields: 'files(id, modifiedTime)' });
       if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
   } else if (state.workspacePath) {
       // Se non abbiamo un actualVaultFolderId per questo workspace, significa che non è mai stato sincronizzato.
@@ -408,7 +408,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
         try {
             const allegatiFolderId = await getOrCreateFolder('allegati_manoscritti', actualVaultFolderId);
             const qAll = `'${allegatiFolderId}' in parents and trashed=false`;
-            const resAll = await drive.files.list({ q: qAll, spaces: 'drive', fields: 'files(id, name)' });
+            const resAll = await drive.files.list({ q: qAll, fields: 'files(id, name)' });
             const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
             if (!fs.existsSync(allegatiLocalDir)) fs.mkdirSync(allegatiLocalDir, { recursive: true });
             
@@ -575,7 +575,7 @@ async function cleanOrphanedAttachments() {
   try {
       const allegatiFolderId = await getOrCreateFolder('allegati_manoscritti', projectFolderId);
       const qAll = `'${allegatiFolderId}' in parents and trashed=false`;
-      const resAll = await drive.files.list({ q: qAll, spaces: 'drive', fields: 'files(id, name)' });
+      const resAll = await drive.files.list({ q: qAll, fields: 'files(id, name)' });
       
       for (const f of resAll.data.files) {
           if (!usedAttachments.has(f.name)) {

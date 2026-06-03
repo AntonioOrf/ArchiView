@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "2.0.5",
+  "version": "2.0.7",
   "description": "Gestionale per manoscritti medievali",
   "author": "Antonio Orf",
   "repository": {
@@ -31,7 +31,8 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
