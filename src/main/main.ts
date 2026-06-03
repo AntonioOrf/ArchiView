@@ -21,6 +21,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     title: "ArchiView",
+    icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
