@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchiView - Gestionale per Manoscritti</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <meta name="google-site-verification" content="5PXEZeOc9c7BrB_h9kS1sXy-v261Zj73N_0lEARr8Uk" />
+</head>
+<body class="bg-stone-50 text-stone-900 min-h-screen flex flex-col">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-stone-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center gap-2">
+                    <div class="w-8 h-8 bg-amber-700 text-white rounded flex items-center justify-center font-bold text-lg">A</div>
+                    <span class="font-bold text-xl text-stone-800">ArchiView</span>
+                </div>
+                <div class="hidden sm:flex sm:space-x-8">
+                    <a href="index.html" class="text-amber-700 px-3 py-2 text-sm font-medium">Home</a>
+                    <a href="privacy.html" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">Privacy Policy</a>
+                    <a href="terms.html" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">Termini di Servizio</a>
+                    <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="flex-grow flex flex-col items-center justify-center py-20 px-4 sm:px-6 lg:px-8 text-center">
+        <div class="w-20 h-20 bg-gradient-to-br from-amber-600 to-amber-800 text-white rounded-2xl flex items-center justify-center font-bold text-4xl mb-8 shadow-xl mx-auto transform hover:scale-105 transition-transform">
+            A
+        </div>
+        <h1 class="text-5xl font-extrabold text-stone-900 tracking-tight sm:text-6xl mb-4">
+            ArchiView
+        </h1>
+        <p class="mt-4 text-xl text-stone-600 max-w-2xl mx-auto">
+            Il software desktop open-source offline-first dedicato alla catalogazione, all'archiviazione e alla trascrizione di manoscritti e documenti storici.
+        </p>
+        <div class="mt-10 flex justify-center gap-4">
+            <a href="https://github.com/AntonioOrf/ArchiView/releases" class="px-8 py-3 bg-amber-700 text-white font-medium rounded-lg shadow hover:bg-amber-800 transition-colors">
+                Scarica l'App
+            </a>
+            <a href="https://github.com/AntonioOrf/ArchiView" class="px-8 py-3 bg-white text-stone-700 border border-stone-200 font-medium rounded-lg shadow-sm hover:bg-stone-50 transition-colors">
+                Codice Sorgente
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-stone-200 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-stone-500 text-sm text-center md:text-left">
+                &copy; 2026 ArchiView. Open Source Software (MIT License).
+            </p>
+            <div class="flex space-x-6">
+                <a href="privacy.html" class="text-stone-400 hover:text-stone-600 text-sm transition-colors">Privacy Policy</a>
+                <a href="terms.html" class="text-stone-400 hover:text-stone-600 text-sm transition-colors">Termini di Servizio</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
