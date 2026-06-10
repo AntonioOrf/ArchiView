@@ -100,24 +100,6 @@ function setupExportImportIpc() {
         
         // Leggi DB attuale
         const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
-        let db = { manoscritti: [], tipiDocumento: [] };
-        if (fs.existsSync(dbPath)) {
-            db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-        }
-        
-        const existingIds = new Set(db.manoscritti.map(m => m.id));
-        let addedCount = 0;
-        
-        for (const m of data.manoscritti) {
-            // Se esiste già, cambiamo l'ID? O lo sovrascriviamo?
-            // Per sicurezza, se esiste già generiamo un nuovo ID
-            if (existingIds.has(m.id)) {
-                m.id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-                m.titolo = m.titolo ? m.titolo + ' (Copia)' : '';
-            }
-            db.manoscritti.push(m);
-            addedCount++;
-        }
         
         // Estrai gli allegati
         const allegatiDir = path.join(state.workspacePath, 'allegati_manoscritti');
@@ -133,8 +115,7 @@ function setupExportImportIpc() {
             }
         }
         
-        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-        return { success: true, count: addedCount };
+        return { success: true, manoscritti: data.manoscritti };
     } catch (e) {
         let errorMsg = e.message;
         if (errorMsg.includes('Invalid or unsupported zip format')) {

@@ -224,6 +224,21 @@ function renderSidebar() {
         } catch(err) {}
     };
 
+    const sidebarFoldersContainer = document.getElementById('sidebar-folders');
+    if (sidebarFoldersContainer) {
+        sidebarFoldersContainer.oncontextmenu = (e) => {
+            // Seleziona il click solo se non è all'interno di una sidebar-row
+            const closestRow = e.target.closest('.sidebar-row');
+            if (!closestRow) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof window.showSidebarFolderContextMenu === 'function') {
+                    window.showSidebarFolderContextMenu(e, 'ROOT');
+                }
+            }
+        };
+    }
+
     requestAnimationFrame(() => {
         if (window.lucide) lucide.createIcons({ nodes: [container] });
     });
@@ -303,14 +318,60 @@ window.renderSourceControl = function() {
     const modificati = appData.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
     const incoming = window.incomingChanges || [];
 
-    countLabel.textContent = (modificati.length + incoming.length).toString();
+    const incomingIndicator = document.getElementById('incoming-updates-indicator');
+    const hasIncomingUpdates = incomingIndicator && !incomingIndicator.classList.contains('hidden');
 
-    if (modificati.length === 0 && incoming.length === 0) {
+    let totalCount = modificati.length + incoming.length;
+    if (hasIncomingUpdates && incoming.length === 0) totalCount += 1;
+
+    countLabel.textContent = totalCount.toString();
+
+    if (modificati.length === 0 && incoming.length === 0 && !hasIncomingUpdates) {
         list.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">Nessuna modifica pendente</div>`;
         return;
     }
 
     const fragment = document.createDocumentFragment();
+    const structural = window.incomingStructuralChanges || [];
+
+    if (hasIncomingUpdates && incoming.length === 0 && structural.length === 0) {
+        const li = document.createElement('li');
+        li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 border-b border-stone-100 dark:border-stone-800/50 last:border-0 opacity-80 cursor-default";
+        li.title = "Sono presenti modifiche strutturali (es. cartelle o rimozioni). Clicca su Scarica in alto a destra.";
+        li.innerHTML = `
+            <div class="flex items-center gap-2 truncate">
+                <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
+                <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">Aggiornamenti strutturali</span>
+            </div>
+            <div class="text-[10px] text-blue-500 font-bold shrink-0">CLOUD</div>
+        `;
+        fragment.appendChild(li);
+    } else if (hasIncomingUpdates && structural.length > 0) {
+        const li = document.createElement('li');
+        li.className = "group flex flex-col py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 border-b border-stone-100 dark:border-stone-800/50 last:border-0";
+        
+        let detailsHtml = structural.map(s => `
+            <div class="text-xs text-stone-500 italic ml-6 mt-1.5 flex items-center gap-1.5">
+                <i data-lucide="${s.icon || 'corner-down-right'}" class="w-3.5 h-3.5 text-stone-400"></i> ${s.label}
+            </div>
+        `).join('');
+        
+        li.innerHTML = `
+            <details class="w-full cursor-pointer group/details">
+                <summary class="flex items-center justify-between outline-none list-none select-none">
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
+                        <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">Aggiornamenti strutturali</span>
+                    </div>
+                    <div class="text-[10px] text-blue-500 font-bold shrink-0 flex items-center gap-1">CLOUD <i data-lucide="chevron-down" class="w-3 h-3 transition-transform group-open/details:rotate-180"></i></div>
+                </summary>
+                <div class="mt-1 pb-1">
+                    ${detailsHtml}
+                </div>
+            </details>
+        `;
+        fragment.appendChild(li);
+    }
 
     const renderItem = (m, isIncoming) => {
         const isNew = m.lastModified === m.createdAt || (!m.createdAt && m.lastModified > loadedAt);
@@ -340,12 +401,33 @@ window.renderSourceControl = function() {
         badge.className = `shrink-0 flex items-center justify-center w-4 h-4 rounded-sm text-[9px] font-bold ${colorClass}`;
         badge.textContent = iconLetter;
         
+        const textContainer = document.createElement('div');
+        textContainer.className = "flex flex-col overflow-hidden";
+
         const titleSpan = document.createElement('span');
         titleSpan.className = "truncate text-stone-700 dark:text-stone-300";
         titleSpan.textContent = m.titolo || m.segnatura || 'Senza Titolo';
+        
+        textContainer.appendChild(titleSpan);
+        
+        if (isIncoming && window.incomingAuthor) {
+            const authorSpan = document.createElement('span');
+            authorSpan.className = "text-[10px] text-stone-400 truncate";
+            authorSpan.textContent = "da " + window.incomingAuthor;
+            textContainer.appendChild(authorSpan);
+            li.title = "Modifica dal Cloud inviata da " + window.incomingAuthor + ". Fai un Fetch/Scarica per vederla.";
+        }
+
+        const autore = m.modificatoDa || m.creatoDa;
+        if (autore) {
+            const authorSpan = document.createElement('span');
+            authorSpan.className = "text-[10px] text-stone-500 truncate leading-tight";
+            authorSpan.textContent = "da: " + autore;
+            textContainer.appendChild(authorSpan);
+        }
 
         leftDiv.appendChild(badge);
-        leftDiv.appendChild(titleSpan);
+        leftDiv.appendChild(textContainer);
 
         li.appendChild(leftDiv);
         fragment.appendChild(li);
@@ -373,6 +455,7 @@ window.renderSourceControl = function() {
     }
     
     list.appendChild(fragment);
+    if (window.lucide) lucide.createIcons({ nodes: [list] });
 };
 
 function renderTagList() {
@@ -453,9 +536,9 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
         <div id="vault-delete-modal" class="modal-overlay z-150 flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
             <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl">
                 <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
-                <h3 class="text-xl font-bold mb-2">Rimuovi Vault</h3>
+                <h3 class="text-xl font-bold mb-2">Rimuovi Archivio</h3>
                 <p class="text-sm text-stone-600 mb-6">
-                    Vuoi solo rimuovere il Vault <strong>${vaultName}</strong> dall'elenco o eliminare definitivamente tutti i suoi file dal computer?
+                    Vuoi solo rimuovere l'Archivio <strong>${vaultName}</strong> dall'elenco o eliminare definitivamente tutti i suoi file dal computer?
                 </p>
                 <div class="flex flex-col gap-2">
                     <button id="btn-delete-files" class="btn btn-danger w-full justify-center">Sì, elimina anche i file</button>
@@ -534,7 +617,7 @@ window.aggiornaListaVault = async function() {
                     nameSpan.title = path;
                     
                     if (isShared) {
-                        nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Vault Condiviso"></i> <span>${name}</span>`;
+                        nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Archivio Condiviso"></i> <span>${name}</span>`;
                     } else if (isPersonal) {
                         nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="Backup Personale"></i> <span>${name}</span>`;
                     } else {

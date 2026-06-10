@@ -220,7 +220,8 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
                 <div class="text-stone-400 mb-3"><i data-lucide="file-warning" class="w-12 h-12 mx-auto text-amber-500"></i></div>
                 <h3 class="text-lg font-medium text-stone-300">Allegato non presente in locale</h3>
                 <p class="text-sm text-stone-400 mt-2 max-w-md mx-auto">
-                    Questo vault è condiviso. Il file dell'allegato non è ancora presente sul tuo PC.
+                    Questo archivio è condiviso. Il file dell'allegato non è ancora presente sul tuo PC.
+                    <br>Usa il Cloud Explorer per sincronizzare gli allegati.
                 </p>
                 <div class="mt-4 p-3 bg-stone-900 border border-stone-800 rounded-sm text-xs font-mono text-stone-300 select-all break-all max-w-md mx-auto">
                     File da inserire: ${nome}

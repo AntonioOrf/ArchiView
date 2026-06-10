@@ -76,10 +76,10 @@ window.apriImpostazioni = async function() {
                 
                 if (settings.isPersonalCloud) {
                     if (driveTitle) driveTitle.textContent = "Backup su Cloud Personale";
-                    if (driveDesc) driveDesc.textContent = "Questo vault locale è sincronizzato privatamente come backup sul tuo Google Drive.";
+                    if (driveDesc) driveDesc.textContent = "Questo archivio locale è sincronizzato privatamente come backup sul tuo Google Drive.";
                 } else {
                     if (driveTitle) driveTitle.textContent = "Sincronizzazione Google Drive";
-                    if (driveDesc) driveDesc.textContent = "Questo vault locale è configurato come Vault Condiviso tramite Google Drive.";
+                    if (driveDesc) driveDesc.textContent = "Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive.";
                 }
             } else {
                 driveSection.classList.add('hidden');
@@ -128,7 +128,7 @@ window.cambiaCartellaAllegati = async function() {
             if (attachmentsPathDiv) attachmentsPathDiv.textContent = path;
             if (btnRestore) btnRestore.classList.remove('hidden-tab');
             
-            mostraMessaggio("Cartella allegati locale configurata con successo.", "success");
+            mostraMessaggio("Directory allegati locale configurata con successo.", "success");
         }
     }
 };
@@ -145,7 +145,7 @@ window.ripristinaCartellaAllegatiPredefinita = async function() {
         if (attachmentsPathDiv) attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
         if (btnRestore) btnRestore.classList.add('hidden-tab');
         
-        mostraMessaggio("Cartella allegati ripristinata al percorso di default (interna al vault).", "success");
+        mostraMessaggio("La directory degli allegati è stata ripristinata al percorso di default (interna all'archivio).", "success");
     }
 };
 

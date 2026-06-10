@@ -16,26 +16,30 @@
             </div>
             <h2 class="text-2xl font-serif text-stone-800 mb-4">Gestione Archivi</h2>
             <p class="text-stone-600 mb-8 leading-relaxed text-sm">
-                Scegli una cartella vuota per creare un nuovo archivio indipendente, oppure seleziona una cartella già esistente per caricarne i dati.
+                Scegli una cartella di destinazione per creare un nuovo archivio indipendente, oppure seleziona un archivio già esistente per caricarne i dati.
             </p>
 
             <div class="flex flex-col gap-3" id="welcome-buttons">
                 <button onclick="selezionaCartellaIniziale()" class="btn btn-primary w-full justify-center py-3 text-lg font-medium shadow-md">
                     <i data-lucide="folder-open" class="w-5 h-5 mr-2"></i>
-                    Apri Cartella Locale
+                    Apri Archivio Locale
                 </button>
-                <button onclick="mostraInputNuovaCartella(false)" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
+                <button onclick="mostraInputNuovaCartella('locale')" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
                     <i data-lucide="folder-plus" class="w-5 h-5 mr-2"></i>
                     Crea Nuova Cartella Locale
                 </button>
                 <div class="h-px bg-stone-200 my-1 w-full"></div>
-                <button onclick="mostraInputNuovaCartella(true)" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-blue-900 border border-blue-300 hover:bg-blue-50" style="background-color: #eff6ff;">
+                <button onclick="mostraInputNuovaCartella('personale')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-sky-900 border border-sky-300 hover:bg-sky-50" style="background-color: #f0f9ff;">
+                    <i data-lucide="cloud" class="w-5 h-5 mr-2"></i>
+                    Crea un Archivio Cloud Privato
+                </button>
+                <button onclick="mostraInputNuovaCartella('condiviso')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-blue-900 border border-blue-300 hover:bg-blue-50" style="background-color: #eff6ff;">
                     <i data-lucide="cloud-upload" class="w-5 h-5 mr-2"></i>
-                    Crea un Vault Condiviso
+                    Crea un Archivio Condiviso
                 </button>
                 <button onclick="mostraJoinForm()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 border border-amber-300 hover:bg-amber-50" style="background-color: #fffbeb;">
                     <i data-lucide="users" class="w-5 h-5 mr-2"></i>
-                    Unisciti a un Vault Condiviso
+                    Unisciti a un Archivio Condiviso
                 </button>
                 <button onclick="mostraCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 mt-1 hover:text-stone-700 w-full justify-center">
                     Ripristina da Google Drive...
@@ -66,7 +70,7 @@
             <!-- JOIN FORM -->
             <div id="welcome-join-form" class="hidden-tab mt-4 text-left border border-stone-200 p-4 rounded-md bg-stone-50">
                 <h3 class="font-medium mb-1 text-stone-800 flex items-center gap-2">
-                    <i data-lucide="users" class="w-5 h-5 text-amber-600"></i> Unisciti a un Vault Condiviso
+                    <i data-lucide="users" class="w-5 h-5 text-amber-600"></i> Unisciti a un Archivio Condiviso
                 </h3>
                 <p class="text-xs text-stone-500 mb-4 leading-snug">
                     Unendoti tramite codice accederai a un Cloud condiviso sul Google Drive del creatore originale.
@@ -80,12 +84,12 @@
                 <div id="welcome-join-vault-info" class="hidden-tab mb-3 p-3 bg-stone-100 border border-stone-200 rounded text-sm text-stone-700 flex items-center gap-2">
                     <i data-lucide="folder-check" class="w-5 h-5 text-emerald-600"></i>
                     <div>
-                        <span class="font-semibold">Nome Vault:</span>
+                        <span class="font-semibold">Nome Archivio:</span>
                         <span id="welcome-join-vault-name" class="font-mono text-emerald-700"></span>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label font-medium mb-1 block text-sm">Posizione cartella locale</label>
+                    <label class="form-label font-medium mb-1 block text-sm">Posizione archivio locale</label>
                     <div class="flex gap-2 mt-1">
                         <input type="text" id="welcome-join-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
                         <button onclick="selezionaPercorsoBaseJoin()" class="btn btn-secondary px-3 py-1 text-sm">Sfoglia...</button>
@@ -102,7 +106,7 @@
             <!-- CLOUD EXPLORER -->
             <div id="welcome-cloud-explorer" class="hidden-tab mt-4 text-left border border-stone-200 p-4 rounded-md bg-stone-50">
                 <h3 class="font-medium mb-3 text-stone-800 flex items-center gap-2">
-                    <i data-lucide="cloud" class="w-5 h-5 text-blue-600"></i> Seleziona un Vault dal Cloud
+                    <i data-lucide="cloud" class="w-5 h-5 text-blue-600"></i> Seleziona un Archivio dal Cloud
                 </h3>
                 <div id="cloud-vaults-list" class="space-y-2 max-h-64 overflow-y-auto pr-2">
                     <!-- Lista popolata via JS -->
@@ -111,7 +115,7 @@
                     <button onclick="nascondiCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> Torna Indietro
                     </button>
-                    <button onclick="eseguiRipristinoCloudGlobale()" class="btn btn-secondary text-sm shadow-sm" title="Se non vedi il tuo vault, cerca in tutto il Drive">Cerca Ovunque</button>
+                    <button onclick="eseguiRipristinoCloudGlobale()" class="btn btn-secondary text-sm shadow-sm" title="Se non vedi il tuo archivio, cerca in tutto il Drive">Cerca Ovunque</button>
                 </div>
             </div>
         </div>
@@ -148,8 +152,9 @@
         }
     });
 
-    window.mostraInputNuovaCartella = async function(isShared = false) {
-        window.creazioneVaultCondiviso = isShared;
+    window.mostraInputNuovaCartella = async function(tipo = 'locale') {
+        window.creazioneVaultCondiviso = (tipo === 'condiviso');
+        window.creazioneVaultPersonale = (tipo === 'personale');
         document.getElementById('welcome-buttons').classList.add('hidden-tab');
         document.getElementById('welcome-create-form').classList.remove('hidden-tab');
         if (window.apiBrowser && window.apiBrowser.getDocumentsPath) {
@@ -175,7 +180,7 @@
     window.mostraCloudExplorer = async function() {
         if (!window.apiDrive) return;
         
-        mostraMessaggio("Autenticazione e ricerca vault in corso...", "info");
+        mostraMessaggio("Autenticazione e ricerca archivi in corso...", "info");
         try {
             await window.apiDrive.auth();
             const vaults = await window.apiDrive.listVaults();
@@ -187,7 +192,7 @@
             listContainer.innerHTML = '';
             
             if (vaults.length === 0) {
-                listContainer.innerHTML = `<p class="text-sm text-stone-500 p-4 text-center">Nessun Vault trovato nella cartella ArchiView sul tuo Drive.</p>`;
+                listContainer.innerHTML = `<p class="text-sm text-stone-500 p-4 text-center">Nessun Archivio trovato nella cartella ArchiView sul tuo Drive.</p>`;
             } else {
                 vaults.forEach(v => {
                     const div = document.createElement('div');
@@ -271,10 +276,10 @@
         }
 
         try {
-            mostraMessaggio("Connessione al Vault in corso...", "info");
+            mostraMessaggio("Connessione all'Archivio in corso...", "info");
             const result = await window.apiDrive.decodeInvite(code);
             if (!result || !result.vaultName) {
-                throw new Error("Codice invito non valido o impossibile recuperare il nome del Vault.");
+                throw new Error("Codice invito non valido o impossibile recuperare il nome dell'Archivio.");
             }
             
             await window.apiDrive.joinInvite(code, basePath, result.vaultName);
@@ -296,8 +301,8 @@
         try {
             const driveData = await window.apiDrive.pull(vaultId);
             
-            if (!driveData || !driveData.database) {
-                mostraMessaggio("Nessun database trovato nel Vault selezionato.", "warning");
+            if (!driveData.files.some(f => f.name === 'database_manoscritti.json')) {
+                mostraMessaggio("Nessun database trovato nell'Archivio selezionato.", "warning");
                 return;
             }
             
@@ -342,15 +347,28 @@
     };
 
     window.creaCartellaIniziale = async function() {
+        const btn = event?.target && event.target.tagName === 'BUTTON' ? event.target : document.querySelector('#welcome-create-form .btn-primary');
         const name = document.getElementById('welcome-new-folder-name').value.trim();
         const basePath = document.getElementById('welcome-new-folder-path').value.trim();
         if (!name || !basePath) return;
         
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i> Creazione...';
+            if (window.lucide) lucide.createIcons({ nodes: [btn] });
+        }
+        
         if (window.apiBrowser && window.apiBrowser.createWorkspaceInPath) {
-            const config = window.creazioneVaultCondiviso ? { autoStartTrasformaCondiviso: true } : null;
+            let config = null;
+            if (window.creazioneVaultCondiviso) config = { autoStartTrasformaCondiviso: true };
+            else if (window.creazioneVaultPersonale) config = { autoStartTrasformaPersonale: true };
+            
             const success = await window.apiBrowser.createWorkspaceInPath(basePath, name, config);
             if (success) {
                 document.getElementById('welcome-modal').classList.add('hidden-tab');
+            } else if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Crea e Avvia';
             }
         }
     };

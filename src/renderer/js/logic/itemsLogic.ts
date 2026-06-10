@@ -168,6 +168,15 @@ function chiudiDeleteModal() {
 
 async function confermaEliminazione() {
     const id = document.getElementById('delete-item-id').value;
+    const manoscritto = appData.manoscritti.find(x => x.id === id);
+    if (!manoscritto) {
+        chiudiDeleteModal();
+        return;
+    }
+    
+    // Clona il manoscritto per sicurezza
+    const recordSalvato = JSON.parse(JSON.stringify(manoscritto));
+    
     appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
     
     // Tombstone: memorizziamo l'ID eliminato per dirlo agli altri client
@@ -177,7 +186,22 @@ async function confermaEliminazione() {
     await salvaTutto();
     renderMain();
     chiudiDeleteModal();
-    mostraMessaggio(window.t("msg_record_deleted"), "success");
+    
+    const ripristinaFn = async () => {
+        if (appData.deletedIds) {
+            appData.deletedIds = appData.deletedIds.filter(x => x !== recordSalvato.id);
+        }
+        appData.manoscritti.push(recordSalvato);
+        await salvaTutto();
+        renderMain();
+    };
+    
+    if (window.gestoreAnnullamento) {
+        window.gestoreAnnullamento.registraAzione(`Eliminazione di "${recordSalvato.titolo}"`, ripristinaFn);
+        mostraMessaggio(window.t("msg_record_deleted"), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
+    } else {
+        mostraMessaggio(window.t("msg_record_deleted"), "success");
+    }
 }
 
 

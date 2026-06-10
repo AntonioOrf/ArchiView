@@ -120,7 +120,7 @@
                     <div id="tab-sync" class="settings-tab-content space-y-8 hidden">
                         <div id="settings-hub-section" class="hidden">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4 text-amber-700"></i> <span>Stato Collegamento Hub</span></h4>
-                            <p class="text-sm text-stone-600 mb-3">Questo vault locale è collegato ad un repository condiviso online.</p>
+                            <p class="text-sm text-stone-600 mb-3">Questo archivio locale è collegato ad un repository condiviso online.</p>
                             <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-xs font-mono text-stone-700 break-all mb-4">
                                 <div><b>URL Server:</b> <span id="settings-hub-url">Non definito</span></div>
                                 <div><b>ID Repository:</b> <span id="settings-hub-repoid">Non definito</span></div>
@@ -146,7 +146,7 @@
 
                         <div id="settings-drive-section" class="hidden space-y-4">
                             <h4 class="font-semibold flex items-center gap-2"><i data-lucide="cloud-lightning" class="w-4 h-4 text-amber-700"></i> <span id="settings-drive-title">Sincronizzazione Google Drive</span></h4>
-                            <p class="text-sm text-stone-600" id="settings-drive-desc">Questo vault locale è configurato come Vault Condiviso tramite Google Drive.</p>
+                            <p class="text-sm text-stone-600" id="settings-drive-desc">Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive.</p>
                             
                             <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm text-stone-700">
                                 <div><b>Stato:</b> <span id="settings-drive-status">Controllo in corso...</span></div>

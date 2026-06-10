@@ -22,14 +22,14 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Attiva Sincronizzazione Cloud</h3>
                     <p class="text-sm text-stone-600 dark:text-stone-400 mb-6 max-w-md">
-                        Questo Vault è salvato solo sul tuo PC. Puoi caricarlo sul tuo Cloud per avere un backup personale, oppure trasformarlo in un Vault Condiviso per ottenere un codice d'invito per i tuoi collaboratori.
+                        Questo Archivio è salvato solo sul tuo PC. Puoi caricarlo sul tuo Cloud per avere un backup personale, oppure trasformarlo in un Archivio Condiviso per ottenere un codice d'invito per i tuoi collaboratori.
                     </p>
                     <div class="flex flex-col gap-3 w-full max-w-sm">
                         <button onclick="trasformaInPersonale()" id="btn-trasforma-personale" class="btn btn-secondary py-3 px-6 text-lg shadow-sm w-full">
                             <i data-lucide="cloud" class="w-5 h-5 mr-2"></i> Carica nel mio Cloud (Privato)
                         </button>
                         <button onclick="trasformaInCondiviso()" id="btn-trasforma-condiviso" class="btn btn-primary py-3 px-6 text-lg shadow-md w-full">
-                            <i data-lucide="users" class="w-5 h-5 mr-2"></i> Trasforma in Vault Condiviso
+                            <i data-lucide="users" class="w-5 h-5 mr-2"></i> Trasforma in Archivio Condiviso
                         </button>
                         <button onclick="creaCondivisoAltroAccount()" class="btn btn-ghost w-full justify-center text-sm text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 flex items-center gap-2">
                             <i data-lucide="user-circle" class="w-4 h-4"></i> Usa un account Google diverso
@@ -45,7 +45,7 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-2" id="cloud-active-title">Cloud Attivo</h3>
                     <p class="text-sm mb-6 max-w-md transition-colors duration-300" id="cloud-active-desc">
-                        Questo Vault è sincronizzato.
+                        Questo Archivio è sincronizzato.
                     </p>
                     
                     <div class="w-full max-w-md space-y-4">
@@ -75,7 +75,7 @@
                                 <i data-lucide="shield" class="w-4 h-4 mr-2"></i> Converti in Backup Privato
                             </button>
                             <button onclick="trasformaInCondiviso()" id="btn-switch-shared" class="btn btn-secondary py-2 justify-center w-full shadow-sm border-amber-500 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30">
-                                <i data-lucide="users" class="w-4 h-4 mr-2"></i> Converti in Vault Condiviso
+                                <i data-lucide="users" class="w-4 h-4 mr-2"></i> Converti in Archivio Condiviso
                             </button>
                             <button onclick="scollegaCloud()" id="btn-disconnect-cloud" class="btn btn-ghost justify-center py-2 text-sm text-stone-500 hover:text-red-600">
                                 <i data-lucide="unlink" class="w-4 h-4 mr-2"></i> Scollega dal Cloud (Solo Locale)
@@ -84,7 +84,7 @@
                                 <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Pulisci File Inutilizzati
                             </button>
                             <button onclick="cambiaAccountGoogleVault()" id="btn-cloud-change-account" class="btn btn-ghost justify-center py-2 text-sm text-stone-500 hover:text-blue-600">
-                                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Usa un altro account Google per questo Vault
+                                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Usa un altro account Google per questo Archivio
                             </button>
                         </div>
                     </div>
@@ -120,7 +120,7 @@
                         <i data-lucide="cloud" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
                         <h3 class="text-xl font-bold mb-2 text-stone-800 dark:text-stone-100">Autenticazione Cloud</h3>
                         <p class="text-sm text-stone-600 dark:text-stone-400 mb-6">
-                            Accedi con il tuo account per sincronizzare questo Vault.
+                            Accedi con il tuo account per sincronizzare questo Archivio.
                         </p>
                         <div class="flex flex-col gap-3">
                             <button id="btn-cloud-auth-google" class="btn btn-secondary w-full justify-center text-lg flex items-center gap-2">
@@ -182,7 +182,7 @@
 
     window.creaCondivisoAltroAccount = async function() {
         if (!window.apiDrive) return;
-        const confirm = await chiediConfermaAzione("Usa un altro account Google", "Verrai reindirizzato al browser per accedere con un altro account Google. Questo account verrà usato SOLO per questo Vault condiviso. Vuoi procedere?");
+        const confirm = await chiediConfermaAzione("Usa un altro account Google", "Verrai reindirizzato al browser per accedere con un altro account Google. Questo account verrà usato SOLO per questo Archivio condiviso. Vuoi procedere?");
         if (confirm) {
             mostraProgressoCloud("Autenticazione in corso", "Accedi con l'account Google desiderato nel browser...");
             try {
@@ -200,7 +200,7 @@
 
     window.cambiaAccountGoogleVault = async function() {
         if (!window.apiDrive) return;
-        const confirm = await chiediConfermaAzione("Cambia account Google", "Questo forzerà l'uso di un account Google specifico SOLO per questo Vault. Vuoi procedere?");
+        const confirm = await chiediConfermaAzione("Cambia account Google", "Questo forzerà l'uso di un account Google specifico SOLO per questo Archivio. Vuoi procedere?");
         if (confirm) {
             mostraProgressoCloud("Autenticazione in corso", "Accedi con il nuovo account nel browser...");
             try {
@@ -254,7 +254,7 @@
                     if (settings.isPersonalCloud) {
                         if (title) title.textContent = "Backup Cloud Personale Attivo";
                         if (desc) {
-                            desc.textContent = "Questo Vault è sincronizzato privatamente sul tuo Google Drive. Solo tu puoi accedervi.";
+                            desc.textContent = "Questo Archivio è sincronizzato privatamente sul tuo Google Drive. Solo tu puoi accedervi.";
                             desc.className = "text-sm mb-6 max-w-md transition-colors duration-300 text-blue-800 dark:text-blue-300";
                         }
                         if (inviteContainer) inviteContainer.style.display = 'none';
@@ -267,9 +267,9 @@
                         if (icon) icon.setAttribute('data-lucide', 'shield-check');
                         
                     } else {
-                        if (title) title.textContent = "Vault Condiviso Attivo";
+                        if (title) title.textContent = "Archivio Condiviso Attivo";
                         if (desc) {
-                            desc.textContent = "Questo Vault è sincronizzato sul Cloud. Condividi il codice sottostante con i tuoi collaboratori per farli accedere immediatamente.";
+                            desc.textContent = "Questo Archivio è sincronizzato sul Cloud. Condividi il codice sottostante con i tuoi collaboratori per farli accedere immediatamente.";
                             desc.className = "text-sm mb-6 max-w-md transition-colors duration-300 text-stone-700 dark:text-amber-300";
                         }
                         if (inviteContainer) inviteContainer.style.display = 'flex';
@@ -340,7 +340,7 @@
                         <h3 class="text-lg font-bold mb-2 text-stone-800 dark:text-stone-100 flex items-center gap-2">
                             <i data-lucide="mail" class="w-5 h-5 text-blue-500"></i> Indirizzo Email
                         </h3>
-                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">Inserisci l'indirizzo email (Google) della persona da invitare al Vault:</p>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">Inserisci l'indirizzo email (Google) della persona da invitare all'Archivio:</p>
                         <input type="email" id="email-prompt-input" class="form-input w-full mb-6" placeholder="email@gmail.com">
                         <div class="flex justify-end gap-3">
                             <button id="email-prompt-cancel" class="btn btn-ghost text-sm">Annulla</button>

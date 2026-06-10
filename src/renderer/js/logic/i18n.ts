@@ -21,15 +21,15 @@ window.initLang = async function() {
 
 function _linguiExtraction() {
     i18n._({ id: "welcome_title", message: "Benvenuto in ArchiView" });
-    i18n._({ id: "welcome_desc", message: "Per iniziare, è necessario creare o selezionare una <strong>Cartella di lavoro</strong>.<br><br>In questa cartella verranno salvati in automatico tutti i dati (il database) e gli allegati (come i PDF e le foto). Ti consigliamo di creare una cartella dedicata (ad esempio in \"Documenti\") per tenere tutto in ordine e al sicuro." });
-    i18n._({ id: "btn_choose_folder", message: "Scegli o crea cartella" });
-    i18n._({ id: "modal_new_folder", message: "Nuova Cartella" });
-    i18n._({ id: "label_folder_name", message: "Nome della cartella o percorso" });
-    i18n._({ id: "hint_folder_name", message: "Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle." });
+    i18n._({ id: "welcome_desc", message: "Per iniziare, è necessario creare o selezionare un <strong>Archivio di lavoro</strong>.<br><br>In questo archivio verranno salvati in automatico tutti i dati (il database) e gli allegati (come i PDF e le foto). Ti consigliamo di creare un archivio dedicato (ad esempio in \"Documenti\") per tenere tutto in ordine e al sicuro." });
+    i18n._({ id: "btn_choose_folder", message: "Scegli o crea archivio" });
+    i18n._({ id: "modal_new_folder", message: "Nuovo Archivio" });
+    i18n._({ id: "label_folder_name", message: "Nome dell'archivio o percorso" });
+    i18n._({ id: "hint_folder_name", message: "Consiglio: usa la barra ( / ) per creare automaticamente sottoarchivi." });
     i18n._({ id: "btn_prev", message: "Precedente" });
     i18n._({ id: "btn_next", message: "Successiva" });
     i18n._({ id: "btn_cancel", message: "Annulla" });
-    i18n._({ id: "btn_create_folder", message: "Crea Cartella" });
+    i18n._({ id: "btn_create_folder", message: "Crea Archivio" });
     i18n._({ id: "btn_new_model", message: "Modello" });
     i18n._({ id: "modal_create_type", message: "Crea Tipo Documento" });
     i18n._({ id: "label_select_model", message: "Seleziona modello o creane uno nuovo" });
@@ -65,10 +65,10 @@ function _linguiExtraction() {
     i18n._({ id: "label_new_filename", message: "Nuovo nome del file" });
     i18n._({ id: "btn_save", message: "Salva" });
     i18n._({ id: "modal_settings", message: "Impostazioni" });
-    i18n._({ id: "settings_workspace", message: "Cartella di Lavoro (Archivio)" });
-    i18n._({ id: "settings_workspace_desc", message: "Questa cartella contiene il tuo database e tutti gli allegati copiati." });
-    i18n._({ id: "btn_change_folder", message: "Cambia Cartella..." });
-    i18n._({ id: "settings_workspace_restart", message: "L'app verrà riavviata se cambi la cartella." });
+    i18n._({ id: "settings_workspace", message: "Archivio di Lavoro" });
+    i18n._({ id: "settings_workspace_desc", message: "Questo archivio contiene il tuo database e tutti gli allegati copiati." });
+    i18n._({ id: "btn_change_folder", message: "Cambia Archivio..." });
+    i18n._({ id: "settings_workspace_restart", message: "L'app verrà riavviata se cambi l'archivio." });
     i18n._({ id: "settings_backup", message: "Backup Dati" });
     i18n._({ id: "settings_backup_desc", message: "Crea un file compresso contenente l'intero archivio e tutti gli allegati." });
     i18n._({ id: "btn_export_zip", message: "Esporta Backup in ZIP" });
@@ -82,16 +82,17 @@ function _linguiExtraction() {
     i18n._({ id: "dont_ask_again", message: "Non chiederlo più" });
     i18n._({ id: "btn_yes_proceed", message: "Sì, procedi" });
     i18n._({ id: "title_structure", message: "Struttura" });
+    i18n._({ id: "title_source_control", message: "Controllo Modifiche" });
     i18n._({ id: "title_search", message: "Ricerca Globale" });
     i18n._({ id: "title_suggestions", message: "SUGGERIMENTI" });
     i18n._({ id: "title_tags", message: "Filtro Tag" });
     i18n._({ id: "btn_clear_tags", message: "Rimuovi filtri tag" });
     i18n._({ id: "title_available_tags", message: "TAG DISPONIBILI" });
-    i18n._({ id: "folder_empty", message: "La cartella è vuota." });
-    i18n._({ id: "btn_delete_folder", message: "Elimina questa cartella" });
+    i18n._({ id: "folder_empty", message: "L'archivio è vuoto." });
+    i18n._({ id: "btn_delete_folder", message: "Elimina questo archivio" });
     i18n._({ id: "title_new_record", message: "Compila Nuova Scheda" });
     i18n._({ id: "btn_cancel_edit", message: "Annulla modifica" });
-    i18n._({ id: "label_folder", message: "Cartella:" });
+    i18n._({ id: "label_folder", message: "Archivio:" });
     i18n._({ id: "label_doc_type", message: "Tipo Documento:" });
     i18n._({ id: "label_identifier", message: "Identificativo / Segnatura *" });
     i18n._({ id: "label_attachments", message: "Allega Documenti (Foto o PDF)" });
@@ -102,7 +103,7 @@ function _linguiExtraction() {
     i18n._({ id: "btn_add_image_pdf", message: "Aggiungi Immagine/PDF" });
     i18n._({ id: "no_attachment", message: "Nessun allegato disponibile per questa scheda." });
     i18n._({ id: "tooltip_sidebar", message: "Mostra/Nascondi Struttura" });
-    i18n._({ id: "tooltip_folders", message: "Apri Cartelle" });
+    i18n._({ id: "tooltip_folders", message: "Apri Archivi" });
     i18n._({ id: "tooltip_search_btn", message: "Ricerca" });
     i18n._({ id: "tooltip_tags_btn", message: "Filtra per Tag" });
     i18n._({ id: "tooltip_new_record", message: "Nuova Scheda" });
@@ -201,14 +202,14 @@ function _linguiExtraction() {
     i18n._({ id: "msg_file_save_error", message: "Errore durante il salvataggio." });
     i18n._({ id: "msg_record_deleted", message: "Scheda eliminata." });
 
-    i18n._({ id: "msg_folder_name_empty", message: "Il nome della cartella non può essere vuoto." });
-    i18n._({ id: "msg_folder_exists", message: "La cartella esiste già." });
-    i18n._({ id: "msg_folder_exists_dest", message: "Esiste già una cartella con questo nome nella destinazione." });
-    i18n._({ id: "msg_cannot_delete_last_folder", message: "Impossibile eliminare l'unica cartella rimasta." });
-    i18n._({ id: "msg_cannot_delete_not_empty", message: "Impossibile eliminare la cartella perché contiene dei documenti." });
-    i18n._({ id: "msg_folder_deleted", message: "Cartella eliminata." });
-    i18n._({ id: "msg_folder_invalid_name", message: "Nome cartella non valido." });
-    i18n._({ id: "msg_folder_renamed", message: "Cartella rinominata." });
+    i18n._({ id: "msg_folder_name_empty", message: "Il nome dell'archivio non può essere vuoto." });
+    i18n._({ id: "msg_folder_exists", message: "L'archivio esiste già." });
+    i18n._({ id: "msg_folder_exists_dest", message: "Esiste già un archivio con questo nome nella destinazione." });
+    i18n._({ id: "msg_cannot_delete_last_folder", message: "Impossibile eliminare l'unico archivio rimasto." });
+    i18n._({ id: "msg_cannot_delete_not_empty", message: "Impossibile eliminare l'archivio perché contiene dei documenti." });
+    i18n._({ id: "msg_folder_deleted", message: "Archivio eliminato." });
+    i18n._({ id: "msg_folder_invalid_name", message: "Nome archivio non valido." });
+    i18n._({ id: "msg_folder_renamed", message: "Archivio rinominato." });
 
     i18n._({ id: "msg_transcription_saved", message: "Trascrizione salvata con successo." });
     i18n._({ id: "msg_attachment_error", message: "Impossibile caricare l'allegato." });

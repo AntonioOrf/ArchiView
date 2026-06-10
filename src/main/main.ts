@@ -1,5 +1,9 @@
-const { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net } = require('electron');
+const { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net, nativeImage } = require('electron');
 const path = require('path');
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId("com.antonioorf.archiview");
+}
 
 const { state, loadWorkspace, initWorkspace } = require('./workspaceManager');
 const { setupDatabaseIpc } = require('./ipc/databaseIpc');
@@ -17,11 +21,13 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '..', '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+  
   state.mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     title: "ArchiView",
-    icon: path.join(__dirname, '..', '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    icon: nativeImage.createFromPath(iconPath),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

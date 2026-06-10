@@ -86,10 +86,18 @@ async function avviaApp() {
     }
 
     // Primo render per popolare l'interfaccia all'avvio
-    
-    if (settings && settings.autoStartTrasformaCondiviso) {
-        delete settings.autoStartTrasformaCondiviso;
+    if (settings && (settings.autoStartTrasformaCondiviso || settings.autoStartTrasformaPersonale)) {
+        const isCondiviso = settings.autoStartTrasformaCondiviso;
+        const isPersonale = settings.autoStartTrasformaPersonale;
+        
+        settings.autoStartTrasformaCondiviso = false;
+        settings.autoStartTrasformaPersonale = false;
         await window.apiSettings.save(settings);
+        
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud("Preparazione in corso", "Avvio configurazione cloud...");
+        }
+
         setTimeout(async () => {
             if (window.driveAuthPromise) {
                 try { await window.driveAuthPromise; } catch (e) { console.error(e); }
@@ -97,8 +105,9 @@ async function avviaApp() {
             if (typeof apriCloudModal === 'function') {
                 await apriCloudModal();
             }
-            if (typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
-        }, 1500);
+            if (isCondiviso && typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
+            else if (isPersonale && typeof trasformaInPersonale === 'function') trasformaInPersonale();
+        }, 300);
     }
 
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
@@ -421,7 +430,7 @@ window.handleInviteCode = function(code) {
     const welcome = document.getElementById('welcome-modal');
     if (welcome && welcome.classList.contains('hidden-tab')) {
         if (typeof mostraBottomConfirm === 'function') {
-            mostraBottomConfirm("Vuoi chiudere il Vault corrente per unirti a un nuovo Vault Condiviso? Le modifiche locali non salvate potrebbero andare perse.", procedi);
+            mostraBottomConfirm("Vuoi chiudere l'Archivio corrente per unirti a un nuovo Archivio Condiviso? Le modifiche locali non salvate potrebbero andare perse.", procedi);
         } else {
             procedi();
         }
@@ -457,9 +466,11 @@ window.esportaCartellaAttuale = async function() {
 
 window.esportaSpecificaCartella = async function(folderName) {
     if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
-    const manoscrittiInCartella = appData.manoscritti.filter(m => m.cartella === folderName);
+    const manoscrittiInCartella = appData.manoscritti.filter(m => 
+        m.cartella === folderName || m.cartella.startsWith(folderName + '/')
+    );
     if (manoscrittiInCartella.length === 0) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio("La cartella è vuota, nulla da esportare.", "warning");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio("L'archivio è vuoto, nulla da esportare.", "warning");
         return;
     }
     const ids = manoscrittiInCartella.map(m => m.id);
@@ -474,16 +485,41 @@ window.esportaSpecificaCartella = async function(folderName) {
 window.importaManoscritto = async function() {
     if (!window.apiBrowser || !window.apiBrowser.importZip) return;
     const res = await window.apiBrowser.importZip();
-    if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(`Importati ${res.count} record con successo!`, "success");
-        if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        await window.apiBrowser.leggiDati().then(dati => {
-            appData = dati;
-            // Se li abbiamo importati in una cartella che non eravamo, forziamo il refresh
-            if (typeof renderSidebar === 'function') renderSidebar();
-            if (typeof renderMain === 'function') renderMain();
-            if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
+    if (res.success && res.manoscritti) {
+        let addedCount = 0;
+        const existingIds = new Set(appData.manoscritti.map(m => m.id));
+        
+        res.manoscritti.forEach(m => {
+            if (existingIds.has(m.id)) {
+                m.id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
+                m.titolo = m.titolo ? m.titolo + ' (Copia)' : '';
+            }
+            // Essenziale: se l'utente aveva cancellato l'ID, lo stiamo importando esplicitamente, quindi va rimosso dai tombstone!
+            if (appData.deletedIds) {
+                appData.deletedIds = appData.deletedIds.filter(id => id !== m.id);
+            }
+            appData.manoscritti.push(m);
+            
+            // Assicuriamoci che la cartella esista
+            if (m.cartella && !appData.cartelle.includes(m.cartella)) {
+                appData.cartelle.push(m.cartella);
+            }
+            
+            addedCount++;
         });
+
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(`Importati ${addedCount} record con successo!`, "success");
+        if (window.salvaStatoPosizione) window.salvaStatoPosizione();
+        
+        // Salvataggio scatena l'update chokidar ma avendo già appData aggiornato in memoria,
+        // sincronizzaEUnisciDati non avrà problemi o sovrascritture.
+        await window.apiBrowser.salvaDati(appData);
+
+        if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
+        if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof renderMain === 'function') renderMain();
+        if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore in importazione: " + res.error, "error");
     }
@@ -575,16 +611,45 @@ window.eliminaSelezionati = async function() {
     const count = window.selectedRecords.length;
     
     const procediEliminazione = async () => {
+        // Salviamo i record da eliminare
+        const recordDaEliminare = appData.manoscritti.filter(m => window.selectedRecords.includes(m.id));
+        const recordSalvati = JSON.parse(JSON.stringify(recordDaEliminare));
+        
         appData.manoscritti = appData.manoscritti.filter(m => !window.selectedRecords.includes(m.id));
+        
+        // Gestione tombstones
+        if (!appData.deletedIds) appData.deletedIds = [];
+        window.selectedRecords.forEach(id => {
+            if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+        });
+        
         await window.apiBrowser.salvaDati(appData);
         window.selectedRecords = [];
         window.aggiornaSelectionBar();
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
+        
+        const ripristinaFn = async () => {
+            const idsRipristinati = recordSalvati.map(r => r.id);
+            if (appData.deletedIds) {
+                appData.deletedIds = appData.deletedIds.filter(x => !idsRipristinati.includes(x));
+            }
+            appData.manoscritti.push(...recordSalvati);
+            await window.apiBrowser.salvaDati(appData);
+            if (typeof renderMain === 'function') renderMain();
+        };
+        
+        if (window.gestoreAnnullamento) {
+            window.gestoreAnnullamento.registraAzione(`Eliminazione di ${count} record`, ripristinaFn);
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(`${count} record eliminati.`, "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
+        }
     };
 
     if (typeof window.mostraBottomConfirm === 'function') {
-        window.mostraBottomConfirm(`Sei sicuro di voler eliminare ${count} record selezionati? L'operazione è irreversibile.`, procediEliminazione);
+        const msg = count > 1 
+            ? `Sei sicuro di voler eliminare ${count} record selezionati? L'operazione è irreversibile.`
+            : `Sei sicuro di voler eliminare questo record? L'operazione è irreversibile.`;
+        window.mostraBottomConfirm(msg, procediEliminazione);
     } else {
         await procediEliminazione();
     }
@@ -595,7 +660,7 @@ window.copiaSelezionati = function() {
     window.copiedRecordIds = [...window.selectedRecords];
     window.cutRecordIds = [];
     const count = window.copiedRecordIds.length;
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`${count} record copiati negli appunti di ArchiView. Tasto destro per incollarli in un'altra cartella.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`${count} record copiati negli appunti di ArchiView. Tasto destro per incollarli in un altro archivio.`, "info");
     window.selectedRecords = [];
     window.aggiornaSelectionBar();
     setTimeout(() => {
@@ -609,7 +674,7 @@ window.tagliaSelezionati = function() {
     window.cutRecordIds = [...window.selectedRecords];
     window.copiedRecordIds = [];
     const count = window.cutRecordIds.length;
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`${count} record tagliati. Tasto destro per spostarli in un'altra cartella.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`${count} record tagliati. Tasto destro per spostarli in un altro archivio.`, "info");
     window.selectedRecords = [];
     window.aggiornaSelectionBar();
     setTimeout(() => {
@@ -686,45 +751,132 @@ window.showFolderContextMenu = function(e) {
 
 window.showSidebarFolderContextMenu = function(e, folderPath) {
     const countToPaste = (window.copiedRecordIds && window.copiedRecordIds.length > 0) ? window.copiedRecordIds.length : ((window.cutRecordIds && window.cutRecordIds.length > 0) ? window.cutRecordIds.length : 0);
-    const isMoving = window.cutRecordIds && window.cutRecordIds.length > 0;
+    const hasFolderAction = window.cutFolderPath || window.copiedFolderPath;
+    const isMoving = (window.cutRecordIds && window.cutRecordIds.length > 0) || window.cutFolderPath;
     
     e.preventDefault();
     e.stopPropagation();
     const menu = getOrCreateContextMenu();
     const escFolder = folderPath.replace(/'/g, "\\'");
+    const isGenerale = folderPath === 'Generale';
+    const isRoot = folderPath === 'ROOT';
     
-    let html = `<button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Cartella</button>`;
+    let html = '';
     
-    if (countToPaste > 0) {
+    if (!isRoot) {
         html += `
+            <button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Archivio</button>
             <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
-            <button onclick="window.incollaRecord('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Incolla qui (${countToPaste})</button>
+            <button onclick="window.copiaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia Archivio</button>
+            <button onclick="window.tagliaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="scissors" class="w-4 h-4"></i> Taglia Archivio</button>
+            <button onclick="window.eliminaCartellaDaSidebar('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 text-red-600 dark:text-red-400" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina Archivio</button>
         `;
+    }
+    
+    if (countToPaste > 0 || hasFolderAction) {
+        let label = countToPaste > 0 ? `Incolla qui (${countToPaste})` : `Incolla Archivio qui`;
+        if (!isRoot) html += `<div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>`;
+        html += `
+            <button onclick="window.incollaRecord('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> ${label}</button>
+        `;
+    }
+    
+    if (html === '') {
+        html = `<div class="px-4 py-2 text-stone-500 italic text-sm">Nessuna azione</div>`;
     }
     
     menu.innerHTML = html;
     if (window.lucide) lucide.createIcons({ nodes: [menu] });
     menu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
-    menu.style.top = Math.min(e.clientY, window.innerHeight - 80) + 'px';
+    menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
     menu.classList.remove('hidden');
 };
 
+window.copiaCartella = function(folderPath) {
+    window.copiedFolderPath = folderPath;
+    window.cutFolderPath = null;
+    window.cutRecordIds = [];
+    window.copiedRecordIds = [];
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Archivio copiato. Tasto destro su un altro archivio per incollarlo.`, "info");
+};
+
+window.tagliaCartella = function(folderPath) {
+    if (folderPath === 'Generale') return;
+    window.cutFolderPath = folderPath;
+    window.copiedFolderPath = null;
+    window.cutRecordIds = [];
+    window.copiedRecordIds = [];
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Archivio tagliato. Tasto destro per spostarlo.`, "info");
+};
 window.copiaRecordSingolo = function(id) {
     window.copiedRecordIds = [id];
     window.cutRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Record copiato. Tasto destro per incollarlo in una cartella.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Record copiato. Tasto destro per incollarlo in un archivio.`, "info");
 };
 
 window.tagliaRecordSingolo = function(id) {
     window.cutRecordIds = [id];
     window.copiedRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Record tagliato. Tasto destro per spostarlo in un'altra cartella.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Record tagliato. Tasto destro per spostarlo in un altro archivio.`, "info");
 };
 
 window.incollaRecord = async function(targetFolderOverride) {
     const targetFolder = targetFolderOverride || window.cartellaAttuale || 'Generale';
 
-    // Se stiamo incollando record tagliati (Spostamento)
+    // Se stiamo spostando un intero archivio (Taglia Archivio)
+    if (window.cutFolderPath) {
+        if (typeof spostaCartella === 'function') {
+            await spostaCartella(window.cutFolderPath, targetFolder);
+            window.cutFolderPath = null;
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(`Archivio spostato con successo!`, "success");
+        }
+        return;
+    }
+
+    // Se stiamo copiando un intero archivio (Copia Archivio)
+    if (window.copiedFolderPath) {
+        // Estraiamo gli ID dei record della cartella copiata
+        const prefix = window.copiedFolderPath + '/';
+        const manoscrittiDaCopiare = appData.manoscritti.filter(m => m.cartella === window.copiedFolderPath || (m.cartella && m.cartella.startsWith(prefix)));
+        
+        if (manoscrittiDaCopiare.length === 0) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(`L'archivio copiato è vuoto.`, "warning");
+            window.copiedFolderPath = null;
+            return;
+        }
+
+        const idsToCopy = manoscrittiDaCopiare.map(m => m.id);
+        
+        // Determiniamo la cartella destinazione (sotto-cartella del target con il nome dell'archivio copiato)
+        const nomeArchivioCopiato = window.copiedFolderPath.split('/').pop();
+        const baseTarget = targetFolder === 'ROOT' ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
+
+        if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
+        const res = await window.apiBrowser.duplicateRecords(idsToCopy, baseTarget);
+
+        if (res.success) {
+            // Assicuriamoci che la nuova cartella esista nel db
+            if (!appData.cartelle.includes(baseTarget)) {
+                appData.cartelle.push(baseTarget);
+            }
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(`Archivio duplicato con successo (${res.count} record)!`, "success");
+            window.copiedFolderPath = null;
+            // Ricarica DB
+            if (window.salvaStatoPosizione) window.salvaStatoPosizione();
+            await window.apiBrowser.leggiDati().then(dati => {
+                appData = dati;
+                if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
+                if (typeof renderSidebar === 'function') renderSidebar();
+                if (typeof renderMain === 'function') renderMain();
+                if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
+            });
+        } else {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore in duplicazione archivio: " + res.error, "error");
+        }
+        return;
+    }
+
+    // Se stiamo incollando record tagliati (Spostamento singolo/multiplo)
     if (window.cutRecordIds && window.cutRecordIds.length > 0) {
         let movedCount = 0;
         appData.manoscritti.forEach(m => {
@@ -743,7 +895,7 @@ window.incollaRecord = async function(targetFolderOverride) {
         return;
     }
 
-    // Se stiamo incollando record copiati (Duplicazione)
+    // Se stiamo incollando record copiati (Duplicazione singolo/multiplo)
     if (!window.copiedRecordIds || window.copiedRecordIds.length === 0) return;
     if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
     
@@ -763,3 +915,20 @@ window.incollaRecord = async function(targetFolderOverride) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore in incolla: " + res.error, "error");
     }
 };
+
+// Listeners globali per shortcut da tastiera
+document.addEventListener('keydown', (e) => {
+    // Gestione Ctrl+Z o Cmd+Z per annullare
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        // Preveniamo l'undo se siamo in un input text nativo
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        const isInput = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
+        
+        if (!isInput) {
+            e.preventDefault();
+            if (window.gestoreAnnullamento) {
+                window.gestoreAnnullamento.annullaUltimaAzione();
+            }
+        }
+    }
+});

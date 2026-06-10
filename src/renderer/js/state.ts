@@ -84,6 +84,38 @@ window.impostaModifichePendenti = function(stato) {
     }
 };
 
+// Gestore Annullamento (Undo)
+window.gestoreAnnullamento = {
+    stack: [],
+    
+    registraAzione(descrizione, ripristinaFn) {
+        this.stack.push({
+            descrizione,
+            ripristinaFn
+        });
+        // Limitiamo la cronologia a 50 azioni per non consumare troppa memoria
+        if (this.stack.length > 50) {
+            this.stack.shift();
+        }
+    },
+    
+    async annullaUltimaAzione() {
+        if (this.stack.length === 0) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio("Nessuna azione da annullare.", "info");
+            return;
+        }
+        
+        const azione = this.stack.pop();
+        try {
+            await azione.ripristinaFn();
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(`Annullato: ${azione.descrizione}`, "success");
+        } catch (err) {
+            console.error("Errore durante l'annullamento:", err);
+            if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante l'annullamento dell'azione.", "error");
+        }
+    }
+};
+
 async function salvaTutto() {
     if (window.apiBrowser) {
         await window.apiBrowser.salvaDati(appData);
@@ -108,9 +140,15 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
         }
         
         const eseguiMergeFinale = async (resolvedCards = []) => {
-            // 1. Fondi le cartelle
+            // 1. Fondi le cartelle (Unione)
+            const mergedDeletedCartelle = new Set([...(appData.deletedCartelle || []), ...(nuovoDati.deletedCartelle || [])]);
+            
             const cartelleSet = new Set([...(appData.cartelle || []), ...(nuovoDati.cartelle || [])]);
+            for (let dc of mergedDeletedCartelle) {
+                cartelleSet.delete(dc);
+            }
             appData.cartelle = Array.from(cartelleSet).sort();
+            appData.deletedCartelle = Array.from(mergedDeletedCartelle);
             
             // 2. Fondi i tipiDocumento
             const tipiMap = new Map();
@@ -126,8 +164,10 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
             const externalMap = new Map((nuovoDati.manoscritti || []).map(m => [m.id, m]));
             
             const mergedManoscritti = [];
-            const tuttiIds = new Set([...localMap.keys(), ...externalMap.keys()]);
+            const deletionsList = [];
+            const localDeletionsToPush = [];
             
+            const tuttiIds = new Set([...localMap.keys(), ...externalMap.keys()]);
             for (const id of tuttiIds) {
                 if (resolvedMap.has(id)) {
                     mergedManoscritti.push(resolvedMap.get(id));
@@ -148,62 +188,111 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     }
                 } else if (local) {
                     if (nuovoDati.deletedIds && nuovoDati.deletedIds.includes(id)) {
-                        if (!appData.deletedIds) appData.deletedIds = [];
-                        if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+                        deletionsList.push(local);
                     } else {
                         mergedManoscritti.push(local);
                     }
                 } else if (external) {
                     if (appData.deletedIds && appData.deletedIds.includes(id)) {
-                        if (!nuovoDati.deletedIds) nuovoDati.deletedIds = [];
-                        if (!nuovoDati.deletedIds.includes(id)) nuovoDati.deletedIds.push(id);
+                        localDeletionsToPush.push(external);
                     } else {
                         mergedManoscritti.push(external);
                     }
                 }
             }
             
-            const tombstoneSet = new Set([...(appData.deletedIds || []), ...(nuovoDati.deletedIds || [])]);
-            appData.deletedIds = Array.from(tombstoneSet);
-            
-            appData.manoscritti = mergedManoscritti;
-            window.ultimoCaricamento = Date.now();
-            
-            if (window.apiSettings) {
-                const settings = await window.apiSettings.get();
-                settings.lastSyncTime = window.ultimoCaricamento;
-                await window.apiSettings.save(settings);
-            }
-            // Salva il risultato del merge su disco (senza passare per salvaTutto
-            // che triggererebbe un'auto-sync e creerebbe un loop infinito)
-            if (window.apiBrowser) {
-                await window.apiBrowser.salvaDati(appData);
-            }
-            
-            // Aggiorna l'interfaccia
-            if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-            if (typeof renderSidebar === 'function') renderSidebar();
-            if (typeof renderMain === 'function') renderMain();
-            
-            const vTrasc = document.getElementById('view-trascrizione');
-            const isTrascrizioneOpen = vTrasc && !vTrasc.classList.contains('hidden-tab');
-            
-            const idInTrascrizione = document.getElementById('trascrizione-id')?.value;
-            // Se l'utente è nella vista trascrizione e non ha modifiche pendenti, ricarica
-            if (isTrascrizioneOpen && idInTrascrizione && !window.trascrizioneNonSalvata) {
-                const checkEsiste = appData.manoscritti.some(x => String(x.id) === String(idInTrascrizione));
-                if (checkEsiste) {
-                    if (typeof apriTrascrizione === 'function') apriTrascrizione(idInTrascrizione);
-                } else {
-                    mostraMessaggio("Il documento corrente è stato eliminato da un altro utente.", "warning");
-                    switchTab('list');
+            const concludiMerge = async (manoscrittiFinali) => {
+                const tombstoneSet = new Set([...(appData.deletedIds || []), ...(nuovoDati.deletedIds || [])]);
+                appData.deletedIds = Array.from(tombstoneSet);
+                
+                appData.manoscritti = manoscrittiFinali;
+                window.ultimoCaricamento = Date.now();
+                
+                if (window.apiSettings) {
+                    const settings = await window.apiSettings.get();
+                    settings.lastSyncTime = window.ultimoCaricamento;
+                    await window.apiSettings.save(settings);
                 }
-            }
+                if (window.apiBrowser) {
+                    await window.apiBrowser.salvaDati(appData);
+                }
+                
+                if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
+                if (typeof renderSidebar === 'function') renderSidebar();
+                if (typeof renderMain === 'function') renderMain();
+                
+                const vTrasc = document.getElementById('view-trascrizione');
+                const isTrascrizioneOpen = vTrasc && !vTrasc.classList.contains('hidden-tab');
+                
+                const idInTrascrizione = document.getElementById('trascrizione-id')?.value;
+                if (isTrascrizioneOpen && idInTrascrizione && !window.trascrizioneNonSalvata) {
+                    const checkEsiste = appData.manoscritti.some(x => String(x.id) === String(idInTrascrizione));
+                    if (checkEsiste) {
+                        if (typeof apriTrascrizione === 'function') apriTrascrizione(idInTrascrizione);
+                    } else {
+                        mostraMessaggio("Il documento corrente è stato eliminato da un altro utente.", "warning");
+                        switchTab('list');
+                    }
+                }
+                resolve(true);
+            };
+
+            const processDeletions = async () => {
+                if (deletionsList.length > 0 && typeof window.apriDeletionConflictModal === 'function') {
+                    if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(false);
+                    window.apriDeletionConflictModal(deletionsList, (resolutions) => {
+                        if (!resolutions) {
+                            resolve(false);
+                            return;
+                        }
+                        deletionsList.forEach(card => {
+                            if (resolutions[card.id] === 'keep') {
+                                card.lastModified = Date.now();
+                                mergedManoscritti.push(card);
+                                if (nuovoDati.deletedIds) nuovoDati.deletedIds = nuovoDati.deletedIds.filter(id => id !== card.id);
+                            }
+                        });
+                        concludiMerge(mergedManoscritti);
+                    });
+                } else {
+                    concludiMerge(mergedManoscritti);
+                }
+            };
             
-            resolve(true);
+            if (localDeletionsToPush.length > 0 && typeof window.mostraBottomConfirm === 'function') {
+                if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(false);
+                const count = localDeletionsToPush.length;
+                const msg = count > 1 
+                    ? `Hai eliminato ${count} record dal tuo archivio. Sei sicuro di volerli cancellare definitivamente anche dal cloud condiviso?` 
+                    : `Hai eliminato un record dal tuo archivio. Sei sicuro di volerlo cancellare definitivamente anche dal cloud condiviso?`;
+                
+                window.mostraBottomConfirm(msg, () => {
+                    // Conferma: cancella anche dal cloud
+                    localDeletionsToPush.forEach(card => {
+                        if (!nuovoDati.deletedIds) nuovoDati.deletedIds = [];
+                        if (!nuovoDati.deletedIds.includes(card.id)) nuovoDati.deletedIds.push(card.id);
+                    });
+                    if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'sync_in_progress');
+                    processDeletions();
+                }, null, () => {
+                    // Annulla: non cancellare dal cloud, e rimuovili dai tombstone locali così non ci chiede più (e li ripristiniamo)
+                    localDeletionsToPush.forEach(card => {
+                        mergedManoscritti.push(card);
+                        if (appData.deletedIds) {
+                            appData.deletedIds = appData.deletedIds.filter(x => x !== card.id);
+                        }
+                    });
+                    if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'sync_in_progress');
+                    processDeletions();
+                });
+            } else {
+                processDeletions();
+            }
+
         };
         
         if (conflitti && conflitti.length > 0) {
+            if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(false);
             if (typeof window.apriMergeConflictModal === 'function') {
                 window.apriMergeConflictModal(conflitti, (resolvedCards) => {
                     if (resolvedCards) {

@@ -30,6 +30,7 @@ function confermaAggiungiCartella() {
 
         if (!appData.cartelle.includes(percorsoPulito)) {
             appData.cartelle.push(percorsoPulito);
+            if (appData.deletedCartelle) appData.deletedCartelle = appData.deletedCartelle.filter(c => c !== percorsoPulito);
             salvaTutto();
             renderSidebar();
             aggiornaSelectCartelle();
@@ -61,10 +62,17 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
 
     // Aggiorna cartelle
     const prefix = pathSorgente + '/';
+    if (!appData.deletedCartelle) appData.deletedCartelle = [];
     appData.cartelle = appData.cartelle.map(c => {
-        if (c === pathSorgente) return nuovoPath;
-        if (c.startsWith(prefix)) return c.replace(pathSorgente, nuovoPath);
-        return c;
+        let nuovoC = c;
+        if (c === pathSorgente) nuovoC = nuovoPath;
+        else if (c.startsWith(prefix)) nuovoC = c.replace(pathSorgente, nuovoPath);
+        
+        if (nuovoC !== c) {
+            if (!appData.deletedCartelle.includes(c)) appData.deletedCartelle.push(c);
+            appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== nuovoC);
+        }
+        return nuovoC;
     });
 
     // Aggiorna manoscritti
@@ -99,27 +107,76 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
     
     // Controlla se ci sono manoscritti dentro la cartella o nelle sue sottocartelle
     const prefix = pathDaEliminare + '/';
-    const haManoscritti = appData.manoscritti.some(m => m.cartella === pathDaEliminare || (m.cartella && m.cartella.startsWith(prefix)));
-    if (haManoscritti) {
-        mostraMessaggio(window.t("msg_cannot_delete_not_empty"), "error");
-        return;
-    }
+    const manoscrittiDaEliminare = appData.manoscritti.filter(m => m.cartella === pathDaEliminare || (m.cartella && m.cartella.startsWith(prefix)));
+    const haManoscritti = manoscrittiDaEliminare.length > 0;
 
     const nomeVisivo = pathDaEliminare.split('/').pop();
 
-    window.mostraBottomConfirm(`Sei sicuro di voler eliminare la cartella "${nomeVisivo}"? Tutte le sottocartelle vuote verranno rimosse.`, async () => {
+    let messaggioConferma = `Sei sicuro di voler eliminare l'archivio "${nomeVisivo}"? Tutti i sotto-archivi vuoti verranno rimossi.`;
+    if (haManoscritti) {
+        messaggioConferma = `L'archivio "${nomeVisivo}" contiene ${manoscrittiDaEliminare.length} documenti. Eliminandolo, verranno eliminati anche tutti i documenti al suo interno. Vuoi procedere?`;
+    }
+
+    window.mostraBottomConfirm(messaggioConferma, async () => {
+        // Salviamo lo stato per l'undo
+        const cartelleDaEliminare = appData.cartelle.filter(c => c === pathDaEliminare || c.startsWith(prefix));
+        const recordSalvati = JSON.parse(JSON.stringify(manoscrittiDaEliminare));
+
         // Elimina anche tutte le sottocartelle
-        appData.cartelle = appData.cartelle.filter(c => c !== pathDaEliminare && !c.startsWith(prefix));
+        const foldersToDel = appData.cartelle.filter(c => c === pathDaEliminare || c.startsWith(prefix));
+        appData.cartelle = appData.cartelle.filter(c => !foldersToDel.includes(c));
         
+        if (!appData.deletedCartelle) appData.deletedCartelle = [];
+        for (let fd of foldersToDel) {
+             if (!appData.deletedCartelle.includes(fd)) appData.deletedCartelle.push(fd);
+        }
+        
+        // Se c'erano manoscritti, eliminali e metti l'ID nei tombstone per la sync
+        if (haManoscritti) {
+            if (!appData.deletedIds) appData.deletedIds = [];
+            const idsToRemove = manoscrittiDaEliminare.map(m => m.id);
+            for (let id of idsToRemove) {
+                if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+            }
+            appData.manoscritti = appData.manoscritti.filter(m => !idsToRemove.includes(m.id));
+        }
+
         if (window.cartellaAttuale === pathDaEliminare || window.cartellaAttuale.startsWith(prefix)) {
             window.cartellaAttuale = appData.cartelle[0] || 'Generale';
-            switchTab('list');
+            if (typeof switchTab === 'function') switchTab('list');
         }
         await salvaTutto();
         renderSidebar();
         renderMain();
         aggiornaSelectCartelle();
-        mostraMessaggio(window.t("msg_folder_deleted"), "success");
+        
+        const ripristinaFn = async () => {
+            const cartelleSet = new Set([...appData.cartelle, ...cartelleDaEliminare]);
+            appData.cartelle = Array.from(cartelleSet).sort();
+            
+            if (appData.deletedCartelle) {
+                appData.deletedCartelle = appData.deletedCartelle.filter(c => !cartelleDaEliminare.includes(c));
+            }
+            
+            if (haManoscritti) {
+                const idsRipristinati = recordSalvati.map(r => r.id);
+                if (appData.deletedIds) {
+                    appData.deletedIds = appData.deletedIds.filter(x => !idsRipristinati.includes(x));
+                }
+                appData.manoscritti.push(...recordSalvati);
+            }
+            await salvaTutto();
+            renderSidebar();
+            renderMain();
+            aggiornaSelectCartelle();
+        };
+
+        if (window.gestoreAnnullamento) {
+            window.gestoreAnnullamento.registraAzione(`Eliminazione archivio "${nomeVisivo}"`, ripristinaFn);
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t ? window.t("msg_folder_deleted") : "Archivio eliminato.", "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
+        } else {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t ? window.t("msg_folder_deleted") : "Archivio eliminato.", "success");
+        }
     }, 'delete_folder');
 }
 
@@ -149,10 +206,17 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
         const username = settings.username || 'Anonimo';
 
         // Aggiorna cartelle
+        if (!appData.deletedCartelle) appData.deletedCartelle = [];
         appData.cartelle = appData.cartelle.map(c => {
-            if (c === vecchioPath) return nuovoPath;
-            if (c.startsWith(prefixVecchia)) return c.replace(vecchioPath, nuovoPath);
-            return c;
+            let nuovoC = c;
+            if (c === vecchioPath) nuovoC = nuovoPath;
+            else if (c.startsWith(prefixVecchia)) nuovoC = c.replace(vecchioPath, nuovoPath);
+            
+            if (nuovoC !== c) {
+                if (!appData.deletedCartelle.includes(c)) appData.deletedCartelle.push(c);
+                appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== nuovoC);
+            }
+            return nuovoC;
         });
 
         // Aggiorna manoscritti

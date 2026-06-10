@@ -112,11 +112,11 @@ function setupWorkspaceIpc() {
     if (!fs.existsSync(newPath)) {
       fs.mkdirSync(newPath, { recursive: true });
     }
-    if (config) {
-      const settingsPath = path.join(newPath, 'settings.json');
-      fs.writeFileSync(settingsPath, JSON.stringify(config, null, 2), 'utf8');
-    }
     initWorkspace(newPath);
+    if (config) {
+      const { saveAllSettings } = require('../workspaceManager');
+      saveAllSettings(config);
+    }
     if (state.mainWindow) {
         state.mainWindow.reload();
     }

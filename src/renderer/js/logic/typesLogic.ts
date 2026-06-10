@@ -266,11 +266,27 @@ window.eliminaTipoDocumento = function(id) {
     }
     
     window.mostraBottomConfirm("Sei sicuro di voler eliminare questo modello?", async () => {
+        // Salva il tipo per eventuale ripristino
+        const tipoSalvato = JSON.parse(JSON.stringify(appData.tipiDocumento.find(t => t.id === id)));
+        
         appData.tipiDocumento = appData.tipiDocumento.filter(t => t.id !== id);
         await salvaTutto();
         aggiornaSelectTipiDocumento();
         apriManageTypesModal(); // Ricarica la lista
-        mostraMessaggio(window.t("msg_type_deleted"), "success");
+        
+        const ripristinaFn = async () => {
+            appData.tipiDocumento.push(tipoSalvato);
+            await salvaTutto();
+            aggiornaSelectTipiDocumento();
+            apriManageTypesModal();
+        };
+
+        if (window.gestoreAnnullamento) {
+            window.gestoreAnnullamento.registraAzione(`Eliminazione modello "${tipoSalvato.nome}"`, ripristinaFn);
+            mostraMessaggio(window.t("msg_type_deleted"), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
+        } else {
+            mostraMessaggio(window.t("msg_type_deleted"), "success");
+        }
     }, 'delete_type');
 };
 

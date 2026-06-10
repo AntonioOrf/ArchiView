@@ -72,9 +72,9 @@ window.getApiCloud = async function() {
 window.controllaModificheInEntrata = async function(manual = false) {
     const apiCloud = await window.getApiCloud();
     if (apiCloud && window.driveStatus && window.driveStatus.isAuthenticated) {
-        if (manual && typeof mostraMessaggio === 'function') {
-            mostraMessaggio("Controllo aggiornamenti dal Cloud...", "info");
-            window.toggleSyncProgress(true);
+        if (manual) {
+            window.toggleSyncProgress(true, 'Controllo Modifiche');
+            window.updateSyncProgress(100, "Ricerca in corso...");
         }
         try {
             const remoteModifiedTime = await apiCloud.checkUpdates();
@@ -88,6 +88,66 @@ window.controllaModificheInEntrata = async function(manual = false) {
                     if (peekData && peekData.database && peekData.database.manoscritti) {
                         const loadedAt = window.ultimoCaricamento || 0;
                         window.incomingChanges = peekData.database.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
+                        
+                        const structural = [];
+                        
+                        // Cartelle nuove o modificate
+                        const remoteCartelle = peekData.database.cartelle || [];
+                        const localCartelle = appData.cartelle || [];
+                        const newFolders = remoteCartelle.filter(c => !localCartelle.includes(c));
+                        if (newFolders.length > 0) {
+                            structural.push({ icon: 'folder-plus', label: `+ ${newFolders.length} Cartell${newFolders.length > 1 ? 'e' : 'a'}` });
+                        }
+                        
+                        const author = peekData.lastModifyingUser ? (peekData.lastModifyingUser.displayName || peekData.lastModifyingUser.emailAddress || 'Sconosciuto') : 'Collaboratore';
+                        window.incomingAuthor = author;
+
+
+                        
+                        // Tipi Documento nuovi o modificati
+                        const remoteTipi = peekData.database.tipiDocumento || [];
+                        const localTipi = appData.tipiDocumento || [];
+                        const newTipi = remoteTipi.filter(rt => !localTipi.some(lt => lt.id === rt.id));
+                        const modTipi = remoteTipi.filter(rt => localTipi.some(lt => lt.id === rt.id && JSON.stringify(lt) !== JSON.stringify(rt)));
+                        const totTipi = newTipi.length + modTipi.length;
+                        if (totTipi > 0) {
+                            structural.push({ icon: 'file-type-2', label: `${totTipi} Modell${totTipi > 1 ? 'i' : 'o'}` });
+                        }
+                        
+                        // Cartelle Eliminate
+                        const remoteDeletedFolders = peekData.database.deletedCartelle || [];
+                        const localDeletedFolders = appData.deletedCartelle || [];
+                        const newDeletedFolders = remoteDeletedFolders.filter(c => !localDeletedFolders.includes(c));
+                        if (newDeletedFolders.length > 0) {
+                            const MAX_DEL_FOLDERS = 10;
+                            newDeletedFolders.slice(0, MAX_DEL_FOLDERS).forEach(f => {
+                                const nomeFolder = f.split('/').pop() || f;
+                                structural.push({ icon: 'folder-minus', label: `Cartella eliminata: ${nomeFolder} (da ${author})` });
+                            });
+                            if (newDeletedFolders.length > MAX_DEL_FOLDERS) {
+                                structural.push({ icon: 'more-horizontal', label: `... e altre ${newDeletedFolders.length - MAX_DEL_FOLDERS} cartelle eliminate` });
+                            }
+                        }
+                        
+                        // Cancellazioni Remote
+                        const remoteDeleted = peekData.database.deletedIds || [];
+                        const localDeleted = appData.deletedIds || [];
+                        const newDeleted = remoteDeleted.filter(id => !localDeleted.includes(id));
+                        
+                        if (newDeleted.length > 0) {
+                            const MAX_DEL = 10;
+                            newDeleted.slice(0, MAX_DEL).forEach(id => {
+                                const m = (appData.manoscritti || []).find(x => x.id === id);
+                                const nome = m ? (m.titolo || m.segnatura || 'Senza Titolo') : 'File eliminato';
+                                const itemAuthor = (m && (m.modificatoDa || m.creatoDa)) ? (m.modificatoDa || m.creatoDa) : author;
+                                structural.push({ icon: 'trash-2', label: `Eliminato: ${nome} (da ${itemAuthor})` });
+                            });
+                            if (newDeleted.length > MAX_DEL) {
+                                structural.push({ icon: 'more-horizontal', label: `... e altre ${newDeleted.length - MAX_DEL} eliminazioni` });
+                            }
+                        }
+                        
+                        window.incomingStructuralChanges = structural;
                         if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     }
                 } catch(e) { console.error("Errore peek", e); }
@@ -95,9 +155,11 @@ window.controllaModificheInEntrata = async function(manual = false) {
             } else {
                 window.impostaModificheInEntrata(false);
                 window.incomingChanges = [];
+                window.incomingAuthor = null;
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Nessun nuovo aggiornamento trovato.", "info");
+                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Nessun nuovo aggiornamento trovato.", "success");
             }
+            if (manual) window.hasFetchedBeforeDownload = true;
         } catch (e) {
             console.error("Errore controllo aggiornamenti in entrata", e);
             if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il fetch: " + e.message, "error");
@@ -268,6 +330,17 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
 };
 
 window.scaricaDalCloud = async function(silent = false) {
+    if (!silent && !window.hasFetchedBeforeDownload && typeof window.mostraBottomConfirm === 'function') {
+        window.mostraBottomConfirm("Attenzione: stai per scaricare le modifiche dal Cloud senza aver prima verificato di cosa si tratta (Fetch). Vuoi procedere comunque?", () => {
+            // Se accetta, procediamo forzando silent a true per bypassare questo stesso blocco, o mettiamo un flag
+            eseguiScaricamentoDalCloud(silent);
+        });
+        return;
+    }
+    await eseguiScaricamentoDalCloud(silent);
+};
+
+async function eseguiScaricamentoDalCloud(silent = false) {
     const apiCloud = await window.getApiCloud();
     if (apiCloud) {
         window.toggleSyncProgress(true, 'download_in_progress');
@@ -293,6 +366,7 @@ window.scaricaDalCloud = async function(silent = false) {
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante lo scaricamento: " + e.message, "error");
         } finally {
             window.toggleSyncProgress(false);
+            window.hasFetchedBeforeDownload = false;
         }
     }
 };
@@ -386,7 +460,7 @@ window.trasformaInCondiviso = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud("Configurazione in corso", "Impostazione Vault come condiviso...");
+            mostraProgressoCloud("Configurazione in corso", "Impostazione Archivio come condiviso...");
         }
         
         if (window.apiSettings) {
@@ -468,7 +542,7 @@ window.trasformaInPersonale = async function() {
 window.scollegaCloud = async function() {
     if (typeof mostraBottomConfirm === 'function') {
         mostraBottomConfirm(
-            "Vuoi davvero scollegare questo Vault dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.",
+            "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.",
             async () => {
                 if (typeof mostraProgressoCloud === 'function') {
                     mostraProgressoCloud("Scollegamento", "Disattivazione della sincronizzazione Cloud...");
@@ -482,7 +556,7 @@ window.scollegaCloud = async function() {
                         settings.sharedVaultId = null;
                         await window.apiSettings.save(settings);
                         
-                        mostraMessaggio("Il Vault è ora scollegato ed è solo locale.", "success");
+                        mostraMessaggio("L'Archivio è ora scollegato ed è solo locale.", "success");
                         
                         if (typeof apriCloudModal === 'function') {
                             apriCloudModal();
@@ -497,7 +571,7 @@ window.scollegaCloud = async function() {
                 }
             }
         );
-    } else if (confirm("Vuoi davvero scollegare questo Vault dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.")) {
+    } else if (confirm("Vuoi davvero scollegare questo Archivio dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.")) {
         if (typeof mostraProgressoCloud === 'function') {
             mostraProgressoCloud("Scollegamento", "Disattivazione della sincronizzazione Cloud...");
         }
@@ -509,7 +583,7 @@ window.scollegaCloud = async function() {
                 settings.driveAutofetch = false;
                 await window.apiSettings.save(settings);
                 
-                mostraMessaggio("Il Vault è ora scollegato ed è solo locale.", "success");
+                mostraMessaggio("L'Archivio è ora scollegato ed è solo locale.", "success");
                 
                 if (typeof apriCloudModal === 'function') {
                     apriCloudModal();

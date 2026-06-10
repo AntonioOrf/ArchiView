@@ -54,7 +54,7 @@ window.riceviModificheHub = async function(isSilent = false) {
         return;
     }
 
-    if (!isSilent) mostraMessaggio("Ricezione modifiche dall'Hub in corso...", "info");
+    // if (!isSilent) mostraMessaggio("Ricezione modifiche dall'Hub in corso...", "info");
     
     try {
         const repoId = window.hubConfig.repoId;
@@ -285,7 +285,7 @@ window.clonaRepositoryHub = async function(url, repoId, key) {
         const data = await res.json();
         
         if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiBrowser.cloneWorkspaceHub) {
-            mostraMessaggio("Seleziona la cartella in cui scaricare l'archivio.", "info");
+            mostraMessaggio("Seleziona il percorso in cui scaricare l'archivio.", "info");
             const basePath = await window.apiBrowser.selectBaseDirectory();
             if (basePath) {
                 const hubConfigObj = {

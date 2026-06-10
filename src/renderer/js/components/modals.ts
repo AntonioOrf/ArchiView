@@ -186,7 +186,7 @@ window.rinominaAllegatoDaModal = function(id, index) {
     });
 }
 
-window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null) {
+window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null, onCancelCallback = null) {
     if (actionId && appData.skipConfirmations && appData.skipConfirmations[actionId]) {
         if (onConfirmCallback) onConfirmCallback();
         return;
@@ -195,6 +195,7 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null)
     const banner = document.getElementById('bottom-confirm-banner');
     document.getElementById('bottom-confirm-text').textContent = testo;
     const btnYes = document.getElementById('btn-bottom-confirm-yes');
+    const btnCancel = banner.querySelector('.btn-ghost');
     
     const checkboxContainer = document.getElementById('bottom-confirm-checkbox-container');
     const checkbox = document.getElementById('bottom-confirm-skip');
@@ -206,9 +207,12 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null)
         checkboxContainer.classList.add('hidden-tab');
     }
     
-    // Rimuovi vecchi listener clonando il pulsante
+    // Rimuovi vecchi listener clonando i pulsanti
     const newBtn = btnYes.cloneNode(true);
     btnYes.parentNode.replaceChild(newBtn, btnYes);
+    
+    const newBtnCancel = btnCancel.cloneNode(true);
+    btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
     
     newBtn.onclick = async () => {
         window.chiudiBottomConfirm();
@@ -220,11 +224,16 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null)
         if (onConfirmCallback) onConfirmCallback();
     };
     
+    newBtnCancel.onclick = () => {
+        window.chiudiBottomConfirm();
+        if (onCancelCallback) onCancelCallback();
+    };
+    
     banner.classList.remove('hidden-tab');
 }
 
 window.chiudiBottomConfirm = function() {
     const banner = document.getElementById('bottom-confirm-banner');
-    banner.classList.add('hidden-tab');
+    if (banner) banner.classList.add('hidden-tab');
 }
 

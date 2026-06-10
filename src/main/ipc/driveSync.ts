@@ -353,13 +353,16 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
       } catch(e) {}
   }
 
+  let lastModifyingUser = null;
+
   // 1. Se è specificato un vaultFolderId (dal Cloud Explorer o Settings)
   if (actualVaultFolderId) {
       let q = `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime, parents)' });
+      let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime, parents, lastModifyingUser)' });
       if (res.data.files.length > 0) {
           fileId = res.data.files[0].id;
           driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
+          lastModifyingUser = res.data.files[0].lastModifyingUser;
           if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
       }
   } 
@@ -372,16 +375,17 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
   // 3. Ripristino Iniziale (quando non c'è workspacePath e stiamo sfogliando cloud in generale)
   if (!fileId && !state.workspacePath) {
       let q = `name='database_manoscritti.json' and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents)' });
+      let res = await drive.files.list({ q, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents, lastModifyingUser)' });
       
       if (res.data.files.length === 0) {
           const qShared = `name='database_manoscritti.json' and trashed=false and sharedWithMe=true`;
-          res = await drive.files.list({ q: qShared, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents)' });
+          res = await drive.files.list({ q: qShared, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents, lastModifyingUser)' });
       }
 
       if (res.data.files.length > 0) {
           fileId = res.data.files[0].id;
           driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
+          lastModifyingUser = res.data.files[0].lastModifyingUser;
           if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
       }
   }
@@ -406,15 +410,43 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
     // Scarica allegati (blocca il return del db così da mostrare la barra di progresso corretta)
     if (syncAttachments && state.workspacePath && actualVaultFolderId) {
         try {
+            const usedAttachments = new Set();
+            if (driveRes.data && driveRes.data.manoscritti) {
+                for (const m of driveRes.data.manoscritti) {
+                    if (m.allegati) {
+                        for (const a of m.allegati) {
+                            if (a.nome) usedAttachments.add(a.nome);
+                        }
+                    }
+                }
+            }
+
             const allegatiFolderId = await getOrCreateFolder('allegati_manoscritti', actualVaultFolderId);
             const qAll = `'${allegatiFolderId}' in parents and trashed=false`;
-            const resAll = await drive.files.list({ q: qAll, fields: 'files(id, name)' });
+            
+            const allDriveFiles: any[] = [];
+            let pageToken = undefined;
+            do {
+                const resAll: any = await drive.files.list({ 
+                    q: qAll, 
+                    pageSize: 1000, 
+                    fields: 'nextPageToken, files(id, name)',
+                    pageToken: pageToken
+                });
+                if (resAll.data.files) {
+                    allDriveFiles.push(...resAll.data.files);
+                }
+                pageToken = resAll.data.nextPageToken;
+            } while (pageToken);
+
             const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
             if (!fs.existsSync(allegatiLocalDir)) fs.mkdirSync(allegatiLocalDir, { recursive: true });
             
+            const filesToDownload = allDriveFiles.filter((f: any) => usedAttachments.has(f.name));
+            
             let i = 0;
-            const total = resAll.data.files.length;
-            for (const f of resAll.data.files) {
+            const total = filesToDownload.length;
+            for (const f of filesToDownload) {
                 i++;
                 const win = require('electron').BrowserWindow.getAllWindows()[0];
                 if (win) win.webContents.send('sync-progress', { percent: (i / total) * 100, message: `Scaricamento allegato ${i} di ${total}` });
@@ -430,7 +462,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
         }
     }
 
-    return { database: driveRes.data, driveModifiedTime };
+    return { database: driveRes.data, driveModifiedTime, lastModifyingUser };
   }
   
   return null;
@@ -492,11 +524,48 @@ async function syncToDrive() {
       if (syncAttachments) {
           const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
           if (fs.existsSync(allegatiLocalDir)) {
+              const usedAttachments = new Set();
+              try {
+                  if (fs.existsSync(dbPath)) {
+                      const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+                      if (db.manoscritti) {
+                          for (const m of db.manoscritti) {
+                              if (m.allegati) {
+                                  for (const a of m.allegati) {
+                                      if (a.nome) usedAttachments.add(a.nome);
+                                  }
+                              }
+                          }
+                      }
+                  }
+              } catch (e) {
+                  console.error("Errore lettura db per filtro upload allegati:", e);
+              }
+              
               const allegatiFolderId = await getOrCreateFolder('allegati_manoscritti', projectFolderId);
-              const files = fs.readdirSync(allegatiLocalDir);
+              
+              const qAll = `'${allegatiFolderId}' in parents and trashed=false`;
+              const existingDriveFiles = new Set();
+              let pageToken = undefined;
+              do {
+                  const resAll: any = await drive.files.list({ 
+                      q: qAll, 
+                      pageSize: 1000, 
+                      fields: 'nextPageToken, files(name)',
+                      pageToken: pageToken
+                  });
+                  if (resAll.data.files) {
+                      resAll.data.files.forEach((f: any) => existingDriveFiles.add(f.name));
+                  }
+                  pageToken = resAll.data.nextPageToken;
+              } while (pageToken);
+
+              const allFiles = fs.readdirSync(allegatiLocalDir);
+              const filesToUpload = allFiles.filter(f => usedAttachments.has(f) && !existingDriveFiles.has(f));
+
               let i = 0;
-              const total = files.length;
-              for (const file of files) {
+              const total = filesToUpload.length;
+              for (const file of filesToUpload) {
                   i++;
                   const filePath = path.join(allegatiLocalDir, file);
                   const stat = fs.statSync(filePath);
@@ -794,7 +863,7 @@ function setupDriveIpc() {
         try { settings = getAllSettings(); } catch(e) {}
         
         let vaultFolderId = settings.sharedVaultId;
-        if (!vaultFolderId) throw new Error("ID del Vault non trovato. Assicurati che sia un Vault Condiviso.");
+        if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato. Assicurati che sia un Archivio Condiviso.");
         
         await drive.permissions.create({
             fileId: vaultFolderId,
@@ -856,8 +925,8 @@ function setupDriveIpc() {
         }
         if (state.mainWindow) state.mainWindow.reload();
         return true;
-    } catch(e) {
-        throw new Error("Errore connessione vault: " + e.message);
+    } catch (e: any) {
+        throw new Error("Errore connessione archivio: " + e.message);
     }
   });
 }
