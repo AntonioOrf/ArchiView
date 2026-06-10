@@ -110,6 +110,20 @@ async function avviaApp() {
         }, 300);
     }
 
+    if (settings && settings.promptCloudAuth) {
+        settings.promptCloudAuth = false;
+        await window.apiSettings.save(settings);
+        
+        setTimeout(() => {
+            if (typeof apriCloudModal === 'function') {
+                apriCloudModal();
+                if (typeof mostraMessaggio === 'function') {
+                    mostraMessaggio("Benvenuto nell'Archivio Condiviso! Effettua l'accesso a Google Drive per scaricare i dati.", "info");
+                }
+            }
+        }, 800);
+    }
+
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
     renderSidebar();
     renderMain();

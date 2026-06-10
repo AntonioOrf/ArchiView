@@ -269,7 +269,7 @@
                     } else {
                         if (title) title.textContent = "Archivio Condiviso Attivo";
                         if (desc) {
-                            desc.textContent = "Questo Archivio è sincronizzato sul Cloud. Condividi il codice sottostante con i tuoi collaboratori per farli accedere immediatamente.";
+                            desc.textContent = "Questo Archivio è sincronizzato sul Cloud. Usa \"Invita tramite Email\" per autorizzare i collaboratori, poi condividi questo codice per configurarli.";
                             desc.className = "text-sm mb-6 max-w-md transition-colors duration-300 text-stone-700 dark:text-amber-300";
                         }
                         if (inviteContainer) inviteContainer.style.display = 'flex';

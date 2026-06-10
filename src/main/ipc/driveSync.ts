@@ -719,17 +719,8 @@ function setupDriveIpc() {
             saveAllSettings(settings);
         }
         
-        try {
-            await drive.permissions.create({
-                fileId: vaultFolderId,
-                requestBody: {
-                    role: 'writer',
-                    type: 'anyone'
-                }
-            });
-        } catch (permErr) {
-            console.error("Errore durante l'impostazione dei permessi della cartella condivisa:", permErr);
-        }
+        // I permessi per la cartella condivisa NON vengono più impostati su "anyone" qui.
+        // L'utente deve invitare esplicitamente i collaboratori tramite email usando "drive-share-vault".
         
         let creds: any = {};
         try {
@@ -739,7 +730,7 @@ function setupDriveIpc() {
         // Formato ultra-ridotto: r|k|c|w|a|v|n
         // r = refresh_token, k = pusherKey, c = cluster, w = webhook, a = autofetch (1/0), v = vaultFolderId, n = projectName
         const inviteObj = {
-            r: refreshToken,
+            r: "", // CRITICO: Il refresh token non viene più condiviso nel codice di invito per sicurezza
             k: settings.pusherKey || creds.PUSHER_KEY || "",
             c: settings.pusherCluster || creds.PUSHER_CLUSTER || "",
             w: settings.pusherWebhook || creds.PUSHER_WEBHOOK || "",
@@ -823,6 +814,7 @@ function setupDriveIpc() {
         
         if (vaultId) {
             settingsToSave.sharedVaultId = vaultId;
+            settingsToSave.promptCloudAuth = true;
         }
         
         initWorkspace(newPath); // Imposta questo workspace come attivo
