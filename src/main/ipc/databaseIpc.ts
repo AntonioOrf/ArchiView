@@ -30,6 +30,14 @@ function startWatcher() {
   }
 }
 
+function isValidDatabase(dati) {
+  if (!dati || typeof dati !== 'object') return false;
+  if (!Array.isArray(dati.manoscritti)) return false;
+  if (!Array.isArray(dati.cartelle)) return false;
+  if (dati.strutturaCampi && !Array.isArray(dati.strutturaCampi)) return false;
+  return true;
+}
+
 function setupDatabaseIpc() {
   ipcMain.handle('leggi-dati', async () => {
     try {
@@ -48,6 +56,10 @@ function setupDatabaseIpc() {
     try {
       if (!state.dataFilePath) throw new Error("Percorso file dati non impostato");
       
+      if (!isValidDatabase(dati)) {
+        throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
+      }
+
       isSavingSelf = true;
       await fsp.writeFile(state.dataFilePath, JSON.stringify(dati, null, 2));
       

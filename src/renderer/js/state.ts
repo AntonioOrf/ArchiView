@@ -178,13 +178,34 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 const external = externalMap.get(id);
                 
                 if (local && external) {
-                    const tLocal = local.lastModified || 0;
-                    const tExternal = external.lastModified || 0;
+                    const baseHashes = appData.baseHashes || {};
+                    const baseHash = baseHashes[id];
                     
-                    if (tLocal >= tExternal) {
-                        mergedManoscritti.push(local);
+                    if (!baseHash || typeof window.getRecordHash !== 'function') {
+                        // Fallback vecchia logica temporale
+                        const tLocal = local.lastModified || 0;
+                        const tExternal = external.lastModified || 0;
+                        
+                        if (tLocal >= tExternal) {
+                            mergedManoscritti.push(local);
+                        } else {
+                            mergedManoscritti.push(external);
+                        }
                     } else {
-                        mergedManoscritti.push(external);
+                        // 3-Way Merge deterministico
+                        const localHash = window.getRecordHash(local);
+                        const externalHash = window.getRecordHash(external);
+                        
+                        if (localHash === externalHash) {
+                            mergedManoscritti.push(external);
+                        } else if (localHash === baseHash) {
+                            mergedManoscritti.push(external); // Locale invariato
+                        } else if (externalHash === baseHash) {
+                            mergedManoscritti.push(local); // Cloud invariato
+                        } else {
+                            // Conflitto sfuggito, preserviamo locale
+                            mergedManoscritti.push(local); 
+                        }
                     }
                 } else if (local) {
                     if (nuovoDati.deletedIds && nuovoDati.deletedIds.includes(id)) {
@@ -206,6 +227,15 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 appData.deletedIds = Array.from(tombstoneSet);
                 
                 appData.manoscritti = manoscrittiFinali;
+                
+                // Aggiorna gli hash di base per i futuri 3-way merge
+                appData.baseHashes = {};
+                if (typeof window.getRecordHash === 'function') {
+                    appData.manoscritti.forEach(m => {
+                        appData.baseHashes[m.id] = window.getRecordHash(m);
+                    });
+                }
+                
                 window.ultimoCaricamento = Date.now();
                 
                 if (window.apiSettings) {

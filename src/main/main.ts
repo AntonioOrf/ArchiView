@@ -113,7 +113,10 @@ if (!gotTheLock) {
   ipcMain.handle('apri-link-esterno', async (event, url) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       await shell.openExternal(url);
+      return true;
     }
+    console.warn(`[SECURITY] Tentativo bloccato di aprire link esterno non sicuro: ${url}`);
+    return false;
   });
 
   ipcMain.handle('get-version', () => {

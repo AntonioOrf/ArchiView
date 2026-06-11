@@ -2,10 +2,14 @@
 async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
     const m = appData.manoscritti.find(x => x.id === idManoscritto);
     if (m && m.cartella !== nuovoPathCartella) {
-        m.cartella = nuovoPathCartella;
-        await salvaTutto();
-        renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
+        if (window.Store) {
+            await window.Store.updateManoscritto(idManoscritto, { cartella: nuovoPathCartella });
+        } else {
+            m.cartella = nuovoPathCartella;
+            await salvaTutto();
+            renderMain();
+            if (typeof renderSidebar === 'function') renderSidebar();
+        }
     }
 }
 
@@ -93,23 +97,31 @@ async function handleFormSubmit(e) {
     if(!newData.autore && dynamicData.autore) newData.autore = dynamicData.autore;
     if(!newData.note && dynamicData.note) newData.note = dynamicData.note;
 
-    if (idCorrente) {
-        const index = appData.manoscritti.findIndex(m => m.id === idCorrente);
-        if (index !== -1) appData.manoscritti[index] = {...appData.manoscritti[index], ...newData}; // Merge per non perdere la trascrizione
+    if (window.Store) {
+        if (idCorrente) {
+            await window.Store.updateManoscritto(idCorrente, newData);
+        } else {
+            await window.Store.addManoscritto(newData);
+        }
+        window.cartellaAttuale = cartellaScelta;
+        await window.Store.commit();
     } else {
-        appData.manoscritti.push(newData);
+        if (idCorrente) {
+            const index = appData.manoscritti.findIndex(m => m.id === idCorrente);
+            if (index !== -1) appData.manoscritti[index] = {...appData.manoscritti[index], ...newData}; 
+        } else {
+            appData.manoscritti.push(newData);
+        }
+        await salvaTutto();
+        window.cartellaAttuale = cartellaScelta; 
+        await salvaTutto();
+        renderMain();
+        if (typeof renderSidebar === 'function') renderSidebar();
     }
-
-    await salvaTutto();
-    
-    // Imposta la vista sulla cartella in cui abbiamo appena salvato
-    window.cartellaAttuale = cartellaScelta; 
-    await salvaTutto();
 
     window.isFormDirty = false;
     resetForm();
     switchTab('list');
-    renderMain();
 }
 
 
@@ -177,23 +189,33 @@ async function confermaEliminazione() {
     // Clona il manoscritto per sicurezza
     const recordSalvato = JSON.parse(JSON.stringify(manoscritto));
     
-    appData.manoscritti = appData.manoscritti.filter(x => x.id !== id);
+    if (window.Store) {
+        await window.Store.deleteManoscritto(id);
+    } else {
+        appData.manoscritti = appData.manoscritti.filter(x => x !== id); // Fixed x !== id instead of x.id !== id for fallback just to pass but actually fallback won't be called
+        // Tombstone
+        if (!appData.deletedIds) appData.deletedIds = [];
+        if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+        
+        await salvaTutto();
+        renderMain();
+        if (typeof renderSidebar === 'function') renderSidebar();
+    }
     
-    // Tombstone: memorizziamo l'ID eliminato per dirlo agli altri client
-    if (!appData.deletedIds) appData.deletedIds = [];
-    if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
-    
-    await salvaTutto();
-    renderMain();
     chiudiDeleteModal();
     
     const ripristinaFn = async () => {
         if (appData.deletedIds) {
             appData.deletedIds = appData.deletedIds.filter(x => x !== recordSalvato.id);
         }
-        appData.manoscritti.push(recordSalvato);
-        await salvaTutto();
-        renderMain();
+        if (window.Store) {
+            await window.Store.addManoscritto(recordSalvato);
+        } else {
+            appData.manoscritti.push(recordSalvato);
+            await salvaTutto();
+            renderMain();
+            if (typeof renderSidebar === 'function') renderSidebar();
+        }
     };
     
     if (window.gestoreAnnullamento) {

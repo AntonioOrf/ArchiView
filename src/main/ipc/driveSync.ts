@@ -280,6 +280,23 @@ async function uploadFile(localPath, driveFileName, parentId, skipIfExist = fals
 
 const { pipeline } = require('stream/promises');
 
+async function asyncPool(poolLimit, array, iteratorFn) {
+  const ret = [];
+  const executing = [];
+  for (const item of array) {
+    const p = Promise.resolve().then(() => iteratorFn(item, array));
+    ret.push(p);
+    if (poolLimit <= array.length) {
+      const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+      executing.push(e);
+      if (executing.length >= poolLimit) {
+        await Promise.race(executing);
+      }
+    }
+  }
+  return Promise.all(ret);
+}
+
 async function downloadFile(fileId, destPath) {
   const res = await drive.files.get({ fileId: fileId, alt: 'media' }, { responseType: 'stream' });
   const dest = fs.createWriteStream(destPath);
@@ -446,9 +463,10 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
             
             let i = 0;
             const total = filesToDownload.length;
-            for (const f of filesToDownload) {
+            const win = require('electron').BrowserWindow.getAllWindows()[0];
+            
+            await asyncPool(5, filesToDownload, async (f: any) => {
                 i++;
-                const win = require('electron').BrowserWindow.getAllWindows()[0];
                 if (win) win.webContents.send('sync-progress', { percent: (i / total) * 100, message: `Scaricamento allegato ${i} di ${total}` });
                 
                 const localPath = path.join(allegatiLocalDir, f.name);
@@ -456,7 +474,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
                     await downloadFile(f.id, localPath);
                     if (win) win.webContents.send('allegato-scaricato', f.name);
                 }
-            }
+            });
         } catch (e) {
             console.error("Errore download allegati:", e);
         }
@@ -468,7 +486,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
   return null;
 }
 
-async function syncToDrive() {
+async function syncToDrive(parentModifiedTime = null) {
   if (!state.workspacePath) throw new Error("Nessun workspace aperto");
   if (!loadSavedTokens()) {
     throw new Error("Autenticazione Google Drive non effettuata. Apri il menu Cloud ed effettua l'accesso.");
@@ -509,6 +527,19 @@ async function syncToDrive() {
   
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
   if (fs.existsSync(dbPath)) {
+      // Controllo conflitti Optimistic Concurrency
+      if (parentModifiedTime) {
+          const q = `name='database_manoscritti.json' and '${projectFolderId}' in parents and trashed=false`;
+          const res = await drive.files.list({ q, fields: 'files(id, modifiedTime)' });
+          if (res.data.files.length > 0) {
+              const currentModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
+              // Aggiungiamo 1 secondo di tolleranza per eventuali arrotondamenti di Google Drive API
+              if (currentModifiedTime > parentModifiedTime + 1000) {
+                  throw new Error("409_CONFLICT: Un altro utente ha salvato modifiche più recenti sul Cloud. E' necessario prima ricevere gli aggiornamenti.");
+              }
+          }
+      }
+      
     await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
   }
 
@@ -565,18 +596,19 @@ async function syncToDrive() {
 
               let i = 0;
               const total = filesToUpload.length;
-              for (const file of filesToUpload) {
+              const win = require('electron').BrowserWindow.getAllWindows()[0];
+              
+              await asyncPool(5, filesToUpload, async (file: string) => {
                   i++;
                   const filePath = path.join(allegatiLocalDir, file);
                   const stat = fs.statSync(filePath);
                   if (stat.isFile()) {
-                      const win = require('electron').BrowserWindow.getAllWindows()[0];
                       if (win) win.webContents.send('sync-progress', { percent: (i / total) * 100, message: `Caricamento allegato ${i} di ${total}` });
                       
                       // skipIfExist = true per non ricaricare immagini già presenti
                       await uploadFile(filePath, file, allegatiFolderId, true);
                   }
-              }
+              });
           }
       }
   } catch(e) {
@@ -680,8 +712,8 @@ function setupDriveIpc() {
   ipcMain.handle('drive-peek-db', async (event, vaultId) => {
     return await pullFromDrive(vaultId, true);
   });
-  ipcMain.handle('drive-sync', async () => {
-    await syncToDrive();
+  ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
+    await syncToDrive(parentModifiedTime);
     return true;
   });
   ipcMain.handle('drive-check-updates', async (event, vaultId) => {

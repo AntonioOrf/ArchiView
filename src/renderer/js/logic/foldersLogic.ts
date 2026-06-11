@@ -18,7 +18,7 @@ function chiudiFolderModal() {
     document.getElementById('folder-modal').classList.add('hidden-tab');
 }
 
-function confermaAggiungiCartella() {
+async function confermaAggiungiCartella() {
     const nome = document.getElementById('folder-name-input').value;
     if (nome) {
         const percorsoPulito = nome.trim().replace(/\/+$/, "");
@@ -31,8 +31,11 @@ function confermaAggiungiCartella() {
         if (!appData.cartelle.includes(percorsoPulito)) {
             appData.cartelle.push(percorsoPulito);
             if (appData.deletedCartelle) appData.deletedCartelle = appData.deletedCartelle.filter(c => c !== percorsoPulito);
-            salvaTutto();
-            renderSidebar();
+            if (window.Store) await window.Store.commit();
+            else {
+                await salvaTutto();
+                renderSidebar();
+            }
             aggiornaSelectCartelle();
             chiudiFolderModal();
         } else {
@@ -88,10 +91,13 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
         }
     });
 
-    await salvaTutto();
-    renderSidebar();
+    if (window.Store) await window.Store.commit();
+    else {
+        await salvaTutto();
+        renderSidebar();
+        renderMain();
+    }
     aggiornaSelectCartelle();
-    renderMain();
 }
 
 
@@ -145,9 +151,12 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
             window.cartellaAttuale = appData.cartelle[0] || 'Generale';
             if (typeof switchTab === 'function') switchTab('list');
         }
-        await salvaTutto();
-        renderSidebar();
-        renderMain();
+        if (window.Store) await window.Store.commit();
+        else {
+            await salvaTutto();
+            renderSidebar();
+            renderMain();
+        }
         aggiornaSelectCartelle();
         
         const ripristinaFn = async () => {
@@ -165,9 +174,12 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
                 }
                 appData.manoscritti.push(...recordSalvati);
             }
-            await salvaTutto();
-            renderSidebar();
-            renderMain();
+            if (window.Store) await window.Store.commit();
+            else {
+                await salvaTutto();
+                renderSidebar();
+                renderMain();
+            }
             aggiornaSelectCartelle();
         };
 
@@ -243,9 +255,12 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
             window.cartelleEspanse.add(nuovoPath);
         }
 
-        await salvaTutto();
-        renderSidebar();
-        renderMain();
+        if (window.Store) await window.Store.commit();
+        else {
+            await salvaTutto();
+            renderSidebar();
+            renderMain();
+        }
         aggiornaSelectCartelle();
         mostraMessaggio(window.t("msg_folder_renamed"), "success");
     });

@@ -12,6 +12,15 @@ function setupWorkspaceIpc() {
     return loadHubConfig();
   });
 
+  ipcMain.handle('apri-cartella-workspace', async () => {
+    const { shell } = require('electron');
+    if (state.workspacePath) {
+      await shell.openPath(state.workspacePath);
+      return true;
+    }
+    return false;
+  });
+
   ipcMain.handle('get-workspace-path', () => {
     return state.workspacePath;
   });

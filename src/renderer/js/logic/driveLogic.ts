@@ -298,10 +298,11 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
+                window.lastDriveModifiedTime = driveData.driveModifiedTime;
             }
 
             // 2. Carica le modifiche locali unite (upload)
-            await apiCloud.sync();
+            await apiCloud.sync(window.lastDriveModifiedTime);
             
             window.ultimoCaricamento = Date.now();
             if (window.apiSettings) {
@@ -321,7 +322,37 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             inviaPingPusher();
         } catch (e) {
             console.error(e);
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la sincronizzazione: " + e.message, "error");
+            if (e.message && e.message.includes("409_CONFLICT")) {
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso...", "warning");
+                console.warn("409_CONFLICT: auto-healing in progress...");
+                try {
+                    const retryData = await apiCloud.pull();
+                    if (retryData && retryData.database) {
+                        if (typeof window.sincronizzaEUnisciDati === 'function') {
+                            await window.sincronizzaEUnisciDati(retryData.database);
+                        }
+                        window.lastDriveModifiedTime = retryData.driveModifiedTime;
+                    }
+                    await apiCloud.sync(window.lastDriveModifiedTime);
+                    
+                    window.ultimoCaricamento = Date.now();
+                    if (window.apiSettings) {
+                        const settings = await window.apiSettings.get();
+                        settings.lastSyncTime = window.ultimoCaricamento;
+                        await window.apiSettings.save(settings);
+                    }
+                    if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+                    window.incomingChanges = [];
+                    if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+                    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto risolto! Sincronizzazione completata in sicurezza.", "success");
+                    inviaPingPusher();
+                } catch(retryErr) {
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la risoluzione del conflitto: " + retryErr.message, "error");
+                }
+            } else {
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la sincronizzazione: " + e.message, "error");
+            }
         } finally {
             if (btn) btn.disabled = false;
             window.toggleSyncProgress(false);
@@ -350,6 +381,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
+                window.lastDriveModifiedTime = driveData.driveModifiedTime;
                 window.ultimoCaricamento = Date.now();
                 if (window.apiSettings) {
                     const settings = await window.apiSettings.get();
@@ -382,10 +414,11 @@ window.caricaSulCloud = async function(silent = false) {
                 if (typeof window.sincronizzaEUnisciDati === 'function') {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
+                window.lastDriveModifiedTime = driveData.driveModifiedTime;
             }
 
             // Ora carichiamo il risultato del merge
-            await apiCloud.sync();
+            await apiCloud.sync(window.lastDriveModifiedTime);
             
             window.ultimoCaricamento = Date.now();
             if (window.apiSettings) {
@@ -403,7 +436,37 @@ window.caricaSulCloud = async function(silent = false) {
             inviaPingPusher();
         } catch (e) {
             console.error(e);
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il caricamento: " + e.message, "error");
+            if (e.message && e.message.includes("409_CONFLICT")) {
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso...", "warning");
+                console.warn("409_CONFLICT in caricaSulCloud: auto-healing in progress...");
+                try {
+                    const retryData = await apiCloud.pull();
+                    if (retryData && retryData.database) {
+                        if (typeof window.sincronizzaEUnisciDati === 'function') {
+                            await window.sincronizzaEUnisciDati(retryData.database);
+                        }
+                        window.lastDriveModifiedTime = retryData.driveModifiedTime;
+                    }
+                    await apiCloud.sync(window.lastDriveModifiedTime);
+                    
+                    window.ultimoCaricamento = Date.now();
+                    if (window.apiSettings) {
+                        const settings = await window.apiSettings.get();
+                        settings.lastSyncTime = window.ultimoCaricamento;
+                        await window.apiSettings.save(settings);
+                    }
+                    if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+                    window.incomingChanges = [];
+                    if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+                    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto risolto! Caricamento completato in sicurezza.", "success");
+                    inviaPingPusher();
+                } catch(retryErr) {
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la risoluzione del conflitto: " + retryErr.message, "error");
+                }
+            } else {
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il caricamento: " + e.message, "error");
+            }
         } finally {
             window.toggleSyncProgress(false);
         }

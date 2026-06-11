@@ -13,7 +13,13 @@
                         </button>
                         <h2 id="form-title" class="text-2xl font-semibold text-amber-800" data-i18n="title_new_record">Compila Nuova Scheda</h2>
                     </div>
-                    <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-sm text-stone-500 hover:text-amber-700 underline" data-i18n="btn_cancel_edit">Annulla modifica</button>
+                    <div class="flex items-center gap-4">
+                        <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-sm text-stone-500 hover:text-amber-700 underline" data-i18n="btn_cancel_edit">Annulla modifica</button>
+                        <button type="submit" form="manoscritto-form" id="btn-submit-form" class="btn btn-primary py-2 px-4 text-sm whitespace-nowrap shadow-sm">
+                            <i data-lucide="save" class="w-4 h-4 mr-1 hidden sm:inline-block"></i>
+                            <span id="testo-btn-submit" data-i18n="btn_save_record">Salva Scheda</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <form id="manoscritto-form" class="space-y-5 panel-solid p-6 shadow-inner" style="background-color: var(--color-bg-base);">
@@ -58,11 +64,6 @@
                         <input id="form-tags" data-i18n-placeholder="placeholder_tags_input" class="form-input">
                     </div>
 
-                    <div class="pt-4">
-                        <button type="submit" id="btn-submit-form" class="btn btn-primary w-full py-3 text-lg">
-                            <span id="testo-btn-submit" data-i18n="btn_save_record">Salva Scheda</span>
-                        </button>
-                    </div>
                 </form>
             </div>
             `;

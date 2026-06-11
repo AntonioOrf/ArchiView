@@ -157,12 +157,16 @@ async function avviaApp() {
     // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato
     setTimeout(() => { if (typeof window.controllaAggiornamenti === 'function') window.controllaAggiornamenti(false); }, 2000);
 
-    document.getElementById('search-input').addEventListener('input', () => {
-        debouncedRenderMain();
-        debouncedRenderSuggestions();
-    });
-    document.getElementById('global-tag-search').addEventListener('input', debouncedRenderMain);
-    document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
+    // Guard: assicuriamoci di bindare gli eventi globali una sola volta
+    if (!window._eventsBound) {
+        window._eventsBound = true;
+
+        document.getElementById('search-input').addEventListener('input', () => {
+            debouncedRenderMain();
+            debouncedRenderSuggestions();
+        });
+        document.getElementById('global-tag-search').addEventListener('input', debouncedRenderMain);
+        document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
 
     // Tracciamento modifiche non salvate form
     document.getElementById('manoscritto-form').addEventListener('input', () => { window.isFormDirty = true; });
@@ -363,6 +367,7 @@ async function avviaApp() {
             }
         });
     }
+    } // End of if (!window._eventsBound)
 }
 
 // Theme Selection Logic
@@ -527,12 +532,16 @@ window.importaManoscritto = async function() {
         
         // Salvataggio scatena l'update chokidar ma avendo già appData aggiornato in memoria,
         // sincronizzaEUnisciDati non avrà problemi o sovrascritture.
-        await window.apiBrowser.salvaDati(appData);
-
-        if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-        if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
-        if (typeof renderSidebar === 'function') renderSidebar();
-        if (typeof renderMain === 'function') renderMain();
+        if (window.Store) {
+            await window.Store.commit();
+            if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
+        } else {
+            await window.apiBrowser.salvaDati(appData);
+            if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
+            if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
+            if (typeof renderSidebar === 'function') renderSidebar();
+            if (typeof renderMain === 'function') renderMain();
+        }
         if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore in importazione: " + res.error, "error");
@@ -637,11 +646,15 @@ window.eliminaSelezionati = async function() {
             if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
         });
         
-        await window.apiBrowser.salvaDati(appData);
+        if (window.Store) {
+            await window.Store.commit();
+        } else {
+            await window.apiBrowser.salvaDati(appData);
+            if (typeof renderMain === 'function') renderMain();
+            if (typeof renderSidebar === 'function') renderSidebar();
+        }
         window.selectedRecords = [];
         window.aggiornaSelectionBar();
-        if (typeof renderMain === 'function') renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
         
         const ripristinaFn = async () => {
             const idsRipristinati = recordSalvati.map(r => r.id);
@@ -649,8 +662,12 @@ window.eliminaSelezionati = async function() {
                 appData.deletedIds = appData.deletedIds.filter(x => !idsRipristinati.includes(x));
             }
             appData.manoscritti.push(...recordSalvati);
-            await window.apiBrowser.salvaDati(appData);
-            if (typeof renderMain === 'function') renderMain();
+            if (window.Store) {
+                await window.Store.commit();
+            } else {
+                await window.apiBrowser.salvaDati(appData);
+                if (typeof renderMain === 'function') renderMain();
+            }
         };
         
         if (window.gestoreAnnullamento) {
@@ -728,7 +745,10 @@ window.showRecordContextMenu = function(e, id) {
     const selCount = window.selectedRecords.length;
     const label = selCount > 1 ? ` (${selCount})` : '';
 
+    const renameHtml = selCount === 1 ? `<button onclick="editItem('${id}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4"></i> Rinomina / Modifica</button>` : '';
+
     menu.innerHTML = `
+        ${renameHtml}
         <button onclick="window.copiaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia${label}</button>
         <button onclick="window.tagliaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="scissors" class="w-4 h-4"></i> Taglia${label}</button>
         <button onclick="window.esportaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Esporta${label}</button>
@@ -779,16 +799,21 @@ window.showSidebarFolderContextMenu = function(e, folderPath) {
     
     if (!isRoot) {
         html += `
-            <button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Archivio</button>
+            <button onclick="window.creaSchedaContext('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="file-plus" class="w-4 h-4"></i> Crea Nuova Scheda</button>
+            <button onclick="window.mostraAggiungiCartellaContext('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="folder-plus" class="w-4 h-4"></i> Crea Nuova Cartella</button>
             <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
-            <button onclick="window.copiaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia Archivio</button>
-            <button onclick="window.tagliaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="scissors" class="w-4 h-4"></i> Taglia Archivio</button>
-            <button onclick="window.eliminaCartellaDaSidebar('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 text-red-600 dark:text-red-400" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina Archivio</button>
+            <button onclick="window.rinominaCartellaDaSidebar('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="edit-2" class="w-4 h-4"></i> Rinomina Cartella</button>
+            <button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Cartella</button>
+            <button onclick="window.apriCartellaInEsploraRisorse('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="folder-open" class="w-4 h-4"></i> Apri in Esplora Risorse</button>
+            <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
+            <button onclick="window.copiaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia Cartella</button>
+            <button onclick="window.tagliaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="scissors" class="w-4 h-4"></i> Taglia Cartella</button>
+            <button onclick="window.eliminaCartellaDaSidebar('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 text-red-600 dark:text-red-400" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina Cartella</button>
         `;
     }
     
     if (countToPaste > 0 || hasFolderAction) {
-        let label = countToPaste > 0 ? `Incolla qui (${countToPaste})` : `Incolla Archivio qui`;
+        let label = countToPaste > 0 ? `Incolla qui (${countToPaste})` : `Incolla Cartella qui`;
         if (!isRoot) html += `<div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>`;
         html += `
             <button onclick="window.incollaRecord('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> ${label}</button>
@@ -811,7 +836,28 @@ window.copiaCartella = function(folderPath) {
     window.cutFolderPath = null;
     window.cutRecordIds = [];
     window.copiedRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Archivio copiato. Tasto destro su un altro archivio per incollarlo.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Cartella copiata. Tasto destro su un'altra cartella per incollarla.`, "info");
+};
+
+window.apriCartellaInEsploraRisorse = async function(folderPath) {
+    if (window.apiBrowser && window.apiBrowser.apriCartellaWorkspace) {
+        const success = await window.apiBrowser.apriCartellaWorkspace();
+        if (!success) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio("Impossibile aprire la cartella in Esplora Risorse.", "error");
+        }
+    }
+};
+
+window.creaSchedaContext = function(folderPath) {
+    window.cartellaAttuale = folderPath;
+    if (typeof window.selectItem === 'function') window.selectItem(folderPath, true);
+    if (typeof switchTab === 'function') switchTab('add');
+};
+
+window.mostraAggiungiCartellaContext = function(folderPath) {
+    window.cartellaAttuale = folderPath;
+    if (typeof window.selectItem === 'function') window.selectItem(folderPath, true);
+    if (typeof aggiungiCartella === 'function') aggiungiCartella();
 };
 
 window.tagliaCartella = function(folderPath) {
@@ -820,12 +866,12 @@ window.tagliaCartella = function(folderPath) {
     window.copiedFolderPath = null;
     window.cutRecordIds = [];
     window.copiedRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Archivio tagliato. Tasto destro per spostarlo.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Cartella tagliata. Tasto destro per spostarla.`, "info");
 };
 window.copiaRecordSingolo = function(id) {
     window.copiedRecordIds = [id];
     window.cutRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Record copiato. Tasto destro per incollarlo in un archivio.`, "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(`Record copiato. Tasto destro per incollarlo in una cartella.`, "info");
 };
 
 window.tagliaRecordSingolo = function(id) {
@@ -877,11 +923,15 @@ window.incollaRecord = async function(targetFolderOverride) {
             window.copiedFolderPath = null;
             // Ricarica DB
             if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-            await window.apiBrowser.leggiDati().then(dati => {
+            await window.apiBrowser.leggiDati().then(async dati => {
                 appData = dati;
-                if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-                if (typeof renderSidebar === 'function') renderSidebar();
-                if (typeof renderMain === 'function') renderMain();
+                if (window.Store) {
+                    await window.Store.commit();
+                } else {
+                    if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
+                    if (typeof renderSidebar === 'function') renderSidebar();
+                    if (typeof renderMain === 'function') renderMain();
+                }
                 if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
             });
         } else {
@@ -900,11 +950,15 @@ window.incollaRecord = async function(targetFolderOverride) {
             }
         });
         if (movedCount > 0) {
-            await window.apiBrowser.salvaDati(appData);
+            if (window.Store) {
+                await window.Store.commit();
+            } else {
+                await window.apiBrowser.salvaDati(appData);
+                if (typeof renderSidebar === 'function') renderSidebar();
+                if (typeof renderMain === 'function') renderMain();
+            }
             if (typeof mostraMessaggio === 'function') mostraMessaggio(`${movedCount} record spostati con successo!`, "success");
             window.cutRecordIds = []; // Reset dopo lo spostamento
-            if (typeof renderSidebar === 'function') renderSidebar();
-            if (typeof renderMain === 'function') renderMain();
         }
         return;
     }
@@ -919,10 +973,14 @@ window.incollaRecord = async function(targetFolderOverride) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(`${res.count} record duplicati con successo!`, "success");
         // Ricarica DB
         if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        await window.apiBrowser.leggiDati().then(dati => {
+        await window.apiBrowser.leggiDati().then(async dati => {
             appData = dati;
-            if (typeof renderSidebar === 'function') renderSidebar();
-            if (typeof renderMain === 'function') renderMain();
+            if (window.Store) {
+                await window.Store.commit();
+            } else {
+                if (typeof renderSidebar === 'function') renderSidebar();
+                if (typeof renderMain === 'function') renderMain();
+            }
             if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
         });
     } else {
