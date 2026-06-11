@@ -72,3 +72,48 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# --- ArchiView Custom Ignores ---
+hub-server/
+dist/
+build/*
+!build/license.txt
+
+# Eseguibili e binari
+electron.exe
+*.exe
+*.dll
+*.so
+*.dylib
+
+TODO
+Agent.md
+Gemini.md
+artifacts/
+
+# File temporanei di sistema
+Thumbs.db
+profilo_test/
+test-cloud.bat
+scratch-test.js
+
+# Credenziali Cloud e Configurazione locale
+vercel-hub/node_modules/
+vercel-hub/.env
+
+# File generati e IDE
+*.tsbuildinfo
+.vscode/
+.idea/
+
+# Token Cloud locali (se il workspace è nel progetto)
+.drive-tokens.json
+.ms-tokens.json
+
+# Test e Workspace dummy
+test-appdata/
+
+# File batch avvio locali
+start.bat
+start-local.bat
+start-two-instances.bat
