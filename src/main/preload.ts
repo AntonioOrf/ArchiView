@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('apiBrowser', {
     leggiDati: () => ipcRenderer.invoke('leggi-dati'),
     salvaDati: (dati) => ipcRenderer.invoke('salva-dati', dati),
+    leggiDatiBase: () => ipcRenderer.invoke('leggi-dati-base'),
+    salvaDatiBase: (dati) => ipcRenderer.invoke('salva-dati-base', dati),
     onDatabaseModificatoEsterno: (callback) => ipcRenderer.on('database-modificato-esterno', () => callback()),
     onInviteUrl: (callback) => ipcRenderer.on('handle-invite-url', (event, url) => callback(url)),
     

@@ -57,8 +57,51 @@ window.selezionaCartellaIniziale = async function() {
     }
 };
 
+window.aggiornaVisibilitaCloud = async function() {
+    let isCloud = false;
+    
+    if (window.hubConfig) {
+        isCloud = true;
+    }
+    
+    if (!isCloud && window.apiSettings) {
+        try {
+            const settings = await window.apiSettings.get();
+            if (settings.isSharedVault || settings.isPersonalCloud) {
+                isCloud = true;
+            }
+        } catch (e) {
+            console.error("Errore lettura settings per visibilità cloud", e);
+        }
+    }
+
+    const btnSourceControl = document.getElementById('btn-tab-source-control');
+    const cloudButtonsContainer = document.getElementById('cloud-buttons-container');
+    
+    if (isCloud) {
+        if (btnSourceControl) btnSourceControl.classList.remove('hidden-tab', 'hidden');
+        if (cloudButtonsContainer) {
+            cloudButtonsContainer.classList.remove('hidden');
+            cloudButtonsContainer.classList.add('md:flex');
+        }
+    } else {
+        if (btnSourceControl) btnSourceControl.classList.add('hidden-tab');
+        if (cloudButtonsContainer) {
+            cloudButtonsContainer.classList.add('hidden');
+            cloudButtonsContainer.classList.remove('md:flex');
+            
+            // Se eravamo nel tab source-control, passiamo al default (list) per evitare UI vuota
+            const activeSidebar = document.querySelector('.sidebar-content:not(.hidden-tab)');
+            if (activeSidebar && activeSidebar.id === 'sidebar-source-control' && typeof switchSidebarTab === 'function') {
+                switchSidebarTab('folders');
+            }
+        }
+    }
+};
+
 async function avviaApp() {
     await initData();
+    if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
 
     if (window.apiBrowser && window.apiBrowser.onDatabaseModificatoEsterno) {
         window.apiBrowser.onDatabaseModificatoEsterno(async () => {

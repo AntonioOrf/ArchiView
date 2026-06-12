@@ -385,12 +385,24 @@ window.renderSourceControl = function() {
 
         const li = document.createElement('li');
         li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer border-b border-stone-100 dark:border-stone-800/50 last:border-0";
-        if (!isIncoming) {
-            li.onclick = () => {
-                if (typeof apriForm === 'function') apriForm(m.id);
-            };
-        } else {
-            li.title = "Modifica dal Cloud. Fai un Fetch/Scarica per vederla nel dettaglio.";
+        
+        li.title = "Clicca per mostrare le modifiche";
+        li.onclick = (e) => {
+            e.stopPropagation();
+            if (isIncoming) {
+                const localeObj = appData.manoscritti.find(x => x.id === m.id);
+                if (typeof window.apriDiffModal === 'function') {
+                    window.apriDiffModal(localeObj || {}, m, `Diff dal Cloud: ${m.titolo || m.segnatura || 'Senza Titolo'}`);
+                }
+            } else {
+                const baseObj = appData.baseObjects && appData.baseObjects[m.id];
+                if (typeof window.apriDiffModal === 'function') {
+                    window.apriDiffModal(baseObj || {}, m, `Modifiche Locali: ${m.titolo || m.segnatura || 'Senza Titolo'}`);
+                }
+            }
+        };
+
+        if (isIncoming) {
             li.classList.add('opacity-80');
         }
 
@@ -405,10 +417,19 @@ window.renderSourceControl = function() {
         textContainer.className = "flex flex-col overflow-hidden";
 
         const titleSpan = document.createElement('span');
-        titleSpan.className = "truncate text-stone-700 dark:text-stone-300";
+        titleSpan.className = "truncate text-stone-700 dark:text-stone-300 group-hover:text-amber-700 transition-colors";
         titleSpan.textContent = m.titolo || m.segnatura || 'Senza Titolo';
         
-        textContainer.appendChild(titleSpan);
+        const titleRowContainer = document.createElement('div');
+        titleRowContainer.className = "flex flex-col";
+        titleRowContainer.appendChild(titleSpan);
+
+        const actionHint = document.createElement('span');
+        actionHint.className = "text-[9px] text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase font-bold tracking-wider";
+        actionHint.textContent = "Clicca per mostrare modifiche";
+        titleRowContainer.appendChild(actionHint);
+        
+        textContainer.appendChild(titleRowContainer);
         
         if (isIncoming && window.incomingAuthor) {
             const authorSpan = document.createElement('span');

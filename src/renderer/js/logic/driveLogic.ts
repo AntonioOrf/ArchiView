@@ -535,6 +535,7 @@ window.trasformaInCondiviso = async function() {
             settings.isPersonalCloud = false;
             settings.driveAutofetch = true;
             await window.apiSettings.save(settings);
+            if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
         }
 
         if (typeof mostraProgressoCloud === 'function') {
@@ -582,6 +583,7 @@ window.trasformaInPersonale = async function() {
             settings.isSharedVault = false; // Ensures it's not both
             settings.driveAutofetch = true;
             await window.apiSettings.save(settings);
+            if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
         }
 
         if (typeof mostraProgressoCloud === 'function') {
@@ -618,6 +620,7 @@ window.scollegaCloud = async function() {
                         settings.driveAutofetch = false;
                         settings.sharedVaultId = null;
                         await window.apiSettings.save(settings);
+                        if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
                         
                         mostraMessaggio("L'Archivio è ora scollegato ed è solo locale.", "success");
                         
@@ -645,6 +648,7 @@ window.scollegaCloud = async function() {
                 settings.isPersonalCloud = false;
                 settings.driveAutofetch = false;
                 await window.apiSettings.save(settings);
+                if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
                 
                 mostraMessaggio("L'Archivio è ora scollegato ed è solo locale.", "success");
                 

@@ -78,6 +78,35 @@ function setupDatabaseIpc() {
       return { success: false, error: error.message }; 
     }
   });
+
+  ipcMain.handle('leggi-dati-base', async () => {
+    try {
+      if (state.workspacePath) {
+        const path = require('path');
+        const basePath = path.join(state.workspacePath, '.archiview-base.json');
+        if (fs.existsSync(basePath)) {
+          const data = await fsp.readFile(basePath, 'utf8');
+          return JSON.parse(data);
+        }
+      }
+    } catch (error) { 
+      console.error("Errore lettura dati base:", error); 
+    }
+    return null;
+  });
+
+  ipcMain.handle('salva-dati-base', async (event, dati) => {
+    try {
+      if (!state.workspacePath) throw new Error("Workspace non impostato");
+      const path = require('path');
+      const basePath = path.join(state.workspacePath, '.archiview-base.json');
+      await fsp.writeFile(basePath, JSON.stringify(dati, null, 2));
+      return { success: true };
+    } catch (error) { 
+      console.error("Errore salvataggio dati base:", error);
+      return { success: false, error: error.message }; 
+    }
+  });
 }
 
 module.exports = { setupDatabaseIpc };

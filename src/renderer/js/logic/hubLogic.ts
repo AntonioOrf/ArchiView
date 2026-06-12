@@ -9,6 +9,7 @@ async function inizializzaHubConfig() {
         window.hubConfig = await window.apiBrowser.loadHubConfig();
         window.aggiornaStatoWidgetHub();
         window.avviaAutofetchHub();
+        if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
     }
 }
 document.addEventListener('DOMContentLoaded', inizializzaHubConfig);

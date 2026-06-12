@@ -24,6 +24,10 @@ async function initData() {
                 appData = datiSalvati; 
             }
         }
+        const datiBaseSalvati = await window.apiBrowser.leggiDatiBase();
+        if (datiBaseSalvati) {
+            appData.baseObjects = datiBaseSalvati;
+        }
     }
     // Assicuriamoci che esista sempre almeno una cartella
     if (!appData.cartelle || appData.cartelle.length === 0) {
@@ -70,6 +74,16 @@ async function initData() {
         window.ultimoCaricamento = settings.lastSyncTime || 0;
     } else {
         window.ultimoCaricamento = 0;
+    }
+
+    if (!appData.baseObjects) {
+        appData.baseObjects = {};
+        appData.manoscritti.forEach(m => {
+            appData.baseObjects[m.id] = m;
+        });
+        if (window.apiBrowser) {
+            await window.apiBrowser.salvaDatiBase(appData.baseObjects);
+        }
     }
 }
 
@@ -230,9 +244,11 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 
                 // Aggiorna gli hash di base per i futuri 3-way merge
                 appData.baseHashes = {};
+                appData.baseObjects = {};
                 if (typeof window.getRecordHash === 'function') {
                     appData.manoscritti.forEach(m => {
                         appData.baseHashes[m.id] = window.getRecordHash(m);
+                        appData.baseObjects[m.id] = { ...m };
                     });
                 }
                 
@@ -245,6 +261,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 }
                 if (window.apiBrowser) {
                     await window.apiBrowser.salvaDati(appData);
+                    await window.apiBrowser.salvaDatiBase(appData.baseObjects || {});
                 }
                 
                 if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
