@@ -15,6 +15,22 @@
         </div>
     </div>
 
+    <div id="info-confirm-banner" class="modal-overlay hidden-tab z-110">
+        <div class="modal-window max-w-sm">
+            <div class="modal-header" style="background-color: var(--color-primary-light); border-color: var(--color-primary-border);">
+                <i data-lucide="info" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                <h3 id="info-confirm-title" class="modal-title" style="color: var(--color-primary-hover); width: 100%;">Informazione</h3>
+            </div>
+            <div class="modal-body">
+                <p id="info-confirm-text" class="font-medium mb-4 text-center">Testo</p>
+                <div class="modal-footer justify-center mt-2">
+                    <button id="btn-info-confirm-no" class="btn btn-ghost text-sm">No, grazie</button>
+                    <button id="btn-info-confirm-yes" class="btn btn-primary text-sm shadow-md">Sì</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="bottom-confirm-banner" class="modal-overlay hidden-tab z-110">
         <div class="modal-window max-w-sm">
             <div class="modal-header" style="background-color: var(--color-danger-light); border-color: #fca5a5;">

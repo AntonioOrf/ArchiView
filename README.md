@@ -20,7 +20,8 @@ The core of the application relies on a fully dynamic document template system. 
 
 ## Additional Features
 
-- **Cloud Sync & Shared Vaults (New in 2.0)**: Automatically synchronize your workspace to Google Drive. Create "Shared Vaults" to collaborate with other users in real-time, resolving conflicts instantly via a dedicated Hub server.
+- **Cloud Sync & Shared Vaults (New in 2.1)**: Automatically synchronize your workspace to Google Drive or OneDrive. Create "Shared Vaults" to collaborate with other users in real-time, resolving conflicts instantly via a dedicated Hub server. You can manage multiple independent Archives (Multi-Vault) and easily switch between them.
+- **Interactive Tutorial & Multi-language**: Learn how to use ArchiView with a built-in interactive guide. The application is fully translated in English and Italian.
 - **Folder Organization**: Manage your archives in a hierarchical structure of folders and subfolders for perfect organization.
 - **Attachment Management**: Attach and view scans, photographs, or PDF files associated with your records directly within the application.
 - **Advanced Search and Tags**: Quickly find any record through global text search or by filtering the archive via associated tags.

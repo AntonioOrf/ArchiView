@@ -144,6 +144,19 @@ if (!gotTheLock) {
 
   createWindow();
   
+  let forceClose = false;
+  state.mainWindow.on('close', (e) => {
+    if (!forceClose && state.mainWindow && state.mainWindow.webContents) {
+      e.preventDefault();
+      state.mainWindow.webContents.send('request-close');
+    }
+  });
+
+  ipcMain.on('confirm-close', () => {
+    forceClose = true;
+    if (state.mainWindow) state.mainWindow.close();
+  });
+  
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

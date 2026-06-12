@@ -246,10 +246,10 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     }
 
     if (tipo === 'pdf') {
-        pdfPreview.src = 'local-asset://' + encodeURIComponent(nome) + '#pagemode=none';
+        pdfPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now() + '#pagemode=none';
         pdfPreview.classList.remove('hidden');
     } else {
-        imgPreview.src = 'local-asset://' + encodeURIComponent(nome);
+        imgPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now();
         imgPreview.classList.remove('hidden');
     }
 };
@@ -298,11 +298,17 @@ window.toggleFullscreenAllegato = function() {
 
 window.chiudiUnsavedModal = function() {
     document.getElementById('unsaved-modal').classList.add('hidden-tab');
+    window.isClosingApp = false;
 }
 
 window.confermaUscitaTrascrizione = function() {
-    document.getElementById('unsaved-modal').classList.add('hidden-tab');
+    if (typeof chiudiUnsavedModal === 'function') chiudiUnsavedModal();
     window.trascrizioneNonSalvata = false;
+    if (window.isClosingApp && window.apiBrowser && window.apiBrowser.confirmClose) {
+        window.apiBrowser.confirmClose();
+    } else {
+        switchTab('list');
+    }
     
     // Prima di chiudere fermiamo l'iframe
     document.getElementById('trasc-pdf-preview').src = '';

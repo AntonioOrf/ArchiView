@@ -7,7 +7,7 @@
             const html = `
             <div id="view-add" class="hidden-tab fade-in max-w-2xl mx-auto pb-10">
                 <div class="flex items-center gap-3 mb-4">
-                    <button onclick="if(typeof switchTab === 'function') switchTab('list');" class="text-stone-500 hover:text-amber-700 p-1.5 bg-stone-100 hover:bg-amber-100 rounded-sm transition-colors" title="Torna alla lista">
+                    <button id="btn-back-to-list" onclick="if(typeof switchTab === 'function') switchTab('list');" class="text-stone-500 hover:text-amber-700 p-1.5 bg-stone-100 hover:bg-amber-100 rounded-sm transition-colors" title="Torna alla lista">
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </button>
                     <h2 id="form-title" class="text-2xl font-semibold text-amber-800" data-i18n="title_new_record">Compila Nuova Scheda</h2>

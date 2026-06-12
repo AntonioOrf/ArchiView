@@ -1,0 +1,30 @@
+{
+  "cartelle": [
+    "Generale",
+    "Esempi / Documenti Legali"
+  ],
+  "manoscritti": [
+    {
+      "id": "TUTORIAL_1",
+      "tipoDocumento": "atti",
+      "tipoAtto": "Atti giudiziari",
+      "titolo": "Esempio di Scheda Tutorial",
+      "segnatura": "Arch. Tutorial n. 1",
+      "cartella": "Esempi / Documenti Legali",
+      "dataCronica": "12 Maggio 1340",
+      "dataTopica": "Firenze",
+      "autore": "Notaio Anonimo",
+      "tags": "tutorial, esempio, dimostrazione",
+      "elementi_economici": "100 fiorini d'oro",
+      "allegati": [
+        {
+          "nome": "tutorial.pdf",
+          "tipo": "pdf",
+          "originalName": "tutorial.pdf"
+        }
+      ],
+      "text": "Questa è un'anteprima della trascrizione per farti vedere come appare una scheda popolata.\nPuoi cliccare in alto a destra su 'Trascrivi' per esplorare l'ambiente testuale e il visualizzatore PDF affiancato.",
+      "note": "Questo record serve per illustrarti tutte le potenzialità di ArchiView."
+    }
+  ]
+}

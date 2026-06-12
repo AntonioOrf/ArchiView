@@ -224,6 +224,54 @@ function setupWorkspaceIpc() {
       archive.finalize();
     });
   });
+
+  ipcMain.handle('load-tutorial-workspace', async () => {
+    try {
+      const sourceDir = path.join(app.getAppPath(), 'assets', 'tutorial_workspace');
+      const targetDir = path.join(app.getPath('userData'), 'Tutorial_Archive');
+
+      // Crea cartella di destinazione se non esiste
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      // Funzione di copia ricorsiva
+      const copyRecursiveSync = function(src, dest) {
+        const exists = fs.existsSync(src);
+        const stats = exists && fs.statSync(src);
+        const isDirectory = exists && stats.isDirectory();
+        if (isDirectory) {
+          if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+          fs.readdirSync(src).forEach(function(childItemName) {
+            copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+          });
+        } else {
+          fs.copyFileSync(src, dest);
+        }
+      };
+
+      if (fs.existsSync(sourceDir)) {
+        copyRecursiveSync(sourceDir, targetDir);
+      } else {
+          // Fallback manuale nel caso gli asset non siano trovati (es. in dev mode)
+          const fallbackSource = path.join(__dirname, '..', '..', '..', 'assets', 'tutorial_workspace');
+          if (fs.existsSync(fallbackSource)) {
+             copyRecursiveSync(fallbackSource, targetDir);
+          } else {
+             return { success: false, error: 'Tutorial assets not found' };
+          }
+      }
+
+      initWorkspace(targetDir);
+      if (state.mainWindow) {
+          state.mainWindow.reload();
+      }
+      return { success: true };
+    } catch (e) {
+      console.error("Errore nel caricamento del tutorial workspace:", e);
+      return { success: false, error: e.message };
+    }
+  });
 }
 
 module.exports = { setupWorkspaceIpc };

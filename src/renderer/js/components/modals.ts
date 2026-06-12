@@ -237,3 +237,41 @@ window.chiudiBottomConfirm = function() {
     if (banner) banner.classList.add('hidden-tab');
 }
 
+window.mostraInfoConfirm = function(titolo, testo, testoSì, testoNo, onConfirmCallback, onCancelCallback) {
+    const banner = document.getElementById('info-confirm-banner');
+    if (!banner) return;
+    
+    document.getElementById('info-confirm-title').textContent = titolo;
+    document.getElementById('info-confirm-text').textContent = testo;
+    
+    const btnYes = document.getElementById('btn-info-confirm-yes');
+    const btnNo = document.getElementById('btn-info-confirm-no');
+    
+    btnYes.textContent = testoSì;
+    btnNo.textContent = testoNo;
+
+    const newBtnYes = btnYes.cloneNode(true);
+    btnYes.parentNode.replaceChild(newBtnYes, btnYes);
+    
+    const newBtnNo = btnNo.cloneNode(true);
+    btnNo.parentNode.replaceChild(newBtnNo, btnNo);
+    
+    newBtnYes.onclick = () => {
+        window.chiudiInfoConfirm();
+        if (onConfirmCallback) onConfirmCallback();
+    };
+    
+    newBtnNo.onclick = () => {
+        window.chiudiInfoConfirm();
+        if (onCancelCallback) onCancelCallback();
+    };
+    
+    banner.classList.remove('hidden-tab');
+    if (window.lucide) window.lucide.createIcons({nodes: [banner]});
+}
+
+window.chiudiInfoConfirm = function() {
+    const banner = document.getElementById('info-confirm-banner');
+    if (banner) banner.classList.add('hidden-tab');
+}
+

@@ -174,23 +174,7 @@ async function avviaApp() {
     // Inizializza tutte le icone statiche dell'HTML
     if (window.lucide) lucide.createIcons();
 
-    if (window.statoIniziale) {
-        if (window.statoIniziale.tab === 'add') {
-            switchTab('add');
-        } else if (window.statoIniziale.tab === 'trascrizione' && window.statoIniziale.trascrizioneId) {
-            // Verifica che il manoscritto esista ancora prima di aprire la trascrizione
-            const esiste = appData.manoscritti.some(m => String(m.id) === String(window.statoIniziale.trascrizioneId));
-            if (esiste && typeof apriTrascrizione === 'function') {
-                apriTrascrizione(window.statoIniziale.trascrizioneId);
-            } else {
-                switchTab('list');
-            }
-        } else {
-            switchTab('list');
-        }
-    } else {
-        switchTab('list');
-    }
+    switchTab('list');
 
     // Debounce sulla ricerca: renderMain e renderSearchSuggestions vengono
     // chiamate max 1 volta ogni 150ms invece che ad ogni singolo tasto
@@ -199,6 +183,31 @@ async function avviaApp() {
 
     // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato
     setTimeout(() => { if (typeof window.controllaAggiornamenti === 'function') window.controllaAggiornamenti(false); }, 2000);
+
+    setTimeout(() => {
+        if (localStorage.getItem('startTutorialOnBoot') === 'true') {
+            localStorage.removeItem('startTutorialOnBoot');
+            if (window.avviaTutorial) window.avviaTutorial();
+        } else if (settings && settings.tutorialCompleted !== true) {
+            if (typeof window.mostraInfoConfirm === 'function') {
+                window.mostraInfoConfirm(
+                    "Tutorial ArchiView",
+                    "Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?",
+                    "Sì, avvia",
+                    "No, grazie",
+                    async () => {
+                        settings.tutorialCompleted = true;
+                        await window.apiSettings.save(settings);
+                        if (window.avviaTutorial) window.avviaTutorial();
+                    },
+                    async () => {
+                        settings.tutorialCompleted = true;
+                        await window.apiSettings.save(settings);
+                    }
+                );
+            }
+        }
+    }, 1500);
 
     // Guard: assicuriamoci di bindare gli eventi globali una sola volta
     if (!window._eventsBound) {
@@ -346,12 +355,23 @@ async function avviaApp() {
         window.trascrizioneNonSalvata = true;
     });
 
-    window.addEventListener('beforeunload', (e) => {
-        if (window.trascrizioneNonSalvata) {
-            e.preventDefault();
-            e.returnValue = ''; 
-        }
-    });
+    if (window.apiBrowser && window.apiBrowser.onRequestClose) {
+        window.apiBrowser.onRequestClose(() => {
+            const isEditingRecord = window.isFormDirty && !document.getElementById('view-add')?.classList.contains('hidden-tab');
+            
+            if (window.trascrizioneNonSalvata) {
+                window.isClosingApp = true;
+                const modal = document.getElementById('unsaved-modal');
+                if (modal) modal.classList.remove('hidden-tab');
+            } else if (isEditingRecord && window.mostraBottomConfirm) {
+                window.mostraBottomConfirm(window.t('unsaved_prompt') || "Ci sono modifiche non salvate alla scheda. Sei sicuro di voler uscire perdendo le modifiche?", () => {
+                    window.apiBrowser.confirmClose();
+                });
+            } else {
+                window.apiBrowser.confirmClose();
+            }
+        });
+    }
     
 
     // Drag to resize Trascrizione panels

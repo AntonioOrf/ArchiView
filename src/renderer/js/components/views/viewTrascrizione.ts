@@ -7,7 +7,7 @@
     <div id="view-trascrizione" class="fixed inset-0 z-40 hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden" style="background-color: var(--color-bg-base);">
         <header class="shrink-0 mb-4 flex items-center justify-between pb-4 p-3 panel-glass">
             <div class="flex items-center gap-4">
-                <button onclick="chiudiTrascrizione()" class="btn btn-secondary btn-icon">
+                <button id="btn-back-to-list-trasc" onclick="chiudiTrascrizione()" class="btn btn-secondary btn-icon">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </button>
                 <button id="btn-collapse-editor" onmousedown="event.preventDefault()" onclick="toggleFullscreenAllegato()" class="btn btn-secondary btn-icon shadow-sm" data-i18n-title="tooltip_collapse">

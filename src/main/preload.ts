@@ -17,10 +17,14 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
     getPathForFile: (file) => webUtils.getPathForFile(file),
     
+    onRequestClose: (callback) => ipcRenderer.on('request-close', () => callback()),
+    confirmClose: () => ipcRenderer.send('confirm-close'),
+
     getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
     saveHubConfig: (config) => ipcRenderer.invoke('save-hub-config', config),
     loadHubConfig: () => ipcRenderer.invoke('load-hub-config'),
     getRecentWorkspaces: () => ipcRenderer.invoke('get-recent-workspaces'),
+    loadTutorialWorkspace: () => ipcRenderer.invoke('load-tutorial-workspace'),
     openRecentWorkspace: (folderPath) => ipcRenderer.invoke('open-recent-workspace', folderPath),
     changeWorkspace: (title) => ipcRenderer.invoke('change-workspace', title),
     getDocumentsPath: () => ipcRenderer.invoke('get-documents-path'),

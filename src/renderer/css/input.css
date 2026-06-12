@@ -1,2 +1,76 @@
 @import "tailwindcss";
 @source "../";
+
+.driver-popover-close-btn { display: block !important; }  
+
+/* Stili Driver.js personalizzati per ArchiView */
+.driver-popover {
+    background-color: var(--color-bg-panel, #fff) !important;
+    color: var(--color-text-main, #1c1917) !important;
+    border: 1px solid var(--color-border, #e7e5e4) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+    font-family: var(--font-sans, inherit) !important;
+}
+
+.driver-popover-title {
+    color: var(--color-text-main, #1c1917) !important;
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.driver-popover-description {
+    color: var(--color-text-muted, #57534e) !important;
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+}
+
+.driver-popover-footer {
+    margin-top: 1rem !important;
+}
+
+.driver-popover-footer button {
+    background-color: var(--color-bg-base, #f5f5f4) !important;
+    color: var(--color-text-main, #1c1917) !important;
+    border: 1px solid var(--color-border, #d6d3d1) !important;
+    border-radius: 0.375rem !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    text-shadow: none !important;
+    transition: all 0.2s !important;
+}
+
+.driver-popover-footer button:hover {
+    background-color: var(--color-bg-hover, #e7e5e4) !important;
+}
+
+.driver-popover-footer .driver-popover-next-btn {
+    background-color: var(--color-primary, #d97706) !important;
+    color: white !important;
+    border-color: var(--color-primary-dark, #b45309) !important;
+}
+
+.driver-popover-footer .driver-popover-next-btn:hover {
+    background-color: var(--color-primary-dark, #b45309) !important;
+}
+
+.driver-popover-arrow-side-left { border-right-color: var(--color-bg-panel, #fff) !important; }
+.driver-popover-arrow-side-right { border-left-color: var(--color-bg-panel, #fff) !important; }
+.driver-popover-arrow-side-top { border-bottom-color: var(--color-bg-panel, #fff) !important; }
+.driver-popover-arrow-side-bottom { border-top-color: var(--color-bg-panel, #fff) !important; }
+
+.driver-popover-close-btn {
+    color: var(--color-text-muted, #a8a29e) !important;
+    top: 5px !important;
+    right: 5px !important;
+}
+
+.driver-popover-close-btn:hover {
+    color: var(--color-text-main, #1c1917) !important;
+}
+
+.driver-popover-progress-text {
+    color: var(--color-text-muted, #78716c) !important;
+}

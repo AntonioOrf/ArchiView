@@ -22,7 +22,8 @@ Il cuore dell'applicazione si basa su un sistema di modelli di documento complet
 
 ## Ulteriori Caratteristiche
 
-- **Sincronizzazione Cloud e Vault Condivisi (Novità della 2.0)**: Sincronizza automaticamente la tua cartella di lavoro su Google Drive. Crea "Vault Condivisi" per collaborare con altri utenti in tempo reale, risolvendo i conflitti istantaneamente tramite un server Hub dedicato.
+- **Sincronizzazione Cloud e Vault Condivisi (Novità della 2.1)**: Sincronizza automaticamente la tua cartella di lavoro su Google Drive o OneDrive. Crea "Vault Condivisi" per collaborare con altri utenti in tempo reale, risolvendo i conflitti istantaneamente tramite un server Hub dedicato. Ora puoi anche gestire archivi multipli e indipendenti (Multi-Vault).
+- **Tutorial Interattivo e Multilingua**: Impara ad utilizzare ArchiView grazie ad una guida interattiva integrata. L'applicazione è inoltre completamente tradotta in Italiano e in Inglese.
 - **Organizzazione a Cartelle**: Gestisci i tuoi archivi in una struttura gerarchica di cartelle e sottocartelle per un ordine perfetto.
 - **Gestione Allegati**: Allega e visualizza direttamente nell'applicazione scansioni, fotografie o file PDF associati alle tue schede.
 - **Ricerca Avanzata e Tag**: Trova rapidamente qualsiasi scheda attraverso la ricerca globale testuale o filtrando l'archivio tramite i tag associati.

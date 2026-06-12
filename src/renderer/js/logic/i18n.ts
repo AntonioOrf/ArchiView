@@ -238,6 +238,54 @@ function _linguiExtraction() {
     i18n._({ id: "sync_in_progress", message: "Sincronizzazione" });
     i18n._({ id: "upload_in_progress", message: "Caricamento" });
     i18n._({ id: "download_in_progress", message: "Scaricamento" });
+    i18n._({ id: "msg_sync_error", message: "Errore di connessione o sincronizzazione." });
+
+    // TUTORIAL
+    i18n._({ id: "tut_welcome_title", message: "Benvenuto in ArchiView" });
+    i18n._({ id: "tut_welcome_desc", message: "Questo tour guidato ti illustrerà le funzionalità principali del sistema. Clicca su \"Avanti\" per iniziare la presentazione." });
+    i18n._({ id: "tut_toolbar_title", message: "Barra degli Strumenti Globale" });
+    i18n._({ id: "tut_toolbar_desc", message: "Quest'area consente la navigazione rapida tra le sezioni principali e l'accesso alle funzioni di gestione dell'archivio." });
+    i18n._({ id: "tut_models_title", message: "Gestione Modelli" });
+    i18n._({ id: "tut_models_desc", message: "Clicca su questo pulsante per creare o personalizzare i modelli di documento. Un modello definisce quali campi (es. Data, Autore, Note) saranno disponibili per la compilazione della scheda." });
+    i18n._({ id: "tut_new_model_title", message: "Creazione Modello" });
+    i18n._({ id: "tut_new_model_desc", message: "In questa finestra puoi selezionare un modello predefinito o crearne uno completamente personalizzato aggiungendo i tuoi campi. Chiudi la finestra (con la X o Annulla) per procedere." });
+    i18n._({ id: "tut_search_title", message: "Ricerca Globale" });
+    i18n._({ id: "tut_search_desc", message: "Per esplorare gli strumenti di ricerca avanzata, clicca sull'icona della lente d'ingrandimento." });
+    i18n._({ id: "tut_search_engine_title", message: "Motore di Ricerca Avanzato" });
+    i18n._({ id: "tut_search_engine_desc", message: "Il sistema indicizza e ricerca le parole chiave all'interno dei metadati, dei titoli e del corpo delle trascrizioni in tempo reale." });
+    i18n._({ id: "tut_tags_title", message: "Sistema di Catalogazione" });
+    i18n._({ id: "tut_tags_desc", message: "Per accedere alle funzionalità di classificazione tramite tag, seleziona l'icona a forma di segnalibro." });
+    i18n._({ id: "tut_tags_filter_title", message: "Filtri Semantici e Tag" });
+    i18n._({ id: "tut_tags_filter_desc", message: "Questa sezione permette di organizzare il patrimonio documentario attraverso etichette personalizzabili. La selezione di un tag applica un filtro immediato all'intero archivio." });
+    i18n._({ id: "tut_cloud_sync_title", message: "Sincronizzazione Remota" });
+    i18n._({ id: "tut_cloud_sync_desc", message: "Strumenti per la gestione del repository Cloud: utilizza \"Fetch\" per verificare la presenza di aggiornamenti, \"Scarica\" per allineare il database locale e \"Carica\" per pubblicare le tue revisioni." });
+    i18n._({ id: "tut_source_control_title", message: "Gestione Versioni" });
+    i18n._({ id: "tut_source_control_desc", message: "Per analizzare lo stato delle revisioni non ancora sincronizzate, seleziona l'icona del Controllo Modifiche." });
+    i18n._({ id: "tut_source_status_title", message: "Stato delle Revisioni" });
+    i18n._({ id: "tut_source_status_desc", message: "Questa vista riepiloga le modifiche effettuate in locale. Prima della sincronizzazione, è possibile revisionare o annullare ciascuna operazione in modo selettivo." });
+    i18n._({ id: "tut_cloud_integration_title", message: "Integrazione Cloud" });
+    i18n._({ id: "tut_cloud_integration_desc", message: "L'archivio corrente è configurato in modalità locale. Seleziona l'icona Cloud nell'angolo in basso a sinistra per esplorare le opzioni di connettività." });
+    i18n._({ id: "tut_cloud_panel_title", message: "Pannello di Configurazione Remota" });
+    i18n._({ id: "tut_cloud_panel_desc", message: "Da questa interfaccia è possibile convertire l'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire." });
+    i18n._({ id: "tut_vaults_title", message: "Gestione Multi-Archivio" });
+    i18n._({ id: "tut_vaults_desc", message: "ArchiView ti permette di creare e gestire un numero illimitato di archivi (vault) separati. Cliccando su questo pulsante potrai passare rapidamente da un archivio all'altro, creare nuovi archivi locali, collegarne di Cloud o gestire Archivi Condivisi per collaborare col tuo team." });
+    i18n._({ id: "tut_nav_return_title", message: "Ritorno alla Navigazione" });
+    i18n._({ id: "tut_nav_return_desc", message: "Per ripristinare la vista principale e sfogliare i record, seleziona l'icona a forma di cartella." });
+    i18n._({ id: "tut_card_edit_title", message: "Accesso alla Schedatura" });
+    i18n._({ id: "tut_card_edit_desc", message: "Per consultare o aggiornare i metadati di un documento, seleziona il pulsante \"Modifica\" posizionato sulla relativa scheda." });
+    i18n._({ id: "tut_editor_title", message: "Editor della Schedatura" });
+    i18n._({ id: "tut_editor_desc", message: "Questo pannello consente la catalogazione estesa del documento e la gestione dei relativi allegati digitali. L'interfaccia mantiene i comandi di salvataggio sempre accessibili. Clicca sulla freccia in alto a sinistra per tornare all'archivio." });
+    i18n._({ id: "tut_transcribe_title", message: "Modulo di Trascrizione" });
+    i18n._({ id: "tut_transcribe_desc", message: "Seleziona ora il pulsante \"Trascrivi\" su una scheda per avviare l'ambiente dedicato all'analisi e alla trascrizione del documento originale." });
+    i18n._({ id: "tut_transcribe_env_title", message: "Ambiente di Trascrizione Integrato" });
+    i18n._({ id: "tut_transcribe_env_desc", message: "Quest'area presenta l'immagine del manoscritto affiancata all'editor testuale avanzato. Si consiglia l'utilizzo della combinazione Ctrl+S per il salvataggio rapido. Clicca sulla freccia in alto a sinistra per tornare all'archivio." });
+    i18n._({ id: "tut_context_menu_title", message: "Operazioni Contestuali" });
+    i18n._({ id: "tut_context_menu_desc", message: "La piattaforma supporta menù contestuali (tasto destro del mouse) sugli elementi dell'archivio per l'accesso rapido alle funzioni di esportazione, duplicazione e rimozione." });
+    i18n._({ id: "tut_done_title", message: "Configurazione Completata" });
+    i18n._({ id: "tut_done_desc", message: "Il sistema è ora pronto per l'utilizzo. È possibile rieseguire questa presentazione formativa in qualsiasi momento selezionando l'icona (?)." });
+    i18n._({ id: "tut_btn_next", message: "Avanti" });
+    i18n._({ id: "tut_btn_prev", message: "Indietro" });
+    i18n._({ id: "tut_btn_done", message: "Fine" });
 }
 
 // Wrapper per compatibilità con il codice esistente
