@@ -15,6 +15,9 @@
             <i data-lucide="git-pull-request" class="w-5 h-5"></i>
         </button>
 
+        <button id="btn-tab-history" onclick="switchSidebarTab('history')" class="btn btn-ghost btn-icon" data-tab="history" title="Storico Versioni Cloud">
+            <i data-lucide="history" class="w-5 h-5"></i>
+        </button>
         <div class="flex-1 relative flex justify-end items-center h-8">
             <!-- Indicatore aggiornamenti in entrata (da remoto) -->
             <div id="incoming-updates-indicator" class="hidden items-center gap-1 mr-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 border border-blue-200 dark:border-blue-800" title="Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica.">

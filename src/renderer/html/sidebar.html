@@ -61,6 +61,24 @@
                 </ul>
             </div>
 
+            <div id="sidebar-history" class="hidden-tab flex flex-col flex-1 min-h-0">
+                <div class="panel-header p-4 shrink-0">
+                    <h2 class="font-bold flex items-center gap-2 mb-1">
+                        <i data-lucide="history" class="w-5 h-5 text-amber-700"></i> Storico Cloud
+                    </h2>
+                    <p class="text-xs text-stone-500 dark:text-stone-400">Versioni salvate su Google Drive</p>
+                </div>
+                <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
+                    <span>REVISIONI CLOUD</span>
+                    <button id="btn-history-refresh" onclick="if(typeof window.renderHistoryList==='function') window.renderHistoryList()" class="text-amber-600 hover:text-amber-800 transition-colors" title="Aggiorna lista">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <ul id="history-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col">
+                    <li class="p-4 text-xs text-stone-400 italic text-center">Apri questa sezione per vedere lo storico.</li>
+                </ul>
+            </div>
+
             <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5 relative" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
                 
                 <button onclick="toggleVaultSwitcher(event)" class="btn btn-ghost w-full justify-between hover:bg-stone-200">

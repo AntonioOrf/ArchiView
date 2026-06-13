@@ -288,6 +288,8 @@ function switchSidebarTab(tabName) {
     document.getElementById('sidebar-tags').classList.add('hidden-tab');
     const sourceControl = document.getElementById('sidebar-source-control');
     if (sourceControl) sourceControl.classList.add('hidden-tab');
+    const historyPanel = document.getElementById('sidebar-history');
+    if (historyPanel) historyPanel.classList.add('hidden-tab');
 
     if (tabName === 'folders') document.getElementById('sidebar-folders').classList.remove('hidden-tab');
     if (tabName === 'search') {
@@ -303,6 +305,12 @@ function switchSidebarTab(tabName) {
         if (sourceControl) {
             sourceControl.classList.remove('hidden-tab');
             if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+        }
+    }
+    if (tabName === 'history') {
+        if (historyPanel) {
+            historyPanel.classList.remove('hidden-tab');
+            if (typeof window.renderHistoryList === 'function') window.renderHistoryList();
         }
     }
 }

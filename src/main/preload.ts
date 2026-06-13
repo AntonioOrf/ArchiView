@@ -73,7 +73,12 @@ contextBridge.exposeInMainWorld('apiDrive', {
     shareVault: (email) => ipcRenderer.invoke('drive-share-vault', email),
     getToken: () => ipcRenderer.invoke('drive-get-token'),
     getClientId: () => ipcRenderer.invoke('drive-get-client-id'),
-    joinByFolderId: (folderId, vaultName, basePath) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath)
+    joinByFolderId: (folderId, vaultName, basePath) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath),
+    // --- Storico Versioni Cloud ---
+    getDbFileId: () => ipcRenderer.invoke('drive-get-db-file-id'),
+    listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),
+    getRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-get-revision', fileId, revisionId),
+    restoreRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-restore-revision', fileId, revisionId)
 });
 
 contextBridge.exposeInMainWorld('apiMicrosoft', {

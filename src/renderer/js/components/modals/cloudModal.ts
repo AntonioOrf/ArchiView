@@ -5,8 +5,8 @@
         if (!document.getElementById('cloud-modal')) {
             const html = `
     <!-- Modal Cloud & Sincronizzazione -->
-    <div id="cloud-modal" class="modal-overlay hidden-tab z-60">
-        <div class="modal-window max-w-4xl max-h-[90vh] flex flex-col mx-auto my-auto">
+    <div id="cloud-modal" class="modal-overlay hidden-tab z-60 fixed inset-0 flex items-center justify-center">
+        <div class="modal-window w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-700">
                 <h3 class="modal-title text-stone-800 dark:text-stone-100 flex items-center gap-2">
                     <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0"></i> Cloud & Condivisione
@@ -39,59 +39,96 @@
                 </div>
 
                 <!-- SEZIONE VAULT CONDIVISO/PERSONALE ATTIVO -->
-                <div id="cloud-shared-section" class="hidden-tab flex flex-col items-center text-center p-6 border rounded-md transition-colors duration-300">
-                    <div id="cloud-active-icon-wrapper" class="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-300">
-                        <i id="cloud-active-icon" data-lucide="cloud" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2" id="cloud-active-title">Cloud Attivo</h3>
-                    <p class="text-sm mb-6 max-w-md transition-colors duration-300" id="cloud-active-desc">
-                        Questo Archivio è sincronizzato.
-                    </p>
+                <div id="cloud-shared-section" class="hidden-tab flex flex-col gap-5 p-6 border rounded-md transition-colors duration-300">
                     
-                    <div class="w-full max-w-md space-y-4">
-                        <div class="flex gap-2 items-center" id="cloud-invite-container">
-                            <input type="text" id="cloud-invite-code" class="form-input flex-1 font-mono text-sm bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-md p-3 text-center" readonly onclick="this.select()">
-                            <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary py-3 px-4 shrink-0">
-                                <i data-lucide="copy" class="w-4 h-4"></i> Copia
-                            </button>
+                    <!-- RIGA TOP: Icona + titolo + desc orizzontali -->
+                    <div class="flex items-center gap-4">
+                        <div id="cloud-active-icon-wrapper" class="w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300">
+                            <i id="cloud-active-icon" data-lucide="cloud" class="w-7 h-7"></i>
                         </div>
-                        
-                        <div class="flex gap-2">
-                            <button onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary flex-1 justify-center py-3 font-medium">
-                                <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i> Sincronizza Ora
-                            </button>
+                        <div class="flex-1 min-w-0 text-left">
+                            <h3 class="text-lg font-bold" id="cloud-active-title">Cloud Attivo</h3>
+                            <p class="text-sm transition-colors duration-300" id="cloud-active-desc">Questo Archivio è sincronizzato.</p>
                         </div>
-                        
-                        <div class="flex items-center gap-2 pt-4 justify-center border-t border-stone-200 dark:border-stone-700">
-                            <input type="checkbox" id="cloud-sync-attachments" onchange="toggleSyncAttachments(this.checked)" class="w-4 h-4 text-blue-600 rounded border-stone-300">
-                            <label for="cloud-sync-attachments" class="text-sm font-medium cursor-pointer" style="color: var(--color-text-main);">Sincronizza automaticamente allegati (PDF/Immagini)</label>
+                        <button onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary px-5 py-2.5 font-medium shrink-0">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> Sincronizza Ora
+                        </button>
+                    </div>
+
+                    <!-- CORPO A DUE COLONNE -->
+                    <div class="grid grid-cols-2 gap-5 items-start">
+
+                        <!-- COLONNA SINISTRA: Impostazioni e azioni avanzate -->
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-center gap-2 p-3 rounded-md border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/40">
+                                <input type="checkbox" id="cloud-sync-attachments" onchange="toggleSyncAttachments(this.checked)" class="w-4 h-4 text-blue-600 rounded border-stone-300 shrink-0">
+                                <label for="cloud-sync-attachments" class="text-sm cursor-pointer leading-snug" style="color: var(--color-text-main);">Sincronizza allegati automaticamente (PDF/Immagini)</label>
+                            </div>
+
+                            <div class="flex flex-col gap-1.5 pt-1">
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-stone-400 px-1">Opzioni avanzate</p>
+                                <button onclick="trasformaInPersonale()" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100">
+                                    <i data-lucide="shield" class="w-4 h-4 mr-2 shrink-0"></i> Converti in Backup Privato
+                                </button>
+                                <button onclick="trasformaInCondiviso()" id="btn-switch-shared" class="btn btn-ghost justify-start py-2 text-sm text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                                    <i data-lucide="users" class="w-4 h-4 mr-2 shrink-0"></i> Converti in Archivio Condiviso
+                                </button>
+                                <button onclick="cambiaAccountGoogleVault()" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm text-stone-500 hover:text-blue-600 dark:hover:text-blue-400">
+                                    <i data-lucide="user-plus" class="w-4 h-4 mr-2 shrink-0"></i> Usa un altro account Google
+                                </button>
+                                <button onclick="pulisciAllegatiOrfani()" id="btn-cloud-clean-orphans" class="btn btn-ghost justify-start py-2 text-sm text-stone-500 hover:text-red-600 dark:hover:text-red-400">
+                                    <i data-lucide="trash-2" class="w-4 h-4 mr-2 shrink-0"></i> Pulisci file inutilizzati
+                                </button>
+                                <button onclick="scollegaCloud()" id="btn-disconnect-cloud" class="btn btn-ghost justify-start py-2 text-sm text-stone-400 hover:text-red-600 dark:hover:text-red-400">
+                                    <i data-lucide="unlink" class="w-4 h-4 mr-2 shrink-0"></i> Scollega dal Cloud
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div class="flex flex-col gap-3 pt-4 border-t border-stone-200 dark:border-stone-700">
-                            <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2 justify-center w-full shadow-sm border-emerald-500 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30">
-                                <i data-lucide="mail-plus" class="w-4 h-4 mr-2"></i> Invita tramite Email
-                            </button>
-                            <button onclick="trasformaInPersonale()" id="btn-switch-personal" class="btn btn-secondary py-2 justify-center w-full shadow-sm">
-                                <i data-lucide="shield" class="w-4 h-4 mr-2"></i> Converti in Backup Privato
-                            </button>
-                            <button onclick="trasformaInCondiviso()" id="btn-switch-shared" class="btn btn-secondary py-2 justify-center w-full shadow-sm border-amber-500 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30">
-                                <i data-lucide="users" class="w-4 h-4 mr-2"></i> Converti in Archivio Condiviso
-                            </button>
-                            <button onclick="scollegaCloud()" id="btn-disconnect-cloud" class="btn btn-ghost justify-center py-2 text-sm text-stone-500 hover:text-red-600">
-                                <i data-lucide="unlink" class="w-4 h-4 mr-2"></i> Scollega dal Cloud (Solo Locale)
-                            </button>
-                            <button onclick="pulisciAllegatiOrfani()" id="btn-cloud-clean-orphans" class="btn btn-ghost justify-center py-2 text-sm text-stone-500 hover:text-red-600">
-                                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Pulisci File Inutilizzati
-                            </button>
-                            <button onclick="cambiaAccountGoogleVault()" id="btn-cloud-change-account" class="btn btn-ghost justify-center py-2 text-sm text-stone-500 hover:text-blue-600">
-                                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Usa un altro account Google per questo Archivio
-                            </button>
+
+                        <!-- COLONNA DESTRA: Stepper collaboratori -->
+                        <div id="cloud-invite-container" class="flex flex-col gap-0 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
+                            <div class="px-4 py-2.5 bg-stone-100 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-700">
+                                <p class="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Aggiungi un collaboratore</p>
+                            </div>
+                            <!-- I due passi affiancati -->
+                            <div class="grid grid-cols-2 divide-x divide-stone-200 dark:divide-stone-700">
+                                <!-- PASSO 1 -->
+                                <div class="flex flex-col p-4 gap-3 bg-emerald-50/50 dark:bg-emerald-900/10">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                                        <p class="text-sm font-semibold text-stone-800 dark:text-stone-100">Autorizza su Drive</p>
+                                    </div>
+                                    <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">Inserisci l'email Google del collaboratore. Google Drive gli darà il permesso di accedere al file.</p>
+                                    <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2 text-sm border-emerald-500 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 justify-center mt-auto">
+                                        <i data-lucide="mail-plus" class="w-4 h-4 mr-1.5"></i> Invita via Email
+                                    </button>
+                                </div>
+                                <!-- PASSO 2 -->
+                                <div class="flex flex-col p-4 gap-3 bg-amber-50/50 dark:bg-amber-900/10">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                                        <p class="text-sm font-semibold text-stone-800 dark:text-stone-100">Condividi il Codice</p>
+                                    </div>
+                                    <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">Il collaboratore incolla questo codice in ArchiView → "Unisciti a un Archivio".</p>
+                                    <div class="flex flex-col gap-2 mt-auto">
+                                        <input type="text" id="cloud-invite-code" class="form-input w-full font-mono text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-md p-2 text-center" readonly onclick="this.select()">
+                                        <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary py-2 text-sm justify-center">
+                                            <i data-lucide="copy" class="w-4 h-4 mr-1.5"></i> Copia Codice
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Footer nota -->
+                            <div class="px-4 py-2 bg-stone-50 dark:bg-stone-800/40 border-t border-stone-200 dark:border-stone-700 flex items-center gap-1.5">
+                                <i data-lucide="info" class="w-3 h-3 text-stone-400 shrink-0"></i>
+                                <p class="text-[10px] text-stone-400">Fai sempre il passo ① prima del ② per ogni nuovo collaboratore.</p>
+                            </div>
                         </div>
+
                     </div>
                 </div>
-            </div>
-            <div class="modal-header shrink-0 justify-end border-t border-stone-200 dark:border-stone-700">
-                <button onclick="chiudiCloudModal()" class="btn btn-primary">Chiudi</button>
+
+                </div>
             </div>
         </div>
     </div>

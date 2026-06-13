@@ -480,7 +480,41 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
         }
     }
 
-    return { database: driveRes.data, driveModifiedTime, lastModifyingUser };
+    let parsedDb = driveRes.data;
+    const logPath = require('path').join(__dirname, '../../../artifacts/superpowers/debug.log');
+    let dbgMsg = `[DEBUG] typeof parsedDb: ${typeof parsedDb}\n`;
+    if (parsedDb) {
+        dbgMsg += `[DEBUG] isBuffer: ${Buffer.isBuffer(parsedDb)}\n`;
+        dbgMsg += `[DEBUG] keys: ${Object.keys(parsedDb).join(', ')}\n`;
+    }
+    
+    if (typeof parsedDb === 'string') {
+        try {
+            parsedDb = JSON.parse(parsedDb);
+            dbgMsg += `[DEBUG] Successfully parsed string. typeof parsedDb is now: ${typeof parsedDb}\n`;
+        } catch (e) {
+            console.error("Errore parse JSON db da Drive:", e);
+            dbgMsg += `[DEBUG] Error parsing string: ${e.message}\n`;
+        }
+    }
+    
+    dbgMsg += `[DEBUG] Final typeof parsedDb: ${typeof parsedDb}\n`;
+    if (typeof parsedDb === 'object') {
+        dbgMsg += `[DEBUG] Final parsedDb keys: ${Object.keys(parsedDb).join(', ')}\n`;
+        if (parsedDb.manoscritti) {
+            dbgMsg += `[DEBUG] manoscritti count: ${parsedDb.manoscritti.length}\n`;
+        } else {
+            dbgMsg += `[DEBUG] manoscritti missing!\n`;
+        }
+    }
+    
+    try {
+        fs.appendFileSync(logPath, dbgMsg + '\n');
+    } catch(err) {
+        console.error("Could not write debug log", err);
+    }
+
+    return { database: parsedDb, driveModifiedTime, lastModifyingUser };
   }
   
   return null;
@@ -693,10 +727,120 @@ async function cleanOrphanedAttachments() {
   return { deletedLocal, deletedDrive };
 }
 
+/**
+ * Recupera la lista delle revisioni del file database_manoscritti.json su Google Drive.
+ * Richiede il fileId del file (non della cartella).
+ */
+async function listDriveRevisions(fileId: string) {
+    if (!loadSavedTokens()) {
+        throw new Error("Autenticazione Google Drive non effettuata.");
+    }
+    try {
+        const res = await drive.revisions.list({
+            fileId,
+            fields: 'revisions(id, modifiedTime, lastModifyingUser, size, keepForever)',
+            pageSize: 1000
+        });
+        return (res.data.revisions || []).reverse(); // La più recente prima
+    } catch (e: any) {
+        throw new Error("Impossibile recuperare lo storico: " + e.message);
+    }
+}
+
+/**
+ * Scarica il contenuto JSON di una revisione specifica.
+ */
+async function getDriveRevision(fileId: string, revisionId: string) {
+    if (!loadSavedTokens()) {
+        throw new Error("Autenticazione Google Drive non effettuata.");
+    }
+    try {
+        const res = await drive.revisions.get({
+            fileId,
+            revisionId,
+            alt: 'media'
+        });
+        let data = res.data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch(e) {}
+        }
+        return data;
+    } catch (e: any) {
+        throw new Error("Impossibile scaricare la revisione: " + e.message);
+    }
+}
+
+/**
+ * Recupera il fileId del database_manoscritti.json dal vault corrente.
+ */
+async function getDbFileId() {
+    let projectFolderId: string | null = null;
+    try {
+        const s = getAllSettings();
+        if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
+            projectFolderId = s.sharedVaultId;
+        }
+    } catch(e) {}
+
+    if (!projectFolderId) {
+        throw new Error("Vault non collegato al Cloud. Sincronizza almeno una volta prima di vedere lo storico.");
+    }
+
+    const q = `name='database_manoscritti.json' and '${projectFolderId}' in parents and trashed=false`;
+    const res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id)' });
+    if (!res.data.files || res.data.files.length === 0) {
+        throw new Error("File database non trovato su Google Drive. Carica almeno una volta.");
+    }
+    return res.data.files[0].id;
+}
+
 function setupDriveIpc() {
+  // --- Storico Versioni Cloud (Drive Revisions) ---
+  ipcMain.handle('drive-get-db-file-id', async () => {
+    initGoogle();
+    return await getDbFileId();
+  });
+
+  ipcMain.handle('drive-list-revisions', async (event, fileId) => {
+    initGoogle();
+    return await listDriveRevisions(fileId);
+  });
+
+  ipcMain.handle('drive-get-revision', async (event, fileId, revisionId) => {
+    initGoogle();
+    return await getDriveRevision(fileId, revisionId);
+  });
+
+  ipcMain.handle('drive-restore-revision', async (event, fileId, revisionId) => {
+    initGoogle();
+    // 1. Scarica il contenuto della revisione
+    const revData = await getDriveRevision(fileId, revisionId);
+    if (!revData) throw new Error("Revisione non trovata.");
+
+    // 2. Sovrascrivi il file locale
+    if (!state.workspacePath) throw new Error("Nessun workspace aperto.");
+    const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
+    const content = typeof revData === 'string' ? revData : JSON.stringify(revData, null, 2);
+    fs.writeFileSync(dbPath, content, 'utf8');
+
+    // 3. Carica la versione ripristinata sul cloud (crea una nuova revisione)
+    let projectFolderId: string | null = null;
+    try {
+        const s = getAllSettings();
+        if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
+            projectFolderId = s.sharedVaultId;
+        }
+    } catch(e) {}
+    if (projectFolderId) {
+        await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
+    }
+    return true;
+  });
+
   ipcMain.handle('drive-auth', async (event, forceLocal) => {
     return await authenticateDrive(forceLocal);
   });
+
   ipcMain.handle('drive-logout', async () => {
     return await logoutDrive();
   });

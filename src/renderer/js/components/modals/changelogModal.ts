@@ -47,7 +47,7 @@
                                 <ul class="list-disc pl-5 space-y-2 text-sm text-stone-600 dark:text-stone-400">
                                     <li>Risolto il problema di rendering delle icone all'apertura del changelog.</li>
                                     <li>Risolti problemi di sincronizzazione e gestione delle estensioni degli allegati.</li>
-                                    <li>Risolto il problema di path assoluti nei sistemi Windows e Mac.</li>
+                                    <li>Risolto il problema di path assoluti.</li>
                                     <li>Aggiornato il motore di ricerca interno per supportare meglio i caratteri speciali.</li>
                                 </ul>
                             </div>

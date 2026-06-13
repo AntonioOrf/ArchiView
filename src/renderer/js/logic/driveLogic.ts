@@ -155,6 +155,7 @@ window.controllaModificheInEntrata = async function(manual = false) {
             } else {
                 window.impostaModificheInEntrata(false);
                 window.incomingChanges = [];
+                window.incomingStructuralChanges = [];
                 window.incomingAuthor = null;
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                 if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Nessun nuovo aggiornamento trovato.", "success");
@@ -312,6 +313,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             }
             if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
             window.incomingChanges = [];
+            window.incomingStructuralChanges = [];
             if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
@@ -343,6 +345,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                     }
                     if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
                     window.incomingChanges = [];
+                    window.incomingStructuralChanges = [];
                     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto risolto! Sincronizzazione completata in sicurezza.", "success");
@@ -390,6 +393,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 }
                 if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
                 window.incomingChanges = [];
+                window.incomingStructuralChanges = [];
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Scaricamento completato!", "success");
@@ -428,6 +432,7 @@ window.caricaSulCloud = async function(silent = false) {
             }
             if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
             window.incomingChanges = [];
+            window.incomingStructuralChanges = [];
             if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
 
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
@@ -457,6 +462,7 @@ window.caricaSulCloud = async function(silent = false) {
                     }
                     if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
                     window.incomingChanges = [];
+                    window.incomingStructuralChanges = [];
                     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto risolto! Caricamento completato in sicurezza.", "success");
@@ -668,3 +674,39 @@ window.scollegaCloud = async function() {
 
 
 
+// ─── STORICO VERSIONI CLOUD ───────────────────────────────────────────────────
+
+/**
+ * Recupera il fileId del database su Drive e la lista delle revisioni.
+ * Restituisce { fileId, revisions[] } oppure lancia un errore.
+ */
+window.elencaRevisioniCloud = async function() {
+    if (!window.apiDrive) throw new Error("Non sei connesso al Cloud.");
+    const fileId = await window.apiDrive.getDbFileId();
+    const revisions = await window.apiDrive.listRevisions(fileId);
+    return { fileId, revisions };
+};
+
+/**
+ * Scarica il contenuto JSON di una revisione specifica.
+ */
+window.caricaRevisioneCloud = async function(fileId, revisionId) {
+    if (!window.apiDrive) throw new Error("Non sei connesso al Cloud.");
+    return await window.apiDrive.getRevision(fileId, revisionId);
+};
+
+/**
+ * Ripristina il vault locale e cloud a una revisione specifica.
+ * Dopo il ripristino, ricarica i dati locali.
+ */
+window.ripristinaRevisioneCloud = async function(fileId, revisionId) {
+    if (!window.apiDrive) throw new Error("Non sei connesso al Cloud.");
+    await window.apiDrive.restoreRevision(fileId, revisionId);
+    // Ricarica i dati dal file locale aggiornato
+    if (window.apiBrowser) {
+        const nuoviDati = await window.apiBrowser.leggiDati();
+        if (nuoviDati && typeof window.sincronizzaEUnisciDati === 'function') {
+            await window.sincronizzaEUnisciDati(nuoviDati);
+        }
+    }
+};
