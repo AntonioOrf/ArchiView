@@ -78,5 +78,8 @@
     "dompurify": "^3.4.7",
     "electron-updater": "^6.8.3",
     "googleapis": "^173.0.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
