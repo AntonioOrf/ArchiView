@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Gestionale per manoscritti medievali",
   "author": "Antonio Orf",
   "repository": {
@@ -63,7 +63,7 @@
     "@types/node": "^25.9.1",
     "electron": "39.8.5",
     "electron-builder": "^26.8.1",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "make-plural": "^8.1.0",
     "shx": "^0.4.0",
     "tailwindcss": "^4.3.0",
@@ -78,5 +78,8 @@
     "dompurify": "^3.4.7",
     "electron-updater": "^6.8.3",
     "googleapis": "^173.0.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }

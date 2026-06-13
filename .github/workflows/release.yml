@@ -31,6 +31,7 @@ jobs:
           cat <<EOF > src/main/ipc/cloudCredentials.ts
           export const GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";
           export const GOOGLE_CLIENT_SECRET = "${{ secrets.GOOGLE_CLIENT_SECRET }}";
+          export const MS_CLIENT_ID = "${{ secrets.MS_CLIENT_ID }}";
           export const PUSHER_KEY = "${{ secrets.PUSHER_KEY }}";
           export const PUSHER_CLUSTER = "${{ secrets.PUSHER_CLUSTER }}";
           export const PUSHER_WEBHOOK = "${{ secrets.PUSHER_WEBHOOK }}";
