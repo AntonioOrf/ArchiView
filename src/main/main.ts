@@ -22,12 +22,13 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow() {
   const iconPath = path.join(__dirname, '..', '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+  const appIcon = nativeImage.createFromPath(iconPath);
   
   state.mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     title: "ArchiView",
-    icon: iconPath,
+    icon: appIcon,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
