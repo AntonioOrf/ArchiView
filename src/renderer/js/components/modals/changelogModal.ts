@@ -9,7 +9,7 @@
                         <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-800">
                             <h3 class="modal-title">
                                 <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
-                                <span>Novità della Versione 2.1</span>
+                                <span>Novità della Versione 2.1.1</span>
                             </h3>
                             <button type="button" onclick="chiudiChangelogModal()" class="btn btn-ghost btn-icon">
                                 <i data-lucide="x" class="w-5 h-5"></i>
@@ -20,8 +20,8 @@
                             <div class="flex items-center gap-4 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800/30">
                                 <i data-lucide="folder-kanban" class="w-10 h-10 text-amber-600 dark:text-amber-500 shrink-0"></i>
                                 <div>
-                                    <h4 class="font-bold text-lg text-amber-900 dark:text-amber-400">Multi-Vault e Sincronizzazione Microsoft OneDrive</h4>
-                                    <p class="text-sm mt-1">Gestisci un numero illimitato di archivi (Vaults) indipendenti. Ora è anche possibile sincronizzare i propri dati sul cloud personale Microsoft OneDrive in alternativa a Google Drive.</p>
+                                    <h4 class="font-bold text-lg text-amber-900 dark:text-amber-400">Supporto Multi-Vault</h4>
+                                    <p class="text-sm mt-1">Gestisci un numero illimitato di archivi (Vaults) indipendenti per organizzare al meglio i tuoi documenti.</p>
                                 </div>
                             </div>
 
@@ -45,6 +45,7 @@
                             <div>
                                 <h4 class="font-semibold text-lg border-b border-stone-200 dark:border-stone-700 pb-2 mb-3">Fix e Ottimizzazioni</h4>
                                 <ul class="list-disc pl-5 space-y-2 text-sm text-stone-600 dark:text-stone-400">
+                                    <li>Risolto il problema di rendering delle icone all'apertura del changelog.</li>
                                     <li>Risolti problemi di sincronizzazione e gestione delle estensioni degli allegati.</li>
                                     <li>Risolto il problema di path assoluti nei sistemi Windows e Mac.</li>
                                     <li>Aggiornato il motore di ricerca interno per supportare meglio i caratteri speciali.</li>
