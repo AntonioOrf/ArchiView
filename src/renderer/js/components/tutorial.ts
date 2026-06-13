@@ -118,7 +118,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_models_desc', 'Clicca su questo pulsante per creare o personalizzare i modelli di documento. Un modello definisce quali campi (es. Data, Autore, Note) saranno disponibili per la compilazione della scheda.'),
                 side: "bottom",
                 align: 'start',
-                showButtons: ['previous', 'close']
+                showButtons: ['close']
             },
             onHighlighted: (el) => {
                 if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 300), { once: true });
@@ -131,7 +131,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_new_model_desc', 'In questa finestra puoi selezionare un modello predefinito o crearne uno completamente personalizzato aggiungendo i tuoi campi. Chiudi la finestra (con la X o Annulla) per procedere.'),
                 side: "left",
                 align: 'start',
-                showButtons: ['previous']
+                showButtons: []
             },
             onHighlighted: (el) => {
                 const advanceTutorial = () => {
@@ -159,7 +159,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_search_desc', 'Per esplorare gli strumenti di ricerca avanzata, clicca sull\'icona della lente d\'ingrandimento.'),
                 side: "bottom",
                 align: 'start',
-                showButtons: ['previous', 'close']
+                showButtons: ['close']
             },
             onHighlighted: (el) => {
                 if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
@@ -181,7 +181,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_tags_desc', 'Per accedere alle funzionalità di classificazione tramite tag, seleziona l\'icona a forma di segnalibro.'),
                 side: "bottom",
                 align: 'start',
-                showButtons: ['previous', 'close']
+                showButtons: ['close']
             },
             onHighlighted: (el) => {
                 if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
@@ -215,7 +215,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_source_control_desc', 'Per analizzare lo stato delle revisioni non ancora sincronizzate, seleziona l\'icona del Controllo Modifiche.'),
                 side: "bottom",
                 align: 'start',
-                showButtons: ['previous', 'close']
+                showButtons: ['close']
             },
             onHighlighted: (el) => {
                 if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
@@ -230,6 +230,28 @@ window.avviaTutorial = async function() {
                 align: 'start'
             }
         });
+        steps.push({
+            element: '#btn-tab-history',
+            popover: {
+                title: window.t('tut_history_title', 'Storico Versioni Cloud'),
+                description: window.t('tut_history_desc', 'Clicca qui per visualizzare lo storico delle revisioni salvate sul Cloud.'),
+                side: "bottom",
+                align: 'start',
+                showButtons: ['close']
+            },
+            onHighlighted: (el) => {
+                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
+            }
+        });
+        steps.push({
+            element: '#sidebar-history',
+            popover: {
+                title: window.t('tut_history_panel_title', 'Pannello Storico'),
+                description: window.t('tut_history_panel_desc', 'Da questo pannello puoi sfogliare le vecchie versioni del database, aprirle in sola lettura, e ripristinare il tuo archivio a una versione precedente.'),
+                side: "right",
+                align: 'start'
+            }
+        });
     } else {
         steps.push({
             element: '#sidebar-cloud-btn',
@@ -238,7 +260,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_cloud_integration_desc', 'L\'archivio corrente è configurato in modalità locale. Seleziona l\'icona Cloud nell\'angolo in basso a sinistra per esplorare le opzioni di connettività.'),
                 side: "right",
                 align: 'start',
-                showButtons: ['previous', 'close']
+                showButtons: ['close']
             },
             onHighlighted: (el) => {
                 if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 300), { once: true });
@@ -251,7 +273,7 @@ window.avviaTutorial = async function() {
                 description: window.t('tut_cloud_panel_desc', 'Da questa interfaccia è possibile convertire l\'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire.'),
                 side: "left",
                 align: 'start',
-                showButtons: ['previous']
+                showButtons: []
             },
             onHighlighted: (el) => {
                 const advanceTutorial = () => {
@@ -291,7 +313,7 @@ window.avviaTutorial = async function() {
             description: window.t('tut_nav_return_desc', 'Per ripristinare la vista principale e sfogliare i record, seleziona l\'icona a forma di cartella.'),
             side: "bottom",
             align: 'start',
-            showButtons: ['previous', 'close']
+            showButtons: ['close']
         },
         onHighlightStarted: () => {
             if (window.chiudiCloudModal) window.chiudiCloudModal();
@@ -313,7 +335,7 @@ window.avviaTutorial = async function() {
             description: window.t('tut_card_edit_desc', 'Per consultare o aggiornare i metadati di un documento, seleziona il pulsante "Modifica" posizionato sulla relativa scheda.'),
             side: "bottom",
             align: 'start',
-            showButtons: ['previous', 'close']
+            showButtons: ['close']
         },
         onHighlighted: (el) => {
             if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
@@ -326,7 +348,7 @@ window.avviaTutorial = async function() {
             description: window.t('tut_editor_desc', 'Questo pannello consente la catalogazione estesa del documento e la gestione dei relativi allegati digitali. L\'interfaccia mantiene i comandi di salvataggio sempre accessibili. Clicca sulla freccia in alto a sinistra per tornare all\'archivio.'),
             side: "left",
             align: 'start',
-            showButtons: ['previous', 'close']
+            showButtons: ['close']
         },
         onHighlighted: (el) => {
             setTimeout(() => {
@@ -351,7 +373,7 @@ window.avviaTutorial = async function() {
             description: window.t('tut_transcribe_desc', 'Seleziona ora il pulsante "Trascrivi" su una scheda per avviare l\'ambiente dedicato all\'analisi e alla trascrizione del documento originale.'),
             side: "bottom",
             align: 'start',
-            showButtons: ['previous', 'close']
+            showButtons: ['close']
         },
         onHighlighted: (el) => {
             if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 200), { once: true });
@@ -368,7 +390,7 @@ window.avviaTutorial = async function() {
             description: window.t('tut_transcribe_env_desc', 'Quest\'area presenta l\'immagine del manoscritto affiancata all\'editor testuale avanzato. Si consiglia l\'utilizzo della combinazione Ctrl+S per il salvataggio rapido. Clicca sulla freccia in alto a sinistra per tornare all\'archivio.'),
             side: "over",
             align: 'start',
-            showButtons: ['previous', 'close']
+            showButtons: ['close']
         },
         onHighlighted: (el) => {
             const backBtn = document.getElementById('btn-back-to-list-trasc');
@@ -417,6 +439,7 @@ window.avviaTutorial = async function() {
     window.dInstance = driverObj({
         showProgress: true,
         allowClose: false,
+        showButtons: ['next', 'close'],
         onPopoverRender: (popover) => {
             if (popover.closeButton) {
                 popover.closeButton.style.display = 'block';

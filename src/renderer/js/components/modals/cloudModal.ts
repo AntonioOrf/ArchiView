@@ -17,23 +17,45 @@
                 
                 <!-- SEZIONE VAULT LOCALE (Non Condiviso) -->
                 <div id="cloud-local-section" class="flex flex-col items-center text-center p-6 border border-stone-200 dark:border-stone-700 rounded-md bg-stone-50 dark:bg-stone-900/50">
-                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
-                        <i data-lucide="cloud-upload" class="w-8 h-8"></i>
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
+                        <i data-lucide="cloud-upload" class="w-6 h-6"></i>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Attiva Sincronizzazione Cloud</h3>
-                    <p class="text-sm text-stone-600 dark:text-stone-400 mb-6 max-w-md">
-                        Questo Archivio è salvato solo sul tuo PC. Puoi caricarlo sul tuo Cloud per avere un backup personale, oppure trasformarlo in un Archivio Condiviso per ottenere un codice d'invito per i tuoi collaboratori.
+                    <p class="text-sm text-stone-600 dark:text-stone-400 mb-4 max-w-xl">
+                        Scegli se caricare il tuo archivio online o se unirti a uno già esistente tramite codice invito.
                     </p>
-                    <div class="flex flex-col gap-3 w-full max-w-sm">
-                        <button onclick="trasformaInPersonale()" id="btn-trasforma-personale" class="btn btn-secondary py-3 px-6 text-lg shadow-sm w-full">
-                            <i data-lucide="cloud" class="w-5 h-5 mr-2"></i> Carica nel mio Cloud (Privato)
-                        </button>
-                        <button onclick="trasformaInCondiviso()" id="btn-trasforma-condiviso" class="btn btn-primary py-3 px-6 text-lg shadow-md w-full">
-                            <i data-lucide="users" class="w-5 h-5 mr-2"></i> Trasforma in Archivio Condiviso
-                        </button>
-                        <button onclick="creaCondivisoAltroAccount()" class="btn btn-ghost w-full justify-center text-sm text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 flex items-center gap-2">
-                            <i data-lucide="user-circle" class="w-4 h-4"></i> Usa un account Google diverso
-                        </button>
+                    
+                    <div class="flex flex-row gap-8 w-full max-w-2xl mt-4">
+                        <!-- Colonna Sinistra: Crea/Carica -->
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="p-5 bg-white dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 text-left h-full flex flex-col shadow-sm">
+                                <h4 class="text-base font-bold text-stone-800 dark:text-stone-200 mb-2 flex items-center gap-2"><i data-lucide="cloud-upload" class="w-5 h-5 text-blue-500"></i> Carica nel Cloud</h4>
+                                <p class="text-sm leading-relaxed text-stone-500 dark:text-stone-400 mb-5">Trasforma questo archivio locale in un archivio cloud per poterlo sincronizzare e condividere.</p>
+                                
+                                <div class="mt-auto flex flex-col gap-3">
+                                    <button onclick="trasformaInPersonale()" id="btn-trasforma-personale" class="btn btn-secondary py-2.5 px-4 w-full justify-center text-sm shadow-sm border-stone-300 dark:border-stone-600 hover:bg-stone-50 dark:hover:bg-stone-700/50">
+                                        <i data-lucide="shield-check" class="w-4 h-4 mr-2 text-stone-600 dark:text-stone-300"></i> Backup Privato
+                                    </button>
+                                    <button onclick="trasformaInCondiviso()" id="btn-trasforma-condiviso" class="btn btn-primary py-2.5 px-4 w-full justify-center text-sm shadow-md">
+                                        <i data-lucide="users" class="w-4 h-4 mr-2"></i> Archivio Condiviso
+                                    </button>
+                                    <button onclick="creaCondivisoAltroAccount()" class="text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-300 mt-1 flex items-center justify-center gap-1.5">
+                                        <i data-lucide="user-circle" class="w-4 h-4"></i> Usa un account diverso
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonna Destra: Unisciti -->
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="p-5 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-700/50 text-left h-full flex flex-col shadow-sm">
+                                <h4 class="text-base font-bold text-amber-800 dark:text-amber-200 mb-2 flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5 text-amber-600"></i> Partecipa</h4>
+                                <p class="text-sm leading-relaxed text-amber-700/80 dark:text-amber-200/70 mb-5">Hai ricevuto un invito? Abbandona l'archivio locale attuale per unirti a quello condiviso da un tuo collaboratore.</p>
+                                <button onclick="uniscitiDaCloudModal()" class="btn w-full justify-center py-3 text-base font-medium shadow-sm text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-600 hover:bg-amber-200 dark:hover:bg-amber-800/60 mt-auto">
+                                    Unisciti a un Archivio
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div id="cloud-transform-status" class="mt-4 text-sm font-medium text-blue-600 hidden-tab">Operazione in corso...</div>
                 </div>
@@ -86,42 +108,52 @@
                         </div>
 
                         <!-- COLONNA DESTRA: Stepper collaboratori -->
-                        <div id="cloud-invite-container" class="flex flex-col gap-0 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
-                            <div class="px-4 py-2.5 bg-stone-100 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-700">
-                                <p class="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Aggiungi un collaboratore</p>
+                        <!-- COLONNA DESTRA: Gestione collaboratori -->
+                        <div id="cloud-invite-container" class="flex flex-col gap-0 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden bg-white dark:bg-stone-900 shadow-sm">
+                            <!-- TABS HEADER -->
+                            <div class="flex border-b border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800/60">
+                                <button onclick="mostraTabCloud('invite')" id="tab-cloud-invite" class="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider text-emerald-600 border-b-2 border-emerald-500 bg-white dark:bg-stone-900 transition-colors">Aggiungi</button>
+                                <button onclick="mostraTabCloud('members')" id="tab-cloud-members" class="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b-2 border-transparent hover:text-stone-700 dark:hover:text-stone-300 transition-colors">Membri</button>
                             </div>
-                            <!-- I due passi affiancati -->
-                            <div class="grid grid-cols-2 divide-x divide-stone-200 dark:divide-stone-700">
-                                <!-- PASSO 1 -->
-                                <div class="flex flex-col p-4 gap-3 bg-emerald-50/50 dark:bg-emerald-900/10">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
-                                        <p class="text-sm font-semibold text-stone-800 dark:text-stone-100">Autorizza su Drive</p>
-                                    </div>
-                                    <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">Inserisci l'email Google del collaboratore. Google Drive gli darà il permesso di accedere al file.</p>
-                                    <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2 text-sm border-emerald-500 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 justify-center mt-auto">
-                                        <i data-lucide="mail-plus" class="w-4 h-4 mr-1.5"></i> Invita via Email
+
+                            <!-- TAB INVITE CONTENT -->
+                            <div id="cloud-tab-invite-content" class="flex flex-col bg-emerald-50/50 dark:bg-emerald-900/10">
+                                <div class="flex flex-col p-4 gap-3">
+                                    <p class="text-sm font-semibold text-stone-800 dark:text-stone-100">Invito Diretto</p>
+                                    <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">Inserisci l'email Google del collaboratore. Riceverà un'email con l'autorizzazione di accesso e un "link magico" per aprire l'archivio nell'app automaticamente.</p>
+                                    <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2.5 text-sm border-emerald-500 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 justify-center mt-2">
+                                        <i data-lucide="mail-plus" class="w-4 h-4 mr-2"></i> Invita tramite Email
+                                    </button>
+                                    <button onclick="toggleManualInvite()" class="text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 text-center mt-1 underline cursor-pointer">
+                                        Invia manualmente il codice d'invito
                                     </button>
                                 </div>
-                                <!-- PASSO 2 -->
-                                <div class="flex flex-col p-4 gap-3 bg-amber-50/50 dark:bg-amber-900/10">
+                                
+                                <!-- SEZIONE MANUALE (Inizialmente nascosta) -->
+                                <div id="manual-invite-section" class="hidden flex flex-col p-4 gap-3 bg-amber-50/50 dark:bg-amber-900/10 border-t border-stone-200 dark:border-stone-700">
                                     <div class="flex items-center gap-2">
-                                        <span class="w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
-                                        <p class="text-sm font-semibold text-stone-800 dark:text-stone-100">Condividi il Codice</p>
+                                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                                        <p class="text-[11px] font-semibold text-amber-800 dark:text-amber-200">Condivisione Manuale</p>
                                     </div>
-                                    <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">Il collaboratore incolla questo codice in ArchiView → "Unisciti a un Archivio".</p>
-                                    <div class="flex flex-col gap-2 mt-auto">
+                                    <p class="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed">Usa questa opzione se invii l'invito via chat (WhatsApp/Slack). Ricorda che <strong>devi comunque aver autorizzato la sua email</strong> inserendola dal bottone qui sopra.</p>
+                                    <div class="flex flex-col gap-2 mt-1">
                                         <input type="text" id="cloud-invite-code" class="form-input w-full font-mono text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-md p-2 text-center" readonly onclick="this.select()">
-                                        <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary py-2 text-sm justify-center">
-                                            <i data-lucide="copy" class="w-4 h-4 mr-1.5"></i> Copia Codice
+                                        <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary py-2 text-xs justify-center">
+                                            <i data-lucide="copy" class="w-3 h-3 mr-1.5"></i> Copia Codice
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            <!-- Footer nota -->
-                            <div class="px-4 py-2 bg-stone-50 dark:bg-stone-800/40 border-t border-stone-200 dark:border-stone-700 flex items-center gap-1.5">
-                                <i data-lucide="info" class="w-3 h-3 text-stone-400 shrink-0"></i>
-                                <p class="text-[10px] text-stone-400">Fai sempre il passo ① prima del ② per ogni nuovo collaboratore.</p>
+
+                            <!-- TAB MEMBERS CONTENT -->
+                            <div id="cloud-tab-members-content" class="hidden flex-col h-full bg-stone-50/50 dark:bg-stone-900/20">
+                                <div class="p-3 text-[11px] text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700 bg-stone-100/50 dark:bg-stone-800/40">
+                                    Elenco di chi ha accesso a questo Archivio.
+                                </div>
+                                <div id="cloud-members-list" class="flex flex-col overflow-y-auto custom-scroll p-2 gap-1 max-h-[250px]">
+                                    <!-- Lista popolata via JS -->
+                                    <div class="text-center p-4 text-stone-400"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i></div>
+                                </div>
                             </div>
                         </div>
 
@@ -348,6 +380,12 @@
         document.getElementById('cloud-modal').classList.add('hidden-tab');
     };
 
+    window.uniscitiDaCloudModal = async function() {
+        if (window.chiudiCloudModal) window.chiudiCloudModal();
+        if (window.mostraWelcomeModal) await window.mostraWelcomeModal();
+        if (window.mostraJoinForm) window.mostraJoinForm();
+    };
+
     window.generaCodiceInvito = async function() {
         try {
             if(!window.apiDrive) return;
@@ -359,6 +397,116 @@
             btnCopy.classList.remove('hidden-tab');
         } catch(e) {
             mostraMessaggio("Errore: " + e.message, "error");
+        }
+    };
+
+    window.toggleManualInvite = function() {
+        const sec = document.getElementById('manual-invite-section');
+        if (sec) {
+            sec.classList.toggle('hidden');
+        }
+    };
+
+    window.mostraTabCloud = function(tab) {
+        const btnInvite = document.getElementById('tab-cloud-invite');
+        const btnMembers = document.getElementById('tab-cloud-members');
+        const contInvite = document.getElementById('cloud-tab-invite-content');
+        const contMembers = document.getElementById('cloud-tab-members-content');
+        
+        if (!btnInvite || !btnMembers || !contInvite || !contMembers) return;
+        
+        if (tab === 'invite') {
+            btnInvite.className = "flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider text-emerald-600 border-b-2 border-emerald-500 bg-white dark:bg-stone-900 transition-colors";
+            btnMembers.className = "flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b-2 border-transparent hover:text-stone-700 dark:hover:text-stone-300 transition-colors";
+            contInvite.classList.remove('hidden');
+            contInvite.classList.add('flex');
+            contMembers.classList.add('hidden');
+            contMembers.classList.remove('flex');
+        } else {
+            btnMembers.className = "flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider text-blue-600 border-b-2 border-blue-500 bg-white dark:bg-stone-900 transition-colors";
+            btnInvite.className = "flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b-2 border-transparent hover:text-stone-700 dark:hover:text-stone-300 transition-colors";
+            contMembers.classList.remove('hidden');
+            contMembers.classList.add('flex');
+            contInvite.classList.add('hidden');
+            contInvite.classList.remove('flex');
+            
+            caricaMembriCloud();
+        }
+    };
+
+    window.caricaMembriCloud = async function() {
+        const list = document.getElementById('cloud-members-list');
+        if (!list) return;
+        list.innerHTML = '<div class="text-center p-4 text-stone-400"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i></div>';
+        if (window.lucide) lucide.createIcons({ nodes: [list] });
+        
+        try {
+            if (!window.apiDrive || !window.apiDrive.listPermissions) throw new Error("API non disponibile");
+            const members = await window.apiDrive.listPermissions();
+            list.innerHTML = '';
+            
+            // Assicuriamoci che la funzione di fallback sia globale
+            if (!window.fallbackCloudAvatar) {
+                window.fallbackCloudAvatar = function(img) {
+                    img.outerHTML = '<div class="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center shrink-0"><i data-lucide="user" class="w-4 h-4 text-stone-500"></i></div>';
+                    if (window.lucide) lucide.createIcons();
+                };
+            }
+            
+            if (!members || members.length === 0) {
+                list.innerHTML = '<div class="text-center p-4 text-xs text-stone-500">Nessun membro trovato.</div>';
+                return;
+            }
+
+            members.forEach(m => {
+                const isOwner = m.role === 'owner';
+                const photoUrl = m.photoLink && m.photoLink.startsWith('//') ? 'https:' + m.photoLink : m.photoLink;
+                const fallbackAvatar = `<div class="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center shrink-0"><i data-lucide="user" class="w-4 h-4 text-stone-500"></i></div>`;
+                const avatar = photoUrl 
+                    ? `<img src="${photoUrl}" onerror="window.fallbackCloudAvatar(this)" class="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 shrink-0 object-cover">` 
+                    : fallbackAvatar;
+                
+                const roleBadge = isOwner 
+                    ? '<span class="text-[9px] px-1.5 py-0.5 rounded-sm bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wide">Proprietario</span>'
+                    : '<span class="text-[9px] px-1.5 py-0.5 rounded-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold uppercase tracking-wide">Collaboratore</span>';
+                
+                const actionBtn = isOwner ? '' : `
+                    <button onclick="rimuoviMembroCloud('${m.id}', '${(m.displayName || m.emailAddress || '').replace(/'/g, "\\'")}')" class="btn btn-ghost text-stone-400 hover:text-red-600 dark:hover:text-red-400 p-1.5" title="Rimuovi Accesso">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                
+                const html = `
+                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-md">
+                        ${avatar}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">${m.displayName || 'Utente'}</span>
+                                ${roleBadge}
+                            </div>
+                            <div class="text-[10px] text-stone-500 dark:text-stone-400 truncate">${m.emailAddress || ''}</div>
+                        </div>
+                        ${actionBtn}
+                    </div>
+                `;
+                list.insertAdjacentHTML('beforeend', html);
+            });
+            if (window.lucide) lucide.createIcons({ nodes: [list] });
+        } catch(e) {
+            list.innerHTML = `<div class="text-center p-4 text-xs text-red-500">Errore: ${e.message}</div>`;
+        }
+    };
+
+    window.rimuoviMembroCloud = async function(permissionId, nome) {
+        if (!confirm(`Sei sicuro di voler rimuovere l'accesso a ${nome}?`)) return;
+        
+        mostraMessaggio(`Rimozione di ${nome} in corso...`, "info");
+        try {
+            await window.apiDrive.removePermission(permissionId);
+            mostraMessaggio(`${nome} è stato rimosso con successo.`, "success");
+            caricaMembriCloud(); // ricarica la lista
+        } catch(e) {
+            mostraMessaggio(`Errore durante la rimozione: ${e.message}`, "error");
         }
     };
 

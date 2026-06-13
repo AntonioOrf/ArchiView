@@ -71,6 +71,8 @@ contextBridge.exposeInMainWorld('apiDrive', {
     pulisciAllegatiOrfani: () => ipcRenderer.invoke('drive-clean-orphans'),
     peekDb: (vaultId) => ipcRenderer.invoke('drive-peek-db', vaultId),
     shareVault: (email) => ipcRenderer.invoke('drive-share-vault', email),
+    listPermissions: () => ipcRenderer.invoke('drive-list-permissions'),
+    removePermission: (permissionId) => ipcRenderer.invoke('drive-remove-permission', permissionId),
     getToken: () => ipcRenderer.invoke('drive-get-token'),
     getClientId: () => ipcRenderer.invoke('drive-get-client-id'),
     joinByFolderId: (folderId, vaultName, basePath) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath),

@@ -592,7 +592,8 @@ async function syncToDrive(parentModifiedTime = null) {
               const usedAttachments = new Set();
               try {
                   if (fs.existsSync(dbPath)) {
-                      const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+                      const dbData = await fs.promises.readFile(dbPath, 'utf8');
+                      const db = JSON.parse(dbData);
                       if (db.manoscritti) {
                           for (const m of db.manoscritti) {
                               if (m.allegati) {
@@ -676,7 +677,8 @@ async function cleanOrphanedAttachments() {
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
   if (!fs.existsSync(dbPath)) return { deletedLocal: 0, deletedDrive: 0 };
   
-  const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  const dbData = await fs.promises.readFile(dbPath, 'utf8');
+  const db = JSON.parse(dbData);
   const usedAttachments = new Set();
   
   if (db.manoscritti) {
@@ -866,7 +868,7 @@ function setupDriveIpc() {
   ipcMain.handle('drive-clean-orphans', async () => {
     return await cleanOrphanedAttachments();
   });
-  ipcMain.handle('drive-generate-invite', async () => {
+  async function generateInviteCode() {
     try {
         await authenticateDrive(); // Necessario per ottenere l'ID della cartella
         let tokenPath = getLocalTokenPath();
@@ -875,7 +877,8 @@ function setupDriveIpc() {
         }
         let refreshToken = "";
         if (fs.existsSync(tokenPath)) {
-            const tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+            const tokenData = await fs.promises.readFile(tokenPath, 'utf8');
+            const tokens = JSON.parse(tokenData);
             refreshToken = tokens.refresh_token || "";
         }
         
@@ -931,6 +934,10 @@ function setupDriveIpc() {
     } catch(e) {
         throw new Error("Impossibile generare l'invito: " + e.message);
     }
+  }
+
+  ipcMain.handle('drive-generate-invite', async () => {
+    return await generateInviteCode();
   });
   
   ipcMain.handle('drive-decode-invite', async (event, inviteCode) => {
@@ -1033,14 +1040,57 @@ function setupDriveIpc() {
         let vaultFolderId = settings.sharedVaultId;
         if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato. Assicurati che sia un Archivio Condiviso.");
         
+        const inviteCode = await generateInviteCode();
+        const inviteLink = `archiview://join/${inviteCode}`;
+        const msg = `Sei stato invitato a collaborare a un Archivio Condiviso su ArchiView!\n\nClicca su questo link per aprirlo direttamente nell'app:\n${inviteLink}\n\nSe il link non funziona, apri ArchiView (Unisciti a un Archivio) e inserisci questo codice:\n${inviteCode}`;
+
         await drive.permissions.create({
             fileId: vaultFolderId,
             sendNotificationEmail: true,
+            emailMessage: msg,
             requestBody: { role: 'writer', type: 'user', emailAddress: email },
         });
         return true;
     } catch(e) {
         throw new Error("Errore durante la condivisione: " + e.message);
+    }
+  });
+
+  ipcMain.handle('drive-list-permissions', async () => {
+    try {
+        await authenticateDrive();
+        let settings: any = {};
+        try { settings = getAllSettings(); } catch(e) {}
+        
+        let vaultFolderId = settings.sharedVaultId;
+        if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato.");
+
+        const res = await drive.permissions.list({
+            fileId: vaultFolderId,
+            fields: 'permissions(id, emailAddress, role, type, displayName, photoLink)'
+        });
+        return res.data.permissions || [];
+    } catch (e) {
+        throw new Error("Impossibile caricare i membri: " + e.message);
+    }
+  });
+
+  ipcMain.handle('drive-remove-permission', async (event, permissionId) => {
+    try {
+        await authenticateDrive();
+        let settings: any = {};
+        try { settings = getAllSettings(); } catch(e) {}
+        
+        let vaultFolderId = settings.sharedVaultId;
+        if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato.");
+
+        await drive.permissions.delete({
+            fileId: vaultFolderId,
+            permissionId: permissionId
+        });
+        return true;
+    } catch (e) {
+        throw new Error("Impossibile rimuovere il membro: " + e.message);
     }
   });
 

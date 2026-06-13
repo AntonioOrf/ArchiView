@@ -134,6 +134,17 @@ function setupWorkspaceIpc() {
 
   ipcMain.handle('delete-vault-local', async (event, pathToRemove) => {
     try {
+        // Sicurezza: Controlliamo che il percorso appartenga alla lista di workspace recenti o a quello attuale
+        const settings = getAllSettings();
+        const recentWorkspaces = settings.recentWorkspaces || [];
+        const isKnownWorkspace = (state.workspacePath && path.resolve(pathToRemove) === path.resolve(state.workspacePath)) || 
+                                 recentWorkspaces.some((w: string) => path.resolve(w) === path.resolve(pathToRemove));
+        
+        if (!isKnownWorkspace) {
+            console.warn(`[SECURITY] Tentativo di eliminazione bloccato per: ${pathToRemove}`);
+            return { success: false, error: 'Access Denied: Path is not a recognized workspace' };
+        }
+
         if (fs.existsSync(pathToRemove)) {
             const { shell } = require('electron');
             await shell.trashItem(pathToRemove);

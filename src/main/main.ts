@@ -1,7 +1,7 @@
 const { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net, nativeImage } = require('electron');
 const path = require('path');
 
-if (process.platform === 'win32') {
+if (process.platform === 'win32' && app.isPackaged) {
   app.setAppUserModelId("com.antonioorf.archiview");
 }
 
@@ -22,13 +22,12 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow() {
   const iconPath = path.join(__dirname, '..', '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
-  const appIcon = nativeImage.createFromPath(iconPath);
   
   state.mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     title: "ArchiView",
-    icon: appIcon,
+    icon: iconPath,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

@@ -13,7 +13,8 @@ function setupExportImportIpc() {
     const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
     if (!fs.existsSync(dbPath)) return { success: false, error: 'Database non trovato' };
     
-    const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    const dbData = await fs.promises.readFile(dbPath, 'utf8');
+    const db = JSON.parse(dbData);
     const manoscritti = db.manoscritti || [];
     
     // Trova i manoscritti richiesti
@@ -110,7 +111,7 @@ function setupExportImportIpc() {
                 const attName = path.basename(entry.entryName);
                 const attPath = path.join(allegatiDir, attName);
                 if (!fs.existsSync(attPath)) {
-                    fs.writeFileSync(attPath, entry.getData());
+                    zip.extractEntryTo(entry.entryName, allegatiDir, false, true, false, attName);
                 }
             }
         }
@@ -131,7 +132,8 @@ function setupExportImportIpc() {
       const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
       if (!fs.existsSync(dbPath)) return { success: false, error: 'Database non trovato' };
       
-      const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+      const dbData = await fs.promises.readFile(dbPath, 'utf8');
+      const db = JSON.parse(dbData);
       if (!db.manoscritti) db.manoscritti = [];
       
       const toDuplicate = db.manoscritti.filter(m => ids.includes(m.id));

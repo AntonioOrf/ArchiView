@@ -36,7 +36,8 @@ function setupAttachmentsIpc() {
   ipcMain.handle('verifica-hash-allegato', async (event, fileName, expectedHash) => {
     try {
       if (!state.attachmentsDirPath || !fileName || !expectedHash) return { status: 'missing', path: '' };
-      const destPath = path.join(state.attachmentsDirPath, fileName);
+      const safeFileName = path.basename(fileName);
+      const destPath = path.join(state.attachmentsDirPath, safeFileName);
       if (!fs.existsSync(destPath)) {
         return { status: 'missing', path: state.attachmentsDirPath };
       }
@@ -60,7 +61,8 @@ function setupAttachmentsIpc() {
   ipcMain.handle('apri-pdf-esterno', async (event, fileName) => {
     try {
       if (!state.attachmentsDirPath) return false;
-      const p = path.join(state.attachmentsDirPath, fileName);
+      const safeFileName = path.basename(fileName);
+      const p = path.join(state.attachmentsDirPath, safeFileName);
       if (fs.existsSync(p)) {
         await shell.openPath(p); 
         return true;
@@ -74,7 +76,8 @@ function setupAttachmentsIpc() {
   ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {
     try {
       if (!state.attachmentsDirPath) return false;
-      const p = path.join(state.attachmentsDirPath, fileName);
+      const safeFileName = path.basename(fileName);
+      const p = path.join(state.attachmentsDirPath, safeFileName);
       if (fs.existsSync(p)) {
         shell.showItemInFolder(p); 
         return true;
@@ -87,7 +90,8 @@ function setupAttachmentsIpc() {
 
   ipcMain.handle('get-allegato-path', (event, fileName) => {
     if (!state.attachmentsDirPath) return '';
-    return path.join(state.attachmentsDirPath, fileName);
+    const safeFileName = path.basename(fileName);
+    return path.join(state.attachmentsDirPath, safeFileName);
   });
 }
 
@@ -95,7 +99,15 @@ function setupAttachmentsProtocol() {
   protocol.handle('local-asset', (request) => {
     let filePath = request.url.slice('local-asset://'.length);
     filePath = decodeURIComponent(filePath);
-    return net.fetch('file://' + path.join(state.attachmentsDirPath, filePath));
+    
+    // Sicurezza: Normalizza ed assicura che il percorso finale sia dentro attachmentsDirPath
+    const resolvedPath = path.resolve(state.attachmentsDirPath, filePath);
+    if (!resolvedPath.startsWith(path.resolve(state.attachmentsDirPath))) {
+      console.warn(`[SECURITY] Tentativo di path traversal bloccato per: ${filePath}`);
+      return new Response('Access Denied', { status: 403 });
+    }
+    
+    return net.fetch('file://' + resolvedPath);
   });
 }
 

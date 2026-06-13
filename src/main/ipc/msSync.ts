@@ -47,7 +47,8 @@ function initMsal() {
           beforeCacheAccess: async (cacheContext) => {
              let tokenPath = getLocalTokenPath() || getGlobalTokenPath();
              if (fs.existsSync(tokenPath)) {
-                 cacheContext.tokenCache.deserialize(fs.readFileSync(tokenPath, 'utf8'));
+                 const tokenData = await fs.promises.readFile(tokenPath, 'utf8');
+                 cacheContext.tokenCache.deserialize(tokenData);
              }
           },
           afterCacheAccess: async (cacheContext) => {
