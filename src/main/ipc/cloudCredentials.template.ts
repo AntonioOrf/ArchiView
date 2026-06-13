@@ -5,6 +5,7 @@
 
 export const GOOGLE_CLIENT_ID = "INSERISCI_QUI_IL_TUO_CLIENT_ID";
 export const GOOGLE_CLIENT_SECRET = "INSERISCI_QUI_IL_TUO_CLIENT_SECRET";
+export const MS_CLIENT_ID = "INSERISCI_QUI_IL_TUO_MS_CLIENT_ID";
 
 // Credenziali Pusher & Vercel (Webhook) per Realtime Sync
 export const PUSHER_KEY = "INSERISCI_QUI_PUSHER_KEY";
