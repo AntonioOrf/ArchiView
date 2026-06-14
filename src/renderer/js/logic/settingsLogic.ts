@@ -17,7 +17,7 @@ window.apriImpostazioni = async function() {
                         const currentSettings = await window.apiSettings.get();
                         currentSettings.username = e.target.value.trim();
                         await window.apiSettings.save(currentSettings);
-                        mostraMessaggio("Nome collaboratore salvato.", "success");
+                        mostraMessaggio(window.t("msg_nome_collaboratore_salvat", "Nome collaboratore salvato."), "success");
                     }
                 });
                 usernameInput.dataset.listenerSetup = 'true';
@@ -116,7 +116,7 @@ window.salvaImpostazioniHub = async function() {
 
 window.cambiaCartellaAllegati = async function() {
     if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiSettings) {
-        const path = await window.apiBrowser.selectBaseDirectory();
+        const path = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
         if (path) {
             const settings = await window.apiSettings.get();
             settings.customAttachmentsPath = path;
@@ -128,7 +128,7 @@ window.cambiaCartellaAllegati = async function() {
             if (attachmentsPathDiv) attachmentsPathDiv.textContent = path;
             if (btnRestore) btnRestore.classList.remove('hidden-tab');
             
-            mostraMessaggio("Directory allegati locale configurata con successo.", "success");
+            mostraMessaggio(window.t("msg_directory_allegati_locale", "Directory allegati locale configurata con successo."), "success");
         }
     }
 };
@@ -145,7 +145,7 @@ window.ripristinaCartellaAllegatiPredefinita = async function() {
         if (attachmentsPathDiv) attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
         if (btnRestore) btnRestore.classList.add('hidden-tab');
         
-        mostraMessaggio("La directory degli allegati è stata ripristinata al percorso di default (interna all'archivio).", "success");
+        mostraMessaggio(window.t("msg_la_directory_degli_allega", "La directory degli allegati è stata ripristinata al percorso di default (interna all'archivio)."), "success");
     }
 };
 
@@ -155,13 +155,13 @@ window.esportaBackupZip = async function() {
         
         const progDiv = document.createElement('div');
         progDiv.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-4 rounded-sm shadow-2xl z-50 min-w-[300px] border border-stone-700 text-center flex flex-col gap-2';
-        progDiv.innerHTML = `
+        progDiv.innerHTML = window.sanitizeHTML(`
             <div class="font-bold text-sm">Esportazione in corso...</div>
             <div class="w-full bg-stone-700 h-2 rounded-full overflow-hidden">
                 <div id="export-progress-bar" class="bg-amber-500 h-full w-0 transition-all duration-300"></div>
             </div>
             <div id="export-progress-text" class="text-xs text-stone-300">Calcolo...</div>
-        `;
+        `);
         document.body.appendChild(progDiv);
 
         if (!window._exportProgressListener && window.apiBrowser.onExportProgress) {

@@ -6,7 +6,7 @@ const AdmZip = require('adm-zip');
 const { state } = require('../workspaceManager');
 
 function setupExportImportIpc() {
-  ipcMain.handle('export-zip', async (event, ids) => {
+  ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
     if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
     
     // Leggi il database

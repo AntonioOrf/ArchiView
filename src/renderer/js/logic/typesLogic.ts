@@ -134,11 +134,11 @@ function aggiungiPill(val, label, isBase) {
         }
     };
 
-    pill.innerHTML = `
+    pill.innerHTML = window.sanitizeHTML(`
         <i data-lucide="grip-horizontal" class="w-3 h-3 text-stone-400 mr-1"></i>
         <span>${escapeHTML(finalLabel)}</span>
         <button type="button" onclick="rimuoviPillDalPulsante(this, '${escapeHTML(val).replace(/'/g, "\\'")}')" class="text-stone-400 hover:text-red-600 focus:outline-none ml-1 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
-    `;
+    `);
     list.appendChild(pill);
     if (window.lucide) lucide.createIcons({ nodes: [pill] });
     
@@ -213,7 +213,7 @@ function confermaCreaTipo() {
 
 function apriManageTypesModal() {
     const listContainer = document.getElementById('manage-types-list');
-    listContainer.innerHTML = '';
+    listContainer.innerHTML = window.sanitizeHTML('');
     
     const defaultIds = ['imbreviature', 'atti', 'fiscali'];
     
@@ -237,7 +237,7 @@ function apriManageTypesModal() {
             `;
         }
 
-        div.innerHTML = `
+        div.innerHTML = window.sanitizeHTML(`
             <div class="flex items-center">
                 <span class="font-medium text-stone-800">${escapeHTML(window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome)}</span>
                 ${defaultBadge}
@@ -246,7 +246,7 @@ function apriManageTypesModal() {
             <div class="flex gap-1">
                 ${buttonsHTML}
             </div>
-        `;
+        `);
         listContainer.appendChild(div);
     });
     
@@ -265,7 +265,7 @@ window.eliminaTipoDocumento = function(id) {
         return;
     }
     
-    window.mostraBottomConfirm("Sei sicuro di voler eliminare questo modello?", async () => {
+    window.mostraBottomConfirm(window.t("confirm_delete_model", "Sei sicuro di voler eliminare questo modello?"), async () => {
         // Salva il tipo per eventuale ripristino
         const tipoSalvato = JSON.parse(JSON.stringify(appData.tipiDocumento.find(t => t.id === id)));
         

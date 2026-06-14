@@ -81,7 +81,7 @@ window.controllaModificheInEntrata = async function(manual = false) {
             if (remoteModifiedTime && remoteModifiedTime > (window.ultimoCaricamento || 0)) {
                 // Ci sono aggiornamenti sul server più recenti dell'ultimo nostro pull
                 window.impostaModificheInEntrata(true);
-                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Ci sono nuovi aggiornamenti da scaricare!", "success");
+                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", "Ci sono nuovi aggiornamenti da scaricare!"), "success");
                 
                 try {
                     const peekData = await apiCloud.peekDb();
@@ -158,12 +158,12 @@ window.controllaModificheInEntrata = async function(manual = false) {
                 window.incomingStructuralChanges = [];
                 window.incomingAuthor = null;
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Nessun nuovo aggiornamento trovato.", "success");
+                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_nessun_nuovo_aggiornament", "Nessun nuovo aggiornamento trovato."), "success");
             }
             if (manual) window.hasFetchedBeforeDownload = true;
         } catch (e) {
             console.error("Errore controllo aggiornamenti in entrata", e);
-            if (manual && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il fetch: " + e.message, "error");
+            if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_fetch", "Errore durante il fetch: ") + e.message, "error");
         } finally {
             if (manual) window.toggleSyncProgress(false);
         }
@@ -197,12 +197,12 @@ window.checkDriveStatusVisual = async function() {
             const statusResult = await apiCloud.status();
             const isAuth = statusResult?.isAuthenticated || false;
             if (isAuth) {
-                statusText.innerHTML = '<span class="text-green-600 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Connesso al Cloud</span>';
+                statusText.innerHTML = window.sanitizeHTML('<span class="text-green-600 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Connesso al Cloud</span>');
                 if(btnLogin) btnLogin.classList.add('hidden');
                 if(btnLogout) btnLogout.classList.remove('hidden');
                 if(btnSync) btnSync.classList.remove('hidden');
             } else {
-                statusText.innerHTML = '<span class="text-stone-500 flex items-center gap-2"><i data-lucide="cloud-off" class="w-4 h-4"></i> Non Connesso</span>';
+                statusText.innerHTML = window.sanitizeHTML('<span class="text-stone-500 flex items-center gap-2"><i data-lucide="cloud-off" class="w-4 h-4"></i> Non Connesso</span>');
                 if(btnLogin) btnLogin.classList.remove('hidden');
                 if(btnLogout) btnLogout.classList.add('hidden');
                 if(btnSync) btnSync.classList.add('hidden');
@@ -239,12 +239,12 @@ async function aggiornaStatoDrive() {
 
         if (section) {
             if (window.driveStatus.isAuthenticated) {
-                statusText.innerHTML = `<span class="text-green-600 font-semibold">Connesso come: ${window.driveStatus.user}</span>`;
+                statusText.innerHTML = window.sanitizeHTML(`<span class="text-green-600 font-semibold">Connesso come: ${window.driveStatus.user}</span>`);
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
                 syncBtn.classList.remove('hidden');
             } else {
-                statusText.innerHTML = `<span class="text-stone-500">Non connesso</span>`;
+                statusText.innerHTML = window.sanitizeHTML(`<span class="text-stone-500">Non connesso</span>`);
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
                 syncBtn.classList.add('hidden');
@@ -256,14 +256,14 @@ async function aggiornaStatoDrive() {
 window.loginCloud = async function(provider, forceLocal = false) {
     const api = provider === 'microsoft' ? window.apiMicrosoft : window.apiDrive;
     if (api) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio("Apri il browser per completare l'accesso...", "info");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_apri_il_browser_per_compl", "Apri il browser per completare l'accesso..."), "info");
         try {
             await api.auth(forceLocal);
             await aggiornaStatoDrive();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Autenticazione completata!", "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", "Autenticazione completata!"), "success");
         } catch (e) {
             console.error(e);
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante l'autenticazione", "error");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_l_autentic", "Errore durante l'autenticazione"), "error");
         }
     }
 };
@@ -278,7 +278,7 @@ window.logoutGoogleDrive = async function() {
         try {
             await apiCloud.logout();
             await aggiornaStatoDrive();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Disconnesso da Google Drive.", "info");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_disconnesso_da_google_dri", "Disconnesso da Google Drive."), "info");
         } catch (e) {
             console.error(e);
         }
@@ -318,14 +318,14 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione completata con successo!", "success");
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_sincronizzazione_completa", "Sincronizzazione completata con successo!"), "success");
             
             // Invia Ping Realtime a Pusher tramite Vercel Serverless
             inviaPingPusher();
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso...", "warning");
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso..."), "warning");
                 console.warn("409_CONFLICT: auto-healing in progress...");
                 try {
                     const retryData = await apiCloud.pull();
@@ -348,13 +348,13 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                     window.incomingStructuralChanges = [];
                     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto risolto! Sincronizzazione completata in sicurezza.", "success");
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_sincron", "Conflitto risolto! Sincronizzazione completata in sicurezza."), "success");
                     inviaPingPusher();
                 } catch(retryErr) {
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la risoluzione del conflitto: " + retryErr.message, "error");
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
                 }
             } else {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la sincronizzazione: " + e.message, "error");
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_sincron", "Errore durante la sincronizzazione: ") + e.message, "error");
             }
         } finally {
             if (btn) btn.disabled = false;
@@ -365,7 +365,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
 
 window.scaricaDalCloud = async function(silent = false) {
     if (!silent && !window.hasFetchedBeforeDownload && typeof window.mostraBottomConfirm === 'function') {
-        window.mostraBottomConfirm("Attenzione: stai per scaricare le modifiche dal Cloud senza aver prima verificato di cosa si tratta (Fetch). Vuoi procedere comunque?", () => {
+        window.mostraBottomConfirm(window.t("confirm_pull_no_fetch", "Attenzione: stai per scaricare le modifiche dal Cloud senza aver prima verificato di cosa si tratta (Fetch). Vuoi procedere comunque?"), () => {
             // Se accetta, procediamo forzando silent a true per bypassare questo stesso blocco, o mettiamo un flag
             eseguiScaricamentoDalCloud(silent);
         });
@@ -396,10 +396,10 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 window.incomingStructuralChanges = [];
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
             }
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Scaricamento completato!", "success");
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_scaricamento_completato", "Scaricamento completato!"), "success");
         } catch (e) {
             console.error(e);
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante lo scaricamento: " + e.message, "error");
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_lo_scarica", "Errore durante lo scaricamento: ") + e.message, "error");
         } finally {
             window.toggleSyncProgress(false);
             window.hasFetchedBeforeDownload = false;
@@ -437,12 +437,12 @@ window.caricaSulCloud = async function(silent = false) {
 
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Caricamento completato in sicurezza!", "success");
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_completato_in", "Caricamento completato in sicurezza!"), "success");
             inviaPingPusher();
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso...", "warning");
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso..."), "warning");
                 console.warn("409_CONFLICT in caricaSulCloud: auto-healing in progress...");
                 try {
                     const retryData = await apiCloud.pull();
@@ -465,13 +465,13 @@ window.caricaSulCloud = async function(silent = false) {
                     window.incomingStructuralChanges = [];
                     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Conflitto risolto! Caricamento completato in sicurezza.", "success");
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_caricam", "Conflitto risolto! Caricamento completato in sicurezza."), "success");
                     inviaPingPusher();
                 } catch(retryErr) {
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante la risoluzione del conflitto: " + retryErr.message, "error");
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
                 }
             } else {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il caricamento: " + e.message, "error");
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_caricam", "Errore durante il caricamento: ") + e.message, "error");
             }
         } finally {
             window.toggleSyncProgress(false);
@@ -518,7 +518,7 @@ window.trasformaInCondiviso = async function() {
     if(btn) btn.disabled = true;
     
     if (typeof mostraProgressoCloud === 'function') {
-        mostraProgressoCloud("Preparazione in corso", "Autenticazione con Google Drive in corso...");
+        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso..."));
     }
 
     try {
@@ -529,7 +529,7 @@ window.trasformaInCondiviso = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud("Configurazione in corso", "Impostazione Archivio come condiviso...");
+            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_shared", "Impostazione Archivio come condiviso..."));
         }
         
         if (window.apiSettings) {
@@ -545,7 +545,7 @@ window.trasformaInCondiviso = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud("Sincronizzazione in corso", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po')...");
+            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')..."));
         }
         await window.sincronizzaGoogleDrive(true);
         
@@ -553,7 +553,7 @@ window.trasformaInCondiviso = async function() {
             apriCloudModal();
         }
     } catch(e) {
-        mostraMessaggio("Errore: " + e.message, "error");
+        mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
         if(btn) btn.disabled = false;
     } finally {
         if (typeof nascondiProgressoCloud === 'function') {
@@ -566,7 +566,7 @@ window.trasformaInPersonale = async function() {
     if(btn) btn.disabled = true;
     
     if (typeof mostraProgressoCloud === 'function') {
-        mostraProgressoCloud("Preparazione in corso", "Autenticazione con Google Drive in corso...");
+        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso..."));
     }
 
     try {
@@ -577,7 +577,7 @@ window.trasformaInPersonale = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud("Configurazione in corso", "Impostazione Backup Personale...");
+            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_backup", "Impostazione Backup Personale..."));
         }
         
         if (window.apiSettings) {
@@ -593,7 +593,7 @@ window.trasformaInPersonale = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud("Sincronizzazione in corso", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po')...");
+            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')..."));
         }
         await window.sincronizzaGoogleDrive(true);
         
@@ -601,7 +601,7 @@ window.trasformaInPersonale = async function() {
             apriCloudModal();
         }
     } catch(e) {
-        mostraMessaggio("Errore: " + e.message, "error");
+        mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
         if(btn) btn.disabled = false;
     } finally {
         if (typeof nascondiProgressoCloud === 'function') {
@@ -613,10 +613,10 @@ window.trasformaInPersonale = async function() {
 window.scollegaCloud = async function() {
     if (typeof mostraBottomConfirm === 'function') {
         mostraBottomConfirm(
-            "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.",
+            window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l\'app tornerà in modalità solo locale per questo progetto."),
             async () => {
                 if (typeof mostraProgressoCloud === 'function') {
-                    mostraProgressoCloud("Scollegamento", "Disattivazione della sincronizzazione Cloud...");
+                    mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
                 }
                 try {
                     if (window.apiSettings) {
@@ -628,14 +628,14 @@ window.scollegaCloud = async function() {
                         await window.apiSettings.save(settings);
                         if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
                         
-                        mostraMessaggio("L'Archivio è ora scollegato ed è solo locale.", "success");
+                        mostraMessaggio(window.t("msg_l_archivio_ora_scollegato", "L'Archivio è ora scollegato ed è solo locale."), "success");
                         
                         if (typeof apriCloudModal === 'function') {
                             apriCloudModal();
                         }
                     }
                 } catch(e) {
-                    mostraMessaggio("Errore: " + e.message, "error");
+                    mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
                 } finally {
                     if (typeof nascondiProgressoCloud === 'function') {
                         nascondiProgressoCloud();
@@ -643,9 +643,9 @@ window.scollegaCloud = async function() {
                 }
             }
         );
-    } else if (confirm("Vuoi davvero scollegare questo Archivio dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.")) {
+    } else if (confirm(window.t("confirm_disc_cloud_short", `Vuoi davvero scollegare questo Archivio dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.`))) {
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud("Scollegamento", "Disattivazione della sincronizzazione Cloud...");
+            mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
         }
         try {
             if (window.apiSettings) {
@@ -656,14 +656,14 @@ window.scollegaCloud = async function() {
                 await window.apiSettings.save(settings);
                 if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
                 
-                mostraMessaggio("L'Archivio è ora scollegato ed è solo locale.", "success");
+                mostraMessaggio(window.t("msg_l_archivio_ora_scollegato", "L'Archivio è ora scollegato ed è solo locale."), "success");
                 
                 if (typeof apriCloudModal === 'function') {
                     apriCloudModal();
                 }
             }
         } catch(e) {
-            mostraMessaggio("Errore durante la disconnessione dal cloud: " + e.message, "error");
+            mostraMessaggio(window.t("msg_errore_durante_la_disconn", "Errore durante la disconnessione dal cloud: ") + e.message, "error");
         } finally {
             if (typeof nascondiProgressoCloud === 'function') {
                 nascondiProgressoCloud();

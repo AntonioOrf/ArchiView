@@ -115,17 +115,17 @@ window.gestoreAnnullamento = {
     
     async annullaUltimaAzione() {
         if (this.stack.length === 0) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Nessuna azione da annullare.", "info");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_nessuna_azione_da_annulla", "Nessuna azione da annullare."), "info");
             return;
         }
         
         const azione = this.stack.pop();
         try {
             await azione.ripristinaFn();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(`Annullato: ${azione.descrizione}`, "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_annullato_var", "Annullato: {var0}").replace("{var0}", String(azione.descrizione)), "success");
         } catch (err) {
             console.error("Errore durante l'annullamento:", err);
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante l'annullamento dell'azione.", "error");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_l_annullam", "Errore durante l'annullamento dell'azione."), "error");
         }
     }
 };
@@ -277,7 +277,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     if (checkEsiste) {
                         if (typeof apriTrascrizione === 'function') apriTrascrizione(idInTrascrizione);
                     } else {
-                        mostraMessaggio("Il documento corrente è stato eliminato da un altro utente.", "warning");
+                        mostraMessaggio(window.t("msg_il_documento_corrente_sta", "Il documento corrente è stato eliminato da un altro utente."), "warning");
                         switchTab('list');
                     }
                 }
@@ -310,8 +310,8 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(false);
                 const count = localDeletionsToPush.length;
                 const msg = count > 1 
-                    ? `Hai eliminato ${count} record dal tuo archivio. Sei sicuro di volerli cancellare definitivamente anche dal cloud condiviso?` 
-                    : `Hai eliminato un record dal tuo archivio. Sei sicuro di volerlo cancellare definitivamente anche dal cloud condiviso?`;
+                    ? window.t("confirm_delete_multiple_cloud", "Hai eliminato {var0} record dal tuo archivio. Sei sicuro di volerli cancellare definitivamente anche dal cloud condiviso?").replace("{var0}", String(count)) 
+                    : window.t("confirm_delete_single_cloud", "Hai eliminato un record dal tuo archivio. Sei sicuro di volerlo cancellare definitivamente anche dal cloud condiviso?");
                 
                 window.mostraBottomConfirm(msg, () => {
                     // Conferma: cancella anche dal cloud

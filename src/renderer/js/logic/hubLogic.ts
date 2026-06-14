@@ -51,11 +51,11 @@ window.avviaAutofetchHub = async function() {
 
 window.riceviModificheHub = async function(isSilent = false) {
     if (!window.hubConfig) {
-        if (!isSilent) mostraMessaggio("Questo archivio non è collegato ad un repository Hub.", "error");
+        if (!isSilent) mostraMessaggio(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."), "error");
         return;
     }
 
-    // if (!isSilent) mostraMessaggio("Ricezione modifiche dall'Hub in corso...", "info");
+    // if (!isSilent) mostraMessaggio(window.t("msg_ricezione_modifiche_dall_", "Ricezione modifiche dall'Hub in corso..."), "info");
     
     try {
         const repoId = window.hubConfig.repoId;
@@ -79,7 +79,7 @@ window.riceviModificheHub = async function(isSilent = false) {
         const serverVersion = dataPull.version;
 
         if (serverVersion === window.hubConfig.version) {
-            if (!isSilent) mostraMessaggio("Nessuna nuova modifica sul server. Sei aggiornato.", "success");
+            if (!isSilent) mostraMessaggio(window.t("msg_nessuna_nuova_modifica_su", "Nessuna nuova modifica sul server. Sei aggiornato."), "success");
             return;
         }
 
@@ -112,12 +112,12 @@ window.riceviModificheHub = async function(isSilent = false) {
             if (typeof renderSidebar === 'function') renderSidebar();
             if (typeof renderMain === 'function') renderMain();
 
-            if (!isSilent) mostraMessaggio("Dati scaricati e fusi con successo in locale.", "success");
+            if (!isSilent) mostraMessaggio(window.t("msg_dati_scaricati_e_fusi_con", "Dati scaricati e fusi con successo in locale."), "success");
         };
 
         if (conflitti.length > 0) {
             if (isSilent) {
-                mostraMessaggio("Attenzione: rilevati conflitti di sincronizzazione dal server. Clicca 'Ricevi' per risolverli.", "warning");
+                mostraMessaggio(window.t("msg_attenzione_rilevati_confl", "Attenzione: rilevati conflitti di sincronizzazione dal server. Clicca 'Ricevi' per risolverli."), "warning");
                 return;
             }
             window.apriMergeConflictModal(conflitti, (resolvedConflicts) => {
@@ -143,7 +143,7 @@ window.riceviModificheHub = async function(isSilent = false) {
             });
         } else if (deletions.length > 0) {
             if (isSilent) {
-                mostraMessaggio("Attenzione: alcuni file sono stati eliminati sul server. Clicca 'Ricevi' per verificare.", "warning");
+                mostraMessaggio(window.t("msg_attenzione_alcuni_file_so", "Attenzione: alcuni file sono stati eliminati sul server. Clicca 'Ricevi' per verificare."), "warning");
                 return;
             }
             window.apriDeletionConflictModal(deletions, (deletionResolutions) => {
@@ -155,7 +155,7 @@ window.riceviModificheHub = async function(isSilent = false) {
             // Nessun conflitto, nessuna cancellazione dubbia, merge liscio
             if (!isSilent || serverVersion !== window.hubConfig.version) {
                 await applyMergeAndSave(mergedManoscritti);
-                if (isSilent) mostraMessaggio("Dati sincronizzati automaticamente dal server.", "info");
+                if (isSilent) mostraMessaggio(window.t("msg_dati_sincronizzati_automa", "Dati sincronizzati automaticamente dal server."), "info");
             }
         }
 
@@ -217,11 +217,11 @@ function applicaRisoluzioneCancellazioni(merged, deletions, resolutions) {
 
 window.inviaModificheHub = async function() {
     if (!window.hubConfig) {
-        mostraMessaggio("Questo archivio non è collegato ad un repository Hub.", "error");
+        mostraMessaggio(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."), "error");
         return;
     }
 
-    mostraMessaggio("Invio modifiche al server...", "info");
+    mostraMessaggio(window.t("msg_invio_modifiche_al_server", "Invio modifiche al server..."), "info");
     
     try {
         const repoId = window.hubConfig.repoId;
@@ -243,7 +243,7 @@ window.inviaModificheHub = async function() {
 
         if (!resPush.ok) {
             if (resPush.status === 409) {
-                mostraMessaggio("Il server contiene modifiche più recenti. Usa 'Ricevi' per aggiornare il tuo archivio prima di inviare.", "warning");
+                mostraMessaggio(window.t("msg_il_server_contiene_modifi", "Il server contiene modifiche più recenti. Usa 'Ricevi' per aggiornare il tuo archivio prima di inviare."), "warning");
                 return;
             }
             throw new Error("Errore durante l'invio delle modifiche al server.");
@@ -255,7 +255,7 @@ window.inviaModificheHub = async function() {
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
 
-        mostraMessaggio("Modifiche inviate con successo!", "success");
+        mostraMessaggio(window.t("msg_modifiche_inviate_con_suc", "Modifiche inviate con successo!"), "success");
 
     } catch (e) {
         console.error("Errore invio sync:", e);
@@ -265,13 +265,13 @@ window.inviaModificheHub = async function() {
 
 window.sincronizzaConHub = async function() {
     // Deprecata: per compatibilità, esegue prima pull e poi push (se non ci sono conflitti bloccanti)
-    mostraMessaggio("Sincronizzazione...", "info");
+    mostraMessaggio(window.t("msg_sincronizzazione", "Sincronizzazione..."), "info");
     await window.riceviModificheHub(true);
     await window.inviaModificheHub();
 };
 
 window.clonaRepositoryHub = async function(url, repoId, key) {
-    mostraMessaggio("Connessione al repository...", "info");
+    mostraMessaggio(window.t("msg_connessione_al_repository", "Connessione al repository..."), "info");
     
     try {
         const res = await fetch(`${url}/api/repos/${repoId}/pull`, {
@@ -286,8 +286,8 @@ window.clonaRepositoryHub = async function(url, repoId, key) {
         const data = await res.json();
         
         if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiBrowser.cloneWorkspaceHub) {
-            mostraMessaggio("Seleziona il percorso in cui scaricare l'archivio.", "info");
-            const basePath = await window.apiBrowser.selectBaseDirectory();
+            mostraMessaggio(window.t("msg_seleziona_il_percorso_in_", "Seleziona il percorso in cui scaricare l'archivio."), "info");
+            const basePath = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
             if (basePath) {
                 const hubConfigObj = {
                     hubUrl: url,
@@ -300,7 +300,7 @@ window.clonaRepositoryHub = async function(url, repoId, key) {
                 const folderName = `Vault_${repoId}`;
                 const success = await window.apiBrowser.cloneWorkspaceHub(basePath, folderName, hubConfigObj, data.database);
                 if (success) {
-                    mostraMessaggio("Archivio clonato con successo! Riavvio in corso...", "success");
+                    mostraMessaggio(window.t("msg_archivio_clonato_con_succ", "Archivio clonato con successo! Riavvio in corso..."), "success");
                 } else {
                     throw new Error("Errore durante la creazione dei file locali.");
                 }

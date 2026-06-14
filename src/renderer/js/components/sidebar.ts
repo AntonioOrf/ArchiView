@@ -3,7 +3,7 @@
 
 function renderSidebar() {
     const container = document.getElementById('folder-list');
-    container.innerHTML = '';
+    container.innerHTML = window.sanitizeHTML('');
 
     // Normalizza cartelle PRIMA del render (non come side-effect nel mezzo)
     normalizzaCartelle();
@@ -86,7 +86,7 @@ function renderSidebar() {
         spanToggle.className = "w-5 h-5 flex items-center justify-center shrink-0";
         if (hasChildren) {
             const isExpanded = window.cartelleEspanse.has(fullPath);
-            spanToggle.innerHTML = `<i data-lucide="${isExpanded ? 'chevron-down' : 'chevron-right'}" class="w-4 h-4 sidebar-chevron transition-colors"></i>`;
+            spanToggle.innerHTML = window.sanitizeHTML(`<i data-lucide="${isExpanded ? 'chevron-down' : 'chevron-right'}" class="w-4 h-4 sidebar-chevron transition-colors"></i>`);
             spanToggle.onclick = (e) => {
                 e.stopPropagation();
                 if (isExpanded) window.cartelleEspanse.delete(fullPath);
@@ -100,7 +100,7 @@ function renderSidebar() {
         const icona = isAttuale ? 'folder-open' : 'folder';
         const testo = document.createElement('span');
         testo.className = "truncate flex items-center gap-1.5 flex-1 select-none";
-        testo.innerHTML = `<i data-lucide="${icona}" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${escapeHTML(nodeName)}`;
+        testo.innerHTML = window.sanitizeHTML(`<i data-lucide="${icona}" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${escapeHTML(nodeName)}`);
 
         riga.appendChild(spanToggle);
         riga.appendChild(testo);
@@ -110,7 +110,7 @@ function renderSidebar() {
         
         const btnRename = document.createElement('button');
         btnRename.className = "p-1 rounded mr-1 sidebar-action-btn rename";
-        btnRename.innerHTML = `<i data-lucide="pencil" class="w-3.5 h-3.5"></i>`;
+        btnRename.innerHTML = window.sanitizeHTML(`<i data-lucide="pencil" class="w-3.5 h-3.5"></i>`);
         btnRename.onclick = (e) => {
             e.stopPropagation();
             if (typeof window.rinominaCartellaDaSidebar === 'function') {
@@ -121,7 +121,7 @@ function renderSidebar() {
 
         const btnDelete = document.createElement('button');
         btnDelete.className = "p-1 rounded sidebar-action-btn delete";
-        btnDelete.innerHTML = `<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`;
+        btnDelete.innerHTML = window.sanitizeHTML(`<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`);
         btnDelete.onclick = (e) => {
             e.stopPropagation();
             if (typeof window.eliminaCartellaDaSidebar === 'function') {
@@ -193,7 +193,7 @@ function renderSidebar() {
                 };
                 fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
 
-                fileRow.innerHTML = `<i data-lucide="${iconaFile}" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i><span class="truncate">${titoloFile}</span>`;
+                fileRow.innerHTML = window.sanitizeHTML(`<i data-lucide="${iconaFile}" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i><span class="truncate">${titoloFile}</span>`);
                 childContainer.appendChild(fileRow);
             });
 
@@ -247,7 +247,7 @@ function renderSidebar() {
 
 function aggiornaSelectCartelle() {
     const select = document.getElementById('form-cartella');
-    select.innerHTML = '';
+    select.innerHTML = window.sanitizeHTML('');
     [...appData.cartelle].sort((a, b) => {
         if (a === 'Generale') return -1;
         if (b === 'Generale') return 1;
@@ -320,7 +320,7 @@ window.renderSourceControl = function() {
     const countLabel = document.getElementById('source-control-count');
     if (!list || !countLabel) return;
 
-    list.innerHTML = '';
+    list.innerHTML = window.sanitizeHTML('');
     
     const loadedAt = window.ultimoCaricamento || 0;
     const modificati = appData.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
@@ -335,7 +335,7 @@ window.renderSourceControl = function() {
     countLabel.textContent = totalCount.toString();
 
     if (modificati.length === 0 && incoming.length === 0 && !hasIncomingUpdates) {
-        list.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">Nessuna modifica pendente</div>`;
+        list.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">Nessuna modifica pendente</div>`);
         return;
     }
 
@@ -346,13 +346,13 @@ window.renderSourceControl = function() {
         const li = document.createElement('li');
         li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 border-b border-stone-100 dark:border-stone-800/50 last:border-0 opacity-80 cursor-default";
         li.title = "Sono presenti modifiche strutturali (es. cartelle o rimozioni). Clicca su Scarica in alto a destra.";
-        li.innerHTML = `
+        li.innerHTML = window.sanitizeHTML(`
             <div class="flex items-center gap-2 truncate">
                 <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
                 <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">Aggiornamenti strutturali</span>
             </div>
             <div class="text-[10px] text-blue-500 font-bold shrink-0">CLOUD</div>
-        `;
+        `);
         fragment.appendChild(li);
     } else if (hasIncomingUpdates && structural.length > 0) {
         const li = document.createElement('li');
@@ -364,7 +364,7 @@ window.renderSourceControl = function() {
             </div>
         `).join('');
         
-        li.innerHTML = `
+        li.innerHTML = window.sanitizeHTML(`
             <details class="w-full cursor-pointer group/details">
                 <summary class="flex items-center justify-between outline-none list-none select-none">
                     <div class="flex items-center gap-2 truncate">
@@ -377,7 +377,7 @@ window.renderSourceControl = function() {
                     ${detailsHtml}
                 </div>
             </details>
-        `;
+        `);
         fragment.appendChild(li);
     }
 
@@ -489,7 +489,7 @@ window.renderSourceControl = function() {
 
 function renderTagList() {
     const container = document.getElementById('tag-list');
-    container.innerHTML = '';
+    container.innerHTML = window.sanitizeHTML('');
     const tagCount = {};
 
     // Calcola le occorrenze dei tag
@@ -505,7 +505,7 @@ function renderTagList() {
     const sortedTags = Object.keys(tagCount).sort();
 
     if (sortedTags.length === 0) {
-        container.innerHTML = `<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`;
+        container.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`);
         return;
     }
 
@@ -533,7 +533,7 @@ function renderTagList() {
             renderMain();
             renderTagList();
         };
-        btn.innerHTML = `<span>#${escapeHTML(tag)}</span>`;
+        btn.innerHTML = window.sanitizeHTML(`<span>#${escapeHTML(tag)}</span>`);
         fragment.appendChild(btn);
     });
     container.appendChild(fragment);
@@ -621,7 +621,7 @@ window.aggiornaListaVault = async function() {
         const currentPath = await window.apiBrowser.getWorkspacePath();
         const list = document.getElementById('vault-switcher-list');
         if (list) {
-            list.innerHTML = '';
+            list.innerHTML = window.sanitizeHTML('');
             if (recents && recents.length > 0) {
                 recents.forEach(item => {
                     const path = item.path || item;
@@ -646,23 +646,23 @@ window.aggiornaListaVault = async function() {
                     nameSpan.title = path;
                     
                     if (isShared) {
-                        nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Archivio Condiviso"></i> <span>${name}</span>`;
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Archivio Condiviso"></i> <span>${name}</span>`);
                     } else if (isPersonal) {
-                        nameSpan.innerHTML = `<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="Backup Personale"></i> <span>${name}</span>`;
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="Backup Personale"></i> <span>${name}</span>`);
                     } else {
-                        nameSpan.innerHTML = `<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="Solo Locale"></i> <span>${name}</span>`;
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="Solo Locale"></i> <span>${name}</span>`);
                     }
                     
                     divContainer.appendChild(nameSpan);
 
                     if (isCurrent) {
                         const checkIcon = document.createElement('div');
-                        checkIcon.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-amber-600 shrink-0"></i>';
+                        checkIcon.innerHTML = window.sanitizeHTML('<i data-lucide="check" class="w-4 h-4 text-amber-600 shrink-0"></i>');
                         divContainer.appendChild(checkIcon.firstChild);
                     } else {
                         const delBtn = document.createElement('button');
                         delBtn.className = 'p-1 rounded hover:bg-red-100 text-stone-400 hover:text-red-600 transition-colors shrink-0 opacity-50 hover:opacity-100';
-                        delBtn.innerHTML = '<i data-lucide="x" class="w-3.5 h-3.5"></i>';
+                        delBtn.innerHTML = window.sanitizeHTML('<i data-lucide="x" class="w-3.5 h-3.5"></i>');
                         delBtn.onclick = (e) => window.rimuoviVaultDallaLista(e, path);
                         delBtn.title = "Rimuovi dalla lista";
                         divContainer.appendChild(delBtn);
@@ -683,13 +683,13 @@ window.aggiornaListaVault = async function() {
             const isCurrentPersonal = currentVaultInfo && currentVaultInfo.isPersonal;
             
             if (isCurrentShared) {
-                nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${vaultName}</span></div>`;
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${vaultName}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else if (isCurrentPersonal) {
-                nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${vaultName}</span></div>`;
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${vaultName}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else {
-                nameEl.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0"></i> <span>${vaultName}</span></div>`;
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0"></i> <span>${vaultName}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             }
             nameEl.title = currentPath;

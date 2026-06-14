@@ -129,7 +129,7 @@ window.renderHistoryList = async function() {
         // Istruzione contestuale
         const hint = document.createElement('li');
         hint.className = 'px-3 py-2 text-[10px] text-stone-400 italic bg-stone-50 dark:bg-stone-800/30 border-b border-stone-100 dark:border-stone-800/50';
-        hint.textContent = 'Clic destro su una versione per confrontare o ripristinare.';
+        hint.textContent = 'Clicca su una versione per confrontare o ripristinare.';
         fragment.appendChild(hint);
 
         revisions.forEach((rev, index) => {
@@ -145,7 +145,7 @@ window.renderHistoryList = async function() {
             const li = document.createElement('li');
             li.className = `flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 ${isCurrent ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-stone-50 dark:hover:bg-stone-800/30'} cursor-context-menu select-none transition-colors`;
             li.dataset.revisionId = rev.id;
-            li.title = 'Clic destro per le azioni disponibili';
+            li.title = 'Clicca per le azioni disponibili';
 
             li.innerHTML = `
                 <i data-lucide="${isCurrent ? 'git-commit-horizontal' : 'clock'}" class="w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-amber-500' : 'text-stone-400'}"></i>
@@ -156,10 +156,12 @@ window.renderHistoryList = async function() {
                 ${isCurrent ? '<span class="text-[9px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded shrink-0">ATTUALE</span>' : ''}
             `;
 
-            // Tasto destro → context menu
-            li.addEventListener('contextmenu', (e) => {
+            // Tasto sinistro o destro → menu contestuale
+            const handleActionMenu = (e) => {
                 apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurrent);
-            });
+            };
+            li.addEventListener('click', handleActionMenu);
+            li.addEventListener('contextmenu', handleActionMenu);
 
             fragment.appendChild(li);
         });
@@ -179,11 +181,11 @@ window.renderHistoryList = async function() {
 // ─── Confronta una revisione con lo stato attuale ───────────────────────────
 
 async function apriDiffRevisioneCloud(fileId, revisionId, label) {
-    if (typeof mostraMessaggio === 'function') mostraMessaggio("Caricamento revisione...", "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_revisione", "Caricamento revisione..."), "info");
     try {
         const revDb = await window.caricaRevisioneCloud(fileId, revisionId);
         if (!revDb || !revDb.manoscritti) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Revisione vuota o non valida.", "warning");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_revisione_vuota_o_non_val", "Revisione vuota o non valida."), "warning");
             return;
         }
 
@@ -203,7 +205,7 @@ async function apriDiffRevisioneCloud(fileId, revisionId, label) {
         }
 
         if (diffs.length === 0) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Nessuna differenza rispetto alla versione attuale.", "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_nessuna_differenza_rispet", "Nessuna differenza rispetto alla versione attuale."), "success");
             return;
         }
 
@@ -211,7 +213,7 @@ async function apriDiffRevisioneCloud(fileId, revisionId, label) {
 
     } catch (err) {
         console.error("Errore confronto revisione:", err);
-        if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore nel caricamento della revisione: " + err.message, "error");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_nel_caricamento_de", "Errore nel caricamento della revisione: ") + err.message, "error");
     }
 }
 
@@ -360,11 +362,11 @@ async function ripristinaRevisioneConConferma(fileId, revisionId, label) {
         if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'download_in_progress');
         try {
             await window.ripristinaRevisioneCloud(fileId, revisionId);
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("✅ Vault ripristinato alla versione selezionata!", "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_vault_ripristinato_alla_v", "✅ Vault ripristinato alla versione selezionata!"), "success");
             if (typeof window.renderHistoryList === 'function') window.renderHistoryList();
         } catch (err) {
             console.error("Errore ripristino:", err);
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Errore durante il ripristino: " + err.message, "error");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_riprist", "Errore durante il ripristino: ") + err.message, "error");
         } finally {
             if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(false);
         }

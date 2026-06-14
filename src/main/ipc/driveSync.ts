@@ -55,8 +55,12 @@ function loadSavedTokens() {
     return false;
   }
   
-  let tokenPath = getLocalTokenPath();
-  if (!tokenPath || !fs.existsSync(tokenPath)) {
+  let tokenPath;
+  if (state.workspacePath) {
+      // Se c'è un workspace aperto, usa ESCLUSIVAMENTE il token locale di quell'archivio
+      tokenPath = getLocalTokenPath();
+  } else {
+      // Se non c'è workspace, usa il token globale
       tokenPath = getGlobalTokenPath();
   }
   
@@ -74,16 +78,37 @@ function loadSavedTokens() {
 
 async function authenticateDrive(forceLocal = false) {
   return new Promise(async (resolve, reject) => {
-    if (!forceLocal && loadSavedTokens()) {
+    const isLocalContext = !!state.workspacePath;
+    const shouldForceLocal = isLocalContext || forceLocal;
+    const skipCheck = forceLocal === true;
+
+    if (!skipCheck && loadSavedTokens()) {
       try {
         const res = await drive.about.get({ fields: 'user' });
-        if (res.data.user) return resolve(true);
+        if (res.data.user) {
+            // Verifica permessi sull'archivio specifico
+            let settings: any = {};
+            try { settings = getAllSettings(); } catch(e) {}
+            if (state.workspacePath && settings.sharedVaultId) {
+                try {
+                    await drive.files.get({ fileId: settings.sharedVaultId, fields: 'id' });
+                } catch (err: any) {
+                    if (err.message && err.message.includes("File not found")) {
+                        const localPath = getLocalTokenPath();
+                        if (isLocalContext && localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
+                        if (oauth2Client) oauth2Client.setCredentials(null);
+                        return reject(new Error("L'account salvato non è più presente tra i collaboratori. Effettua nuovamente l'accesso."));
+                    }
+                }
+            }
+            return resolve(true);
+        }
       } catch (e) {
         console.warn("Token caricato ma non valido. Procedo con nuova autenticazione.");
         const localPath = getLocalTokenPath();
-        if (localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
+        if (isLocalContext && localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
         const globalPath = getGlobalTokenPath();
-        if (globalPath && fs.existsSync(globalPath)) fs.unlinkSync(globalPath);
+        if (!isLocalContext && globalPath && fs.existsSync(globalPath)) fs.unlinkSync(globalPath);
       }
     }
 
@@ -158,10 +183,25 @@ async function authenticateDrive(forceLocal = false) {
           const { tokens } = await oauth2Client.getToken(code);
           oauth2Client.setCredentials(tokens);
           
-          if (forceLocal && getLocalTokenPath()) {
+          if (shouldForceLocal && getLocalTokenPath()) {
               fs.writeFileSync(getLocalTokenPath(), JSON.stringify(tokens));
           } else {
               fs.writeFileSync(getGlobalTokenPath(), JSON.stringify(tokens));
+          }
+          
+          let settings: any = {};
+          try { settings = getAllSettings(); } catch(e) {}
+          if (state.workspacePath && settings.sharedVaultId) {
+              try {
+                  await drive.files.get({ fileId: settings.sharedVaultId, fields: 'id' });
+              } catch (err: any) {
+                  if (err.message && err.message.includes("File not found")) {
+                      const localPath = getLocalTokenPath();
+                      if (isLocalContext && localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
+                      if (oauth2Client) oauth2Client.setCredentials(null);
+                      return reject(new Error("L'account selezionato non è presente tra i collaboratori. Usa l'account con cui sei stato invitato."));
+                  }
+              }
           }
           
           resolve(true);
@@ -184,14 +224,18 @@ async function authenticateDrive(forceLocal = false) {
 }
 
 async function logoutDrive() {
-  const localTokenPath = getLocalTokenPath();
-  const globalTokenPath = getGlobalTokenPath();
-  
-  if (localTokenPath && fs.existsSync(localTokenPath)) {
-    fs.unlinkSync(localTokenPath);
-  }
-  if (globalTokenPath && fs.existsSync(globalTokenPath)) {
-    fs.unlinkSync(globalTokenPath);
+  const isLocalContext = !!state.workspacePath;
+
+  if (isLocalContext) {
+    const localTokenPath = getLocalTokenPath();
+    if (localTokenPath && fs.existsSync(localTokenPath)) {
+      fs.unlinkSync(localTokenPath);
+    }
+  } else {
+    const globalTokenPath = getGlobalTokenPath();
+    if (globalTokenPath && fs.existsSync(globalTokenPath)) {
+      fs.unlinkSync(globalTokenPath);
+    }
   }
   
   if (oauth2Client) oauth2Client.setCredentials(null);
@@ -871,8 +915,10 @@ function setupDriveIpc() {
   async function generateInviteCode() {
     try {
         await authenticateDrive(); // Necessario per ottenere l'ID della cartella
-        let tokenPath = getLocalTokenPath();
-        if (!tokenPath || !fs.existsSync(tokenPath)) {
+        let tokenPath;
+        if (state.workspacePath) {
+            tokenPath = getLocalTokenPath();
+        } else {
             tokenPath = getGlobalTokenPath();
         }
         let refreshToken = "";
@@ -1070,7 +1116,10 @@ function setupDriveIpc() {
             fields: 'permissions(id, emailAddress, role, type, displayName, photoLink)'
         });
         return res.data.permissions || [];
-    } catch (e) {
+    } catch (e: any) {
+        if (e.message && e.message.includes("File not found")) {
+            throw new Error("La cartella condivisa non esiste più su Google Drive. Scollega questo archivio dal Cloud o ricaricalo.");
+        }
         throw new Error("Impossibile caricare i membri: " + e.message);
     }
   });

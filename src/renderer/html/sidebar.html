@@ -51,10 +51,10 @@
                     <h2 class="font-bold flex items-center gap-2 mb-1">
                         <i data-lucide="git-pull-request" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_source_control">Controllo Modifiche</span>
                     </h2>
-                    <p class="text-xs text-stone-500 dark:text-stone-400">Modifiche locali non ancora inviate al Cloud</p>
+                    <p class="text-xs text-stone-500 dark:text-stone-400"><span data-i18n="sidebar_source_control_desc">Modifiche locali non ancora inviate al Cloud</span></p>
                 </div>
                 <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
-                    <span>MODIFICHE PENDENTI</span>
+                    <span><span data-i18n="sidebar_pending_changes">MODIFICHE PENDENTI</span></span>
                     <span id="source-control-count" class="bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 px-2 py-0.5 rounded-full text-[10px]">0</span>
                 </div>
                 <ul id="source-control-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col">
@@ -64,18 +64,18 @@
             <div id="sidebar-history" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-1">
-                        <i data-lucide="history" class="w-5 h-5 text-amber-700"></i> Storico Cloud
+                        <i data-lucide="history" class="w-5 h-5 text-amber-700"></i> <span data-i18n="sidebar_cloud_history">Storico Cloud</span>
                     </h2>
-                    <p class="text-xs text-stone-500 dark:text-stone-400">Versioni salvate su Google Drive</p>
+                    <p class="text-xs text-stone-500 dark:text-stone-400"><span data-i18n="sidebar_cloud_history_desc">Versioni salvate su Google Drive</span></p>
                 </div>
                 <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
-                    <span>REVISIONI CLOUD</span>
-                    <button id="btn-history-refresh" onclick="if(typeof window.renderHistoryList==='function') window.renderHistoryList()" class="text-amber-600 hover:text-amber-800 transition-colors" title="Aggiorna lista">
+                    <span><span data-i18n="sidebar_cloud_revisions">REVISIONI CLOUD</span></span>
+                    <button id="btn-history-refresh" onclick="if(typeof window.renderHistoryList==='function') window.renderHistoryList()" class="text-amber-600 hover:text-amber-800 transition-colors" data-i18n-title="tooltip_refresh_list" title="Aggiorna lista">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
                 <ul id="history-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col">
-                    <li class="p-4 text-xs text-stone-400 italic text-center">Apri questa sezione per vedere lo storico.</li>
+                    <li class="p-4 text-xs text-stone-400 italic text-center"><span data-i18n="sidebar_history_empty">Apri questa sezione per vedere lo storico.</span></li>
                 </ul>
             </div>
 
@@ -108,7 +108,7 @@
                     <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
                     <div class="w-full h-px bg-stone-200 my-1.5"></div>
                     <button onclick="mostraWelcomeModal(); toggleVaultSwitcher(new Event('click'));" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
-                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> Gestisci archivi...
+                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> <span data-i18n="sidebar_manage_archives">Gestisci archivi...</span>
                     </button>
                 </div>
             </div>

@@ -28,6 +28,7 @@
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
         }
     });
 
@@ -47,13 +48,13 @@
 
     window.annullaSincronizzazioneDeletions = function() {
         document.getElementById('deletion-conflict-modal').classList.add('hidden-tab');
-        mostraMessaggio("Sincronizzazione annullata.", "warning");
+        mostraMessaggio(window.t("msg_sincronizzazione_annullat", "Sincronizzazione annullata."), "warning");
         if (onResolvedDeletionsCallback) onResolvedDeletionsCallback(null);
     };
 
     function renderDeletionList() {
         const container = document.getElementById('deletion-list');
-        container.innerHTML = '';
+        container.innerHTML = window.sanitizeHTML('');
 
         activeDeletions.forEach(card => {
             const isResolved = deletionResolutions[card.id] !== undefined;
@@ -75,7 +76,7 @@
                 }
             }
 
-            div.innerHTML = `
+            div.innerHTML = window.sanitizeHTML(`
                 <div class="flex-1">
                     <div class="font-bold text-stone-800 text-sm truncate" title="${escapeHTML(card.segnatura)}">${escapeHTML(card.segnatura)}</div>
                     <div class="text-xs text-stone-500 mt-0.5">ID: ${card.id.substring(0, 8)}...</div>
@@ -87,7 +88,7 @@
                         <button onclick="window.risolviDeletion('${card.id}', 'delete')" class="btn btn-secondary py-1 px-3 text-xs ${chosenAction === 'delete' ? 'bg-red-600 text-white border-transparent hover:bg-red-700' : 'bg-white'}">Elimina</button>
                     </div>
                 </div>
-            `;
+            `);
             container.appendChild(div);
         });
 

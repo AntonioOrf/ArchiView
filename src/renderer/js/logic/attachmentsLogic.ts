@@ -7,7 +7,7 @@ async function apriTrascrizione(id) {
     document.getElementById('trascrizione-subtitle').textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
     
     // Carica il testo precedente (se esiste, altrimenti inizializza con un paragrafo vuoto cliccabile)
-    document.getElementById('trascrizione-editor').innerHTML = m.trascrizione || '<p><br></p>';
+    document.getElementById('trascrizione-editor').innerHTML = window.sanitizeHTML(m.trascrizione || '<p><br></p>');
     window.trascrizioneNonSalvata = false;
     
     const panelAllegato = document.getElementById('trascrizione-allegato-panel');
@@ -27,7 +27,7 @@ async function apriTrascrizione(id) {
     pdfPreview.src = '';
     
     const thumbContainer = document.getElementById('trascrizione-thumbnails');
-    if (thumbContainer) thumbContainer.innerHTML = '';
+    if (thumbContainer) thumbContainer.innerHTML = window.sanitizeHTML('');
     
     // Usa helper condiviso per normalizzare la lista allegati
     const allegatiM = normalizzaAllegati(m);
@@ -42,7 +42,7 @@ async function apriTrascrizione(id) {
         btnCarica.classList.add('hidden');
         if (btnCollapse) {
             btnCollapse.classList.remove('hidden');
-            btnCollapse.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnCollapse.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
             btnCollapse.title = "Collassa Editor";
         }
         
@@ -73,7 +73,7 @@ window.renderThumbnailsTrascrizione = function(id) {
     const thumbContainer = document.getElementById('trascrizione-thumbnails');
     if (!thumbContainer) return;
     
-    thumbContainer.innerHTML = '';
+    thumbContainer.innerHTML = window.sanitizeHTML('');
     // Usa helper condiviso per normalizzare la lista allegati
     normalizzaAllegati(m);
     
@@ -94,7 +94,7 @@ window.renderThumbnailsTrascrizione = function(id) {
             const btnEdit = document.createElement('button');
             btnEdit.className = "btn btn-ghost btn-icon rounded-none px-2 py-1";
             btnEdit.title = "Rinomina";
-            btnEdit.innerHTML = '<i data-lucide="pencil" class="w-3 h-3"></i>';
+            btnEdit.innerHTML = window.sanitizeHTML('<i data-lucide="pencil" class="w-3 h-3"></i>');
             btnEdit.onclick = (e) => {
                 e.stopPropagation();
                 window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
@@ -216,7 +216,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     if (expectedHash && window.apiBrowser && window.apiBrowser.verificaHashAllegato) {
         const result = await window.apiBrowser.verificaHashAllegato(nome, expectedHash);
         if (result.status === 'missing') {
-            noAllegato.innerHTML = `
+            noAllegato.innerHTML = window.sanitizeHTML(`
                 <div class="text-stone-400 mb-3"><i data-lucide="file-warning" class="w-12 h-12 mx-auto text-amber-500"></i></div>
                 <h3 class="text-lg font-medium text-stone-300">Allegato non presente in locale</h3>
                 <p class="text-sm text-stone-400 mt-2 max-w-md mx-auto">
@@ -230,18 +230,18 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
                     Copia il file nella tua cartella allegati:<br>
                     <span class="font-mono text-[10px] break-all select-all text-amber-600">${result.path}</span>
                 </p>
-            `;
+            `);
             noAllegato.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
             return;
         } else if (result.status === 'corrupted') {
-            mostraMessaggio("Attenzione: l'allegato potrebbe essere corrotto o modificato (Hash non corrispondente).", "error");
-            noAllegato.innerHTML = `<div class="text-stone-400 mb-2"><i data-lucide="shield-alert" class="w-12 h-12 mx-auto text-red-500"></i></div><h3 class="text-lg font-medium text-stone-300">File non sicuro</h3><p class="text-sm text-stone-500 mt-1">L'hash del file non corrisponde a quello salvato nel cloud.</p>`;
+            mostraMessaggio(window.t("msg_attenzione_l_allegato_pot", "Attenzione: l'allegato potrebbe essere corrotto o modificato (Hash non corrispondente)."), "error");
+            noAllegato.innerHTML = window.sanitizeHTML(`<div class="text-stone-400 mb-2"><i data-lucide="shield-alert" class="w-12 h-12 mx-auto text-red-500"></i></div><h3 class="text-lg font-medium text-stone-300">File non sicuro</h3><p class="text-sm text-stone-500 mt-1">L'hash del file non corrisponde a quello salvato nel cloud.</p>`);
             noAllegato.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
             return;
         } else {
-            noAllegato.innerHTML = '<div class="text-stone-400 mb-2"><i data-lucide="image-off" class="w-12 h-12 mx-auto"></i></div><h3 class="text-lg font-medium text-stone-300" data-i18n="no_attachment">Nessun allegato disponibile per questa scheda.</h3>';
+            noAllegato.innerHTML = window.sanitizeHTML('<div class="text-stone-400 mb-2"><i data-lucide="image-off" class="w-12 h-12 mx-auto"></i></div><h3 class="text-lg font-medium text-stone-300" data-i18n="no_attachment">Nessun allegato disponibile per questa scheda.</h3>');
         }
     }
 
@@ -282,14 +282,14 @@ window.toggleFullscreenAllegato = function() {
         editorPanel.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
             btnToggle.title = "Collassa Editor";
         }
     } else {
         editorPanel.classList.add('hidden');
         if (resizer) resizer.classList.add('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = '<i data-lucide="panel-left-open" class="w-5 h-5"></i>';
+            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-open" class="w-5 h-5"></i>');
             btnToggle.title = "Espandi Editor";
         }
     }
@@ -321,7 +321,7 @@ window.confermaUscitaTrascrizione = function() {
         editorPanel.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = '<i data-lucide="panel-left-close" class="w-5 h-5"></i>';
+            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
             btnToggle.title = "Collassa Editor";
         }
     }

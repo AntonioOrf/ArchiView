@@ -3,6 +3,11 @@
 
 .driver-popover-close-btn { display: block !important; }  
 
+/* FIX CURSORE: In alcuni ambienti il cursore scompare sui temi chiari */
+a, button, select, [role="button"], .cursor-pointer {
+    cursor: pointer !important;
+}
+
 /* Stili Driver.js personalizzati per ArchiView */
 .driver-popover {
     background-color: var(--color-bg-panel, #fff) !important;

@@ -129,7 +129,159 @@ function _linguiExtraction() {
     i18n._({ id: "settings_lang", message: "Lingua / Language" });
     i18n._({ id: "settings_lang_desc", message: "Scegli la lingua dell'applicazione." });
 
+
+    // IMPOSTAZIONI - TAB
+    i18n._({ id: "settings_tab_general", message: "Generali" });
+    i18n._({ id: "settings_tab_data", message: "Archivio Dati" });
+    i18n._({ id: "settings_tab_sync", message: "Sincronizzazione" });
+    i18n._({ id: "settings_tab_system", message: "Sistema & Info" });
+
+    // IMPOSTAZIONI - CONTENUTI
+    i18n._({ id: "settings_username_title", message: "Nome Collaboratore / Utente" });
+    i18n._({ id: "settings_username_desc", message: "Imposta il tuo nome per identificare chi inserisce o modifica le schede ed i testi." });
+    i18n._({ id: "settings_username_placeholder", message: "Es. Antonio" });
+    i18n._({ id: "theme_light_group", message: "Temi Chiari" });
+    i18n._({ id: "theme_dark_group", message: "Temi Scuri" });
+    
+    i18n._({ id: "settings_local_attachments_title", message: "Cartella Allegati Locale (Opzionale)" });
+    i18n._({ id: "settings_local_attachments_desc", message: "Consente di salvare le immagini localmente sul PC, escludendole dal cloud condiviso per risparmiare spazio." });
+    i18n._({ id: "btn_select_folder", message: "Seleziona Cartella..." });
+    i18n._({ id: "btn_restore_default", message: "Ripristina di default" });
+    
+    i18n._({ id: "settings_hub_title", message: "Stato Collegamento Hub" });
+    i18n._({ id: "settings_hub_desc", message: "Questo archivio locale è collegato ad un repository condiviso online." });
+    i18n._({ id: "settings_hub_url", message: "URL Server:" });
+    i18n._({ id: "settings_hub_repoid", message: "ID Repository:" });
+    i18n._({ id: "settings_hub_key", message: "Chiave di Scrittura:" });
+    i18n._({ id: "settings_not_defined", message: "Non definito" });
+    i18n._({ id: "settings_autofetch_title", message: "Sincronizzazione Automatica (Autofetch)" });
+    i18n._({ id: "settings_autofetch_interval", message: "Intervallo di controllo:" });
+    i18n._({ id: "settings_autofetch_1m", message: "1 minuto" });
+    i18n._({ id: "settings_autofetch_5m", message: "5 minuti" });
+    i18n._({ id: "settings_autofetch_10m", message: "10 minuti" });
+    i18n._({ id: "settings_autofetch_30m", message: "30 minuti" });
+    i18n._({ id: "settings_autofetch_desc", message: "Se attivato, l'app controllerà in background se ci sono nuove modifiche dal server e le scaricherà automaticamente." });
+    
+    i18n._({ id: "settings_drive_title", message: "Sincronizzazione Google Drive" });
+    i18n._({ id: "settings_drive_desc", message: "Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive." });
+    i18n._({ id: "settings_drive_status", message: "Stato:" });
+    i18n._({ id: "settings_drive_checking", message: "Controllo in corso..." });
+    i18n._({ id: "btn_drive_login", message: "Accedi a Drive" });
+    i18n._({ id: "btn_drive_logout", message: "Disconnetti" });
+    i18n._({ id: "btn_drive_sync", message: "Sincronizza Ora" });
+    i18n._({ id: "settings_drive_hint", message: "Per gestire la sincronizzazione, gli inviti o disconnetterti, utilizza il menu <b>Cloud</b> nella barra superiore dell'applicazione." });
+
     // === CHIAVI DINAMICHE DA TYPESCRIPT ===
+
+    // === CHIAVI MODALI ===
+    i18n._({ id: "modal_cloud_manual_desc", message: "Usa questa opzione se invii l'invito via chat (WhatsApp/Slack). Ricorda che <strong>devi comunque aver autorizzato la sua email</strong> inserendola dal bottone qui sopra." });
+    i18n._({ id: "btn_disconnect_cloud", message: "Scollega dal Cloud" });
+
+    i18n._({ id: "modal_cloud_activate_title", message: "Attiva Sincronizzazione Cloud" });
+    i18n._({ id: "modal_cloud_activate_desc", message: "Scegli se caricare il tuo archivio online o se unirti a uno già esistente tramite codice invito." });
+    i18n._({ id: "modal_cloud_upload_title", message: "Carica nel Cloud" });
+    i18n._({ id: "modal_cloud_upload_desc", message: "Trasforma questo archivio locale in un archivio cloud per poterlo sincronizzare e condividere." });
+    i18n._({ id: "btn_backup_private", message: "Backup Privato" });
+    i18n._({ id: "btn_shared_archive", message: "Archivio Condiviso" });
+    i18n._({ id: "btn_use_different_account", message: "Usa un account diverso" });
+    i18n._({ id: "modal_cloud_join_title", message: "Partecipa" });
+    i18n._({ id: "modal_cloud_join_desc", message: "Hai ricevuto un invito? Abbandona l'archivio locale attuale per unirti a quello condiviso da un tuo collaboratore." });
+    i18n._({ id: "btn_join_archive", message: "Unisciti a un Archivio" });
+    i18n._({ id: "modal_cloud_active_title", message: "Cloud Attivo" });
+    i18n._({ id: "modal_cloud_active_desc", message: "Questo Archivio è sincronizzato." });
+    i18n._({ id: "btn_sync_now", message: "Sincronizza Ora" });
+    i18n._({ id: "label_sync_attachments", message: "Sincronizza allegati automaticamente (PDF/Immagini)" });
+    i18n._({ id: "label_advanced_options", message: "Opzioni avanzate" });
+    i18n._({ id: "btn_convert_backup_private", message: "Converti in Backup Privato" });
+    i18n._({ id: "btn_convert_shared", message: "Converti in Archivio Condiviso" });
+    i18n._({ id: "btn_use_another_account", message: "Usa un altro account Google" });
+    i18n._({ id: "btn_join_another", message: "Unisiti a un altro Archivio" });
+    i18n._({ id: "modal_cloud_shared_active", message: "Archivio Condiviso Attivo" });
+    i18n._({ id: "modal_cloud_shared_desc", message: "Questo Archivio è sincronizzato sul Cloud. Usa \"Invita tramite Email\" per autorizzare i collaboratori, poi condividi questo codice per configurarli." });
+    i18n._({ id: "modal_cloud_backup_active", message: "Backup Personale Attivo" });
+    i18n._({ id: "modal_cloud_backup_desc", message: "Questo Archivio è sincronizzato nel tuo Cloud privato. Nessun altro ha accesso." });
+    i18n._({ id: "tab_add", message: "Aggiungi" });
+    i18n._({ id: "tab_members", message: "Membri" });
+    i18n._({ id: "modal_cloud_direct_invite", message: "Invito Diretto" });
+    i18n._({ id: "modal_cloud_invite_desc", message: "Inserisci l'email Google del collaboratore. Riceverà un'email con l'autorizzazione di accesso e un \"link magico\" per aprire l'archivio nell'app automaticamente." });
+    i18n._({ id: "btn_invite_email", message: "Invita tramite Email" });
+    i18n._({ id: "btn_manual_invite_code", message: "Invia manualmente il codice d'invito" });
+    i18n._({ id: "modal_cloud_members_desc", message: "Elenco di chi ha accesso a questo Archivio." });
+    i18n._({ id: "modal_cloud_auth_desc", message: "Accedi con il tuo account per sincronizzare questo Archivio." });
+    
+    i18n._({ id: "sidebar_source_control_desc", message: "Modifiche locali non ancora inviate al Cloud" });
+    i18n._({ id: "sidebar_pending_changes", message: "MODIFICHE PENDENTI" });
+    i18n._({ id: "sidebar_cloud_history", message: "Storico Cloud" });
+    i18n._({ id: "sidebar_cloud_history_desc", message: "Versioni salvate su Google Drive" });
+    i18n._({ id: "sidebar_cloud_revisions", message: "REVISIONI CLOUD" });
+    i18n._({ id: "tooltip_refresh_list", message: "Aggiorna lista" });
+    i18n._({ id: "sidebar_history_empty", message: "Apri questa sezione per vedere lo storico." });
+    i18n._({ id: "sidebar_manage_archives", message: "Gestisci archivi..." });
+
+
+    i18n._({ id: "modal_docs_title", message: "Documentazione e Aiuto" });
+    i18n._({ id: "modal_media_title", message: "Visualizzatore Multimediale" });
+    i18n._({ id: "modal_unsaved_title", message: "Modifiche non salvate" });
+    i18n._({ id: "modal_unsaved_desc", message: "Hai delle modifiche non salvate" });
+    i18n._({ id: "btn_save_exit", message: "Salva ed esci" });
+    i18n._({ id: "btn_exit_nosave", message: "Esci senza salvare" });
+    i18n._({ id: "modal_conflict_title", message: "Conflitto di Sincronizzazione" });
+    i18n._({ id: "modal_conflict_desc", message: "La scheda è stata modificata sia da te che da un altro utente" });
+    i18n._({ id: "btn_keep_local", message: "Mantieni versione Locale" });
+    i18n._({ id: "btn_keep_remote", message: "Mantieni versione Remota" });
+    i18n._({ id: "modal_del_conflict_title", message: "Conflitto di Eliminazione" });
+    i18n._({ id: "modal_del_conflict_desc", message: "Questa scheda è stata modificata da un altro utente" });
+    i18n._({ id: "btn_force_delete", message: "Forza Eliminazione" });
+
+    i18n._({ id: "tooltip_source_control", message: "Controllo Modifiche (Source Control)" });
+    i18n._({ id: "tooltip_history", message: "Storico Versioni Cloud" });
+    i18n._({ id: "tooltip_cloud_updates", message: "Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica." });
+    i18n._({ id: "indicator_incoming", message: "In Entrata" });
+    i18n._({ id: "tooltip_pending_changes", message: "Hai modifiche locali non ancora sincronizzate con il Cloud" });
+    i18n._({ id: "indicator_pending", message: "Modifiche Pendenti" });
+    i18n._({ id: "tooltip_fetch", message: "Controlla se ci sono aggiornamenti dal Cloud" });
+    i18n._({ id: "btn_fetch", message: "Fetch" });
+    i18n._({ id: "tooltip_pull", message: "Scarica le ultime modifiche dal Cloud" });
+    i18n._({ id: "tooltip_push", message: "Carica le modifiche locali sul Cloud" });
+    i18n._({ id: "tooltip_tutorial", message: "Avvia Tutorial" });
+
+    i18n._({ id: "modal_cloud_title", message: "Gestione Condivisione (Cloud)" });
+    i18n._({ id: "modal_cloud_connect", message: "Connetti questo Archivio" });
+    i18n._({ id: "modal_cloud_desc", message: "Se questo archivio locale non è ancora collegato al Cloud, puoi farlo ora." });
+    i18n._({ id: "modal_cloud_drive", message: "Condivisione Google Drive" });
+    i18n._({ id: "modal_cloud_drive_desc", message: "Crea o collega un Archivio Condiviso su Google Drive." });
+    i18n._({ id: "modal_cloud_drive_btn", message: "Crea / Connetti a Drive" });
+    i18n._({ id: "modal_cloud_control", message: "Pannello di Controllo" });
+    i18n._({ id: "btn_add_member", message: "Aggiungi Membro" });
+    i18n._({ id: "btn_clean_ghosts", message: "Pulizia File Fantasma" });
+    i18n._({ id: "modal_cloud_manual", message: "Condivisione Manuale" });
+    i18n._({ id: "btn_copy_code", message: "Copia Codice" });
+    i18n._({ id: "msg_operation_progress", message: "Operazione in corso" });
+    i18n._({ id: "msg_please_wait", message: "Attendere prego..." });
+    i18n._({ id: "modal_cloud_auth", message: "Autenticazione Cloud" });
+    i18n._({ id: "btn_login_google", message: "Accedi con Google" });
+    i18n._({ id: "label_email", message: "Indirizzo Email" });
+    i18n._({ id: "btn_send_invite", message: "Invia Invito" });
+
+    i18n._({ id: "modal_delete_title", message: "Conferma Eliminazione" });
+    i18n._({ id: "modal_delete_warning", message: "Attenzione: questa azione è irreversibile." });
+    i18n._({ id: "modal_delete_desc", message: "Sei sicuro di voler eliminare" });
+    i18n._({ id: "btn_delete", message: "Elimina" });
+
+    i18n._({ id: "modal_folder_title", message: "Gestione Archivi" });
+    i18n._({ id: "modal_folder_new", message: "Crea Nuovo Archivio" });
+    i18n._({ id: "modal_folder_recent", message: "Archivi Recenti" });
+
+    i18n._({ id: "modal_rename_title", message: "Rinomina" });
+    i18n._({ id: "modal_rename_desc", message: "Inserisci il nuovo nome:" });
+
+    i18n._({ id: "modal_manage_types_title", message: "Gestione Modelli Documento" });
+    i18n._({ id: "btn_create_model", message: "Crea Nuovo Modello" });
+    i18n._({ id: "modal_manage_types_default", message: "Modelli Predefiniti" });
+    i18n._({ id: "modal_manage_types_custom", message: "I tuoi Modelli" });
+
+    i18n._({ id: "modal_changelog_title", message: "Novità in ArchiView" });
+
     i18n._({ id: "btn_edit", message: "Modifica" });
     i18n._({ id: "btn_transcribe", message: "Trascrivi" });
     i18n._({ id: "btn_add_dynamic", message: "Aggiungi" });
@@ -214,6 +366,12 @@ function _linguiExtraction() {
     i18n._({ id: "msg_transcription_saved", message: "Trascrizione salvata con successo." });
     i18n._({ id: "msg_attachment_error", message: "Impossibile caricare l'allegato." });
 
+    i18n._({ id: "no_tags_found", message: "Nessun tag disponibile" });
+    i18n._({ id: "no_attached_docs", message: "Nessun documento allegato" });
+    i18n._({ id: "no_workspace_set", message: "Nessun archivio impostato" });
+    i18n._({ id: "btn_pull", message: "Scarica" });
+    i18n._({ id: "btn_push", message: "Invia" });
+
     i18n._({ id: "msg_new_version_avail", message: "È disponibile la nuova versione" });
     i18n._({ id: "msg_current_version", message: "attuale:" });
     i18n._({ id: "btn_download_update", message: "Scarica Aggiornamento" });
@@ -289,7 +447,163 @@ function _linguiExtraction() {
 }
 
 // Wrapper per compatibilità con il codice esistente
+const customEn = {
+    "msg_export_success_count": "Export of {var0} records completed successfully!",
+    "msg_import_success_count": "{var0} records imported successfully!",
+    "msg_delete_count": "{var0} records deleted.",
+    "msg_copied_count": "{var0} records copied to ArchiView clipboard. Right click to paste in another archive.",
+    "msg_cut_count": "{var0} records cut. Right click to move them to another archive.",
+    "msg_folder_copied": "Folder copied. Right click on another folder to paste it.",
+    "msg_impossible_open_folder": "Cannot open folder in File Explorer.",
+    "msg_folder_cut": "Folder cut. Right click to move it.",
+    "msg_record_copied": "Record copied. Right click to paste it into a folder.",
+    "msg_record_cut": "Record cut. Right click to move it to another archive.",
+    "msg_archive_moved_success": "Archive moved successfully!",
+    "msg_copied_archive_empty": "The copied archive is empty.",
+    "msg_archive_dup_success": "Archive duplicated successfully ({var0} records)!",
+    "msg_records_moved_success": "{var0} records moved successfully!",
+    "msg_records_dup_success": "{var0} records duplicated successfully!",
+    "msg_undone_action": "Undone: {var0}",
+    "msg_removing_in_progress": "Removing {var0}...",
+    "msg_removed_success": "{var0} was removed successfully.",
+    "msg_error_during_remove": "Error during removal: {var0}",
+    "msg_invite_sent_success": "Invite sent successfully to {var0}!",
+    "msg_cleanup_completed": "Cleanup completed! Files removed: {var0} local, {var1} on Drive.",
+    "msg_l_archivio_stato_sincro": "The archive has been synced in real-time.",
+    "msg_benvenuto_nell_archivio_c": "Welcome to the Shared Archive! Sign in to Google Drive to download data.",
+    "msg_esportazione_completata_c": "Export completed successfully!",
+    "msg_errore_in_esportazione": "Error during export: ",
+    "msg_l_archivio_vuoto_nulla_da": "The archive is empty, nothing to export.",
+    "msg_errore_in_importazione": "Error during import: ",
+    "msg_errore_in_duplicazione_ar": "Error during archive duplication: ",
+    "msg_errore_in_incolla": "Error pasting: ",
+    "msg_nessuna_azione_da_annulla": "No actions to undo.",
+    "msg_errore_durante_l_annullam": "Error during undo.",
+    "msg_il_documento_corrente_sta": "The current document was deleted by another user.",
+    "msg_caricamento_revisione": "Loading revision...",
+    "msg_revisione_vuota_o_non_val": "Empty or invalid revision.",
+    "msg_nessuna_differenza_rispet": "No difference compared to the current version.",
+    "msg_errore_nel_caricamento_de": "Error loading revision: ",
+    "msg_vault_ripristinato_alla_v": "\u2705 Vault restored to the selected version!",
+    "msg_errore_durante_il_riprist": "Error during restore: ",
+    "msg_segnalazione_inviata_con_": "Report sent successfully!",
+    "msg_errore_durante_l_invio_de": "Error sending report.",
+    "msg_errore_di_rete_durante_l_": "Network error during send.",
+    "msg_funzionalit_non_disponibi": "Feature not available.",
+    "msg_errore": "Error: ",
+    "msg_dlg_cambia_account_google": "Change Google Account",
+    "msg_dlg_questo_forzer_l_uso_d": "This will force the use of a specific Google account ONLY for this Archive. Do you want to proceed?",
+    "msg_codice_copiato_negli_appu": "Code copied to clipboard!",
+    "msg_errore_durante_la_pulizia": "Error during cleanup: ",
+    "msg_sincronizzazione_annullat": "Sync cancelled. Restoring local version.",
+    "msg_nessuna_modifica_rilevata": "No changes detected in main fields.",
+    "msg_autenticazione_e_ricerca_": "Authenticating and searching for archives...",
+    "msg_errore_cloud": "Cloud Error: ",
+    "msg_compila_tutti_i_campi": "Please fill all fields.",
+    "msg_connessione_all_archivio_": "Connecting to Archive...",
+    "msg_connesso_con_successo_ria": "Connected successfully! Restarting...",
+    "msg_scaricamento_archivio": "Downloading archive...",
+    "msg_nessun_database_trovato_n": "No database found in the selected Archive.",
+    "msg_archivio_scaricato_selezi": "Archive downloaded! Select where to save it on your PC.",
+    "msg_archivio_ripristinato_con": "Archive restored successfully! Restarting...",
+    "msg_attenzione_l_allegato_pot": "Warning: the attachment might be corrupted or modified (Hash mismatch).",
+    "msg_ci_sono_nuovi_aggiornamen": "There are new updates to download!",
+    "msg_nessun_nuovo_aggiornament": "No new updates found.",
+    "msg_errore_durante_il_fetch": "Error during fetch: ",
+    "msg_apri_il_browser_per_compl": "Open browser to complete sign-in...",
+    "msg_autenticazione_completata": "Authentication completed!",
+    "msg_errore_durante_l_autentic": "Error during authentication",
+    "msg_disconnesso_da_google_dri": "Disconnected from Google Drive.",
+    "msg_sincronizzazione_completa": "Sync completed successfully!",
+    "msg_conflitto_sul_cloud_un_al": "Cloud conflict: another user saved. Auto-merging...",
+    "msg_conflitto_risolto_sincron": "Conflict resolved! Sync completed safely.",
+    "msg_errore_durante_la_risoluz": "Error during conflict resolution: ",
+    "msg_errore_durante_la_sincron": "Error during sync: ",
+    "msg_scaricamento_completato": "Download completed!",
+    "msg_errore_durante_lo_scarica": "Error downloading: ",
+    "msg_caricamento_completato_in": "Upload completed safely!",
+    "msg_conflitto_risolto_caricam": "Conflict resolved! Upload completed safely.",
+    "msg_errore_durante_il_caricam": "Error uploading: ",
+    "msg_l_archivio_ora_scollegato": "The Archive is now unlinked and strictly local.",
+    "msg_errore_durante_la_disconn": "Error disconnecting from cloud: ",
+    "msg_questo_archivio_non_colle": "This archive is not connected to a Hub repository.",
+    "msg_ricezione_modifiche_dall_": "Receiving changes from Hub...",
+    "msg_nessuna_nuova_modifica_su": "No new changes on server. You are up to date.",
+    "msg_dati_scaricati_e_fusi_con": "Data downloaded and merged locally successfully.",
+    "msg_attenzione_rilevati_confl": "Warning: Sync conflicts detected from server. Click 'Receive' to resolve.",
+    "msg_attenzione_alcuni_file_so": "Warning: Some files were deleted on the server. Click 'Receive' to check.",
+    "msg_dati_sincronizzati_automa": "Data automatically synced from server.",
+    "msg_invio_modifiche_al_server": "Sending changes to server...",
+    "msg_il_server_contiene_modifi": "The server has more recent changes. Use 'Receive' to update your archive before sending.",
+    "msg_modifiche_inviate_con_suc": "Changes sent successfully!",
+    "msg_sincronizzazione": "Syncing...",
+    "msg_connessione_al_repository": "Connecting to repository...",
+    "msg_seleziona_il_percorso_in_": "Select the path to download the archive.",
+    "msg_archivio_clonato_con_succ": "Archive cloned successfully! Restarting...",
+    "msg_impostazioni_cloud_salvat": "Cloud settings saved.",
+    "msg_nome_collaboratore_salvat": "Collaborator name saved.",
+    "msg_directory_allegati_locale": "Local attachments directory configured successfully.",
+    "msg_la_directory_degli_allega": "The attachments directory was reset to its default (inside the archive).",
+    "dialog_select_folder": "Select the location for the new folder",
+    "dialog_export_zip": "Export Backup as ZIP",
+    "dialog_import_zip": "Import JSON Archive",
+    "btn_procedi": "Proceed",
+    "modal_folder_title": "Archives Management",
+    "welcome_desc_gestione": "Choose a destination folder to create a new independent archive, or select an existing archive to load its data.",
+    "btn_open_local": "Open Local Archive",
+    "btn_create_local": "Create New Local Folder",
+    "btn_create_cloud_private": "Create a Private Cloud Archive",
+    "btn_create_shared": "Create a Shared Archive",
+    "btn_join_shared": "Join a Shared Archive",
+    "btn_restore_drive": "Restore from Google Drive...",
+    "label_archive_name": "Archive Name",
+    "placeholder_archive_name": "E.g. Manuscripts Archive",
+    "label_position": "Location",
+    "btn_browse": "Browse...",
+    "btn_go_back": "Go Back",
+    "btn_create_and_start": "Create and Start",
+    "welcome_desc_join": "By joining via code you will access a shared Cloud on the original creator's Google Drive. Any local changes will sync directly with the other members.",
+    "label_invite_code": "Invite Code",
+    "placeholder_invite_code": "Paste the code here...",
+    "label_archive_name_colon": "Archive Name:",
+    "label_local_archive_pos": "Local archive location",
+    "btn_connect": "Connect",
+    "title_select_cloud_archive": "Select an Archive from the Cloud",
+    "msg_no_archive_found_drive": "No Archive found in the ArchiView folder on your Drive.",
+    "label_modified": "Modified:",
+    "btn_search_everywhere": "Search Everywhere",
+    "title_search_everywhere": "If you don't see your archive, search all of Drive",
+    "prog_prep_title": "Preparation in progress",
+    "prog_prep_auth": "Authenticating with Google Drive...",
+    "prog_conf_title": "Configuration in progress",
+    "prog_conf_shared": "Setting up Archive as shared...",
+    "prog_sync_title": "Syncing",
+    "prog_sync_merge": "Uploading and merging data on Cloud (this may take a while)...",
+    "prog_conf_backup": "Setting up Personal Backup...",
+    "prog_disc_title": "Disconnecting",
+    "prog_disc_desc": "Disabling Cloud synchronization...",
+    "prog_auth_title": "Authentication in progress",
+    "prog_auth_desc1": "Sign in with your desired Google account in the browser...",
+    "prog_auth_desc2": "Sign in with the new account in the browser...",
+    "prog_invite_title": "Sending invite",
+    "prog_invite_desc": "Assigning permissions on Google Drive...",
+    "prog_prep_cloud": "Starting cloud configuration...",
+    "confirm_disc_cloud": "Do you really want to disconnect this Archive from the Cloud? The data will remain saved on your computer, but will no longer be synced online and the app will return to local-only mode.",
+    "confirm_pull_no_fetch": "Warning: you are about to download changes from the Cloud without verifying what they are (Fetch) first. Proceed anyway?",
+    "confirm_disc_cloud_short": "Do you really want to disconnect this Archive from the Cloud?\nData will remain saved on your computer, but will no longer be synced online.",
+    "confirm_join_shared": "Do you want to close the current Archive to join a new Shared Archive? Unsaved local changes may be lost.",
+    "confirm_delete_multiple": "Are you sure you want to delete the {var0} selected records? This operation is irreversible.",
+    "confirm_delete_single": "Are you sure you want to delete this record? This operation is irreversible.",
+    "confirm_delete_multiple_cloud": "You deleted {var0} records from your archive. Are you sure you want to permanently delete them from the shared cloud as well?",
+    "confirm_delete_single_cloud": "You deleted a record from your archive. Are you sure you want to permanently delete it from the shared cloud as well?",
+    "confirm_delete_archive_empty": "Are you sure you want to delete the archive \"{var0}\"? All empty sub-archives will be removed.",
+    "confirm_delete_archive_with_docs": "The archive \"{var0}\" contains {var1} documents. Deleting it will also delete all documents inside it. Do you want to proceed?",
+    "confirm_delete_model": "Are you sure you want to delete this model?",
+    "confirm_tutorial_demo": "You are about to load the Demo archive. The current archive will be closed. Do you want to proceed?"
+};
+
 window.t = function(key, fallback) {
+    if (window.linguaAttuale === 'en' && customEn[key]) return customEn[key];
     const res = i18n._({ id: key });
     if (res === key && fallback) return fallback;
     return res;
@@ -313,7 +627,7 @@ window.applicaTraduzioniHtml = function() {
     // Sostituisce il testo (innerHTML)
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        el.innerHTML = window.t(key);
+        el.innerHTML = window.sanitizeHTML(window.t(key));
     });
 
     // Sostituisce il title

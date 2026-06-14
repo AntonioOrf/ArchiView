@@ -22,7 +22,7 @@
                     <i data-lucide="info" class="w-3 h-3"></i> Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle.
                 </p>
                 <div class="modal-footer mt-6 pt-4 border-t border-stone-100 flex justify-end gap-2">
-                    <button onclick="chiudiFolderModal()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
+                    <button onclick="chiudiFolderModal()" class="btn btn-ghost" data-i18n="btn_cancel"><span data-i18n="btn_cancel">Annulla</span></button>
                     <button onclick="confermaAggiungiCartella()" class="btn btn-primary shadow-sm" data-i18n="btn_create_folder">Crea Cartella</button>
                 </div>
             </div>
@@ -30,6 +30,7 @@
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
         }
     });
 })();

@@ -118,9 +118,9 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
 
     const nomeVisivo = pathDaEliminare.split('/').pop();
 
-    let messaggioConferma = `Sei sicuro di voler eliminare l'archivio "${nomeVisivo}"? Tutti i sotto-archivi vuoti verranno rimossi.`;
+    let messaggioConferma = window.t("confirm_delete_archive_empty", "Sei sicuro di voler eliminare l\'archivio \"{var0}\"? Tutti i sotto-archivi vuoti verranno rimossi.").replace("{var0}", String(nomeVisivo));
     if (haManoscritti) {
-        messaggioConferma = `L'archivio "${nomeVisivo}" contiene ${manoscrittiDaEliminare.length} documenti. Eliminandolo, verranno eliminati anche tutti i documenti al suo interno. Vuoi procedere?`;
+        messaggioConferma = window.t("confirm_delete_archive_with_docs", "L\'archivio \"{var0}\" contiene {var1} documenti. Eliminandolo, verranno eliminati anche tutti i documenti al suo interno. Vuoi procedere?").replace("{var0}", String(nomeVisivo)).replace("{var1}", String(manoscrittiDaEliminare.length));
     }
 
     window.mostraBottomConfirm(messaggioConferma, async () => {

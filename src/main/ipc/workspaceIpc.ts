@@ -105,9 +105,9 @@ function setupWorkspaceIpc() {
     return app.getPath('documents');
   });
 
-  ipcMain.handle('select-base-directory', async () => {
+  ipcMain.handle('select-base-directory', async (event, titleDialog) => {
     const result = await dialog.showOpenDialog({
-      title: "Seleziona la posizione per la nuova cartella",
+      title: titleDialog || "Seleziona la posizione per la nuova cartella",
       properties: ['openDirectory']
     });
     if (!result.canceled && result.filePaths.length > 0) {

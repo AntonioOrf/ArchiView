@@ -13,14 +13,15 @@
                 <label class="form-label" data-i18n="label_new_filename">Nuovo nome del file</label>
                 <input type="text" id="rename-input" class="form-input" onkeydown="if(event.key === 'Enter') { event.preventDefault(); confermaRinomina(); }">
                 <div class="modal-footer">
-                    <button onclick="chiudiRenameModal()" class="btn btn-ghost">Annulla</button>
-                    <button onclick="confermaRinomina()" class="btn btn-primary" data-i18n="btn_save">Salva</button>
+                    <button onclick="chiudiRenameModal()" class="btn btn-ghost"><span data-i18n="btn_cancel">Annulla</span></button>
+                    <button onclick="confermaRinomina()" class="btn btn-primary" data-i18n="btn_save"><span data-i18n="btn_save">Salva</span></button>
                 </div>
             </div>
         </div>
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
         }
     });
 })();

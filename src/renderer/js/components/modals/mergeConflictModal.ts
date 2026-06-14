@@ -32,6 +32,7 @@
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
         }
     }
 
@@ -68,13 +69,13 @@
 
     window.annullaSincronizzazioneConflitto = function() {
         document.getElementById('merge-conflict-modal').classList.add('hidden-tab');
-        mostraMessaggio("Sincronizzazione annullata. Ripristino versione locale.", "warning");
+        mostraMessaggio(window.t("msg_sincronizzazione_annullat", "Sincronizzazione annullata. Ripristino versione locale."), "warning");
         if (onResolvedCallback) onResolvedCallback(null); // Segnala l'annullamento
     };
 
     function renderConflictList() {
         const container = document.getElementById('conflict-list');
-        container.innerHTML = '';
+        container.innerHTML = window.sanitizeHTML('');
 
         activeConflicts.forEach((c, index) => {
             const isSelected = index === currentConflictIndex;
@@ -96,17 +97,17 @@
                 ? '<span class="text-[9px] uppercase tracking-wider font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full self-start">Risolto</span>'
                 : `<span class="text-[9px] uppercase tracking-wider font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full self-start">${c.campiConflitto.length - resolvedFields[c.id].size} in sospeso</span>`;
 
-            div.innerHTML = `
+            div.innerHTML = window.sanitizeHTML(`
                 <div class="font-semibold text-sm text-stone-800 truncate" title="${escapeHTML(c.segnatura)}">${escapeHTML(c.segnatura)}</div>
                 ${badgeHtml}
-            `;
+            `);
             container.appendChild(div);
         });
     }
 
     function renderConflictDetail() {
         const container = document.getElementById('conflict-detail');
-        container.innerHTML = '';
+        container.innerHTML = window.sanitizeHTML('');
 
         if (activeConflicts.length === 0) return;
 
@@ -116,10 +117,10 @@
 
         const headerDiv = document.createElement('div');
         headerDiv.className = 'mb-4 pb-2 border-b border-stone-200';
-        headerDiv.innerHTML = `
+        headerDiv.innerHTML = window.sanitizeHTML(`
             <h4 class="text-lg font-serif text-stone-800 mb-1">${escapeHTML(c.segnatura)}</h4>
             <p class="text-xs text-stone-500">Seleziona la versione corretta per ciascun campo modificato da entrambi gli utenti.</p>
-        `;
+        `);
         container.appendChild(headerDiv);
 
         c.campiConflitto.forEach(campo => {
@@ -141,7 +142,7 @@
             let localStr = renderValoreCampo(localVal, campo);
             let externalStr = renderValoreCampo(externalVal, campo);
 
-            fieldDiv.innerHTML = `
+            fieldDiv.innerHTML = window.sanitizeHTML(`
                 <div class="font-bold text-xs uppercase tracking-wider text-amber-700 mb-3 flex items-center justify-between">
                     <span>${escapeHTML(conf.label || campo)}</span>
                     ${isResolved ? '<span class="text-green-700 text-[10px] flex items-center gap-0.5"><i data-lucide="check-circle" class="w-3 h-3"></i> Scelta registrata</span>' : ''}
@@ -177,7 +178,7 @@
                         }">Usa questa</button>
                     </div>
                 </div>
-            `;
+            `);
             container.appendChild(fieldDiv);
         });
 

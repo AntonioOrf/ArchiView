@@ -87,7 +87,7 @@ window.salvaImpostazioniDrive = async function() {
         }
     }
     
-    mostraMessaggio("Impostazioni Cloud Salvate", "success");
+    mostraMessaggio(window.t("msg_impostazioni_cloud_salvat", "Impostazioni Cloud Salvate"), "success");
 };
 
 // Popola i campi all'avvio

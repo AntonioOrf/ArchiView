@@ -27,7 +27,7 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
 
     if (cambiamenti.length === 0) {
         if (typeof window.mostraMessaggio === 'function') {
-            window.mostraMessaggio("Nessuna modifica rilevata nei campi principali.", "info");
+            window.mostraMessaggio(window.t("msg_nessuna_modifica_rilevata", "Nessuna modifica rilevata nei campi principali."), "info");
         }
         return;
     }

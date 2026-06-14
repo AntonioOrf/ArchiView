@@ -103,14 +103,14 @@
         if (window.apiBrowser && window.apiBrowser.inviaSegnalazione) {
             window.apiBrowser.inviaSegnalazione(payload).then(response => {
                 if(response.ok) {
-                    if (window.mostraMessaggio) window.mostraMessaggio("Segnalazione inviata con successo!", "success");
+                    if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_segnalazione_inviata_con_", "Segnalazione inviata con successo!"), "success");
                 } else {
                     console.error("Errore FormSubmit:", response);
-                    if (window.mostraMessaggio) window.mostraMessaggio("Errore durante l'invio della segnalazione.", "error");
+                    if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_errore_durante_l_invio_de", "Errore durante l'invio della segnalazione."), "error");
                 }
             }).catch(err => {
                 console.error(err);
-                if (window.mostraMessaggio) window.mostraMessaggio("Errore di rete durante l'invio.", "error");
+                if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_errore_di_rete_durante_l_", "Errore di rete durante l'invio."), "error");
             }).finally(() => {
                 button.textContent = oldText;
                 button.disabled = false;
@@ -121,7 +121,7 @@
             button.textContent = oldText;
             button.disabled = false;
             window.chiudiIssueModal();
-            if (window.mostraMessaggio) window.mostraMessaggio("Funzionalità non disponibile", "error");
+            if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_funzionalit_non_disponibi", "Funzionalità non disponibile"), "error");
         }
     };
 })();

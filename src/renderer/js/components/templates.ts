@@ -300,7 +300,7 @@ window.modalsHtml = `
                     <label for="bottom-confirm-skip" class="text-sm text-stone-600 cursor-pointer select-none" data-i18n="dont_ask_again">Non chiederlo più</label>
                 </div>
                 <div class="modal-footer justify-center mt-2">
-                    <button onclick="window.chiudiBottomConfirm()" class="btn btn-ghost text-sm">Annulla</button>
+                    <button onclick="window.chiudiBottomConfirm()" class="btn btn-ghost text-sm" data-i18n="btn_cancel">Annulla</button>
                     <button id="btn-bottom-confirm-yes" class="btn btn-danger text-sm shadow-md" data-i18n="btn_yes_proceed">Sì, procedi</button>
                 </div>
             </div>

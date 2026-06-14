@@ -124,22 +124,33 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle('invia-segnalazione', async (event, payload) => {
-    try {
-      const response = await net.fetch('https://formsubmit.co/ajax/9267297c79d548e052d348548565a2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Referer': 'https://archiview.app',
-          'Origin': 'https://archiview.app'
-        },
-        body: JSON.stringify(payload)
-      });
-      return { ok: response.ok, status: response.status, text: await response.text() };
-    } catch (e) {
-      console.error('Errore invio segnalazione:', e);
-      return { ok: false, error: e.message };
+    let lastError = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const response = await net.fetch('https://formsubmit.co/ajax/9267297c79d548e052d348548565a2fa', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Referer': 'https://archiview.app',
+              'Origin': 'https://archiview.app',
+              'User-Agent': 'ArchiView-Desktop-App/1.0'
+            },
+            body: JSON.stringify(payload)
+          });
+          if (response.ok) {
+              return { ok: true, status: response.status, text: await response.text() };
+          } else {
+              lastError = { ok: false, status: response.status, text: await response.text() };
+          }
+        } catch (e) {
+          lastError = { ok: false, error: e.message };
+        }
+        // Attendi prima del retry (es: 1s, 2s)
+        await new Promise(res => setTimeout(res, attempt * 1000));
     }
+    console.error('Errore invio segnalazione dopo 3 tentativi:', lastError);
+    return lastError;
   });
 
   createWindow();

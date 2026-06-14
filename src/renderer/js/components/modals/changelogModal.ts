@@ -9,7 +9,7 @@
                         <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-800">
                             <h3 class="modal-title">
                                 <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
-                                <span>Novità della Versione 2.2.0</span>
+                                <span>Novità della Versione 2.2.1</span>
                             </h3>
                             <button type="button" onclick="chiudiChangelogModal()" class="btn btn-ghost btn-icon">
                                 <i data-lucide="x" class="w-5 h-5"></i>
@@ -34,8 +34,10 @@
                             </div>
 
                             <div>
-                                <h4 class="font-semibold text-lg border-b border-stone-200 dark:border-stone-700 pb-2 mb-3">Miglioramenti all'Interfaccia</h4>
+                                <h4 class="font-semibold text-lg border-b border-stone-200 dark:border-stone-700 pb-2 mb-3">Miglioramenti all'Interfaccia e Bugfixes</h4>
                                 <ul class="list-disc pl-5 space-y-2 text-sm">
+                                    <li><strong class="text-stone-900 dark:text-stone-100">Risoluzione Lingua [2.2.1]:</strong> Traduzione completa in lingua inglese (inclusi i modali, i menu contestuali, le conferme di eliminazione e i popup del Pannello Cloud) supportando dinamicamente le variabili utente.</li>
+                                    <li><strong class="text-stone-900 dark:text-stone-100">Fix Contrasto Visivo [2.2.1]:</strong> Risolto il problema di scarsa leggibilità del testo nelle sezioni Cloud del tema chiaro (Clear Blue).</li>
                                     <li><strong class="text-stone-900 dark:text-stone-100">Riprogettazione Pannello Cloud:</strong> Nuovo layout a due colonne per un'esperienza utente più intuitiva nella creazione e partecipazione agli archivi condivisi.</li>
                                     <li><strong class="text-stone-900 dark:text-stone-100">Storico Versioni:</strong> Integrazione di moduli informativi nel tutorial iniziale per illustrare il funzionamento del tracciamento cloud.</li>
                                     <li>Ottimizzazione delle animazioni e del bilanciamento visivo all'interno dei componenti modali.</li>
@@ -59,6 +61,7 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
         }
     });
 

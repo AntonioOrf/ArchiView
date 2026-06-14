@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Gestionale per manoscritti medievali",
   "author": "Antonio Orf",
   "repository": {
@@ -25,6 +25,7 @@
     "directories": {
       "output": "dist"
     },
+    "icon": "assets/icon.ico",
     "files": [
       "out/**/*",
       "assets/**/*",
@@ -35,11 +36,14 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "displayLanguageSelector": true,
       "license": "build/license.txt",
+      "include": "build/installer.nsh",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "${productName}-Setup-${version}.${ext}"

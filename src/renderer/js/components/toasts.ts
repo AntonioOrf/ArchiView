@@ -18,7 +18,7 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null) {
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'flex items-center gap-2';
-    contentDiv.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i> <span>${escapeHTML(testo)}</span>`;
+    contentDiv.innerHTML = window.sanitizeHTML(`<i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i> <span>${escapeHTML(testo)}</span>`);
     toast.appendChild(contentDiv);
 
     let dismissTimeout;
