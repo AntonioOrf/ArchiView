@@ -4,6 +4,7 @@ node_modules/
 dist/
 build/*
 !build/license.txt
+!build/installer.nsh
 out/
 .env
 .DS_Store
