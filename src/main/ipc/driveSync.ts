@@ -4,10 +4,11 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 const { state, initWorkspace, getAllSettings, saveAllSettings } = require('../workspaceManager');
+const { splitFileIntoChunks, assembleFileFromChunks } = require('../chunkingLogic');
 
 const REDIRECT_URI = 'http://localhost:3456/oauth2callback';
 
-const SCOPES = ['https://www.googleapis.com/auth/drive'];
+const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
 function getGlobalTokenPath() {
   return path.join(app.getPath('userData'), 'google-drive-tokens-global.json');
@@ -15,7 +16,23 @@ function getGlobalTokenPath() {
 
 function getLocalTokenPath() {
   if (!state.workspacePath) return null;
-  return path.join(state.workspacePath, '.drive-tokens.json');
+  return path.join(state.workspacePath, '.archiview-chunks', '.credentials.json');
+}
+
+function logAuthEvent(message) {
+    let logPath;
+    if (state.workspacePath) {
+        logPath = path.join(state.workspacePath, '.archiview-chunks', 'auth_debug.log');
+        const dir = path.dirname(logPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    } else {
+        logPath = path.join(app.getPath('userData'), 'auth_debug.log');
+    }
+    const timestamp = new Date().toISOString();
+    const formattedMessage = `[${timestamp}] ${message}\n`;
+    try {
+        fs.appendFileSync(logPath, formattedMessage);
+    } catch(e) {}
 }
 
 let localServer = null;
@@ -43,6 +60,37 @@ function initGoogle() {
     const { google } = require('googleapis');
     googleInstance = google;
     oauth2Client = new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
+    
+    // Ascolta il refresh automatico dei token e salvali
+    oauth2Client.on('tokens', (tokens) => {
+        let currentTokens = {};
+        const localPath = getLocalTokenPath();
+        const globalPath = getGlobalTokenPath();
+        let targetPath = null;
+
+        // Se siamo in un workspace, DEVE sempre salvare localmente!
+        if (state.workspacePath && localPath) {
+            targetPath = localPath;
+            if (fs.existsSync(localPath)) {
+                try { currentTokens = JSON.parse(fs.readFileSync(localPath, 'utf8')); } catch(e){}
+            }
+        } else {
+            // Solo se NON c'è un workspace attivo, usiamo il path globale
+            targetPath = globalPath;
+            if (fs.existsSync(globalPath)) {
+                try { currentTokens = JSON.parse(fs.readFileSync(globalPath, 'utf8')); } catch(e){}
+            }
+        }
+
+        if (targetPath) {
+            const mergedTokens = { ...currentTokens, ...tokens };
+            const dir = path.dirname(targetPath);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(targetPath, JSON.stringify(mergedTokens, null, 2));
+            logAuthEvent("REFRESH TOKEN RICEVUTO: Salvato in " + targetPath);
+        }
+    });
+
     drive = google.drive({ version: 'v3', auth: oauth2Client });
   }
 }
@@ -52,27 +100,61 @@ function loadSavedTokens() {
     initGoogle();
   } catch (e) {
     console.warn("Google Drive disabilitato:", e.message);
+    logAuthEvent("ERRORE: initGoogle fallito in loadSavedTokens - " + e.message);
     return false;
   }
   
   let tokenPath;
   if (state.workspacePath) {
-      // Se c'è un workspace aperto, usa ESCLUSIVAMENTE il token locale di quell'archivio
       tokenPath = getLocalTokenPath();
+      // AUTO-MIGRAZIONE: Se locale non esiste, pesca dal globale
+      if (tokenPath && !fs.existsSync(tokenPath)) {
+          const globalPath = getGlobalTokenPath();
+          if (globalPath && fs.existsSync(globalPath)) {
+              try {
+                  const dir = path.dirname(tokenPath);
+                  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                  fs.copyFileSync(globalPath, tokenPath);
+                  logAuthEvent("AUTO-MIGRAZIONE SUCCESSO: Token globale copiato nel workspace corrente -> " + tokenPath);
+              } catch(e) {
+                  logAuthEvent("AUTO-MIGRAZIONE FALLITA: " + e.message);
+              }
+          } else {
+              logAuthEvent("ATTENZIONE: Nessun token locale e nessun token globale disponibile.");
+          }
+      }
   } else {
-      // Se non c'è workspace, usa il token globale
       tokenPath = getGlobalTokenPath();
   }
   
+  logAuthEvent("Tentativo lettura token da: " + tokenPath);
   if (tokenPath && fs.existsSync(tokenPath)) {
     try {
-      const tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
-      oauth2Client.setCredentials(tokens);
-      return true;
-    } catch (e) {
-      console.error('Errore nel caricamento dei token di Drive:', e);
+        const tokenData = fs.readFileSync(tokenPath, 'utf8');
+        const tokens = JSON.parse(tokenData);
+        
+        // Verifica che lo scope sia supportato
+        if (tokens.scope && typeof tokens.scope === 'string') {
+            const scopesArray = tokens.scope.split(' ');
+            const hasValidScope = scopesArray.includes('https://www.googleapis.com/auth/drive') || 
+                                  scopesArray.includes('https://www.googleapis.com/auth/drive.file') ||
+                                  scopesArray.includes('https://www.googleapis.com/auth/drive.appdata');
+            if (!hasValidScope) {
+                console.warn("Scope non valido, ma evito di eliminare il token.");
+                // Ritorniamo false per richiedere auth ma non cancelliamo
+                return false;
+            }
+        }
+        
+        oauth2Client.setCredentials(tokens);
+        logAuthEvent("Token letto e impostato con SUCCESSO. Scope: " + tokens.scope);
+        return true;
+    } catch(e) {
+        logAuthEvent("ERRORE LETTURA: " + e.message);
+        return false;
     }
   }
+  logAuthEvent("FALLIMENTO: Il file " + tokenPath + " non esiste.");
   return false;
 }
 
@@ -84,31 +166,28 @@ async function authenticateDrive(forceLocal = false) {
 
     if (!skipCheck && loadSavedTokens()) {
       try {
-        const res = await drive.about.get({ fields: 'user' });
-        if (res.data.user) {
-            // Verifica permessi sull'archivio specifico
-            let settings: any = {};
-            try { settings = getAllSettings(); } catch(e) {}
-            if (state.workspacePath && settings.sharedVaultId) {
-                try {
-                    await drive.files.get({ fileId: settings.sharedVaultId, fields: 'id' });
-                } catch (err: any) {
-                    if (err.message && err.message.includes("File not found")) {
-                        const localPath = getLocalTokenPath();
-                        if (isLocalContext && localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
-                        if (oauth2Client) oauth2Client.setCredentials(null);
-                        return reject(new Error("L'account salvato non è più presente tra i collaboratori. Effettua nuovamente l'accesso."));
-                    }
+        // Con scope drive.file, about.get fallisce con 403. 
+        // Proviamo una chiamata innocua come files.list per validare il token.
+        await drive.files.list({ pageSize: 1, spaces: 'drive' });
+        
+        // Verifica permessi sull'archivio specifico
+        let settings: any = {};
+        try { settings = getAllSettings(); } catch(e) {}
+        if (state.workspacePath && settings.sharedVaultId) {
+            try {
+                await drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
+            } catch (err: any) {
+                if (err.message && err.message.includes("File not found")) {
+                    // NON cancelliamo il token, potremmo non avere i permessi a causa di drive.file
+                    return reject(new Error("L'archivio condiviso non è accessibile. Se è stato creato da altri, richiedi di nuovo l'invito."));
                 }
             }
-            return resolve(true);
         }
-      } catch (e) {
-        console.warn("Token caricato ma non valido. Procedo con nuova autenticazione.");
-        const localPath = getLocalTokenPath();
-        if (isLocalContext && localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
-        const globalPath = getGlobalTokenPath();
-        if (!isLocalContext && globalPath && fs.existsSync(globalPath)) fs.unlinkSync(globalPath);
+        return resolve(true);
+        
+      } catch (e: any) {
+        console.warn("Token caricato ma API list fallita (Token forse scaduto o revocato).", e.message);
+        // NON eliminiamo il token, lasciamo che il nuovo login lo sovrascriva
       }
     }
 
@@ -129,11 +208,51 @@ async function authenticateDrive(forceLocal = false) {
     if (localServer) localServer.close();
 
     localServer = http.createServer(async (req, res) => {
+      let codeExtracted = false;
       try {
         const urlObj = new URL(req.url, `http://localhost:3456`);
         const code = urlObj.searchParams.get('code');
         
         if (code) {
+          codeExtracted = true;
+          console.log("DEBUG AUTH: Workspace Path is currently:", state.workspacePath);
+          
+          let tokens;
+          try {
+              console.log("DEBUG AUTH: Attempting token exchange with code:", code.substring(0, 10) + "...");
+              const response = await oauth2Client.getToken(code);
+              tokens = response.tokens;
+              console.log("DEBUG AUTH: Tokens received successfully! Scopes:", tokens.scope);
+          } catch (tokenErr) {
+              console.error("DEBUG AUTH ERROR - TOKEN EXCHANGE FAILED:", tokenErr);
+              throw tokenErr; // Propaghiamo l'errore al blocco catch principale
+          }
+          
+          oauth2Client.setCredentials(tokens);
+          
+          const win = require('electron').BrowserWindow.getAllWindows()[0];
+          if (win) {
+              win.webContents.send('drive-status-updated', { authenticated: true });
+          }
+          
+          // Ricalcoliamo il path ORA, perché state.workspacePath potrebbe essersi aggiornato!
+          const currentLocalPath = getLocalTokenPath();
+          if (currentLocalPath) {
+              const targetPath = currentLocalPath;
+              const dir = path.dirname(targetPath);
+              if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+              fs.writeFileSync(targetPath, JSON.stringify(tokens));
+              logAuthEvent("LOGIN MANUALE: Token FORZATO su LOCAL PATH -> " + targetPath);
+          } else {
+              const globalPath = getGlobalTokenPath();
+              if (globalPath) {
+                  const dir = path.dirname(globalPath);
+                  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                  fs.writeFileSync(globalPath, JSON.stringify(tokens));
+                  logAuthEvent("LOGIN MANUALE: Nessun workspace, salvato su GLOBAL PATH -> " + globalPath);
+              }
+          }
+          
           const successHtml = `
 <!DOCTYPE html>
 <html lang="it">
@@ -176,43 +295,35 @@ async function authenticateDrive(forceLocal = false) {
   </script>
 </body>
 </html>`;
-          res.end(successHtml);
-          localServer.close();
-          localServer = null;
           
-          const { tokens } = await oauth2Client.getToken(code);
-          oauth2Client.setCredentials(tokens);
-          
-          if (shouldForceLocal && getLocalTokenPath()) {
-              fs.writeFileSync(getLocalTokenPath(), JSON.stringify(tokens));
-          } else {
-              fs.writeFileSync(getGlobalTokenPath(), JSON.stringify(tokens));
-          }
-          
-          let settings: any = {};
-          try { settings = getAllSettings(); } catch(e) {}
-          if (state.workspacePath && settings.sharedVaultId) {
-              try {
-                  await drive.files.get({ fileId: settings.sharedVaultId, fields: 'id' });
-              } catch (err: any) {
-                  if (err.message && err.message.includes("File not found")) {
-                      const localPath = getLocalTokenPath();
-                      if (isLocalContext && localPath && fs.existsSync(localPath)) fs.unlinkSync(localPath);
-                      if (oauth2Client) oauth2Client.setCredentials(null);
-                      return reject(new Error("L'account selezionato non è presente tra i collaboratori. Usa l'account con cui sei stato invitato."));
-                  }
-              }
+          if (!res.headersSent) {
+              res.writeHead(200, { 'Content-Type': 'text/html' });
+              res.end(successHtml);
           }
           
           resolve(true);
         } else {
           const waitHtml = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>In Attesa - ArchiView</title><style>body { margin: 0; font-family: sans-serif; background-color: #fafaf9; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #1c1917; } .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e7e5e4; }</style></head><body><div class="card"><h2>In attesa di autenticazione...</h2><p>Completa il login su Google per continuare.</p></div></body></html>`;
-          res.end(waitHtml);
+          if (!res.headersSent) {
+              res.writeHead(200, { 'Content-Type': 'text/html' });
+              res.end(waitHtml);
+          }
         }
       } catch (e) {
+        console.error("Errore OAuth Server Locale:", e);
         const errHtml = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Errore - ArchiView</title><style>body { margin: 0; font-family: sans-serif; background-color: #fafaf9; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #1c1917; } .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e7e5e4; } h2 { color: #dc2626; margin-top:0; }</style></head><body><div class="card"><h2>Errore di Autenticazione</h2><p>Si è verificato un errore durante il login. Chiudi la scheda e riprova da ArchiView.</p></div></body></html>`;
-        res.end(errHtml);
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(errHtml);
+        }
         reject(e);
+      } finally {
+        if (codeExtracted) {
+            if (localServer) {
+                localServer.close();
+                localServer = null;
+            }
+        }
       }
     }).on('error', (err) => {
       console.error("Errore server locale:", err);
@@ -250,8 +361,11 @@ async function checkDriveStatus() {
       isAuthenticated: true, 
       user: res.data.user.emailAddress 
     };
-  } catch (e) {
-    return { isAuthenticated: false };
+  } catch (e: any) {
+    console.error("DEBUG AUTH checkDriveStatus API Call Failed:", e.message);
+    // Se la rete è down o lo scope drive.file non permette about.get,
+    // ma abbiamo i token locali validi, consideriamoci comunque autenticati.
+    return { isAuthenticated: true, user: 'Utente (Drive.file)' };
   }
 }
 
@@ -266,12 +380,23 @@ async function getOrCreateFolder(folderName, parentId = null) {
   }
 
   // Eseguiamo la ricerca
-  let res = await drive.files.list({ q, fields: 'files(id, name)' });
+  let res = await drive.files.list({ 
+      q, 
+      fields: 'files(id, name)',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true
+  });
   
   // Se non la trova, riproviamo cercando esplicitamente nei file condivisi con l'utente (utile se un altro account ha condiviso la cartella)
   if (res.data.files.length === 0 && !parentId) {
       const qShared = `name='${escapeDriveQuery(folderName)}' and mimeType='application/vnd.google-apps.folder' and trashed=false and sharedWithMe=true`;
-      const resShared = await drive.files.list({ q: qShared, spaces: 'drive', fields: 'files(id, name)' });
+      const resShared = await drive.files.list({ 
+          q: qShared, 
+          spaces: 'drive', 
+          fields: 'files(id, name)',
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true
+      });
       if (resShared.data.files.length > 0) {
           return resShared.data.files[0].id;
       }
@@ -299,26 +424,36 @@ async function uploadFile(localPath, driveFileName, parentId, skipIfExist = fals
   
   // Controlla se il file esiste
   const q = `name='${escapeDriveQuery(driveFileName)}' and '${parentId}' in parents and trashed=false`;
-  const res = await drive.files.list({ q, fields: 'files(id)' });
+  const res = await drive.files.list({ 
+      q, 
+      fields: 'files(id)',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true
+  });
   
   if (res.data.files.length > 0) {
     if (skipIfExist) return; // Ottimizzazione: non ricaricare allegati già presenti
     const fileId = res.data.files[0].id;
     const media = { mimeType: mimeType, body: fs.createReadStream(localPath) };
-    await drive.files.update({
+    const updateRes = await drive.files.update({
       fileId: fileId,
-      media: media
+      media: media,
+      fields: 'id, modifiedTime',
+      supportsAllDrives: true
     });
+    return new Date(updateRes.data.modifiedTime).getTime();
   } else {
     const media = { mimeType: mimeType, body: fs.createReadStream(localPath) };
-    await drive.files.create({
+    const createRes = await drive.files.create({
       requestBody: {
         name: driveFileName,
         parents: [parentId]
       },
       media: media,
-      fields: 'id'
+      fields: 'id, modifiedTime',
+      supportsAllDrives: true
     });
+    return new Date(createRes.data.modifiedTime).getTime();
   }
 }
 
@@ -342,7 +477,7 @@ async function asyncPool(poolLimit, array, iteratorFn) {
 }
 
 async function downloadFile(fileId, destPath) {
-  const res = await drive.files.get({ fileId: fileId, alt: 'media' }, { responseType: 'stream' });
+  const res = await drive.files.get({ fileId: fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream' });
   const dest = fs.createWriteStream(destPath);
   await pipeline(res.data, dest);
 }
@@ -374,7 +509,12 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
 
   if (actualVaultFolderId) {
       let q = `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`;
-      const res = await drive.files.list({ q, fields: 'files(id, modifiedTime)' });
+      const res = await drive.files.list({ 
+          q, 
+          fields: 'files(id, modifiedTime)',
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true
+      });
       if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
   } else if (state.workspacePath) {
       // Se non abbiamo un actualVaultFolderId per questo workspace, significa che non è mai stato sincronizzato.
@@ -384,10 +524,17 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
 
   if (!driveModifiedTime) {
       let q = `name='database_manoscritti.json' and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime)' });
+      let res = await drive.files.list({ q, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime)', includeItemsFromAllDrives: true, supportsAllDrives: true });
       if (res.data.files.length === 0) {
           const qShared = `name='database_manoscritti.json' and trashed=false and sharedWithMe=true`;
-          res = await drive.files.list({ q: qShared, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime)' });
+          res = await drive.files.list({ 
+              q: qShared, 
+              spaces: 'drive', 
+              orderBy: 'modifiedTime desc', 
+              fields: 'files(id, modifiedTime)',
+              includeItemsFromAllDrives: true,
+              supportsAllDrives: true
+          });
       }
       if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
   }
@@ -419,7 +566,13 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
   // 1. Se è specificato un vaultFolderId (dal Cloud Explorer o Settings)
   if (actualVaultFolderId) {
       let q = `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', fields: 'files(id, modifiedTime, parents, lastModifyingUser)' });
+      let res = await drive.files.list({ 
+          q, 
+          spaces: 'drive', 
+          fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true
+      });
       if (res.data.files.length > 0) {
           fileId = res.data.files[0].id;
           driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
@@ -436,11 +589,25 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
   // 3. Ripristino Iniziale (quando non c'è workspacePath e stiamo sfogliando cloud in generale)
   if (!fileId && !state.workspacePath) {
       let q = `name='database_manoscritti.json' and trashed=false`;
-      let res = await drive.files.list({ q, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents, lastModifyingUser)' });
+      let res = await drive.files.list({ 
+          q, 
+          spaces: 'drive', 
+          orderBy: 'modifiedTime desc', 
+          fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true
+      });
       
       if (res.data.files.length === 0) {
           const qShared = `name='database_manoscritti.json' and trashed=false and sharedWithMe=true`;
-          res = await drive.files.list({ q: qShared, spaces: 'drive', orderBy: 'modifiedTime desc', fields: 'files(id, modifiedTime, parents, lastModifyingUser)' });
+          res = await drive.files.list({ 
+              q: qShared, 
+              spaces: 'drive', 
+              orderBy: 'modifiedTime desc', 
+              fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
+              includeItemsFromAllDrives: true,
+              supportsAllDrives: true
+          });
       }
 
       if (res.data.files.length > 0) {
@@ -454,7 +621,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
   if (fileId) {
     // Ritorna il file in memoria senza sovrascrivere direttamente,
     // così il frontend può fare il merge in modo sicuro.
-    const driveRes = await drive.files.get({ fileId: fileId, alt: 'media' });
+    const driveRes = await drive.files.get({ fileId: fileId, alt: 'media', supportsAllDrives: true });
     
     // Controlla se dobbiamo sincronizzare anche gli allegati
     let syncAttachments = true; // Default true se non specificato diversamente
@@ -468,62 +635,6 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
     
     if (skipAttachments) syncAttachments = false;
     
-    // Scarica allegati (blocca il return del db così da mostrare la barra di progresso corretta)
-    if (syncAttachments && state.workspacePath && actualVaultFolderId) {
-        try {
-            const usedAttachments = new Set();
-            if (driveRes.data && driveRes.data.manoscritti) {
-                for (const m of driveRes.data.manoscritti) {
-                    if (m.allegati) {
-                        for (const a of m.allegati) {
-                            if (a.nome) usedAttachments.add(a.nome);
-                        }
-                    }
-                }
-            }
-
-            const allegatiFolderId = await getOrCreateFolder('allegati_manoscritti', actualVaultFolderId);
-            const qAll = `'${allegatiFolderId}' in parents and trashed=false`;
-            
-            const allDriveFiles: any[] = [];
-            let pageToken = undefined;
-            do {
-                const resAll: any = await drive.files.list({ 
-                    q: qAll, 
-                    pageSize: 1000, 
-                    fields: 'nextPageToken, files(id, name)',
-                    pageToken: pageToken
-                });
-                if (resAll.data.files) {
-                    allDriveFiles.push(...resAll.data.files);
-                }
-                pageToken = resAll.data.nextPageToken;
-            } while (pageToken);
-
-            const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
-            if (!fs.existsSync(allegatiLocalDir)) fs.mkdirSync(allegatiLocalDir, { recursive: true });
-            
-            const filesToDownload = allDriveFiles.filter((f: any) => usedAttachments.has(f.name));
-            
-            let i = 0;
-            const total = filesToDownload.length;
-            const win = require('electron').BrowserWindow.getAllWindows()[0];
-            
-            await asyncPool(5, filesToDownload, async (f: any) => {
-                i++;
-                if (win) win.webContents.send('sync-progress', { percent: (i / total) * 100, message: `Scaricamento allegato ${i} di ${total}` });
-                
-                const localPath = path.join(allegatiLocalDir, f.name);
-                if (!fs.existsSync(localPath)) {
-                    await downloadFile(f.id, localPath);
-                    if (win) win.webContents.send('allegato-scaricato', f.name);
-                }
-            });
-        } catch (e) {
-            console.error("Errore download allegati:", e);
-        }
-    }
-
     let parsedDb = driveRes.data;
     const logPath = require('path').join(__dirname, '../../../artifacts/superpowers/debug.log');
     let dbgMsg = `[DEBUG] typeof parsedDb: ${typeof parsedDb}\n`;
@@ -569,6 +680,7 @@ async function syncToDrive(parentModifiedTime = null) {
   if (!loadSavedTokens()) {
     throw new Error("Autenticazione Google Drive non effettuata. Apri il menu Cloud ed effettua l'accesso.");
   }
+  let finalModifiedTime = undefined;
   
   let projectFolderId;
   try {
@@ -580,7 +692,7 @@ async function syncToDrive(parentModifiedTime = null) {
   
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
-      const projectName = path.basename(state.workspacePath);
+      const projectName = path.basename(state.workspacePath) + '_ArchiView';
       
       // Creiamo una cartella nuova in modo incondizionato per evitare collisioni con vecchi vault aventi lo stesso nome
       const fileMetadata = {
@@ -608,7 +720,12 @@ async function syncToDrive(parentModifiedTime = null) {
       // Controllo conflitti Optimistic Concurrency
       if (parentModifiedTime) {
           const q = `name='database_manoscritti.json' and '${projectFolderId}' in parents and trashed=false`;
-          const res = await drive.files.list({ q, fields: 'files(id, modifiedTime)' });
+          const res = await drive.files.list({ 
+              q, 
+              fields: 'files(id, modifiedTime)',
+              includeItemsFromAllDrives: true,
+              supportsAllDrives: true
+          });
           if (res.data.files.length > 0) {
               const currentModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
               // Aggiungiamo 1 secondo di tolleranza per eventuali arrotondamenti di Google Drive API
@@ -618,83 +735,11 @@ async function syncToDrive(parentModifiedTime = null) {
           }
       }
       
-    await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
+    const newDbTime = await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
+    finalModifiedTime = newDbTime;
   }
 
-  // Sincronizzazione allegati se abilitata
-  try {
-      let syncAttachments = true;
-
-      try {
-          const s = getAllSettings();
-          if (s.syncAttachments !== undefined) syncAttachments = !!s.syncAttachments;
-      } catch(e) {}
-      
-      if (syncAttachments) {
-          const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
-          if (fs.existsSync(allegatiLocalDir)) {
-              const usedAttachments = new Set();
-              try {
-                  if (fs.existsSync(dbPath)) {
-                      const dbData = await fs.promises.readFile(dbPath, 'utf8');
-                      const db = JSON.parse(dbData);
-                      if (db.manoscritti) {
-                          for (const m of db.manoscritti) {
-                              if (m.allegati) {
-                                  for (const a of m.allegati) {
-                                      if (a.nome) usedAttachments.add(a.nome);
-                                  }
-                              }
-                          }
-                      }
-                  }
-              } catch (e) {
-                  console.error("Errore lettura db per filtro upload allegati:", e);
-              }
-              
-              const allegatiFolderId = await getOrCreateFolder('allegati_manoscritti', projectFolderId);
-              
-              const qAll = `'${allegatiFolderId}' in parents and trashed=false`;
-              const existingDriveFiles = new Set();
-              let pageToken = undefined;
-              do {
-                  const resAll: any = await drive.files.list({ 
-                      q: qAll, 
-                      pageSize: 1000, 
-                      fields: 'nextPageToken, files(name)',
-                      pageToken: pageToken
-                  });
-                  if (resAll.data.files) {
-                      resAll.data.files.forEach((f: any) => existingDriveFiles.add(f.name));
-                  }
-                  pageToken = resAll.data.nextPageToken;
-              } while (pageToken);
-
-              const allFiles = fs.readdirSync(allegatiLocalDir);
-              const filesToUpload = allFiles.filter(f => usedAttachments.has(f) && !existingDriveFiles.has(f));
-
-              let i = 0;
-              const total = filesToUpload.length;
-              const win = require('electron').BrowserWindow.getAllWindows()[0];
-              
-              await asyncPool(5, filesToUpload, async (file: string) => {
-                  i++;
-                  const filePath = path.join(allegatiLocalDir, file);
-                  const stat = fs.statSync(filePath);
-                  if (stat.isFile()) {
-                      if (win) win.webContents.send('sync-progress', { percent: (i / total) * 100, message: `Caricamento allegato ${i} di ${total}` });
-                      
-                      // skipIfExist = true per non ricaricare immagini già presenti
-                      await uploadFile(filePath, file, allegatiFolderId, true);
-                  }
-              });
-          }
-      }
-  } catch(e) {
-      console.error("Errore durante upload allegati:", e);
-  }
-
-  return true;
+  return finalModifiedTime || Date.now();
 }
 
 async function cleanOrphanedAttachments() {
@@ -713,7 +758,7 @@ async function cleanOrphanedAttachments() {
   
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
-      const projectName = path.basename(state.workspacePath);
+      const projectName = path.basename(state.workspacePath) + '_ArchiView';
       projectFolderId = await getOrCreateFolder(projectName, rootFolderId);
   }
 
@@ -890,6 +935,9 @@ function setupDriveIpc() {
   ipcMain.handle('drive-logout', async () => {
     return await logoutDrive();
   });
+  ipcMain.handle('drive-check-auth', async () => {
+    return loadSavedTokens();
+  });
   ipcMain.handle('drive-status', async () => {
     return await checkDriveStatus();
   });
@@ -902,9 +950,11 @@ function setupDriveIpc() {
   ipcMain.handle('drive-peek-db', async (event, vaultId) => {
     return await pullFromDrive(vaultId, true);
   });
-  ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
-    await syncToDrive(parentModifiedTime);
-    return true;
+    ipcMain.handle('drive-sync-attachments', async () => {
+    return await syncAttachmentsBidirectional();
+  });
+ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
+    return await syncToDrive(parentModifiedTime);
   });
   ipcMain.handle('drive-check-updates', async (event, vaultId) => {
     return await checkUpdatesFromDrive(vaultId);
@@ -935,7 +985,7 @@ function setupDriveIpc() {
         
         // Recupera l'ID univoco della cartella di questo Vault su Google Drive
         let vaultFolderId = settings.sharedVaultId;
-        const projectName = path.basename(state.workspacePath);
+        const projectName = path.basename(state.workspacePath) + '_ArchiView';
         
         if (!vaultFolderId) {
             const rootFolderId = await getOrCreateFolder('ArchiView');
@@ -1157,14 +1207,15 @@ function setupDriveIpc() {
     try {
         const creds = require('./cloudCredentials');
         const clientId = creds.GOOGLE_CLIENT_ID;
+        const apiKey = creds.GOOGLE_API_KEY || '';
         const appId = clientId ? clientId.split('-')[0] : '';
-        return { clientId, appId };
+        return { clientId, appId, apiKey };
     } catch(e) {
-        return { clientId: '', appId: '' };
+        return { clientId: '', appId: '', apiKey: '' };
     }
   });
 
-  ipcMain.handle('drive-join-folder-id', async (event, vaultId, vaultName, basePath) => {
+  ipcMain.handle('drive-join-folder-id', async (event, vaultId, vaultName, basePath, customPusher) => {
     try {
         const name = vaultName || "Vault_Condiviso";
         const newPath = path.join(basePath, name);
@@ -1173,7 +1224,17 @@ function setupDriveIpc() {
         }
         fs.mkdirSync(newPath, { recursive: true });
         
-        let settingsToSave: any = { isSharedVault: true, sharedVaultId: vaultId };
+        let creds: any = {};
+        try { creds = require('./cloudCredentials'); } catch(e) {}
+        
+        let settingsToSave: any = { 
+            isSharedVault: true, 
+            sharedVaultId: vaultId,
+            pusherKey: customPusher?.pusherKey || creds.PUSHER_KEY || "",
+            pusherCluster: customPusher?.pusherCluster || creds.PUSHER_CLUSTER || "",
+            pusherWebhook: customPusher?.pusherWebhook || creds.PUSHER_WEBHOOK || "",
+            driveAutofetch: customPusher ? customPusher.driveAutofetch : true
+        };
         initWorkspace(newPath);
         saveAllSettings(settingsToSave);
         
@@ -1196,7 +1257,322 @@ function setupDriveIpc() {
         throw new Error("Errore connessione archivio: " + e.message);
     }
   });
+  ipcMain.handle('drive-open-external-picker', async () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            await authenticateDrive();
+            if (!oauth2Client) return reject(new Error("OAuth client non inizializzato."));
+            
+            const { token } = await oauth2Client.getAccessToken();
+            const creds = require('./cloudCredentials');
+            const clientId = creds.GOOGLE_CLIENT_ID;
+            const apiKey = creds.GOOGLE_API_KEY || '';
+            const appId = clientId ? clientId.split('-')[0] : '';
+
+            if (!token || !apiKey || !appId) {
+                return reject(new Error("Configurazione API mancante in cloudCredentials.ts. Assicurati che l'API Key e il Client ID siano corretti."));
+            }
+
+            const rootFolderId = await getOrCreateFolder('ArchiView');
+
+            const http = require('http');
+            const pickerHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Google Picker per ArchiView</title>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #fafaf9; color: #1c1917; }
+    .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-block; border: 1px solid #e7e5e4; }
+    h2 { margin-top: 0; color: #0284c7; }
+    p { color: #57534e; }
+  </style>
+</head>
+<body>
+  <div class="container" id="message-container">
+      <h2>Google Picker Iniziato</h2>
+      <p>Seleziona la cartella di ArchiView dal popup di Google Drive...</p>
+      <p style="font-size: 0.9em; color: #a8a29e;">Assicurati che non ci siano blocchi popup attivi.</p>
+  </div>
+  <script>
+    const clientId = "${clientId}";
+    const appId = "${appId}";
+    const apiKey = "${apiKey}";
+    const token = "${token}";
+    const rootFolderId = "${rootFolderId}";
+
+    gapi.load('picker', { 'callback': () => {
+        // Tab 1: Condivisi con me
+        const sharedView = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+            .setMimeTypes('application/vnd.google-apps.folder')
+            .setIncludeFolders(true)
+            .setSelectFolderEnabled(true)
+            .setOwnedByMe(false)
+            .setQuery('_ArchiView');
+            
+        // Tab 2: Il mio Drive
+        const myDriveView = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+            .setMimeTypes('application/vnd.google-apps.folder')
+            .setIncludeFolders(true)
+            .setSelectFolderEnabled(true)
+            .setQuery('_ArchiView');
+            
+        const picker = new google.picker.PickerBuilder()
+            .addView(sharedView)
+            .addView(myDriveView)
+            .setAppId(appId)
+            .setOAuthToken(token)
+            .setDeveloperKey(apiKey)
+            .setTitle("Seleziona la cartella dell'Archivio Condiviso")
+            .setCallback(async (data) => {
+                if (data.action == google.picker.Action.PICKED) {
+                    const file = data.docs[0];
+                    try {
+                        await fetch('/picker-callback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: file.id, name: file.name })
+                        });
+                        document.getElementById('message-container').innerHTML = "<h2>Cartella selezionata!</h2><p>Tutto pronto. Puoi chiudere questa scheda e tornare ad ArchiView.</p>";
+                        setTimeout(() => window.close(), 2000);
+                    } catch(e) {
+                        alert("Errore di connessione locale con ArchiView: " + e);
+                    }
+                } else if (data.action == google.picker.Action.CANCEL) {
+                    await fetch('/picker-cancel', { method: 'POST' });
+                    document.getElementById('message-container').innerHTML = "<h2>Selezione annullata</h2><p>Puoi chiudere questa scheda e tornare ad ArchiView per riprovare.</p>";
+                    setTimeout(() => window.close(), 1000);
+                }
+            })
+            .build();
+        
+        picker.setVisible(true);
+    }});
+  </script>
+</body>
+</html>`;
+
+            let localServer = http.createServer((req, res) => {
+                if (req.url === '/' || req.url === '/picker') {
+                    res.writeHead(200, { 'Content-Type': 'text/html' });
+                    res.end(pickerHtml);
+                } else if (req.url === '/picker-callback' && req.method === 'POST') {
+                    let body = '';
+                    req.on('data', chunk => { body += chunk.toString(); });
+                    req.on('end', () => {
+                        res.writeHead(200);
+                        res.end('OK');
+                        try {
+                            const data = JSON.parse(body);
+                            resolve(data);
+                        } catch(e) {
+                            reject(new Error("Dati ricevuti dal picker non validi."));
+                        }
+                        if (localServer) { localServer.close(); localServer = null; }
+                    });
+                } else if (req.url === '/picker-cancel' && req.method === 'POST') {
+                    res.writeHead(200);
+                    res.end('OK');
+                    resolve(null); // Utente ha annullato
+                    if (localServer) { localServer.close(); localServer = null; }
+                } else {
+                    res.writeHead(404);
+                    res.end();
+                }
+            });
+
+            localServer.on('error', (err) => {
+                console.error("Errore server picker:", err);
+                reject(new Error("Porta 3457 già in uso o errore server."));
+            });
+
+            localServer.listen(3457, () => {
+                shell.openExternal('http://localhost:3457/picker');
+            });
+
+        } catch(e) {
+            reject(e);
+        }
+    });
+  });
 }
 
 module.exports = { setupDriveIpc };
 export {};
+
+async function syncAttachmentsBidirectional() {
+  if (!state.workspacePath) throw new Error("Nessun workspace aperto");
+  if (!loadSavedTokens()) {
+    throw new Error("Autenticazione Google Drive non effettuata.");
+  }
+
+  let projectFolderId;
+  try {
+      const s = getAllSettings();
+      if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
+          projectFolderId = s.sharedVaultId;
+      }
+      if (!s.syncAttachments) return;
+  } catch(e) {}
+  
+  if (!projectFolderId) return; // Non sincronizzato
+
+  const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
+  const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
+  const cacheDir = path.join(state.workspacePath, '.archiview-chunks');
+  
+  if (!fs.existsSync(allegatiLocalDir)) fs.mkdirSync(allegatiLocalDir, { recursive: true });
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+  const usedAttachments = new Set();
+  try {
+      if (fs.existsSync(dbPath)) {
+          const dbData = await fs.promises.readFile(dbPath, 'utf8');
+          const db = JSON.parse(dbData);
+          if (db.manoscritti) {
+              for (const m of db.manoscritti) {
+                  if (m.allegati) {
+                      for (const a of m.allegati) {
+                          if (a.nome) usedAttachments.add(a.nome);
+                      }
+                  }
+              }
+          }
+      }
+  } catch (e) {
+      console.error("Errore lettura db per filtro upload allegati:", e);
+      return;
+  }
+
+  const dataFolderId = await getOrCreateFolder('data', projectFolderId);
+
+  // Scarica o Inizializza index.json per poterlo aggiornare
+  let remoteIndex: any = {};
+  let indexFileId = null;
+  const qIndex = `name='index.json' and '${projectFolderId}' in parents and trashed=false`;
+  const indexRes = await drive.files.list({ q: qIndex, fields: 'files(id)' });
+  if (indexRes.data.files && indexRes.data.files.length > 0) {
+      indexFileId = indexRes.data.files[0].id;
+      const indexContent = await drive.files.get({ fileId: indexFileId, alt: 'media' });
+      if (typeof indexContent.data === 'string') {
+          remoteIndex = JSON.parse(indexContent.data);
+      } else {
+          remoteIndex = indexContent.data;
+      }
+  }
+
+  const allFiles = fs.readdirSync(allegatiLocalDir);
+  const filesToUpload = allFiles.filter(f => usedAttachments.has(f));
+  const allRequiredHashes = new Set();
+  let indexChanged = false;
+
+  // UPLOAD PREPARATION
+  for (const file of filesToUpload) {
+      const filePath = path.join(allegatiLocalDir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.isFile()) {
+          const hashes = await splitFileIntoChunks(filePath, cacheDir);
+          const currentHashes = remoteIndex[file];
+          if (!currentHashes || JSON.stringify(currentHashes) !== JSON.stringify(hashes)) {
+              remoteIndex[file] = hashes;
+              indexChanged = true;
+          }
+          hashes.forEach((h: string) => allRequiredHashes.add(h));
+      }
+  }
+
+  // DOWNLOAD PREPARATION
+  const chunksToDownload = new Set();
+  const filesToReassemble: any[] = [];
+  for (const fileName of Array.from(usedAttachments)) {
+      const localPath = path.join(allegatiLocalDir, fileName as string);
+      if (!fs.existsSync(localPath) && remoteIndex[fileName as string]) {
+          const hashes = remoteIndex[fileName as string];
+          filesToReassemble.push({ fileName, hashes });
+          hashes.forEach((h: string) => {
+              if (!fs.existsSync(path.join(cacheDir, h))) chunksToDownload.add(h);
+          });
+      }
+  }
+
+  // FETCH REMOTE CHUNKS INFO
+  const existingDriveChunks = new Set();
+  const chunkIdsToDownload: any[] = [];
+  
+  if (chunksToDownload.size > 0 || allRequiredHashes.size > 0) {
+      let pageToken = undefined;
+      do {
+          const resAll = await drive.files.list({ 
+              q: `'${dataFolderId}' in parents and trashed=false`, 
+              pageSize: 1000, 
+              fields: 'nextPageToken, files(id, name)',
+              pageToken: pageToken
+          });
+          if (resAll.data.files) {
+              resAll.data.files.forEach((f: any) => {
+                  existingDriveChunks.add(f.name);
+                  if (chunksToDownload.has(f.name)) chunkIdsToDownload.push(f);
+              });
+          }
+          pageToken = resAll.data.nextPageToken;
+      } while (pageToken);
+  }
+
+  const win = require('electron').BrowserWindow.getAllWindows()[0];
+
+  // DOWNLOAD CHUNKS
+  let iDown = 0;
+  const totalDown = chunkIdsToDownload.length;
+  await asyncPool(5, chunkIdsToDownload, async (f: any) => {
+      iDown++;
+      if (win) win.webContents.send('sync-progress', { percent: (iDown / totalDown) * 100, message: `Scaricamento blocco allegati ${iDown} di ${totalDown}` });
+      const localPath = path.join(cacheDir, f.name);
+      await downloadFile(f.id, localPath);
+  });
+
+  // REASSEMBLE
+  for (const item of filesToReassemble) {
+      const destPath = path.join(allegatiLocalDir, item.fileName);
+      await assembleFileFromChunks(item.hashes, cacheDir, destPath);
+      if (win) win.webContents.send('allegato-scaricato', item.fileName);
+  }
+
+  // UPLOAD CHUNKS
+  const chunksToUpload = Array.from(allRequiredHashes).filter(h => !existingDriveChunks.has(h));
+  let iUp = 0;
+  const totalUp = chunksToUpload.length;
+  await asyncPool(5, chunksToUpload, async (hash) => {
+      iUp++;
+      const filePath = path.join(cacheDir, hash as string);
+      if (fs.existsSync(filePath)) {
+          if (win) win.webContents.send('sync-progress', { percent: (iUp / totalUp) * 100, message: `Caricamento blocco allegati ${iUp} di ${totalUp}` });
+          await uploadFile(filePath, hash as string, dataFolderId, true);
+      }
+  });
+
+  // UPDATE REMOTE INDEX
+  if (indexChanged) {
+      if (indexFileId) {
+          try {
+              const latestIndexContent = await drive.files.get({ fileId: indexFileId, alt: 'media' });
+              let latestRemoteIndex: any = {};
+              if (typeof latestIndexContent.data === 'string') {
+                  latestRemoteIndex = JSON.parse(latestIndexContent.data);
+              } else {
+                  latestRemoteIndex = latestIndexContent.data;
+              }
+              remoteIndex = { ...latestRemoteIndex, ...remoteIndex };
+          } catch (e) {
+              console.warn("Errore durante il refetch di index.json:", e);
+          }
+      }
+
+      const localIndexPath = path.join(cacheDir, 'index.json');
+      fs.writeFileSync(localIndexPath, JSON.stringify(remoteIndex, null, 2));
+      await uploadFile(localIndexPath, 'index.json', projectFolderId, false);
+  }
+
+  // PULIZIA CACHE
+  if (fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true, force: true });
+}

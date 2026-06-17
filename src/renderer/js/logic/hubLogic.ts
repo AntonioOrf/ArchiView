@@ -84,7 +84,7 @@ window.riceviModificheHub = async function(isSilent = false) {
         }
 
         // RILEVAMENTO CONFLITTI E CANCELLAZIONI
-        const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, lastLoadedAt);
+        const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, lastLoadedAt, appData.baseHashes || {});
         const { mergedManoscritti, deletions } = rilevaCancellazioniEMergeParziale(esterniDati, lastLoadedAt);
 
         const applyMergeAndSave = async (finalCards) => {

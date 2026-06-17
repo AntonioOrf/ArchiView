@@ -73,11 +73,20 @@
                     <i data-lucide="users" class="w-5 h-5 text-amber-600"></i> <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                 </h3>
                 <p class="text-xs text-stone-500 mb-4 leading-snug">
-                    <span data-i18n="welcome_desc_join">Unendoti tramite codice accederai a un Cloud condiviso sul Google Drive del creatore originale. Qualsiasi modifica locale si sincronizzerà direttamente con gli altri membri.</span>
+                    <span data-i18n="welcome_desc_join_picker">Seleziona la cartella condivisa dal tuo Google Drive per sincronizzarla sul tuo PC. L'app avrà accesso unicamente a quella cartella.</span>
                 </p>
-                <div class="mb-3">
-                    <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_invite_code">Codice di Invito</label>
-                    <textarea id="welcome-join-code" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-all text-xs font-mono h-24" placeholder="Incolla qui il codice..." data-i18n-placeholder="placeholder_invite_code"></textarea>
+                <div class="mb-3 text-center">
+                    <button type="button" onclick="apriGooglePicker()" class="btn btn-secondary w-full justify-center py-4 text-sm font-medium shadow-sm bg-white border border-stone-300 hover:bg-stone-50 text-stone-700">
+                        <i data-lucide="folder-search" class="w-5 h-5 mr-2 text-blue-600"></i>
+                        <span data-i18n="btn_browse_drive">Sfoglia Google Drive...</span>
+                    </button>
+                    <div class="mt-4 border-t border-stone-200 pt-3">
+                        <label class="form-label font-medium mb-1 block text-sm text-left text-stone-600" data-i18n="label_invite_code_opt">Hai un Codice d'Invito? (Opzionale)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="welcome-join-code" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" placeholder="Incolla il codice qui..." oninput="if(window.handleInviteCode) window.handleInviteCode(this.value, true)">
+                        </div>
+                    </div>
+                    <input type="hidden" id="welcome-join-vault-id">
                 </div>
 
                 <div id="welcome-join-vault-info" class="hidden-tab mb-3 p-3 bg-stone-100 border border-stone-200 rounded text-sm text-stone-700 flex items-center gap-2">
@@ -123,31 +132,10 @@
             document.body.insertAdjacentHTML('beforeend', html);
             if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
 
+            // Rimossi gli event listener per il codice invito
             const joinCodeTextarea = document.getElementById('welcome-join-code');
             if (joinCodeTextarea) {
-                joinCodeTextarea.addEventListener('input', async () => {
-                    let code = joinCodeTextarea.value.trim();
-                    if (code.startsWith('archiview://join/')) {
-                        code = code.substring(17);
-                    }
-                    const infoDiv = document.getElementById('welcome-join-vault-info');
-                    const nameSpan = document.getElementById('welcome-join-vault-name');
-                    if (!code) {
-                        if (infoDiv) infoDiv.classList.add('hidden-tab');
-                        return;
-                    }
-                    try {
-                        if (window.apiDrive && window.apiDrive.decodeInvite) {
-                            const result = await window.apiDrive.decodeInvite(code);
-                            if (result && result.vaultName) {
-                                if (nameSpan) nameSpan.textContent = result.vaultName;
-                                if (infoDiv) infoDiv.classList.remove('hidden-tab');
-                                return;
-                            }
-                        }
-                    } catch (e) {}
-                    if (infoDiv) infoDiv.classList.add('hidden-tab');
-                });
+                // ...
             }
         }
     });
@@ -231,6 +219,14 @@
     window.mostraJoinForm = async function() {
         document.getElementById('welcome-buttons').classList.add('hidden-tab');
         document.getElementById('welcome-join-form').classList.remove('hidden-tab');
+
+        if (!document.getElementById('google-api-script')) {
+            const script = document.createElement('script');
+            script.id = 'google-api-script';
+            script.src = 'https://apis.google.com/js/api.js';
+            document.head.appendChild(script);
+        }
+
         if (window.apiBrowser && window.apiBrowser.getDocumentsPath) {
             let initialPath = await window.apiBrowser.getDocumentsPath();
             if (window.apiSettings) {
@@ -263,27 +259,57 @@
         }
     };
 
-    window.eseguiJoinVault = async function() {
-        let code = document.getElementById('welcome-join-code').value.trim();
-        if (code.startsWith('archiview://join/')) {
-            code = code.substring(17);
+    window.apriGooglePicker = async function() {
+        if (!window.apiDrive) return;
+        try {
+            mostraMessaggio(window.t("msg_autenticazione_e_ricerca_", "Apertura di Google Picker nel tuo browser predefinito... Attendi..."), "info");
+            
+            // Chiama l'IPC che aprirà Chrome col picker. Questa funzione "resta in attesa" 
+            // finché il server locale non riceve l'ID o l'utente non annulla.
+            const data = await window.apiDrive.openExternalPicker();
+            
+            if (data && data.id) {
+                // Usiamo una variabile globale invece dell'elemento DOM per massima sicurezza
+                window.welcomeJoinVaultId = data.id;
+                let cleanName = data.name;
+                if (cleanName.endsWith('_ArchiView')) {
+                    cleanName = cleanName.substring(0, cleanName.length - 10);
+                }
+                window.welcomeJoinVaultName = cleanName;
+                
+                const nameSpan = document.getElementById('welcome-join-vault-name');
+                if (nameSpan) nameSpan.textContent = cleanName;
+                
+                const infoDiv = document.getElementById('welcome-join-vault-info');
+                if (infoDiv) infoDiv.classList.remove('hidden-tab');
+                
+                if (window.nascondiMessaggi) window.nascondiMessaggi();
+            } else {
+                mostraMessaggio("Selezione annullata.", "warning");
+            }
+        } catch (e) {
+            mostraMessaggio("Errore: " + e.message, "error");
         }
-        const basePath = document.getElementById('welcome-join-folder-path').value.trim();
+    };
+
+    window.eseguiJoinVault = async function() {
+        const vaultId = window.welcomeJoinVaultId || (document.getElementById('welcome-join-vault-id') ? document.getElementById('welcome-join-vault-id').value : null);
+        const vaultName = window.welcomeJoinVaultName || "Vault_Condiviso";
+        const pathInput = document.getElementById('welcome-join-folder-path');
+        const basePath = pathInput ? pathInput.value.trim() : "";
         
-        if(!code || !basePath) {
-            mostraMessaggio(window.t("msg_compila_tutti_i_campi", "Compila tutti i campi."), "warning");
+        if(!vaultId || !basePath) {
+            mostraMessaggio(window.t("msg_seleziona_cartella_e_percorso", "Seleziona una cartella dal Cloud e un percorso locale."), "warning");
             return;
         }
 
         try {
             mostraMessaggio(window.t("msg_connessione_all_archivio_", "Connessione all'Archivio in corso..."), "info");
-            const result = await window.apiDrive.decodeInvite(code);
-            if (!result || !result.vaultName) {
-                throw new Error("Codice invito non valido o impossibile recuperare il nome dell'Archivio.");
-            }
+            await window.apiDrive.joinByFolderId(vaultId, vaultName, basePath, window.welcomePusherCreds);
             
-            await window.apiDrive.joinInvite(code, basePath, result.vaultName);
-            document.getElementById('welcome-modal').classList.add('hidden-tab');
+            const modal = document.getElementById('welcome-modal');
+            if (modal) modal.classList.add('hidden-tab');
+            
             mostraMessaggio(window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso..."), "success");
         } catch(e) {
             mostraMessaggio(e.message, "error");

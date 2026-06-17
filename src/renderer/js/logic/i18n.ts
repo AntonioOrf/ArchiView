@@ -11,6 +11,7 @@ i18n.load({
 // Attiva un locale di default subito per evitare errori Lingui
 // prima che initLang() venga chiamato dall'app
 i18n.activate('it');
+window.linguaAttuale = 'it';
 
 window.initLang = async function() {
     const settings = await window.apiSettings.get();
@@ -602,8 +603,68 @@ const customEn = {
     "confirm_tutorial_demo": "You are about to load the Demo archive. The current archive will be closed. Do you want to proceed?"
 };
 
+const customIt = {
+    "dialog_select_folder": "Seleziona la posizione per il nuovo archivio",
+    "dialog_export_zip": "Esporta Backup in ZIP",
+    "dialog_import_zip": "Importa Archivio JSON",
+    "btn_procedi": "Procedi",
+    "modal_folder_title": "Gestione Archivi",
+    "welcome_desc_gestione": "Scegli una cartella di destinazione per creare un nuovo archivio indipendente, oppure seleziona un archivio esistente per caricarne i dati.",
+    "btn_open_local": "Apri Archivio Locale",
+    "btn_create_local": "Crea Nuova Cartella Locale",
+    "btn_create_cloud_private": "Crea Archivio Cloud Personale",
+    "btn_create_shared": "Crea Archivio Condiviso",
+    "btn_join_shared": "Unisciti a un Archivio Condiviso",
+    "btn_restore_drive": "Ripristina da Google Drive...",
+    "label_archive_name": "Nome Archivio",
+    "placeholder_archive_name": "Es. Archivio Manoscritti",
+    "label_position": "Posizione",
+    "btn_browse": "Sfoglia...",
+    "btn_go_back": "Torna Indietro",
+    "btn_create_and_start": "Crea e Avvia",
+    "welcome_desc_join": "Unendoti tramite codice accederai a un Cloud condiviso sul Google Drive del creatore. Qualsiasi modifica locale si sincronizzerà direttamente con gli altri membri.",
+    "label_invite_code": "Codice Invito",
+    "placeholder_invite_code": "Incolla il codice qui...",
+    "label_archive_name_colon": "Nome Archivio:",
+    "label_local_archive_pos": "Posizione dell'archivio locale",
+    "btn_connect": "Connetti",
+    "title_select_cloud_archive": "Seleziona un Archivio dal Cloud",
+    "msg_no_archive_found_drive": "Nessun Archivio trovato nella cartella ArchiView sul tuo Drive.",
+    "label_modified": "Modificato:",
+    "btn_search_everywhere": "Cerca Ovunque",
+    "title_search_everywhere": "Se non vedi il tuo archivio, cerca in tutto il Drive",
+    "prog_prep_title": "Preparazione in corso",
+    "prog_prep_auth": "Autenticazione con Google Drive...",
+    "prog_conf_title": "Configurazione in corso",
+    "prog_conf_shared": "Impostazione Archivio come condiviso...",
+    "prog_sync_title": "Sincronizzazione",
+    "prog_sync_merge": "Caricamento e unione dei dati sul Cloud (potrebbe richiedere un po')...",
+    "prog_conf_backup": "Impostazione Backup Personale...",
+    "prog_disc_title": "Disconnessione",
+    "prog_disc_desc": "Disattivazione della sincronizzazione Cloud...",
+    "prog_auth_title": "Autenticazione in corso",
+    "prog_auth_desc1": "Accedi con l'account Google desiderato nel browser...",
+    "prog_auth_desc2": "Accedi con il nuovo account nel browser...",
+    "prog_invite_title": "Invio invito",
+    "prog_invite_desc": "Assegnazione dei permessi su Google Drive...",
+    "prog_prep_cloud": "Avvio della configurazione cloud...",
+    "confirm_disc_cloud": "Vuoi davvero disconnettere questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non saranno più sincronizzati online e l'app tornerà in modalità solo locale.",
+    "confirm_pull_no_fetch": "Attenzione: stai per scaricare le modifiche dal Cloud senza prima verificare quali siano (Fetch). Procedere comunque?",
+    "confirm_disc_cloud_short": "Vuoi davvero disconnettere questo Archivio dal Cloud?\nI dati rimarranno salvati sul computer, ma non saranno più sincronizzati.",
+    "confirm_join_shared": "Vuoi chiudere l'Archivio attuale per unirti a un nuovo Archivio Condiviso? Le modifiche locali non salvate andranno perse.",
+    "confirm_delete_multiple": "Sei sicuro di voler eliminare le {var0} schede selezionate? L'operazione è irreversibile.",
+    "confirm_delete_single": "Sei sicuro di voler eliminare questa scheda? L'operazione è irreversibile.",
+    "confirm_delete_multiple_cloud": "Hai eliminato {var0} schede dal tuo archivio. Sei sicuro di volerle eliminare permanentemente anche dal cloud condiviso?",
+    "confirm_delete_single_cloud": "Hai eliminato una scheda dal tuo archivio. Sei sicuro di volerla eliminare permanentemente anche dal cloud condiviso?",
+    "confirm_delete_archive_empty": "Sei sicuro di voler eliminare l'archivio \"{var0}\"? Tutte le sotto-cartelle vuote verranno rimosse.",
+    "confirm_delete_archive_with_docs": "L'archivio \"{var0}\" contiene {var1} documenti. Eliminandolo verranno eliminati anche tutti i documenti all'interno. Vuoi procedere?",
+    "confirm_delete_model": "Sei sicuro di voler eliminare questo modello?",
+    "confirm_tutorial_demo": "Stai per caricare l'archivio Demo. L'archivio attuale verrà chiuso. Vuoi procedere?"
+};
+
 window.t = function(key, fallback) {
     if (window.linguaAttuale === 'en' && customEn[key]) return customEn[key];
+    if (window.linguaAttuale === 'it' && customIt[key]) return customIt[key];
     const res = i18n._({ id: key });
     if (res === key && fallback) return fallback;
     return res;

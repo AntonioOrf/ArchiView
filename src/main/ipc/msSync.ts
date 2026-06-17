@@ -361,7 +361,7 @@ async function syncToDrive() {
   
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
-      const projectName = path.basename(state.workspacePath);
+      const projectName = path.basename(state.workspacePath) + '_ArchiView';
       
       const client = await getGraphClient();
       const driveItem = {

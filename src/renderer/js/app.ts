@@ -483,8 +483,8 @@ window.initTheme = async function() {
     });
 };
 
-window.handleInviteCode = function(code) {
-    const procedi = () => {
+window.handleInviteCode = function(code, isManualInput = false) {
+    const procedi = async () => {
         // Chiudi altri modali
         const modals = document.querySelectorAll('.modal-overlay');
         modals.forEach(m => m.classList.add('hidden-tab'));
@@ -501,15 +501,39 @@ window.handleInviteCode = function(code) {
             mostraJoinForm();
         }
         
-        // Incolla il codice
-        setTimeout(() => {
-            const input = document.getElementById('welcome-join-code');
-            if (input) {
-                input.value = code;
-                input.focus();
-                input.dispatchEvent(new Event('input', { bubbles: true }));
+        // Incolla il codice se non è stato inserito manualmente
+        if (!isManualInput) {
+            setTimeout(() => {
+                const input = document.getElementById('welcome-join-code') as HTMLInputElement;
+                if (input) {
+                    input.value = code;
+                }
+            }, 300);
+        }
+        
+        try {
+            if (window.apiDrive && window.apiDrive.decodeInvite) {
+                const decoded = await window.apiDrive.decodeInvite(code);
+                window.welcomeJoinVaultId = decoded.vaultId;
+                window.welcomeJoinVaultName = decoded.projectName;
+                window.welcomePusherCreds = {
+                    pusherKey: decoded.pusherKey,
+                    pusherCluster: decoded.pusherCluster,
+                    pusherWebhook: decoded.pusherWebhook,
+                    driveAutofetch: decoded.driveAutofetch
+                };
+                
+                const nameSpan = document.getElementById('welcome-join-vault-name');
+                if (nameSpan) nameSpan.textContent = decoded.projectName || "Vault_Condiviso";
+                
+                const infoDiv = document.getElementById('welcome-join-vault-info');
+                if (infoDiv) infoDiv.classList.remove('hidden-tab');
+                
+                mostraMessaggio(window.t("msg_invite_decoded", "Codice invito riconosciuto. Clicca su 'Sfoglia Google Drive' e seleziona la cartella condivisa per autorizzare l'accesso."), "success");
             }
-        }, 300);
+        } catch (e) {
+            mostraMessaggio("Codice invito incompleto o non valido.", "warning");
+        }
     };
 
     const welcome = document.getElementById('welcome-modal');

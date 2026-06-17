@@ -4,7 +4,7 @@
     function initMergeConflictModal() {
         if (!document.getElementById('merge-conflict-modal')) {
             const html = `
-    <div id="merge-conflict-modal" class="modal-overlay hidden-tab z-80 bg-stone-900/80 backdrop-blur-sm flex justify-center items-center">
+    <div id="merge-conflict-modal" class="modal-overlay hidden-tab z-[9999] bg-stone-900/80 backdrop-blur-sm flex justify-center items-center">
         <div class="modal-window w-full max-w-5xl p-6 shadow-2xl border border-stone-200 flex flex-col h-[85vh] bg-stone-50">
             <div class="modal-header shrink-0 flex justify-between items-center pb-3 border-b border-stone-200">
                 <h3 class="modal-title text-stone-800 font-serif flex items-center gap-2">
@@ -202,7 +202,7 @@
     }
 
     window.risolviCampoConflitto = function(id, campo, scelta) {
-        const c = activeConflicts.find(x => x.id === id);
+        const c = activeConflicts.find(x => String(x.id) === String(id));
         if (!c) return;
 
         const valScelto = scelta === 'local' ? c.localCard[campo] : c.externalCard[campo];

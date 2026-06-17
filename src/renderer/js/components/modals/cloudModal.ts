@@ -127,24 +127,6 @@
                                     <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2.5 text-sm border-emerald-500 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 justify-center mt-2">
                                         <i data-lucide="mail-plus" class="w-4 h-4 mr-2"></i> <span data-i18n="btn_invite_email">Invita tramite Email</span>
                                     </button>
-                                    <button onclick="toggleManualInvite()" class="text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 text-center mt-1 underline cursor-pointer">
-                                        <span data-i18n="btn_manual_invite_code">Invia manualmente il codice d'invito</span>
-                                    </button>
-                                </div>
-                                
-                                <!-- SEZIONE MANUALE (Inizialmente nascosta) -->
-                                <div id="manual-invite-section" class="hidden flex flex-col p-4 gap-3 bg-amber-50/50 dark:bg-amber-900/10 border-t border-stone-200 dark:border-stone-700">
-                                    <div class="flex items-center gap-2">
-                                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                                        <p class="text-[11px] font-semibold text-amber-800 dark:text-amber-200"><span data-i18n="modal_cloud_manual">Condivisione Manuale</span></p>
-                                    </div>
-                                    <p class="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed"><span data-i18n="modal_cloud_manual_desc">Usa questa opzione se invii l'invito via chat (WhatsApp/Slack). Ricorda che <strong>devi comunque aver autorizzato la sua email</strong> inserendola dal bottone qui sopra.</span></p>
-                                    <div class="flex flex-col gap-2 mt-1">
-                                        <input type="text" id="cloud-invite-code" class="form-input w-full font-mono text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-md p-2 text-center" readonly onclick="this.select()">
-                                        <button onclick="copiaCodiceInvito()" id="btn-copy-invite" class="btn btn-secondary py-2 text-xs justify-center">
-                                            <i data-lucide="copy" class="w-3 h-3 mr-1.5"></i> <span data-i18n="btn_copy_code">Copia Codice</span>
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
 
@@ -400,9 +382,11 @@
             const code = await window.apiDrive.generateInvite();
             const input = document.getElementById('cloud-invite-code');
             const btnCopy = document.getElementById('btn-copy-invite');
-            input.value = `archiview://join/${code}`;
-            input.classList.remove('hidden-tab');
-            btnCopy.classList.remove('hidden-tab');
+            if (input && btnCopy) {
+                input.value = `archiview://join/${code}`;
+                input.classList.remove('hidden-tab');
+                btnCopy.classList.remove('hidden-tab');
+            }
         } catch(e) {
             mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
         }
@@ -506,7 +490,12 @@
     };
 
     window.rimuoviMembroCloud = async function(permissionId, nome) {
-        if (!confirm(`Sei sicuro di voler rimuovere l'accesso a ${nome}?`)) return;
+        const confirmResult = await chiediConfermaAzione(
+            window.t("modal_confirm_action", "Conferma Azione"),
+            `Sei sicuro di voler rimuovere l'accesso a ${nome}?`,
+            window.t("btn_delete", "Elimina")
+        );
+        if (!confirmResult) return;
         
         mostraMessaggio(window.t("msg_rimozione_di_var_in_corso", "Rimozione di {var0} in corso...").replace("{var0}", String(nome)), "info");
         try {

@@ -25,6 +25,8 @@ Thumbs.db
 profilo_test/
 test-cloud.bat
 scratch-test.js
+testChunking.js
+.archiview-chunks/
 
 # Credenziali Cloud e Configurazione locale
 src/main/ipc/cloudCredentials.ts

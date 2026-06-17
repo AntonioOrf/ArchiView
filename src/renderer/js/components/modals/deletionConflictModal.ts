@@ -4,7 +4,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('deletion-conflict-modal')) {
             const html = `
-    <div id="deletion-conflict-modal" class="modal-overlay hidden-tab z-80 bg-stone-900/80 backdrop-blur-sm flex justify-center items-center">
+    <div id="deletion-conflict-modal" class="modal-overlay hidden-tab z-[9999] bg-stone-900/80 backdrop-blur-sm flex justify-center items-center">
         <div class="modal-window w-full max-w-4xl p-6 shadow-2xl border border-stone-200 flex flex-col max-h-[85vh] bg-stone-50">
             <div class="modal-header shrink-0 flex justify-between items-center pb-3 border-b border-stone-200">
                 <h3 class="modal-title text-stone-800 font-serif flex items-center gap-2">

@@ -60,9 +60,12 @@ contextBridge.exposeInMainWorld('apiDrive', {
     auth: (forceLocal) => ipcRenderer.invoke('drive-auth', forceLocal),
     logout: () => ipcRenderer.invoke('drive-logout'),
     status: () => ipcRenderer.invoke('drive-status'),
+    checkAuth: () => ipcRenderer.invoke('drive-check-auth'),
+    onStatusUpdated: (callback) => ipcRenderer.on('drive-status-updated', (event, data) => callback(data)),
     listVaults: () => ipcRenderer.invoke('drive-list-vaults'),
     pull: (vaultId) => ipcRenderer.invoke('drive-pull', vaultId),
     sync: (parentTime) => ipcRenderer.invoke('drive-sync', parentTime),
+    syncAttachments: () => ipcRenderer.invoke('drive-sync-attachments'),
     checkUpdates: () => ipcRenderer.invoke('drive-check-updates'),
     generateInvite: () => ipcRenderer.invoke('drive-generate-invite'),
     joinInvite: (code, basePath, name) => ipcRenderer.invoke('drive-join-invite', code, basePath, name),
@@ -75,12 +78,13 @@ contextBridge.exposeInMainWorld('apiDrive', {
     removePermission: (permissionId) => ipcRenderer.invoke('drive-remove-permission', permissionId),
     getToken: () => ipcRenderer.invoke('drive-get-token'),
     getClientId: () => ipcRenderer.invoke('drive-get-client-id'),
-    joinByFolderId: (folderId, vaultName, basePath) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath),
+    joinByFolderId: (folderId, vaultName, basePath, customPusher) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath, customPusher),
     // --- Storico Versioni Cloud ---
     getDbFileId: () => ipcRenderer.invoke('drive-get-db-file-id'),
     listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),
     getRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-get-revision', fileId, revisionId),
-    restoreRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-restore-revision', fileId, revisionId)
+    restoreRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-restore-revision', fileId, revisionId),
+    openExternalPicker: () => ipcRenderer.invoke('drive-open-external-picker')
 });
 
 contextBridge.exposeInMainWorld('apiMicrosoft', {

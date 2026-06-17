@@ -16,11 +16,9 @@ window.getRecordHash = function(record) {
     return JSON.stringify(sortedObj);
 };
 
-window.rilevaConflitti = function(locali, esterni, loadedAt) {
+window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}) {
     const localMap = new Map((locali || []).map(m => [m.id, m]));
     const externalMap = new Map((esterni || []).map(m => [m.id, m]));
-    // Recupera i baseHashes salvati in appData
-    const baseHashes = window.appData?.baseHashes || {};
     
     const conflitti = [];
     const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa'];
@@ -37,6 +35,10 @@ window.rilevaConflitti = function(locali, esterni, loadedAt) {
             
             // Se non c'è baseHash (es. documenti vecchi prima di questa patch), fallback alla vecchia logica temporale
             if (!baseHash) {
+                console.warn("[MERGE SPY] Fallback to overwrite triggered for ID:", local.id);
+                console.warn("BaseHash exists?", !!baseHashes[local.id]);
+                console.warn("LocalHash vs RemoteHash Match?", localHash === externalHash);
+                
                 const tLocal = local.lastModified || 0;
                 const tExternal = external.lastModified || 0;
                 if (tLocal > loadedAt && tExternal > loadedAt) {
