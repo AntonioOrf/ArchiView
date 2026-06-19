@@ -97,16 +97,13 @@ function setupAttachmentsIpc() {
 
 function setupAttachmentsProtocol() {
   protocol.handle('local-asset', (request) => {
-    let filePath = request.url.slice('local-asset://'.length);
-    filePath = decodeURIComponent(filePath);
-    
-    // Sicurezza: Normalizza ed assicura che il percorso finale sia dentro attachmentsDirPath
-    const resolvedPath = path.resolve(state.attachmentsDirPath, filePath);
-    if (!resolvedPath.startsWith(path.resolve(state.attachmentsDirPath))) {
-      console.warn(`[SECURITY] Tentativo di path traversal bloccato per: ${filePath}`);
+    // path.basename elimina qualsiasi traversal relativo o assoluto: solo il nome file
+    const safeFileName = path.basename(decodeURIComponent(request.url.slice('local-asset://'.length)));
+    if (!safeFileName) {
+      console.warn(`[SECURITY] Richiesta local-asset con path vuoto bloccata.`);
       return new Response('Access Denied', { status: 403 });
     }
-    
+    const resolvedPath = path.join(state.attachmentsDirPath, safeFileName);
     return net.fetch('file://' + resolvedPath);
   });
 }

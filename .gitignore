@@ -19,7 +19,8 @@ electron.exe
 *.so
 *.dylib
 TODO
-Agent.md
+CLAUDE.md
+.claudeignore
 # File temporanei di sistema
 Thumbs.db
 profilo_test/

@@ -203,14 +203,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     const baseHash = baseHashes[id];
                     
                     if (!baseHash || typeof window.getRecordHash !== 'function') {
-                        console.warn("[MERGE SPY] Fallback to overwrite triggered for ID:", local.id);
-                        console.warn("BaseHash exists?", !!baseHash);
-                        const lh = typeof window.getRecordHash === 'function' ? window.getRecordHash(local) : null;
-                        const eh = typeof window.getRecordHash === 'function' ? window.getRecordHash(external) : null;
-                        console.warn("LocalHash vs RemoteHash Match?", lh === eh);
-                        console.warn("Keys in baseHashes:", Object.keys(baseHashes));
-                        
-                        // Fallback vecchia logica temporale
+                        // Fallback timestamp: nessun baseHash (documento precedente alla migrazione hash)
                         const tLocal = local.lastModified || 0;
                         const tExternal = external.lastModified || 0;
                         

@@ -1,4 +1,4 @@
-const { ipcMain, app, shell } = require('electron');
+const { ipcMain, app, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -9,6 +9,31 @@ const { splitFileIntoChunks, assembleFileFromChunks } = require('../chunkingLogi
 const REDIRECT_URI = 'http://localhost:3456/oauth2callback';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+
+function writeTokenFile(tokenPath: string, tokenData: object): void {
+  const dir = path.dirname(tokenPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (safeStorage.isEncryptionAvailable()) {
+    const encrypted = safeStorage.encryptString(JSON.stringify(tokenData)).toString('base64');
+    fs.writeFileSync(tokenPath, JSON.stringify({ encrypted, v: 1 }));
+  } else {
+    fs.writeFileSync(tokenPath, JSON.stringify(tokenData, null, 2));
+  }
+}
+
+function readTokenFile(tokenPath: string): object | null {
+  if (!fs.existsSync(tokenPath)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+    if (raw.v === 1 && raw.encrypted) {
+      return JSON.parse(safeStorage.decryptString(Buffer.from(raw.encrypted, 'base64')));
+    }
+    return raw; // plaintext legacy — verrà riscritto cifrato al prossimo save
+  } catch (e) {
+    console.error("Errore lettura token Drive:", e);
+    return null;
+  }
+}
 
 function getGlobalTokenPath() {
   return path.join(app.getPath('userData'), 'google-drive-tokens-global.json');
@@ -32,7 +57,7 @@ function logAuthEvent(message) {
     const formattedMessage = `[${timestamp}] ${message}\n`;
     try {
         fs.appendFileSync(logPath, formattedMessage);
-    } catch(e) {}
+    } catch(e) { console.error("Errore scrittura log auth:", e); }
 }
 
 let localServer = null;
@@ -71,22 +96,16 @@ function initGoogle() {
         // Se siamo in un workspace, DEVE sempre salvare localmente!
         if (state.workspacePath && localPath) {
             targetPath = localPath;
-            if (fs.existsSync(localPath)) {
-                try { currentTokens = JSON.parse(fs.readFileSync(localPath, 'utf8')); } catch(e){}
-            }
+            currentTokens = readTokenFile(localPath) || {};
         } else {
             // Solo se NON c'è un workspace attivo, usiamo il path globale
             targetPath = globalPath;
-            if (fs.existsSync(globalPath)) {
-                try { currentTokens = JSON.parse(fs.readFileSync(globalPath, 'utf8')); } catch(e){}
-            }
+            currentTokens = readTokenFile(globalPath) || {};
         }
 
         if (targetPath) {
             const mergedTokens = { ...currentTokens, ...tokens };
-            const dir = path.dirname(targetPath);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(targetPath, JSON.stringify(mergedTokens, null, 2));
+            writeTokenFile(targetPath, mergedTokens);
             logAuthEvent("REFRESH TOKEN RICEVUTO: Salvato in " + targetPath);
         }
     });
@@ -107,21 +126,11 @@ function loadSavedTokens() {
   let tokenPath;
   if (state.workspacePath) {
       tokenPath = getLocalTokenPath();
-      // AUTO-MIGRAZIONE: Se locale non esiste, pesca dal globale
-      if (tokenPath && !fs.existsSync(tokenPath)) {
-          const globalPath = getGlobalTokenPath();
-          if (globalPath && fs.existsSync(globalPath)) {
-              try {
-                  const dir = path.dirname(tokenPath);
-                  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                  fs.copyFileSync(globalPath, tokenPath);
-                  logAuthEvent("AUTO-MIGRAZIONE SUCCESSO: Token globale copiato nel workspace corrente -> " + tokenPath);
-              } catch(e) {
-                  logAuthEvent("AUTO-MIGRAZIONE FALLITA: " + e.message);
-              }
-          } else {
-              logAuthEvent("ATTENZIONE: Nessun token locale e nessun token globale disponibile.");
-          }
+      if (!tokenPath || !fs.existsSync(tokenPath)) {
+          // Nessun token locale per questo workspace: reset credenziali in memoria e richiedi login
+          if (oauth2Client) oauth2Client.setCredentials(null);
+          logAuthEvent("ATTENZIONE: Nessun token locale per il workspace corrente. Login richiesto.");
+          return false;
       }
   } else {
       tokenPath = getGlobalTokenPath();
@@ -130,9 +139,12 @@ function loadSavedTokens() {
   logAuthEvent("Tentativo lettura token da: " + tokenPath);
   if (tokenPath && fs.existsSync(tokenPath)) {
     try {
-        const tokenData = fs.readFileSync(tokenPath, 'utf8');
-        const tokens = JSON.parse(tokenData);
-        
+        const tokens = readTokenFile(tokenPath) as any;
+        if (!tokens) {
+            logAuthEvent("ERRORE LETTURA TOKEN: impossibile decifrare " + tokenPath);
+            return false;
+        }
+
         // Verifica che lo scope sia supportato
         if (tokens.scope && typeof tokens.scope === 'string') {
             const scopesArray = tokens.scope.split(' ');
@@ -160,6 +172,7 @@ function loadSavedTokens() {
 
 async function authenticateDrive(forceLocal = false) {
   return new Promise(async (resolve, reject) => {
+    try {
     const isLocalContext = !!state.workspacePath;
     const shouldForceLocal = isLocalContext || forceLocal;
     const skipCheck = forceLocal === true;
@@ -172,7 +185,7 @@ async function authenticateDrive(forceLocal = false) {
         
         // Verifica permessi sull'archivio specifico
         let settings: any = {};
-        try { settings = getAllSettings(); } catch(e) {}
+        try { settings = getAllSettings(); } catch(e) { console.error("Errore lettura settings:", e); }
         if (state.workspacePath && settings.sharedVaultId) {
             try {
                 await drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
@@ -215,17 +228,14 @@ async function authenticateDrive(forceLocal = false) {
         
         if (code) {
           codeExtracted = true;
-          console.log("DEBUG AUTH: Workspace Path is currently:", state.workspacePath);
-          
+
           let tokens;
           try {
-              console.log("DEBUG AUTH: Attempting token exchange with code:", code.substring(0, 10) + "...");
               const response = await oauth2Client.getToken(code);
               tokens = response.tokens;
-              console.log("DEBUG AUTH: Tokens received successfully! Scopes:", tokens.scope);
           } catch (tokenErr) {
-              console.error("DEBUG AUTH ERROR - TOKEN EXCHANGE FAILED:", tokenErr);
-              throw tokenErr; // Propaghiamo l'errore al blocco catch principale
+              console.error("Errore token exchange OAuth:", tokenErr);
+              throw tokenErr;
           }
           
           oauth2Client.setCredentials(tokens);
@@ -238,17 +248,12 @@ async function authenticateDrive(forceLocal = false) {
           // Ricalcoliamo il path ORA, perché state.workspacePath potrebbe essersi aggiornato!
           const currentLocalPath = getLocalTokenPath();
           if (currentLocalPath) {
-              const targetPath = currentLocalPath;
-              const dir = path.dirname(targetPath);
-              if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-              fs.writeFileSync(targetPath, JSON.stringify(tokens));
-              logAuthEvent("LOGIN MANUALE: Token FORZATO su LOCAL PATH -> " + targetPath);
+              writeTokenFile(currentLocalPath, tokens);
+              logAuthEvent("LOGIN MANUALE: Token FORZATO su LOCAL PATH -> " + currentLocalPath);
           } else {
               const globalPath = getGlobalTokenPath();
               if (globalPath) {
-                  const dir = path.dirname(globalPath);
-                  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                  fs.writeFileSync(globalPath, JSON.stringify(tokens));
+                  writeTokenFile(globalPath, tokens);
                   logAuthEvent("LOGIN MANUALE: Nessun workspace, salvato su GLOBAL PATH -> " + globalPath);
               }
           }
@@ -331,6 +336,7 @@ async function authenticateDrive(forceLocal = false) {
     }).listen(3456, () => {
       shell.openExternal(authUrl);
     });
+    } catch (e) { reject(e); }
   });
 }
 
@@ -362,7 +368,7 @@ async function checkDriveStatus() {
       user: res.data.user.emailAddress 
     };
   } catch (e: any) {
-    console.error("DEBUG AUTH checkDriveStatus API Call Failed:", e.message);
+    console.warn("checkDriveStatus API fallita (scope drive.file o rete):", e.message);
     // Se la rete è down o lo scope drive.file non permette about.get,
     // ma abbiamo i token locali validi, consideriamoci comunque autenticati.
     return { isAuthenticated: true, user: 'Utente (Drive.file)' };
@@ -504,7 +510,7 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
       try {
           const s = getAllSettings();
           if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
-      } catch(e) {}
+      } catch(e) { console.error("Errore lettura settings:", e); }
   }
 
   if (actualVaultFolderId) {
@@ -558,7 +564,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
           if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
               actualVaultFolderId = s.sharedVaultId;
           }
-      } catch(e) {}
+      } catch(e) { console.error("Errore lettura settings:", e); }
   }
 
   let lastModifyingUser = null;
@@ -630,43 +636,19 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
         try {
             const s = getAllSettings();
             if (s.syncAttachments !== undefined) syncAttachments = !!s.syncAttachments;
-        } catch(e) {}
+        } catch(e) { console.error("Errore lettura settings syncAttachments:", e); }
     }
     
     if (skipAttachments) syncAttachments = false;
     
     let parsedDb = driveRes.data;
-    const logPath = require('path').join(__dirname, '../../../artifacts/superpowers/debug.log');
-    let dbgMsg = `[DEBUG] typeof parsedDb: ${typeof parsedDb}\n`;
-    if (parsedDb) {
-        dbgMsg += `[DEBUG] isBuffer: ${Buffer.isBuffer(parsedDb)}\n`;
-        dbgMsg += `[DEBUG] keys: ${Object.keys(parsedDb).join(', ')}\n`;
-    }
-    
+
     if (typeof parsedDb === 'string') {
         try {
             parsedDb = JSON.parse(parsedDb);
-            dbgMsg += `[DEBUG] Successfully parsed string. typeof parsedDb is now: ${typeof parsedDb}\n`;
         } catch (e) {
             console.error("Errore parse JSON db da Drive:", e);
-            dbgMsg += `[DEBUG] Error parsing string: ${e.message}\n`;
         }
-    }
-    
-    dbgMsg += `[DEBUG] Final typeof parsedDb: ${typeof parsedDb}\n`;
-    if (typeof parsedDb === 'object') {
-        dbgMsg += `[DEBUG] Final parsedDb keys: ${Object.keys(parsedDb).join(', ')}\n`;
-        if (parsedDb.manoscritti) {
-            dbgMsg += `[DEBUG] manoscritti count: ${parsedDb.manoscritti.length}\n`;
-        } else {
-            dbgMsg += `[DEBUG] manoscritti missing!\n`;
-        }
-    }
-    
-    try {
-        fs.appendFileSync(logPath, dbgMsg + '\n');
-    } catch(err) {
-        console.error("Could not write debug log", err);
     }
 
     return { database: parsedDb, driveModifiedTime, lastModifyingUser };
@@ -688,7 +670,7 @@ async function syncToDrive(parentModifiedTime = null) {
       if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
           projectFolderId = s.sharedVaultId;
       }
-  } catch(e) {}
+  } catch(e) { console.error("Errore lettura settings:", e); }
   
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
@@ -712,7 +694,7 @@ async function syncToDrive(parentModifiedTime = null) {
               s.sharedVaultId = projectFolderId;
               saveAllSettings(s);
           }
-      } catch(e) {}
+      } catch(e) { console.error("Errore salvataggio sharedVaultId:", e); }
   }
   
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
@@ -754,7 +736,7 @@ async function cleanOrphanedAttachments() {
       if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
           projectFolderId = s.sharedVaultId;
       }
-  } catch(e) {}
+  } catch(e) { console.error("Errore lettura settings:", e); }
   
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
@@ -853,7 +835,7 @@ async function getDriveRevision(fileId: string, revisionId: string) {
         });
         let data = res.data;
         if (typeof data === 'string') {
-            try { data = JSON.parse(data); } catch(e) {}
+            try { data = JSON.parse(data); } catch(e) { console.error("Errore parse revisione Drive:", e); }
         }
         return data;
     } catch (e: any) {
@@ -871,7 +853,7 @@ async function getDbFileId() {
         if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
             projectFolderId = s.sharedVaultId;
         }
-    } catch(e) {}
+    } catch(e) { console.error("Errore lettura settings:", e); }
 
     if (!projectFolderId) {
         throw new Error("Vault non collegato al Cloud. Sincronizza almeno una volta prima di vedere lo storico.");
@@ -921,7 +903,7 @@ function setupDriveIpc() {
         if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) {
             projectFolderId = s.sharedVaultId;
         }
-    } catch(e) {}
+    } catch(e) { console.error("Errore lettura settings:", e); }
     if (projectFolderId) {
         await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
     }
@@ -981,7 +963,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
         let settings: any = {};
         try {
             settings = getAllSettings();
-        } catch(e) {}
+        } catch(e) { console.error("Errore lettura settings:", e); }
         
         // Recupera l'ID univoco della cartella di questo Vault su Google Drive
         let vaultFolderId = settings.sharedVaultId;
@@ -1000,7 +982,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
         let creds: any = {};
         try {
             creds = require('./cloudCredentials');
-        } catch(e) {}
+        } catch(e) { /* cloudCredentials.ts opzionale */ }
         
         // Formato ultra-ridotto: r|k|c|w|a|v|n
         // r = refresh_token, k = pusherKey, c = cluster, w = webhook, a = autofetch (1/0), v = vaultFolderId, n = projectName
@@ -1077,8 +1059,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
         // 2. Salva il token Google Drive (solo refresh_token)
         if(refreshToken) {
             const tokenPath = path.join(path.join(basePath, name), '.drive-tokens.json');
-            const mockTokens = { refresh_token: refreshToken };
-            fs.writeFileSync(tokenPath, JSON.stringify(mockTokens, null, 2));
+            writeTokenFile(tokenPath, { refresh_token: refreshToken });
         }
         
         // 3. Salva le impostazioni Pusher e il flag Condiviso globalmente
@@ -1131,7 +1112,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
     try {
         await authenticateDrive();
         let settings: any = {};
-        try { settings = getAllSettings(); } catch(e) {}
+        try { settings = getAllSettings(); } catch(e) { console.error("Errore lettura settings:", e); }
         
         let vaultFolderId = settings.sharedVaultId;
         if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato. Assicurati che sia un Archivio Condiviso.");
@@ -1156,7 +1137,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
     try {
         await authenticateDrive();
         let settings: any = {};
-        try { settings = getAllSettings(); } catch(e) {}
+        try { settings = getAllSettings(); } catch(e) { console.error("Errore lettura settings:", e); }
         
         let vaultFolderId = settings.sharedVaultId;
         if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato.");
@@ -1178,7 +1159,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
     try {
         await authenticateDrive();
         let settings: any = {};
-        try { settings = getAllSettings(); } catch(e) {}
+        try { settings = getAllSettings(); } catch(e) { console.error("Errore lettura settings:", e); }
         
         let vaultFolderId = settings.sharedVaultId;
         if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato.");
@@ -1225,7 +1206,7 @@ ipcMain.handle('drive-sync', async (event, parentModifiedTime) => {
         fs.mkdirSync(newPath, { recursive: true });
         
         let creds: any = {};
-        try { creds = require('./cloudCredentials'); } catch(e) {}
+        try { creds = require('./cloudCredentials'); } catch(e) { /* cloudCredentials.ts opzionale */ }
         
         let settingsToSave: any = { 
             isSharedVault: true, 
@@ -1414,7 +1395,7 @@ async function syncAttachmentsBidirectional() {
           projectFolderId = s.sharedVaultId;
       }
       if (!s.syncAttachments) return;
-  } catch(e) {}
+  } catch(e) { console.error("Errore lettura settings:", e); }
   
   if (!projectFolderId) return; // Non sincronizzato
 

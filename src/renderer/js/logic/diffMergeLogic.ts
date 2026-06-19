@@ -33,11 +33,8 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}) {
             // Se sono identici (i contenuti, scartando i timestamp), non c'è conflitto
             if (localHash === externalHash) continue;
             
-            // Se non c'è baseHash (es. documenti vecchi prima di questa patch), fallback alla vecchia logica temporale
+            // Se non c'è baseHash (documento precedente alla migrazione hash), fallback timestamp
             if (!baseHash) {
-                console.warn("[MERGE SPY] Fallback to overwrite triggered for ID:", local.id);
-                console.warn("BaseHash exists?", !!baseHashes[local.id]);
-                console.warn("LocalHash vs RemoteHash Match?", localHash === externalHash);
                 
                 const tLocal = local.lastModified || 0;
                 const tExternal = external.lastModified || 0;

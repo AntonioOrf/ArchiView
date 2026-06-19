@@ -52,7 +52,7 @@ function saveAllSettings(newSettings) {
     };
     try {
         fs.writeFileSync(driveSettingsPath, JSON.stringify(driveSettings, null, 2));
-    } catch(e) {}
+    } catch(e) { console.error("Errore salvataggio drive settings:", e); }
   }
 
   return updated;
@@ -106,7 +106,7 @@ function initWorkspace(folderPath) {
   if (fs.existsSync(driveSettingsPath)) {
       try {
           workspaceDriveSettings = JSON.parse(fs.readFileSync(driveSettingsPath, 'utf8'));
-      } catch(e) {}
+      } catch(e) { console.error("Errore parsing drive settings locali:", e); }
   } else {
       // If no local config exists, but this is the SAME workspace as the global one, migrate global settings to local
       if (currentSettings.workspacePath === folderPath && (currentSettings.isSharedVault || currentSettings.isPersonalCloud)) {
@@ -121,7 +121,7 @@ function initWorkspace(folderPath) {
           };
           try {
               fs.writeFileSync(driveSettingsPath, JSON.stringify(workspaceDriveSettings, null, 2));
-          } catch(e) {}
+          } catch(e) { console.error("Errore migrazione drive settings locali:", e); }
       }
   }
 
