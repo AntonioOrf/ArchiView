@@ -11,7 +11,7 @@ const { setupAttachmentsIpc, setupAttachmentsProtocol } = require('./ipc/attachm
 const { setupWorkspaceIpc } = require('./ipc/workspaceIpc');
 const { setupUpdaterIpc } = require('./ipc/updaterIpc');
 const { setupSettingsIpc } = require('./ipc/settingsIpc');
-const { setupDriveIpc } = require('./ipc/driveSync');
+const { setupDriveIpc } = require('./ipc/drive');
 const { setupMsIpc } = require('./ipc/msSync');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
 

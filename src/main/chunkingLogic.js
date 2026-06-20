@@ -49,6 +49,18 @@ export async function splitFileIntoChunks(filePath, cacheDir, chunkSize = DEFAUL
  * @param cacheDir Directory where chunks are stored
  * @param destinationFilePath Output path for the reassembled file
  */
+const SHA256_HEX_RE = /^[a-f0-9]{64}$/;
+function safeChunkPath(cacheDir, hash) {
+    if (!SHA256_HEX_RE.test(hash)) {
+        throw new Error(`Hash chunk non valido (formato inatteso): ${hash}`);
+    }
+    const resolvedCache = path.resolve(cacheDir);
+    const chunkPath = path.resolve(path.join(cacheDir, hash));
+    if (!chunkPath.startsWith(resolvedCache + path.sep) && chunkPath !== resolvedCache) {
+        throw new Error(`Path traversal rilevato per hash: ${hash}`);
+    }
+    return chunkPath;
+}
 export async function assembleFileFromChunks(chunkHashes, cacheDir, destinationFilePath) {
     const destDir = path.dirname(destinationFilePath);
     if (!fs.existsSync(destDir)) {
@@ -57,7 +69,7 @@ export async function assembleFileFromChunks(chunkHashes, cacheDir, destinationF
     const fileHandle = await fs.promises.open(destinationFilePath, 'w');
     try {
         for (const hash of chunkHashes) {
-            const chunkPath = path.join(cacheDir, hash);
+            const chunkPath = safeChunkPath(cacheDir, hash);
             if (!fs.existsSync(chunkPath)) {
                 throw new Error(`Chunk mancante nella cache locale: ${hash}`);
             }

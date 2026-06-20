@@ -5,6 +5,7 @@ const { state } = require('../workspaceManager');
 
 let watcher = null;
 let isSavingSelf = false;
+let watcherDebounceTimer = null;
 
 function startWatcher() {
   if (watcher) {
@@ -13,16 +14,19 @@ function startWatcher() {
     } catch (e) {}
     watcher = null;
   }
-  
+
   if (!state.dataFilePath || !fs.existsSync(state.dataFilePath)) return;
 
   try {
     watcher = fs.watch(state.dataFilePath, (event) => {
       if (event === 'change') {
         if (isSavingSelf) return;
-        if (state.mainWindow && !state.mainWindow.isDestroyed()) {
-          state.mainWindow.webContents.send('database-modificato-esterno');
-        }
+        clearTimeout(watcherDebounceTimer);
+        watcherDebounceTimer = setTimeout(() => {
+          if (state.mainWindow && !state.mainWindow.isDestroyed()) {
+            state.mainWindow.webContents.send('database-modificato-esterno');
+          }
+        }, 150);
       }
     });
   } catch (error) {
@@ -61,7 +65,7 @@ function setupDatabaseIpc() {
       }
 
       isSavingSelf = true;
-      await fsp.writeFile(state.dataFilePath, JSON.stringify(dati, null, 2));
+      await fsp.writeFile(state.dataFilePath, JSON.stringify(dati));
       
       if (!watcher) {
         startWatcher();
@@ -100,9 +104,9 @@ function setupDatabaseIpc() {
       if (!state.workspacePath) throw new Error("Workspace non impostato");
       const path = require('path');
       const basePath = path.join(state.workspacePath, '.archiview-base.json');
-      await fsp.writeFile(basePath, JSON.stringify(dati, null, 2));
+      await fsp.writeFile(basePath, JSON.stringify(dati));
       return { success: true };
-    } catch (error) { 
+    } catch (error) {
       console.error("Errore salvataggio dati base:", error);
       return { success: false, error: error.message }; 
     }

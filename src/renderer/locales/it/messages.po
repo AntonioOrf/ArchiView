@@ -1934,310 +1934,310 @@ msgid "modal_media_title"
 msgstr "Visualizzatore Multimediale"
 
 msgid "msg_l_archivio_stato_sincroni"
-msgstr "msg_l_archivio_stato_sincroni"
+msgstr "L'archivio è stato sincronizzato in tempo reale."
 
 msgid "msg_benvenuto_nell_archivio_c"
-msgstr "msg_benvenuto_nell_archivio_c"
+msgstr "Benvenuto nell'Archivio Condiviso! Accedi a Google Drive per scaricare i dati."
 
 msgid "dialog_export_zip"
-msgstr "dialog_export_zip"
+msgstr "Esporta Backup in ZIP"
 
 msgid "msg_esportazione_completata_c"
-msgstr "msg_esportazione_completata_c"
+msgstr "Esportazione completata con successo!"
 
 msgid "msg_errore_in_esportazione"
-msgstr "msg_errore_in_esportazione"
+msgstr "Errore in esportazione: "
 
 msgid "msg_l_archivio_vuoto_nulla_da"
-msgstr "msg_l_archivio_vuoto_nulla_da"
+msgstr "L'archivio è vuoto, nulla da esportare."
 
 msgid "msg_esportazione_di_var_recor"
-msgstr "msg_esportazione_di_var_recor"
+msgstr "Esportazione di {var0} record completata con successo!"
 
 msgid "dialog_import_zip"
-msgstr "dialog_import_zip"
+msgstr "Importa Archivio JSON"
 
 msgid "msg_importati_var_record_con_"
-msgstr "msg_importati_var_record_con_"
+msgstr "Importati {var0} record con successo!"
 
 msgid "msg_errore_in_importazione"
-msgstr "msg_errore_in_importazione"
+msgstr "Errore in importazione: "
 
 msgid "msg_var_record_eliminati"
-msgstr "msg_var_record_eliminati"
+msgstr "{var0} record eliminati."
 
 msgid "msg_var_record_copiati_negli_"
-msgstr "msg_var_record_copiati_negli_"
+msgstr "{var0} record copiati negli appunti di ArchiView. Tasto destro per incollarli in un altro archivio."
 
 msgid "msg_var_record_tagliati_tasto"
-msgstr "msg_var_record_tagliati_tasto"
+msgstr "{var0} record tagliati. Tasto destro per spostarli in un altro archivio."
 
 msgid "msg_cartella_copiata_tasto_de"
-msgstr "msg_cartella_copiata_tasto_de"
+msgstr "Cartella copiata. Tasto destro su un'altra cartella per incollarla."
 
 msgid "msg_impossibile_aprire_la_car"
-msgstr "msg_impossibile_aprire_la_car"
+msgstr "Impossibile aprire la cartella in Esplora Risorse."
 
 msgid "msg_cartella_tagliata_tasto_d"
-msgstr "msg_cartella_tagliata_tasto_d"
+msgstr "Cartella tagliata. Tasto destro per spostarla."
 
 msgid "msg_record_copiato_tasto_dest"
-msgstr "msg_record_copiato_tasto_dest"
+msgstr "Record copiato. Tasto destro per incollarlo in una cartella."
 
 msgid "msg_record_tagliato_tasto_des"
-msgstr "msg_record_tagliato_tasto_des"
+msgstr "Record tagliato. Tasto destro per spostarlo in un altro archivio."
 
 msgid "msg_archivio_spostato_con_suc"
-msgstr "msg_archivio_spostato_con_suc"
+msgstr "Archivio spostato con successo!"
 
 msgid "msg_l_archivio_copiato_vuoto"
-msgstr "msg_l_archivio_copiato_vuoto"
+msgstr "L'archivio copiato è vuoto."
 
 msgid "msg_archivio_duplicato_con_su"
-msgstr "msg_archivio_duplicato_con_su"
+msgstr "Archivio duplicato con successo ({var0} record)!"
 
 msgid "msg_errore_in_duplicazione_ar"
-msgstr "msg_errore_in_duplicazione_ar"
+msgstr "Errore in duplicazione archivio: "
 
 msgid "msg_var_record_spostati_con_s"
-msgstr "msg_var_record_spostati_con_s"
+msgstr "{var0} record spostati con successo!"
 
 msgid "msg_var_record_duplicati_con_"
-msgstr "msg_var_record_duplicati_con_"
+msgstr "{var0} record duplicati con successo!"
 
 msgid "msg_errore_in_incolla"
-msgstr "msg_errore_in_incolla"
+msgstr "Errore in incolla: "
 
 msgid "msg_nessuna_azione_da_annulla"
-msgstr "msg_nessuna_azione_da_annulla"
+msgstr "Nessuna azione da annullare."
 
 msgid "msg_annullato_var"
-msgstr "msg_annullato_var"
+msgstr "Annullato: {var0}"
 
 msgid "msg_errore_durante_l_annullam"
-msgstr "msg_errore_durante_l_annullam"
+msgstr "Errore durante l'annullamento."
 
 msgid "msg_il_documento_corrente_sta"
-msgstr "msg_il_documento_corrente_sta"
+msgstr "Il documento corrente è stato eliminato da un altro utente."
 
 msgid "msg_caricamento_revisione"
-msgstr "msg_caricamento_revisione"
+msgstr "Caricamento revisione..."
 
 msgid "msg_revisione_vuota_o_non_val"
-msgstr "msg_revisione_vuota_o_non_val"
+msgstr "Revisione vuota o non valida."
 
 msgid "msg_nessuna_differenza_rispet"
-msgstr "msg_nessuna_differenza_rispet"
+msgstr "Nessuna differenza rispetto alla versione corrente."
 
 msgid "msg_errore_nel_caricamento_de"
-msgstr "msg_errore_nel_caricamento_de"
+msgstr "Errore nel caricamento della revisione: "
 
 msgid "msg_vault_ripristinato_alla_v"
-msgstr "msg_vault_ripristinato_alla_v"
+msgstr "✅ Vault ripristinato alla versione selezionata!"
 
 msgid "msg_errore_durante_il_riprist"
-msgstr "msg_errore_durante_il_riprist"
+msgstr "Errore durante il ripristino: "
 
 msgid "msg_segnalazione_inviata_con_"
-msgstr "msg_segnalazione_inviata_con_"
+msgstr "Segnalazione inviata con successo!"
 
 msgid "msg_errore_durante_l_invio_de"
-msgstr "msg_errore_durante_l_invio_de"
+msgstr "Errore durante l'invio della segnalazione."
 
 msgid "msg_errore_di_rete_durante_l_"
-msgstr "msg_errore_di_rete_durante_l_"
+msgstr "Errore di rete durante l'invio."
 
 msgid "msg_funzionalit_non_disponibi"
-msgstr "msg_funzionalit_non_disponibi"
+msgstr "Funzionalità non disponibile."
 
 msgid "tut_history_title"
-msgstr "tut_history_title"
+msgstr "Storico Versioni Cloud"
 
 msgid "tut_history_desc"
-msgstr "tut_history_desc"
+msgstr "Clicca qui per visualizzare lo storico delle revisioni salvate sul Cloud."
 
 msgid "tut_history_panel_title"
-msgstr "tut_history_panel_title"
+msgstr "Pannello Storico"
 
 msgid "tut_history_panel_desc"
-msgstr "tut_history_panel_desc"
+msgstr "Da questo pannello puoi sfogliare le vecchie versioni del database, aprirle in sola lettura, e ripristinare il tuo archivio a una versione precedente."
 
 msgid "msg_errore"
-msgstr "msg_errore"
+msgstr "Errore: "
 
 msgid "msg_dlg_cambia_account_google"
-msgstr "msg_dlg_cambia_account_google"
+msgstr "Cambia Account Google"
 
 msgid "msg_dlg_questo_forzer_l_uso_d"
-msgstr "msg_dlg_questo_forzer_l_uso_d"
+msgstr "Questo forzerà l'uso di uno specifico account Google SOLO per questo Archivio. Vuoi procedere?"
 
 msgid "msg_rimozione_di_var_in_corso"
-msgstr "msg_rimozione_di_var_in_corso"
+msgstr "Rimozione di {var0} in corso..."
 
 msgid "msg_var_stato_rimosso_con_suc"
-msgstr "msg_var_stato_rimosso_con_suc"
+msgstr "{var0} è stato rimosso con successo."
 
 msgid "msg_errore_durante_la_rimozio"
-msgstr "msg_errore_durante_la_rimozio"
+msgstr "Errore durante la rimozione: {var0}"
 
 msgid "msg_codice_copiato_negli_appu"
-msgstr "msg_codice_copiato_negli_appu"
+msgstr "Codice copiato negli appunti!"
 
 msgid "msg_invito_inviato_con_succes"
-msgstr "msg_invito_inviato_con_succes"
+msgstr "Invito inviato con successo a {var0}!"
 
 msgid "msg_pulizia_completata_file_r"
-msgstr "msg_pulizia_completata_file_r"
+msgstr "Pulizia completata! File rimossi: {var0} in locale, {var1} su Drive."
 
 msgid "msg_errore_durante_la_pulizia"
-msgstr "msg_errore_durante_la_pulizia"
+msgstr "Errore durante la pulizia: "
 
 msgid "msg_sincronizzazione_annullat"
-msgstr "msg_sincronizzazione_annullat"
+msgstr "Sincronizzazione annullata. Ripristino versione locale."
 
 msgid "msg_nessuna_modifica_rilevata"
-msgstr "msg_nessuna_modifica_rilevata"
+msgstr "Nessuna modifica rilevata nei campi principali."
 
 msgid "msg_autenticazione_e_ricerca_"
-msgstr "msg_autenticazione_e_ricerca_"
+msgstr "Autenticazione e ricerca archivi in corso..."
 
 msgid "msg_errore_cloud"
-msgstr "msg_errore_cloud"
+msgstr "Errore Cloud: "
 
 msgid "dialog_select_folder"
-msgstr "dialog_select_folder"
+msgstr "Seleziona la posizione per la nuova cartella"
 
 msgid "msg_compila_tutti_i_campi"
-msgstr "msg_compila_tutti_i_campi"
+msgstr "Compila tutti i campi."
 
 msgid "msg_connessione_all_archivio_"
-msgstr "msg_connessione_all_archivio_"
+msgstr "Connessione all'Archivio..."
 
 msgid "msg_connesso_con_successo_ria"
-msgstr "msg_connesso_con_successo_ria"
+msgstr "Connesso con successo! Riavvio..."
 
 msgid "msg_scaricamento_archivio"
-msgstr "msg_scaricamento_archivio"
+msgstr "Scaricamento archivio..."
 
 msgid "msg_nessun_database_trovato_n"
-msgstr "msg_nessun_database_trovato_n"
+msgstr "Nessun database trovato nell'Archivio selezionato."
 
 msgid "msg_archivio_scaricato_selezi"
-msgstr "msg_archivio_scaricato_selezi"
+msgstr "Archivio scaricato! Seleziona dove salvarlo sul tuo PC."
 
 msgid "msg_archivio_ripristinato_con"
-msgstr "msg_archivio_ripristinato_con"
+msgstr "Archivio ripristinato con successo! Riavvio..."
 
 msgid "msg_attenzione_l_allegato_pot"
-msgstr "msg_attenzione_l_allegato_pot"
+msgstr "Attenzione: l'allegato potrebbe essere corrotto o modificato (Hash mismatch)."
 
 msgid "msg_ci_sono_nuovi_aggiornamen"
-msgstr "msg_ci_sono_nuovi_aggiornamen"
+msgstr "Ci sono nuovi aggiornamenti da scaricare!"
 
 msgid "msg_nessun_nuovo_aggiornament"
-msgstr "msg_nessun_nuovo_aggiornament"
+msgstr "Nessun nuovo aggiornamento trovato."
 
 msgid "msg_errore_durante_il_fetch"
-msgstr "msg_errore_durante_il_fetch"
+msgstr "Errore durante il fetch: "
 
 msgid "msg_apri_il_browser_per_compl"
-msgstr "msg_apri_il_browser_per_compl"
+msgstr "Apri il browser per completare l'accesso..."
 
 msgid "msg_autenticazione_completata"
-msgstr "msg_autenticazione_completata"
+msgstr "Autenticazione completata!"
 
 msgid "msg_errore_durante_l_autentic"
-msgstr "msg_errore_durante_l_autentic"
+msgstr "Errore durante l'autenticazione"
 
 msgid "msg_disconnesso_da_google_dri"
-msgstr "msg_disconnesso_da_google_dri"
+msgstr "Disconnesso da Google Drive."
 
 msgid "msg_sincronizzazione_completa"
-msgstr "msg_sincronizzazione_completa"
+msgstr "Sincronizzazione completata con successo!"
 
 msgid "msg_conflitto_sul_cloud_un_al"
-msgstr "msg_conflitto_sul_cloud_un_al"
+msgstr "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso..."
 
 msgid "msg_conflitto_risolto_sincron"
-msgstr "msg_conflitto_risolto_sincron"
+msgstr "Conflitto risolto! Sincronizzazione completata in sicurezza."
 
 msgid "msg_errore_durante_la_risoluz"
-msgstr "msg_errore_durante_la_risoluz"
+msgstr "Errore durante la risoluzione del conflitto: "
 
 msgid "msg_errore_durante_la_sincron"
-msgstr "msg_errore_durante_la_sincron"
+msgstr "Errore durante la sincronizzazione: "
 
 msgid "msg_scaricamento_completato"
-msgstr "msg_scaricamento_completato"
+msgstr "Scaricamento completato!"
 
 msgid "msg_errore_durante_lo_scarica"
-msgstr "msg_errore_durante_lo_scarica"
+msgstr "Errore durante lo scaricamento: "
 
 msgid "msg_caricamento_completato_in"
-msgstr "msg_caricamento_completato_in"
+msgstr "Caricamento completato in sicurezza!"
 
 msgid "msg_conflitto_risolto_caricam"
-msgstr "msg_conflitto_risolto_caricam"
+msgstr "Conflitto risolto! Caricamento completato in sicurezza."
 
 msgid "msg_errore_durante_il_caricam"
-msgstr "msg_errore_durante_il_caricam"
+msgstr "Errore durante il caricamento: "
 
 msgid "msg_l_archivio_ora_scollegato"
-msgstr "msg_l_archivio_ora_scollegato"
+msgstr "L'archivio è ora scollegato e strettamente locale."
 
 msgid "msg_errore_durante_la_disconn"
-msgstr "msg_errore_durante_la_disconn"
+msgstr "Errore durante la disconnessione dal cloud: "
 
 msgid "msg_questo_archivio_non_colle"
-msgstr "msg_questo_archivio_non_colle"
+msgstr "Questo archivio non è collegato a un repository Hub."
 
 msgid "msg_ricezione_modifiche_dall_"
-msgstr "msg_ricezione_modifiche_dall_"
+msgstr "Ricezione modifiche dall'Hub..."
 
 msgid "msg_nessuna_nuova_modifica_su"
-msgstr "msg_nessuna_nuova_modifica_su"
+msgstr "Nessuna nuova modifica sul server. Sei aggiornato."
 
 msgid "msg_dati_scaricati_e_fusi_con"
-msgstr "msg_dati_scaricati_e_fusi_con"
+msgstr "Dati scaricati e fusi localmente con successo."
 
 msgid "msg_attenzione_rilevati_confl"
-msgstr "msg_attenzione_rilevati_confl"
+msgstr "Attenzione: Rilevati conflitti di sincronizzazione dal server. Clicca 'Ricevi' per risolvere."
 
 msgid "msg_attenzione_alcuni_file_so"
-msgstr "msg_attenzione_alcuni_file_so"
+msgstr "Attenzione: Alcuni file sono stati eliminati sul server. Clicca 'Ricevi' per verificare."
 
 msgid "msg_dati_sincronizzati_automa"
-msgstr "msg_dati_sincronizzati_automa"
+msgstr "Dati sincronizzati automaticamente dal server."
 
 msgid "msg_invio_modifiche_al_server"
-msgstr "msg_invio_modifiche_al_server"
+msgstr "Invio modifiche al server..."
 
 msgid "msg_il_server_contiene_modifi"
-msgstr "msg_il_server_contiene_modifi"
+msgstr "Il server contiene modifiche più recenti. Usa 'Ricevi' per aggiornare il tuo archivio prima di inviare."
 
 msgid "msg_modifiche_inviate_con_suc"
-msgstr "msg_modifiche_inviate_con_suc"
+msgstr "Modifiche inviate con successo!"
 
 msgid "msg_sincronizzazione"
-msgstr "msg_sincronizzazione"
+msgstr "Sincronizzazione..."
 
 msgid "msg_connessione_al_repository"
-msgstr "msg_connessione_al_repository"
+msgstr "Connessione al repository..."
 
 msgid "msg_seleziona_il_percorso_in_"
-msgstr "msg_seleziona_il_percorso_in_"
+msgstr "Seleziona il percorso in cui scaricare l'archivio."
 
 msgid "msg_archivio_clonato_con_succ"
-msgstr "msg_archivio_clonato_con_succ"
+msgstr "Archivio clonato con successo! Riavvio..."
 
 msgid "msg_impostazioni_cloud_salvat"
-msgstr "msg_impostazioni_cloud_salvat"
+msgstr "Impostazioni cloud salvate."
 
 msgid "msg_nome_collaboratore_salvat"
-msgstr "msg_nome_collaboratore_salvat"
+msgstr "Nome collaboratore salvato."
 
 msgid "msg_directory_allegati_locale"
-msgstr "msg_directory_allegati_locale"
+msgstr "Directory allegati locale configurata con successo."
 
 msgid "msg_la_directory_degli_allega"
-msgstr "msg_la_directory_degli_allega"
+msgstr "La directory degli allegati è stata ripristinata al valore predefinito (all'interno dell'archivio)."

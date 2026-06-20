@@ -27,23 +27,38 @@ async function handleFormSubmit(e) {
     const fileInput = document.getElementById('form-allegato');
     
     if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0 && window.apiBrowser) {
-        for (let i = 0; i < window.pendingFilesToUpload.length; i++) {
-            const file = window.pendingFilesToUpload[i];
+        const UPLOAD_CONCURRENCY = 3;
+        const files = window.pendingFilesToUpload;
+        const results: any[] = new Array(files.length).fill(null);
+
+        const uploadOne = async (i: number) => {
+            const file = files[i];
             try {
                 const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
                 const risultato = await window.apiBrowser.salvaAllegato(filePath, documentoId);
                 if (risultato) {
-                    allegatiCorrenti.push({
+                    results[i] = {
                         nome: risultato.fileName,
                         tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
                         originalName: file.name,
                         hash: risultato.hash
-                    });
+                    };
                 }
             } catch (error) {
                 console.error("Errore durante il salvataggio dell'allegato:", error);
                 mostraMessaggio(window.t("msg_file_save_error"), "error");
             }
+        };
+
+        // Upload concurrenti con limite UPLOAD_CONCURRENCY
+        const queue = Array.from({ length: files.length }, (_, i) => i);
+        const workers = Array.from({ length: Math.min(UPLOAD_CONCURRENCY, files.length) }, async () => {
+            while (queue.length) await uploadOne(queue.shift()!);
+        });
+        await Promise.all(workers);
+
+        for (const r of results) {
+            if (r) allegatiCorrenti.push(r);
         }
     }
 
@@ -112,8 +127,7 @@ async function handleFormSubmit(e) {
         } else {
             appData.manoscritti.push(newData);
         }
-        await salvaTutto();
-        window.cartellaAttuale = cartellaScelta; 
+        window.cartellaAttuale = cartellaScelta;
         await salvaTutto();
         renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
@@ -164,7 +178,7 @@ async function editItem(id) {
         }
     });
 
-    document.getElementById('form-title').textContent = "Modifica Scheda";
+    document.getElementById('form-title').textContent = window.t("title_edit_record", "Edit Record");
     document.getElementById('btn-cancel-edit').classList.remove('hidden');
 }
 

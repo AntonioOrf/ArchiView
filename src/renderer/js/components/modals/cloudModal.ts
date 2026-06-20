@@ -121,12 +121,33 @@
 
                             <!-- TAB INVITE CONTENT -->
                             <div id="cloud-tab-invite-content" class="flex flex-col bg-emerald-50/50 dark:bg-emerald-900/10">
-                                <div class="flex flex-col p-4 gap-3">
-                                    <p class="text-sm font-semibold text-stone-800 dark:text-stone-100"><span data-i18n="modal_cloud_direct_invite">Invito Diretto</span></p>
-                                    <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed"><span data-i18n="modal_cloud_invite_desc">Inserisci l'email Google del collaboratore. Riceverà un'email con l'autorizzazione di accesso e un "link magico" per aprire l'archivio nell'app automaticamente.</span></p>
-                                    <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2.5 text-sm border-emerald-500 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 justify-center mt-2">
-                                        <i data-lucide="mail-plus" class="w-4 h-4 mr-2"></i> <span data-i18n="btn_invite_email">Invita tramite Email</span>
-                                    </button>
+                                <div class="flex flex-col gap-0">
+                                    <!-- STEP 1: Email → autorizzazione Drive -->
+                                    <div class="flex items-start gap-3 p-4 border-b border-emerald-100 dark:border-emerald-900/40">
+                                        <div class="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                                        <div class="flex-1 flex flex-col gap-2">
+                                            <p class="text-xs font-semibold text-stone-800 dark:text-stone-100"><span data-i18n="cloud_step1_title">Grant Access to Google Drive</span></p>
+                                            <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed"><span data-i18n="cloud_step1_desc">The collaborator will receive an email from Google authorizing access to the shared folder.</span></p>
+                                            <button onclick="invitaTramiteEmail()" id="btn-cloud-share-email" class="btn btn-secondary py-2 text-xs border-emerald-400 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 justify-center">
+                                                <i data-lucide="mail-plus" class="w-3.5 h-3.5 mr-1.5"></i> <span data-i18n="btn_invite_email">Invite via Email</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- STEP 2: Link archiview:// per config Pusher -->
+                                    <div class="flex items-start gap-3 p-4">
+                                        <div class="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                                        <div class="flex-1 flex flex-col gap-2">
+                                            <p class="text-xs font-semibold text-stone-800 dark:text-stone-100"><span data-i18n="cloud_step2_title">Share the ArchiView Link</span></p>
+                                            <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed"><span data-i18n="cloud_step2_desc">The collaborator pastes this link in ArchiView to complete setup and enable real-time sync.</span></p>
+                                            <div class="flex gap-1.5">
+                                                <input type="text" id="cloud-invite-code" class="form-input flex-1 text-[11px] font-mono bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hidden-tab" readonly placeholder="Generazione link...">
+                                                <button id="btn-copy-invite" onclick="copiaCodiceInvito()" class="btn btn-secondary px-2.5 shrink-0 border-stone-300 dark:border-stone-600 hidden-tab" title="Copia link">
+                                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </div>
+                                            <p class="text-[10px] text-stone-400 dark:text-stone-500 leading-snug"><span data-i18n="cloud_step2_hint">The recipient goes to <em>Join an Archive</em> and pastes this link in the Step 1 field.</span></p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -239,7 +260,7 @@
 
     window.creaCondivisoAltroAccount = async function() {
         if (!window.apiDrive) return;
-        const confirm = await chiediConfermaAzione(window.t("btn_use_another_account", "Usa un altro account Google"), "Verrai reindirizzato al browser per accedere con un altro account Google. Questo account verrà usato SOLO per questo Archivio condiviso. Vuoi procedere?");
+        const confirm = await chiediConfermaAzione(window.t("btn_use_another_account", "Use another Google account"), window.t("confirm_use_another_account", "You will be redirected to the browser to sign in with another Google account. This account will be used ONLY for this shared Archive. Do you want to proceed?"));
         if (confirm) {
             mostraProgressoCloud(window.t("prog_auth_title", "Autenticazione in corso"), window.t("prog_auth_desc1", "Accedi con l\'account Google desiderato nel browser..."));
             try {
@@ -446,7 +467,7 @@
             }
             
             if (!members || members.length === 0) {
-                list.innerHTML = window.sanitizeHTML('<div class="text-center p-4 text-xs text-stone-500">Nessun membro trovato.</div>');
+                list.innerHTML = window.sanitizeHTML(`<div class="text-center p-4 text-xs text-stone-500">${window.t("cloud_no_members", "No members found.")}</div>`);
                 return;
             }
 
@@ -454,26 +475,26 @@
                 const isOwner = m.role === 'owner';
                 const photoUrl = m.photoLink && m.photoLink.startsWith('//') ? 'https:' + m.photoLink : m.photoLink;
                 const fallbackAvatar = `<div class="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center shrink-0"><i data-lucide="user" class="w-4 h-4 text-stone-500"></i></div>`;
-                const avatar = photoUrl 
-                    ? `<img src="${photoUrl}" onerror="window.fallbackCloudAvatar(this)" class="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 shrink-0 object-cover">` 
+                const avatar = photoUrl
+                    ? `<img src="${photoUrl}" onerror="window.fallbackCloudAvatar(this)" class="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 shrink-0 object-cover">`
                     : fallbackAvatar;
-                
-                const roleBadge = isOwner 
-                    ? '<span class="text-[9px] px-1.5 py-0.5 rounded-sm bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wide">Proprietario</span>'
-                    : '<span class="text-[9px] px-1.5 py-0.5 rounded-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold uppercase tracking-wide">Collaboratore</span>';
-                
+
+                const roleBadge = isOwner
+                    ? `<span class="text-[9px] px-1.5 py-0.5 rounded-sm bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wide">${window.t("cloud_role_owner", "Owner")}</span>`
+                    : `<span class="text-[9px] px-1.5 py-0.5 rounded-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold uppercase tracking-wide">${window.t("cloud_role_collaborator", "Collaborator")}</span>`;
+
                 const actionBtn = isOwner ? '' : `
-                    <button onclick="rimuoviMembroCloud('${m.id}', '${(m.displayName || m.emailAddress || '').replace(/'/g, "\\'")}')" class="btn btn-ghost text-stone-400 hover:text-red-600 dark:hover:text-red-400 p-1.5" title="Rimuovi Accesso">
+                    <button onclick="rimuoviMembroCloud('${m.id}', '${(m.displayName || m.emailAddress || '').replace(/'/g, "\\'")}')" class="btn btn-ghost text-stone-400 hover:text-red-600 dark:hover:text-red-400 p-1.5" title="${window.t("btn_remove_access", "Remove Access")}">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 `;
-                
+
                 const html = `
                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-md">
                         ${avatar}
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">${m.displayName || 'Utente'}</span>
+                                <span class="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">${m.displayName || window.t("cloud_user_fallback", "User")}</span>
                                 ${roleBadge}
                             </div>
                             <div class="text-[10px] text-stone-500 dark:text-stone-400 truncate">${m.emailAddress || ''}</div>
@@ -485,15 +506,15 @@
             });
             if (window.lucide) lucide.createIcons({ nodes: [list] });
         } catch(e) {
-            list.innerHTML = window.sanitizeHTML(`<div class="text-center p-4 text-xs text-red-500">Errore: ${e.message}</div>`);
+            list.innerHTML = window.sanitizeHTML(`<div class="text-center p-4 text-xs text-red-500">${window.t("msg_errore", "Error: ")}${e.message}</div>`);
         }
     };
 
     window.rimuoviMembroCloud = async function(permissionId, nome) {
         const confirmResult = await chiediConfermaAzione(
-            window.t("modal_confirm_action", "Conferma Azione"),
-            `Sei sicuro di voler rimuovere l'accesso a ${nome}?`,
-            window.t("btn_delete", "Elimina")
+            window.t("modal_confirm_action", "Confirm Action"),
+            window.t("confirm_remove_access", "Are you sure you want to remove access for {var0}?").replace("{var0}", String(nome)),
+            window.t("btn_delete", "Delete")
         );
         if (!confirmResult) return;
         
@@ -520,9 +541,9 @@
                 <div id="email-prompt-modal" class="modal-overlay z-250 flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0">
                     <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-2xl p-6 w-full max-w-md">
                         <h3 class="text-lg font-bold mb-2 text-stone-800 dark:text-stone-100 flex items-center gap-2">
-                            <i data-lucide="mail" class="w-5 h-5 text-blue-500"></i> Indirizzo Email
+                            <i data-lucide="mail" class="w-5 h-5 text-blue-500"></i> ${window.t("label_email", "Email Address")}
                         </h3>
-                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">Inserisci l'indirizzo email (Google) della persona da invitare all'Archivio:</p>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">${window.t("cloud_invite_email_desc", "Enter the Google email address of the person to invite to the Archive:")}</p>
                         <input type="email" id="email-prompt-input" class="form-input w-full mb-6" placeholder="email@gmail.com">
                         <div class="flex justify-end gap-3">
                             <button id="email-prompt-cancel" class="btn btn-ghost text-sm"><span data-i18n="btn_cancel">Annulla</span></button>
@@ -567,7 +588,7 @@
     };
 
     window.pulisciAllegatiOrfani = async function() {
-        const confirm = await chiediConfermaAzione(window.t("btn_clean_ghosts", "Pulisci file inutilizzati"), "Questa operazione eliminerà definitivamente dal PC e da Google Drive tutti gli allegati che non sono più associati a nessuna scheda nel database corrente. Vuoi procedere?", "Elimina file orfani");
+        const confirm = await chiediConfermaAzione(window.t("btn_clean_ghosts", "Clean Ghost Files"), window.t("confirm_clean_orphans_desc", "This operation will permanently delete from your PC and Google Drive all attachments no longer associated with any record in the current database. Do you want to proceed?"), window.t("btn_delete_orphans", "Delete orphan files"));
         if (!confirm) {
             return;
         }
@@ -575,7 +596,7 @@
         const btn = document.getElementById('btn-cloud-clean-orphans');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = window.sanitizeHTML('<i class="w-4 h-4 mr-2">⏳</i> Pulizia in corso...');
+        btn.innerHTML = window.sanitizeHTML(`<i class="w-4 h-4 mr-2">⏳</i> ${window.t("cloud_cleaning_in_progress", "Cleaning in progress...")}`);
         
         try {
             if (!window.getApiCloud || !window.getApiCloud().pulisciAllegatiOrfani) {

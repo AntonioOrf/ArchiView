@@ -84,7 +84,7 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="folder-tree" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_workspace">Cartella di Lavoro (Archivio)</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_workspace_desc">Questa cartella contiene il tuo database e tutti gli allegati copiati.</p>
                             <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-workspace-path">
-                                Caricamento...
+                                <span data-i18n="label_loading">Loading...</span>
                             </div>
                             <button onclick="cambiaCartellaLavoro()" class="btn btn-secondary mt-3">
                                 <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_change_folder">Cambia Cartella...</span></button>
@@ -95,7 +95,7 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_local_attachments_title">Cartella Allegati Locale (Opzionale)</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_local_attachments_desc">Consente di salvare le immagini localmente sul PC, escludendole dal cloud condiviso per risparmiare spazio.</p>
                             <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-attachments-path">
-                                Caricamento...
+                                <span data-i18n="label_loading">Loading...</span>
                             </div>
                             <div class="flex gap-2 mt-3">
                                 <button onclick="cambiaCartellaAllegati()" class="btn btn-secondary">
@@ -149,7 +149,7 @@
                             <p class="text-sm text-stone-600" id="settings-drive-desc" data-i18n="settings_drive_desc">Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive.</p>
                             
                             <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm text-stone-700">
-                                <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-drive-status" data-i18n="settings_drive_checking">Controllo in corso...</span></div>
+                                <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-drive-status">...</span></div>
                                 <div class="flex gap-2 mt-2">
                                     <button id="btn-drive-login" class="btn btn-primary" onclick="loginGoogleDrive()" data-i18n="btn_drive_login">Accedi a Drive</button>
                                     <button id="btn-drive-logout" class="btn btn-danger hidden" onclick="logoutGoogleDrive()" data-i18n="btn_drive_logout">Disconnetti</button>

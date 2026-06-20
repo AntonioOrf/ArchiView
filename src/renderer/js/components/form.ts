@@ -79,7 +79,7 @@ window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderV
     inputKey.className = 'form-input w-1/3 list-key';
     let pKey = window.t('placeholder_key_' + campoId);
     pKey = pKey !== 'placeholder_key_' + campoId ? pKey : placeholderKey;
-    inputKey.placeholder = pKey || 'Chiave';
+    inputKey.placeholder = pKey || window.t("placeholder_key", "Key");
     inputKey.value = valKey;
     inputKey.style.width = '33.33%'; // Fix flexbox
 
@@ -88,7 +88,7 @@ window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderV
     inputVal.className = 'form-input flex-1 list-val';
     let pVal = window.t('placeholder_val_' + campoId);
     pVal = pVal !== 'placeholder_val_' + campoId ? pVal : placeholderVal;
-    inputVal.placeholder = pVal || 'Valore';
+    inputVal.placeholder = pVal || window.t("placeholder_value", "Value");
     inputVal.value = valVal;
     inputVal.style.width = 'auto'; // Fix flexbox crush
     

@@ -21,7 +21,9 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}) {
     const externalMap = new Map((esterni || []).map(m => [m.id, m]));
     
     const conflitti = [];
-    const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa'];
+    // allegatoTipo è un campo derivato da allegati: viene risolto implicitamente
+    // quando l'utente sceglie la versione degli allegati. Tenerli separati crea rumore.
+    const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'allegatoTipo'];
 
     for (const [id, local] of localMap) {
         const external = externalMap.get(id);

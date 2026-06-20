@@ -76,7 +76,6 @@ contextBridge.exposeInMainWorld('apiDrive', {
     shareVault: (email) => ipcRenderer.invoke('drive-share-vault', email),
     listPermissions: () => ipcRenderer.invoke('drive-list-permissions'),
     removePermission: (permissionId) => ipcRenderer.invoke('drive-remove-permission', permissionId),
-    getToken: () => ipcRenderer.invoke('drive-get-token'),
     getClientId: () => ipcRenderer.invoke('drive-get-client-id'),
     joinByFolderId: (folderId, vaultName, basePath, customPusher) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath, customPusher),
     // --- Storico Versioni Cloud ---

@@ -75,11 +75,11 @@ window.apriImpostazioni = async function() {
                 const driveDesc = document.getElementById('settings-drive-desc');
                 
                 if (settings.isPersonalCloud) {
-                    if (driveTitle) driveTitle.textContent = "Backup su Cloud Personale";
-                    if (driveDesc) driveDesc.textContent = "Questo archivio locale è sincronizzato privatamente come backup sul tuo Google Drive.";
+                    if (driveTitle) driveTitle.textContent = window.t("settings_personal_backup_title", "Personal Cloud Backup");
+                    if (driveDesc) driveDesc.textContent = window.t("settings_personal_backup_desc", "This local archive is synced privately as a backup on your Google Drive.");
                 } else {
-                    if (driveTitle) driveTitle.textContent = "Sincronizzazione Google Drive";
-                    if (driveDesc) driveDesc.textContent = "Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive.";
+                    if (driveTitle) driveTitle.textContent = window.t("settings_drive_title");
+                    if (driveDesc) driveDesc.textContent = window.t("settings_drive_desc");
                 }
             } else {
                 driveSection.classList.add('hidden');
