@@ -21,7 +21,10 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function createWindow() {
-  const iconPath = path.join(__dirname, '..', '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+  const iconFile = process.platform === 'win32' ? 'icon.ico' : 'icon.png';
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', iconFile)
+    : path.join(__dirname, '..', '..', 'assets', iconFile);
   
   state.mainWindow = new BrowserWindow({
     width: 1200,
