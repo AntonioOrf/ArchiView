@@ -389,7 +389,7 @@ button, .btn {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease;
     cursor: grab;
 }
 .card-scheda:active {
@@ -398,6 +398,7 @@ button, .btn {
 .card-scheda:hover {
     border-left-color: var(--color-primary);
     box-shadow: 0 4px 8px -2px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
 }
 :root.dark-theme .card-scheda {
     background-color: var(--color-bg-panel);
@@ -489,6 +490,72 @@ button, .btn {
 }
 
 /* Activity Bar */
+/* Tab navigazione header: stato attivo */
+.btn-ghost.tab-active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    border-bottom: 2px solid var(--color-primary);
+}
+:root.dark-theme .btn-ghost.tab-active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+}
+
+/* Focus accessibilità tastiera */
+.btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    z-index: 1;
+}
+.form-input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 0;
+}
+
+/* Bottoni cloud: gerarchia cromatica */
+#cloud-buttons-container .btn-pull:hover {
+    color: #2563eb;
+    background-color: #eff6ff;
+}
+:root.dark-theme #cloud-buttons-container .btn-pull:hover {
+    color: #60a5fa;
+    background-color: rgba(37, 99, 235, 0.15);
+}
+#cloud-buttons-container .btn-push:hover {
+    color: #16a34a;
+    background-color: #f0fdf4;
+}
+:root.dark-theme #cloud-buttons-container .btn-push:hover {
+    color: #4ade80;
+    background-color: rgba(22, 163, 74, 0.15);
+}
+
+/* Empty state */
+#empty-state {
+    background-color: transparent !important;
+    border-color: var(--color-border-light) !important;
+}
+#empty-state p {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+}
+
+/* Indicatore incoming: pulse per 3 cicli quando appare */
+@keyframes pulse-indicator {
+    0%   { opacity: 0.7; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+#incoming-updates-indicator:not(.hidden):not([style*="display: none"]) {
+    animation: pulse-indicator 2s ease-in-out 3;
+}
+
+/* Sidebar panel-header: accento sinistro per gerarchia visiva */
+#sidebar .panel-header {
+    border-left: 3px solid var(--color-primary);
+    padding-left: 0.875rem;
+}
+
 .activity-bar-btn {
     display: flex;
     align-items: center;

@@ -289,6 +289,11 @@ function switchSidebarTab(tabName) {
     sidebar.classList.remove('hidden-tab');
     _currentSidebarTab = tabName;
 
+    // Active state visivo sul bottone tab corrispondente
+    document.querySelectorAll('[data-tab]').forEach(btn => btn.classList.remove('tab-active'));
+    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeBtn) activeBtn.classList.add('tab-active');
+
     document.getElementById('sidebar-folders').classList.add('hidden-tab');
     document.getElementById('sidebar-search').classList.add('hidden-tab');
     document.getElementById('sidebar-tags').classList.add('hidden-tab');
