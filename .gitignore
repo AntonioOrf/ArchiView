@@ -12,6 +12,7 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+CODEMAP.md
 # Eseguibili e binari
 electron.exe
 *.exe
