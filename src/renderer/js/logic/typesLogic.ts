@@ -6,8 +6,8 @@ function apriNewTypeModal() {
     editingTypeId = null;
     document.getElementById('new-type-select').value = 'custom';
     document.getElementById('new-type-select').disabled = false;
-    document.getElementById('btn-salva-tipo').textContent = 'Crea';
-    document.querySelector('#new-type-modal .modal-title').textContent = 'Crea Tipo Documento';
+    document.getElementById('btn-salva-tipo').textContent = window.t("btn_create", "Create");
+    document.querySelector('#new-type-modal .modal-title').textContent = window.t("modal_create_type", "Create Document Type");
     applicaModello();
     document.getElementById('new-type-modal').classList.remove('hidden-tab');
 }
@@ -300,8 +300,8 @@ window.modificaTipoDocumento = function(id) {
     editingTypeId = id;
     document.getElementById('new-type-select').value = 'custom';
     document.getElementById('new-type-select').disabled = true; // Impedisce di cambiare base durante modifica
-    document.getElementById('btn-salva-tipo').textContent = 'Salva Modifiche';
-    document.querySelector('#new-type-modal .modal-title').textContent = 'Modifica Tipo Documento';
+    document.getElementById('btn-salva-tipo').textContent = window.t("btn_save_changes", "Save Changes");
+    document.querySelector('#new-type-modal .modal-title').textContent = window.t("type_modal_edit_title", "Edit Document Type");
     
     // Resetta UI
     document.getElementById('custom-type-name').value = tipo.nome;

@@ -19,12 +19,15 @@ electron.exe
 *.so
 *.dylib
 TODO
-Agent.md
+CLAUDE.md
+.claudeignore
 # File temporanei di sistema
 Thumbs.db
 profilo_test/
 test-cloud.bat
 scratch-test.js
+testChunking.js
+.archiview-chunks/
 
 # Credenziali Cloud e Configurazione locale
 src/main/ipc/cloudCredentials.ts

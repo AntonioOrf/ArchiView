@@ -43,9 +43,9 @@ async function apriTrascrizione(id) {
         if (btnCollapse) {
             btnCollapse.classList.remove('hidden');
             btnCollapse.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
-            btnCollapse.title = "Collassa Editor";
+            btnCollapse.title = window.t("tooltip_collapse", "Collapse Editor");
         }
-        
+
         window.renderThumbnailsTrascrizione(m.id);
         
         if (window.cambiaAllegatoTrascrizione) {
@@ -88,12 +88,12 @@ window.renderThumbnailsTrascrizione = function(id) {
             const btn = document.createElement('button');
             btn.className = "btn btn-ghost rounded-none allegato-btn px-3 py-1 text-xs whitespace-nowrap truncate max-w-[150px] border-r border-stone-200";
             btn.title = al.originalName || `Allegato ${i+1}`;
-            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || 'PDF ' + (i+1))}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || 'Immagine ' + (i+1))}`;
+            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || 'PDF ' + (i+1))}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || window.t("attachment_image", "Image") + ' ' + (i+1))}`;
             btn.onclick = () => window.cambiaAllegatoTrascrizione(al.nome, al.tipo, i);
             
             const btnEdit = document.createElement('button');
             btnEdit.className = "btn btn-ghost btn-icon rounded-none px-2 py-1";
-            btnEdit.title = "Rinomina";
+            btnEdit.title = window.t("btn_rename_short", "Rename");
             btnEdit.innerHTML = window.sanitizeHTML('<i data-lucide="pencil" class="w-3 h-3"></i>');
             btnEdit.onclick = (e) => {
                 e.stopPropagation();
@@ -218,16 +218,16 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
         if (result.status === 'missing') {
             noAllegato.innerHTML = window.sanitizeHTML(`
                 <div class="text-stone-400 mb-3"><i data-lucide="file-warning" class="w-12 h-12 mx-auto text-amber-500"></i></div>
-                <h3 class="text-lg font-medium text-stone-300">Allegato non presente in locale</h3>
+                <h3 class="text-lg font-medium text-stone-300">${window.t("attachment_not_local_title", "Attachment not found locally")}</h3>
                 <p class="text-sm text-stone-400 mt-2 max-w-md mx-auto">
-                    Questo archivio è condiviso. Il file dell'allegato non è ancora presente sul tuo PC.
-                    <br>Usa il Cloud Explorer per sincronizzare gli allegati.
+                    ${window.t("attachment_not_local_desc1", "This archive is shared. The attachment file is not yet present on your PC.")}
+                    <br>${window.t("attachment_not_local_desc2", "Use Cloud Explorer to sync attachments.")}
                 </p>
                 <div class="mt-4 p-3 bg-stone-900 border border-stone-800 rounded-sm text-xs font-mono text-stone-300 select-all break-all max-w-md mx-auto">
-                    File da inserire: ${nome}
+                    ${window.t("attachment_file_label", "File to insert:")} ${nome}
                 </div>
                 <p class="text-xs text-stone-500 mt-3">
-                    Copia il file nella tua cartella allegati:<br>
+                    ${window.t("attachment_copy_hint", "Copy the file to your attachments folder:")}<br>
                     <span class="font-mono text-[10px] break-all select-all text-amber-600">${result.path}</span>
                 </p>
             `);
@@ -236,7 +236,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
             return;
         } else if (result.status === 'corrupted') {
             mostraMessaggio(window.t("msg_attenzione_l_allegato_pot", "Attenzione: l'allegato potrebbe essere corrotto o modificato (Hash non corrispondente)."), "error");
-            noAllegato.innerHTML = window.sanitizeHTML(`<div class="text-stone-400 mb-2"><i data-lucide="shield-alert" class="w-12 h-12 mx-auto text-red-500"></i></div><h3 class="text-lg font-medium text-stone-300">File non sicuro</h3><p class="text-sm text-stone-500 mt-1">L'hash del file non corrisponde a quello salvato nel cloud.</p>`);
+            noAllegato.innerHTML = window.sanitizeHTML(`<div class="text-stone-400 mb-2"><i data-lucide="shield-alert" class="w-12 h-12 mx-auto text-red-500"></i></div><h3 class="text-lg font-medium text-stone-300">${window.t("attachment_unsafe_title", "Unsafe file")}</h3><p class="text-sm text-stone-500 mt-1">${window.t("attachment_unsafe_desc", "The file hash does not match the one saved in the cloud.")}</p>`);
             noAllegato.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
             return;
@@ -283,14 +283,14 @@ window.toggleFullscreenAllegato = function() {
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
             btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
-            btnToggle.title = "Collassa Editor";
+            btnToggle.title = window.t("tooltip_collapse", "Collapse Editor");
         }
     } else {
         editorPanel.classList.add('hidden');
         if (resizer) resizer.classList.add('hidden');
         if (btnToggle) {
             btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-open" class="w-5 h-5"></i>');
-            btnToggle.title = "Espandi Editor";
+            btnToggle.title = window.t("tooltip_expand_editor", "Expand Editor");
         }
     }
     if (window.lucide) lucide.createIcons();
@@ -322,10 +322,10 @@ window.confermaUscitaTrascrizione = function() {
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
             btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
-            btnToggle.title = "Collassa Editor";
+            btnToggle.title = window.t("tooltip_collapse", "Collapse Editor");
         }
     }
-    
+
     switchTab('list');
 }
 

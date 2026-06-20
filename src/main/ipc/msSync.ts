@@ -1,4 +1,4 @@
-const { ipcMain, app, shell } = require('electron');
+const { ipcMain, app, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -8,6 +8,34 @@ const { Client } = require('@microsoft/microsoft-graph-client');
 
 const REDIRECT_URI = 'http://localhost:3457/redirect';
 const SCOPES = ['user.read', 'files.readwrite', 'offline_access'];
+
+function writeMsTokenFile(tokenPath: string, serializedCache: string): void {
+  const dir = path.dirname(tokenPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (safeStorage.isEncryptionAvailable()) {
+    const encrypted = safeStorage.encryptString(serializedCache).toString('base64');
+    fs.writeFileSync(tokenPath, JSON.stringify({ encrypted, v: 1 }));
+  } else {
+    fs.writeFileSync(tokenPath, serializedCache);
+  }
+}
+
+function readMsTokenFile(tokenPath: string): string | null {
+  if (!fs.existsSync(tokenPath)) return null;
+  try {
+    const raw = fs.readFileSync(tokenPath, 'utf8');
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.v === 1 && parsed.encrypted) {
+        return safeStorage.decryptString(Buffer.from(parsed.encrypted, 'base64'));
+      }
+    } catch { /* non è JSON cifrato — è MSAL plaintext */ }
+    return raw; // plaintext legacy
+  } catch (e) {
+    console.error("Errore lettura token MS:", e);
+    return null;
+  }
+}
 
 function getGlobalTokenPath() {
   return path.join(app.getPath('userData'), 'ms-tokens-global.json');
@@ -45,16 +73,18 @@ function initMsal() {
       cache: {
         cachePlugin: {
           beforeCacheAccess: async (cacheContext) => {
-             let tokenPath = getLocalTokenPath() || getGlobalTokenPath();
-             if (fs.existsSync(tokenPath)) {
-                 const tokenData = await fs.promises.readFile(tokenPath, 'utf8');
-                 cacheContext.tokenCache.deserialize(tokenData);
+             const tokenPath = state.workspacePath ? getLocalTokenPath() : getGlobalTokenPath();
+             if (tokenPath) {
+                 const tokenData = readMsTokenFile(tokenPath);
+                 if (tokenData) cacheContext.tokenCache.deserialize(tokenData);
              }
           },
           afterCacheAccess: async (cacheContext) => {
              if (cacheContext.cacheHasChanged) {
-                 let tokenPath = getLocalTokenPath() || getGlobalTokenPath();
-                 fs.writeFileSync(tokenPath, cacheContext.tokenCache.serialize());
+                 const tokenPath = state.workspacePath ? getLocalTokenPath() : getGlobalTokenPath();
+                 if (tokenPath) {
+                     writeMsTokenFile(tokenPath, cacheContext.tokenCache.serialize());
+                 }
              }
           }
         }
@@ -95,21 +125,29 @@ function loadSavedTokens() {
   try {
     initMsal();
   } catch (e) {
+    console.warn("MSAL init fallita:", e.message);
     return false;
   }
-  let tokenPath = getLocalTokenPath();
-  if (!tokenPath || !fs.existsSync(tokenPath)) {
-      tokenPath = getGlobalTokenPath();
+
+  if (state.workspacePath) {
+    const tokenPath = getLocalTokenPath();
+    if (!tokenPath || !fs.existsSync(tokenPath)) {
+      // Nessun token locale per questo workspace: reset stato in-memory e richiedi login
+      account = null;
+      graphClient = null;
+      return false;
+    }
+    return true;
   }
-  if (tokenPath && fs.existsSync(tokenPath)) {
-      // In MSAL cache is handled by cachePlugin, we just need to see if we have an account
-      return true; 
-  }
-  return false;
+
+  // Nessun workspace aperto → usa il token globale
+  const globalPath = getGlobalTokenPath();
+  return !!(globalPath && fs.existsSync(globalPath));
 }
 
 async function authenticateDrive(forceLocal = false) {
   return new Promise(async (resolve, reject) => {
+    try {
     try { initMsal(); } catch(e) { return reject(e); }
 
     const cryptoProvider = new CryptoProvider();
@@ -151,8 +189,8 @@ async function authenticateDrive(forceLocal = false) {
              tokenCache: msalClient.getTokenCache(),
              cacheHasChanged: true
           };
-          let tokenPath = forceLocal && getLocalTokenPath() ? getLocalTokenPath() : getGlobalTokenPath();
-          fs.writeFileSync(tokenPath, msalClient.getTokenCache().serialize());
+          const tokenPath = (forceLocal && getLocalTokenPath()) ? getLocalTokenPath() : getGlobalTokenPath();
+          writeMsTokenFile(tokenPath, msalClient.getTokenCache().serialize());
 
           resolve(true);
         } else {
@@ -167,6 +205,7 @@ async function authenticateDrive(forceLocal = false) {
     }).listen(3457, () => {
       shell.openExternal(authUrl);
     });
+    } catch (e) { reject(e); }
   });
 }
 
@@ -254,7 +293,7 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
       try {
           const s = getAllSettings();
           if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
-      } catch(e) {}
+      } catch(e) { console.error("Errore lettura settings:", e); }
   }
 
   if (!actualVaultFolderId && state.workspacePath) {
@@ -268,7 +307,7 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
           if (res && res.value && res.value.length > 0) {
               return new Date(res.value[0].lastModifiedDateTime).getTime();
           }
-      } catch(e) {}
+      } catch(e) { console.error("Errore checkUpdates OneDrive:", e); }
   }
   return null;
 }
@@ -285,7 +324,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
       try {
           const s = getAllSettings();
           if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
-      } catch(e) {}
+      } catch(e) { console.error("Errore lettura settings:", e); }
   }
 
   if (!actualVaultFolderId && state.workspacePath) {
@@ -315,7 +354,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
         try {
             const s = getAllSettings();
             if (s.syncAttachments !== undefined) syncAttachments = !!s.syncAttachments;
-        } catch(e) {}
+        } catch(e) { console.error("Errore lettura settings syncAttachments:", e); }
     }
     if (skipAttachments) syncAttachments = false;
 
@@ -357,11 +396,11 @@ async function syncToDrive() {
   try {
       const s = getAllSettings();
       if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
-  } catch(e) {}
+  } catch(e) { console.error("Errore lettura settings:", e); }
   
   if (!projectFolderId) {
       const rootFolderId = await getOrCreateFolder('ArchiView');
-      const projectName = path.basename(state.workspacePath);
+      const projectName = path.basename(state.workspacePath) + '_ArchiView';
       
       const client = await getGraphClient();
       const driveItem = {
@@ -378,7 +417,7 @@ async function syncToDrive() {
               s.sharedVaultId = projectFolderId;
               saveAllSettings(s);
           }
-      } catch(e) {}
+      } catch(e) { console.error("Errore salvataggio sharedVaultId:", e); }
   }
   
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
@@ -391,7 +430,7 @@ async function syncToDrive() {
       try {
           const s = getAllSettings();
           if (s.syncAttachments !== undefined) syncAttachments = !!s.syncAttachments;
-      } catch(e) {}
+      } catch(e) { console.error("Errore lettura settings syncAttachments:", e); }
       
       if (syncAttachments) {
           const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');

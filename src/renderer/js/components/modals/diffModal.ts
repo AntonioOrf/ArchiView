@@ -47,22 +47,23 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
             textDopo = typeof c.dopo === 'object' ? JSON.stringify(c.dopo, null, 2) : String(c.dopo);
         }
         
-        if (textPrima.trim() === '') textPrima = '<i>(Vuoto)</i>';
-        if (textDopo.trim() === '') textDopo = '<i>(Vuoto)</i>';
+        const emptyLabel = `<i>${escapeHTML(window.t("diff_empty", "(Empty)"))}</i>`;
+        if (textPrima.trim() === '') textPrima = emptyLabel;
+        if (textDopo.trim() === '') textDopo = emptyLabel;
 
         return `
             <div class="mb-4 border border-stone-200 rounded-md overflow-hidden bg-white">
                 <div class="bg-stone-100 px-3 py-1.5 border-b border-stone-200 font-bold text-sm text-stone-700">
-                    Campo: <span class="text-amber-700">${escapeHTML(c.chiave)}</span>
+                    ${escapeHTML(window.t("diff_field", "Field:"))} <span class="text-amber-700">${escapeHTML(c.chiave)}</span>
                 </div>
                 <div class="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-stone-200">
                     <div class="flex-1 p-3 bg-red-50/30">
-                        <div class="text-[10px] font-bold text-red-600 mb-1">PRIMA</div>
-                        <div class="text-sm text-stone-600 whitespace-pre-wrap break-words">${textPrima === '<i>(Vuoto)</i>' ? textPrima : escapeHTML(textPrima)}</div>
+                        <div class="text-[10px] font-bold text-red-600 mb-1">${escapeHTML(window.t("diff_before", "BEFORE"))}</div>
+                        <div class="text-sm text-stone-600 whitespace-pre-wrap break-words">${textPrima === emptyLabel ? textPrima : escapeHTML(textPrima)}</div>
                     </div>
                     <div class="flex-1 p-3 bg-green-50/30">
-                        <div class="text-[10px] font-bold text-green-600 mb-1">DOPO</div>
-                        <div class="text-sm text-stone-800 whitespace-pre-wrap break-words">${textDopo === '<i>(Vuoto)</i>' ? textDopo : escapeHTML(textDopo)}</div>
+                        <div class="text-[10px] font-bold text-green-600 mb-1">${escapeHTML(window.t("diff_after", "AFTER"))}</div>
+                        <div class="text-sm text-stone-800 whitespace-pre-wrap break-words">${textDopo === emptyLabel ? textDopo : escapeHTML(textDopo)}</div>
                     </div>
                 </div>
             </div>
@@ -84,7 +85,7 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
                     ${campiHtml}
                 </div>
                 <div class="p-4 border-t border-stone-200 bg-white rounded-b-lg flex justify-end shrink-0">
-                    <button id="btn-close-diff" class="btn btn-primary px-6">Chiudi</button>
+                    <button id="btn-close-diff" class="btn btn-primary px-6">${escapeHTML(window.t("btn_close", "Close"))}</button>
                 </div>
             </div>
         </div>

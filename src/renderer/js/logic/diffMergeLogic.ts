@@ -16,14 +16,14 @@ window.getRecordHash = function(record) {
     return JSON.stringify(sortedObj);
 };
 
-window.rilevaConflitti = function(locali, esterni, loadedAt) {
+window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}) {
     const localMap = new Map((locali || []).map(m => [m.id, m]));
     const externalMap = new Map((esterni || []).map(m => [m.id, m]));
-    // Recupera i baseHashes salvati in appData
-    const baseHashes = window.appData?.baseHashes || {};
     
     const conflitti = [];
-    const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa'];
+    // allegatoTipo è un campo derivato da allegati: viene risolto implicitamente
+    // quando l'utente sceglie la versione degli allegati. Tenerli separati crea rumore.
+    const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'allegatoTipo'];
 
     for (const [id, local] of localMap) {
         const external = externalMap.get(id);
@@ -35,8 +35,9 @@ window.rilevaConflitti = function(locali, esterni, loadedAt) {
             // Se sono identici (i contenuti, scartando i timestamp), non c'è conflitto
             if (localHash === externalHash) continue;
             
-            // Se non c'è baseHash (es. documenti vecchi prima di questa patch), fallback alla vecchia logica temporale
+            // Se non c'è baseHash (documento precedente alla migrazione hash), fallback timestamp
             if (!baseHash) {
+                
                 const tLocal = local.lastModified || 0;
                 const tExternal = external.lastModified || 0;
                 if (tLocal > loadedAt && tExternal > loadedAt) {

@@ -1,20 +1,13 @@
 // @ts-nocheck
-// Helper per la ricerca profonda
-function objectContainsString(obj, str) {
-    if (!obj) return false;
-    if (typeof obj === 'string' || typeof obj === 'number') {
-        return obj.toString().toLowerCase().includes(str);
-    }
-    // Salta completamente gli array per ottimizzare (es. allegati)
-    if (Array.isArray(obj)) {
-        return false;
-    }
-    if (typeof obj === 'object') {
-        return Object.entries(obj).some(([k, val]) => {
-            // Ignora chiavi interne non rilevanti per la ricerca testuale
-            if (k === 'id' || k === 'cartella' || k === 'tipoDocumento') return false;
-            return objectContainsString(val, str);
-        });
+// Campi su cui viene eseguita la ricerca testuale (whitelist esplicita)
+const SEARCH_FIELDS = ['segnatura', 'titolo', 'autore', 'datazione', 'supporto', 'incipit', 'explicit', 'note', 'tags', 'trascrizione', 'descrizione', 'provenienza', 'contenuto', 'lingua'];
+
+function objectContainsString(m, str) {
+    for (const k of SEARCH_FIELDS) {
+        const v = m[k];
+        if (!v) continue;
+        if (typeof v === 'string' && v.toLowerCase().includes(str)) return true;
+        if (typeof v === 'number' && v.toString().includes(str)) return true;
     }
     return false;
 }
@@ -33,7 +26,7 @@ function renderMain(resetPage = true) {
     const isGlobalSearch = search !== '' || window.activeTags.size > 0;
 
     if (isGlobalSearch) {
-        document.getElementById('titolo-cartella-attuale').textContent = "Risultati Ricerca Globale";
+        document.getElementById('titolo-cartella-attuale').textContent = window.t("search_results_title", "Global Search Results");
     } else {
         const partiTitolo = window.cartellaAttuale.split('/');
         document.getElementById('titolo-cartella-attuale').textContent = partiTitolo[partiTitolo.length - 1];
@@ -304,9 +297,7 @@ function extractSnippet(val, search) {
     if (!val) return null;
     const strVal = val.toString();
     
-    // Rimuovi tag HTML per sicurezza
-    const doc = new DOMParser().parseFromString(strVal, 'text/html');
-    const cleanText = doc.body.textContent || doc.body.innerText || "";
+    const cleanText = strVal.replace(/<[^>]*>/g, '');
     
     const lowerStr = cleanText.toLowerCase();
     const idx = lowerStr.indexOf(search);

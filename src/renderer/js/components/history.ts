@@ -58,7 +58,7 @@ function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurre
     menu.appendChild(header);
 
     // Confronta con ora (sempre disponibile)
-    menu.appendChild(menuItem('git-compare', 'Confronta con ora', '#93c5fd',
+    menu.appendChild(menuItem('git-compare', window.t("history_compare_now", "Compare with current"), '#93c5fd',
         () => apriDiffRevisioneCloud(fileId, rev.id, label)));
 
     // Separatore
@@ -67,7 +67,7 @@ function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurre
         sep.style.cssText = 'height: 1px; background: #292524; margin: 4px 0;';
         menu.appendChild(sep);
 
-        menu.appendChild(menuItem('rotate-ccw', 'Ripristina a questa versione', '#fca5a5',
+        menu.appendChild(menuItem('rotate-ccw', window.t("history_restore_version", "Restore to this version"), '#fca5a5',
             () => ripristinaRevisioneConConferma(fileId, rev.id, label)));
     }
 
@@ -76,7 +76,7 @@ function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurre
     sep2.style.cssText = 'height: 1px; background: #292524; margin: 4px 0;';
     menu.appendChild(sep2);
 
-    menu.appendChild(menuItem('x', 'Annulla', '#78716c', () => {}));
+    menu.appendChild(menuItem('x', window.t("btn_cancel", "Cancel"), '#78716c', () => {}));
 
     document.body.appendChild(menu);
     _historyContextMenu = menu;
@@ -101,7 +101,7 @@ window.renderHistoryList = async function() {
         list.innerHTML = `
             <li class="p-6 text-center flex flex-col items-center gap-3">
                 <i data-lucide="cloud-off" class="w-8 h-8 text-stone-300"></i>
-                <span class="text-xs text-stone-400 italic">Connettiti a Google Drive per vedere lo storico.</span>
+                <span class="text-xs text-stone-400 italic">${window.t("history_not_connected", "Connect to Google Drive to see the history.")}</span>
             </li>`;
         if (window.lucide) lucide.createIcons();
         return;
@@ -111,7 +111,7 @@ window.renderHistoryList = async function() {
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
             <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-xs text-stone-400 italic">Caricamento storico...</span>
+            <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history...")}</span>
         </li>`;
 
     try {
@@ -119,7 +119,7 @@ window.renderHistoryList = async function() {
         window._historyFileId = fileId;
 
         if (!revisions || revisions.length === 0) {
-            list.innerHTML = `<li class="p-4 text-xs text-stone-400 italic text-center">Nessuna revisione trovata. Carica almeno una volta sul Cloud.</li>`;
+            list.innerHTML = `<li class="p-4 text-xs text-stone-400 italic text-center">${window.t("history_no_revisions", "No revisions found. Upload to Cloud at least once.")}</li>`;
             return;
         }
 
@@ -129,7 +129,7 @@ window.renderHistoryList = async function() {
         // Istruzione contestuale
         const hint = document.createElement('li');
         hint.className = 'px-3 py-2 text-[10px] text-stone-400 italic bg-stone-50 dark:bg-stone-800/30 border-b border-stone-100 dark:border-stone-800/50';
-        hint.textContent = 'Clicca su una versione per confrontare o ripristinare.';
+        hint.textContent = window.t("history_click_hint", "Click a version to compare or restore.");
         fragment.appendChild(hint);
 
         revisions.forEach((rev, index) => {
@@ -285,11 +285,11 @@ function apriDiffRevisioneModal(diffs, label) {
                     </div>
                     <div style="display:flex;">
                         <div style="flex:1;padding:0.6rem;background:${redBg};border-right:1px solid ${borderColor};">
-                            <div style="font-size:0.6rem;font-weight:700;color:#f87171;margin-bottom:4px;">NELLA REVISIONE</div>
+                            <div style="font-size:0.6rem;font-weight:700;color:#f87171;margin-bottom:4px;">${window.t("diff_in_revision", "IN REVISION")}</div>
                             <div style="font-size:0.8rem;color:${isDark?'#a8a29e':'#57534e'};white-space:pre-wrap;word-break:break-word;">${escapeHTML(prima)}</div>
                         </div>
                         <div style="flex:1;padding:0.6rem;background:${greenBg};">
-                            <div style="font-size:0.6rem;font-weight:700;color:#4ade80;margin-bottom:4px;">VERSIONE ATTUALE</div>
+                            <div style="font-size:0.6rem;font-weight:700;color:#4ade80;margin-bottom:4px;">${window.t("diff_current_version", "CURRENT VERSION")}</div>
                             <div style="font-size:0.8rem;color:${isDark?'#a8a29e':'#57534e'};white-space:pre-wrap;word-break:break-word;">${escapeHTML(dopo)}</div>
                         </div>
                     </div>

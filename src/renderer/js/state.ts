@@ -85,6 +85,13 @@ async function initData() {
             await window.apiBrowser.salvaDatiBase(appData.baseObjects);
         }
     }
+    
+    appData.baseHashes = {};
+    if (appData.baseObjects && typeof window.getRecordHash === 'function') {
+        for (const [id, m] of Object.entries(appData.baseObjects)) {
+            appData.baseHashes[id] = window.getRecordHash(m);
+        }
+    }
 }
 
 window.impostaModifichePendenti = function(stato) {
@@ -150,7 +157,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
         const loadedAt = window.ultimoCaricamento || 0;
         let conflitti = [];
         if (typeof window.rilevaConflitti === 'function') {
-            conflitti = window.rilevaConflitti(appData.manoscritti, nuovoDati.manoscritti, loadedAt);
+            conflitti = window.rilevaConflitti(appData.manoscritti, nuovoDati.manoscritti, loadedAt, appData.baseHashes || {});
         }
         
         const eseguiMergeFinale = async (resolvedCards = []) => {
@@ -196,7 +203,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     const baseHash = baseHashes[id];
                     
                     if (!baseHash || typeof window.getRecordHash !== 'function') {
-                        // Fallback vecchia logica temporale
+                        // Fallback timestamp: nessun baseHash (documento precedente alla migrazione hash)
                         const tLocal = local.lastModified || 0;
                         const tExternal = external.lastModified || 0;
                         
@@ -246,7 +253,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 appData.baseHashes = {};
                 appData.baseObjects = {};
                 if (typeof window.getRecordHash === 'function') {
-                    appData.manoscritti.forEach(m => {
+                    (nuovoDati.manoscritti || []).forEach(m => {
                         appData.baseHashes[m.id] = window.getRecordHash(m);
                         appData.baseObjects[m.id] = { ...m };
                     });

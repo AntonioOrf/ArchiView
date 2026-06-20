@@ -20,10 +20,18 @@ function renderSidebar() {
         });
     });
 
+    // Index pre-computato: path → manoscritti[], evita filter O(n) per ogni nodo
+    const folderIndex = new Map<string, any[]>();
+    for (const m of appData.manoscritti) {
+        const key = m.cartella || '';
+        if (!folderIndex.has(key)) folderIndex.set(key, []);
+        folderIndex.get(key)!.push(m);
+    }
+
     // Funzione ricorsiva per renderizzare
     function renderNode(nodeName, nodeObj, parentEl, profondita) {
         const fullPath = nodeObj.path;
-        const filesInFolder = appData.manoscritti.filter(m => m.cartella === fullPath);
+        const filesInFolder = folderIndex.get(fullPath) || [];
         filesInFolder.sort((a, b) => {
             const valA = a.segnatura || a.titolo || '';
             const valB = b.segnatura || b.titolo || '';
@@ -239,9 +247,7 @@ function renderSidebar() {
         };
     }
 
-    requestAnimationFrame(() => {
-        if (window.lucide) lucide.createIcons({ nodes: [container] });
-    });
+    if (window.lucide) lucide.createIcons({ nodes: [container] });
     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
 }
 
@@ -335,7 +341,7 @@ window.renderSourceControl = function() {
     countLabel.textContent = totalCount.toString();
 
     if (modificati.length === 0 && incoming.length === 0 && !hasIncomingUpdates) {
-        list.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">Nessuna modifica pendente</div>`);
+        list.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t("sidebar_no_pending", "No pending changes")}</div>`);
         return;
     }
 
@@ -345,11 +351,11 @@ window.renderSourceControl = function() {
     if (hasIncomingUpdates && incoming.length === 0 && structural.length === 0) {
         const li = document.createElement('li');
         li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 border-b border-stone-100 dark:border-stone-800/50 last:border-0 opacity-80 cursor-default";
-        li.title = "Sono presenti modifiche strutturali (es. cartelle o rimozioni). Clicca su Scarica in alto a destra.";
+        li.title = window.t("sidebar_structural_hint", "There are structural changes (e.g. folders or removals). Click Download on the top right.");
         li.innerHTML = window.sanitizeHTML(`
             <div class="flex items-center gap-2 truncate">
                 <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
-                <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">Aggiornamenti strutturali</span>
+                <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">${window.t("sidebar_structural_updates", "Structural updates")}</span>
             </div>
             <div class="text-[10px] text-blue-500 font-bold shrink-0">CLOUD</div>
         `);
@@ -369,7 +375,7 @@ window.renderSourceControl = function() {
                 <summary class="flex items-center justify-between outline-none list-none select-none">
                     <div class="flex items-center gap-2 truncate">
                         <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
-                        <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">Aggiornamenti strutturali</span>
+                        <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">${window.t("sidebar_structural_updates", "Structural updates")}</span>
                     </div>
                     <div class="text-[10px] text-blue-500 font-bold shrink-0 flex items-center gap-1">CLOUD <i data-lucide="chevron-down" class="w-3 h-3 transition-transform group-open/details:rotate-180"></i></div>
                 </summary>
@@ -433,8 +439,8 @@ window.renderSourceControl = function() {
         titleRowContainer.appendChild(titleSpan);
 
         const actionHint = document.createElement('span');
-        actionHint.className = "text-[9px] text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase font-bold tracking-wider";
-        actionHint.textContent = "Clicca per mostrare modifiche";
+        actionHint.className = "text-[9px] text-amber-600 uppercase font-bold tracking-wider";
+        actionHint.textContent = window.t("sidebar_click_to_show", "Click to show changes");
         titleRowContainer.appendChild(actionHint);
         
         textContainer.appendChild(titleRowContainer);
@@ -442,16 +448,16 @@ window.renderSourceControl = function() {
         if (isIncoming && window.incomingAuthor) {
             const authorSpan = document.createElement('span');
             authorSpan.className = "text-[10px] text-stone-400 truncate";
-            authorSpan.textContent = "da " + window.incomingAuthor;
+            authorSpan.textContent = window.t("sidebar_from", "from ") + window.incomingAuthor;
             textContainer.appendChild(authorSpan);
-            li.title = "Modifica dal Cloud inviata da " + window.incomingAuthor + ". Fai un Fetch/Scarica per vederla.";
+            li.title = window.t("sidebar_from_cloud_title", "Cloud change sent by {var0}. Do a Fetch/Download to see it.").replace("{var0}", window.incomingAuthor);
         }
 
         const autore = m.modificatoDa || m.creatoDa;
         if (autore) {
             const authorSpan = document.createElement('span');
             authorSpan.className = "text-[10px] text-stone-500 truncate leading-tight";
-            authorSpan.textContent = "da: " + autore;
+            authorSpan.textContent = window.t("sidebar_from_colon", "from: ") + autore;
             textContainer.appendChild(authorSpan);
         }
 
@@ -465,7 +471,7 @@ window.renderSourceControl = function() {
     if (incoming.length > 0) {
         const header = document.createElement('div');
         header.className = "px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 text-[10px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800";
-        header.textContent = "IN ENTRATA (CLOUD)";
+        header.textContent = window.t("sidebar_incoming_cloud", "INCOMING (CLOUD)");
         fragment.appendChild(header);
         
         incoming.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
@@ -476,7 +482,7 @@ window.renderSourceControl = function() {
         if (incoming.length > 0) {
             const header = document.createElement('div');
             header.className = "px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 text-[10px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-700 mt-2";
-            header.textContent = "LOCALE";
+            header.textContent = window.t("sidebar_local_label", "LOCAL");
             fragment.appendChild(header);
         }
         modificati.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));

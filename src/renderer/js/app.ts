@@ -23,12 +23,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (typeof aggiornaListaVault === 'function') {
                     aggiornaListaVault();
                 }
+
+                // Per i vault condivisi: blocca accesso se l'account Google non è autorizzato
+                try {
+                    const settings = await window.apiSettings.get();
+                    if (settings.isSharedVault && settings.sharedVaultId && window.apiDrive) {
+                        const statusResult = await window.apiDrive.status();
+                        if (statusResult && statusResult.unauthorizedVault) {
+                            mostraErroreAccessoNegato(statusResult.user);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Controllo accesso vault fallito, proseguo normalmente:", e);
+                }
             }
         }
-        
+
         if (window.initTheme) await window.initTheme();
         if (window.initLang) await window.initLang();
-        
+
         await avviaApp();
 
         // Controllo Changelog
@@ -148,11 +162,12 @@ async function avviaApp() {
             if (window.driveAuthPromise) {
                 try { await window.driveAuthPromise; } catch (e) { console.error(e); }
             }
-            if (typeof apriCloudModal === 'function') {
-                await apriCloudModal();
-            }
-            if (isCondiviso && typeof trasformaInCondiviso === 'function') trasformaInCondiviso();
-            else if (isPersonale && typeof trasformaInPersonale === 'function') trasformaInPersonale();
+            // apriCloudModal() rimossa da qui: chiedeva login prima che trasformaIn*
+            // gestisse la propria auth, causando una doppia richiesta di accesso.
+            // trasformaIn* chiama apriCloudModal() al termine, quindi il modal si apre
+            // correttamente dopo il completamento del setup.
+            if (isCondiviso && typeof trasformaInCondiviso === 'function') await trasformaInCondiviso();
+            else if (isPersonale && typeof trasformaInPersonale === 'function') await trasformaInPersonale();
         }, 300);
     }
 
@@ -179,10 +194,9 @@ async function avviaApp() {
 
     switchTab('list');
 
-    // Debounce sulla ricerca: renderMain e renderSearchSuggestions vengono
-    // chiamate max 1 volta ogni 150ms invece che ad ogni singolo tasto
+    // Un unico debounce sincronizzato per renderMain + renderSearchSuggestions
+    const debouncedSearch = debounce(() => { renderMain(); renderSearchSuggestions(); }, 150);
     const debouncedRenderMain = debounce(renderMain, 150);
-    const debouncedRenderSuggestions = debounce(renderSearchSuggestions, 150);
 
     // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato
     setTimeout(() => { if (typeof window.controllaAggiornamenti === 'function') window.controllaAggiornamenti(false); }, 2000);
@@ -216,10 +230,7 @@ async function avviaApp() {
     if (!window._eventsBound) {
         window._eventsBound = true;
 
-        document.getElementById('search-input').addEventListener('input', () => {
-            debouncedRenderMain();
-            debouncedRenderSuggestions();
-        });
+        document.getElementById('search-input').addEventListener('input', debouncedSearch);
         document.getElementById('global-tag-search').addEventListener('input', debouncedRenderMain);
         document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
 
@@ -483,8 +494,8 @@ window.initTheme = async function() {
     });
 };
 
-window.handleInviteCode = function(code) {
-    const procedi = () => {
+window.handleInviteCode = function(code, isManualInput = false) {
+    const procedi = async () => {
         // Chiudi altri modali
         const modals = document.querySelectorAll('.modal-overlay');
         modals.forEach(m => m.classList.add('hidden-tab'));
@@ -501,15 +512,39 @@ window.handleInviteCode = function(code) {
             mostraJoinForm();
         }
         
-        // Incolla il codice
-        setTimeout(() => {
-            const input = document.getElementById('welcome-join-code');
-            if (input) {
-                input.value = code;
-                input.focus();
-                input.dispatchEvent(new Event('input', { bubbles: true }));
+        // Incolla il codice se non è stato inserito manualmente
+        if (!isManualInput) {
+            setTimeout(() => {
+                const input = document.getElementById('welcome-join-code') as HTMLInputElement;
+                if (input) {
+                    input.value = code;
+                }
+            }, 300);
+        }
+        
+        try {
+            if (window.apiDrive && window.apiDrive.decodeInvite) {
+                const decoded = await window.apiDrive.decodeInvite(code);
+                window.welcomeJoinVaultId = decoded.vaultId;
+                window.welcomeJoinVaultName = decoded.projectName;
+                window.welcomePusherCreds = {
+                    pusherKey: decoded.pusherKey,
+                    pusherCluster: decoded.pusherCluster,
+                    pusherWebhook: decoded.pusherWebhook,
+                    driveAutofetch: decoded.driveAutofetch
+                };
+                
+                const nameSpan = document.getElementById('welcome-join-vault-name');
+                if (nameSpan) nameSpan.textContent = decoded.projectName || "Vault_Condiviso";
+                
+                const infoDiv = document.getElementById('welcome-join-vault-info');
+                if (infoDiv) infoDiv.classList.remove('hidden-tab');
+                
+                mostraMessaggio(window.t("msg_invite_decoded", "Codice invito riconosciuto. Clicca su 'Sfoglia Google Drive' e seleziona la cartella condivisa per autorizzare l'accesso."), "success");
             }
-        }, 300);
+        } catch (e) {
+            mostraMessaggio("Codice invito incompleto o non valido.", "warning");
+        }
     };
 
     const welcome = document.getElementById('welcome-modal');
@@ -1053,6 +1088,43 @@ window.incollaRecord = async function(targetFolderOverride) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_incolla", "Errore in incolla: ") + res.error, "error");
     }
 };
+
+function mostraErroreAccessoNegato(account: string) {
+    const overlay = document.createElement('div');
+    overlay.id = 'accesso-negato-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(12,10,9,0.6);backdrop-filter:blur(6px)';
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:44px 40px 36px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.25);border:1px solid #e7e5e4">
+            <div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+                <svg width="32" height="32" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <h2 style="font-size:1.25rem;font-weight:700;color:#1c1917;margin:0 0 10px">Accesso Negato</h2>
+            <p style="color:#57534e;line-height:1.6;margin:0 0 6px">L'account <strong id="_an_account"></strong> non è autorizzato ad accedere a questo Archivio Condiviso.</p>
+            <p style="color:#78716c;font-size:0.875rem;margin:0 0 28px">Accedi con l'account Google invitato dal proprietario, oppure scegli un altro archivio.</p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                <button id="_an_btn_login" style="background:#1c1917;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">Cambia Account Google</button>
+                <button id="_an_btn_back" style="background:#fff;color:#1c1917;border:1px solid #d6d3d1;padding:10px 22px;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">Scegli Altro Archivio</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const accountEl = overlay.querySelector('#_an_account') as HTMLElement;
+    if (accountEl) accountEl.textContent = account || 'corrente';
+
+    (overlay.querySelector('#_an_btn_login') as HTMLButtonElement).addEventListener('click', async () => {
+        try {
+            await window.apiDrive.auth(true);
+            overlay.remove();
+            location.reload();
+        } catch (e) { /* utente ha annullato il login */ }
+    });
+
+    (overlay.querySelector('#_an_btn_back') as HTMLButtonElement).addEventListener('click', async () => {
+        overlay.remove();
+        if (typeof mostraWelcomeModal === 'function') await mostraWelcomeModal();
+    });
+}
 
 // Listeners globali per shortcut da tastiera
 document.addEventListener('keydown', (e) => {

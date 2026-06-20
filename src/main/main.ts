@@ -11,13 +11,13 @@ const { setupAttachmentsIpc, setupAttachmentsProtocol } = require('./ipc/attachm
 const { setupWorkspaceIpc } = require('./ipc/workspaceIpc');
 const { setupUpdaterIpc } = require('./ipc/updaterIpc');
 const { setupSettingsIpc } = require('./ipc/settingsIpc');
-const { setupDriveIpc } = require('./ipc/driveSync');
+const { setupDriveIpc } = require('./ipc/drive');
 const { setupMsIpc } = require('./ipc/msSync');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
 
 // Protocollo custom per servire allegati
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } }
+  { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true } }
 ]);
 
 function createWindow() {
@@ -31,9 +31,8 @@ function createWindow() {
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true, 
-      nodeIntegration: false,
-      plugins: true // Abilita il lettore PDF nativo di Chromium
+      contextIsolation: true,
+      nodeIntegration: false
     }
   });
 
@@ -98,8 +97,8 @@ if (!gotTheLock) {
 
     const savedWorkspace = loadWorkspace();
     if (savedWorkspace) {
-    initWorkspace(savedWorkspace);
-  }
+      initWorkspace(savedWorkspace);
+    }
 
   setupDatabaseIpc();
   setupAttachmentsIpc();

@@ -50,6 +50,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inizializza lo stato all'avvio
     window.driveAuthPromise = aggiornaStatoDrive();
     
+    // Check rapido all'avvio senza attendere la rete
+    if (window.apiDrive && window.apiDrive.checkAuth) {
+        window.apiDrive.checkAuth().then(isAuth => {
+            if (isAuth) {
+                console.log("Frontend detected existing valid tokens for this workspace!");
+                window.driveStatus.isAuthenticated = true;
+                // Aggiorna visivamente i tasti bypassando il lungo check di rete
+                const statusText = document.getElementById('settings-drive-status');
+                const loginBtn = document.getElementById('btn-drive-login');
+                const logoutBtn = document.getElementById('btn-drive-logout');
+                const syncBtn = document.getElementById('btn-drive-sync');
+                
+                if (statusText) statusText.innerHTML = window.sanitizeHTML('<span class="text-green-600 font-semibold">Connesso al Cloud</span>');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (logoutBtn) logoutBtn.classList.remove('hidden');
+                if (syncBtn) syncBtn.classList.remove('hidden');
+                
+                if (typeof checkDriveStatusVisual === 'function') checkDriveStatusVisual();
+            }
+        });
+    }
+
+    // Ascolta notifiche IPC dal Main Process
+    if (window.apiDrive && window.apiDrive.onStatusUpdated) {
+        window.apiDrive.onStatusUpdated((data) => {
+            if (data.authenticated) {
+                console.log("Notifica IPC ricevuta: Autenticazione completata con successo!");
+                window.driveStatus.isAuthenticated = true;
+                aggiornaStatoDrive();
+                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", "Autenticazione completata!"), "success");
+            }
+        });
+    }
+    
     // Ascolta eventi di progresso sincrono (se l'IPC lo espone)
     if (window.apiDrive && window.apiDrive.onSyncProgress) {
         window.apiDrive.onSyncProgress((data) => {
@@ -107,8 +141,9 @@ window.controllaModificheInEntrata = async function(manual = false) {
                         // Tipi Documento nuovi o modificati
                         const remoteTipi = peekData.database.tipiDocumento || [];
                         const localTipi = appData.tipiDocumento || [];
-                        const newTipi = remoteTipi.filter(rt => !localTipi.some(lt => lt.id === rt.id));
-                        const modTipi = remoteTipi.filter(rt => localTipi.some(lt => lt.id === rt.id && JSON.stringify(lt) !== JSON.stringify(rt)));
+                        const localTipiMap = new Map(localTipi.map(t => [t.id, JSON.stringify(t)]));
+                        const newTipi = remoteTipi.filter(rt => !localTipiMap.has(rt.id));
+                        const modTipi = remoteTipi.filter(rt => localTipiMap.has(rt.id) && localTipiMap.get(rt.id) !== JSON.stringify(rt));
                         const totTipi = newTipi.length + modTipi.length;
                         if (totTipi > 0) {
                             structural.push({ icon: 'file-type-2', label: `${totTipi} Modell${totTipi > 1 ? 'i' : 'o'}` });
@@ -221,8 +256,10 @@ async function aggiornaStatoDrive() {
         const statusResult = await apiCloud.status();
         window.driveStatus = {
             isAuthenticated: statusResult?.isAuthenticated || false,
-            user: statusResult?.user || null
+            user: statusResult?.user || null,
+            unauthorizedVault: statusResult?.unauthorizedVault || false
         };
+
         if (typeof checkDriveStatusVisual === 'function') {
             checkDriveStatusVisual();
         }
@@ -286,6 +323,10 @@ window.logoutGoogleDrive = async function() {
 };
 
 window.sincronizzaGoogleDrive = async function(silent = false) {
+    if (window.driveStatus?.unauthorizedVault) {
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
+        return;
+    }
     const apiCloud = await window.getApiCloud();
     if (apiCloud) {
         const btn = document.getElementById('btn-drive-sync');
@@ -303,9 +344,25 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             }
 
             // 2. Carica le modifiche locali unite (upload)
-            await apiCloud.sync(window.lastDriveModifiedTime);
+            const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
             
-            window.ultimoCaricamento = Date.now();
+            try {
+                if (apiCloud.syncAttachments) {
+                    await apiCloud.syncAttachments();
+                }
+            } catch (attErr) {
+                console.error("Errore sync allegati:", attErr);
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione DB completata, ma errore negli allegati: " + attErr.message, "warning");
+            }
+            
+            if (typeof newSyncTime === 'number') {
+                window.ultimoCaricamento = newSyncTime;
+            } else if (driveData && driveData.driveModifiedTime) {
+                window.ultimoCaricamento = driveData.driveModifiedTime;
+            } else {
+                window.ultimoCaricamento = Date.now();
+            }
+
             if (window.apiSettings) {
                 const settings = await window.apiSettings.get();
                 settings.lastSyncTime = window.ultimoCaricamento;
@@ -319,7 +376,11 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_sincronizzazione_completa", "Sincronizzazione completata con successo!"), "success");
-            
+
+            // Dopo una sync riuscita, aggiorna lo stato auth (potrebbe essere rimasto false
+            // se all'avvio il token era drive.file e il check scope l'aveva marcato non auth)
+            if (window.driveStatus) window.driveStatus.isAuthenticated = true;
+
             // Invia Ping Realtime a Pusher tramite Vercel Serverless
             inviaPingPusher();
         } catch (e) {
@@ -335,9 +396,23 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                         }
                         window.lastDriveModifiedTime = retryData.driveModifiedTime;
                     }
-                    await apiCloud.sync(window.lastDriveModifiedTime);
+                    const newRetryTime = await apiCloud.sync(window.lastDriveModifiedTime);
+                    try {
+                        if (apiCloud.syncAttachments) {
+                            await apiCloud.syncAttachments();
+                        }
+                    } catch (attErr) {
+                        console.error("Errore sync allegati:", attErr);
+                    }
                     
-                    window.ultimoCaricamento = Date.now();
+                    if (typeof newRetryTime === 'number') {
+                        window.ultimoCaricamento = newRetryTime;
+                    } else if (retryData && retryData.driveModifiedTime) {
+                        window.ultimoCaricamento = retryData.driveModifiedTime;
+                    } else {
+                        window.ultimoCaricamento = Date.now();
+                    }
+
                     if (window.apiSettings) {
                         const settings = await window.apiSettings.get();
                         settings.lastSyncTime = window.ultimoCaricamento;
@@ -352,6 +427,19 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                     inviaPingPusher();
                 } catch(retryErr) {
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
+                }
+            } else if (e.message && e.message.includes('ACCESSO_NEGATO_VAULT')) {
+                window.driveStatus.isAuthenticated = false;
+                window.driveStatus.unauthorizedVault = true;
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.', 'error');
+                if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
+            } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
+                // Errore di autenticazione: apri il cloud modal per guidare l'utente al login
+                // (es. primo avvio dopo upgrade scope drive.file → drive per vault condivisi)
+                if (typeof window.apriCloudModal === 'function') {
+                    window.apriCloudModal();
+                } else if (!silent && typeof mostraMessaggio === 'function') {
+                    mostraMessaggio("Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.", "warning");
                 }
             } else {
                 if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_sincron", "Errore durante la sincronizzazione: ") + e.message, "error");
@@ -375,6 +463,10 @@ window.scaricaDalCloud = async function(silent = false) {
 };
 
 async function eseguiScaricamentoDalCloud(silent = false) {
+    if (window.driveStatus?.unauthorizedVault) {
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
+        return;
+    }
     const apiCloud = await window.getApiCloud();
     if (apiCloud) {
         window.toggleSyncProgress(true, 'download_in_progress');
@@ -385,7 +477,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
                 window.lastDriveModifiedTime = driveData.driveModifiedTime;
-                window.ultimoCaricamento = Date.now();
+                window.ultimoCaricamento = driveData.driveModifiedTime || Date.now();
                 if (window.apiSettings) {
                     const settings = await window.apiSettings.get();
                     settings.lastSyncTime = window.ultimoCaricamento;
@@ -395,6 +487,14 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 window.incomingChanges = [];
                 window.incomingStructuralChanges = [];
                 if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+                
+                try {
+                    if (apiCloud.syncAttachments) {
+                        await apiCloud.syncAttachments();
+                    }
+                } catch (attErr) {
+                    console.error("Errore sync allegati:", attErr);
+                }
             }
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_scaricamento_completato", "Scaricamento completato!"), "success");
         } catch (e) {
@@ -408,6 +508,10 @@ async function eseguiScaricamentoDalCloud(silent = false) {
 };
 
 window.caricaSulCloud = async function(silent = false) {
+    if (window.driveStatus?.unauthorizedVault) {
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
+        return;
+    }
     const apiCloud = await window.getApiCloud();
     if (apiCloud) {
         window.toggleSyncProgress(true, 'upload_in_progress');
@@ -422,9 +526,25 @@ window.caricaSulCloud = async function(silent = false) {
             }
 
             // Ora carichiamo il risultato del merge
-            await apiCloud.sync(window.lastDriveModifiedTime);
+            const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
             
-            window.ultimoCaricamento = Date.now();
+            try {
+                if (apiCloud.syncAttachments) {
+                    await apiCloud.syncAttachments();
+                }
+            } catch (attErr) {
+                console.error("Errore sync allegati:", attErr);
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione DB completata, ma errore negli allegati: " + attErr.message, "warning");
+            }
+            
+            if (typeof newSyncTime === 'number') {
+                window.ultimoCaricamento = newSyncTime;
+            } else if (driveData && driveData.driveModifiedTime) {
+                window.ultimoCaricamento = driveData.driveModifiedTime;
+            } else {
+                window.ultimoCaricamento = Date.now();
+            }
+
             if (window.apiSettings) {
                 const settings = await window.apiSettings.get();
                 settings.lastSyncTime = window.ultimoCaricamento;
@@ -452,9 +572,23 @@ window.caricaSulCloud = async function(silent = false) {
                         }
                         window.lastDriveModifiedTime = retryData.driveModifiedTime;
                     }
-                    await apiCloud.sync(window.lastDriveModifiedTime);
+                    const newRetryTime = await apiCloud.sync(window.lastDriveModifiedTime);
+                    try {
+                        if (apiCloud.syncAttachments) {
+                            await apiCloud.syncAttachments();
+                        }
+                    } catch (attErr) {
+                        console.error("Errore sync allegati:", attErr);
+                    }
                     
-                    window.ultimoCaricamento = Date.now();
+                    if (typeof newRetryTime === 'number') {
+                        window.ultimoCaricamento = newRetryTime;
+                    } else if (retryData && retryData.driveModifiedTime) {
+                        window.ultimoCaricamento = retryData.driveModifiedTime;
+                    } else {
+                        window.ultimoCaricamento = Date.now();
+                    }
+
                     if (window.apiSettings) {
                         const settings = await window.apiSettings.get();
                         settings.lastSyncTime = window.ultimoCaricamento;
