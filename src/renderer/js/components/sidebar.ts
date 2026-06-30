@@ -513,21 +513,24 @@ function renderTagList() {
         }
     });
 
-    const sortedTags = Object.keys(tagCount).sort();
+    const allTags = Object.keys(tagCount).sort();
 
-    if (sortedTags.length === 0) {
+    if (allTags.length === 0) {
         container.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`);
         return;
     }
 
     window.activeTags = window.activeTags || new Set();
 
-    if (window.activeTags.size > 0) {
-        document.getElementById('btn-clear-tag').classList.remove('hidden');
-        document.getElementById('global-tag-search').value = Array.from(window.activeTags).join(', ');
-    } else {
-        document.getElementById('btn-clear-tag').classList.add('hidden');
-        document.getElementById('global-tag-search').value = '';
+    document.getElementById('btn-clear-tag').classList.toggle('hidden', window.activeTags.size === 0);
+
+    // Filtro live: mostra solo i tag che contengono il testo digitato (l'input non è più readonly)
+    const filtro = (document.getElementById('global-tag-search')?.value || '').trim().toLowerCase();
+    const sortedTags = filtro ? allTags.filter(t => t.includes(filtro)) : allTags;
+
+    if (sortedTags.length === 0) {
+        container.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`);
+        return;
     }
 
     const fragment = document.createDocumentFragment();
@@ -657,11 +660,11 @@ window.aggiornaListaVault = async function() {
                     nameSpan.title = path;
                     
                     if (isShared) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="Archivio Condiviso"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Archivio Condiviso'))}"></i> <span>${name}</span>`);
                     } else if (isPersonal) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="Backup Personale"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_backup', 'Backup Personale'))}"></i> <span>${name}</span>`);
                     } else {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="Solo Locale"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Solo Locale'))}"></i> <span>${name}</span>`);
                     }
                     
                     divContainer.appendChild(nameSpan);

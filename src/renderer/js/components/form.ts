@@ -95,6 +95,7 @@ window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderV
     const btnRemove = document.createElement('button');
     btnRemove.type = 'button';
     btnRemove.className = 'btn btn-ghost btn-icon text-red-500 hover:bg-red-50 hover:text-red-700';
+    btnRemove.setAttribute('aria-label', window.t('tooltip_remove', 'Rimuovi'));
     btnRemove.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
     btnRemove.onclick = () => row.remove();
     
@@ -134,13 +135,23 @@ function resetForm() {
 
     // Reimposta la select sulla cartella in cui si stava navigando
     document.getElementById('form-cartella').value = window.cartellaAttuale;
-    document.getElementById('form-title').textContent = "Compila Nuova Scheda";
+    document.getElementById('form-title').textContent = window.t('title_new_record', 'Compila Nuova Scheda');
     
     // Aggiorna le icone (es. arrow-left) in caso siano state resettate
     if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('btn-cancel-edit')] });
 }
 
-window.rimuoviAllegatoForm = function(index) {
+// Accetta sia un indice numerico (retrocompat) sia l'elemento bottone, da cui
+// ricava l'indice corrente leggendo data-idx della riga (sempre allineato al DOM).
+function _idxAllegatoForm(arg) {
+    if (typeof arg === 'number') return arg;
+    const row = arg && arg.closest ? arg.closest('.allegato-row') : null;
+    return row ? parseInt(row.dataset.idx, 10) : -1;
+}
+
+window.rimuoviAllegatoForm = function(arg) {
+    const index = _idxAllegatoForm(arg);
+    if (index < 0) return;
     window.isFormDirty = true;
     let allegatiList = JSON.parse(document.getElementById('form-allegati').value || '[]');
     allegatiList.splice(index, 1);
@@ -148,7 +159,32 @@ window.rimuoviAllegatoForm = function(index) {
     window.renderAllegatiForm(allegatiList);
 }
 
-window.rinominaAllegatoForm = function(index) {
+// P2.4 — alternativa accessibile (da tastiera) al riordino drag&drop.
+window.spostaAllegatoForm = function(arg, direction) {
+    const index = _idxAllegatoForm(arg);
+    if (index < 0) return;
+    let allegatiList = JSON.parse(document.getElementById('form-allegati').value || '[]');
+    const target = index + direction;
+    if (target < 0 || target >= allegatiList.length) return;
+    [allegatiList[index], allegatiList[target]] = [allegatiList[target], allegatiList[index]];
+    window.isFormDirty = true;
+    document.getElementById('form-allegati').value = JSON.stringify(allegatiList);
+    window.renderAllegatiForm(allegatiList).then(() => {
+        // Mantieni il focus sulla riga spostata per una navigazione fluida da tastiera.
+        const container = document.getElementById('form-allegati-list');
+        const rows = container ? container.querySelectorAll(':scope > div') : [];
+        const moved = rows[target];
+        if (moved) {
+            const btn = moved.querySelector(`button[data-move="${direction > 0 ? 'down' : 'up'}"]`)
+                || moved.querySelector('button[data-move]');
+            if (btn) btn.focus();
+        }
+    });
+}
+
+window.rinominaAllegatoForm = function(arg) {
+    const index = _idxAllegatoForm(arg);
+    if (index < 0) return;
     let allegatiList = JSON.parse(document.getElementById('form-allegati').value || '[]');
     let nomeAttuale = allegatiList[index].originalName || '';
 
@@ -170,52 +206,50 @@ window.renderAllegatiForm = async function(allegatiList) {
     for (let i = 0; i < allegatiList.length; i++) {
         const al = allegatiList[i];
         const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2 bg-white border border-stone-300 rounded-sm shadow-sm gap-2 cursor-grab active:cursor-grabbing transition-transform";
+        div.className = "allegato-row flex items-center justify-between p-2 bg-white border border-stone-300 rounded-sm shadow-sm gap-2 cursor-grab active:cursor-grabbing transition-transform";
+        div.dataset.idx = String(i);
 
         div.draggable = true;
         div.ondragstart = (e) => {
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', i.toString());
+            e.dataTransfer.setData('text/plain', div.dataset.idx);
             setTimeout(() => div.classList.add('opacity-40'), 0);
-            window._draggedAttachmentIndex = i;
+            window._draggedAttachmentRow = div;
         };
         div.ondragend = () => {
             div.classList.remove('opacity-40');
-            window._draggedAttachmentIndex = null;
+            window._draggedAttachmentRow = null;
             container.querySelectorAll(':scope > div').forEach(p => p.style.transform = '');
         };
         div.ondragover = (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
+            const dragged = window._draggedAttachmentRow;
+            if (!dragged || dragged === div) return;
             const rect = div.getBoundingClientRect();
             const mid = rect.left + rect.width / 2;
-            container.querySelectorAll(':scope > div').forEach(p => {
-                if (p !== div && window._draggedAttachmentIndex !== i) p.style.transform = '';
-            });
-            if (window._draggedAttachmentIndex !== null && window._draggedAttachmentIndex !== i) {
-                div.style.transform = e.clientX < mid ? 'translateX(10px)' : 'translateX(-10px)';
-            }
+            div.style.transform = e.clientX < mid ? 'translateX(10px)' : 'translateX(-10px)';
         };
         div.ondragleave = () => div.style.transform = '';
         div.ondrop = (e) => {
             e.preventDefault();
             div.style.transform = '';
-            const dragIndex = window._draggedAttachmentIndex;
-            if (dragIndex !== null && dragIndex !== i) {
-                let currentList = JSON.parse(document.getElementById('form-allegati').value || '[]');
-                const item = currentList.splice(dragIndex, 1)[0];
+            const dragged = window._draggedAttachmentRow;
+            if (!dragged || dragged === div) return;
 
-                const rect = div.getBoundingClientRect();
-                const mid = rect.left + rect.width / 2;
-                let targetIndex = i;
-                if (e.clientX > mid) targetIndex++;
-                if (dragIndex < targetIndex) targetIndex--;
+            // Sposta il nodo nel DOM in-place: niente re-render completo, niente flicker.
+            const rect = div.getBoundingClientRect();
+            const mid = rect.left + rect.width / 2;
+            if (e.clientX > mid) div.after(dragged); else div.before(dragged);
 
-                currentList.splice(targetIndex, 0, item);
-                window.isFormDirty = true;
-                document.getElementById('form-allegati').value = JSON.stringify(currentList);
-                window.renderAllegatiForm(currentList);
-            }
+            // Riallinea l'array degli allegati al nuovo ordine del DOM usando i
+            // data-idx ancora "vecchi", poi li rinumera in base alla posizione attuale.
+            const rows = Array.prototype.slice.call(container.children);
+            const currentList = JSON.parse(document.getElementById('form-allegati').value || '[]');
+            const newList = rows.map(r => currentList[parseInt(r.dataset.idx, 10)]);
+            rows.forEach((r, idx) => { r.dataset.idx = String(idx); });
+            window.isFormDirty = true;
+            document.getElementById('form-allegati').value = JSON.stringify(newList);
         };
 
         let content = '';
@@ -233,8 +267,8 @@ window.renderAllegatiForm = async function(allegatiList) {
             content = `
                 <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" onclick="apriModal('${escapeHTML(src)}', 'img')">
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                    <img src="${escapeHTML(src)}" class="w-8 h-8 object-cover rounded-sm border border-stone-200 shrink-0">
-                    <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || 'Immagine')}</span>
+                    <img src="${escapeHTML(src)}" alt="${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}" class="w-8 h-8 object-cover rounded-sm border border-stone-200 shrink-0">
+                    <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}</span>
                 </div>
             `;
         }
@@ -242,10 +276,16 @@ window.renderAllegatiForm = async function(allegatiList) {
         div.innerHTML = `
             ${content}
             <div class="flex items-center gap-1 shrink-0">
-                <button type="button" onclick="rinominaAllegatoForm(${i})" class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" title="Rinomina">
+                <button type="button" data-move="up" onclick="spostaAllegatoForm(this, -1)" ${i === 0 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}" title="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}">
+                    <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-move="down" onclick="spostaAllegatoForm(this, 1)" ${i === allegatiList.length - 1 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}" title="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="rinominaAllegatoForm(this)" class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" aria-label="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}" title="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="rimuoviAllegatoForm(${i})" class="text-stone-400 hover:text-red-600 p-1 rounded hover:bg-red-50" title="Rimuovi">
+                <button type="button" onclick="rimuoviAllegatoForm(this)" class="text-stone-400 hover:text-red-600 p-1 rounded hover:bg-red-50" aria-label="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}" title="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>

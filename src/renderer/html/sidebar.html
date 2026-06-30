@@ -5,10 +5,10 @@
                     <h2 class="font-bold flex items-center gap-2">
                         <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span></h2>
                     <div class="flex gap-1.5">
-                        <button onclick="importaManoscritto()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" title="Importa Schedatura (da ZIP)">
+                        <button onclick="importaManoscritto()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" data-i18n-title="tooltip_import" data-i18n-aria-label="tooltip_import" title="Importa Schedatura (da ZIP)">
                             <i data-lucide="download" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="aggiungiCartella()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" title="Crea nuovo archivio">
+                        <button onclick="aggiungiCartella()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" data-i18n-title="tooltip_add_folder" data-i18n-aria-label="tooltip_add_folder" title="Crea nuovo archivio">
                             <i data-lucide="folder-plus" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -37,7 +37,7 @@
                         <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span></h2>
                     <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
                         <i data-lucide="bookmark" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;" readonly>
+                        <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
                     </div>
                     <button onclick="if(window.activeTags) window.activeTags.clear(); renderMain(); renderTagList();" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
                 </div>
@@ -70,7 +70,7 @@
                 </div>
                 <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
                     <span><span data-i18n="sidebar_cloud_revisions">REVISIONI CLOUD</span></span>
-                    <button id="btn-history-refresh" onclick="if(typeof window.renderHistoryList==='function') window.renderHistoryList()" class="text-amber-600 hover:text-amber-800 transition-colors" data-i18n-title="tooltip_refresh_list" title="Aggiorna lista">
+                    <button id="btn-history-refresh" onclick="if(typeof window.renderHistoryList==='function') window.renderHistoryList()" class="text-amber-600 hover:text-amber-800 transition-colors" data-i18n-title="tooltip_refresh_list" data-i18n-aria-label="tooltip_refresh_list" title="Aggiorna lista">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
@@ -92,13 +92,13 @@
                 <div class="w-full h-px bg-stone-200 my-1"></div>
 
                 <div class="flex items-center justify-center gap-1 w-full">
-                    <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings">
+                    <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
-                    <button id="sidebar-cloud-btn" onclick="apriCloudModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" title="Cloud & Sincronizzazione">
+                    <button id="sidebar-cloud-btn" onclick="apriCloudModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_cloud_sync" data-i18n-aria-label="tooltip_cloud_sync" title="Cloud & Sincronizzazione">
                         <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
                     </button>
-                    <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue">
+                    <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
                         <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
                     </button>
                 </div>

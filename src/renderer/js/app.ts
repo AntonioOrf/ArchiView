@@ -231,7 +231,7 @@ async function avviaApp() {
         window._eventsBound = true;
 
         document.getElementById('search-input').addEventListener('input', debouncedSearch);
-        document.getElementById('global-tag-search').addEventListener('input', debouncedRenderMain);
+        document.getElementById('global-tag-search').addEventListener('input', () => { if (typeof renderTagList === 'function') renderTagList(); });
         document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
 
     // Tracciamento modifiche non salvate form
@@ -287,6 +287,54 @@ async function avviaApp() {
         e.target.value = ''; // Reset per poter selezionare di nuovo
         window.renderPendingFiles();
     });
+
+    // Mappa id-modale → funzione di chiusura dedicata (cleanup: reset iframe, callback, ecc.)
+    const modalClosers = {
+        'image-modal': 'chiudiModal',
+        'docs-modal': 'chiudiModalDocumenti',
+        'rename-modal': 'chiudiRenameModal',
+        'settings-modal': 'chiudiImpostazioni',
+        'folder-modal': 'chiudiFolderModal',
+        'new-type-modal': 'chiudiNewTypeModal',
+        'manage-types-modal': 'chiudiManageTypesModal',
+        'delete-modal': 'chiudiDeleteModal',
+        'unsaved-modal': 'chiudiUnsavedModal',
+        'cloud-modal': 'chiudiCloudModal',
+        'changelog-modal': 'chiudiChangelogModal',
+        'issue-modal': 'chiudiIssueModal',
+    };
+
+    // Chiusura centralizzata del modale in cima allo stack (riusata da Esc e click sul backdrop).
+    // Ritorna false se la chiusura è stata bloccata (es. welcome-modal obbligatorio).
+    function chiudiModaleTop(top) {
+        // Il welcome-modal è chiudibile solo se un workspace esiste già (pulsante chiusura visibile);
+        // durante la scelta iniziale è obbligatorio.
+        if (top.id === 'welcome-modal') {
+            const closeBtn = document.getElementById('welcome-close-btn');
+            if (closeBtn && !closeBtn.classList.contains('hidden') && window.chiudiWelcomeModal) {
+                window.chiudiWelcomeModal();
+                return true;
+            }
+            return false;
+        }
+
+        if (top.id === 'bottom-confirm-banner') {
+            const btnCancel = top.querySelector('.btn-ghost');
+            if (btnCancel) btnCancel.click();
+            else if (window.chiudiBottomConfirm) window.chiudiBottomConfirm();
+        } else if (top.id === 'info-confirm-banner') {
+            const btnNo = document.getElementById('btn-info-confirm-no');
+            if (btnNo) btnNo.click();
+            else if (window.chiudiInfoConfirm) window.chiudiInfoConfirm();
+        } else {
+            const fnName = modalClosers[top.id];
+            if (fnName && typeof window[fnName] === 'function') window[fnName]();
+            else top.classList.add('hidden-tab'); // fallback per modali senza handler dedicato
+        }
+
+        if (typeof editingTypeId !== 'undefined') editingTypeId = null;
+        return true;
+    }
 
     // Scorciatoie da tastiera
     document.addEventListener('keydown', function(e) {
@@ -345,21 +393,30 @@ async function avviaApp() {
             }
         }
 
-        // Esc -> Chiudi modali aperte o pulisci la barra di ricerca
+        // Esc -> Chiudi SOLO il modale in primo piano (non tutti in blocco) oppure
+        // pulisci la barra di ricerca. La chiusura passa per gli handler dedicati così
+        // da eseguire i cleanup (reset iframe PDF, callback di annullamento, ecc.).
         if (e.key === 'Escape') {
-            const modals = document.querySelectorAll('.modal-overlay:not(.hidden-tab)');
-            if (modals.length > 0) {
-                modals.forEach(m => m.classList.add('hidden-tab'));
-                // Eventuali cleanup
-                if (typeof editingTypeId !== 'undefined') editingTypeId = null;
-            } else {
-                const searchInput = document.getElementById('search-input');
-                if (searchInput && document.activeElement === searchInput) {
-                    searchInput.value = '';
-                    searchInput.blur();
-                    if (typeof renderMain === 'function') renderMain();
-                    if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
+            const aperti = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden-tab)'));
+            if (aperti.length > 0) {
+                // Determina il modale in cima allo stack (z-index più alto)
+                let top = aperti[0];
+                let topZ = -1;
+                for (const m of aperti) {
+                    const z = parseInt(window.getComputedStyle(m).zIndex) || 0;
+                    if (z >= topZ) { topZ = z; top = m; }
                 }
+
+                chiudiModaleTop(top);
+                return;
+            }
+
+            const searchInput = document.getElementById('search-input');
+            if (searchInput && document.activeElement === searchInput) {
+                searchInput.value = '';
+                searchInput.blur();
+                if (typeof renderMain === 'function') renderMain();
+                if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
             }
         }
     });
@@ -393,17 +450,13 @@ async function avviaApp() {
     const leftPanel = document.getElementById('trascrizione-editor-panel');
     const container = document.getElementById('trascrizione-container');
 
-    // Chiusura automatica modali cliccando sullo sfondo
+    // Chiusura automatica modali cliccando sullo sfondo (solo sull'overlay, non sul contenuto)
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal-overlay')) {
             const preventCloseIds = ['cloud-progress-overlay', 'cloud-auth-modal', 'email-prompt-modal'];
             if (preventCloseIds.includes(e.target.id)) return;
-            
-            e.target.classList.add('hidden-tab');
-            // Gestione specifica per reset stato se necessario
-            if (e.target.id === 'new-type-modal' && typeof editingTypeId !== 'undefined') {
-                editingTypeId = null;
-            }
+            // Instrada alle funzioni chiudi* dedicate (cleanup) come il dispatcher Esc
+            chiudiModaleTop(e.target);
         }
     });
 
@@ -813,6 +866,28 @@ window.tagliaSelezionati = function() {
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
     }, 50);
+};
+
+// --- CLOUD MENU (overflow, finestra stretta < md) ---
+window.toggleCloudMenu = function(e?: Event) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('cloud-menu-dropdown');
+    const btn = document.getElementById('cloud-menu-btn');
+    if (!dropdown || !btn) return;
+    const willOpen = dropdown.classList.contains('hidden');
+    dropdown.classList.toggle('hidden', !willOpen);
+    btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen) {
+        const closeOutside = (ev: MouseEvent) => {
+            if (!dropdown.contains(ev.target as Node) && !btn.contains(ev.target as Node)) {
+                dropdown.classList.add('hidden');
+                btn.setAttribute('aria-expanded', 'false');
+                document.removeEventListener('click', closeOutside);
+            }
+        };
+        // differito per non intercettare il click corrente
+        setTimeout(() => document.addEventListener('click', closeOutside), 0);
+    }
 };
 
 // --- CONTEXT MENU ---

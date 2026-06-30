@@ -11,7 +11,7 @@
                                 <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
                                 <span>Novità della Versione 2.2.1</span>
                             </h3>
-                            <button type="button" onclick="chiudiChangelogModal()" class="btn btn-ghost btn-icon">
+                            <button type="button" onclick="chiudiChangelogModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </div>

@@ -14,6 +14,7 @@
     "extract": "lingui extract",
     "compile": "lingui compile",
     "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets",
+    "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
     "pack": "npm run build-css && npm run build-ts && electron-builder --win",
     "publish-app": "npm run build-css && npm run build-ts && electron-builder --win -p always"
@@ -75,6 +76,7 @@
     "electron-builder": "^26.8.1",
     "esbuild": "^0.28.1",
     "make-plural": "^8.1.0",
+    "png-to-ico": "^3.0.1",
     "shx": "^0.4.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3"

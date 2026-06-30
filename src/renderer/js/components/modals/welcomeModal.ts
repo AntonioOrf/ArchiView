@@ -6,7 +6,7 @@
             const html = `
     <div id="welcome-modal" class="modal-overlay hidden-tab z-70 bg-stone-900/80 backdrop-blur-sm">
         <div class="modal-window max-w-lg p-8 text-center shadow-2xl border-2 border-stone-200 relative">
-            <button id="welcome-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 hidden transition-colors" onclick="chiudiWelcomeModal()" title="Chiudi">
+            <button id="welcome-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 hidden transition-colors" onclick="chiudiWelcomeModal()" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <div class="flex justify-center mb-6">

@@ -12,7 +12,7 @@
                                 <i data-lucide="alert-circle" class="w-5 h-5 text-amber-700"></i>
                                 <span data-i18n="modal_report_issue">Segnala un problema</span>
                             </h3>
-                            <button type="button" onclick="chiudiIssueModal()" class="btn btn-ghost btn-icon">
+                            <button type="button" onclick="chiudiIssueModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -88,7 +88,7 @@
 
         const button = event.target.querySelector('button[type="submit"]');
         const oldText = button.textContent;
-        button.textContent = 'Invio in corso...';
+        button.textContent = window.t('btn_sending', 'Invio in corso...');
         button.disabled = true;
 
         const payload = {

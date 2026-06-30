@@ -11,7 +11,7 @@
                     <i data-lucide="folder-plus" class="w-5 h-5 text-amber-700"></i>
                     <span data-i18n="modal_new_folder">Nuova Cartella</span>
                 </h3>
-                <button type="button" onclick="chiudiFolderModal()" class="btn btn-ghost btn-icon hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <button type="button" onclick="chiudiFolderModal()" class="btn btn-ghost btn-icon hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>

@@ -30,7 +30,7 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null) {
     if (azioneAnnulla && typeof azioneAnnulla === 'function') {
         const btnAnnulla = document.createElement('button');
         btnAnnulla.className = 'text-amber-400 hover:text-amber-300 underline font-bold uppercase text-xs tracking-wider shrink-0 transition-colors';
-        btnAnnulla.innerText = 'Annulla';
+        btnAnnulla.innerText = window.t('btn_cancel', 'Annulla');
         btnAnnulla.onclick = () => {
             clearTimeout(dismissTimeout);
             hideToast();
@@ -39,12 +39,28 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null) {
         toast.appendChild(btnAnnulla);
     }
 
+    // Pulsante di chiusura sempre presente: indispensabile per gli errori che non
+    // si auto-chiudono, utile in generale per liberare lo schermo.
+    const btnClose = document.createElement('button');
+    btnClose.className = 'text-white/70 hover:text-white shrink-0 transition-colors';
+    btnClose.setAttribute('aria-label', window.t('btn_close', 'Chiudi'));
+    btnClose.innerHTML = window.sanitizeHTML('<i data-lucide="x" class="w-4 h-4"></i>');
+    btnClose.onclick = () => {
+        clearTimeout(dismissTimeout);
+        hideToast();
+    };
+    toast.appendChild(btnClose);
+
     container.appendChild(toast);
     if (window.lucide) lucide.createIcons({ nodes: [toast] });
 
     requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.remove('opacity-0')));
 
-    // Aumentiamo leggermente il tempo a 5 secondi se c'è un'azione di annullamento per dare tempo di cliccare
-    dismissTimeout = setTimeout(hideToast, azioneAnnulla ? 5000 : 3500);
+    // Gli errori restano finché non vengono chiusi manualmente (rischio di non
+    // farli leggere altrimenti). Gli altri si auto-chiudono; 5s se c'è un'azione
+    // di annullamento per dare il tempo di cliccare.
+    if (tipo !== 'error') {
+        dismissTimeout = setTimeout(hideToast, azioneAnnulla ? 5000 : 3500);
+    }
 }
 

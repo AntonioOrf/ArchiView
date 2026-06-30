@@ -249,6 +249,8 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
         pdfPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now() + '#pagemode=none';
         pdfPreview.classList.remove('hidden');
     } else {
+        const altName = (m && m.allegati && m.allegati[index] && m.allegati[index].originalName) || window.t('attachment_image', 'Immagine');
+        imgPreview.alt = altName;
         imgPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now();
         imgPreview.classList.remove('hidden');
     }

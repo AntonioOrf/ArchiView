@@ -10,7 +10,7 @@
                 <h3 class="modal-title">
                     <i data-lucide="layers" class="w-5 h-5 text-amber-700"></i> Documenti: <span id="docs-modal-title"></span>
                 </h3>
-                <button type="button" onclick="chiudiModalDocumenti()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" onclick="chiudiModalDocumenti()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div id="docs-modal-content" class="modal-body flex-1 bg-stone-50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             </div>

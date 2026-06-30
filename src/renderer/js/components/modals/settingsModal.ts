@@ -27,7 +27,7 @@
         <div class="modal-window max-w-3xl h-[600px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <div class="modal-header shrink-0 p-4 px-6 border-b border-stone-200 flex justify-between items-center">
                 <h3 class="modal-title text-stone-800 m-0 flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5 text-stone-600"></i> <span data-i18n="modal_settings">Impostazioni</span></h3>
-                <button type="button" onclick="chiudiImpostazioni()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" onclick="chiudiImpostazioni()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
             <div class="flex-1 overflow-hidden flex flex-col md:flex-row bg-white">

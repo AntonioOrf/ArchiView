@@ -33,6 +33,13 @@ window.toggleSyncProgress = function(show, titleKey = 'sync_in_progress') {
             if (bar) bar.style.width = '0%';
         }
     }
+
+    // P3.6 — durante un'operazione cloud disabilita i bottoni Fetch/Pull/Push per evitare doppi-click
+    document.querySelectorAll('#cloud-buttons-container button').forEach(b => {
+        b.disabled = show;
+        b.classList.toggle('opacity-50', show);
+        b.classList.toggle('cursor-not-allowed', show);
+    });
 };
 
 window.updateSyncProgress = function(percent, text) {
@@ -237,14 +244,14 @@ window.checkDriveStatusVisual = async function() {
                 if(btnLogout) btnLogout.classList.remove('hidden');
                 if(btnSync) btnSync.classList.remove('hidden');
             } else {
-                statusText.innerHTML = window.sanitizeHTML('<span class="text-stone-500 flex items-center gap-2"><i data-lucide="cloud-off" class="w-4 h-4"></i> Non Connesso</span>');
+                statusText.innerHTML = window.sanitizeHTML(`<span class="text-stone-500 flex items-center gap-2"><i data-lucide="cloud-off" class="w-4 h-4"></i> ${escapeHTML(window.t('settings_drive_not_connected', 'Non Connesso'))}</span>`);
                 if(btnLogin) btnLogin.classList.remove('hidden');
                 if(btnLogout) btnLogout.classList.add('hidden');
                 if(btnSync) btnSync.classList.add('hidden');
             }
             if (window.lucide) lucide.createIcons();
         } catch (e) {
-            statusText.textContent = "Errore di controllo stato";
+            statusText.textContent = window.t('settings_drive_status_error', 'Errore di controllo stato');
         }
     }
 };

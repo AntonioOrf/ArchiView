@@ -300,6 +300,11 @@ button, .btn {
 .btn-icon {
     padding: 0.375rem;
 }
+/* P2.5 — stato attivo bottoni editor rich-text (toolbar trascrizione) */
+#trascrizione-toolbar button[data-cmd][aria-pressed="true"] {
+    background-color: var(--color-primary);
+    color: var(--color-bg-base);
+}
 
 /* Form */
 .form-group {
@@ -586,4 +591,70 @@ button, .btn {
     width: 3px;
     background-color: var(--color-primary);
     border-radius: 0 2px 2px 0;
+}
+
+/* Chip "Campi di base" (modale crea-tipo): indicatore di selezione non-cromatico.
+   Oltre a colore/grassetto, prepone un segno di spunta quando il campo è scelto,
+   così lo stato è distinguibile anche senza percezione del colore. */
+.custom-type-field:checked + div::before {
+    content: "\2713\00a0"; /* ✓ + spazio unificatore */
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   Dark theme: remap delle utility neutre (stone/white) DENTRO i modali.
+   Le finestre modali usano molte utility Tailwind hardcoded (text-stone-800,
+   bg-white, bg-stone-100, border-stone-200...) senza varianti dark:, quindi
+   in tema scuro risulterebbero chiare/illeggibili. Qui le rimappiamo alle
+   variabili del tema sfruttando la maggiore specificità (.modal-window .x).
+   Le utility cromatiche semantiche (amber/sky/blue/emerald/red) NON vengono
+   toccate: restano accenti volutamente colorati.
+   ========================================================================== */
+:root.dark-theme .modal-window .text-stone-800,
+:root.blue-dark-theme .modal-window .text-stone-800,
+:root.dark-theme .modal-window .text-stone-700,
+:root.blue-dark-theme .modal-window .text-stone-700 {
+    color: var(--color-text-main);
+}
+:root.dark-theme .modal-window .text-stone-600,
+:root.blue-dark-theme .modal-window .text-stone-600,
+:root.dark-theme .modal-window .text-stone-500,
+:root.blue-dark-theme .modal-window .text-stone-500,
+:root.dark-theme .modal-window .text-stone-400,
+:root.blue-dark-theme .modal-window .text-stone-400 {
+    color: var(--color-text-muted);
+}
+:root.dark-theme .modal-window .bg-white,
+:root.blue-dark-theme .modal-window .bg-white,
+:root.dark-theme .modal-window .bg-stone-50,
+:root.blue-dark-theme .modal-window .bg-stone-50,
+:root.dark-theme .modal-window .bg-stone-100,
+:root.blue-dark-theme .modal-window .bg-stone-100 {
+    background-color: var(--color-bg-panel);
+}
+:root.dark-theme .modal-window .bg-stone-200,
+:root.blue-dark-theme .modal-window .bg-stone-200 {
+    background-color: var(--color-bg-hover);
+}
+:root.dark-theme .modal-window .border-stone-200,
+:root.blue-dark-theme .modal-window .border-stone-200,
+:root.dark-theme .modal-window .border-stone-300,
+:root.blue-dark-theme .modal-window .border-stone-300 {
+    border-color: var(--color-border);
+}
+
+/* Stati hover neutri all'interno dei modali */
+:root.dark-theme .modal-window .hover\:bg-stone-50:hover,
+:root.blue-dark-theme .modal-window .hover\:bg-stone-50:hover,
+:root.dark-theme .modal-window .hover\:bg-stone-100:hover,
+:root.blue-dark-theme .modal-window .hover\:bg-stone-100:hover,
+:root.dark-theme .modal-window .hover\:bg-stone-200:hover,
+:root.blue-dark-theme .modal-window .hover\:bg-stone-200:hover {
+    background-color: var(--color-bg-hover);
+}
+:root.dark-theme .modal-window .hover\:text-stone-700:hover,
+:root.blue-dark-theme .modal-window .hover\:text-stone-700:hover,
+:root.dark-theme .modal-window .hover\:text-stone-800:hover,
+:root.blue-dark-theme .modal-window .hover\:text-stone-800:hover {
+    color: var(--color-text-main);
 }

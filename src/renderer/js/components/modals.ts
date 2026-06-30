@@ -16,6 +16,7 @@ function apriModal(sorgente, tipo = 'img') {
         modalPdf.src = sorgente;
         modalPdf.classList.remove('hidden');
     } else {
+        modalImg.alt = window.t('attachment_image', 'Immagine');
         modalImg.src = sorgente;
         modalImg.classList.remove('hidden');
     }
@@ -55,7 +56,7 @@ window.apriModalDocumenti = async function(id) {
 
     document.getElementById('docs-modal-title').textContent = m.segnatura;
     const container = document.getElementById('docs-modal-content');
-    container.innerHTML = '<div class="col-span-full text-center text-stone-500 py-10">Caricamento...</div>';
+    container.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">${escapeHTML(window.t('label_loading', 'Caricamento...'))}</div>`;
     document.getElementById('docs-modal').classList.remove('hidden-tab');
 
     // Usa helper condiviso invece di duplicare il pattern
@@ -137,19 +138,25 @@ window.apriModalDocumenti = async function(id) {
             previewHtml = `
                 <div onclick="apriModal('${src}', 'img')" class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:opacity-80 transition-opacity mb-3 border border-stone-200 overflow-hidden relative">
                      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex justify-center items-center text-white transition-opacity"><i data-lucide="zoom-in"></i></div>
-                     <img src="${src}" class="w-full h-full object-cover">
+                     <img src="${src}" alt="${escapeHTML(al.originalName || `${window.t('attachment_image', 'Immagine')} ${i+1}`)}" class="w-full h-full object-cover">
                 </div>
             `;
         }
 
-        const defaultName = al.originalName || (al.tipo === 'pdf' ? `PDF ${i+1}` : `Immagine ${i+1}`);
+        const defaultName = al.originalName || (al.tipo === 'pdf' ? `PDF ${i+1}` : `${window.t('attachment_image', 'Immagine')} ${i+1}`);
 
         div.innerHTML = `
             ${previewHtml}
             <div class="w-full flex items-center justify-between gap-1 mt-auto pt-2">
                 <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-300 shrink-0"></i>
                 <span class="text-sm font-semibold text-stone-700 truncate flex-1 text-left" title="${escapeHTML(defaultName)}">${escapeHTML(defaultName)}</span>
-                <button type="button" onclick="rinominaAllegatoDaModal('${id}', ${i})" class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0" title="Rinomina">
+                <button type="button" onclick="spostaAllegatoDaModal('${id}', ${i}, -1)" ${i === 0 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}" title="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}">
+                    <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="spostaAllegatoDaModal('${id}', ${i}, 1)" ${i === allegatiRender.length - 1 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}" title="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="rinominaAllegatoDaModal('${id}', ${i})" class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0" aria-label="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}" title="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -184,6 +191,33 @@ window.rinominaAllegatoDaModal = function(id, index) {
         if (typeof renderMain === 'function') renderMain();
         window.apriModalDocumenti(id);
     });
+}
+
+// P2.4 — alternativa accessibile (da tastiera) al riordino drag&drop nel docs-modal.
+window.spostaAllegatoDaModal = async function(id, index, direction) {
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (!m || !Array.isArray(m.allegati)) return;
+    const target = index + direction;
+    if (target < 0 || target >= m.allegati.length) return;
+    [m.allegati[index], m.allegati[target]] = [m.allegati[target], m.allegati[index]];
+
+    const settings = await window.apiSettings.get();
+    const username = settings.username || 'Anonimo';
+    m.lastModified = Date.now();
+    m.modificatoDa = username;
+
+    await salvaTutto();
+    if (typeof renderMain === 'function') renderMain();
+    await window.apriModalDocumenti(id);
+
+    // Riporta il focus sulla riga spostata per la navigazione da tastiera.
+    const container = document.getElementById('docs-modal-content');
+    const rows = container ? container.querySelectorAll(':scope > div') : [];
+    const moved = rows[target];
+    if (moved) {
+        const btn = moved.querySelector(`button[onclick*="${direction > 0 ? ', 1)' : ', -1)'}"]`);
+        if (btn) btn.focus();
+    }
 }
 
 window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null, onCancelCallback = null) {

@@ -17,6 +17,7 @@ window.initLang = async function() {
     const settings = await window.apiSettings.get();
     window.linguaAttuale = settings.lang || 'it';
     i18n.activate(window.linguaAttuale);
+    document.documentElement.lang = window.linguaAttuale;
     window.applicaTraduzioniHtml();
 };
 
@@ -115,11 +116,12 @@ function _linguiExtraction() {
     i18n._({ id: "tooltip_ul", message: "Elenco puntato" });
     i18n._({ id: "tooltip_ol", message: "Elenco numerato" });
     i18n._({ id: "tooltip_collapse", message: "Collassa Editor" });
+    i18n._({ id: "tooltip_back", message: "Torna alla lista" });
     i18n._({ id: "tooltip_prev", message: "Precedente (Alt + Freccia Sinistra)" });
     i18n._({ id: "tooltip_next", message: "Successivo (Alt + Freccia Destra)" });
     i18n._({ id: "placeholder_custom_field", message: "Es. Supporto, Filigrana..." });
     i18n._({ id: "placeholder_search", message: "Cerca in tutte le schede..." });
-    i18n._({ id: "placeholder_tags", message: "Seleziona tag..." });
+    i18n._({ id: "placeholder_tags", message: "Filtra tag..." });
     i18n._({ id: "placeholder_identifier", message: "Es. Plut. 40.1 o Atto 12" });
     i18n._({ id: "placeholder_tags_input", message: "es. miniatura, secolo XII, pergamenaceo" });
     i18n._({ id: "settings_theme", message: "Tema / Aspetto" });
@@ -688,7 +690,29 @@ const customEn = {
     "diff_field": "Field:",
     "diff_empty": "(Empty)",
     "diff_in_revision": "IN REVISION",
-    "diff_current_version": "CURRENT VERSION"
+    "diff_current_version": "CURRENT VERSION",
+    "counter_documents_found": "Documents found: {var0}",
+    "counter_documents": "Documents: {var0}",
+    "attachment_count_one": "1 attached document",
+    "attachment_count_many": "{var0} attached documents",
+    "tooltip_export": "Export",
+    "tooltip_rename": "Rename",
+    "tooltip_remove": "Remove",
+    "tooltip_move_up": "Move up",
+    "tooltip_move_down": "Move down",
+    "tooltip_delete": "Delete",
+    "vault_type_shared": "Shared Archive",
+    "vault_type_backup": "Personal Backup",
+    "vault_type_local": "Local Only",
+    "msg_record_non_in_vista": "Document not visible in the current view.",
+    "btn_sending": "Sending...",
+    "settings_drive_not_connected": "Not Connected",
+    "settings_drive_status_error": "Status check error",
+    "tooltip_import": "Import Record Set (from ZIP)",
+    "tooltip_add_folder": "Create new archive",
+    "tooltip_cloud_sync": "Cloud & Sync",
+    "tooltip_back": "Back to list",
+    "placeholder_tags": "Filter tags..."
 };
 
 const customIt = {
@@ -835,7 +859,27 @@ const customIt = {
     "diff_field": "Campo:",
     "diff_empty": "(Vuoto)",
     "diff_in_revision": "NELLA REVISIONE",
-    "diff_current_version": "VERSIONE ATTUALE"
+    "diff_current_version": "VERSIONE ATTUALE",
+    "counter_documents_found": "Documenti trovati: {var0}",
+    "counter_documents": "Documenti: {var0}",
+    "attachment_count_one": "1 documento allegato",
+    "attachment_count_many": "{var0} documenti allegati",
+    "tooltip_export": "Esporta",
+    "tooltip_rename": "Rinomina",
+    "tooltip_remove": "Rimuovi",
+    "tooltip_move_up": "Sposta su",
+    "tooltip_move_down": "Sposta giù",
+    "tooltip_delete": "Elimina",
+    "vault_type_shared": "Archivio Condiviso",
+    "vault_type_backup": "Backup Personale",
+    "vault_type_local": "Solo Locale",
+    "msg_record_non_in_vista": "Documento non visibile nella vista corrente.",
+    "btn_sending": "Invio in corso...",
+    "settings_drive_not_connected": "Non Connesso",
+    "settings_drive_status_error": "Errore di controllo stato",
+    "tooltip_import": "Importa Schedatura (da ZIP)",
+    "tooltip_add_folder": "Crea nuovo archivio",
+    "tooltip_cloud_sync": "Cloud & Sincronizzazione"
 };
 
 window.t = function(key, fallback) {
@@ -853,6 +897,7 @@ window.cambiaLingua = async function(lang) {
     settings.lang = lang;
     await window.apiSettings.save(settings);
     i18n.activate(lang);
+    document.documentElement.lang = lang;
     window.applicaTraduzioniHtml();
     
     // Rendi nuovamente l'interfaccia principale per applicare i cambiamenti
@@ -877,6 +922,12 @@ window.applicaTraduzioniHtml = function() {
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
         el.placeholder = window.t(key);
+    });
+
+    // Sostituisce l'aria-label (accessible name per bottoni icona)
+    document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+        const key = el.getAttribute('data-i18n-aria-label');
+        el.setAttribute('aria-label', window.t(key));
     });
 }
 

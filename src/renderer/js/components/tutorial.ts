@@ -1,25 +1,25 @@
 // @ts-nocheck
-window.avviaTutorial = async function() {
-    // Verifichiamo che la libreria sia stata caricata
-    if (typeof window.driver === 'undefined') {
-        if (typeof window.driver !== 'undefined' && window.driver.js) {
-             window.driver = window.driver.js; // iife version places it here sometimes
-        } else if (typeof window.driver !== 'undefined' && window.driver.driver) {
-             window.driver = window.driver.driver;
-        } else {
-             console.error("Driver.js non caricato!");
-             return;
-        }
+window.avviaTutorial = async function () {
+    // Distruggi istanza precedente prima di crearne una nuova
+    if (window.dInstance) {
+        try { window.dInstance.destroy(); } catch (_) { /* già distrutta */ }
+        window.dInstance = null;
     }
-    
-    // Il modulo driver è caricato globalmente come window.driver.js.driver o window.driver
-    const driverObj = window.driver.js ? window.driver.js.driver : (window.driver.driver ? window.driver.driver : window.driver);
 
-    // Controlliamo se i bottoni cloud sono visibili
+    // Risolvi il costruttore driver.js indipendentemente dal formato del bundle
+    const rawDriver = window.driver;
+    if (!rawDriver) {
+        console.error("Driver.js non caricato!");
+        return;
+    }
+    const driverObj = rawDriver?.js?.driver ?? rawDriver?.driver ?? rawDriver;
+    if (typeof driverObj !== 'function') {
+        console.error("Driver.js: costruttore non trovato nel namespace:", rawDriver);
+        return;
+    }
+
     const cloudButtons = document.getElementById('cloud-buttons-container');
-    const isCloud = cloudButtons && !cloudButtons.classList.contains('hidden');
-
-    // Controlliamo se stiamo già nel workspace del tutorial
+    // isCloud viene riletto dopo gli await per evitare race con aggiornaVisibilitaCloud()
     let isTutorialWorkspace = false;
     if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
         const wp = await window.apiBrowser.getWorkspacePath();
@@ -27,29 +27,37 @@ window.avviaTutorial = async function() {
             isTutorialWorkspace = true;
         }
     }
+    // Rileggiamo isCloud e isAuthenticated dopo l'await, quando il DOM è sicuramente aggiornato
+    const isCloud = cloudButtons && !cloudButtons.classList.contains('hidden');
+    const isAuthenticated = !!(window.driveStatus && window.driveStatus.isAuthenticated);
 
-    // Se l'archivio è vuoto e non siamo nel workspace tutorial, proponiamo di caricare l'ambiente tutorial
     if (typeof appData !== 'undefined' && !isTutorialWorkspace) {
         if (!appData.manoscritti) appData.manoscritti = [];
-        const isEmptyOrFake = appData.manoscritti.length === 0 || 
-                              (appData.manoscritti.length === 1 && appData.manoscritti[0].id === 'test-doc-tutorial');
-        
+        const isEmptyOrFake = appData.manoscritti.length === 0 ||
+            (appData.manoscritti.length === 1 && appData.manoscritti[0].id === 'test-doc-tutorial');
+
         if (isEmptyOrFake) {
             if (window.mostraBottomConfirm && window.apiBrowser && window.apiBrowser.loadTutorialWorkspace) {
                 window.mostraBottomConfirm(
                     "L'archivio è vuoto. Vuoi caricare l'Archivio Tutorial preimpostato (con file PDF e schede d'esempio) per seguire al meglio la guida?",
                     async () => {
                         localStorage.setItem('startTutorialOnBoot', 'true');
-                        const res = await window.apiBrowser.loadTutorialWorkspace();
-                        if (!res.success) {
-                            alert("Errore nel caricamento del Tutorial: " + res.error);
+                        try {
+                            const res = await window.apiBrowser.loadTutorialWorkspace();
+                            if (!res.success) {
+                                console.error("Errore caricamento Tutorial:", res.error);
+                                localStorage.removeItem('startTutorialOnBoot');
+                                if (window.mostraMessaggio) window.mostraMessaggio("Errore nel caricamento del Tutorial: " + res.error, 'error');
+                            }
+                        } catch (e) {
+                            console.error("Eccezione caricamento Tutorial:", e);
                             localStorage.removeItem('startTutorialOnBoot');
+                            if (window.mostraMessaggio) window.mostraMessaggio("Errore imprevisto nel caricamento del Tutorial.", 'error');
                         }
                     }
                 );
-                return; // Stop current execution, wait for confirm/reload
+                return;
             } else {
-                // Fallback: crea record fittizio
                 if (!appData.cartelle) appData.cartelle = [];
                 if (!appData.cartelle.find(c => c.nome === 'Tutorial')) {
                     appData.cartelle.push({ id: 'cartella-tutorial', nome: 'Tutorial', createdAt: new Date().toISOString() });
@@ -65,22 +73,25 @@ window.avviaTutorial = async function() {
                     allegati: [],
                     text: '<p>Benvenuto nell\'editor di trascrizione! Qui puoi annotare i tuoi documenti in modo strutturato.</p>'
                 });
-                if (window.salvaDatiApp) await window.salvaDatiApp();
+                if (window.salvaDatiApp) {
+                    try {
+                        await window.salvaDatiApp();
+                    } catch (e) {
+                        console.error("Errore salvataggio dati tutorial:", e);
+                    }
+                }
                 if (window.renderMain) window.renderMain();
             }
         }
     }
 
-    // Se stiamo nel workspace del tutorial (o c'è un file di test), assicuriamoci di aprire la cartella in cui si trovano le schede
     if (typeof appData !== 'undefined' && appData.manoscritti && appData.manoscritti.length > 0) {
         const testRecord = appData.manoscritti.find(m => m.id === 'TUTORIAL_1' || m.id === 'test-doc-tutorial');
         if (testRecord && testRecord.cartella) {
             if (window.cartellaAttuale !== testRecord.cartella) {
                 window.cartellaAttuale = testRecord.cartella;
-                // Espandi la cartella se non lo è
                 if (!window.cartelleEspanse) window.cartelleEspanse = new Set();
                 window.cartelleEspanse.add(testRecord.cartella);
-                // Espandi anche le parent
                 let parentPath = testRecord.cartella;
                 while (parentPath.includes('/')) {
                     parentPath = parentPath.substring(0, parentPath.lastIndexOf('/'));
@@ -90,6 +101,27 @@ window.avviaTutorial = async function() {
                 if (window.renderMain) window.renderMain();
             }
         }
+    }
+
+    // AbortController condiviso per lo step corrente: annulla i listener del visit precedente
+    // prima di registrarne di nuovi, evitando accumulo su navigazione prev→next.
+    let stepAC = null;
+
+    function attachOnce(el, delay = 150) {
+        stepAC?.abort();
+        stepAC = new AbortController();
+        if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance?.moveNext(), delay), { once: true, signal: stepAC.signal });
+    }
+
+    function attachModalButtons(selector, clickAttrs, delay = 300) {
+        stepAC?.abort();
+        stepAC = new AbortController();
+        const advance = () => setTimeout(() => window.dInstance?.moveNext(), delay);
+        document.querySelectorAll(selector).forEach(btn => {
+            if (clickAttrs.includes(btn.getAttribute('onclick'))) {
+                btn.addEventListener('click', advance, { once: true, signal: stepAC.signal });
+            }
+        });
     }
 
     const steps = [
@@ -120,9 +152,7 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => {
-                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 300), { once: true });
-            }
+            onHighlighted: (el) => attachOnce(el, 300)
         },
         {
             element: '#new-type-modal .modal-window',
@@ -133,23 +163,10 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: []
             },
-            onHighlighted: (el) => {
-                const advanceTutorial = () => {
-                    setTimeout(() => {
-                        if (window.dInstance) window.dInstance.moveNext();
-                    }, 300);
-                };
-                const btns = document.querySelectorAll('#new-type-modal button');
-                btns.forEach(btn => {
-                    const clickAttr = btn.getAttribute('onclick');
-                    if (clickAttr === 'chiudiNewTypeModal()' || clickAttr === 'confermaCreaTipo()') {
-                        btn.addEventListener('click', advanceTutorial, { once: true });
-                    }
-                });
-            },
+            onHighlighted: () => attachModalButtons('#new-type-modal button', ['chiudiNewTypeModal()', 'confermaCreaTipo()']),
             onPrevClick: () => {
                 if (window.chiudiNewTypeModal) window.chiudiNewTypeModal();
-                setTimeout(() => window.dInstance.movePrevious(), 150);
+                setTimeout(() => window.dInstance?.movePrevious(), 150);
             }
         },
         {
@@ -161,9 +178,7 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => {
-                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
-            }
+            onHighlighted: (el) => attachOnce(el)
         },
         {
             element: '#sidebar-search',
@@ -183,9 +198,7 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => {
-                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
-            }
+            onHighlighted: (el) => attachOnce(el)
         },
         {
             element: '#sidebar-tags',
@@ -217,9 +230,7 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => {
-                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
-            }
+            onHighlighted: (el) => attachOnce(el)
         });
         steps.push({
             element: '#sidebar-source-control',
@@ -239,9 +250,7 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => {
-                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
-            }
+            onHighlighted: (el) => attachOnce(el)
         });
         steps.push({
             element: '#sidebar-history',
@@ -262,38 +271,110 @@ window.avviaTutorial = async function() {
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => {
-                if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 300), { once: true });
-            }
+            onHighlighted: (el) => attachOnce(el, 300)
         });
-        steps.push({
-            element: '#cloud-modal',
-            popover: {
-                title: window.t('tut_cloud_panel_title', 'Pannello di Configurazione Remota'),
-                description: window.t('tut_cloud_panel_desc', 'Da questa interfaccia è possibile convertire l\'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire.'),
-                side: "left",
-                align: 'start',
-                showButtons: []
-            },
-            onHighlighted: (el) => {
-                const advanceTutorial = () => {
-                    setTimeout(() => {
-                        if (window.dInstance) window.dInstance.moveNext();
-                    }, 300);
-                };
-                const btns = document.querySelectorAll('#cloud-modal button');
-                btns.forEach(btn => {
-                    const clickAttr = btn.getAttribute('onclick');
-                    if (clickAttr === 'chiudiCloudModal()') {
-                        btn.addEventListener('click', advanceTutorial, { once: true });
+        if (isAuthenticated) {
+            // Utente loggato: #cloud-modal viene aperto normalmente da apriCloudModal().
+            // Aspettiamo che chiuda il modal per avanzare.
+            steps.push({
+                element: '#cloud-modal',
+                popover: {
+                    title: window.t('tut_cloud_panel_title', 'Pannello di Configurazione Remota'),
+                    description: window.t('tut_cloud_panel_desc', 'Da questa interfaccia è possibile convertire l\'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire.'),
+                    side: "left",
+                    align: 'start',
+                    showButtons: []
+                },
+                onHighlighted: () => {
+                    stepAC?.abort();
+                    stepAC = new AbortController();
+                    const cloudModal = document.getElementById('cloud-modal');
+                    let cloudObs = null;
+                    const advanceNext = () => { cloudObs?.disconnect(); authObs.disconnect(); setTimeout(() => window.dInstance?.moveNext(), 300); };
+                    if (cloudModal && !cloudModal.classList.contains('hidden-tab')) {
+                        cloudObs = new MutationObserver(() => { if (cloudModal.classList.contains('hidden-tab')) advanceNext(); });
+                        cloudObs.observe(cloudModal, { attributes: true, attributeFilter: ['class'] });
                     }
-                });
-            },
-            onPrevClick: () => {
-                if (window.chiudiCloudModal) window.chiudiCloudModal();
-                setTimeout(() => window.dInstance.movePrevious(), 150);
-            }
-        });
+                    const authObs = new MutationObserver((mutations) => {
+                        for (const m of mutations) {
+                            for (const node of m.addedNodes) {
+                                if (node.id === 'cloud-auth-modal') {
+                                    const cancelBtn = node.querySelector('#btn-cloud-auth-no');
+                                    if (cancelBtn) cancelBtn.addEventListener('click', () => setTimeout(() => { if (window.chiudiCloudModal) window.chiudiCloudModal(); }, 350), { once: true });
+                                }
+                            }
+                        }
+                    });
+                    authObs.observe(document.body, { childList: true });
+                    stepAC.signal.addEventListener('abort', () => { cloudObs?.disconnect(); authObs.disconnect(); });
+                },
+                onPrevClick: () => {
+                    if (window.chiudiCloudModal) window.chiudiCloudModal();
+                    setTimeout(() => window.dInstance?.movePrevious(), 150);
+                }
+            });
+        } else {
+            // Utente NON loggato: apriCloudModal() mostra #cloud-auth-modal (z-150) invece di #cloud-modal.
+            // Il popover di driver.js è z-1000000000, quindi i suoi bottoni stanno SOPRA il modal auth
+            // e sono cliccabili. CRITICO: driver.js legge i click-hook da `popover.onNextClick` /
+            // `popover.onPrevClick` (NON dallo step). Messi nello step venivano ignorati e partiva la
+            // navigazione default (movePrevious → tornava a "Integrazione Cloud" senza chiudere il modal).
+            let cloudStepDone = false;
+            const advanceOnce = () => {
+                if (cloudStepDone) return;
+                cloudStepDone = true;
+                window.dInstance?.moveNext();
+            };
+            steps.push({
+                // Agganciamo il popover alla finestra di login (non a 'body') con side 'right':
+                // così il tutorial appare ACCANTO al modal auth, non sopra, e lo spotlight
+                // evidenzia il box di accesso. Il modal viene creato (sincrono) al click sul
+                // bottone Cloud dello step precedente, quindi è già nel DOM a questo punto.
+                element: '#cloud-auth-modal .modal-window',
+                popover: {
+                    title: window.t('tut_cloud_panel_title', 'Pannello di Configurazione Remota'),
+                    description: window.t('tut_cloud_no_auth_desc', 'Non sei ancora autenticato con Google. Puoi accedere ora per esplorare le funzionalità Cloud, oppure proseguire il tutorial senza configurare il Cloud.'),
+                    side: "right",
+                    align: 'center',
+                    showButtons: ['next', 'previous'],
+                    nextBtnText: window.t('btn_login_google', 'Accedi con Google'),
+                    prevBtnText: window.t('tut_btn_prosegui', 'Prosegui'),
+                    // "Prosegui" (bottone sinistro): chiude il modal auth e AVANZA (non torna indietro).
+                    onPrevClick: () => {
+                        const cancelBtn = document.getElementById('btn-cloud-auth-no');
+                        if (cancelBtn) cancelBtn.click();
+                        else document.getElementById('cloud-auth-modal')?.remove();
+                        advanceOnce();
+                    },
+                    // "Accedi con Google" (bottone destro): avvia OAuth tramite il bottone reale del
+                    // modal; quando #cloud-modal diventa visibile, avanza.
+                    onNextClick: () => {
+                        const googleBtn = document.getElementById('btn-cloud-auth-google');
+                        if (!googleBtn) { advanceOnce(); return; }
+                        googleBtn.click();
+                        const cloudModal = document.getElementById('cloud-modal');
+                        if (!cloudModal) { advanceOnce(); return; }
+                        const obs = new MutationObserver(() => {
+                            if (!cloudModal.classList.contains('hidden-tab')) {
+                                obs.disconnect();
+                                advanceOnce();
+                            }
+                        });
+                        obs.observe(cloudModal, { attributes: true, attributeFilter: ['class'] });
+                        stepAC?.signal.addEventListener('abort', () => obs.disconnect());
+                    },
+                },
+                onHighlighted: () => {
+                    stepAC?.abort();
+                    stepAC = new AbortController();
+                    cloudStepDone = false;
+                    // Rete di sicurezza: se l'utente clicca direttamente i bottoni del modal auth
+                    // reale invece di quelli del popover, avanza comunque il tutorial.
+                    const realCancel = document.getElementById('btn-cloud-auth-no');
+                    if (realCancel) realCancel.addEventListener('click', () => advanceOnce(), { once: true, signal: stepAC.signal });
+                }
+            });
+        }
     }
 
     steps.push({
@@ -319,15 +400,18 @@ window.avviaTutorial = async function() {
             if (window.chiudiCloudModal) window.chiudiCloudModal();
         },
         onHighlighted: (el) => {
+            stepAC?.abort();
+            stepAC = new AbortController();
             if (el) el.addEventListener('click', () => {
                 const vList = document.getElementById('view-list');
                 if (vList && vList.classList.contains('hidden-tab') && window.switchTab) {
                     window.switchTab('list');
                 }
-                setTimeout(() => window.dInstance.moveNext(), 150);
-            }, { once: true });
+                setTimeout(() => window.dInstance?.moveNext(), 150);
+            }, { once: true, signal: stepAC.signal });
         }
     });
+
     steps.push({
         element: '.tutorial-modifica-btn',
         popover: {
@@ -337,10 +421,9 @@ window.avviaTutorial = async function() {
             align: 'start',
             showButtons: ['close']
         },
-        onHighlighted: (el) => {
-            if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
-        }
+        onHighlighted: (el) => attachOnce(el)
     });
+
     steps.push({
         element: '#view-add',
         popover: {
@@ -350,22 +433,25 @@ window.avviaTutorial = async function() {
             align: 'start',
             showButtons: ['close']
         },
-        onHighlighted: (el) => {
+        onHighlighted: () => {
             setTimeout(() => {
                 const main = document.querySelector('main');
                 if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
             }, 50);
+            stepAC?.abort();
+            stepAC = new AbortController();
             const backBtn = document.getElementById('btn-back-to-list');
-            if (backBtn) backBtn.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
+            if (backBtn) backBtn.addEventListener('click', () => setTimeout(() => window.dInstance?.moveNext(), 150), { once: true, signal: stepAC.signal });
         },
         onPrevClick: () => {
             const vList = document.getElementById('view-list');
             if (vList && vList.classList.contains('hidden-tab') && window.switchTab) {
                 window.switchTab('list');
             }
-            setTimeout(() => window.dInstance.movePrevious(), 150);
+            setTimeout(() => window.dInstance?.movePrevious(), 150);
         }
     });
+
     steps.push({
         element: '.tutorial-trascrivi-btn',
         popover: {
@@ -375,14 +461,13 @@ window.avviaTutorial = async function() {
             align: 'start',
             showButtons: ['close']
         },
-        onHighlighted: (el) => {
-            if (el) el.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 200), { once: true });
-        },
+        onHighlighted: (el) => attachOnce(el, 200),
         onPrevClick: () => {
             if (window.switchTab) window.switchTab('add');
-            setTimeout(() => window.dInstance.movePrevious(), 150);
+            setTimeout(() => window.dInstance?.movePrevious(), 150);
         }
     });
+
     steps.push({
         element: '#view-trascrizione',
         popover: {
@@ -392,19 +477,20 @@ window.avviaTutorial = async function() {
             align: 'start',
             showButtons: ['close']
         },
-        onHighlighted: (el) => {
+        onHighlighted: () => {
+            stepAC?.abort();
+            stepAC = new AbortController();
             const backBtn = document.getElementById('btn-back-to-list-trasc');
-            if (backBtn) backBtn.addEventListener('click', () => setTimeout(() => window.dInstance.moveNext(), 150), { once: true });
+            if (backBtn) backBtn.addEventListener('click', () => setTimeout(() => window.dInstance?.moveNext(), 150), { once: true, signal: stepAC.signal });
         },
         onPrevClick: () => {
             const vList = document.getElementById('view-list');
             if (vList && vList.classList.contains('hidden-tab') && window.switchTab) {
                 window.switchTab('list');
             }
-            setTimeout(() => window.dInstance.movePrevious(), 150);
+            setTimeout(() => window.dInstance?.movePrevious(), 150);
         }
     });
-
 
     steps.push({
         element: '#sidebar',
@@ -439,11 +525,19 @@ window.avviaTutorial = async function() {
     window.dInstance = driverObj({
         showProgress: true,
         allowClose: false,
+        // Con allowClose:false driver.js gate la X sull'evento "closeClick" (allowClose && destroy),
+        // perciò il pulsante non chiuderebbe il tour. Configuriamo onCloseClick per distruggere
+        // esplicitamente, mantenendo allowClose:false così Esc/click sull'overlay non chiudono il tour per sbaglio.
+        onCloseClick: () => { if (window.dInstance) window.dInstance.destroy(); },
         showButtons: ['next', 'close'],
         onPopoverRender: (popover) => {
             if (popover.closeButton) {
                 popover.closeButton.style.display = 'block';
             }
+        },
+        onDestroyStarted: () => {
+            stepAC?.abort();
+            stepAC = null;
         },
         steps: steps,
         nextBtnText: window.t('tut_btn_next', 'Avanti'),
@@ -453,7 +547,6 @@ window.avviaTutorial = async function() {
 
     window.dInstance.drive();
 
-    // Segniamo come completato
     if (window.apiSettings) {
         try {
             const settings = await window.apiSettings.get();
@@ -461,6 +554,8 @@ window.avviaTutorial = async function() {
                 settings.tutorialCompleted = true;
                 await window.apiSettings.save(settings);
             }
-        } catch(e) {}
+        } catch (e) {
+            console.error("Errore persistenza tutorialCompleted:", e);
+        }
     }
 };

@@ -1,23 +1,23 @@
     <header class="panel-glass shrink-0 mb-6 flex flex-wrap items-center gap-2 p-2">
         <!-- Gruppo navigazione pannello -->
         <div class="flex items-center gap-0.5 shrink-0 mr-1">
-            <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders">
+            <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders" data-i18n-aria-label="tooltip_folders">
                 <i data-lucide="folder" class="w-5 h-5"></i>
             </button>
 
-            <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-i18n-title="tooltip_search_btn">
+            <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-i18n-title="tooltip_search_btn" data-i18n-aria-label="tooltip_search_btn">
                 <i data-lucide="search" class="w-5 h-5"></i>
             </button>
 
-            <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn">
+            <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn" data-i18n-aria-label="tooltip_tags_btn">
                 <i data-lucide="bookmark" class="w-5 h-5"></i>
             </button>
 
-            <button id="btn-tab-source-control" onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" data-i18n-title="tooltip_source_control" title="Controllo Modifiche (Source Control)">
+            <button id="btn-tab-source-control" onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" data-i18n-title="tooltip_source_control" data-i18n-aria-label="tooltip_source_control" title="Controllo Modifiche (Source Control)">
                 <i data-lucide="git-pull-request" class="w-5 h-5"></i>
             </button>
 
-            <button id="btn-tab-history" onclick="switchSidebarTab('history')" class="btn btn-ghost btn-icon" data-tab="history" data-i18n-title="tooltip_history" title="Storico Versioni Cloud">
+            <button id="btn-tab-history" onclick="switchSidebarTab('history')" class="btn btn-ghost btn-icon" data-tab="history" data-i18n-title="tooltip_history" data-i18n-aria-label="tooltip_history" title="Storico Versioni Cloud">
                 <i data-lucide="history" class="w-5 h-5"></i>
             </button>
         </div>
@@ -50,13 +50,31 @@
             </button>
         </div>
 
-        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record">
+        <!-- Menu Cloud compatto (overflow) — visibile solo quando la barra è stretta (< md) -->
+        <div id="cloud-menu-wrapper" class="md:hidden relative mr-2">
+            <button id="cloud-menu-btn" type="button" onclick="toggleCloudMenu(event)" aria-haspopup="true" aria-expanded="false" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_cloud_sync" data-i18n-aria-label="tooltip_cloud_sync" title="Sincronizzazione Cloud">
+                <i data-lucide="cloud" class="w-5 h-5"></i>
+            </button>
+            <div id="cloud-menu-dropdown" class="hidden absolute right-0 top-full mt-1 z-9999 min-w-[180px] py-1 rounded-md shadow-xl" style="background-color: var(--color-bg-base); border: 1px solid var(--color-border);">
+                <button onclick="controllaModificheInEntrata(true);toggleCloudMenu()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20" style="color: var(--color-text-main);">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_fetch">Fetch</span>
+                </button>
+                <button onclick="scaricaDalCloud();toggleCloudMenu()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20" style="color: var(--color-text-main);">
+                    <i data-lucide="cloud-download" class="w-4 h-4"></i> <span data-i18n="btn_pull">Scarica</span>
+                </button>
+                <button onclick="caricaSulCloud();toggleCloudMenu()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20" style="color: var(--color-text-main);">
+                    <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btn_push">Carica</span>
+                </button>
+            </div>
+        </div>
+
+        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record" data-i18n-aria-label="tooltip_new_record">
             <i data-lucide="plus" class="w-5 h-5"></i>
         </button>
         <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm ml-2">
             <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span data-i18n="btn_new_model">Modello</span>
         </button>
-        <button onclick="if(window.avviaTutorial) window.avviaTutorial()" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="tooltip_tutorial" title="Avvia Tutorial">
+        <button onclick="if(window.avviaTutorial) window.avviaTutorial()" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial" title="Avvia Tutorial">
             <i data-lucide="help-circle" class="w-5 h-5"></i>
         </button>
     </header>

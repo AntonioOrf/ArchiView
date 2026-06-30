@@ -77,7 +77,7 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
                     <h3 class="text-xl font-bold flex items-center gap-2">
                         <i data-lucide="git-compare" class="w-5 h-5 text-amber-600"></i> ${escapeHTML(titolo)}
                     </h3>
-                    <button id="btn-close-diff-top" class="text-stone-400 hover:text-stone-600 transition-colors">
+                    <button id="btn-close-diff-top" class="text-stone-400 hover:text-stone-600 transition-colors" aria-label="${escapeHTML(window.t('btn_close', 'Chiudi'))}">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>

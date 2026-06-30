@@ -11,7 +11,7 @@
                 <h3 class="modal-title text-stone-800 dark:text-stone-100 flex items-center gap-2">
                     <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0"></i> <span data-i18n="modal_cloud_title">Cloud & Condivisione</span>
                 </h3>
-                <button type="button" onclick="chiudiCloudModal()" class="btn btn-ghost btn-icon"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" onclick="chiudiCloudModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="modal-body p-6 flex-1 overflow-y-auto custom-scroll min-h-0">
                 

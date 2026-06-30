@@ -15,31 +15,18 @@ function objectContainsString(m, str) {
 window.currentPage = 0;
 const PAGE_SIZE = 50;
 
-// renderMain è sincrona: non usa await, non deve essere async
-function renderMain(resetPage = true) {
-    if (resetPage) window.currentPage = 0;
-
-    const grid = document.getElementById('manoscritti-grid');
+// Calcola l'elenco dei manoscritti visibili nella griglia secondo gli stessi
+// criteri di renderMain (cartella + ricerca + tag). Esposto su window così che
+// altri componenti (es. suggerimenti di ricerca) possano localizzare un record.
+window.getManoscrittiFiltrati = function() {
     const search = document.getElementById('search-input').value.trim().toLowerCase();
-    
     window.activeTags = window.activeTags || new Set();
     const isGlobalSearch = search !== '' || window.activeTags.size > 0;
 
-    if (isGlobalSearch) {
-        document.getElementById('titolo-cartella-attuale').textContent = window.t("search_results_title", "Global Search Results");
-    } else {
-        const partiTitolo = window.cartellaAttuale.split('/');
-        document.getElementById('titolo-cartella-attuale').textContent = partiTitolo[partiTitolo.length - 1];
-    }
-
-    // Filtro per Cartella (se non globale) E per Ricerca Profonda E per (Multi) Tag
-    const filtered = appData.manoscritti.filter(m => {
+    return appData.manoscritti.filter(m => {
         const matchCartella = isGlobalSearch ? true : m.cartella === window.cartellaAttuale;
-
-        // Ricerca veramente globale su ogni campo (testo, metadati, trascrizioni, allegati)
         const matchSearch = search === '' || objectContainsString(m, search);
 
-        // Controllo tag (AND logico: il manoscritto deve avere TUTTI i tag selezionati)
         const mTags = (m.tags || '').toLowerCase();
         let matchTag = true;
         if (window.activeTags.size > 0) {
@@ -53,8 +40,32 @@ function renderMain(resetPage = true) {
 
         return matchCartella && matchSearch && matchTag;
     });
+};
 
-    document.getElementById('counter-results').textContent = `Documenti trovati: ${filtered.length}`;
+// renderMain è sincrona: non usa await, non deve essere async
+function renderMain(resetPage = true) {
+    if (resetPage) window.currentPage = 0;
+
+    const grid = document.getElementById('manoscritti-grid');
+    const search = document.getElementById('search-input').value.trim().toLowerCase();
+
+    window.activeTags = window.activeTags || new Set();
+    const isGlobalSearch = search !== '' || window.activeTags.size > 0;
+
+    if (isGlobalSearch) {
+        document.getElementById('titolo-cartella-attuale').textContent = window.t("search_results_title", "Global Search Results");
+    } else {
+        const partiTitolo = window.cartellaAttuale.split('/');
+        document.getElementById('titolo-cartella-attuale').textContent = partiTitolo[partiTitolo.length - 1];
+    }
+
+    // Filtro per Cartella (se non globale) E per Ricerca Profonda E per (Multi) Tag
+    const filtered = window.getManoscrittiFiltrati();
+
+    // Etichetta diversa quando si naviga una cartella (non si sta cercando)
+    const counterKey = isGlobalSearch ? 'counter_documents_found' : 'counter_documents';
+    const counterFallback = isGlobalSearch ? 'Documenti trovati: {var0}' : 'Documenti: {var0}';
+    document.getElementById('counter-results').textContent = window.t(counterKey, counterFallback).replace('{var0}', String(filtered.length));
     grid.innerHTML = '';
 
     const btnDeleteFolder = document.getElementById('btn-delete-folder');
@@ -152,7 +163,9 @@ function renderMain(resetPage = true) {
             let btnVediPdfPiccolo = '';
 
             if (allegatiRender.length > 0) {
-                const textAllegati = allegatiRender.length === 1 ? '1 documento allegato' : `${allegatiRender.length} documenti allegati`;
+                const textAllegati = allegatiRender.length === 1
+                    ? window.t('attachment_count_one', '1 documento allegato')
+                    : window.t('attachment_count_many', '{var0} documenti allegati').replace('{var0}', String(allegatiRender.length));
                 btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}</span>`;
                 allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
             } else {
@@ -244,8 +257,8 @@ function renderMain(resetPage = true) {
                 </div>
                 <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end gap-2">
                     ${btnVediPdfPiccolo}
-                    <button onclick="esportaManoscritto('${m.id}')" class="btn btn-ghost btn-icon" title="Esporta"><i data-lucide="download" class="w-4 h-4"></i></button>
-                    <button onclick="deleteItem('${m.id}')" class="btn btn-ghost btn-icon" style="color: var(--color-danger);"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="esportaManoscritto('${m.id}')" class="btn btn-ghost btn-icon" aria-label="${escapeHTML(window.t('tooltip_export', 'Esporta'))}" title="${escapeHTML(window.t('tooltip_export', 'Esporta'))}"><i data-lucide="download" class="w-4 h-4"></i></button>
+                    <button onclick="deleteItem('${m.id}')" class="btn btn-ghost btn-icon" style="color: var(--color-danger);" aria-label="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}" title="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `;
             fragment.appendChild(div);
@@ -371,7 +384,19 @@ function renderSearchSuggestions() {
         const div = document.createElement('div');
         div.className = "p-2 border-b border-stone-200 hover:bg-amber-50 cursor-pointer transition-colors";
         div.onclick = () => {
-            // Scorriamo fino alla scheda nella griglia a destra
+            // La griglia è paginata: se il record è in un'altra pagina, salta prima
+            // alla pagina corretta, altrimenti la card non esiste nel DOM e lo scroll
+            // fallirebbe silenziosamente.
+            const filtrati = window.getManoscrittiFiltrati();
+            const idx = filtrati.findIndex(x => x.id === match.item.id);
+            if (idx !== -1) {
+                const paginaTarget = Math.floor(idx / PAGE_SIZE);
+                if (window.currentPage !== paginaTarget) {
+                    window.currentPage = paginaTarget;
+                    renderMain(false);
+                }
+            }
+
             const cardId = 'card-' + match.item.id;
             const targetCard = document.getElementById(cardId);
             if (targetCard) {
@@ -386,6 +411,10 @@ function renderSearchSuggestions() {
                     targetCard.style.boxShadow = oldShadow;
                     targetCard.style.borderColor = oldBorder;
                 }, 1500);
+            } else if (typeof mostraMessaggio === 'function') {
+                // Il suggerimento ha trovato corrispondenza su un campo non incluso nel
+                // filtro della griglia: il record non è nella vista corrente.
+                mostraMessaggio(window.t('msg_record_non_in_vista', 'Documento non visibile nella vista corrente.'), 'info');
             }
         };
         div.innerHTML = `
