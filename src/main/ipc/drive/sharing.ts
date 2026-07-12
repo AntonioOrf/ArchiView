@@ -3,8 +3,8 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 const { shell } = require('electron');
-const { state, initWorkspace, getAllSettings, saveAllSettings } = require('../../workspaceManager');
-const { driveState, authenticateDrive, writeTokenFile, getLocalTokenPath } = require('./auth');
+const { state, initWorkspace, getActiveVaultFlags, saveAllSettings } = require('../../workspaceManager');
+const { driveState, authenticateDrive } = require('./auth');
 const { getOrCreateFolder } = require('./fileOps');
 const { pullFromDrive } = require('./vaultOps');
 
@@ -12,7 +12,7 @@ async function generateInviteCode(): Promise<string> {
   try {
     await authenticateDrive();
     let settings: any = {};
-    try { settings = getAllSettings(); } catch (e) { console.error("Errore lettura settings:", e); }
+    try { settings = getActiveVaultFlags(); } catch (e) { console.error("Errore lettura settings:", e); }
 
     let vaultFolderId = settings.sharedVaultId;
     const projectName = path.basename(state.workspacePath) + '_ArchiView';
@@ -65,9 +65,10 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   }
   fs.mkdirSync(newPath, { recursive: true });
 
-  if (refreshToken) {
-    writeTokenFile(path.join(newPath, '.drive-tokens.json'), { refresh_token: refreshToken });
-  }
+  // Nota: l'invito NON trasporta refresh_token (parts[0] è sempre vuoto per sicurezza).
+  // Il ricevente autentica il proprio account; con scope drive.file l'accesso al vault
+  // condiviso passa dal Google Picker (vedi openExternalPicker). I token vivono in
+  // userData/cloud-tokens/ (cloudTokenStore), mai dentro il workspace.
 
   const settingsToSave: any = { isSharedVault: true };
   if (pKey || pWebhook) {
@@ -144,7 +145,7 @@ async function joinByFolderId(vaultId: string, vaultName: string, basePath: stri
 async function shareVault(email: string): Promise<boolean> {
   await authenticateDrive();
   let settings: any = {};
-  try { settings = getAllSettings(); } catch (e) { console.error("Errore lettura settings:", e); }
+  try { settings = getActiveVaultFlags(); } catch (e) { console.error("Errore lettura settings:", e); }
 
   const vaultFolderId = settings.sharedVaultId;
   if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato. Assicurati che sia un Archivio Condiviso.");
@@ -165,7 +166,7 @@ async function shareVault(email: string): Promise<boolean> {
 async function listPermissions(): Promise<any[]> {
   await authenticateDrive();
   let settings: any = {};
-  try { settings = getAllSettings(); } catch (e) { console.error("Errore lettura settings:", e); }
+  try { settings = getActiveVaultFlags(); } catch (e) { console.error("Errore lettura settings:", e); }
 
   const vaultFolderId = settings.sharedVaultId;
   if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato.");
@@ -180,7 +181,7 @@ async function listPermissions(): Promise<any[]> {
 async function removePermission(permissionId: string): Promise<boolean> {
   await authenticateDrive();
   let settings: any = {};
-  try { settings = getAllSettings(); } catch (e) { console.error("Errore lettura settings:", e); }
+  try { settings = getActiveVaultFlags(); } catch (e) { console.error("Errore lettura settings:", e); }
 
   const vaultFolderId = settings.sharedVaultId;
   if (!vaultFolderId) throw new Error("ID dell'Archivio non trovato.");

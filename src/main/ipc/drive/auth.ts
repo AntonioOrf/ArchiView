@@ -1,8 +1,9 @@
-const { app, shell, safeStorage } = require('electron');
+const { app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const { state, getAllSettings } = require('../../workspaceManager');
+const { state, getActiveVaultFlags } = require('../../workspaceManager');
+const tokenStore = require('../../cloudTokenStore');
 
 const REDIRECT_URI = 'http://localhost:3456/oauth2callback';
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
@@ -18,37 +19,39 @@ const driveState = {
 // --- Token Storage ---
 
 function writeTokenFile(tokenPath: string, tokenData: object): void {
-  const dir = path.dirname(tokenPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (safeStorage.isEncryptionAvailable()) {
-    const encrypted = safeStorage.encryptString(JSON.stringify(tokenData)).toString('base64');
-    fs.writeFileSync(tokenPath, JSON.stringify({ encrypted, v: 1 }));
-  } else {
-    fs.writeFileSync(tokenPath, JSON.stringify(tokenData, null, 2));
-  }
+  tokenStore.writeSerialized(tokenPath, JSON.stringify(tokenData));
 }
 
 function readTokenFile(tokenPath: string): object | null {
-  if (!fs.existsSync(tokenPath)) return null;
+  const serialized = tokenStore.readSerialized(tokenPath);
+  if (serialized == null) return null;
   try {
-    const raw = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
-    if (raw.v === 1 && raw.encrypted) {
-      return JSON.parse(safeStorage.decryptString(Buffer.from(raw.encrypted, 'base64')));
-    }
-    return raw;
+    return JSON.parse(serialized);
   } catch (e) {
-    console.error("Errore lettura token Drive:", e);
+    console.error("Errore parsing token Drive:", e);
     return null;
   }
 }
 
-function getGlobalTokenPath(): string {
+// Percorso legacy (pre-refactor) del token globale, usato solo per la migrazione one-shot.
+function getLegacyGlobalTokenPath(): string {
   return path.join(app.getPath('userData'), 'google-drive-tokens-global.json');
 }
 
+// Percorso legacy (pre-refactor) del token dentro il workspace, usato solo per la migrazione.
+function getLegacyLocalTokenPath(ws: string): string {
+  return path.join(ws, '.archiview-chunks', '.credentials.json');
+}
+
+function getGlobalTokenPath(): string {
+  return tokenStore.tokenPathFor('google', 'global');
+}
+
+// Percorso token del vault attivo: null per i workspace non-cloud (usano il globale).
 function getLocalTokenPath(): string | null {
-  if (!state.workspacePath) return null;
-  return path.join(state.workspacePath, '.archiview-chunks', '.credentials.json');
+  const key = tokenStore.activeVaultKey();
+  if (key === 'global') return null;
+  return tokenStore.tokenPathFor('google', key);
 }
 
 // --- Auth Logging ---
@@ -123,6 +126,9 @@ function loadSavedTokens(): boolean {
     logAuthEvent("ERRORE: initGoogle fallito in loadSavedTokens - " + e.message);
     return false;
   }
+
+  // Migrazione one-shot dai vecchi percorsi (workspace / userData legacy) → cloud-tokens/.
+  tokenStore.migrateLegacy('google', getLegacyGlobalTokenPath(), getLegacyLocalTokenPath);
 
   let tokenPath: string | null;
   if (state.workspacePath) {
@@ -199,7 +205,7 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
         try {
           await driveState.drive.files.list({ pageSize: 1, spaces: 'drive' });
           let settings: any = {};
-          try { settings = getAllSettings(); } catch (e) { console.error("Errore lettura settings:", e); }
+          try { settings = getActiveVaultFlags(); } catch (e) { console.error("Errore lettura settings:", e); }
           if (state.workspacePath && settings.sharedVaultId) {
             try {
               await driveState.drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
@@ -246,19 +252,29 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
       // Con consent fisso → consent screen ad ogni re-auth → esperienza pessima.
       // Senza consent se abbiamo già refresh_token → Google non lo re-emette (comportamento corretto).
       let needConsent = true;
+      let loginHint: string | null = null;
       try {
         const existingPath = getLocalTokenPath() || getGlobalTokenPath();
         if (existingPath) {
           const existingTok = readTokenFile(existingPath) as any;
           if (existingTok && existingTok.refresh_token) needConsent = false;
+          if (existingTok && existingTok.email) loginHint = existingTok.email;
         }
       } catch (e) { /* non bloccante: fallback a consent=true */ }
 
-      const authUrl = driveState.oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: SCOPES,
-        prompt: needConsent ? 'select_account consent' : 'select_account'
-      });
+      // Selezione del prompt OAuth:
+      //  - forceLocal (cambio account volontario) → chooser + consent
+      //  - primo login senza refresh_token → chooser + consent (necessario per ottenere il refresh_token)
+      //  - re-auth con refresh_token già presente → nessun prompt = refresh SILENZIOSO (niente chooser nel browser)
+      let promptMode = '';
+      if (forceLocal || needConsent) promptMode = 'select_account consent';
+
+      const authUrlParams: any = { access_type: 'offline', scope: SCOPES };
+      if (promptMode) authUrlParams.prompt = promptMode;
+      // login_hint salta il chooser puntando all'account già in uso (solo re-auth, non cambio account).
+      if (!forceLocal && loginHint) authUrlParams.login_hint = loginHint;
+
+      const authUrl = driveState.oauth2Client.generateAuthUrl(authUrlParams);
 
       if (driveState.localServer) driveState.localServer.close();
 
@@ -296,6 +312,12 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
             }
 
             driveState.oauth2Client.setCredentials(tokens);
+            // Salva l'email dell'account nel token file: abilita login_hint per il refresh silenzioso.
+            // best-effort: about.get può fallire con scope drive.file, in quel caso si prosegue senza email.
+            try {
+              const about = await driveState.drive.about.get({ fields: 'user' });
+              if (about?.data?.user?.emailAddress) tokens.email = about.data.user.emailAddress;
+            } catch (e) { /* non bloccante */ }
             const win = require('electron').BrowserWindow.getAllWindows()[0];
             if (win) win.webContents.send('drive-status-updated', { authenticated: true });
 
@@ -375,7 +397,7 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
   }
 
   try {
-    const settings = getAllSettings();
+    const settings = getActiveVaultFlags();
     if (settings.isSharedVault && settings.sharedVaultId) {
       try {
         await driveState.drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });

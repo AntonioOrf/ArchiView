@@ -31,11 +31,11 @@
                 <div class="h-px bg-stone-200 my-1 w-full"></div>
                 <button onclick="mostraInputNuovaCartella('personale')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-sky-900 border border-sky-300 hover:bg-sky-50" style="background-color: #f0f9ff;">
                     <i data-lucide="cloud" class="w-5 h-5 mr-2"></i>
-                    <span data-i18n="btn_create_cloud_private">Crea un Archivio Cloud Privato</span>
+                    <span data-i18n="btn_create_cloud_private">Crea un Backup Personale</span>
                 </button>
-                <button onclick="mostraInputNuovaCartella('condiviso')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-blue-900 border border-blue-300 hover:bg-blue-50" style="background-color: #eff6ff;">
-                    <i data-lucide="cloud-upload" class="w-5 h-5 mr-2"></i>
-                    <span data-i18n="btn_create_shared">Crea un Archivio Condiviso</span>
+                <button onclick="mostraInputNuovaCartella('hub')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-emerald-900 border border-emerald-300 hover:bg-emerald-50" style="background-color: #ecfdf5;">
+                    <i data-lucide="server" class="w-5 h-5 mr-2"></i>
+                    <span data-i18n="btn_create_hub_shared">Crea un Hub Condiviso</span>
                 </button>
                 <button onclick="mostraJoinForm()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 border border-amber-300 hover:bg-amber-50" style="background-color: #fffbeb;">
                     <i data-lucide="users" class="w-5 h-5 mr-2"></i>
@@ -95,7 +95,7 @@
                             <input type="text" id="welcome-join-code"
                                 class="form-input w-full bg-white text-stone-600 text-sm border border-stone-300 font-mono"
                                 placeholder="archiview://join/..."
-                                oninput="if(window.handleInviteCode) window.handleInviteCode(this.value)">
+                                oninput="if(window.handleJoinCodeInput) window.handleJoinCodeInput(this.value)">
                             <div id="join-code-ok" class="hidden-tab mt-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5 flex items-center gap-1.5">
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0"></i>
                                 <span id="join-code-ok-text"></span>
@@ -103,8 +103,8 @@
                             <div id="join-code-err" class="hidden mt-1.5 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5"></div>
                         </div>
 
-                        <!-- STEP 2: Picker Google Drive -->
-                        <div>
+                        <!-- STEP 2: Picker Google Drive (solo per inviti Drive legacy) -->
+                        <div id="join-step-drive" class="hidden-tab">
                             <div class="flex items-center gap-2 mb-1.5">
                                 <span id="join-step2-badge" class="w-5 h-5 rounded-full bg-stone-300 text-white text-[10px] font-bold flex items-center justify-center shrink-0 transition-colors">2</span>
                                 <label class="form-label font-medium text-sm text-stone-700" data-i18n="label_authorize_folder">Autorizza accesso cartella Drive</label>
@@ -184,6 +184,7 @@
     window.mostraInputNuovaCartella = async function(tipo = 'locale') {
         window.creazioneVaultCondiviso = (tipo === 'condiviso');
         window.creazioneVaultPersonale = (tipo === 'personale');
+        window.creazioneVaultHub = (tipo === 'hub');
         document.getElementById('welcome-buttons').classList.add('hidden-tab');
         document.getElementById('welcome-create-form').classList.remove('hidden-tab');
         if (window.apiBrowser && window.apiBrowser.getDocumentsPath) {
@@ -275,10 +276,19 @@
         }
     }
 
+    // Mostra/nasconde lo step Picker Drive (necessario solo per gli inviti Drive legacy).
+    // Quando è nascosto, lo step "cartella locale" diventa visivamente il passo 2.
+    function setDriveStepVisible(visible: boolean) {
+        document.getElementById('join-step-drive')?.classList.toggle('hidden-tab', !visible);
+        const b3 = document.getElementById('join-step3-badge');
+        if (b3 && b3.textContent !== '✓') b3.textContent = visible ? '3' : '2';
+    }
+
     function resetJoinState() {
         window.welcomeJoinVaultId = null;
         window.welcomeJoinVaultName = null;
         window.welcomePusherCreds = null;
+        window.welcomeHubInvite = null;
 
         const codeInput = document.getElementById('welcome-join-code') as HTMLInputElement;
         if (codeInput) codeInput.value = '';
@@ -292,12 +302,13 @@
             .replace('border-blue-400 ring-2 ring-blue-200', 'border-stone-300');
 
         for (let i = 1; i <= 3; i++) updateJoinStepBadge(i, 'pending');
+        setDriveStepVisible(false); // default: layout Hub a 2 passi
     }
 
     // --- Decodifica codice invito (frontend, nessuna chiamata IPC) ---
     // Il codice è puro base64: |pusherKey|pusherCluster|pusherWebhook|autoFetch|vaultId|vaultName
 
-    window.handleInviteCode = function(rawCode: string) {
+    window.handleJoinCodeInput = function(rawCode: string) {
         const okDiv  = document.getElementById('join-code-ok');
         const errDiv = document.getElementById('join-code-err');
         const okText = document.getElementById('join-code-ok-text');
@@ -308,7 +319,27 @@
 
         let code = rawCode.trim();
         if (code.startsWith('archiview://join/')) code = code.slice('archiview://join/'.length);
-        if (!code) { updateJoinStepBadge(1, 'pending'); return; }
+        if (!code) { updateJoinStepBadge(1, 'pending'); setDriveStepVisible(false); return; }
+
+        // Invito ad archivio condiviso: nessun accesso Google né Picker, si salta direttamente
+        // allo step "cartella locale". Mai il repoId: solo il nome scelto dal proprietario.
+        const hubInvite = window.decodeHubInvite ? window.decodeHubInvite(rawCode) : null;
+        if (hubInvite) {
+            window.welcomeHubInvite = hubInvite;
+            window.welcomePusherCreds = null;
+            const archiveLabel = hubInvite.name
+                ? `"${hubInvite.name}"`
+                : window.t("hub_fallback_name", "Questo archivio condiviso");
+            if (okText) okText.textContent =
+                `${archiveLabel} — ${window.t("hub_join_ok_suffix", "nessun accesso Google richiesto: scegli la cartella locale e connettiti.")}`;
+            okDiv?.classList.remove('hidden-tab');
+            if (window.lucide) lucide.createIcons({ nodes: [okDiv] });
+            updateJoinStepBadge(1, 'done');
+            updateJoinStepBadge(3, 'active');
+            setDriveStepVisible(false); // Hub: nessun Picker, layout a 2 passi (rinumera lo step 3 -> 2 una sola volta)
+            return;
+        }
+        window.welcomeHubInvite = null;
 
         try {
             let b64 = code;
@@ -331,6 +362,9 @@
                 `"${displayName}" ${window.t("join_code_ok_suffix", "— now click \"Browse Google Drive\" to authorize access.")}`;
             okDiv?.classList.remove('hidden-tab');
             if (window.lucide) lucide.createIcons({ nodes: [okDiv] });
+
+            // Invito Drive legacy: rivela lo step Picker (layout a 3 passi).
+            setDriveStepVisible(true);
 
             // Evidenzia il pulsante picker come prossimo step obbligatorio
             const pickerBtn = document.getElementById('btn-open-picker');
@@ -448,6 +482,28 @@
         const vaultName: string = window.welcomeJoinVaultName || "Vault_Condiviso";
         const basePath: string = (document.getElementById('welcome-join-folder-path') as HTMLInputElement)?.value.trim() || '';
 
+        // Percorso Hub: nessun vaultId Drive, si clona via invito.
+        if (window.welcomeHubInvite) {
+            if (!basePath) { mostraMessaggio(window.t("msg_seleziona_percorso", "Seleziona una posizione locale per l'archivio."), "warning"); return; }
+            const btnH = document.getElementById('btn-join-connect') as HTMLButtonElement;
+            if (btnH) { btnH.disabled = true; btnH.textContent = '...'; }
+            try {
+                mostraMessaggio(window.t("msg_connessione_all_archivio_", "Connessione all'Archivio in corso..."), "info");
+                const ok = await window.eseguiJoinHub(window.welcomeHubInvite, basePath);
+                if (!ok) throw new Error(window.t("msg_error_creating_files", "Error creating local files."));
+                document.getElementById('welcome-modal')?.classList.add('hidden-tab');
+                const archiveName = window.welcomeHubInvite.name;
+                const successMsg = archiveName
+                    ? window.t("msg_connesso_con_successo_nome", 'Connesso con successo a "{var0}"! Riavvio in corso...').replace('{var0}', archiveName)
+                    : window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso...");
+                mostraMessaggio(successMsg, "success");
+            } catch (e: any) {
+                mostraMessaggio(e.message, "error");
+                if (btnH) { btnH.disabled = false; btnH.textContent = window.t("btn_connect", "Connettiti"); }
+            }
+            return;
+        }
+
         if (!vaultId) {
             mostraMessaggio(
                 window.t("msg_picker_required", "Prima apri Google Drive con il pulsante 'Sfoglia' per autorizzare l'accesso alla cartella condivisa."),
@@ -547,7 +603,8 @@
         
         if (window.apiBrowser && window.apiBrowser.createWorkspaceInPath) {
             let config = null;
-            if (window.creazioneVaultCondiviso) config = { autoStartTrasformaCondiviso: true };
+            if (window.creazioneVaultHub) config = { autoStartCreaHub: true };
+            else if (window.creazioneVaultCondiviso) config = { autoStartTrasformaCondiviso: true };
             else if (window.creazioneVaultPersonale) config = { autoStartTrasformaPersonale: true };
             
             const success = await window.apiBrowser.createWorkspaceInPath(basePath, name, config);

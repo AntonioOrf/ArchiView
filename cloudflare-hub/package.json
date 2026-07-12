@@ -1,0 +1,20 @@
+{
+  "name": "archiview-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hub di sincronizzazione gratuito per ArchiView (Cloudflare Workers + D1)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate": "wrangler d1 execute archiview-hub --remote --file=./src/schema.sql",
+    "migrate:local": "wrangler d1 execute archiview-hub --local --file=./src/schema.sql",
+    "smoke": "node test/smoke.mjs",
+    "e2e": "node test/e2e.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.110.0"
+  }
+}

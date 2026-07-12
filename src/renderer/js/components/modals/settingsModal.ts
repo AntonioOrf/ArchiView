@@ -124,23 +124,23 @@
                             <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-xs font-mono text-stone-700 break-all mb-4">
                                 <div><b data-i18n="settings_hub_url">URL Server:</b> <span id="settings-hub-url" data-i18n="settings_not_defined">Non definito</span></div>
                                 <div><b data-i18n="settings_hub_repoid">ID Repository:</b> <span id="settings-hub-repoid" data-i18n="settings_not_defined">Non definito</span></div>
-                                <div><b data-i18n="settings_hub_key">Chiave di Scrittura:</b> <span id="settings-hub-key" data-i18n="settings_not_defined">Non definita</span></div>
+                                <div><b data-i18n="settings_hub_key">Chiave di Scrittura:</b> <span id="settings-hub-key">••••••••</span></div>
                             </div>
-                            <div class="space-y-3">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="settings-hub-autofetch" onchange="salvaImpostazioniHub()" class="form-checkbox text-amber-600 rounded border-stone-300 focus:ring-amber-500">
-                                    <span class="text-sm font-medium text-stone-800" data-i18n="settings_autofetch_title">Sincronizzazione Automatica (Autofetch)</span>
-                                </label>
-                                <div class="flex items-center gap-3">
-                                    <span class="text-sm text-stone-600" data-i18n="settings_autofetch_interval">Intervallo di controllo:</span>
-                                    <select id="settings-hub-autofetch-interval" onchange="salvaImpostazioniHub()" class="form-input text-sm py-1 p-2 bg-stone-50 border border-stone-200 rounded-sm">
-                                        <option value="1" data-i18n="settings_autofetch_1m">1 minuto</option>
-                                        <option value="5" data-i18n="settings_autofetch_5m">5 minuti</option>
-                                        <option value="10" data-i18n="settings_autofetch_10m">10 minuti</option>
-                                        <option value="30" data-i18n="settings_autofetch_30m">30 minuti</option>
-                                    </select>
+                            <p class="text-xs text-stone-500 mb-3" data-i18n="settings_hub_manage_hint">Inviti, collaboratori, allegati e sincronizzazione automatica si gestiscono dal pannello Condivisione.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="chiudiImpostazioni(); if(window.apriShareModal) apriShareModal();" class="btn btn-primary text-sm"><i data-lucide="users-round" class="w-4 h-4 mr-1.5"></i> <span data-i18n="btn_open_share">Apri Condivisione</span></button>
+                            </div>
+
+                            <div class="border-t border-stone-200 mt-5 pt-5">
+                                <h4 class="font-semibold mb-1 flex items-center gap-2 text-sm"><i data-lucide="cloud-lightning" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_hub_drive_title">Google Drive personale (per gli allegati)</span></h4>
+                                <p class="text-xs text-stone-500 mb-3" data-i18n="settings_hub_drive_desc">Collega il tuo account Google Drive per caricare i tuoi allegati (scansioni) e condividerli con gli altri collaboratori.</p>
+                                <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm text-stone-700">
+                                    <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-hub-drive-status">...</span></div>
+                                    <div class="flex gap-2 mt-2">
+                                        <button id="btn-hub-drive-login" class="btn btn-primary" onclick="loginGoogleDrive()" data-i18n="btn_drive_login">Accedi a Drive</button>
+                                        <button id="btn-hub-drive-logout" class="btn btn-danger hidden" onclick="logoutGoogleDrive()" data-i18n="btn_drive_logout">Disconnetti</button>
+                                    </div>
                                 </div>
-                                <p class="text-xs text-stone-500" data-i18n="settings_autofetch_desc">Se attivato, l'app controllerà in background se ci sono nuove modifiche dal server e le scaricherà automaticamente.</p>
                             </div>
                         </div>
 
@@ -162,7 +162,7 @@
                             </div>
                         </div>
 
-                        <div id="settings-hub-disabled" class="text-sm text-stone-500 italic p-4 bg-stone-50 border border-stone-200 rounded-sm">
+                        <div id="settings-hub-disabled" class="text-sm text-stone-500 italic p-4 bg-stone-50 border border-stone-200 rounded-sm" data-i18n="settings_sync_none">
                             Nessuna sincronizzazione cloud (Hub o Google Drive) configurata per questa cartella di lavoro.
                         </div>
                     </div>

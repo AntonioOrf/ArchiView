@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { state, getAllSettings } = require('../../workspaceManager');
+const { state, getAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
 const { splitFileIntoChunks, assembleFileFromChunks } = require('../../chunkingLogic');
 const { driveState, loadSavedTokens } = require('./auth');
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
@@ -11,7 +11,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
 
   let projectFolderId: string | null = null;
   try {
-    const s = getAllSettings();
+    const s = { ...getAllSettings(), ...getActiveVaultFlags() };
     if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
     if (!s.syncAttachments) return;
   } catch (e) { console.error("Errore lettura settings:", e); }

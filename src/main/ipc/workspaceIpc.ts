@@ -1,7 +1,8 @@
 const { ipcMain, dialog, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { state, initWorkspace, getAllSettings, saveHubConfig, loadHubConfig } = require('../workspaceManager');
+const { state, initWorkspace, getAllSettings, saveHubConfig, loadHubConfig, disconnectHub } = require('../workspaceManager');
+const { readVaultConfig, syncUnifiedFromLegacy } = require('../vaultConfig');
 
 function setupWorkspaceIpc() {
   ipcMain.handle('save-hub-config', (event, config) => {
@@ -10,6 +11,10 @@ function setupWorkspaceIpc() {
 
   ipcMain.handle('load-hub-config', () => {
     return loadHubConfig();
+  });
+
+  ipcMain.handle('disconnect-hub', () => {
+    return disconnectHub();
   });
 
   ipcMain.handle('apri-cartella-workspace', async () => {
@@ -28,37 +33,17 @@ function setupWorkspaceIpc() {
   ipcMain.handle('get-recent-workspaces', () => {
     const settings = getAllSettings();
     const recents = settings.recentWorkspaces || [];
+    // Fonte di verità unica: .archiview-vault.json (con fallback derivato dai legacy)
     return recents.map((folderPath: string) => {
-      let isShared = false;
-      let isPersonal = false;
-
-      // The global settings might have isSharedVault = true or isPersonalCloud = true for the current active workspace
-      if (settings.workspacePath === folderPath) {
-        if (settings.isSharedVault) isShared = true;
-        if (settings.isPersonalCloud) isPersonal = true;
-      }
-
-      try {
-        const driveSettingsPath = path.join(folderPath, '.archiview-drive.json');
-        if (fs.existsSync(driveSettingsPath)) {
-          const driveSettings = JSON.parse(fs.readFileSync(driveSettingsPath, 'utf8'));
-          if (driveSettings.isSharedVault) isShared = true;
-          if (driveSettings.isPersonalCloud) isPersonal = true;
-        }
-        
-        const vaultSettingsPath = path.join(folderPath, 'settings.json');
-        if (fs.existsSync(vaultSettingsPath)) {
-          const vaultSettings = JSON.parse(fs.readFileSync(vaultSettingsPath, 'utf8'));
-          if (vaultSettings.isSharedVault) isShared = true;
-          if (vaultSettings.isPersonalCloud) isPersonal = true;
-        }
-        
-        const hubConfigPath = path.join(folderPath, '.archiview-hub.json');
-        if (fs.existsSync(hubConfigPath)) {
-          isShared = true;
-        }
-      } catch (e) {}
-      return { path: folderPath, isShared, isPersonal };
+      const cfg = readVaultConfig(folderPath, settings);
+      return {
+        path: folderPath,
+        vaultType: cfg.vaultType,
+        provider: cfg.provider,
+        // Campi derivati per retrocompatibilità con il renderer (sidebar)
+        isShared: cfg.vaultType === 'shared',
+        isPersonal: cfg.vaultType === 'backup'
+      };
     });
   });
 
@@ -117,7 +102,12 @@ function setupWorkspaceIpc() {
   });
 
   ipcMain.handle('create-workspace-in-path', async (event, basePath, folderName, config) => {
-    const newPath = path.join(basePath, folderName);
+    const resolvedBase = path.resolve(basePath);
+    const newPath = path.resolve(path.join(resolvedBase, folderName));
+    if (!newPath.startsWith(resolvedBase + path.sep)) {
+      console.error("[SECURITY] Path traversal attempt in create-workspace-in-path blocked.");
+      return false;
+    }
     if (!fs.existsSync(newPath)) {
       fs.mkdirSync(newPath, { recursive: true });
     }
@@ -159,15 +149,35 @@ function setupWorkspaceIpc() {
 
   ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, hubConfig, database) => {
     try {
-      const newPath = path.join(basePath, folderName);
+      const resolvedBase = path.resolve(basePath);
+      const newPath = path.resolve(path.join(resolvedBase, folderName));
+      if (!newPath.startsWith(resolvedBase + path.sep)) {
+          console.error("[SECURITY] Path traversal attempt in clone-workspace-hub blocked.");
+          return false;
+      }
       if (!fs.existsSync(newPath)) {
         fs.mkdirSync(newPath, { recursive: true });
       }
       
-      // Scrivi config dell'Hub (se presente e valido)
+      // Scrivi config dell'Hub (se presente e valido). I segreti (repoKey/encKey) vanno
+      // in cloudTokenStore (DPAPI), MAI in chiaro nel file di vault potenzialmente sincronizzato.
       if (hubConfig && hubConfig.hubUrl) {
+          const { saveHubSecrets } = require('../cloudTokenStore');
+          const { repoKey, encKey, ...publicCfg } = hubConfig;
+          // Salva i segreti sotto lo scope del NUOVO workspace (state.workspacePath punta ancora
+          // a quello corrente: senza override finirebbero nello slot sbagliato e il clone
+          // non li ritroverebbe al riavvio).
+          if (publicCfg.repoId && (repoKey || encKey)) saveHubSecrets(publicCfg.repoId, { repoKey, encKey }, newPath);
           const configPath = path.join(newPath, '.archiview-hub.json');
-          fs.writeFileSync(configPath, JSON.stringify(hubConfig, null, 2), 'utf8');
+          fs.writeFileSync(configPath, JSON.stringify(publicCfg, null, 2), 'utf8');
+          // Realtime: deriveFromLegacy legge i campi Pusher da .archiview-drive.json.
+          if (publicCfg.pusherKey) {
+            fs.writeFileSync(path.join(newPath, '.archiview-drive.json'), JSON.stringify({
+              pusherKey: publicCfg.pusherKey,
+              pusherCluster: publicCfg.pusherCluster || '',
+              pusherWebhook: publicCfg.pusherWebhook || (publicCfg.hubUrl ? `${publicCfg.hubUrl}/api/ping` : '')
+            }, null, 2), 'utf8');
+          }
       }
 
       // Se hubConfig contiene dati Drive (è stato "abusato" per passare impostazioni Drive)
@@ -188,6 +198,9 @@ function setupWorkspaceIpc() {
       if (!fs.existsSync(attPath)) {
         fs.mkdirSync(attPath, { recursive: true });
       }
+
+      // Genera subito il modello unificato dai legacy appena scritti
+      syncUnifiedFromLegacy(newPath, getAllSettings());
 
       initWorkspace(newPath);
       if (state.mainWindow) {

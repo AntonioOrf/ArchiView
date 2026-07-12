@@ -659,12 +659,14 @@ window.aggiornaListaVault = async function() {
                     nameSpan.className = 'truncate pr-2 flex-1 flex items-center gap-1.5';
                     nameSpan.title = path;
                     
-                    if (isShared) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Archivio Condiviso'))}"></i> <span>${name}</span>`);
+                    if (item.provider === 'hub') {
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_hub', 'Hub Condiviso'))}"></i> <span>${name}</span>`);
+                    } else if (isShared) {
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Condiviso'))}"></i> <span>${name}</span>`);
                     } else if (isPersonal) {
                         nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_backup', 'Backup Personale'))}"></i> <span>${name}</span>`);
                     } else {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Solo Locale'))}"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Locale'))}"></i> <span>${name}</span>`);
                     }
                     
                     divContainer.appendChild(nameSpan);
@@ -691,12 +693,18 @@ window.aggiornaListaVault = async function() {
         // Aggiorna anche il nome nel pulsante
         const nameEl = document.getElementById('current-vault-name');
         if (nameEl && currentPath) {
-            const vaultName = currentPath.split(/[\\/\\\\]/).pop();
+            let vaultName = currentPath.split(/[\\/\\\\]/).pop();
             const currentVaultInfo = recents ? recents.find(r => r.path === currentPath || r === currentPath) : null;
+            const isCurrentHub = (currentVaultInfo && currentVaultInfo.provider === 'hub') || !!window.hubConfig;
             const isCurrentShared = currentVaultInfo && currentVaultInfo.isShared;
             const isCurrentPersonal = currentVaultInfo && currentVaultInfo.isPersonal;
-            
-            if (isCurrentShared) {
+
+            if (isCurrentHub) {
+                // Hub: mostra il nome scelto (condiviso via invito), non il nome cartella.
+                const hubName = (window.hubConfig && window.hubConfig.name) || vaultName;
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${escapeHTML(hubName)}</span></div>`);
+                if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
+            } else if (isCurrentShared) {
                 nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${vaultName}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else if (isCurrentPersonal) {

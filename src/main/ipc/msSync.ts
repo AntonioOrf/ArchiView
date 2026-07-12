@@ -1,8 +1,9 @@
-const { ipcMain, app, shell, safeStorage } = require('electron');
+const { ipcMain, app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const { state, initWorkspace, getAllSettings, saveAllSettings } = require('../workspaceManager');
+const { state, initWorkspace, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../workspaceManager');
+const tokenStore = require('../cloudTokenStore');
 const { PublicClientApplication, CryptoProvider } = require('@azure/msal-node');
 const { Client } = require('@microsoft/microsoft-graph-client');
 
@@ -10,46 +11,36 @@ const REDIRECT_URI = 'http://localhost:3457/redirect';
 const SCOPES = ['user.read', 'files.readwrite', 'offline_access'];
 
 function writeMsTokenFile(tokenPath: string, serializedCache: string): void {
-  const dir = path.dirname(tokenPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (safeStorage.isEncryptionAvailable()) {
-    const encrypted = safeStorage.encryptString(serializedCache).toString('base64');
-    fs.writeFileSync(tokenPath, JSON.stringify({ encrypted, v: 1 }));
-  } else {
-    fs.writeFileSync(tokenPath, serializedCache);
-  }
+  tokenStore.writeSerialized(tokenPath, serializedCache);
 }
 
 function readMsTokenFile(tokenPath: string): string | null {
-  if (!fs.existsSync(tokenPath)) return null;
-  try {
-    const raw = fs.readFileSync(tokenPath, 'utf8');
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.v === 1 && parsed.encrypted) {
-        return safeStorage.decryptString(Buffer.from(parsed.encrypted, 'base64'));
-      }
-    } catch { /* non è JSON cifrato — è MSAL plaintext */ }
-    return raw; // plaintext legacy
-  } catch (e) {
-    console.error("Errore lettura token MS:", e);
-    return null;
-  }
+  return tokenStore.readSerialized(tokenPath);
 }
 
-function getGlobalTokenPath() {
+// Percorsi legacy (pre-refactor), usati solo per la migrazione one-shot.
+function getLegacyGlobalTokenPath() {
   return path.join(app.getPath('userData'), 'ms-tokens-global.json');
 }
+function getLegacyLocalTokenPath(ws: string) {
+  return path.join(ws, '.ms-tokens.json');
+}
 
-function getLocalTokenPath() {
-  if (!state.workspacePath) return null;
-  return path.join(state.workspacePath, '.ms-tokens.json');
+// Percorso token MS del vault attivo (o globale per workspace non-cloud / nessun workspace).
+function getMsTokenPath() {
+  return tokenStore.tokenPathFor('ms', tokenStore.activeVaultKey());
+}
+
+// Migra i vecchi file MS verso cloud-tokens/. Idempotente.
+function migrateMsTokens() {
+  tokenStore.migrateLegacy('ms', getLegacyGlobalTokenPath(), getLegacyLocalTokenPath);
 }
 
 let localServer = null;
 let msalClient = null;
 let graphClient = null;
 let account = null;
+let lastTokenKey = null; // chiave vault dell'ultimo token caricato: resetta i singleton allo switch
 
 function initMsal() {
   if (!msalClient) {
@@ -73,18 +64,12 @@ function initMsal() {
       cache: {
         cachePlugin: {
           beforeCacheAccess: async (cacheContext) => {
-             const tokenPath = state.workspacePath ? getLocalTokenPath() : getGlobalTokenPath();
-             if (tokenPath) {
-                 const tokenData = readMsTokenFile(tokenPath);
-                 if (tokenData) cacheContext.tokenCache.deserialize(tokenData);
-             }
+             const tokenData = readMsTokenFile(getMsTokenPath());
+             if (tokenData) cacheContext.tokenCache.deserialize(tokenData);
           },
           afterCacheAccess: async (cacheContext) => {
              if (cacheContext.cacheHasChanged) {
-                 const tokenPath = state.workspacePath ? getLocalTokenPath() : getGlobalTokenPath();
-                 if (tokenPath) {
-                     writeMsTokenFile(tokenPath, cacheContext.tokenCache.serialize());
-                 }
+                 writeMsTokenFile(getMsTokenPath(), cacheContext.tokenCache.serialize());
              }
           }
         }
@@ -129,20 +114,26 @@ function loadSavedTokens() {
     return false;
   }
 
-  if (state.workspacePath) {
-    const tokenPath = getLocalTokenPath();
-    if (!tokenPath || !fs.existsSync(tokenPath)) {
-      // Nessun token locale per questo workspace: reset stato in-memory e richiedi login
-      account = null;
-      graphClient = null;
-      return false;
-    }
-    return true;
+  // Migrazione one-shot dai vecchi percorsi (workspace / userData legacy) → cloud-tokens/.
+  migrateMsTokens();
+
+  // Se è cambiato il vault attivo, i singleton in-memory (account/graphClient) sono di un altro
+  // account/cache: azzerali per forzare il re-resolve dalla cache corretta.
+  const activeKey = tokenStore.activeVaultKey();
+  if (lastTokenKey !== activeKey) {
+    account = null;
+    graphClient = null;
+    lastTokenKey = activeKey;
   }
 
-  // Nessun workspace aperto → usa il token globale
-  const globalPath = getGlobalTokenPath();
-  return !!(globalPath && fs.existsSync(globalPath));
+  const tokenPath = getMsTokenPath();
+  if (!fs.existsSync(tokenPath)) {
+    // Nessun token per il vault/account attivo: reset stato in-memory e richiedi login
+    account = null;
+    graphClient = null;
+    return false;
+  }
+  return true;
 }
 
 async function authenticateDrive(forceLocal = false) {
@@ -184,13 +175,9 @@ async function authenticateDrive(forceLocal = false) {
           const response = await msalClient.acquireTokenByCode(tokenRequest);
           account = response.account;
 
-          // Assicura che la cache venga scritta nel posto giusto (locale vs globale)
-          const cacheContext = {
-             tokenCache: msalClient.getTokenCache(),
-             cacheHasChanged: true
-          };
-          const tokenPath = (forceLocal && getLocalTokenPath()) ? getLocalTokenPath() : getGlobalTokenPath();
-          writeMsTokenFile(tokenPath, msalClient.getTokenCache().serialize());
+          // Scrive la cache nel percorso del vault/account attivo (cloud-tokens/).
+          writeMsTokenFile(getMsTokenPath(), msalClient.getTokenCache().serialize());
+          lastTokenKey = tokenStore.activeVaultKey();
 
           resolve(true);
         } else {
@@ -210,12 +197,15 @@ async function authenticateDrive(forceLocal = false) {
 }
 
 async function logoutDrive() {
-  const localTokenPath = getLocalTokenPath();
-  const globalTokenPath = getGlobalTokenPath();
-  if (localTokenPath && fs.existsSync(localTokenPath)) fs.unlinkSync(localTokenPath);
-  if (globalTokenPath && fs.existsSync(globalTokenPath)) fs.unlinkSync(globalTokenPath);
+  // Rimuove il token del vault/account attivo e quello globale.
+  const activePath = getMsTokenPath();
+  const globalPath = tokenStore.tokenPathFor('ms', 'global');
+  for (const p of new Set([activePath, globalPath])) {
+    if (p && fs.existsSync(p)) fs.unlinkSync(p);
+  }
   account = null;
   graphClient = null;
+  lastTokenKey = null;
   if(msalClient) msalClient.clearCache();
   return true;
 }
@@ -291,7 +281,7 @@ async function checkUpdatesFromDrive(vaultFolderId = null) {
 
   if (!actualVaultFolderId && state.workspacePath) {
       try {
-          const s = getAllSettings();
+          const s = getActiveVaultFlags();
           if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
       } catch(e) { console.error("Errore lettura settings:", e); }
   }
@@ -322,7 +312,7 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
 
   if (!actualVaultFolderId && state.workspacePath) {
       try {
-          const s = getAllSettings();
+          const s = getActiveVaultFlags();
           if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
       } catch(e) { console.error("Errore lettura settings:", e); }
   }
@@ -394,7 +384,7 @@ async function syncToDrive() {
 
   let projectFolderId;
   try {
-      const s = getAllSettings();
+      const s = getActiveVaultFlags();
       if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
   } catch(e) { console.error("Errore lettura settings:", e); }
   
@@ -412,7 +402,7 @@ async function syncToDrive() {
       projectFolderId = newFolder.id;
       
       try {
-          const s = getAllSettings();
+          const s = getActiveVaultFlags();
           if (s.isSharedVault || s.isPersonalCloud) {
               s.sharedVaultId = projectFolderId;
               saveAllSettings(s);

@@ -6,7 +6,8 @@ window.apriImpostazioni = async function() {
         document.getElementById('settings-workspace-path').textContent = p || window.t('no_workspace_set');
         
         const settings = await window.apiSettings.get();
-        
+        const vaultConfig = window.apiBrowser.getVaultConfig ? await window.apiBrowser.getVaultConfig() : { vaultType: 'local' };
+
         // Popola Nome Collaboratore
         const usernameInput = document.getElementById('settings-username');
         if (usernameInput) {
@@ -48,7 +49,10 @@ window.apriImpostazioni = async function() {
             if (window.hubConfig) {
                 document.getElementById('settings-hub-url').textContent = window.hubConfig.hubUrl;
                 document.getElementById('settings-hub-repoid').textContent = window.hubConfig.repoId;
-                document.getElementById('settings-hub-key').textContent = window.hubConfig.repoKey;
+                // La chiave non va mostrata in chiaro: mascherata, si condivide solo via invito.
+                document.getElementById('settings-hub-key').textContent = '•••••••• (condividi tramite invito)';
+                const cbAtt = document.getElementById('settings-hub-attachments');
+                if (cbAtt) cbAtt.checked = window.hubConfig.attachmentsMode !== 'off';
                 
                 const cbAutofetch = document.getElementById('settings-hub-autofetch');
                 const selInterval = document.getElementById('settings-hub-autofetch-interval');
@@ -58,7 +62,12 @@ window.apriImpostazioni = async function() {
                 if (selInterval) {
                     selInterval.value = settings.autofetchInterval || "5"; // 5 min default
                 }
-                
+
+                // Google Drive personale per gli allegati: indipendente dal Drive del vault
+                // condiviso (che per un vault Hub non esiste), serve solo a caricare/scaricare
+                // i chunk cifrati degli allegati sul proprio Drive.
+                if (typeof window.aggiornaStatoDriveHub === 'function') window.aggiornaStatoDriveHub();
+
                 hubSection.classList.remove('hidden');
                 isAnySyncActive = true;
             } else {
@@ -67,14 +76,16 @@ window.apriImpostazioni = async function() {
         }
         
         if (driveSection) {
-            if (settings.isSharedVault || settings.isPersonalCloud) {
+            // Un vault Hub ha vaultType='shared' ma NON è Drive: la sezione Drive non va mostrata.
+            const isHubVault = !!window.hubConfig || vaultConfig.provider === 'hub';
+            if (vaultConfig.vaultType !== 'local' && !isHubVault) {
                 driveSection.classList.remove('hidden');
                 isAnySyncActive = true;
-                
+
                 const driveTitle = document.getElementById('settings-drive-title');
                 const driveDesc = document.getElementById('settings-drive-desc');
-                
-                if (settings.isPersonalCloud) {
+
+                if (vaultConfig.vaultType === 'backup') {
                     if (driveTitle) driveTitle.textContent = window.t("settings_personal_backup_title", "Personal Cloud Backup");
                     if (driveDesc) driveDesc.textContent = window.t("settings_personal_backup_desc", "This local archive is synced privately as a backup on your Google Drive.");
                 } else {
@@ -113,6 +124,21 @@ window.salvaImpostazioniHub = async function() {
         }
     }
 }
+
+window.salvaAllegatiModeHub = async function() {
+    if (!window.hubConfig) return;
+    const cb = document.getElementById('settings-hub-attachments');
+    const checked = !!(cb && cb.checked);
+    // Vedi shareModal.toggleAllegatiShare: senza Drive collegato l'upload non può funzionare.
+    if (checked && !window.driveStatus?.isAuthenticated) {
+        mostraMessaggio(window.t("msg_hub_attachments_need_drive", "Per condividere gli allegati devi prima collegare Google Drive dalle Impostazioni (sezione Sincronizzazione)."), "error");
+        if (cb) cb.checked = false;
+        return;
+    }
+    window.hubConfig.attachmentsMode = checked ? 'drive-links' : 'off';
+    await window.apiBrowser.saveHubConfig(window.hubConfig);
+    if (window.hubConfig.attachmentsMode === 'drive-links') window.sincronizzaAllegatiHub(false);
+};
 
 window.cambiaCartellaAllegati = async function() {
     if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiSettings) {

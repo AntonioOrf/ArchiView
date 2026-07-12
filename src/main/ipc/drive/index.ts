@@ -127,6 +127,18 @@ function setupDriveIpc() {
   ipcMain.handle('drive-open-external-picker', async () => {
     return await openExternalPicker();
   });
+
+  // DIAGNOSTICA (temporanea): verifica se il file dell'owner è accessibile PER ID
+  // col grant drive.file ottenuto via Picker sulla cartella. Prerequisito dell'opzione B.
+  ipcMain.handle('drive-get-file-meta', async (event: any, fileId: string) => {
+    if (!loadSavedTokens()) throw new Error("Autenticazione Google Drive non effettuata.");
+    const res = await driveState.drive.files.get({
+      fileId,
+      fields: 'id, name, parents, modifiedTime, owners(emailAddress)',
+      supportsAllDrives: true
+    });
+    return res.data;
+  });
 }
 
 module.exports = { setupDriveIpc };

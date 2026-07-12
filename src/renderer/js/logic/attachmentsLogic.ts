@@ -216,6 +216,11 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     if (expectedHash && window.apiBrowser && window.apiBrowser.verificaHashAllegato) {
         const result = await window.apiBrowser.verificaHashAllegato(nome, expectedHash);
         if (result.status === 'missing') {
+            const hubBtn = window.hubConfig ? `
+                <button id="btn-scarica-allegato-hub" class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-sm transition-colors">
+                    <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i>
+                    ${window.t("attachment_download_hub_btn", "Scarica dall'Hub")}
+                </button>` : '';
             noAllegato.innerHTML = window.sanitizeHTML(`
                 <div class="text-stone-400 mb-3"><i data-lucide="file-warning" class="w-12 h-12 mx-auto text-amber-500"></i></div>
                 <h3 class="text-lg font-medium text-stone-300">${window.t("attachment_not_local_title", "Attachment not found locally")}</h3>
@@ -230,9 +235,40 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
                     ${window.t("attachment_copy_hint", "Copy the file to your attachments folder:")}<br>
                     <span class="font-mono text-[10px] break-all select-all text-amber-600">${result.path}</span>
                 </p>
+                ${hubBtn}
             `);
             noAllegato.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
+
+            const btnHub = document.getElementById('btn-scarica-allegato-hub');
+            if (btnHub) {
+                btnHub.onclick = async () => {
+                    btnHub.disabled = true;
+                    btnHub.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> ${window.t("attachment_downloading", "Download in corso...")}`;
+                    if (window.lucide) lucide.createIcons({ nodes: [btnHub] });
+                    try {
+                        // sincronizzaAllegatiHub mostra già i toast aggregati (caricati/scaricati/
+                        // chiave errata/non ancora pubblicato). Qui copriamo solo il caso residuo in
+                        // cui non ritorna nulla (es. attachmentsMode disattivato): nessun toast
+                        // sarebbe altrimenti mostrato e il pannello si richiuderebbe in silenzio.
+                        const r = await window.sincronizzaAllegatiHub(false);
+                        if (!r) {
+                            const check = await window.apiBrowser.verificaHashAllegato(nome, expectedHash);
+                            if (check.status === 'missing') {
+                                mostraMessaggio(window.t("msg_hub_attachment_not_uploaded",
+                                    "Impossibile scaricare: la sincronizzazione allegati Hub non è attiva per questo archivio."), "warning");
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Errore download allegato Hub:", e);
+                        mostraMessaggio(e.message || "Errore durante il download dall'Hub.", "error");
+                    } finally {
+                        // Ri-renderizza la vista: se il download è riuscito mostrerà l'anteprima,
+                        // altrimenti questo stesso pannello "non disponibile".
+                        window.cambiaAllegatoTrascrizione(nome, tipo, index);
+                    }
+                };
+            }
             return;
         } else if (result.status === 'corrupted') {
             mostraMessaggio(window.t("msg_attenzione_l_allegato_pot", "Attenzione: l'allegato potrebbe essere corrotto o modificato (Hash non corrispondente)."), "error");

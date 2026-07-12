@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Per i vault condivisi: blocca accesso se l'account Google non è autorizzato
                 try {
-                    const settings = await window.apiSettings.get();
-                    if (settings.isSharedVault && settings.sharedVaultId && window.apiDrive) {
+                    const vc = await window.apiBrowser.getVaultConfig();
+                    if (vc.vaultType === 'shared' && vc.sync && vc.sync.sharedVaultId && window.apiDrive) {
                         const statusResult = await window.apiDrive.status();
                         if (statusResult && statusResult.unauthorizedVault) {
                             mostraErroreAccessoNegato(statusResult.user);
@@ -78,14 +78,14 @@ window.aggiornaVisibilitaCloud = async function() {
         isCloud = true;
     }
     
-    if (!isCloud && window.apiSettings) {
+    if (!isCloud && window.apiBrowser && window.apiBrowser.getVaultConfig) {
         try {
-            const settings = await window.apiSettings.get();
-            if (settings.isSharedVault || settings.isPersonalCloud) {
+            const vc = await window.apiBrowser.getVaultConfig();
+            if (vc.vaultType !== 'local') {
                 isCloud = true;
             }
         } catch (e) {
-            console.error("Errore lettura settings per visibilità cloud", e);
+            console.error("Errore lettura vault config per visibilità cloud", e);
         }
     }
 
@@ -130,6 +130,22 @@ async function avviaApp() {
         });
     }
 
+    // Un allegato Hub scaricato in background (post-pull/push, o su richiesta dal pannello
+    // "non disponibile") è ora presente su disco: se è quello attualmente in visualizzazione
+    // nella trascrizione, ri-renderizza per uscire dallo stato "non trovato localmente".
+    if (window.apiBrowser && window.apiBrowser.onAllegatoScaricato) {
+        window.apiBrowser.onAllegatoScaricato((fileName) => {
+            const idInput = document.getElementById('trascrizione-id');
+            if (!idInput || !fileName) return;
+            const m = appData.manoscritti.find(x => x.id === idInput.value);
+            const idx = window.currentAllegatoIndex || 0;
+            const allegatoCorrente = m && m.allegati && m.allegati[idx];
+            if (allegatoCorrente && allegatoCorrente.nome === fileName && typeof window.cambiaAllegatoTrascrizione === 'function') {
+                window.cambiaAllegatoTrascrizione(fileName, allegatoCorrente.tipo, idx);
+            }
+        });
+    }
+
     const settings = await window.apiSettings.get();
     const statoSalvato = settings.appState;
     if (statoSalvato) {
@@ -145,15 +161,27 @@ async function avviaApp() {
         } catch (e) {}
     }
 
+    // Creazione Hub da welcome: il workspace locale è appena stato creato, ora lo si pubblica.
+    if (settings && settings.autoStartCreaHub) {
+        settings.autoStartCreaHub = false;
+        await window.apiSettings.save(settings);
+        setTimeout(async () => {
+            if (typeof window.creaRepositoryHub === 'function') {
+                // null → creaRepositoryHub usa il basename della cartella come nome vault.
+                await window.creaRepositoryHub(null);
+            }
+        }, 400);
+    }
+
     // Primo render per popolare l'interfaccia all'avvio
     if (settings && (settings.autoStartTrasformaCondiviso || settings.autoStartTrasformaPersonale)) {
         const isCondiviso = settings.autoStartTrasformaCondiviso;
         const isPersonale = settings.autoStartTrasformaPersonale;
-        
+
         settings.autoStartTrasformaCondiviso = false;
         settings.autoStartTrasformaPersonale = false;
         await window.apiSettings.save(settings);
-        
+
         if (typeof mostraProgressoCloud === 'function') {
             mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_cloud", "Avvio configurazione cloud..."));
         }
@@ -169,6 +197,25 @@ async function avviaApp() {
             if (isCondiviso && typeof trasformaInCondiviso === 'function') await trasformaInCondiviso();
             else if (isPersonale && typeof trasformaInPersonale === 'function') await trasformaInPersonale();
         }, 300);
+    }
+
+    if (settings && settings.hubJustCreated) {
+        settings.hubJustCreated = false;
+        await window.apiSettings.save(settings);
+        setTimeout(() => {
+            if (typeof window.apriShareModal === 'function') window.apriShareModal();
+        }, 800);
+    }
+
+    if (settings && settings.hubJustMigrated) {
+        settings.hubJustMigrated = false;
+        await window.apiSettings.save(settings);
+        setTimeout(() => {
+            if (typeof mostraMessaggio === 'function') {
+                mostraMessaggio(window.t("msg_hub_migrato_reinvita", "Migrazione su Hub completata! Ricorda di re-invitare i collaboratori: genera un nuovo invito dal pannello Condivisione (i permessi di Google Drive non sono trasferibili)."), "info");
+            }
+            if (typeof window.apriShareModal === 'function') window.apriShareModal();
+        }, 1000);
     }
 
     if (settings && settings.promptCloudAuth) {
@@ -300,6 +347,7 @@ async function avviaApp() {
         'delete-modal': 'chiudiDeleteModal',
         'unsaved-modal': 'chiudiUnsavedModal',
         'cloud-modal': 'chiudiCloudModal',
+        'share-modal': 'chiudiShareModal',
         'changelog-modal': 'chiudiChangelogModal',
         'issue-modal': 'chiudiIssueModal',
     };
@@ -547,57 +595,32 @@ window.initTheme = async function() {
     });
 };
 
+// Dispatcher unico per gli inviti: riconosce sia i codici Hub (HUB1|...) sia quelli
+// Google Drive legacy. È il punto d'ingresso di deep-link (archiview://join/...) e incolla
+// manuale. Il ramo Hub non richiede alcun accesso Google (nessun Picker).
 window.handleInviteCode = function(code, isManualInput = false) {
     const procedi = async () => {
         // Chiudi altri modali
         const modals = document.querySelectorAll('.modal-overlay');
         modals.forEach(m => m.classList.add('hidden-tab'));
-        
-        // Apri il welcome modal
+
+        // Apri il welcome modal + form di join
         const welcome = document.getElementById('welcome-modal');
         if (welcome) {
             welcome.classList.remove('hidden-tab');
             welcome.style.setProperty('display', 'flex', 'important');
         }
-        
-        // Vai al form di join
-        if (typeof mostraJoinForm === 'function') {
-            mostraJoinForm();
-        }
-        
-        // Incolla il codice se non è stato inserito manualmente
-        if (!isManualInput) {
-            setTimeout(() => {
-                const input = document.getElementById('welcome-join-code') as HTMLInputElement;
-                if (input) {
-                    input.value = code;
-                }
-            }, 300);
-        }
-        
-        try {
-            if (window.apiDrive && window.apiDrive.decodeInvite) {
-                const decoded = await window.apiDrive.decodeInvite(code);
-                window.welcomeJoinVaultId = decoded.vaultId;
-                window.welcomeJoinVaultName = decoded.projectName;
-                window.welcomePusherCreds = {
-                    pusherKey: decoded.pusherKey,
-                    pusherCluster: decoded.pusherCluster,
-                    pusherWebhook: decoded.pusherWebhook,
-                    driveAutofetch: decoded.driveAutofetch
-                };
-                
-                const nameSpan = document.getElementById('welcome-join-vault-name');
-                if (nameSpan) nameSpan.textContent = decoded.projectName || "Vault_Condiviso";
-                
-                const infoDiv = document.getElementById('welcome-join-vault-info');
-                if (infoDiv) infoDiv.classList.remove('hidden-tab');
-                
-                mostraMessaggio(window.t("msg_invite_decoded", "Codice invito riconosciuto. Clicca su 'Sfoglia Google Drive' e seleziona la cartella condivisa per autorizzare l'accesso."), "success");
+        if (typeof mostraJoinForm === 'function') await mostraJoinForm();
+
+        // Precompila il campo codice e lascia che handleJoinCodeInput (welcomeModal)
+        // discrimini Hub vs Drive e imposti gli step corretti.
+        setTimeout(() => {
+            const input = document.getElementById('welcome-join-code') as HTMLInputElement;
+            if (input) {
+                input.value = code;
+                if (typeof window.handleJoinCodeInput === 'function') window.handleJoinCodeInput(code);
             }
-        } catch (e) {
-            mostraMessaggio("Codice invito incompleto o non valido.", "warning");
-        }
+        }, 250);
     };
 
     const welcome = document.getElementById('welcome-modal');

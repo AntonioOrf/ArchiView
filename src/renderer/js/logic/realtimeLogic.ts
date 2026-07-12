@@ -4,10 +4,11 @@ window.pusherInstance = null;
 window.pusherChannel = null;
 
 async function inizializzaRealTime() {
-    if (!window.apiSettings) return;
+    if (!window.apiBrowser || !window.apiBrowser.getVaultConfig) return;
 
-    const settings = await window.apiSettings.get();
-    
+    const vc = await window.apiBrowser.getVaultConfig();
+    const rt = vc.realtime || {};
+
     // Cleanup precedente se esiste
     if (window.pusherInstance) {
         window.pusherInstance.disconnect();
@@ -15,13 +16,13 @@ async function inizializzaRealTime() {
     }
 
     // Se mancano i dati, non attiviamo Pusher
-    if (!settings.pusherKey || !settings.pusherCluster || !settings.driveAutofetch) {
+    if (!rt.pusherKey || !rt.pusherCluster || !(vc.sync && vc.sync.driveAutofetch)) {
         return;
     }
 
     // Inizializza Pusher
-    window.pusherInstance = new Pusher(settings.pusherKey, {
-        cluster: settings.pusherCluster
+    window.pusherInstance = new Pusher(rt.pusherKey, {
+        cluster: rt.pusherCluster
     });
 
     // Ottieni il path del workspace per creare un ID univoco del canale
@@ -63,21 +64,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Funzione chiamata da settingsModal.ts quando vengono salvate le impostazioni
 window.salvaImpostazioniDrive = async function() {
-    if (!window.apiSettings) return;
-    const settings = await window.apiSettings.get() || {};
-    
+    if (!window.apiBrowser || !window.apiBrowser.setRealtimeConfig) return;
+
     const syncAtt = document.getElementById('cloud-drive-sync-attachments');
-    
-    settings.driveAutofetch = document.getElementById('cloud-drive-autofetch').checked;
-    if (syncAtt) settings.syncAttachments = syncAtt.checked;
-    settings.pusherKey = document.getElementById('cloud-pusher-key').value;
-    settings.pusherCluster = document.getElementById('cloud-pusher-cluster').value;
-    settings.pusherWebhook = document.getElementById('cloud-pusher-webhook').value;
-    
-    await window.apiSettings.save(settings);
-    
+    const driveAutofetch = document.getElementById('cloud-drive-autofetch').checked;
+
+    // Config realtime (pusher* + autofetch) → modello vault unico.
+    await window.apiBrowser.setRealtimeConfig({
+        driveAutofetch,
+        pusherKey: document.getElementById('cloud-pusher-key').value,
+        pusherCluster: document.getElementById('cloud-pusher-cluster').value,
+        pusherWebhook: document.getElementById('cloud-pusher-webhook').value
+    });
+
+    // syncAttachments resta una preferenza globale.
+    if (syncAtt && window.apiSettings) {
+        const settings = await window.apiSettings.get() || {};
+        settings.syncAttachments = syncAtt.checked;
+        await window.apiSettings.save(settings);
+    }
+
     // Riavvia Realtime
-    if(settings.driveAutofetch) {
+    if(driveAutofetch) {
         avviaPusherRealtime();
     } else {
         if(window.pusherInstance) {
@@ -92,23 +100,28 @@ window.salvaImpostazioniDrive = async function() {
 
 // Popola i campi all'avvio
 window.caricaImpostazioniDriveUI = async function() {
-    if (!window.apiSettings) return;
-    const settings = await window.apiSettings.get() || {};
-    
+    if (!window.apiBrowser || !window.apiBrowser.getVaultConfig) return;
+    const vc = await window.apiBrowser.getVaultConfig();
+    const rt = vc.realtime || {};
+
     const checkAutofetch = document.getElementById('cloud-drive-autofetch');
-    if(checkAutofetch) checkAutofetch.checked = !!settings.driveAutofetch;
-    
+    if(checkAutofetch) checkAutofetch.checked = !!(vc.sync && vc.sync.driveAutofetch);
+
+    // syncAttachments resta globale.
     const syncAtt = document.getElementById('cloud-drive-sync-attachments');
-    if(syncAtt) syncAtt.checked = !!settings.syncAttachments;
-    
+    if(syncAtt && window.apiSettings) {
+        const settings = await window.apiSettings.get() || {};
+        syncAtt.checked = !!settings.syncAttachments;
+    }
+
     const inputKey = document.getElementById('cloud-pusher-key');
-    if(inputKey) inputKey.value = settings.pusherKey || "";
-    
+    if(inputKey) inputKey.value = rt.pusherKey || "";
+
     const inputCluster = document.getElementById('cloud-pusher-cluster');
-    if(inputCluster) inputCluster.value = settings.pusherCluster || "";
-    
+    if(inputCluster) inputCluster.value = rt.pusherCluster || "";
+
     const inputWebhook = document.getElementById('cloud-pusher-webhook');
-    if(inputWebhook) inputWebhook.value = settings.pusherWebhook || "";
+    if(inputWebhook) inputWebhook.value = rt.pusherWebhook || "";
 };
 
 // Quando si apre il modale delle impostazioni, si chiama popolaImpostazioniDrive

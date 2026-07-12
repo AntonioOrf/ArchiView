@@ -2,17 +2,10 @@ const { ipcMain } = require('electron');
 const { getAllSettings, saveAllSettings } = require('../workspaceManager');
 
 function setupSettingsIpc() {
+  // get-settings ritorna SOLO le preferenze globali. I flag del vault
+  // (tipo/sharedVaultId/pusher*/driveAutofetch) si leggono via get-vault-config (vaultIpc).
   ipcMain.handle('get-settings', () => {
-    const s = getAllSettings();
-    if (!s.pusherKey) {
-        try {
-            const creds = require('./cloudCredentials');
-            s.pusherKey = creds.PUSHER_KEY;
-            s.pusherCluster = creds.PUSHER_CLUSTER;
-            s.pusherWebhook = creds.PUSHER_WEBHOOK;
-        } catch(e) {}
-    }
-    return s;
+    return getAllSettings();
   });
 
   ipcMain.handle('save-settings', (event, newSettings) => {

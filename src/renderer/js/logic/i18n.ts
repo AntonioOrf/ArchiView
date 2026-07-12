@@ -184,7 +184,7 @@ function _linguiExtraction() {
     i18n._({ id: "modal_cloud_activate_desc", message: "Scegli se caricare il tuo archivio online o se unirti a uno già esistente tramite codice invito." });
     i18n._({ id: "modal_cloud_upload_title", message: "Carica nel Cloud" });
     i18n._({ id: "modal_cloud_upload_desc", message: "Trasforma questo archivio locale in un archivio cloud per poterlo sincronizzare e condividere." });
-    i18n._({ id: "btn_backup_private", message: "Backup Privato" });
+    i18n._({ id: "btn_backup_private", message: "Backup Personale" });
     i18n._({ id: "btn_shared_archive", message: "Archivio Condiviso" });
     i18n._({ id: "btn_use_different_account", message: "Usa un account diverso" });
     i18n._({ id: "modal_cloud_join_title", message: "Partecipa" });
@@ -195,7 +195,7 @@ function _linguiExtraction() {
     i18n._({ id: "btn_sync_now", message: "Sincronizza Ora" });
     i18n._({ id: "label_sync_attachments", message: "Sincronizza allegati automaticamente (PDF/Immagini)" });
     i18n._({ id: "label_advanced_options", message: "Opzioni avanzate" });
-    i18n._({ id: "btn_convert_backup_private", message: "Converti in Backup Privato" });
+    i18n._({ id: "btn_convert_backup_private", message: "Converti in Backup Personale" });
     i18n._({ id: "btn_convert_shared", message: "Converti in Archivio Condiviso" });
     i18n._({ id: "btn_use_another_account", message: "Usa un altro account Google" });
     i18n._({ id: "btn_join_another", message: "Unisiti a un altro Archivio" });
@@ -555,7 +555,9 @@ const customEn = {
     "welcome_desc_gestione": "Choose a destination folder to create a new independent archive, or select an existing archive to load its data.",
     "btn_open_local": "Open Local Archive",
     "btn_create_local": "Create New Local Folder",
-    "btn_create_cloud_private": "Create a Private Cloud Archive",
+    "btn_create_cloud_private": "Create a Personal Backup",
+    "btn_backup_private": "Personal Backup",
+    "btn_convert_backup_private": "Convert to Personal Backup",
     "btn_create_shared": "Create a Shared Archive",
     "btn_join_shared": "Join a Shared Archive",
     "btn_restore_drive": "Restore from Google Drive...",
@@ -662,7 +664,7 @@ const customEn = {
     "attachment_unsafe_title": "Unsafe file",
     "attachment_unsafe_desc": "The file hash does not match the one saved in the cloud.",
     "attachment_image": "Image",
-    "settings_personal_backup_title": "Personal Cloud Backup",
+    "settings_personal_backup_title": "Personal Backup",
     "settings_personal_backup_desc": "This local archive is synced privately as a backup on your Google Drive.",
     "sidebar_no_pending": "No pending changes",
     "sidebar_incoming_cloud": "INCOMING (CLOUD)",
@@ -701,9 +703,9 @@ const customEn = {
     "tooltip_move_up": "Move up",
     "tooltip_move_down": "Move down",
     "tooltip_delete": "Delete",
-    "vault_type_shared": "Shared Archive",
+    "vault_type_shared": "Shared",
     "vault_type_backup": "Personal Backup",
-    "vault_type_local": "Local Only",
+    "vault_type_local": "Local",
     "msg_record_non_in_vista": "Document not visible in the current view.",
     "btn_sending": "Sending...",
     "settings_drive_not_connected": "Not Connected",
@@ -712,7 +714,99 @@ const customEn = {
     "tooltip_add_folder": "Create new archive",
     "tooltip_cloud_sync": "Cloud & Sync",
     "tooltip_back": "Back to list",
-    "placeholder_tags": "Filter tags..."
+    "placeholder_tags": "Filter tags...",
+
+    // === CONDIVISIONE (redesign) ===
+    "share_title": "Sharing",
+    "share_local_title": "Share this archive",
+    "share_local_desc": "Create a free shared archive to work together with your colleagues, or join an existing one with an invite link.",
+    "share_local_share_online": "Share online",
+    "share_local_create_hub": "Create shared Hub",
+    "share_local_have_invite": "I received an invite",
+    "share_local_backup_link": "Just want a private backup copy? Backup on Google Drive",
+    "share_drive_title": "Archive on Google Drive",
+    "share_drive_sub": "sharing via Drive permissions",
+    "share_drive_note": "Sharing now happens through ArchiView's shared archive: invite with a simple link, revoke instantly, automatic updates.",
+    "share_drive_migrate": "Switch to a shared archive",
+    "share_drive_reinvite": "After switching you must re-invite collaborators: Google Drive permissions are not transferable.",
+    "share_drive_manage_backup_link": "Manage the Google Drive backup",
+    "share_migrate_panel_title": "Switch to a shared archive?",
+    "share_migrate_bullet1": "The archive stays exactly as it is on your PC.",
+    "share_migrate_bullet2": "The Google Drive backup remains as a safety copy.",
+    "share_migrate_bullet3": "Current collaborators will need a new invite link.",
+    "btn_continue": "Continue",
+    "share_badge_member": "Collaborator",
+    "share_badge_owner": "Owner",
+    "share_member_note": "This archive is shared with you. Only the owner can invite or remove collaborators.",
+    "share_sync_title": "Synchronization",
+    "share_sync_desc": "Download others' changes or send yours to the shared archive.",
+    "share_receive": "Receive changes",
+    "share_send": "Send changes",
+    "share_sync_receive_desc": "Download your colleagues' updates",
+    "share_sync_send_desc": "Publish your changes",
+    "share_last_update": "Last update: {var0}",
+    "share_last_update_unknown": "Last update: unknown",
+    "share_attachments_label": "Also share attachments (images and PDFs)",
+    "share_attachments_status_on": "Attachments are shared through your Google Drive.",
+    "share_attachments_connect_title": "To share images and PDFs you need to connect Google Drive",
+    "share_attachments_connect_desc": "Free space on your Google account, used only for your own attachments.",
+    "share_attachments_connect_btn": "Connect Google Drive",
+    "share_attachments_member_off_note": "The owner hasn't turned on attachment sharing yet.",
+    "share_member_leave": "Leave this shared archive",
+    "share_member_leave_confirm": "Your PC will keep a local copy, but you will no longer receive your colleagues' updates.",
+    "share_invite_title": "Invite a collaborator",
+    "share_invite_desc": "Create a personal invite link. Each link creates a collaborator you can revoke at any time.",
+    "share_invite_label_ph": "Collaborator's name (e.g. Maria)",
+    "share_invite_generate": "Create invite link",
+    "share_invite_hint": "Whoever receives the link needs ArchiView installed: they just click it.",
+    "share_members_title": "Collaborators",
+    "share_members_empty": "No collaborators yet. Create an invite link above.",
+    "share_chip_revoked": "Revoked",
+    "share_revoke_confirm": "Revoke this collaborator's access? Their invite link will stop working.",
+    "share_invite_copied": "Link copied. Send it to {var0} by email or message.",
+    "share_invite_copied_generic": "Link copied. Send it to your collaborator by email or message.",
+    "share_invite_generated": "Invite created. Copy the link and share it.",
+    "share_sync_settings": "Synchronization settings",
+    "share_version": "v",
+    "share_widget_btn": "Share",
+    "btn_copy": "Copy",
+    "btn_revoke": "Revoke",
+    "btn_manage_share": "Manage sharing",
+    "btn_open_share": "Open Sharing",
+    "btn_create_hub_shared": "Create a Shared Hub",
+    "cloud_backup_hint": "This is a personal backup on your private Cloud. To collaborate with others, use a shared archive instead.",
+    "modal_cloud_shared_legacy_desc": "Shared archive on Google Drive (legacy). Switch to the shared archive for revocable invites and real-time sync.",
+    "hub_widget_label": "Hub:",
+    "hub_widget_receive": "Receive",
+    "hub_widget_send": "Send",
+    "hub_invite_default_label": "Invite",
+    "msg_membro_revocato": "Access revoked.",
+    "msg_errore_revoca": "Error during revocation.",
+    "btn_pull": "Receive changes",
+    "btn_push": "Send changes",
+    "hub_fallback_name": "Shared archive",
+    "vault_type_hub": "Shared Hub",
+    "share_local_name_label": "Archive name (all collaborators will see it)",
+    "share_local_name_ph": "e.g. Datini Manuscripts",
+    "modal_cloud_hub_active": "Shared Hub Active",
+    "modal_cloud_hub_desc": "This Archive is synced on the shared Hub. Use \"Manage sharing\" for invites and collaborators.",
+    "settings_hub_manage_hint": "Invites, collaborators, attachments and automatic sync are managed from the Sharing panel.",
+    "settings_sync_none": "No cloud synchronization (Hub or Google Drive) configured for this workspace.",
+    "btn_export_folder": "Export Folder",
+    "btn_create_hub": "Shared Hub (recommended for collaboration)",
+    "btn_migrate_hub": "Switch to shared archive",
+    "msg_creazione_repository": "Preparing your shared archive...",
+    "msg_repository_creato": "Shared archive ready! You can now invite collaborators.",
+    "msg_errore_creazione_repo": "Failed to create the shared archive.",
+    "msg_errore_creazione_repo_generic": "Error while creating the shared archive.",
+    "msg_timeout_creazione_repo": "Hub unreachable (timeout). Please try again later.",
+    "msg_allegati_sincronizzati": "Attachments synced.",
+    "msg_allegati_non_disponibili": "Some attachments are unavailable (the owner hasn't uploaded them yet or the link has expired).",
+    "msg_il_server_contiene_modifi_action": "A colleague just saved some changes. Receive them, then try sending again.",
+    "share_conflict_action_label": "Receive now",
+    "prog_hub_prepare_title": "Preparing your shared archive",
+    "prog_hub_prepare_desc": "Just a moment...",
+    "msg_connesso_con_successo_nome": "Connected successfully to \"{var0}\"! Restarting..."
 };
 
 const customIt = {
@@ -724,7 +818,9 @@ const customIt = {
     "welcome_desc_gestione": "Scegli una cartella di destinazione per creare un nuovo archivio indipendente, oppure seleziona un archivio esistente per caricarne i dati.",
     "btn_open_local": "Apri Archivio Locale",
     "btn_create_local": "Crea Nuova Cartella Locale",
-    "btn_create_cloud_private": "Crea Archivio Cloud Personale",
+    "btn_create_cloud_private": "Crea un Backup Personale",
+    "btn_backup_private": "Backup Personale",
+    "btn_convert_backup_private": "Converti in Backup Personale",
     "btn_create_shared": "Crea Archivio Condiviso",
     "btn_join_shared": "Unisciti a un Archivio Condiviso",
     "btn_restore_drive": "Ripristina da Google Drive...",
@@ -831,7 +927,7 @@ const customIt = {
     "attachment_unsafe_title": "File non sicuro",
     "attachment_unsafe_desc": "L'hash del file non corrisponde a quello salvato nel cloud.",
     "attachment_image": "Immagine",
-    "settings_personal_backup_title": "Backup su Cloud Personale",
+    "settings_personal_backup_title": "Backup Personale",
     "settings_personal_backup_desc": "Questo archivio locale è sincronizzato privatamente come backup sul tuo Google Drive.",
     "sidebar_no_pending": "Nessuna modifica pendente",
     "sidebar_incoming_cloud": "IN ENTRATA (CLOUD)",
@@ -870,16 +966,100 @@ const customIt = {
     "tooltip_move_up": "Sposta su",
     "tooltip_move_down": "Sposta giù",
     "tooltip_delete": "Elimina",
-    "vault_type_shared": "Archivio Condiviso",
+    "vault_type_shared": "Condiviso",
     "vault_type_backup": "Backup Personale",
-    "vault_type_local": "Solo Locale",
+    "vault_type_local": "Locale",
     "msg_record_non_in_vista": "Documento non visibile nella vista corrente.",
     "btn_sending": "Invio in corso...",
     "settings_drive_not_connected": "Non Connesso",
     "settings_drive_status_error": "Errore di controllo stato",
     "tooltip_import": "Importa Schedatura (da ZIP)",
     "tooltip_add_folder": "Crea nuovo archivio",
-    "tooltip_cloud_sync": "Cloud & Sincronizzazione"
+    "tooltip_cloud_sync": "Cloud & Sincronizzazione",
+
+    // === CONDIVISIONE (redesign) ===
+    "share_title": "Condivisione",
+    "share_local_title": "Condividi questo archivio",
+    "share_local_desc": "Crea un archivio condiviso gratuito per lavorare insieme ai tuoi colleghi, oppure unisciti a un archivio con un link di invito.",
+    "share_local_share_online": "Condividi online",
+    "share_local_create_hub": "Crea Hub condiviso",
+    "share_local_have_invite": "Ho ricevuto un invito",
+    "share_local_backup_link": "Vuoi solo una copia di sicurezza privata? Backup su Google Drive",
+    "share_drive_title": "Archivio su Google Drive",
+    "share_drive_sub": "condivisione tramite permessi Drive",
+    "share_drive_note": "La condivisione ora avviene tramite l'archivio condiviso di ArchiView: inviti con un semplice link, revoca immediata, aggiornamenti automatici.",
+    "share_drive_migrate": "Passa all'archivio condiviso",
+    "share_drive_reinvite": "Dopo il passaggio dovrai re-invitare i collaboratori: i permessi di Google Drive non sono trasferibili.",
+    "share_drive_manage_backup_link": "Gestisci il backup su Google Drive",
+    "share_migrate_panel_title": "Passare all'archivio condiviso?",
+    "share_migrate_bullet1": "L'archivio resta identico sul tuo PC.",
+    "share_migrate_bullet2": "Il backup su Google Drive resta come copia di sicurezza.",
+    "share_migrate_bullet3": "I collaboratori attuali dovranno ricevere un nuovo link di invito.",
+    "btn_continue": "Continua",
+    "share_badge_member": "Collaboratore",
+    "share_badge_owner": "Proprietario",
+    "share_member_note": "Questo archivio è condiviso con te. Solo il proprietario può invitare o rimuovere collaboratori.",
+    "share_sync_title": "Sincronizzazione",
+    "share_sync_desc": "Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.",
+    "share_receive": "Ricevi modifiche",
+    "share_send": "Invia modifiche",
+    "share_sync_receive_desc": "Scarica le novità dei colleghi",
+    "share_sync_send_desc": "Pubblica le tue modifiche",
+    "share_last_update": "Ultimo aggiornamento: {var0}",
+    "share_last_update_unknown": "Ultimo aggiornamento: sconosciuto",
+    "share_attachments_label": "Condividi anche gli allegati (immagini e PDF)",
+    "share_attachments_status_on": "Allegati condivisi tramite il tuo Google Drive.",
+    "share_attachments_connect_title": "Per condividere immagini e PDF serve collegare Google Drive",
+    "share_attachments_connect_desc": "Spazio gratuito del tuo account Google, usato solo per i tuoi allegati.",
+    "share_attachments_connect_btn": "Collega Google Drive",
+    "share_attachments_member_off_note": "Il proprietario non ha ancora attivato la condivisione degli allegati.",
+    "share_member_leave": "Abbandona questo archivio condiviso",
+    "share_member_leave_confirm": "Il tuo PC conserverà una copia locale, ma non riceverai più gli aggiornamenti dei colleghi.",
+    "share_invite_title": "Invita un collaboratore",
+    "share_invite_desc": "Crea un link d'invito personale. Ogni link crea un collaboratore che puoi revocare in qualsiasi momento.",
+    "share_invite_label_ph": "Nome del collaboratore (es. Maria)",
+    "share_invite_generate": "Crea link di invito",
+    "share_invite_hint": "Chi riceve il link deve avere ArchiView installato: gli basterà cliccarlo.",
+    "share_members_title": "Collaboratori",
+    "share_members_empty": "Nessun collaboratore ancora. Crea un link di invito qui sopra.",
+    "share_chip_revoked": "Revocato",
+    "share_revoke_confirm": "Revocare l'accesso di questo collaboratore? Il suo link d'invito smetterà di funzionare.",
+    "share_invite_copied": "Link copiato. Invialo a {var0} per email o messaggio.",
+    "share_invite_copied_generic": "Link copiato. Invialo al collaboratore per email o messaggio.",
+    "share_invite_generated": "Invito creato. Copia il link e condividilo.",
+    "share_sync_settings": "Impostazioni di sincronizzazione",
+    "share_version": "v",
+    "share_widget_btn": "Condividi",
+    "btn_copy": "Copia",
+    "btn_revoke": "Revoca",
+    "btn_manage_share": "Gestisci condivisione",
+    "btn_open_share": "Apri Condivisione",
+    "btn_create_hub_shared": "Crea un Hub Condiviso",
+    "cloud_backup_hint": "Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.",
+    "modal_cloud_shared_legacy_desc": "Archivio condiviso su Google Drive (legacy). Passa all'archivio condiviso per inviti revocabili e sincronizzazione in tempo reale.",
+    "hub_widget_label": "Hub:",
+    "hub_widget_receive": "Ricevi",
+    "hub_widget_send": "Invia",
+    "hub_invite_default_label": "Invito",
+    "msg_membro_revocato": "Accesso revocato.",
+    "msg_errore_revoca": "Errore durante la revoca.",
+    "btn_pull": "Ricevi modifiche",
+    "btn_push": "Invia modifiche",
+    "hub_fallback_name": "Archivio condiviso",
+    "vault_type_hub": "Hub Condiviso",
+    "share_local_name_label": "Nome dell'archivio (lo vedranno tutti i collaboratori)",
+    "share_local_name_ph": "Es. Manoscritti Datini",
+    "modal_cloud_hub_active": "Hub Condiviso Attivo",
+    "modal_cloud_hub_desc": "Questo Archivio è sincronizzato sull'Hub condiviso. Usa \"Gestisci condivisione\" per inviti e collaboratori.",
+    "settings_hub_manage_hint": "Inviti, collaboratori, allegati e sincronizzazione automatica si gestiscono dal pannello Condivisione.",
+    "settings_sync_none": "Nessuna sincronizzazione cloud (Hub o Google Drive) configurata per questa cartella di lavoro.",
+    "btn_export_folder": "Esporta Cartella",
+    "msg_il_server_contiene_modifi_action": "Un collega ha appena salvato delle modifiche. Ricevile e poi riprova a inviare.",
+    "share_conflict_action_label": "Ricevi ora",
+    "prog_hub_prepare_title": "Preparazione dell'archivio condiviso",
+    "prog_hub_prepare_desc": "Un attimo di pazienza...",
+    "msg_timeout_creazione_repo": "Hub non raggiungibile (timeout). Riprova più tardi.",
+    "msg_connesso_con_successo_nome": "Connesso con successo a \"{var0}\"! Riavvio in corso..."
 };
 
 window.t = function(key, fallback) {
@@ -906,28 +1086,38 @@ window.cambiaLingua = async function(lang) {
 }
 
 window.applicaTraduzioniHtml = function() {
-    // Sostituisce il testo (innerHTML)
+    // Sostituisce il testo (innerHTML).
+    // Il testo statico presente nell'HTML (in italiano) viene memorizzato come
+    // fallback: se una chiave non è ancora tradotta si mostra quel testo invece
+    // della chiave grezza (es. "btn_create_hub").
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        el.innerHTML = window.sanitizeHTML(window.t(key));
+        if (!el.hasAttribute('data-i18n-default')) {
+            el.setAttribute('data-i18n-default', el.textContent || '');
+        }
+        const def = el.getAttribute('data-i18n-default') || key;
+        el.innerHTML = window.sanitizeHTML(window.t(key, def));
     });
 
     // Sostituisce il title
     document.querySelectorAll('[data-i18n-title]').forEach(el => {
         const key = el.getAttribute('data-i18n-title');
-        el.title = window.t(key);
+        el.title = window.t(key, el.title || key);
     });
 
     // Sostituisce il placeholder
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
-        el.placeholder = window.t(key);
+        if (!el.hasAttribute('data-i18n-ph-default')) {
+            el.setAttribute('data-i18n-ph-default', el.placeholder || '');
+        }
+        el.placeholder = window.t(key, el.getAttribute('data-i18n-ph-default') || key);
     });
 
     // Sostituisce l'aria-label (accessible name per bottoni icona)
     document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
         const key = el.getAttribute('data-i18n-aria-label');
-        el.setAttribute('aria-label', window.t(key));
+        el.setAttribute('aria-label', window.t(key, el.getAttribute('aria-label') || key));
     });
 }
 

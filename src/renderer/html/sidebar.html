@@ -95,7 +95,7 @@
                     <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
-                    <button id="sidebar-cloud-btn" onclick="apriCloudModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_cloud_sync" data-i18n-aria-label="tooltip_cloud_sync" title="Cloud & Sincronizzazione">
+                    <button id="sidebar-cloud-btn" onclick="if(window.apriShareModal) apriShareModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_cloud_sync" data-i18n-aria-label="tooltip_cloud_sync" title="Cloud & Sincronizzazione">
                         <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
                     </button>
                     <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">

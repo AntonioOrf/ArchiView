@@ -16,8 +16,11 @@
     "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets",
     "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
+    "test:e2e": "playwright test",
+    "pretest:e2e": "npm run build-css && npm run build-ts",
     "pack": "npm run build-css && npm run build-ts && electron-builder --win",
-    "publish-app": "npm run build-css && npm run build-ts && electron-builder --win -p always"
+    "publish-app": "npm run build-css && npm run build-ts && electron-builder --win -p always",
+    "security-check": "npm audit --audit-level=high"
   },
   "build": {
     "generateUpdatesFilesForAllChannels": true,
@@ -66,6 +69,7 @@
   },
   "devDependencies": {
     "@lingui/cli": "^6.1.0",
+    "@playwright/test": "^1.50.0",
     "@lingui/conf": "^6.1.0",
     "@lingui/format-po": "^6.1.0",
     "@tailwindcss/cli": "^4.3.0",

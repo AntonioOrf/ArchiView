@@ -21,8 +21,14 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     confirmClose: () => ipcRenderer.send('confirm-close'),
 
     getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
+    getVaultConfig: () => ipcRenderer.invoke('get-vault-config'),
+    setVaultType: (payload) => ipcRenderer.invoke('set-vault-type', payload),
+    setRealtimeConfig: (payload) => ipcRenderer.invoke('set-realtime-config', payload),
     saveHubConfig: (config) => ipcRenderer.invoke('save-hub-config', config),
     loadHubConfig: () => ipcRenderer.invoke('load-hub-config'),
+    disconnectHub: () => ipcRenderer.invoke('disconnect-hub'),
+    syncHubAttachments: () => ipcRenderer.invoke('hub-sync-attachments'),
+    hubCreateRepo: (name) => ipcRenderer.invoke('hub-create-repo', name),
     getRecentWorkspaces: () => ipcRenderer.invoke('get-recent-workspaces'),
     loadTutorialWorkspace: () => ipcRenderer.invoke('load-tutorial-workspace'),
     openRecentWorkspace: (folderPath) => ipcRenderer.invoke('open-recent-workspace', folderPath),
@@ -83,7 +89,8 @@ contextBridge.exposeInMainWorld('apiDrive', {
     listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),
     getRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-get-revision', fileId, revisionId),
     restoreRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-restore-revision', fileId, revisionId),
-    openExternalPicker: () => ipcRenderer.invoke('drive-open-external-picker')
+    openExternalPicker: () => ipcRenderer.invoke('drive-open-external-picker'),
+    getFileMeta: (fileId) => ipcRenderer.invoke('drive-get-file-meta', fileId)
 });
 
 contextBridge.exposeInMainWorld('apiMicrosoft', {

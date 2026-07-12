@@ -1,6 +1,10 @@
 const { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net, nativeImage } = require('electron');
 const path = require('path');
 
+// Isolamento test E2E: reindirizza userData se ARCHIVIEW_E2E_USER_DATA è impostata.
+// Deve precedere il require di workspaceManager (che legge userData a import-time).
+require('./e2eBootstrap');
+
 if (process.platform === 'win32' && app.isPackaged) {
   app.setAppUserModelId("com.antonioorf.archiview");
 }
@@ -11,6 +15,8 @@ const { setupAttachmentsIpc, setupAttachmentsProtocol } = require('./ipc/attachm
 const { setupWorkspaceIpc } = require('./ipc/workspaceIpc');
 const { setupUpdaterIpc } = require('./ipc/updaterIpc');
 const { setupSettingsIpc } = require('./ipc/settingsIpc');
+const { setupVaultIpc } = require('./ipc/vaultIpc');
+const { setupHubIpc } = require('./ipc/hubIpc');
 const { setupDriveIpc } = require('./ipc/drive');
 const { setupMsIpc } = require('./ipc/msSync');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
@@ -108,6 +114,8 @@ if (!gotTheLock) {
   setupWorkspaceIpc();
   setupUpdaterIpc();
   setupSettingsIpc();
+  setupVaultIpc();
+  setupHubIpc();
   setupDriveIpc();
   setupMsIpc();
   setupExportImportIpc();
@@ -159,6 +167,9 @@ if (!gotTheLock) {
   
   let forceClose = false;
   state.mainWindow.on('close', (e) => {
+    // In E2E la conferma di chiusura non è pilotabile e il renderer, sulla welcome modal,
+    // non registra nemmeno l'handler request-close → app.close() si bloccherebbe.
+    if (process.env.ARCHIVIEW_E2E_USER_DATA) return;
     if (!forceClose && state.mainWindow && state.mainWindow.webContents) {
       e.preventDefault();
       state.mainWindow.webContents.send('request-close');

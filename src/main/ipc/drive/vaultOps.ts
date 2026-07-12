@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { state, getAllSettings, saveAllSettings } = require('../../workspaceManager');
+const { state, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
 const { driveState, loadSavedTokens, authenticateDrive } = require('./auth');
 const { getOrCreateFolder, uploadFile } = require('./fileOps');
 
@@ -35,7 +35,7 @@ async function checkUpdatesFromDrive(vaultFolderId: string | null = null): Promi
 
   if (!actualVaultFolderId && state.workspacePath) {
     try {
-      const s = getAllSettings();
+      const s = getActiveVaultFlags();
       if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
     } catch (e) { console.error("Errore lettura settings:", e); }
   }
@@ -44,6 +44,7 @@ async function checkUpdatesFromDrive(vaultFolderId: string | null = null): Promi
     const res = await driveState.drive.files.list({
       q: `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`,
       fields: 'files(id, modifiedTime)',
+      orderBy: 'modifiedTime desc',
       includeItemsFromAllDrives: true,
       supportsAllDrives: true
     });
@@ -87,7 +88,7 @@ async function pullFromDrive(vaultFolderId: string | null = null): Promise<any |
 
   if (!actualVaultFolderId && state.workspacePath) {
     try {
-      const s = getAllSettings();
+      const s = getActiveVaultFlags();
       if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
     } catch (e) { console.error("Errore lettura settings:", e); }
   }
@@ -99,6 +100,7 @@ async function pullFromDrive(vaultFolderId: string | null = null): Promise<any |
       q: `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`,
       spaces: 'drive',
       fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
+      orderBy: 'modifiedTime desc',
       includeItemsFromAllDrives: true,
       supportsAllDrives: true
     }));
@@ -159,7 +161,7 @@ async function syncToDrive(parentModifiedTime: number | null = null): Promise<nu
 
   let projectFolderId: string | null = null;
   try {
-    const s = getAllSettings();
+    const s = getActiveVaultFlags();
     if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
   } catch (e) { console.error("Errore lettura settings:", e); }
 
@@ -175,7 +177,7 @@ async function syncToDrive(parentModifiedTime: number | null = null): Promise<nu
     });
     projectFolderId = folder.data.id;
     try {
-      const s = getAllSettings();
+      const s = getActiveVaultFlags();
       s.sharedVaultId = projectFolderId;
       if (!s.isSharedVault) s.isPersonalCloud = true;
       saveAllSettings(s);
@@ -210,7 +212,7 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
   let projectFolderId: string | null = null;
   try {
-    const s = getAllSettings();
+    const s = getActiveVaultFlags();
     if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
   } catch (e) { console.error("Errore lettura settings:", e); }
 

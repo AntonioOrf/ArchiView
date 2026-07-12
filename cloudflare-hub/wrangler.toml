@@ -1,0 +1,30 @@
+name = "archiview-hub"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+
+# Binding D1. Sostituisci database_id con l'output di:
+#   wrangler d1 create archiview-hub
+[[d1_databases]]
+binding = "DB"
+database_name = "archiview-hub"
+database_id = "44cd0b73-818b-4f3f-8437-47f5a79966f1"
+
+[vars]
+# Numero di versioni del DB da conservare per repo (retention/prune).
+MAX_VERSIONS = "20"
+# Tetto dimensione body push (MB) prima del rifiuto con 413.
+MAX_PUSH_MB = "20"
+# Rate-limit creazione repo (POST /api/repos). Il CREATE_SECRET è estraibile
+# dal binario client: questi tetti sono il vero argine anti-abuso.
+CREATE_MAX_PER_IP_MIN = "5"    # burst per-IP al minuto
+CREATE_MAX_PER_IP_DAY = "20"   # quota per-IP al giorno
+CREATE_MAX_GLOBAL_DAY = "500"  # tetto globale al giorno
+
+# --- Secret da impostare con `wrangler secret put <NOME>` (NON committare) ---
+#   CREATE_SECRET    -> gate anti-abuso su POST /api/repos (bakeato nel client)
+#   TURNSTILE_SECRET -> opz.: se impostato, POST /api/repos esige token Turnstile
+#   PUSHER_APP_ID    -> relay ping (sostituisce vercel-hub)
+#   PUSHER_KEY
+#   PUSHER_SECRET
+#   PUSHER_CLUSTER

@@ -36,6 +36,8 @@ jobs:
           export const PUSHER_KEY = "${{ secrets.PUSHER_KEY }}";
           export const PUSHER_CLUSTER = "${{ secrets.PUSHER_CLUSTER }}";
           export const PUSHER_WEBHOOK = "${{ secrets.PUSHER_WEBHOOK }}";
+          export const HUB_URL = "${{ secrets.HUB_URL }}";
+          export const HUB_CREATE_SECRET = "${{ secrets.HUB_CREATE_SECRET }}";
           EOF
 
       - name: Costruisci e pubblica la Release

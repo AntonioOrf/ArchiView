@@ -47,15 +47,29 @@ async function uploadFile(localPath: string, driveFileName: string, parentId: st
   const q = `name='${escapeDriveQuery(driveFileName)}' and '${parentId}' in parents and trashed=false`;
   const res = await driveState.drive.files.list({
     q,
-    fields: 'files(id)',
+    fields: 'files(id, modifiedTime)',
+    orderBy: 'modifiedTime desc',
     includeItemsFromAllDrives: true,
     supportsAllDrives: true
   });
 
-  if (res.data.files.length > 0) {
+  const files = res.data.files || [];
+  if (files.length > 0) {
     if (skipIfExist) return;
+    // Dedup: Drive consente più file omonimi nella stessa cartella. Se esistono duplicati,
+    // aggiorna il più recente (files[0], orderBy modifiedTime desc) ed elimina gli altri,
+    // altrimenti pull/push finiscono su file diversi → i dati "non si sincronizzano".
+    if (files.length > 1) {
+      for (let i = 1; i < files.length; i++) {
+        try {
+          await driveState.drive.files.delete({ fileId: files[i].id, supportsAllDrives: true });
+        } catch (e: any) {
+          console.warn("Impossibile eliminare duplicato Drive:", files[i].id, e.message);
+        }
+      }
+    }
     const updateRes = await driveState.drive.files.update({
-      fileId: res.data.files[0].id,
+      fileId: files[0].id,
       media: { mimeType, body: fs.createReadStream(localPath) },
       fields: 'id, modifiedTime',
       supportsAllDrives: true
@@ -70,6 +84,28 @@ async function uploadFile(localPath: string, driveFileName: string, parentId: st
     });
     return new Date(createRes.data.modifiedTime).getTime();
   }
+}
+
+// Come uploadFile ma ritorna l'id Drive del file (serve agli allegati hub per costruire il link pubblico).
+// Nessuna dedup per-nome: i chunk hanno nome = hash (content-addressable), il chiamante fa lo skip a monte.
+async function uploadFileReturningId(localPath: string, driveFileName: string, parentId: string): Promise<string> {
+  const mimeType = driveFileName.endsWith('.json') ? 'application/json' : 'application/octet-stream';
+  const createRes = await driveState.drive.files.create({
+    requestBody: { name: driveFileName, parents: [parentId] },
+    media: { mimeType, body: fs.createReadStream(localPath) },
+    fields: 'id',
+    supportsAllDrives: true
+  });
+  return createRes.data.id;
+}
+
+// Rende un file scaricabile da chiunque abbia il link (reader) e ritorna l'id (idempotente).
+async function makeFilePublic(fileId: string): Promise<void> {
+  await driveState.drive.permissions.create({
+    fileId,
+    requestBody: { role: 'reader', type: 'anyone' },
+    supportsAllDrives: true
+  });
 }
 
 async function asyncPool(poolLimit: number, array: any[], iteratorFn: Function): Promise<any[]> {
@@ -93,5 +129,5 @@ async function downloadFile(fileId: string, destPath: string): Promise<void> {
   await pipeline(res.data, dest);
 }
 
-module.exports = { escapeDriveQuery, getOrCreateFolder, uploadFile, asyncPool, downloadFile };
+module.exports = { escapeDriveQuery, getOrCreateFolder, uploadFile, uploadFileReturningId, makeFilePublic, asyncPool, downloadFile };
 export {};

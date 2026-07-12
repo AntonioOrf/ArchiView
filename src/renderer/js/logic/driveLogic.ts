@@ -111,6 +111,8 @@ window.getApiCloud = async function() {
 };
 
 window.controllaModificheInEntrata = async function(manual = false) {
+    // Coesistenza: su un vault Hub i pulsanti header instradano alle funzioni Hub (percorso Drive intatto).
+    if (window.hubConfig) { if (window.controllaModificheHub) await window.controllaModificheHub(manual); return; }
     const apiCloud = await window.getApiCloud();
     if (apiCloud && window.driveStatus && window.driveStatus.isAuthenticated) {
         if (manual) {
@@ -294,8 +296,28 @@ async function aggiornaStatoDrive() {
                 syncBtn.classList.add('hidden');
             }
         }
+        window.aggiornaStatoDriveHub();
     }
 }
+
+// Aggiorna il blocco "Google Drive personale (per gli allegati)" nella sezione Hub delle
+// Impostazioni. Indipendente dal Drive del vault condiviso: serve solo per gli allegati.
+window.aggiornaStatoDriveHub = function() {
+    const statusText = document.getElementById('settings-hub-drive-status');
+    const loginBtn = document.getElementById('btn-hub-drive-login');
+    const logoutBtn = document.getElementById('btn-hub-drive-logout');
+    if (!statusText) return;
+
+    if (window.driveStatus && window.driveStatus.isAuthenticated) {
+        statusText.innerHTML = window.sanitizeHTML(`<span class="text-green-600 font-semibold">Connesso come: ${escapeHTML(window.driveStatus.user || '')}</span>`);
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (logoutBtn) logoutBtn.classList.remove('hidden');
+    } else {
+        statusText.innerHTML = window.sanitizeHTML(`<span class="text-stone-500">${escapeHTML(window.t('settings_drive_not_connected', 'Non Connesso'))}</span>`);
+        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (logoutBtn) logoutBtn.classList.add('hidden');
+    }
+};
 
 window.loginCloud = async function(provider, forceLocal = false) {
     const api = provider === 'microsoft' ? window.apiMicrosoft : window.apiDrive;
@@ -330,6 +352,7 @@ window.logoutGoogleDrive = async function() {
 };
 
 window.sincronizzaGoogleDrive = async function(silent = false) {
+    if (window.hubConfig) { if (window.sincronizzaConHub) await window.sincronizzaConHub(); return; }
     if (window.driveStatus?.unauthorizedVault) {
         if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
         return;
@@ -459,6 +482,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
 };
 
 window.scaricaDalCloud = async function(silent = false) {
+    if (window.hubConfig) { if (window.riceviModificheHub) await window.riceviModificheHub(silent); return; }
     if (!silent && !window.hasFetchedBeforeDownload && typeof window.mostraBottomConfirm === 'function') {
         window.mostraBottomConfirm(window.t("confirm_pull_no_fetch", "Attenzione: stai per scaricare le modifiche dal Cloud senza aver prima verificato di cosa si tratta (Fetch). Vuoi procedere comunque?"), () => {
             // Se accetta, procediamo forzando silent a true per bypassare questo stesso blocco, o mettiamo un flag
@@ -515,6 +539,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
 };
 
 window.caricaSulCloud = async function(silent = false) {
+    if (window.hubConfig) { if (window.inviaModificheHub) await window.inviaModificheHub(); return; }
     if (window.driveStatus?.unauthorizedVault) {
         if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
         return;
@@ -633,12 +658,13 @@ window.sincronizzaGoogleDriveBackground = async function() {
 };
 
 async function inviaPingPusher() {
-    if (!window.apiSettings) return;
-    const settings = await window.apiSettings.get();
-    
-    if (settings.pusherWebhook && window.currentPusherChannelName) {
+    if (!window.apiBrowser || !window.apiBrowser.getVaultConfig) return;
+    const vc = await window.apiBrowser.getVaultConfig();
+    const pusherWebhook = vc.realtime && vc.realtime.pusherWebhook;
+
+    if (pusherWebhook && window.currentPusherChannelName) {
         try {
-            await fetch(settings.pusherWebhook, {
+            await fetch(pusherWebhook, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -673,15 +699,10 @@ window.trasformaInCondiviso = async function() {
             mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_shared", "Impostazione Archivio come condiviso..."));
         }
         
-        if (window.apiSettings) {
-            const settings = await window.apiSettings.get();
-            if (!settings.isSharedVault && !settings.isPersonalCloud) {
-                settings.sharedVaultId = null;
-            }
-            settings.isSharedVault = true;
-            settings.isPersonalCloud = false;
-            settings.driveAutofetch = true;
-            await window.apiSettings.save(settings);
+        if (window.apiBrowser && window.apiBrowser.setVaultType) {
+            // Il main gestisce il reset dello sharedVaultId sulla transizione local→cloud
+            // e la conservazione dell'id sullo switch shared<->backup.
+            await window.apiBrowser.setVaultType({ vaultType: 'shared', driveAutofetch: true });
             if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
         }
 
@@ -721,15 +742,8 @@ window.trasformaInPersonale = async function() {
             mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_backup", "Impostazione Backup Personale..."));
         }
         
-        if (window.apiSettings) {
-            const settings = await window.apiSettings.get();
-            if (!settings.isSharedVault && !settings.isPersonalCloud) {
-                settings.sharedVaultId = null;
-            }
-            settings.isPersonalCloud = true;
-            settings.isSharedVault = false; // Ensures it's not both
-            settings.driveAutofetch = true;
-            await window.apiSettings.save(settings);
+        if (window.apiBrowser && window.apiBrowser.setVaultType) {
+            await window.apiBrowser.setVaultType({ vaultType: 'backup', driveAutofetch: true });
             if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
         }
 
@@ -751,65 +765,109 @@ window.trasformaInPersonale = async function() {
     }
 }
 
-window.scollegaCloud = async function() {
-    if (typeof mostraBottomConfirm === 'function') {
-        mostraBottomConfirm(
-            window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l\'app tornerà in modalità solo locale per questo progetto."),
-            async () => {
-                if (typeof mostraProgressoCloud === 'function') {
-                    mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
-                }
+// ─── MIGRAZIONE Drive → Hub (one-way) ─────────────────────────────────────────
+// Pull finale da Drive (per non perdere modifiche remote) → crea repo Hub + push v1 +
+// upload allegati (i chunk sono già locali) → riscrive il vault come provider 'hub'.
+// La config Drive (.archiview-drive.json + sharedVaultId) resta come backup dormiente.
+// I permessi Drive NON sono convertibili: l'owner dovrà re-invitare i collaboratori.
+window.migraVaultSuHub = async function(skipConfirm = false) {
+    if (window.hubConfig) { mostraMessaggio(window.t("msg_gia_su_hub", "Questo archivio è già collegato ad un Hub."), "info"); return; }
+    if (typeof window.creaRepositoryHub !== 'function') return;
+
+    const esegui = async () => {
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud(window.t("prog_migrate_title", "Migrazione su Hub"), window.t("prog_migrate_pull", "Scarico le ultime modifiche da Google Drive..."));
+        }
+        try {
+            // 1. Pull finale da Drive per fondere eventuali modifiche remote non ancora scaricate.
+            const apiCloud = await window.getApiCloud();
+            if (apiCloud && window.driveStatus?.isAuthenticated) {
                 try {
-                    if (window.apiSettings) {
-                        const settings = await window.apiSettings.get();
-                        settings.isSharedVault = false;
-                        settings.isPersonalCloud = false;
-                        settings.driveAutofetch = false;
-                        settings.sharedVaultId = null;
-                        await window.apiSettings.save(settings);
-                        if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
-                        
-                        mostraMessaggio(window.t("msg_l_archivio_ora_scollegato", "L'Archivio è ora scollegato ed è solo locale."), "success");
-                        
-                        if (typeof apriCloudModal === 'function') {
-                            apriCloudModal();
-                        }
+                    const driveData = await apiCloud.pull();
+                    if (driveData?.database && typeof window.sincronizzaEUnisciDati === 'function') {
+                        await window.sincronizzaEUnisciDati(driveData.database);
                     }
-                } catch(e) {
-                    mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
-                } finally {
-                    if (typeof nascondiProgressoCloud === 'function') {
-                        nascondiProgressoCloud();
-                    }
-                }
+                } catch (e) { console.warn("Pull Drive pre-migrazione fallito (procedo con i dati locali):", e); }
             }
-        );
-    } else if (confirm(window.t("confirm_disc_cloud_short", `Vuoi davvero scollegare questo Archivio dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.`))) {
+
+            // Flag per mostrare il promemoria "re-invita i collaboratori" dopo il reload.
+            if (window.apiSettings) {
+                try {
+                    const s = await window.apiSettings.get();
+                    s.hubJustMigrated = true;
+                    await window.apiSettings.save(s);
+                } catch (e) { /* best-effort */ }
+            }
+
+            // 2. Crea repo + push v1 + salva config (provider→'hub') + upload allegati + reload.
+            //    creaRepositoryHub gestisce i propri errori (toast, nessun throw), mostra il proprio
+            //    overlay "preparazione" e ricarica da sola in caso di successo: nascondiamo il nostro
+            //    overlay solo se fallisce, altrimenti resterebbe visibile fino al reload.
+            // null → creaRepositoryHub usa il basename della cartella come nome vault.
+            const ok = await window.creaRepositoryHub(null);
+            if (!ok && typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
+        } catch (e) {
+            if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
+            mostraMessaggio(window.t("msg_errore_migrazione_hub", "Errore durante la migrazione su Hub: ") + (e.message || e), "error");
+        }
+    };
+
+    // Il pannello dedicato in shareModal (stato drive) spiega già le conseguenze prima di
+    // chiamare questa funzione con skipConfirm=true; la conferma testuale resta come fallback
+    // per eventuali altri chiamanti diretti (es. cloudModal "Avanzate").
+    if (skipConfirm) { await esegui(); return; }
+    const msg = window.t("confirm_migrate_hub", "Vuoi passare questo archivio da Google Drive all'archivio condiviso di ArchiView? I dati e gli allegati verranno caricati online. La connessione a Google Drive resterà come backup, ma dovrai re-invitare i collaboratori con un nuovo link di invito. L'operazione non è reversibile automaticamente.");
+    if (typeof mostraBottomConfirm === 'function') mostraBottomConfirm(msg, esegui);
+    else if (confirm(msg)) await esegui();
+};
+
+window.scollegaCloud = async function() {
+    // Coesistenza: scollegare un vault Hub deve rimuovere .archiview-hub.json + i segreti,
+    // altrimenti il modello unificato tornerebbe a derivare provider 'hub' dal file legacy.
+    if (window.hubConfig) {
+        const scollega = async () => {
+            if (typeof mostraProgressoCloud === 'function') {
+                mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
+            }
+            try {
+                if (window.hubAutofetchTimer) { clearInterval(window.hubAutofetchTimer); window.hubAutofetchTimer = null; }
+                if (window.apiBrowser?.disconnectHub) await window.apiBrowser.disconnectHub();
+                window.hubConfig = null;
+                if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
+                mostraMessaggio(window.t("msg_l_archivio_ora_scollegato", "L'Archivio è ora scollegato ed è solo locale."), "success");
+                if (typeof apriCloudModal === 'function') apriCloudModal();
+            } catch (e) {
+                mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
+            } finally {
+                if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
+            }
+        };
+        const msg = window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.");
+        if (typeof mostraBottomConfirm === 'function') mostraBottomConfirm(msg, scollega);
+        else if (confirm(msg)) await scollega();
+        return;
+    }
+    const scollegaLegacy = async () => {
         if (typeof mostraProgressoCloud === 'function') {
             mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
         }
         try {
-            if (window.apiSettings) {
-                const settings = await window.apiSettings.get();
-                settings.isSharedVault = false;
-                settings.isPersonalCloud = false;
-                settings.driveAutofetch = false;
-                await window.apiSettings.save(settings);
+            if (window.apiBrowser && window.apiBrowser.setVaultType) {
+                await window.apiBrowser.setVaultType({ vaultType: 'local' });
                 if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
-                
                 mostraMessaggio(window.t("msg_l_archivio_ora_scollegato", "L'Archivio è ora scollegato ed è solo locale."), "success");
-                
-                if (typeof apriCloudModal === 'function') {
-                    apriCloudModal();
-                }
+                if (typeof apriCloudModal === 'function') apriCloudModal();
             }
         } catch(e) {
             mostraMessaggio(window.t("msg_errore_durante_la_disconn", "Errore durante la disconnessione dal cloud: ") + e.message, "error");
         } finally {
-            if (typeof nascondiProgressoCloud === 'function') {
-                nascondiProgressoCloud();
-            }
+            if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
         }
+    };
+    const msgLegacy = window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.");
+    if (typeof mostraBottomConfirm === 'function') mostraBottomConfirm(msgLegacy, scollegaLegacy);
+    else if (confirm(window.t("confirm_disc_cloud_short", `Vuoi davvero scollegare questo Archivio dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.`))) {
+        await scollegaLegacy();
     }
 }
 

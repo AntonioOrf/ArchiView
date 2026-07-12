@@ -1,6 +1,8 @@
 // @ts-nocheck
 // Il container toast è già in HTML: niente check dinamico
-window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null) {
+// azioneCustom = {label, onClick}: pulsante d'azione con etichetta propria (es. "Ricevi ora"),
+// distinto da azioneAnnulla che è sempre etichettato "Annulla".
+window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null, azioneCustom = null) {
     const container = document.getElementById('toast-container');
     
     // Non far apparire più di 3 messaggi identici
@@ -39,6 +41,18 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null) {
         toast.appendChild(btnAnnulla);
     }
 
+    if (azioneCustom && typeof azioneCustom.onClick === 'function') {
+        const btnCustom = document.createElement('button');
+        btnCustom.className = 'text-amber-400 hover:text-amber-300 underline font-bold uppercase text-xs tracking-wider shrink-0 transition-colors';
+        btnCustom.innerText = azioneCustom.label || '';
+        btnCustom.onclick = () => {
+            clearTimeout(dismissTimeout);
+            hideToast();
+            azioneCustom.onClick();
+        };
+        toast.appendChild(btnCustom);
+    }
+
     // Pulsante di chiusura sempre presente: indispensabile per gli errori che non
     // si auto-chiudono, utile in generale per liberare lo schermo.
     const btnClose = document.createElement('button');
@@ -60,7 +74,7 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null) {
     // farli leggere altrimenti). Gli altri si auto-chiudono; 5s se c'è un'azione
     // di annullamento per dare il tempo di cliccare.
     if (tipo !== 'error') {
-        dismissTimeout = setTimeout(hideToast, azioneAnnulla ? 5000 : 3500);
+        dismissTimeout = setTimeout(hideToast, (azioneAnnulla || azioneCustom) ? 5000 : 3500);
     }
 }
 
