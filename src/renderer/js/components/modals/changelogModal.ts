@@ -9,7 +9,7 @@
                         <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-800">
                             <h3 class="modal-title">
                                 <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
-                                <span>Novità della Versione 2.2.1</span>
+                                <span>Novità della Versione 2.3.0</span>
                             </h3>
                             <button type="button" onclick="chiudiChangelogModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                                 <i data-lucide="x" class="w-5 h-5"></i>
@@ -20,16 +20,14 @@
                             <div class="flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
                                 <i data-lucide="mail-plus" class="w-10 h-10 text-emerald-600 dark:text-emerald-500 shrink-0"></i>
                                 <div>
-                                    <h4 class="font-bold text-lg text-emerald-900 dark:text-emerald-400">Invito Diretto tramite Email</h4>
-                                    <p class="text-sm mt-1">Introdotta la funzionalità di invito diretto dall'applicazione. Il sistema gestisce in autonomia l'autorizzazione su Google Drive e l'invio di un link di accesso rapido per semplificare l'inserimento dei collaboratori.</p>
+                                    <h4 class="font-bold text-lg text-emerald-900 dark:text-emerald-400">Transizione a Server Hub</h4>
+                                    <p class="text-sm mt-1">Abbiamo sostituito il vecchio modello di sincronizzazione basato su Google Drive. ArchiView ora utilizza nativamente un'architettura Server Hub dedicata per i Vault condivisi, offrendo una sincronizzazione in tempo reale più veloce, affidabile e indipendente da servizi terzi.</p>
                                 </div>
                             </div>
 
                             <div class="flex items-center gap-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                                <i data-lucide="users" class="w-10 h-10 text-blue-600 dark:text-blue-500 shrink-0"></i>
+                                <i data-lucide="shield-check" class="w-10 h-10 text-blue-600 dark:text-blue-500 shrink-0"></i>
                                 <div>
-                                    <h4 class="font-bold text-lg text-blue-900 dark:text-blue-400">Gestione Partecipanti Cloud</h4>
-                                    <p class="text-sm mt-1">Implementata una dashboard dedicata all'interno del modulo Cloud per la gestione degli accessi. È ora possibile monitorare la lista dei collaboratori attivi e revocare i permessi in tempo reale.</p>
                                 </div>
                             </div>
 
