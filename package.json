@@ -16,6 +16,8 @@
     "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets",
     "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
+    "pretest:unit": "tsc",
+    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js",
     "test:e2e": "playwright test",
     "pretest:e2e": "npm run build-css && npm run build-ts",
     "pack": "npm run build-css && npm run build-ts && electron-builder --win",

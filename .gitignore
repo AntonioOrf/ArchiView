@@ -74,3 +74,8 @@ test-appdata/
 Gemini.md
 artifacts/
 REFACTOR_EXECCOMMAND_TODO.md
+PERF_LOWEND_TODO.md
+
+# Test unit locali di sicurezza
+test/pathSafety.test.js
+test/pickerSecurity.test.js

@@ -6,6 +6,7 @@ const { state, initWorkspace, getAllSettings, saveAllSettings, getActiveVaultFla
 const tokenStore = require('../cloudTokenStore');
 const { PublicClientApplication, CryptoProvider } = require('@azure/msal-node');
 const { Client } = require('@microsoft/microsoft-graph-client');
+const { safeAttachmentPathOrNull } = require('./pathSafety');
 
 const REDIRECT_URI = 'http://localhost:3457/redirect';
 const SCOPES = ['user.read', 'files.readwrite', 'offline_access'];
@@ -362,7 +363,8 @@ async function pullFromDrive(vaultFolderId = null, skipAttachments = false) {
                 const win = require('electron').BrowserWindow.getAllWindows()[0];
                 if (win) win.webContents.send('sync-progress', { percent: (i / total) * 100, message: `Scaricamento allegato ${i} di ${total}` });
                 
-                const localPath = path.join(allegatiLocalDir, f.name);
+                const localPath = safeAttachmentPathOrNull(allegatiLocalDir, f.name);
+                if (!localPath) { console.warn(`[ms-sync] download saltato, nome non sicuro: ${f.name}`); continue; }
                 if (!fs.existsSync(localPath)) {
                     await downloadFile(f.id, localPath);
                     if (win) win.webContents.send('allegato-scaricato', f.name);

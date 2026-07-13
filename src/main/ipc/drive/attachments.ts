@@ -4,6 +4,7 @@ const { state, getAllSettings, getActiveVaultFlags } = require('../../workspaceM
 const { splitFileIntoChunks, assembleFileFromChunks } = require('../../chunkingLogic');
 const { driveState, loadSavedTokens } = require('./auth');
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
+const { safeAttachmentPath, safeAttachmentPathOrNull } = require('../pathSafety');
 
 async function syncAttachmentsBidirectional(): Promise<void> {
   if (!state.workspacePath) throw new Error("Nessun workspace aperto");
@@ -76,7 +77,8 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   const chunksToDownload = new Set<string>();
   const filesToReassemble: any[] = [];
   for (const fileName of usedAttachments) {
-    const localPath = path.join(allegatiLocalDir, fileName);
+    const localPath = safeAttachmentPathOrNull(allegatiLocalDir, fileName);
+    if (!localPath) { console.warn(`[drive-att] download saltato, nome non sicuro: ${fileName}`); continue; }
     if (!fs.existsSync(localPath) && remoteIndex[fileName]) {
       const hashes = remoteIndex[fileName];
       filesToReassemble.push({ fileName, hashes });
@@ -121,7 +123,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   });
 
   for (const item of filesToReassemble) {
-    await assembleFileFromChunks(item.hashes, cacheDir, path.join(allegatiLocalDir, item.fileName));
+    await assembleFileFromChunks(item.hashes, cacheDir, safeAttachmentPath(allegatiLocalDir, item.fileName));
     if (win) win.webContents.send('allegato-scaricato', item.fileName);
   }
 

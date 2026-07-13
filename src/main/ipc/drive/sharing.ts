@@ -7,6 +7,7 @@ const { state, initWorkspace, getActiveVaultFlags, saveAllSettings } = require('
 const { driveState, authenticateDrive } = require('./auth');
 const { getOrCreateFolder } = require('./fileOps');
 const { pullFromDrive } = require('./vaultOps');
+const { pickerGetSecretOk } = require('./pickerSecurity');
 
 async function generateInviteCode(): Promise<string> {
   try {
@@ -365,10 +366,20 @@ async function openExternalPicker(): Promise<any> {
 </body></html>`;
 
       let pickerServer: any = http.createServer((req: any, res: any) => {
-        if (req.url === '/' || req.url === '/picker') {
-          res.writeHead(200, { 'Content-Type': 'text/html' });
+        const parsedUrl = new URL(req.url, 'http://127.0.0.1:3457');
+        const pathname = parsedUrl.pathname;
+        if ((pathname === '/' || pathname === '/picker') && req.method === 'GET') {
+          // Il GET serve HTML con l'access token OAuth interpolato in chiaro. Senza auth,
+          // qualsiasi processo locale (o pagina web nel browser dell'utente) potrebbe fare
+          // GET su questa URL e scrapare il token. Richiediamo il sessionSecret anche qui e
+          // impediamo il caching della risposta.
+          if (!pickerGetSecretOk(req.url, sessionSecret)) {
+            res.writeHead(403); res.end('Forbidden');
+            return;
+          }
+          res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
           res.end(pickerHtml);
-        } else if (req.url === '/picker-callback' && req.method === 'POST') {
+        } else if (pathname === '/picker-callback' && req.method === 'POST') {
           let body = '';
           req.on('data', (chunk: any) => { body += chunk.toString(); });
           req.on('end', () => {
@@ -386,7 +397,7 @@ async function openExternalPicker(): Promise<any> {
             }
             if (pickerServer) { pickerServer.close(); pickerServer = null; }
           });
-        } else if (req.url === '/picker-cancel' && req.method === 'POST') {
+        } else if (pathname === '/picker-cancel' && req.method === 'POST') {
           res.writeHead(200); res.end('OK');
           resolve(null);
           if (pickerServer) { pickerServer.close(); pickerServer = null; }
@@ -399,7 +410,7 @@ async function openExternalPicker(): Promise<any> {
         console.error("Errore server picker:", err);
         reject(new Error("Porta 3457 già in uso o errore server."));
       });
-      pickerServer.listen(3457, '127.0.0.1', () => { shell.openExternal('http://localhost:3457/picker'); });
+      pickerServer.listen(3457, '127.0.0.1', () => { shell.openExternal('http://localhost:3457/picker?s=' + sessionSecret); });
     } catch (e) { reject(e); }
   });
 }

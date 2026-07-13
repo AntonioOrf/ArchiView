@@ -6,6 +6,7 @@ const { splitFileIntoChunks } = require('../chunkingLogic');
 const { loadSavedTokens } = require('./drive/auth');
 const { getOrCreateFolder, uploadFileReturningId, makeFilePublic, asyncPool } = require('./drive/fileOps');
 const { GOOGLE_API_KEY } = require('./cloudCredentials');
+const { safeAttachmentPathOrNull } = require('./pathSafety');
 
 // Sincronizzazione allegati per vault Hub.
 // Modello: i chunk (5MB, content-addressable) vivono sul Drive PERSONALE di ogni utente con
@@ -84,7 +85,9 @@ function collectUsedAttachments(dbPath: string, dir: string): Map<string, number
   for (const m of db.manoscritti || []) {
     for (const a of m.allegati || []) {
       if (!a.nome) continue;
-      const p = path.join(dir, a.nome);
+      // Scarta nomi non fidati (path traversal): il DB può arrivare da un membro malevolo.
+      const p = safeAttachmentPathOrNull(dir, a.nome);
+      if (!p) { console.warn(`[hub-att] nome allegato non sicuro ignorato: ${a.nome}`); continue; }
       let mtime = m.lastModified || 0;
       try { if (fs.existsSync(p)) mtime = Math.max(mtime, fs.statSync(p).mtimeMs); } catch { /* ignore */ }
       used.set(a.nome, mtime);
@@ -153,8 +156,8 @@ async function syncHubAttachments(): Promise<{
       const newFiles: any[] = [];
 
       for (const [fileName, mtime] of used) {
-        const localPath = path.join(attDir, fileName);
-        if (!fs.existsSync(localPath) || !fs.statSync(localPath).isFile()) continue;
+        const localPath = safeAttachmentPathOrNull(attDir, fileName);
+        if (!localPath || !fs.existsSync(localPath) || !fs.statSync(localPath).isFile()) continue;
 
         // 1. split plaintext → 2. cifra ogni chunk → ctHash
         const plainHashes: string[] = await splitFileIntoChunks(localPath, plainCache);
@@ -252,7 +255,8 @@ async function syncHubAttachments(): Promise<{
 
     // ---------- DOWNLOAD (qualsiasi membro, zero Google) ----------
     for (const [fileName] of used) {
-      const localPath = path.join(attDir, fileName);
+      const localPath = safeAttachmentPathOrNull(attDir, fileName);
+      if (!localPath) { console.warn(`[hub-att] download saltato, nome non sicuro: ${fileName}`); continue; }
       if (fs.existsSync(localPath)) continue; // già presente
       const entry = remoteFiles.get(fileName);
       if (!entry || entry.deleted || !Array.isArray(entry.hashes)) {
