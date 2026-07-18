@@ -91,7 +91,7 @@
     "@azure/msal-node": "^5.2.2",
     "@lingui/core": "^6.1.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
-    "adm-zip": "^0.5.17",
+    "adm-zip": "^0.6.0",
     "archiver": "^8.0.0",
     "dompurify": "^3.4.11",
     "electron-updater": "^6.8.3",
