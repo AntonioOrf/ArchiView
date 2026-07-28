@@ -79,7 +79,7 @@
     "@types/dompurify": "^3.0.5",
     "@types/node": "^25.9.1",
     "electron": "39.8.5",
-    "electron-builder": "^26.8.1",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.28.1",
     "make-plural": "^8.1.0",
     "png-to-ico": "^3.0.1",
@@ -94,7 +94,7 @@
     "adm-zip": "^0.5.17",
     "archiver": "^8.0.0",
     "dompurify": "^3.4.11",
-    "electron-updater": "^6.8.3",
+    "electron-updater": "^6.8.9",
     "googleapis": "^173.0.0"
   },
   "overrides": {
