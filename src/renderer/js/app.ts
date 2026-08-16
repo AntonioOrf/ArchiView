@@ -245,8 +245,19 @@ async function avviaApp() {
     const debouncedSearch = debounce(() => { renderMain(); renderSearchSuggestions(); }, 150);
     const debouncedRenderMain = debounce(renderMain, 150);
 
-    // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato
-    setTimeout(() => { if (typeof window.controllaAggiornamenti === 'function') window.controllaAggiornamenti(false); }, 2000);
+    // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato.
+    // Salta il check se offline (l'utente potrebbe aprire l'app in aereo/senza rete): evita una
+    // chiamata di rete destinata a fallire e un log 'error' inutile.
+    const controllaAggiornamentiSeOnline = () => {
+        if (typeof window.controllaAggiornamenti === 'function' && navigator.onLine !== false) {
+            window.controllaAggiornamenti(false);
+        }
+    };
+    setTimeout(controllaAggiornamentiSeOnline, 2000);
+    // Re-check periodico ogni 4h: le sessioni lunghe (app mai riavviata) altrimenti non vedrebbero
+    // mai un aggiornamento pubblicato dopo l'avvio. La cache/dedup lato main (updaterIpc.ts) evita
+    // comunque richieste ravvicinate se l'utente controlla anche manualmente dalle Impostazioni.
+    setInterval(controllaAggiornamentiSeOnline, 4 * 60 * 60 * 1000);
 
     setTimeout(() => {
         if (localStorage.getItem('startTutorialOnBoot') === 'true') {

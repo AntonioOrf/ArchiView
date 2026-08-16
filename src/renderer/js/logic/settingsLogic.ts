@@ -234,62 +234,167 @@ window.cambiaCartellaLavoro = async function() {
     }
 }
 
-window.controllaAggiornamenti = async function(mostraAvvisi = true) {
-    if (window.apiBrowser && window.apiBrowser.checkForUpdates) {
-        if (mostraAvvisi) mostraMessaggio(window.t("msg_check_updates"), "info");
-        
-        const result = await window.apiBrowser.checkForUpdates();
+// Macchina a stati esplicita per il banner aggiornamenti: idle -> available -> downloading -> downloaded -> installing,
+// con 'error' raggiungibile da qualunque stato attivo. Un solo punto di rendering (renderUpdateBanner) evita che gli
+// handler asincroni (progress/downloaded/error) lascino il bottone in uno stato incoerente tra loro.
+window._updateState = window._updateState || { status: 'idle' };
 
-        if (result.error) {
-            if (mostraAvvisi) mostraMessaggio(window.t("msg_update_error") + result.error, "error");
-        } else if (result.updateAvailable) {
-            // Mostra il banner non-intrusivo
-            const banner = document.getElementById('update-banner');
-            banner.classList.remove('hidden-tab');
-            document.getElementById('update-banner-text').textContent = `${window.t("msg_new_version_avail")} ${result.latestVersion} (${window.t("msg_current_version")} ${result.currentVersion})`;
-            
-            const btn = document.getElementById('btn-scarica-aggiornamento');
+function mapErrorCodeToMessage(errorCode, rawError) {
+    switch (errorCode) {
+        case 'offline': return window.t("msg_update_offline");
+        case 'no-release': return window.t("msg_update_no_release");
+        case 'rate-limited': return window.t("msg_update_rate_limited");
+        default: return window.t("msg_update_generic") + (rawError || '');
+    }
+}
+
+function renderUpdateBanner() {
+    const banner = document.getElementById('update-banner');
+    const text = document.getElementById('update-banner-text');
+    const btn = document.getElementById('btn-scarica-aggiornamento');
+    const notesBtn = document.getElementById('btn-note-rilascio');
+    if (!banner || !text || !btn) return;
+
+    const s = window._updateState;
+    btn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white', 'border-transparent');
+    btn.disabled = false;
+    banner.classList.remove('bg-sky-600', 'border-sky-700', 'bg-red-600', 'border-red-700');
+
+    if (notesBtn) {
+        notesBtn.classList.toggle('hidden-tab', !s.releaseNotes);
+    }
+
+    switch (s.status) {
+        case 'available':
+            banner.classList.add('bg-sky-600', 'border-sky-700');
+            text.textContent = `${window.t("msg_new_version_avail")} ${s.latestVersion} (${window.t("msg_current_version")} ${s.currentVersion})`;
             btn.textContent = window.t("btn_download_update");
-            btn.disabled = false;
-            
-            btn.onclick = async () => {
-                btn.disabled = true;
-                btn.textContent = window.t("btn_download_starting");
-                const res = await window.apiBrowser.downloadUpdate();
-                if (res && !res.success) {
-                    btn.textContent = window.t("btn_download_error");
-                    mostraMessaggio(window.t("msg_update_error") + res.error, "error");
-                }
-            };
-            
-            if (!window._updateListenersSetup && window.apiBrowser.onUpdateProgress) {
-                window.apiBrowser.onUpdateProgress((progressObj) => {
-                    const perc = Math.round(progressObj.percent);
-                    btn.textContent = `${window.t("msg_downloading")} ${perc}%`;
-                });
-                
-                window.apiBrowser.onUpdateDownloaded(() => {
-                    btn.disabled = false;
-                    btn.textContent = window.t("btn_restart_install");
-                    btn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white', 'border-transparent');
-                    btn.onclick = () => {
-                        btn.textContent = window.t("btn_installing");
-                        btn.disabled = true;
-                        window.apiBrowser.installUpdate();
-                    };
-                });
-                window._updateListenersSetup = true;
-            }
-            
+            btn.onclick = avviaDownloadAggiornamento;
             banner.classList.remove('hidden-tab');
-        } else {
-            if (mostraAvvisi) mostraMessaggio(`${window.t("msg_up_to_date")} (${result.currentVersion}).`, "success");
-        }
+            break;
+        case 'downloading':
+            banner.classList.add('bg-sky-600', 'border-sky-700');
+            btn.disabled = true;
+            btn.textContent = s.percent != null ? `${window.t("msg_downloading")} ${s.percent}%` : window.t("btn_download_starting");
+            banner.classList.remove('hidden-tab');
+            break;
+        case 'downloaded':
+            banner.classList.add('bg-sky-600', 'border-sky-700');
+            btn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white', 'border-transparent');
+            btn.textContent = window.t("btn_restart_install");
+            btn.onclick = avviaInstallazioneAggiornamento;
+            banner.classList.remove('hidden-tab');
+            break;
+        case 'installing':
+            banner.classList.add('bg-sky-600', 'border-sky-700');
+            btn.disabled = true;
+            btn.textContent = window.t("btn_installing");
+            banner.classList.remove('hidden-tab');
+            break;
+        case 'error':
+            banner.classList.add('bg-red-600', 'border-red-700');
+            text.textContent = mapErrorCodeToMessage(s.errorCode, s.errorMessage);
+            btn.textContent = window.t("btn_download_update");
+            btn.onclick = avviaDownloadAggiornamento;
+            banner.classList.remove('hidden-tab');
+            break;
+        default: // idle
+            banner.classList.add('hidden-tab');
+    }
+}
+
+async function avviaDownloadAggiornamento() {
+    window._updateState = { ...window._updateState, status: 'downloading', percent: null };
+    renderUpdateBanner();
+    const res = await window.apiBrowser.downloadUpdate();
+    if (res && !res.success) {
+        window._updateState = { ...window._updateState, status: 'error', errorCode: res.errorCode, errorMessage: res.error };
+        renderUpdateBanner();
+    }
+}
+
+function avviaInstallazioneAggiornamento() {
+    window._updateState = { ...window._updateState, status: 'installing' };
+    renderUpdateBanner();
+    window.apiBrowser.installUpdate();
+}
+
+function setupUpdateEventListeners() {
+    if (window._updateListenersSetup || !window.apiBrowser || !window.apiBrowser.onUpdateProgress) return;
+
+    window.apiBrowser.onUpdateProgress((progressObj) => {
+        if (window._updateState.status !== 'downloading') return; // Evita di sovrascrivere uno stato più recente
+        window._updateState = { ...window._updateState, percent: Math.round(progressObj.percent) };
+        renderUpdateBanner();
+    });
+
+    window.apiBrowser.onUpdateDownloaded(() => {
+        window._updateState = { ...window._updateState, status: 'downloaded' };
+        renderUpdateBanner();
+    });
+
+    if (window.apiBrowser.onUpdateError) {
+        window.apiBrowser.onUpdateError((payload) => {
+            // Errore asincrono (rete caduta a metà download, checksum non valido, ecc.)
+            window._updateState = { ...window._updateState, status: 'error', errorCode: payload && payload.errorCode, errorMessage: payload && payload.error };
+            renderUpdateBanner();
+        });
+    }
+
+    window._updateListenersSetup = true;
+}
+
+window.controllaAggiornamenti = async function(mostraAvvisi = true) {
+    if (!window.apiBrowser || !window.apiBrowser.checkForUpdates) return;
+
+    setupUpdateEventListeners();
+
+    // Un download/installazione in corso non deve essere interrotto da un ri-check silenzioso periodico
+    if (window._updateState.status === 'downloading' || window._updateState.status === 'installing') return;
+
+    if (mostraAvvisi) mostraMessaggio(window.t("msg_check_updates"), "info");
+
+    const result = await window.apiBrowser.checkForUpdates();
+
+    if (result.devMode) {
+        return; // Build non pacchettizzata: nessun canale di update disponibile
+    } else if (result.error) {
+        window._updateState = { status: 'error', errorCode: result.errorCode, errorMessage: result.error };
+        renderUpdateBanner();
+        if (mostraAvvisi) mostraMessaggio(mapErrorCodeToMessage(result.errorCode, result.error), "error");
+    } else if (result.updateAvailable) {
+        window._updateState = {
+            status: 'available',
+            latestVersion: result.latestVersion,
+            currentVersion: result.currentVersion,
+            releaseNotes: result.releaseNotes || null
+        };
+        renderUpdateBanner();
+    } else {
+        window._updateState = { status: 'idle' };
+        renderUpdateBanner();
+        if (mostraAvvisi) mostraMessaggio(`${window.t("msg_up_to_date")} (${result.currentVersion}).`, "success");
     }
 }
 
 window.nascondiBannerAggiornamento = function() {
     document.getElementById('update-banner').classList.add('hidden-tab');
+}
+
+window.mostraNoteRilascio = function() {
+    const notes = window._updateState && window._updateState.releaseNotes;
+    const modal = document.getElementById('release-notes-modal');
+    const body = document.getElementById('release-notes-body');
+    if (!modal || !body) return;
+    // releaseNotes arriva dal body della GitHub Release (contenuto remoto non fidato): sanitizzato prima dell'inserimento nel DOM.
+    body.innerHTML = notes ? window.sanitizeHTML(notes) : window.escapeHTML(window.t("msg_no_release_notes"));
+    modal.classList.remove('hidden-tab');
+    if (window.lucide) lucide.createIcons({ nodes: [modal] });
+}
+
+window.chiudiNoteRilascio = function() {
+    const modal = document.getElementById('release-notes-modal');
+    if (modal) modal.classList.add('hidden-tab');
 }
 
 

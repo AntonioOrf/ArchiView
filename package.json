@@ -17,7 +17,7 @@
     "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
     "pretest:unit": "tsc",
-    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js",
+    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js",
     "test:e2e": "playwright test",
     "pretest:e2e": "npm run build-css && npm run build-ts",
     "pack": "npm run build-css && npm run build-ts && electron-builder --win",
