@@ -806,7 +806,14 @@ const customEn = {
     "share_conflict_action_label": "Receive now",
     "prog_hub_prepare_title": "Preparing your shared archive",
     "prog_hub_prepare_desc": "Just a moment...",
-    "msg_connesso_con_successo_nome": "Connected successfully to \"{var0}\"! Restarting..."
+    "msg_connesso_con_successo_nome": "Connected successfully to \"{var0}\"! Restarting...",
+    "msg_update_offline": "No Internet connection: cannot check for updates.",
+    "msg_update_no_release": "No published release found on GitHub.",
+    "msg_update_rate_limited": "Too many requests to GitHub, try again in a few minutes.",
+    "msg_update_generic": "Error during update: ",
+    "btn_release_notes": "What's new in this version",
+    "modal_release_notes_title": "Release notes",
+    "msg_no_release_notes": "No release notes available for this version."
 };
 
 const customIt = {
@@ -1059,7 +1066,14 @@ const customIt = {
     "prog_hub_prepare_title": "Preparazione dell'archivio condiviso",
     "prog_hub_prepare_desc": "Un attimo di pazienza...",
     "msg_timeout_creazione_repo": "Hub non raggiungibile (timeout). Riprova più tardi.",
-    "msg_connesso_con_successo_nome": "Connesso con successo a \"{var0}\"! Riavvio in corso..."
+    "msg_connesso_con_successo_nome": "Connesso con successo a \"{var0}\"! Riavvio in corso...",
+    "msg_update_offline": "Nessuna connessione a Internet: impossibile controllare gli aggiornamenti.",
+    "msg_update_no_release": "Nessuna versione pubblicata trovata su GitHub.",
+    "msg_update_rate_limited": "Troppe richieste a GitHub, riprova tra qualche minuto.",
+    "msg_update_generic": "Errore durante l'aggiornamento: ",
+    "btn_release_notes": "Novità di questa versione",
+    "modal_release_notes_title": "Note di rilascio",
+    "msg_no_release_notes": "Nessuna nota di rilascio disponibile per questa versione."
 };
 
 window.t = function(key, fallback) {

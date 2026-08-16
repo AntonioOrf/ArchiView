@@ -9,9 +9,26 @@
             <i data-lucide="download-cloud" class="w-5 h-5"></i>
             <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
         </div>
-        <div class="flex gap-2 shrink-0">
+        <div class="flex gap-2 shrink-0 items-center">
+            <button id="btn-note-rilascio" onclick="mostraNoteRilascio()" class="hidden-tab text-sky-100 hover:text-white underline text-xs font-medium px-1" data-i18n="btn_release_notes">Novità di questa versione</button>
             <button id="btn-scarica-aggiornamento" class="bg-white text-sky-700 hover:bg-sky-50 px-3 py-1.5 rounded-sm text-xs font-bold transition-colors shadow-sm" data-i18n="btn_download_github">Scarica da GitHub</button>
             <button onclick="nascondiBannerAggiornamento()" class="text-sky-100 hover:text-white px-2 py-1.5 transition-colors rounded-sm hover:bg-sky-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+    </div>
+
+    <!-- Modal Note di Rilascio -->
+    <div id="release-notes-modal" class="modal-overlay hidden-tab z-200">
+        <div class="modal-window max-w-lg bg-white dark:bg-stone-900 overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-800">
+                <h3 class="modal-title">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+                    <span data-i18n="modal_release_notes_title">Note di rilascio</span>
+                </h3>
+                <button type="button" onclick="chiudiNoteRilascio()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="release-notes-body" class="modal-body overflow-y-auto p-6 text-sm text-stone-800 dark:text-stone-300"></div>
         </div>
     </div>
 
