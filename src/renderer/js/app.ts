@@ -1058,15 +1058,16 @@ window.apriCartellaInEsploraRisorse = async function(folderPath) {
     }
 };
 
+// Nota: nessuna chiamata a selectItem qui — passava un percorso di cartella come id di
+// record, sporcando window.selectedRecords. L'evidenziazione della cartella nell'albero
+// dipende già da window.cartellaAttuale.
 window.creaSchedaContext = function(folderPath) {
     window.cartellaAttuale = folderPath;
-    if (typeof window.selectItem === 'function') window.selectItem(folderPath, true);
     if (typeof switchTab === 'function') switchTab('add');
 };
 
 window.mostraAggiungiCartellaContext = function(folderPath) {
     window.cartellaAttuale = folderPath;
-    if (typeof window.selectItem === 'function') window.selectItem(folderPath, true);
     if (typeof aggiungiCartella === 'function') aggiungiCartella();
 };
 

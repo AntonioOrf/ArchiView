@@ -31,10 +31,18 @@ async function confermaAggiungiCartella() {
         if (!appData.cartelle.includes(percorsoPulito)) {
             appData.cartelle.push(percorsoPulito);
             if (appData.deletedCartelle) appData.deletedCartelle = appData.deletedCartelle.filter(c => c !== percorsoPulito);
+
+            // Seleziona e rivela la cartella appena creata: senza espandere gli antenati
+            // un percorso annidato resterebbe invisibile nell'albero.
+            window.cartellaAttuale = percorsoPulito;
+            window.espandiAntenati(percorsoPulito);
+            window.azzeraFiltriRicerca();
+
             if (window.Store) await window.Store.commit();
             else {
                 await salvaTutto();
                 renderSidebar();
+                renderMain();
             }
             aggiornaSelectCartelle();
             chiudiFolderModal();

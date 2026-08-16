@@ -383,40 +383,7 @@ function renderSearchSuggestions() {
     matches.forEach(match => {
         const div = document.createElement('div');
         div.className = "p-2 border-b border-stone-200 hover:bg-amber-50 cursor-pointer transition-colors";
-        div.onclick = () => {
-            // La griglia è paginata: se il record è in un'altra pagina, salta prima
-            // alla pagina corretta, altrimenti la card non esiste nel DOM e lo scroll
-            // fallirebbe silenziosamente.
-            const filtrati = window.getManoscrittiFiltrati();
-            const idx = filtrati.findIndex(x => x.id === match.item.id);
-            if (idx !== -1) {
-                const paginaTarget = Math.floor(idx / PAGE_SIZE);
-                if (window.currentPage !== paginaTarget) {
-                    window.currentPage = paginaTarget;
-                    renderMain(false);
-                }
-            }
-
-            const cardId = 'card-' + match.item.id;
-            const targetCard = document.getElementById(cardId);
-            if (targetCard) {
-                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Evidenziazione temporanea per indicare quale scheda è stata trovata
-                targetCard.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
-                const oldShadow = targetCard.style.boxShadow;
-                const oldBorder = targetCard.style.borderColor;
-                targetCard.style.boxShadow = "0 0 0 4px rgba(251, 191, 36, 0.4)";
-                targetCard.style.borderColor = "#f59e0b";
-                setTimeout(() => {
-                    targetCard.style.boxShadow = oldShadow;
-                    targetCard.style.borderColor = oldBorder;
-                }, 1500);
-            } else if (typeof mostraMessaggio === 'function') {
-                // Il suggerimento ha trovato corrispondenza su un campo non incluso nel
-                // filtro della griglia: il record non è nella vista corrente.
-                mostraMessaggio(window.t('msg_record_non_in_vista', 'Documento non visibile nella vista corrente.'), 'info');
-            }
-        };
+        div.onclick = () => window.rivelaRecordNellaGriglia(match.item.id);
         div.innerHTML = `
             <div class="text-xs font-bold text-stone-800 truncate mb-1">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
             <div class="text-[10px] text-stone-600 leading-tight">
@@ -427,6 +394,45 @@ function renderSearchSuggestions() {
     });
     container.appendChild(fragment);
 }
+
+/**
+ * Porta l'utente sulla card di un record nella griglia di destra: salta alla pagina
+ * corretta (la griglia è paginata a PAGE_SIZE, altrimenti la card non è nel DOM),
+ * scrolla e la evidenzia. Usata dai suggerimenti di ricerca e dall'albero a sinistra.
+ */
+window.rivelaRecordNellaGriglia = function(id) {
+    const filtrati = window.getManoscrittiFiltrati();
+    const idx = filtrati.findIndex(x => x.id === id);
+    if (idx !== -1) {
+        const paginaTarget = Math.floor(idx / PAGE_SIZE);
+        if (window.currentPage !== paginaTarget) {
+            window.currentPage = paginaTarget;
+            renderMain(false);
+        }
+    }
+
+    const targetCard = document.getElementById('card-' + id);
+    if (!targetCard) {
+        // Il record non rientra nel filtro corrente della griglia (es. suggerimento di
+        // ricerca su un campo non incluso nel filtro): non c'è nulla su cui scrollare.
+        if (typeof mostraMessaggio === 'function') {
+            mostraMessaggio(window.t('msg_record_non_in_vista', 'Documento non visibile nella vista corrente.'), 'info');
+        }
+        return;
+    }
+
+    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Evidenziazione temporanea per indicare quale scheda è stata raggiunta
+    targetCard.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
+    const oldShadow = targetCard.style.boxShadow;
+    const oldBorder = targetCard.style.borderColor;
+    targetCard.style.boxShadow = "0 0 0 4px rgba(251, 191, 36, 0.4)";
+    targetCard.style.borderColor = "#f59e0b";
+    setTimeout(() => {
+        targetCard.style.boxShadow = oldShadow;
+        targetCard.style.borderColor = oldBorder;
+    }, 1500);
+};
 
 window.cambiaPagina = function(dir) {
     window.currentPage += dir;
