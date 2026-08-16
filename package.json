@@ -78,7 +78,7 @@
     "@types/archiver": "^7.0.0",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^25.9.1",
-    "electron": "39.8.5",
+    "electron": "39.8.10",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.1",
     "make-plural": "^8.1.0",
