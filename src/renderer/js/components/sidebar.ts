@@ -143,7 +143,9 @@ function renderSidebar() {
         riga.onclick = () => {
             window.cartellaAttuale = fullPath;
             window.cartelleEspanse.add(fullPath);
-            document.getElementById('search-input').value = '';
+            // Navigare l'albero esce dalla ricerca globale (testo E tag): finché uno dei
+            // due è attivo, getManoscrittiFiltrati ignora del tutto la cartella scelta.
+            window.azzeraFiltriRicerca();
             switchTab('list');
             renderSidebar();
             renderMain();
@@ -181,10 +183,24 @@ function renderSidebar() {
                     e.stopPropagation();
                     if (window.cartellaAttuale !== fullPath) {
                         window.cartellaAttuale = fullPath;
-                        if (typeof switchTab === 'function') switchTab('list');
+                        // Il record deve comparire nella vista della sua cartella
+                        window.azzeraFiltriRicerca();
                     }
+                    // Sempre, non solo al cambio cartella: si può arrivare qui dal tab
+                    // 'add' o 'trascrizione', dove la griglia non è nemmeno visibile.
+                    if (typeof switchTab === 'function') switchTab('list');
+
                     if (typeof window.selectItem === 'function') {
-                        window.selectItem(m.id, e);
+                        window.selectItem(m.id, e); // ri-renderizza sidebar + griglia (sincrono)
+                    }
+
+                    // In multi-selezione (ctrl/shift) lo scroll disorienterebbe.
+                    // switchTab può abortire su form sporco: in quel caso view-list è
+                    // ancora nascosta e non c'è nulla da rivelare.
+                    const vList = document.getElementById('view-list');
+                    const isListaVisibile = vList && !vList.classList.contains('hidden-tab');
+                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && isListaVisibile) {
+                        window.rivelaRecordNellaGriglia(m.id);
                     }
                 };
                 

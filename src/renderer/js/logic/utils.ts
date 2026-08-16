@@ -108,3 +108,31 @@ function normalizzaCartelle() {
     appData.cartelle = Array.from(cartelleSet).sort();
 }
 
+/**
+ * Unico punto di uscita dalla modalità "ricerca globale" (testo E tag).
+ * getManoscrittiFiltrati bypassa il filtro cartella finché uno dei due è attivo:
+ * navigare l'albero deve quindi azzerarli entrambi, non solo l'input di ricerca.
+ */
+window.azzeraFiltriRicerca = function() {
+    const input = document.getElementById('search-input');
+    if (input) input.value = '';
+
+    if (window.activeTags) window.activeTags.clear();
+
+    const btnClearTag = document.getElementById('btn-clear-tag');
+    if (btnClearTag) btnClearTag.classList.add('hidden');
+
+    if (typeof renderTagList === 'function') renderTagList();
+    if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
+};
+
+/** Espande nell'albero il percorso indicato e tutti i suoi antenati. */
+window.espandiAntenati = function(percorso) {
+    if (!percorso) return;
+    let pathCorrente = '';
+    percorso.split('/').forEach(part => {
+        pathCorrente = pathCorrente ? pathCorrente + '/' + part : part;
+        window.cartelleEspanse.add(pathCorrente);
+    });
+};
+
