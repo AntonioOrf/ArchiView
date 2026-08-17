@@ -91,27 +91,24 @@ window.aggiornaVisibilitaCloud = async function() {
 
     const btnSourceControl = document.getElementById('btn-tab-source-control');
     const btnHistory = document.getElementById('btn-tab-history');
-    const cloudButtonsContainer = document.getElementById('cloud-buttons-container');
-    
+
+    // Fase 3.1 — il gruppo Fetch/Scarica/Carica non esiste più: le tre azioni stanno nel
+    // popover del bottone di stato, che resta visibile anche su vault locale (3.5).
+    window.statoCloud.vaultCloud = isCloud;
+    if (window.hubConfig) window.statoCloud.autenticato = true;
+    if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
+
     if (isCloud) {
         if (btnSourceControl) btnSourceControl.classList.remove('hidden-tab', 'hidden');
         if (btnHistory) btnHistory.classList.remove('hidden-tab', 'hidden');
-        if (cloudButtonsContainer) {
-            cloudButtonsContainer.classList.remove('hidden');
-            cloudButtonsContainer.classList.add('md:flex');
-        }
     } else {
         if (btnSourceControl) btnSourceControl.classList.add('hidden-tab');
         if (btnHistory) btnHistory.classList.add('hidden-tab');
-        if (cloudButtonsContainer) {
-            cloudButtonsContainer.classList.add('hidden');
-            cloudButtonsContainer.classList.remove('md:flex');
-            
-            // Se eravamo nel tab source-control o history, passiamo al default (list) per evitare UI vuota
-            const activeSidebar = document.querySelector('.sidebar-content:not(.hidden-tab)');
-            if (activeSidebar && (activeSidebar.id === 'sidebar-source-control' || activeSidebar.id === 'sidebar-history') && typeof switchSidebarTab === 'function') {
-                switchSidebarTab('folders');
-            }
+
+        // Se eravamo nel tab source-control o history, passiamo al default (list) per evitare UI vuota
+        const activeSidebar = document.querySelector('.sidebar-content:not(.hidden-tab)');
+        if (activeSidebar && (activeSidebar.id === 'sidebar-source-control' || activeSidebar.id === 'sidebar-history') && typeof switchSidebarTab === 'function') {
+            switchSidebarTab('folders');
         }
     }
 };
@@ -151,7 +148,8 @@ async function avviaApp() {
     if (statoSalvato) {
         try {
             const stato = statoSalvato;
-            if (stato.cartella) {
+            // typeof e non truthiness: '' è la radice, uno stato salvato legittimo
+            if (typeof stato.cartella === 'string') {
                 window.cartellaAttuale = stato.cartella;
             }
             if (stato.cartelleEspanse) {
@@ -259,28 +257,43 @@ async function avviaApp() {
     // comunque richieste ravvicinate se l'utente controlla anche manualmente dalle Impostazioni.
     setInterval(controllaAggiornamentiSeOnline, 4 * 60 * 60 * 1000);
 
+    /**
+     * Propone il tutorial senza bloccare: banner in coda alla pagina, non un overlay.
+     * Un modal aperto a tempo dopo l'avvio si sovrappone a quello che l'utente ha gia'
+     * iniziato a fare e ne mangia i click; per lo stesso motivo l'invito non compare se
+     * l'utente e' gia' dentro una scheda o nella trascrizione.
+     */
+    function mostraInvitoTutorial(settings) {
+        const banner = document.getElementById('tutorial-banner');
+        const vList = document.getElementById('view-list');
+        if (!banner || !vList || vList.classList.contains('hidden-tab')) return;
+
+        const chiudiEDimentica = async () => {
+            banner.classList.add('hidden-tab');
+            try {
+                settings.tutorialCompleted = true;
+                await window.apiSettings.save(settings);
+            } catch (err) {
+                console.error('Salvataggio stato tutorial fallito:', err);
+            }
+        };
+
+        window.avviaTutorialDaInvito = async () => {
+            await chiudiEDimentica();
+            if (window.avviaTutorial) window.avviaTutorial();
+        };
+        window.rifiutaInvitoTutorial = chiudiEDimentica;
+
+        banner.classList.remove('hidden-tab');
+        if (window.lucide) lucide.createIcons({ nodes: [banner] });
+    }
+
     setTimeout(() => {
         if (localStorage.getItem('startTutorialOnBoot') === 'true') {
             localStorage.removeItem('startTutorialOnBoot');
             if (window.avviaTutorial) window.avviaTutorial();
         } else if (settings && settings.tutorialCompleted !== true) {
-            if (typeof window.mostraInfoConfirm === 'function') {
-                window.mostraInfoConfirm(
-                    "Tutorial ArchiView",
-                    "Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?",
-                    "Sì, avvia",
-                    "No, grazie",
-                    async () => {
-                        settings.tutorialCompleted = true;
-                        await window.apiSettings.save(settings);
-                        if (window.avviaTutorial) window.avviaTutorial();
-                    },
-                    async () => {
-                        settings.tutorialCompleted = true;
-                        await window.apiSettings.save(settings);
-                    }
-                );
-            }
+            mostraInvitoTutorial(settings);
         }
     }, 1500);
 
@@ -347,6 +360,10 @@ async function avviaApp() {
     });
 
     // Mappa id-modale → funzione di chiusura dedicata (cleanup: reset iframe, callback, ecc.)
+    // Overlay che NON vanno chiusi né con Esc né cliccando lo sfondo: sono in mezzo a
+    // un'operazione (progresso di sync, finestra di autenticazione).
+    const modaliNonChiudibili = ['cloud-progress-overlay', 'cloud-auth-modal', 'email-prompt-modal'];
+
     const modalClosers = {
         'image-modal': 'chiudiModal',
         'docs-modal': 'chiudiModalDocumenti',
@@ -361,11 +378,21 @@ async function avviaApp() {
         'share-modal': 'chiudiShareModal',
         'changelog-modal': 'chiudiChangelogModal',
         'issue-modal': 'chiudiIssueModal',
+        // Fase 5.3 — prima mancavano: Esc li nascondeva con il fallback `hidden-tab`,
+        // che sui modali creati e rimossi al volo lasciava il nodo nel DOM, e sui
+        // conflitti di sync abbandonava la callback di risoluzione senza annullarla.
+        'diff-modal': 'chiudiDiffModal',
+        'history-diff-modal': 'chiudiHistoryDiffModal',
+        'release-notes-modal': 'chiudiNoteRilascio',
+        'merge-conflict-modal': 'annullaSincronizzazioneConflitto',
+        'deletion-conflict-modal': 'annullaSincronizzazioneDeletions',
     };
 
     // Chiusura centralizzata del modale in cima allo stack (riusata da Esc e click sul backdrop).
     // Ritorna false se la chiusura è stata bloccata (es. welcome-modal obbligatorio).
     function chiudiModaleTop(top) {
+        if (modaliNonChiudibili.includes(top.id)) return false;
+
         // Il welcome-modal è chiudibile solo se un workspace esiste già (pulsante chiusura visibile);
         // durante la scelta iniziale è obbligatorio.
         if (top.id === 'welcome-modal') {
@@ -387,7 +414,11 @@ async function avviaApp() {
             else if (window.chiudiInfoConfirm) window.chiudiInfoConfirm();
         } else {
             const fnName = modalClosers[top.id];
+            // I modali costruiti al volo (es. vault-delete-modal) espongono il proprio
+            // annulla con data-modal-cancel: cliccarlo esegue anche il resolve della promise.
+            const btnAnnulla = top.querySelector('[data-modal-cancel]');
             if (fnName && typeof window[fnName] === 'function') window[fnName]();
+            else if (btnAnnulla) btnAnnulla.click();
             else top.classList.add('hidden-tab'); // fallback per modali senza handler dedicato
         }
 
@@ -425,6 +456,9 @@ async function avviaApp() {
             const searchInput = document.getElementById('search-input');
             if (searchInput) {
                 if (typeof switchTab === 'function') switchTab('list');
+                // Il campo vive nel pannello 'search' della sidebar: se e' chiuso o
+                // sostituito da un altro tab, il focus finiva su un elemento nascosto.
+                if (typeof window.apriSidebarTab === 'function') window.apriSidebarTab('search');
                 searchInput.focus();
                 searchInput.select();
             }
@@ -512,9 +546,8 @@ async function avviaApp() {
     // Chiusura automatica modali cliccando sullo sfondo (solo sull'overlay, non sul contenuto)
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal-overlay')) {
-            const preventCloseIds = ['cloud-progress-overlay', 'cloud-auth-modal', 'email-prompt-modal'];
-            if (preventCloseIds.includes(e.target.id)) return;
-            // Instrada alle funzioni chiudi* dedicate (cleanup) come il dispatcher Esc
+            // Instrada alle funzioni chiudi* dedicate (cleanup) come il dispatcher Esc;
+            // gli overlay non chiudibili sono filtrati dentro chiudiModaleTop, un elenco solo.
             chiudiModaleTop(e.target);
         }
     });
@@ -673,9 +706,10 @@ window.esportaCartellaAttuale = async function() {
 
 window.esportaSpecificaCartella = async function(folderName) {
     if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
-    const manoscrittiInCartella = appData.manoscritti.filter(m => 
-        m.cartella === folderName || m.cartella.startsWith(folderName + '/')
-    );
+    // Radice ('') = intero vault: esporta tutto, non solo le schede non archiviate.
+    const manoscrittiInCartella = folderName
+        ? appData.manoscritti.filter(m => m.cartella === folderName || (m.cartella || '').startsWith(folderName + '/'))
+        : appData.manoscritti.slice();
     if (manoscrittiInCartella.length === 0) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_vuoto_nulla_da", "L'archivio è vuoto, nulla da esportare."), "warning");
         return;
@@ -794,12 +828,24 @@ window.selectItem = function(id, event) {
 window.aggiornaSelectionBar = function() {
     const bar = document.getElementById('selection-bar');
     if (!bar) return;
-    if (window.selectedRecords && window.selectedRecords.length > 0) {
-        bar.classList.remove('hidden');
-        document.getElementById('selection-count').innerText = `${window.selectedRecords.length} selezionati`;
-    } else {
-        bar.classList.add('hidden');
+    const n = (window.selectedRecords && window.selectedRecords.length) || 0;
+    // 'hidden' e 'flex' insieme: hidden vince su display:flex solo se flex non c'è.
+    bar.classList.toggle('hidden', n === 0);
+    bar.classList.toggle('flex', n > 0);
+    if (n > 0) {
+        const etichetta = n === 1
+            ? window.t('selection_count_one', '1 scheda selezionata')
+            : window.t('selection_count_many', '{var0} schede selezionate').replace('{var0}', String(n));
+        document.getElementById('selection-count').innerText = etichetta;
     }
+};
+
+window.azzeraSelezione = function() {
+    window.selectedRecords = [];
+    window.lastSelectedId = null;
+    window.aggiornaSelectionBar();
+    if (typeof renderMain === 'function') renderMain();
+    if (typeof renderSidebar === 'function') renderSidebar();
 };
 
 window.esportaSelezionati = async function() {
@@ -902,48 +948,13 @@ window.tagliaSelezionati = function() {
     }, 50);
 };
 
-// --- CLOUD MENU (overflow, finestra stretta < md) ---
-window.toggleCloudMenu = function(e?: Event) {
-    if (e) e.stopPropagation();
-    const dropdown = document.getElementById('cloud-menu-dropdown');
-    const btn = document.getElementById('cloud-menu-btn');
-    if (!dropdown || !btn) return;
-    const willOpen = dropdown.classList.contains('hidden');
-    dropdown.classList.toggle('hidden', !willOpen);
-    btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-    if (willOpen) {
-        const closeOutside = (ev: MouseEvent) => {
-            if (!dropdown.contains(ev.target as Node) && !btn.contains(ev.target as Node)) {
-                dropdown.classList.add('hidden');
-                btn.setAttribute('aria-expanded', 'false');
-                document.removeEventListener('click', closeOutside);
-            }
-        };
-        // differito per non intercettare il click corrente
-        setTimeout(() => document.addEventListener('click', closeOutside), 0);
-    }
-};
-
 // --- CONTEXT MENU ---
-function getOrCreateContextMenu() {
-    let menu = document.getElementById('custom-context-menu');
-    if (!menu) {
-        menu = document.createElement('div');
-        menu.id = 'custom-context-menu';
-        menu.className = 'fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-[9999] min-w-[150px] text-sm hidden text-stone-800 dark:text-stone-100';
-        document.body.appendChild(menu);
-        
-        // Chiudi click fuori
-        document.addEventListener('click', () => menu.classList.add('hidden'));
-        document.addEventListener('scroll', () => menu.classList.add('hidden'));
-    }
-    return menu;
-}
+// Le voci sono dichiarative; disegno, tastiera e posizionamento stanno in
+// components/contextMenu.ts (Fase 4.3). Gli stessi array alimentano il tasto destro
+// e i pulsanti overflow "⋯" di card e cartelle, così le due strade non divergono.
 
-window.showRecordContextMenu = function(e, id) {
-    const menu = getOrCreateContextMenu();
-
-    // Se l'ID cliccato non è tra i selezionati, seleziona solo quello
+// Il tasto destro (o il "⋯") su un record fuori selezione lavora su quel solo record.
+window.assicuraSelezioneRecord = function(id) {
     if (!window.selectedRecords.includes(id)) {
         window.selectedRecords = [id];
         window.lastSelectedId = id;
@@ -951,94 +962,103 @@ window.showRecordContextMenu = function(e, id) {
         if (typeof renderSidebar === 'function') renderSidebar();
         window.aggiornaSelectionBar();
     }
+};
 
+window.vociMenuRecord = function(id) {
     const selCount = window.selectedRecords.length;
-    const label = selCount > 1 ? ` (${selCount})` : '';
+    const suffisso = selCount > 1 ? ` (${selCount})` : '';
+    const voci = [];
+    if (selCount === 1) {
+        voci.push({ label: window.t('menu_edit_record', 'Rinomina / Modifica'), icon: 'edit-3', onSelect: () => window.editItem(id) });
+        voci.push({ label: window.t('btn_transcribe', 'Trascrivi'), icon: 'pen-line', onSelect: () => window.apriTrascrizione(id) });
+        voci.push({ separator: true });
+    }
+    voci.push({ label: window.t('menu_copy', 'Copia') + suffisso, icon: 'copy', onSelect: () => window.copiaSelezionati() });
+    voci.push({ label: window.t('menu_cut', 'Taglia') + suffisso, icon: 'scissors', onSelect: () => window.tagliaSelezionati() });
+    voci.push({ label: window.t('tooltip_export', 'Esporta') + suffisso, icon: 'upload', onSelect: () => window.esportaSelezionati() });
+    voci.push({ separator: true });
+    voci.push({ label: window.t('tooltip_delete', 'Elimina') + suffisso, icon: 'trash-2', danger: true, onSelect: () => window.eliminaSelezionati() });
+    return voci;
+};
 
-    const renameHtml = selCount === 1 ? `<button onclick="editItem('${id}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4"></i> Rinomina / Modifica</button>` : '';
-
-    menu.innerHTML = `
-        ${renameHtml}
-        <button onclick="window.copiaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia${label}</button>
-        <button onclick="window.tagliaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="scissors" class="w-4 h-4"></i> Taglia${label}</button>
-        <button onclick="window.esportaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Esporta${label}</button>
-        <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
-        <button onclick="window.eliminaSelezionati()" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina${label}</button>
-    `;
-    if (window.lucide) lucide.createIcons({ nodes: [menu] });
-    
-    // Posizionamento
-    menu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
-    menu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
-    menu.classList.remove('hidden');
+window.showRecordContextMenu = function(e, id) {
+    window.assicuraSelezioneRecord(id);
+    window.apriMenuContestuale(e, window.vociMenuRecord(id));
 };
 
 window.showFolderContextMenu = function(e) {
     // Mostra solo se clicchiamo nello sfondo del view-list
     if (e.target.closest('.card-scheda')) return;
-    
-    const countToPaste = (window.copiedRecordIds && window.copiedRecordIds.length > 0) ? window.copiedRecordIds.length : ((window.cutRecordIds && window.cutRecordIds.length > 0) ? window.cutRecordIds.length : 0);
-    const isMoving = window.cutRecordIds && window.cutRecordIds.length > 0;
-    
-    if (countToPaste > 0) {
-        e.preventDefault();
-        const menu = getOrCreateContextMenu();
-        menu.innerHTML = `
-            <button onclick="window.incollaRecord()" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Incolla (${countToPaste})</button>
-        `;
-        if (window.lucide) lucide.createIcons({ nodes: [menu] });
-        menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
-        menu.style.top = Math.min(e.clientY, window.innerHeight - 50) + 'px';
-        menu.classList.remove('hidden');
+
+    const voceIncolla = window.voceMenuIncolla(null);
+    if (voceIncolla) window.apriMenuContestuale(e, [voceIncolla]);
+};
+
+// Voce "Incolla" condivisa fra sfondo lista e cartelle: null se non c'è nulla negli appunti.
+window.voceMenuIncolla = function(folderPath) {
+    const countRecord = (window.copiedRecordIds && window.copiedRecordIds.length) || (window.cutRecordIds && window.cutRecordIds.length) || 0;
+    const hasFolderAction = !!(window.cutFolderPath || window.copiedFolderPath);
+    if (countRecord === 0 && !hasFolderAction) return null;
+    const isMoving = !!((window.cutRecordIds && window.cutRecordIds.length > 0) || window.cutFolderPath);
+    // null = sfondo della lista ⇒ "incolla nella cartella corrente". '' e 'ROOT' sono
+    // entrambi la radice virtuale, ed è una destinazione esplicita come le altre.
+    const destinazione = folderPath === null || folderPath === undefined
+        ? undefined
+        : (folderPath === 'ROOT' ? '' : folderPath);
+    const label = countRecord > 0
+        ? (destinazione !== undefined
+            ? window.t('menu_paste_here', 'Incolla qui') + ` (${countRecord})`
+            : window.t('menu_paste', 'Incolla') + ` (${countRecord})`)
+        : window.t('menu_paste_folder_here', 'Incolla cartella qui');
+    return {
+        label,
+        icon: 'clipboard-paste',
+        accent: !isMoving,
+        accentWarn: isMoving,
+        onSelect: () => window.incollaRecord(destinazione)
+    };
+};
+
+window.vociMenuCartella = function(folderPath) {
+    // La radice virtuale ('') non è una cartella vera: si può creare dentro e incollare,
+    // ma non rinominare/copiare/eliminare. 'ROOT' = click a vuoto nell'area della sidebar.
+    const isRadice = folderPath === '' || folderPath === 'ROOT';
+    const isAreaVuota = folderPath === 'ROOT';
+    const voci = [];
+
+    if (!isAreaVuota) {
+        voci.push({ label: window.t('menu_new_record_here', 'Crea nuova scheda'), icon: 'file-plus', onSelect: () => window.creaSchedaContext(folderPath) });
+        voci.push({ label: window.t('menu_new_folder_here', 'Crea nuova cartella'), icon: 'folder-plus', onSelect: () => window.mostraAggiungiCartellaContext(folderPath) });
     }
+
+    if (!isRadice) {
+        voci.push({ separator: true });
+        voci.push({ label: window.t('menu_rename_folder', 'Rinomina cartella'), icon: 'edit-2', onSelect: () => window.rinominaCartellaDaSidebar(folderPath) });
+        voci.push({ label: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) });
+        voci.push({ label: window.t('menu_open_in_explorer', 'Apri in Esplora Risorse'), icon: 'folder-open', onSelect: () => window.apriCartellaInEsploraRisorse(folderPath) });
+        voci.push({ separator: true });
+        voci.push({ label: window.t('menu_copy_folder', 'Copia cartella'), icon: 'copy', onSelect: () => window.copiaCartella(folderPath) });
+        voci.push({ label: window.t('menu_cut_folder', 'Taglia cartella'), icon: 'scissors', onSelect: () => window.tagliaCartella(folderPath) });
+        voci.push({ label: window.t('menu_delete_folder', 'Elimina cartella'), icon: 'trash-2', danger: true, onSelect: () => window.eliminaCartellaDaSidebar(folderPath) });
+    }
+
+    const voceIncolla = window.voceMenuIncolla(folderPath);
+    if (voceIncolla) {
+        if (voci.length > 0) voci.push({ separator: true });
+        voci.push(voceIncolla);
+    }
+    return voci;
 };
 
 window.showSidebarFolderContextMenu = function(e, folderPath) {
-    const countToPaste = (window.copiedRecordIds && window.copiedRecordIds.length > 0) ? window.copiedRecordIds.length : ((window.cutRecordIds && window.cutRecordIds.length > 0) ? window.cutRecordIds.length : 0);
-    const hasFolderAction = window.cutFolderPath || window.copiedFolderPath;
-    const isMoving = (window.cutRecordIds && window.cutRecordIds.length > 0) || window.cutFolderPath;
-    
     e.preventDefault();
     e.stopPropagation();
-    const menu = getOrCreateContextMenu();
-    const escFolder = folderPath.replace(/'/g, "\\'");
-    const isGenerale = folderPath === 'Generale';
-    const isRoot = folderPath === 'ROOT';
-    
-    let html = '';
-    
-    if (!isRoot) {
-        html += `
-            <button onclick="window.creaSchedaContext('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="file-plus" class="w-4 h-4"></i> Crea Nuova Scheda</button>
-            <button onclick="window.mostraAggiungiCartellaContext('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="folder-plus" class="w-4 h-4"></i> Crea Nuova Cartella</button>
-            <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
-            <button onclick="window.rinominaCartellaDaSidebar('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="edit-2" class="w-4 h-4"></i> Rinomina Cartella</button>
-            <button onclick="window.esportaSpecificaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Esporta Cartella</button>
-            <button onclick="window.apriCartellaInEsploraRisorse('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="folder-open" class="w-4 h-4"></i> Apri in Esplora Risorse</button>
-            <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
-            <button onclick="window.copiaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copia Cartella</button>
-            <button onclick="window.tagliaCartella('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="scissors" class="w-4 h-4"></i> Taglia Cartella</button>
-            <button onclick="window.eliminaCartellaDaSidebar('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 text-red-600 dark:text-red-400" ${isGenerale ? 'disabled style="opacity:0.5"' : ''}><i data-lucide="trash-2" class="w-4 h-4"></i> Elimina Cartella</button>
-        `;
+    const voci = window.vociMenuCartella(folderPath);
+    if (voci.length === 0) {
+        // ROOT senza appunti: niente da mostrare, ma il menu del sistema resta soppresso
+        return;
     }
-    
-    if (countToPaste > 0 || hasFolderAction) {
-        let label = countToPaste > 0 ? `Incolla qui (${countToPaste})` : `Incolla Cartella qui`;
-        if (!isRoot) html += `<div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>`;
-        html += `
-            <button onclick="window.incollaRecord('${escFolder}')" class="w-full text-left px-4 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2 ${isMoving ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} font-medium"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> ${label}</button>
-        `;
-    }
-    
-    if (html === '') {
-        html = `<div class="px-4 py-2 text-stone-500 italic text-sm">Nessuna azione</div>`;
-    }
-    
-    menu.innerHTML = html;
-    if (window.lucide) lucide.createIcons({ nodes: [menu] });
-    menu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
-    menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
-    menu.classList.remove('hidden');
+    window.apriMenuContestuale(e, voci);
 };
 
 window.copiaCartella = function(folderPath) {
@@ -1072,7 +1092,7 @@ window.mostraAggiungiCartellaContext = function(folderPath) {
 };
 
 window.tagliaCartella = function(folderPath) {
-    if (folderPath === 'Generale') return;
+    if (!folderPath) return; // la radice virtuale non si taglia
     window.cutFolderPath = folderPath;
     window.copiedFolderPath = null;
     window.cutRecordIds = [];
@@ -1092,12 +1112,14 @@ window.tagliaRecordSingolo = function(id) {
 };
 
 window.incollaRecord = async function(targetFolderOverride) {
-    const targetFolder = targetFolderOverride || window.cartellaAttuale || 'Generale';
+    // ?? e non ||: '' è la radice, una destinazione valida, non un valore "assente".
+    const targetFolder = targetFolderOverride ?? window.cartellaAttuale ?? '';
 
     // Se stiamo spostando un intero archivio (Taglia Archivio)
     if (window.cutFolderPath) {
         if (typeof spostaCartella === 'function') {
-            await spostaCartella(window.cutFolderPath, targetFolder);
+            // spostaCartella parla il dialetto 'ROOT' per la radice
+            await spostaCartella(window.cutFolderPath, targetFolder === '' ? 'ROOT' : targetFolder);
             window.cutFolderPath = null;
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_spostato_con_suc", "Archivio spostato con successo!"), "success");
         }
@@ -1120,7 +1142,7 @@ window.incollaRecord = async function(targetFolderOverride) {
         
         // Determiniamo la cartella destinazione (sotto-cartella del target con il nome dell'archivio copiato)
         const nomeArchivioCopiato = window.copiedFolderPath.split('/').pop();
-        const baseTarget = targetFolder === 'ROOT' ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
+        const baseTarget = (targetFolder === 'ROOT' || targetFolder === '') ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
 
         if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
         const res = await window.apiBrowser.duplicateRecords(idsToCopy, baseTarget);

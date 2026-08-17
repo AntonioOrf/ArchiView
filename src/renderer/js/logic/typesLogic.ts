@@ -229,11 +229,11 @@ function apriManageTypesModal() {
         
         let buttonsHTML = '';
         if (isDefault) {
-            buttonsHTML = '<span class="text-xs text-stone-400 italic">Non modificabile</span>';
+            buttonsHTML = `<span class="text-xs text-stone-400 italic">${escapeHTML(window.t('label_not_editable', 'Non modificabile'))}</span>`;
         } else {
             buttonsHTML = `
-                <button type="button" onclick="modificaTipoDocumento('${tipo.id}')" class="btn btn-ghost btn-icon text-stone-600 hover:text-amber-700 hover:bg-amber-50" title="Modifica"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                <button type="button" onclick="eliminaTipoDocumento('${tipo.id}')" class="btn btn-ghost btn-icon text-red-500 hover:text-red-700 hover:bg-red-50" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button type="button" onclick="modificaTipoDocumento('${tipo.id}')" class="btn btn-ghost btn-icon text-stone-600 hover:text-amber-700 hover:bg-amber-50" title="${escapeHTML(window.t('btn_edit', 'Modifica'))}" aria-label="${escapeHTML(window.t('btn_edit', 'Modifica'))}"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                <button type="button" onclick="eliminaTipoDocumento('${tipo.id}')" class="btn btn-ghost btn-icon text-red-500 hover:text-red-700 hover:bg-red-50" title="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}" aria-label="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             `;
         }
 

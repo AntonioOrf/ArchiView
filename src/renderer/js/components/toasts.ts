@@ -10,6 +10,10 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null, az
     const ugualiCount = existingToasts.filter(t => t.innerText.trim().includes(testo.trim())).length;
     if (ugualiCount >= 3) return;
 
+    // Il toast è puramente visivo: senza questo gli utenti di screen reader non ricevono
+    // nessun esito delle operazioni. Gli errori interrompono (assertive), il resto attende.
+    if (window.annunciaA11y) window.annunciaA11y(testo, tipo === 'error' ? 'assertive' : 'polite');
+
     const toast = document.createElement('div');
     const bgClass = tipo === 'error' ? 'bg-red-600' : (tipo === 'success' ? 'bg-green-600' : 'bg-stone-800');
     toast.className = `${bgClass} text-white px-4 py-3 rounded-sm shadow-lg text-sm font-medium flex items-center justify-between gap-4 opacity-0 transition-opacity duration-300 pointer-events-auto`;

@@ -42,6 +42,152 @@ window.getManoscrittiFiltrati = function() {
     });
 };
 
+/**
+ * Abilita "Elimina archivio" solo quando l'operazione è davvero possibile, spiegando
+ * nel tooltip il motivo del blocco invece di far sparire il pulsante.
+ */
+function aggiornaStatoEliminaCartella() {
+    const btn = document.getElementById('btn-delete-folder');
+    if (!btn) return;
+
+    const cartella = window.cartellaAttuale;
+    const vuota = !appData.manoscritti.some(m => m.cartella === cartella);
+    const isRadice = !cartella;
+    const abilitato = vuota && !isRadice;
+
+    btn.disabled = !abilitato;
+    let motivo;
+    if (isRadice) motivo = window.t('tooltip_delete_folder_root', "La radice dell'archivio non può essere eliminata");
+    else if (!vuota) motivo = window.t('tooltip_delete_folder_not_empty', 'Puoi eliminare solo un archivio vuoto');
+    else motivo = window.t('tooltip_delete_folder', 'Elimina questo archivio');
+    btn.title = motivo;
+    btn.setAttribute('aria-label', motivo);
+}
+
+/**
+ * Intestazione della vista lista: breadcrumb del percorso + titolo + chip dei filtri
+ * attivi. Serve a rendere VISIBILE lo stato che altrimenti governa la griglia in modo
+ * silenzioso: ricerca globale e tag vivono in tab della sidebar che possono essere
+ * chiuse, ma continuano a scavalcare la cartella selezionata in getManoscrittiFiltrati.
+ */
+function renderIntestazioneVista(isGlobalSearch, search) {
+    const titolo = document.getElementById('titolo-cartella-attuale');
+    const crumbs = document.getElementById('breadcrumb-cartella');
+    const icona = document.getElementById('icona-vista-corrente');
+
+    if (crumbs) crumbs.innerHTML = '';
+
+    if (isGlobalSearch) {
+        titolo.textContent = window.t("search_results_title", "Risultati ricerca globale");
+        if (icona) icona.setAttribute('data-lucide', 'search');
+    } else if (!window.cartellaAttuale) {
+        // Radice virtuale: nessun breadcrumb da mostrare (non ha antenati)
+        titolo.textContent = typeof window.etichettaRadice === 'function'
+            ? window.etichettaRadice()
+            : window.t('folder_root_label', 'Archivio');
+        if (icona) icona.setAttribute('data-lucide', 'library');
+    } else {
+        const parti = window.cartellaAttuale.split('/');
+        titolo.textContent = parti[parti.length - 1];
+        if (icona) icona.setAttribute('data-lucide', 'folder-open');
+
+        // Breadcrumb cliccabile sugli antenati: due cartelle con lo stesso nome in rami
+        // diversi erano indistinguibili mostrando solo l'ultimo segmento.
+        if (crumbs && parti.length > 1) {
+            parti.slice(0, -1).forEach((parte, i) => {
+                const percorso = parti.slice(0, i + 1).join('/');
+                const link = document.createElement('button');
+                link.type = 'button';
+                link.className = 'hover:text-amber-700 hover:underline truncate max-w-[12rem]';
+                link.textContent = parte;
+                link.onclick = () => window.vaiACartella(percorso);
+                crumbs.appendChild(link);
+                const sep = document.createElement('span');
+                sep.className = 'text-stone-300 dark:text-stone-600 select-none';
+                sep.textContent = '/';
+                crumbs.appendChild(sep);
+            });
+        }
+    }
+
+    if (icona && window.lucide) lucide.createIcons({ nodes: [icona.parentElement] });
+    renderFiltriAttivi(search);
+}
+
+/** Chip dei filtri attivi (ricerca + tag), ognuno rimovibile senza aprire la sidebar. */
+function renderFiltriAttivi(search) {
+    const bar = document.getElementById('active-filters');
+    if (!bar) return;
+
+    const tags = window.activeTags ? [...window.activeTags] : [];
+    bar.innerHTML = '';
+
+    if (!search && tags.length === 0) {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+        return;
+    }
+    bar.classList.remove('hidden');
+    bar.classList.add('flex');
+
+    const label = document.createElement('span');
+    label.className = 'text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500';
+    label.textContent = window.t('label_active_filters', 'Filtri attivi');
+    bar.appendChild(label);
+
+    const chip = (icona, testo, titoloRimozione, onRemove) => {
+        const el = document.createElement('span');
+        el.className = 'inline-flex items-center gap-1.5 pl-2 pr-1 py-1 text-xs font-medium rounded-sm bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 max-w-[18rem]';
+        const ico = document.createElement('i');
+        ico.setAttribute('data-lucide', icona);
+        ico.className = 'w-3.5 h-3.5 shrink-0';
+        const txt = document.createElement('span');
+        txt.className = 'truncate';
+        txt.textContent = testo;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'shrink-0 chip-remove-btn rounded-sm hover:bg-amber-200 dark:hover:bg-amber-800/50';
+        btn.title = titoloRimozione;
+        btn.setAttribute('aria-label', titoloRimozione);
+        btn.innerHTML = '<i data-lucide="x" class="w-3.5 h-3.5"></i>';
+        btn.onclick = onRemove;
+        el.append(ico, txt, btn);
+        bar.appendChild(el);
+    };
+
+    if (search) {
+        const input = document.getElementById('search-input');
+        chip('search', window.t('filter_search', 'Ricerca') + ': ' + input.value.trim(),
+            window.t('filter_remove_search', 'Rimuovi la ricerca'), () => {
+                input.value = '';
+                if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
+                renderMain();
+            });
+    }
+
+    tags.forEach(tag => {
+        chip('bookmark', '#' + tag, window.t('filter_remove_tag', 'Rimuovi questo tag'), () => {
+            window.activeTags.delete(tag);
+            if (typeof renderTagList === 'function') renderTagList();
+            renderMain();
+        });
+    });
+
+    if (search || tags.length > 1) {
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.className = 'text-xs font-medium text-stone-500 hover:text-red-600 underline ml-1';
+        clear.textContent = window.t('btn_clear_filters', 'Azzera tutti i filtri');
+        clear.onclick = () => {
+            window.azzeraFiltriRicerca();
+            renderMain();
+        };
+        bar.appendChild(clear);
+    }
+
+    if (window.lucide) lucide.createIcons({ nodes: [bar] });
+}
+
 // renderMain è sincrona: non usa await, non deve essere async
 function renderMain(resetPage = true) {
     if (resetPage) window.currentPage = 0;
@@ -52,12 +198,7 @@ function renderMain(resetPage = true) {
     window.activeTags = window.activeTags || new Set();
     const isGlobalSearch = search !== '' || window.activeTags.size > 0;
 
-    if (isGlobalSearch) {
-        document.getElementById('titolo-cartella-attuale').textContent = window.t("search_results_title", "Global Search Results");
-    } else {
-        const partiTitolo = window.cartellaAttuale.split('/');
-        document.getElementById('titolo-cartella-attuale').textContent = partiTitolo[partiTitolo.length - 1];
-    }
+    renderIntestazioneVista(isGlobalSearch, search);
 
     // Filtro per Cartella (se non globale) E per Ricerca Profonda E per (Multi) Tag
     const filtered = window.getManoscrittiFiltrati();
@@ -68,8 +209,11 @@ function renderMain(resetPage = true) {
     document.getElementById('counter-results').textContent = window.t(counterKey, counterFallback).replace('{var0}', String(filtered.length));
     grid.innerHTML = '';
 
-    const btnDeleteFolder = document.getElementById('btn-delete-folder');
     const paginationControls = document.getElementById('pagination-controls');
+
+    // Zona 3: "Elimina archivio" ha posizione fissa nella barra azioni e cambia solo
+    // stato (prima appariva/spariva dentro l'empty state, quindi si spostava da sola).
+    aggiornaStatoEliminaCartella();
 
     if (filtered.length === 0) {
         grid.classList.add('hidden');
@@ -79,14 +223,17 @@ function renderMain(resetPage = true) {
         }
         document.getElementById('empty-state').classList.remove('hidden');
 
-        const manoscrittiTotaliInCartella = appData.manoscritti.filter(m => m.cartella === window.cartellaAttuale).length;
-        if (manoscrittiTotaliInCartella === 0 && window.cartellaAttuale !== 'Generale' && search === '') {
-            btnDeleteFolder.classList.remove('hidden');
-            btnDeleteFolder.classList.add('flex');
-        } else {
-            btnDeleteFolder.classList.add('hidden');
-            btnDeleteFolder.classList.remove('flex');
+        // Messaggio coerente con il motivo reale dello zero risultati: con ricerca o tag
+        // attivi la cartella può essere piena, e "La cartella è vuota" è fuorviante.
+        const emptyText = document.getElementById('empty-state-text');
+        if (emptyText) {
+            const key = isGlobalSearch ? 'no_search_match' : 'folder_empty';
+            emptyText.setAttribute('data-i18n', key);
+            emptyText.textContent = isGlobalSearch
+                ? window.t('no_search_match', 'Nessun documento corrisponde ai filtri attivi.')
+                : window.t('folder_empty', 'La cartella è vuota.');
         }
+
     } else {
         grid.classList.remove('hidden');
         document.getElementById('empty-state').classList.add('hidden');
@@ -255,12 +402,31 @@ function renderMain(resetPage = true) {
                     ${allegatoHTML}
                     ${dateHTML}
                 </div>
-                <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end gap-2">
+                <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end items-center gap-2">
                     ${btnVediPdfPiccolo}
-                    <button onclick="esportaManoscritto('${m.id}')" class="btn btn-ghost btn-icon" aria-label="${escapeHTML(window.t('tooltip_export', 'Esporta'))}" title="${escapeHTML(window.t('tooltip_export', 'Esporta'))}"><i data-lucide="download" class="w-4 h-4"></i></button>
-                    <button onclick="deleteItem('${m.id}')" class="btn btn-ghost btn-icon" style="color: var(--color-danger);" aria-label="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}" title="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <span class="card-overflow-slot flex"></span>
                 </div>
             `;
+
+            // Fase 4.2 — Esporta ed Elimina non stanno più come icone sempre visibili in
+            // fondo alla card (competevano con Modifica/Trascrivi, le azioni vere): sono
+            // nel "⋯", che è lo stesso menu del tasto destro.
+            const slot = div.querySelector('.card-overflow-slot');
+            if (slot && typeof window.creaBottoneOverflow === 'function') {
+                slot.appendChild(window.creaBottoneOverflow(
+                    () => window.vociMenuRecord(m.id),
+                    {
+                        className: 'btn btn-ghost btn-icon card-overflow-btn',
+                        // Selezionare la scheda ri-disegna la griglia: recuperiamo il
+                        // pulsante ricreato per ancorarci il menu.
+                        preparaApertura: () => {
+                            window.assicuraSelezioneRecord(m.id);
+                            const card = document.getElementById('card-' + m.id);
+                            return card ? card.querySelector('.card-overflow-btn') : null;
+                        }
+                    }
+                ));
+            }
             fragment.appendChild(div);
         }
 

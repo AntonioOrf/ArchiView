@@ -1,80 +1,56 @@
-    <header class="panel-glass shrink-0 mb-6 flex flex-wrap items-center gap-2 p-2">
-        <!-- Gruppo navigazione pannello -->
-        <div class="flex items-center gap-0.5 shrink-0 mr-1">
-            <button onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders" data-i18n-aria-label="tooltip_folders">
+    <!--
+      ZONA 1 (sinistra) = NAVIGAZIONE: solo i tab della sidebar.
+      ZONA 2 (destra)   = STATO GLOBALE: indicatori e sincronizzazione cloud.
+      Le azioni sui dati vivono nell'header della vista (Zona 3, viewList.ts).
+      Vedi UI_UX_TODO.md — "Legge delle Zone".
+    -->
+    <header class="panel-glass shrink-0 mb-6 flex items-center justify-between gap-3 p-2">
+
+        <!-- ZONA 1 — Navigazione pannelli sidebar -->
+        <nav id="sidebar-tablist" role="tablist" aria-orientation="horizontal" class="flex items-center gap-0.5 shrink-0" data-i18n-aria-label="nav_panels" aria-label="Pannelli">
+            <button id="btn-tab-folders" role="tab" aria-selected="false" aria-controls="sidebar-folders" tabindex="0" onclick="switchSidebarTab('folders')" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders" data-i18n-aria-label="tooltip_folders">
                 <i data-lucide="folder" class="w-5 h-5"></i>
             </button>
 
-            <button onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-i18n-title="tooltip_search_btn" data-i18n-aria-label="tooltip_search_btn">
+            <button id="btn-tab-search" role="tab" aria-selected="false" aria-controls="sidebar-search" tabindex="-1" onclick="switchSidebarTab('search')" class="btn btn-ghost btn-icon" data-tab="search" data-shortcut="Ctrl+F" data-i18n-title="tooltip_search_btn" data-i18n-aria-label="tooltip_search_btn">
                 <i data-lucide="search" class="w-5 h-5"></i>
             </button>
 
-            <button onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn" data-i18n-aria-label="tooltip_tags_btn">
+            <button id="btn-tab-tags" role="tab" aria-selected="false" aria-controls="sidebar-tags" tabindex="-1" onclick="switchSidebarTab('tags')" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn" data-i18n-aria-label="tooltip_tags_btn">
                 <i data-lucide="bookmark" class="w-5 h-5"></i>
             </button>
 
-            <button id="btn-tab-source-control" onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" data-i18n-title="tooltip_source_control" data-i18n-aria-label="tooltip_source_control" title="Controllo Modifiche (Source Control)">
+            <button id="btn-tab-source-control" role="tab" aria-selected="false" aria-controls="sidebar-source-control" tabindex="-1" onclick="switchSidebarTab('source-control')" class="btn btn-ghost btn-icon" data-tab="source-control" data-i18n-title="tooltip_source_control" data-i18n-aria-label="tooltip_source_control">
                 <i data-lucide="git-pull-request" class="w-5 h-5"></i>
             </button>
 
-            <button id="btn-tab-history" onclick="switchSidebarTab('history')" class="btn btn-ghost btn-icon" data-tab="history" data-i18n-title="tooltip_history" data-i18n-aria-label="tooltip_history" title="Storico Versioni Cloud">
+            <button id="btn-tab-history" role="tab" aria-selected="false" aria-controls="sidebar-history" tabindex="-1" onclick="switchSidebarTab('history')" class="btn btn-ghost btn-icon" data-tab="history" data-i18n-title="tooltip_history" data-i18n-aria-label="tooltip_history">
                 <i data-lucide="history" class="w-5 h-5"></i>
             </button>
-        </div>
-        <!-- Separatore gruppi -->
-        <div class="w-px h-5 bg-stone-300 dark:bg-stone-600 shrink-0"></div>
-        <div class="flex-1 relative flex justify-end items-center h-8">
-            <!-- Indicatore aggiornamenti in entrata (da remoto) -->
-            <div id="incoming-updates-indicator" class="hidden items-center gap-1 mr-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 border border-blue-200 dark:border-blue-800" data-i18n-title="tooltip_cloud_updates" title="Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica.">
-                <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i> <span data-i18n="indicator_incoming">In Entrata</span>
-            </div>
+        </nav>
 
-            <!-- Indicatore modifiche pendenti -->
-            <div id="pending-changes-indicator" class="hidden items-center gap-1 mr-3 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 border border-amber-200 dark:border-amber-800" data-i18n-title="tooltip_pending_changes" title="Hai modifiche locali non ancora sincronizzate con il Cloud">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> <span data-i18n="indicator_pending">Modifiche Pendenti</span>
-            </div>
-        </div>
+        <!-- ZONA 2 — Stato globale (sincronizzazione) -->
+        <div class="flex items-center justify-end gap-2 min-w-0">
 
-        <!-- Bottoni Cloud (Fetch / Pull / Push) -->
-        <div id="cloud-buttons-container" class="hidden md:flex items-center gap-1 mr-2 rounded-none p-1" style="background-color: var(--color-bg-hover); border: 1px solid var(--color-border);">
-            <button onclick="controllaModificheInEntrata(true)" class="btn btn-ghost rounded-none text-stone-600 dark:text-stone-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" data-i18n-title="tooltip_fetch" title="Controlla se ci sono aggiornamenti dal Cloud">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_fetch">Fetch</span>
+            <!-- ZONA 2 — Un solo controllo cloud (Fase 3.1/3.4). Stato prevalente in una riga;
+                 il dettaglio sta nel popover, non in indicatori paralleli.
+                 Nessun md: qui — il controllo non sparisce a finestra stretta (3.3). -->
+            <button id="cloud-status-btn" type="button" onclick="apriPopoverCloud(this)" aria-haspopup="menu" aria-expanded="false"
+                    class="btn btn-ghost flex items-center gap-2 min-w-0 max-w-[240px] border border-stone-300 dark:border-stone-600">
+                <i id="cloud-status-icon" data-lucide="cloud" class="w-4 h-4 shrink-0"></i>
+                <span id="cloud-status-label" class="text-xs font-medium truncate"></span>
+                <!-- Il chevron è l'unico segnale che qui si apre qualcosa: senza, il
+                     controllo si legge come un'etichetta di stato e le azioni di sync
+                     restano non scoperte. -->
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 shrink-0 opacity-60"></i>
             </button>
-            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
-            <button onclick="scaricaDalCloud()" class="btn btn-ghost btn-pull rounded-none text-stone-600 dark:text-stone-300 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" data-i18n-title="tooltip_pull" title="Scarica le ultime modifiche dal Cloud">
-                <i data-lucide="cloud-download" class="w-4 h-4"></i> <span data-i18n="btn_pull">Scarica</span>
-            </button>
-            <div class="w-px h-4 bg-stone-300 dark:bg-stone-600"></div>
-            <button onclick="caricaSulCloud()" class="btn btn-ghost btn-push rounded-none text-stone-600 dark:text-stone-300 px-2 py-1 flex items-center gap-1 h-auto min-h-0 text-xs font-medium" data-i18n-title="tooltip_push" title="Carica le modifiche locali sul Cloud">
-                <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btn_push">Carica</span>
+
+            <!-- L'azione che lo stato corrente richiede, sempre visibile e con etichetta:
+                 Ricevi se ci sono aggiornamenti, Invia se ci sono modifiche locali,
+                 Controlla se è tutto allineato. Le altre due restano nel popover. -->
+            <button id="cloud-primary-action" type="button" style="display:none" class="btn btn-secondary items-center gap-1.5 shrink-0">
+                <i id="cloud-primary-action-icon" data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i>
+                <span id="cloud-primary-action-label" class="text-xs font-medium"></span>
             </button>
         </div>
-
-        <!-- Menu Cloud compatto (overflow) — visibile solo quando la barra è stretta (< md) -->
-        <div id="cloud-menu-wrapper" class="md:hidden relative mr-2">
-            <button id="cloud-menu-btn" type="button" onclick="toggleCloudMenu(event)" aria-haspopup="true" aria-expanded="false" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_cloud_sync" data-i18n-aria-label="tooltip_cloud_sync" title="Sincronizzazione Cloud">
-                <i data-lucide="cloud" class="w-5 h-5"></i>
-            </button>
-            <div id="cloud-menu-dropdown" class="hidden absolute right-0 top-full mt-1 z-9999 min-w-[180px] py-1 rounded-md shadow-xl" style="background-color: var(--color-bg-base); border: 1px solid var(--color-border);">
-                <button onclick="controllaModificheInEntrata(true);toggleCloudMenu()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20" style="color: var(--color-text-main);">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_fetch">Fetch</span>
-                </button>
-                <button onclick="scaricaDalCloud();toggleCloudMenu()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20" style="color: var(--color-text-main);">
-                    <i data-lucide="cloud-download" class="w-4 h-4"></i> <span data-i18n="btn_pull">Scarica</span>
-                </button>
-                <button onclick="caricaSulCloud();toggleCloudMenu()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20" style="color: var(--color-text-main);">
-                    <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btn_push">Carica</span>
-                </button>
-            </div>
-        </div>
-
-        <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary btn-icon" data-i18n-title="tooltip_new_record" data-i18n-aria-label="tooltip_new_record">
-            <i data-lucide="plus" class="w-5 h-5"></i>
-        </button>
-        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm ml-2">
-            <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span data-i18n="btn_new_model">Modello</span>
-        </button>
-        <button onclick="if(window.avviaTutorial) window.avviaTutorial()" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial" title="Avvia Tutorial">
-            <i data-lucide="help-circle" class="w-5 h-5"></i>
-        </button>
     </header>

@@ -144,7 +144,7 @@ async function editItem(id) {
 
     const m = appData.manoscritti.find(x => x.id === id);
     document.getElementById('form-id').value = m.id;
-    document.getElementById('form-cartella').value = m.cartella || 'Generale';
+    document.getElementById('form-cartella').value = m.cartella || '';
     document.getElementById('form-tipo-documento').value = m.tipoDocumento || 'manoscritto';
     
     renderDynamicFields();

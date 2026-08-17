@@ -1,5 +1,6 @@
 const { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net, nativeImage } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 // Isolamento test E2E: reindirizza userData se ARCHIVIEW_E2E_USER_DATA è impostata.
 // Deve precedere il require di workspaceManager (che legge userData a import-time).
@@ -46,10 +47,19 @@ function createWindow() {
   });
 
   state.mainWindow.setMenuBarVisibility(false);
-  state.mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  const indexPath = path.join(__dirname, '..', 'renderer', 'index.html');
+  const indexUrl = pathToFileURL(indexPath).href;
+  state.mainWindow.loadFile(indexPath);
 
-  // Sicurezza: blocca la navigazione interna
+  // Sicurezza: blocca la navigazione verso destinazioni esterne.
+  // ATTENZIONE: da Electron 34+ questo evento viene emesso anche per i reload avviati dal
+  // renderer (`location.reload()`), che qui è l'ultimo passo di flussi come la creazione di un
+  // repository Hub o il cambio workspace. Un preventDefault() incondizionato li congelava
+  // (overlay "Preparazione dell'archivio condiviso" infinito), quindi consentiamo solo la
+  // ri-navigazione verso la index locale dell'app.
   state.mainWindow.webContents.on('will-navigate', (event, url) => {
+    const target = url.split('#')[0].split('?')[0];
+    if (target === indexUrl || target === state.mainWindow.webContents.getURL().split('#')[0].split('?')[0]) return;
     event.preventDefault();
   });
 

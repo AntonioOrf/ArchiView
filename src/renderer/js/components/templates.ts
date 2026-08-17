@@ -261,7 +261,7 @@ window.modalsHtml = `
 
                     <!-- Sezione Aggiornamenti -->
                     <div class="border-t border-stone-200 pt-6">
-                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_updates">Aggiornamenti</span></h4>
+                        <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_updates">Aggiornamenti</span></h4>
                         <p class="text-sm text-stone-600 mb-3" data-i18n="settings_updates_desc">Controlla se è disponibile una nuova versione del programma su GitHub.</p>
                         <button onclick="controllaAggiornamenti(true)" class="btn btn-secondary">
                             <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_check_updates">Controlla Aggiornamenti</span></button>
@@ -277,7 +277,7 @@ window.modalsHtml = `
     <!-- Banner Aggiornamenti -->
     <div id="update-banner" class="hidden-tab w-full bg-sky-600 text-white px-4 py-3 flex items-center justify-between shadow-md z-50 shrink-0 mb-6 rounded-sm border border-sky-700">
         <div class="flex items-center gap-2 text-sm font-medium">
-            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+            <i data-lucide="download" class="w-5 h-5"></i>
             <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
         </div>
         <div class="flex gap-2 shrink-0">

@@ -11,7 +11,7 @@ test.describe('Schede (manoscritti)', () => {
     await expect(page.locator('#view-add')).toBeVisible();
     await expect(page.locator('#manoscritto-form')).toBeVisible();
 
-    // La cartella 'Generale' e i tipi documento di default devono essere disponibili.
+    // Senza cartelle create resta comunque l'opzione radice, più i tipi di default.
     await expect(page.locator('#form-cartella option')).not.toHaveCount(0);
     await expect(page.locator('#form-tipo-documento option')).not.toHaveCount(0);
 

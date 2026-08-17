@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Gestionale per manoscritti medievali",
   "author": "Antonio Orf",
   "repository": {
@@ -59,6 +59,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "releaseInfo": {
+      "releaseNotesFile": "RELEASE_NOTES.md"
     },
     "publish": [
       {

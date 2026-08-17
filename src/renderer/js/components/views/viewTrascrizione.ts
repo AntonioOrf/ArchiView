@@ -4,7 +4,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('view-trascrizione')) {
             const html = `
-    <div id="view-trascrizione" class="fixed inset-0 z-40 hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden" style="background-color: var(--color-bg-base);">
+    <div id="view-trascrizione" class="fixed inset-0 z-sticky hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden" style="background-color: var(--color-bg-base);">
         <header class="shrink-0 mb-4 flex items-center justify-between pb-4 p-3 panel-glass">
             <div class="flex items-center gap-4">
                 <button id="btn-back-to-list-trasc" onclick="chiudiTrascrizione()" class="btn btn-secondary btn-icon" data-i18n-title="tooltip_back" data-i18n-aria-label="tooltip_back">
@@ -38,7 +38,7 @@
                     <div class="flex-1"></div>
                     
                     <button id="btn-carica-allegato-trasc" onclick="document.getElementById('trasc-file-input').click()" class="btn hidden btn-secondary border border-amber-300/50">
-                        <i data-lucide="upload" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
+                        <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" onchange="caricaAllegatoTrascrizione(event)">
                 </div>
                 <div class="flex-1 overflow-y-auto cursor-text p-6 bg-white" onclick="if(event.target === this) document.getElementById('trascrizione-editor').focus()">
@@ -46,7 +46,7 @@
                 </div>
             </div>
 
-            <div id="trascrizione-resizer" class="lg:flex w-2 cursor-col-resize bg-stone-200 hover:bg-amber-400 active:bg-amber-500 border border-stone-300 rounded-sm items-center justify-center group transition-colors hidden z-10 shrink-0" title="Trascina per ridimensionare">
+            <div id="trascrizione-resizer" class="lg:flex w-2 cursor-col-resize bg-stone-200 hover:bg-amber-400 active:bg-amber-500 border border-stone-300 rounded-sm items-center justify-center group transition-colors hidden z-10 shrink-0" data-i18n-title="tooltip_resize" title="Trascina per ridimensionare">
                 <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 group-hover:text-white pointer-events-none"></i>
             </div>
 

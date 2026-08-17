@@ -71,7 +71,7 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
     }).join('');
 
     const modalHtml = `
-        <div id="diff-modal" class="modal-overlay z-150 flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        <div id="diff-modal" class="modal-overlay z-modal-nested flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
             <div class="modal-window p-0 text-left max-w-2xl w-full mx-4 bg-stone-50 rounded-lg shadow-xl flex flex-col max-h-[90vh]">
                 <div class="panel-header p-4 border-b border-stone-200 flex justify-between items-center shrink-0">
                     <h3 class="text-xl font-bold flex items-center gap-2">
@@ -98,6 +98,7 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
         const m = document.getElementById('diff-modal');
         if (m) m.remove();
     };
+    window.chiudiDiffModal = closeModal;
 
     document.getElementById('btn-close-diff-top').onclick = closeModal;
     document.getElementById('btn-close-diff').onclick = closeModal;

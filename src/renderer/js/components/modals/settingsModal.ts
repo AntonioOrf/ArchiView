@@ -170,7 +170,7 @@
                     <!-- TAB: SISTEMA & INFO -->
                     <div id="tab-system" class="settings-tab-content space-y-8 hidden">
                         <div>
-                            <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_updates">Aggiornamenti</span></h4>
+                            <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_updates">Aggiornamenti</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_updates_desc">Controlla se è disponibile una nuova versione del programma su GitHub.</p>
                             <div class="flex gap-2">
                                 <button onclick="controllaAggiornamenti(true)" class="btn btn-secondary">

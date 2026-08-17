@@ -1,17 +1,17 @@
 // @ts-nocheck
 function aggiungiCartella() {
     const input = document.getElementById('folder-name-input');
-    if (window.cartellaAttuale && window.cartellaAttuale !== 'Generale') {
-        input.value = window.cartellaAttuale + '/';
-    } else {
-        input.value = '';
-    }
+    // Radice ('') → nessun prefisso: la nuova cartella nasce al primo livello
+    input.value = window.cartellaAttuale ? window.cartellaAttuale + '/' : '';
     document.getElementById('folder-modal').classList.remove('hidden-tab');
-    setTimeout(() => {
-        input.focus();
-        const len = input.value.length;
-        input.setSelectionRange(len, len);
-    }, 100);
+    // Focus immediato: il modal è già visibile a questo punto. Con il vecchio
+    // setTimeout(100) il campo restava non focalizzato per un decimo di secondo — quanto
+    // basta per perdere i primi caratteri di chi digita subito, e per far cadere lo
+    // spostamento del cursore in mezzo a una scrittura già in corso (il cursore tornava
+    // in fondo e il testo digitato finiva accodato al prefisso).
+    input.focus();
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
 }
 
 function chiudiFolderModal() {
@@ -54,7 +54,7 @@ async function confermaAggiungiCartella() {
 
 
 async function spostaCartella(pathSorgente, pathDestinazioneBase) {
-    if (pathSorgente === 'Generale') return; // Generale non si sposta
+    if (!pathSorgente) return; // la radice virtuale non si sposta
     if (pathSorgente === pathDestinazioneBase || pathDestinazioneBase.startsWith(pathSorgente + '/')) {
         // Impossibile spostare una cartella dentro se stessa o dentro una sua sottocartella
         return;
@@ -64,7 +64,7 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
     const username = settings.username || 'Anonimo';
 
     const nomeCartella = pathSorgente.split('/').pop();
-    const nuovoPath = pathDestinazioneBase === 'ROOT' ? nomeCartella : `${pathDestinazioneBase}/${nomeCartella}`;
+    const nuovoPath = (pathDestinazioneBase === 'ROOT' || pathDestinazioneBase === '') ? nomeCartella : `${pathDestinazioneBase}/${nomeCartella}`;
     
     if (appData.cartelle.includes(nuovoPath)) {
         mostraMessaggio(window.t("msg_folder_exists_dest"), "error");
@@ -114,11 +114,8 @@ async function eliminaCartellaAttuale() {
 }
 
 window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
-    if (appData.cartelle.length <= 1) {
-        mostraMessaggio(window.t("msg_cannot_delete_last_folder"), "error");
-        return;
-    }
-    
+    if (!pathDaEliminare) return; // la radice virtuale non è eliminabile
+
     // Controlla se ci sono manoscritti dentro la cartella o nelle sue sottocartelle
     const prefix = pathDaEliminare + '/';
     const manoscrittiDaEliminare = appData.manoscritti.filter(m => m.cartella === pathDaEliminare || (m.cartella && m.cartella.startsWith(prefix)));
@@ -156,7 +153,7 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
         }
 
         if (window.cartellaAttuale === pathDaEliminare || window.cartellaAttuale.startsWith(prefix)) {
-            window.cartellaAttuale = appData.cartelle[0] || 'Generale';
+            window.cartellaAttuale = '';
             if (typeof switchTab === 'function') switchTab('list');
         }
         if (window.Store) await window.Store.commit();

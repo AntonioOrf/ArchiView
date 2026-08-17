@@ -180,7 +180,7 @@ window.esportaBackupZip = async function() {
         mostraMessaggio(window.t("msg_backup_init"), "info");
         
         const progDiv = document.createElement('div');
-        progDiv.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-4 rounded-sm shadow-2xl z-50 min-w-[300px] border border-stone-700 text-center flex flex-col gap-2';
+        progDiv.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-4 rounded-sm shadow-2xl z-toast min-w-[300px] border border-stone-700 text-center flex flex-col gap-2';
         progDiv.innerHTML = window.sanitizeHTML(`
             <div class="font-bold text-sm">Esportazione in corso...</div>
             <div class="w-full bg-stone-700 h-2 rounded-full overflow-hidden">

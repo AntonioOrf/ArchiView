@@ -4,7 +4,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('image-modal')) {
             const html = `
-    <div id="image-modal" class="modal-overlay z-60 hidden-tab" style="background-color: rgba(0,0,0,0.9);">
+    <div id="image-modal" class="modal-overlay z-modal-nested hidden-tab" style="background-color: rgba(0,0,0,0.9);">
         <button onclick="chiudiModal()" class="btn btn-ghost btn-icon absolute top-6 right-6 z-10" data-i18n-aria-label="btn_close" aria-label="Chiudi" style="background-color: rgba(0,0,0,0.5); color: #ccc;">
             <i data-lucide="x" class="w-8 h-8"></i>
         </button>

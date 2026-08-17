@@ -64,6 +64,7 @@ window.avviaAutofetchHub = async function() {
 // non esserci nulla da scaricare, per non lasciare l'indicatore acceso fino al fetch successivo).
 window.pulisciModificheInEntrataHub = function() {
     window.impostaModificheInEntrata(false);
+    window.azzeraErroreCloud();
     window.incomingChanges = [];
     window.incomingStructuralChanges = [];
     window.incomingAuthor = null;
@@ -204,6 +205,7 @@ window.riceviModificheHub = async function(isSilent = false) {
         }
 
     } catch (error) {
+        window.impostaErroreCloud(error.message);
         if (!isSilent) {
             console.error("Errore di ricezione:", error);
             mostraMessaggio(error.message || "Errore durante la ricezione dall'Hub.", "error");
@@ -277,6 +279,7 @@ window.controllaModificheHub = async function(manual = false) {
             );
         }
     } catch (e) {
+        window.impostaErroreCloud(e.message);
         if (manual) { console.error("Errore controllo Hub:", e); mostraMessaggio(window.t("msg_errore_durante_il_fetch", "Errore durante il fetch: ") + (e.message || ''), "error"); }
     }
 };
@@ -375,10 +378,12 @@ window.inviaModificheHub = async function() {
 
         window.sincronizzaAllegatiHub(false); // carica i chunk mancanti sul proprio Drive + pubblica indice
 
+        window.azzeraErroreCloud();
         mostraMessaggio(window.t("msg_modifiche_inviate_con_suc", "Modifiche inviate con successo!"), "success");
 
     } catch (e) {
         console.error("Errore invio sync:", e);
+        window.impostaErroreCloud(e.message);
         mostraMessaggio(e.message || "Errore durante l'invio all'Hub.", "error");
     }
 };

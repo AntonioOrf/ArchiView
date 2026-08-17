@@ -50,10 +50,10 @@ window.Store = {
             appData.cartelle.splice(index, 1);
             if (!appData.deletedCartelle) appData.deletedCartelle = [];
             if (!appData.deletedCartelle.includes(nome)) appData.deletedCartelle.push(nome);
-            // Move items to Generale
+            // Gli orfani tornano nella radice virtuale
             appData.manoscritti.forEach(m => {
-                if (m.cartella === nome) m.cartella = 'Generale';
-                else if (m.cartella && m.cartella.startsWith(nome + '/')) m.cartella = 'Generale';
+                if (m.cartella === nome) m.cartella = '';
+                else if (m.cartella && m.cartella.startsWith(nome + '/')) m.cartella = '';
             });
             await this.commit();
         }

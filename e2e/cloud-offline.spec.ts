@@ -3,19 +3,28 @@ import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
 test.describe('Cloud: stati UI offline', () => {
-  test('senza cloud configurato i bottoni Fetch/Pull/Push sono nascosti', async ({ page, userDataDir }) => {
+  // Fase 3: niente più gruppo Fetch/Pull/Push né indicatori separati. Il controllo unico
+  // resta visibile anche in locale (3.5) e dichiara "Solo locale" invece di sparire.
+  test('senza cloud configurato i tab cloud sono nascosti e lo stato è "Solo locale"', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'CloudOff');
 
-    await expect(page.locator('#cloud-buttons-container')).not.toHaveClass(/(^| )flex/);
     await expect(page.locator('#btn-tab-source-control')).toBeHidden();
     await expect(page.locator('#btn-tab-history')).toBeHidden();
+
+    const btn = page.locator('#cloud-status-btn');
+    await expect(btn).toBeVisible();
+    await expect(btn).toHaveAttribute('data-stato', 'locale');
+    await expect(page.locator('#cloud-status-label')).toHaveText('Solo locale');
   });
 
-  test('gli indicatori di sincronizzazione sono nascosti in locale', async ({ page, userDataDir }) => {
+  test('il popover in locale offre di attivare il cloud, non le azioni di sync', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'CloudOff');
 
-    await expect(page.locator('#incoming-updates-indicator')).toBeHidden();
-    await expect(page.locator('#pending-changes-indicator')).toBeHidden();
+    await page.locator('#cloud-status-btn').click();
+    const menu = page.locator('#custom-context-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toContainText('Attiva il cloud');
+    await expect(menu.locator('[role="menuitem"]')).toHaveCount(1);
   });
 
   test('il cloud modal in locale mostra solo il backup personale, non le opzioni di disconnessione', async ({ page, userDataDir }) => {

@@ -8,7 +8,7 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
 
     const conflitti = await page.evaluate(() => {
       const w = window as any;
-      const base = { id: '1', segnatura: 'Base', cartella: 'Generale' };
+      const base = { id: '1', segnatura: 'Base', cartella: '' };
       const baseHash = w.getRecordHash(base);
       const local = { ...base, segnatura: 'Locale' };
       const external = { ...base, segnatura: 'Esterno' };
@@ -24,7 +24,7 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
 
     const conflitti = await page.evaluate(() => {
       const w = window as any;
-      const record = { id: '1', segnatura: 'Uguale', cartella: 'Generale' };
+      const record = { id: '1', segnatura: 'Uguale', cartella: '' };
       const baseHash = w.getRecordHash(record);
       return w.rilevaConflitti([record], [record], 0, { '1': baseHash });
     });

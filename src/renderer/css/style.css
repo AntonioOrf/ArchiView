@@ -1,3 +1,22 @@
+﻿/* ============================================================
+   SCALA Z-INDEX UNICA (Fase 5.1)
+   Prima convivevano z-40, z-50, z-60, z-70, z-100, z-110, z-150,
+   z-200 e z-[9999], assegnati a occhio: ogni nuovo overlay era una
+   scommessa. Qui i livelli hanno un nome e un ordine dichiarato.
+   Non usare valori numerici nel markup: usare queste classi.
+   ============================================================ */
+:root {
+    --z-sticky: 40;          /* barre sticky dentro la pagina */
+    --z-dropdown: 100;       /* popover ancorati (vault switcher, progressi) */
+    --z-modal: 200;          /* modale base */
+    --z-modal-nested: 220;   /* modale aperto sopra un altro modale */
+    --z-modal-alert: 240;    /* conferme distruttive, banner di conferma, progressi bloccanti */
+    --z-modal-critical: 260; /* conflitti di sync: sopra qualsiasi altro modale */
+    --z-toast: 300;          /* notifiche transitorie */
+    --z-menu: 400;           /* menu contestuali e popover di comando */
+}
+
+
 :root {
     /* Accenti primari - Blu per ottima leggibilità */
     --color-primary: #1d4ed8;
@@ -25,6 +44,11 @@
     --color-danger: #b91c1c;
     --color-danger-hover: #991b1b;
     --color-danger-light: #fee2e2;
+
+    /* Warning (vault condiviso legacy) */
+    --color-warning: #b45309;
+    --color-warning-light: #fef3c7;
+    --color-warning-border: #f59e0b;
 
     --radius-sm: 0;
 }
@@ -56,6 +80,10 @@
     --color-danger: #ef4444;
     --color-danger-hover: #dc2626;
     --color-danger-light: rgba(239, 68, 68, 0.15);
+
+    --color-warning: #fbbf24;
+    --color-warning-light: rgba(251, 191, 36, 0.15);
+    --color-warning-border: rgba(251, 191, 36, 0.45);
 }
 
 :root.blue-dark-theme {
@@ -85,6 +113,10 @@
     --color-danger: #f87171;
     --color-danger-hover: #ef4444;
     --color-danger-light: rgba(248, 113, 113, 0.15);
+
+    --color-warning: #fbbf24;
+    --color-warning-light: rgba(251, 191, 36, 0.15);
+    --color-warning-border: rgba(251, 191, 36, 0.45);
 }
 
 :root.amber-light-theme {
@@ -299,6 +331,29 @@ button, .btn {
 }
 .btn-icon {
     padding: 0.375rem;
+    /* Fase 5.4 — area di click minima 32px: con un'icona w-4 il solo padding dava 28px,
+       e nella sidebar il pulsante ⋯ scendeva a 26px. */
+    min-width: 2rem;
+    min-height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.sidebar-action-btn {
+    min-width: 2rem;
+    min-height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Pulsanti dentro elementi in linea (chip filtro): 32px sfonderebbe il chip, ma 24px
+   è comunque il minimo WCAG 2.5.8 e il doppio dei 12px di prima. */
+.chip-remove-btn {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 /* P2.5 — stato attivo bottoni editor rich-text (toolbar trascrizione) */
 #trascrizione-toolbar button[data-cmd][aria-pressed="true"] {
@@ -340,7 +395,7 @@ button, .btn {
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 50;
+    z-index: var(--z-modal);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -506,6 +561,33 @@ button, .btn {
     background-color: var(--color-primary-light);
 }
 
+/* Cloud modal — superfici e accenti tema-aware.
+   Le utility Tailwind `dark:` seguono prefers-color-scheme, non la classe .dark-theme che
+   l'app applica: nei temi scuri restituivano fondi chiari e testi illeggibili. Qui si passa
+   dai token, che sono l'unica cosa che cambia davvero con il tema scelto. */
+.cloud-panel {
+    background-color: var(--color-bg-base);
+    border: 1px solid var(--color-border-light);
+}
+.cloud-muted { color: var(--color-text-muted); }
+.cloud-strong { color: var(--color-text-secondary); }
+/* .btn centra il contenuto e style.css è caricato dopo tailwind.css: senza questa regola
+   l'utility justify-start non ha effetto e le voci dell'elenco azioni restano centrate. */
+#cloud-shared-section .btn.justify-start {
+    justify-content: flex-start;
+    text-align: left; /* etichette su due righe restavano centrate rispetto all'icona */
+}
+.cloud-accent { color: var(--color-primary); }
+.cloud-danger { color: var(--color-danger); }
+.cloud-danger:hover { background-color: var(--color-danger-light); color: var(--color-danger-hover); }
+
+/* Le due varianti si distinguono per bordo e icona: il fondo resta neutro, così il testo
+   mantiene lo stesso rapporto di contrasto in tutti e quattro i temi. */
+.cloud-variant-backup { border-color: var(--color-primary-border); }
+.cloud-variant-backup .cloud-icon-wrap { background-color: var(--color-primary-light); color: var(--color-primary); }
+.cloud-variant-legacy { border-color: var(--color-warning-border); }
+.cloud-variant-legacy .cloud-icon-wrap { background-color: var(--color-warning-light); color: var(--color-warning); }
+
 /* Focus accessibilità tastiera */
 .btn:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -516,24 +598,50 @@ button, .btn {
     outline: 2px solid var(--color-primary);
     outline-offset: 0;
 }
+/* Checkbox e radio non sono né .btn né .form-input: senza questa regola l'unico indicatore
+   di fuoco è l'outline di default del browser, invisibile sui fondi scuri del tema dark. */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+/* Il ring di default del browser su summary, con display:flex, viene disegnato male.
+   Va tolto SOLO fuori da :focus-visible: `summary:focus` da solo ha la stessa specificità
+   della regola sopra e, venendo dopo, cancellava anche il nostro focus ring. */
+summary:focus:not(:focus-visible) { outline: none; }
 
-/* Bottoni cloud: gerarchia cromatica */
-#cloud-buttons-container .btn-pull:hover {
-    color: #2563eb;
-    background-color: #eff6ff;
+/* prefers-reduced-motion: gli spinner e le transizioni di stato non devono girare
+   per chi ha chiesto meno movimento a livello di sistema. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
-:root.dark-theme #cloud-buttons-container .btn-pull:hover {
-    color: #60a5fa;
-    background-color: rgba(37, 99, 235, 0.15);
+
+/* Bottone di stato cloud (Zona 2). Il colore sta QUI e non nelle utility Tailwind:
+   .btn-ghost imposta color/background e, essendo style.css caricato dopo tailwind.css,
+   vincerebbe sulle utility text- e bg-. Lo stato arriva dall attributo data-stato. */
+#cloud-status-btn:hover {
+    background-color: var(--color-bg-hover);
 }
-#cloud-buttons-container .btn-push:hover {
-    color: #16a34a;
-    background-color: #f0fdf4;
-}
-:root.dark-theme #cloud-buttons-container .btn-push:hover {
-    color: #4ade80;
-    background-color: rgba(22, 163, 74, 0.15);
-}
+#cloud-status-btn[data-stato="ok"]        { color: #15803d; }
+#cloud-status-btn[data-stato="entrata"]   { color: #1d4ed8; background-color: #eff6ff; border-color: #bfdbfe; }
+#cloud-status-btn[data-stato="pendenti"]  { color: #b45309; background-color: #fffbeb; border-color: #fcd34d; }
+#cloud-status-btn[data-stato="errore"]    { color: #b91c1c; background-color: #fef2f2; border-color: #fecaca; }
+#cloud-status-btn[data-stato="disconnesso"] { color: #b45309; background-color: #fffbeb; border-color: #fcd34d; }
+#cloud-status-btn[data-stato="occupato"]  { color: #1d4ed8; }
+#cloud-status-btn[data-stato="offline"],
+#cloud-status-btn[data-stato="locale"]    { color: var(--color-text-muted); }
+:root.dark-theme #cloud-status-btn[data-stato="ok"]        { color: #4ade80; }
+:root.dark-theme #cloud-status-btn[data-stato="entrata"]   { color: #60a5fa; background-color: rgba(37,99,235,0.15); border-color: rgba(37,99,235,0.4); }
+:root.dark-theme #cloud-status-btn[data-stato="pendenti"]  { color: #fbbf24; background-color: rgba(217,119,6,0.15); border-color: rgba(217,119,6,0.4); }
+:root.dark-theme #cloud-status-btn[data-stato="errore"]    { color: #f87171; background-color: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.4); }
+:root.dark-theme #cloud-status-btn[data-stato="disconnesso"] { color: #fbbf24; background-color: rgba(217,119,6,0.15); border-color: rgba(217,119,6,0.4); }
+:root.dark-theme #cloud-status-btn[data-stato="occupato"]  { color: #60a5fa; }
 
 /* Empty state */
 #empty-state {
@@ -551,7 +659,7 @@ button, .btn {
     50%  { opacity: 1; }
     100% { opacity: 0.7; }
 }
-#incoming-updates-indicator:not(.hidden):not([style*="display: none"]) {
+#cloud-status-btn[data-stato="entrata"] {
     animation: pulse-indicator 2s ease-in-out 3;
 }
 
@@ -658,3 +766,14 @@ button, .btn {
 :root.blue-dark-theme .modal-window .hover\:text-stone-800:hover {
     color: var(--color-text-main);
 }
+
+/* Utility della scala z-index (Fase 5.1): in coda perche devono prevalere su
+   .modal-overlay, che porta il livello base var(--z-modal). */
+.z-sticky { z-index: var(--z-sticky); }
+.z-dropdown { z-index: var(--z-dropdown); }
+.z-modal { z-index: var(--z-modal); }
+.z-modal-nested { z-index: var(--z-modal-nested); }
+.z-modal-alert { z-index: var(--z-modal-alert); }
+.z-modal-critical { z-index: var(--z-modal-critical); }
+.z-toast { z-index: var(--z-toast); }
+.z-menu { z-index: var(--z-menu); }
