@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Stato globale per le cartelle espansive
-window.cartelleEspanse = window.cartelleEspanse || new Set(['Generale']);
+// '' = radice virtuale, espansa di default
+window.cartelleEspanse = window.cartelleEspanse || new Set(['']);
 
 window.escapeHTML = function(str) {
     if (str === null || str === undefined) return '';
@@ -19,6 +20,19 @@ window.sanitizeHTML = function(html) {
     return window.escapeHTML(html); // Fallback to escape if DOMPurify is not loaded
 };
 
+// Annuncio per screen reader. Unico punto d'ingresso alle due live region di toasts-bars.html:
+// sempre textContent (nessuna superficie XSS) e mai focus rubato.
+// Il doppio passaggio svuota/riscrive serve perché una live region che riceve lo stesso identico
+// testo due volte di fila non genera un secondo annuncio: senza reset, "Sincronizzazione completata"
+// ripetuta resterebbe muta.
+window.annunciaA11y = function(testo, priorita = 'polite') {
+    if (!testo) return;
+    const el = document.getElementById(priorita === 'assertive' ? 'a11y-live-assertive' : 'a11y-live-polite');
+    if (!el) return; // parziali HTML non ancora montati (test unitari, boot precoce)
+    el.textContent = '';
+    requestAnimationFrame(() => { el.textContent = String(testo); });
+};
+
 window.salvaStatoPosizione = async function() {
     const vAdd = document.getElementById('view-add');
     const vTrasc = document.getElementById('view-trascrizione');
@@ -27,7 +41,7 @@ window.salvaStatoPosizione = async function() {
     else if (vTrasc && !vTrasc.classList.contains('hidden-tab')) tabAttuale = 'trascrizione';
 
     const stato = {
-        cartella: typeof window.cartellaAttuale !== 'undefined' ? window.cartellaAttuale : 'Generale',
+        cartella: typeof window.cartellaAttuale === 'string' ? window.cartellaAttuale : '',
         tab: tabAttuale,
         trascrizioneId: document.getElementById('trascrizione-id') ? document.getElementById('trascrizione-id').value : null,
         cartelleEspanse: Array.from(window.cartelleEspanse)
@@ -124,6 +138,43 @@ window.azzeraFiltriRicerca = function() {
 
     if (typeof renderTagList === 'function') renderTagList();
     if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
+};
+
+/**
+ * Aggiunge la scorciatoia da tastiera al tooltip (e all'accessible name) di ogni
+ * elemento con `data-shortcut`. Va richiamata DOPO applicaTraduzioniHtml, che riscrive
+ * title/aria-label dalla chiave i18n: la base viene ricalcolata ogni volta, quindi
+ * l'operazione e' idempotente e sopravvive al cambio lingua.
+ */
+window.applicaScorciatoieTooltip = function() {
+    document.querySelectorAll('[data-shortcut]').forEach(el => {
+        const sc = el.getAttribute('data-shortcut');
+        if (!sc) return;
+        const suffisso = ' (' + sc + ')';
+        const base = (testo) => (testo || '').split(suffisso)[0].trim();
+
+        const titolo = base(el.getAttribute('title'));
+        if (titolo) el.title = titolo + suffisso;
+
+        const aria = base(el.getAttribute('aria-label'));
+        if (aria) el.setAttribute('aria-label', aria + suffisso);
+    });
+};
+
+/**
+ * Naviga a una cartella dall'esterno dell'albero (breadcrumb, link vari):
+ * azzera i filtri globali, altrimenti la griglia continuerebbe a ignorare la cartella.
+ */
+window.vaiACartella = function(percorso) {
+    if (!percorso) return;
+    window.cartellaAttuale = percorso;
+    if (typeof window.espandiAntenati === 'function') window.espandiAntenati(percorso);
+    window.cartelleEspanse.add(percorso);
+    window.azzeraFiltriRicerca();
+    if (typeof switchTab === 'function') switchTab('list');
+    if (typeof renderSidebar === 'function') renderSidebar();
+    if (typeof renderMain === 'function') renderMain();
+    if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 };
 
 /** Espande nell'albero il percorso indicato e tutti i suoi antenati. */

@@ -4,7 +4,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('manage-types-modal')) {
             const html = `
-    <div id="manage-types-modal" class="modal-overlay hidden-tab z-60">
+    <div id="manage-types-modal" class="modal-overlay hidden-tab z-modal-nested">
         <div class="modal-window max-w-lg">
             <div class="modal-header">
                 <h3 class="modal-title" data-i18n="modal_manage_models">Gestisci Modelli</h3>

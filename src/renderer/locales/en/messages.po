@@ -1,4 +1,4 @@
-msgid ""
+﻿msgid ""
 msgstr ""
 "POT-Creation-Date: 2026-05-24 17:20+0200\n"
 "MIME-Version: 1.0\n"
@@ -52,6 +52,11 @@ msgstr "Login with your account to synchronize this Archive."
 #: src/renderer/js/logic/i18n.ts
 msgid "tut_card_edit_title"
 msgstr "Accessing the Record"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "cloud_status_account"
+msgstr "Account"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -150,8 +155,18 @@ msgstr "Shared Archive"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
+msgid "cloud_status_type_shared"
+msgstr "Shared archive (legacy)"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
 msgid "modal_cloud_shared_active"
 msgstr "Active Shared Archive"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_cloud_title_shared"
+msgstr "Shared archive on Google Drive"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -195,6 +210,11 @@ msgstr "Activate Cloud Sync"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
+msgid "btn_activating"
+msgstr "Activating..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
 msgid "msg_current_version"
 msgstr "current:"
 
@@ -235,13 +255,23 @@ msgstr "Data Backup"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
-msgid "modal_cloud_backup_active"
-msgstr "Active Personal Backup"
+msgid "cloud_status_type_backup"
+msgstr "Personal backup"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_backup_private"
 msgstr "Private Backup"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_cloud_backup_active"
+msgstr "Active Personal Backup"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "modal_cloud_title_backup"
+msgstr "Personal backup on Google Drive"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -644,6 +674,15 @@ msgstr "Detailed description *"
 msgid "placeholder_elementi_economici"
 msgstr "Economic details..."
 
+#~ msgid "dialog_export_zip"
+#~ msgstr "Export Backup as ZIP"
+
+#~ msgid "dialog_import_zip"
+#~ msgstr "Import Archive JSON"
+
+#~ msgid "dialog_select_folder"
+#~ msgstr "Select the location for the new folder"
+
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "field_dichiarante"
@@ -841,6 +880,11 @@ msgstr "Filter by Tag"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
+msgid "placeholder_tags"
+msgstr "Select tags..."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
 msgid "tut_tags_filter_title"
 msgstr "Semantic Filters and Tags"
 
@@ -933,6 +977,11 @@ msgstr "Did you receive an invite? Leave the current local archive to join the o
 #: src/renderer/js/logic/i18n.ts
 msgid "settings_support_desc"
 msgstr "Did you encounter any problems or have suggestions? Report it on GitHub."
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "cloud_shared_hint"
+msgstr "Drive permissions cannot be revoked individually: anyone with the link keeps access. Switch to a shared archive for revocable invites."
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1305,6 +1354,294 @@ msgstr "Reason for Trial"
 msgid "tut_search_engine_title"
 msgstr "Advanced Search Engine"
 
+#~ msgid "msg_annullato_var"
+#~ msgstr "Undone: {var0}"
+
+#~ msgid "msg_apri_il_browser_per_compl"
+#~ msgstr "Open browser to complete sign-in..."
+
+#~ msgid "msg_archivio_clonato_con_succ"
+#~ msgstr "Archive cloned successfully! Restarting..."
+
+#~ msgid "msg_archivio_duplicato_con_su"
+#~ msgstr "Archive duplicated successfully ({var0} records)!"
+
+#~ msgid "msg_archivio_ripristinato_con"
+#~ msgstr "Archive restored successfully! Restarting..."
+
+#~ msgid "msg_archivio_scaricato_selezi"
+#~ msgstr "Archive downloaded! Select where to save it on your PC."
+
+#~ msgid "msg_archivio_spostato_con_suc"
+#~ msgstr "Archive moved successfully!"
+
+#~ msgid "msg_attenzione_alcuni_file_so"
+#~ msgstr "Warning: Some files were deleted on the server. Click 'Receive' to check."
+
+#~ msgid "msg_attenzione_l_allegato_pot"
+#~ msgstr "Warning: the attachment might be corrupted or modified (Hash mismatch)."
+
+#~ msgid "msg_attenzione_rilevati_confl"
+#~ msgstr "Warning: Sync conflicts detected from server. Click 'Receive' to resolve."
+
+#~ msgid "msg_autenticazione_completata"
+#~ msgstr "Authentication completed!"
+
+#~ msgid "msg_autenticazione_e_ricerca_"
+#~ msgstr "Authenticating and searching for archives..."
+
+#~ msgid "msg_benvenuto_nell_archivio_c"
+#~ msgstr "Welcome to the Shared Archive! Sign in to Google Drive to download data."
+
+#~ msgid "msg_caricamento_completato_in"
+#~ msgstr "Upload completed safely!"
+
+#~ msgid "msg_caricamento_revisione"
+#~ msgstr "Loading revision..."
+
+#~ msgid "msg_cartella_copiata_tasto_de"
+#~ msgstr "Folder copied. Right-click on another folder to paste it."
+
+#~ msgid "msg_cartella_tagliata_tasto_d"
+#~ msgstr "Folder cut. Right-click to move it."
+
+#~ msgid "msg_ci_sono_nuovi_aggiornamen"
+#~ msgstr "There are new updates to download!"
+
+#~ msgid "msg_codice_copiato_negli_appu"
+#~ msgstr "Code copied to clipboard!"
+
+#~ msgid "msg_compila_tutti_i_campi"
+#~ msgstr "Please fill all fields."
+
+#~ msgid "msg_conflitto_risolto_caricam"
+#~ msgstr "Conflict resolved! Upload completed safely."
+
+#~ msgid "msg_conflitto_risolto_sincron"
+#~ msgstr "Conflict resolved! Sync completed safely."
+
+#~ msgid "msg_conflitto_sul_cloud_un_al"
+#~ msgstr "Cloud conflict: another user saved. Auto-merging..."
+
+#~ msgid "msg_connessione_al_repository"
+#~ msgstr "Connecting to repository..."
+
+#~ msgid "msg_connessione_all_archivio_"
+#~ msgstr "Connecting to Archive..."
+
+#~ msgid "msg_connesso_con_successo_ria"
+#~ msgstr "Connected successfully! Restarting..."
+
+#~ msgid "msg_dati_scaricati_e_fusi_con"
+#~ msgstr "Data downloaded and merged locally successfully."
+
+#~ msgid "msg_dati_sincronizzati_automa"
+#~ msgstr "Data automatically synced from server."
+
+#~ msgid "msg_directory_allegati_locale"
+#~ msgstr "Local attachments directory configured successfully."
+
+#~ msgid "msg_disconnesso_da_google_dri"
+#~ msgstr "Disconnected from Google Drive."
+
+#~ msgid "msg_dlg_cambia_account_google"
+#~ msgstr "Change Google Account"
+
+#~ msgid "msg_dlg_questo_forzer_l_uso_d"
+#~ msgstr "This will force the use of a specific Google account ONLY for this Archive. Do you want to proceed?"
+
+#~ msgid "msg_errore"
+#~ msgstr "Error: "
+
+#~ msgid "msg_errore_cloud"
+#~ msgstr "Cloud Error: "
+
+#~ msgid "msg_errore_di_rete_durante_l_"
+#~ msgstr "Network error during send."
+
+#~ msgid "msg_errore_durante_il_caricam"
+#~ msgstr "Error uploading: "
+
+#~ msgid "msg_errore_durante_il_fetch"
+#~ msgstr "Error during fetch: "
+
+#~ msgid "msg_errore_durante_il_riprist"
+#~ msgstr "Error during restore: "
+
+#~ msgid "msg_errore_durante_l_annullam"
+#~ msgstr "Error during undo."
+
+#~ msgid "msg_errore_durante_l_autentic"
+#~ msgstr "Error during authentication"
+
+#~ msgid "msg_errore_durante_l_invio_de"
+#~ msgstr "Error sending report."
+
+#~ msgid "msg_errore_durante_la_disconn"
+#~ msgstr "Error disconnecting from cloud: "
+
+#~ msgid "msg_errore_durante_la_pulizia"
+#~ msgstr "Error during cleanup: "
+
+#~ msgid "msg_errore_durante_la_rimozio"
+#~ msgstr "Error during removal: {var0}"
+
+#~ msgid "msg_errore_durante_la_risoluz"
+#~ msgstr "Error during conflict resolution: "
+
+#~ msgid "msg_errore_durante_la_sincron"
+#~ msgstr "Error during sync: "
+
+#~ msgid "msg_errore_durante_lo_scarica"
+#~ msgstr "Error downloading: "
+
+#~ msgid "msg_errore_in_duplicazione_ar"
+#~ msgstr "Error during archive duplication: "
+
+#~ msgid "msg_errore_in_esportazione"
+#~ msgstr "Error during export: "
+
+#~ msgid "msg_errore_in_importazione"
+#~ msgstr "Error during import: "
+
+#~ msgid "msg_errore_in_incolla"
+#~ msgstr "Error pasting: "
+
+#~ msgid "msg_errore_nel_caricamento_de"
+#~ msgstr "Error loading revision: "
+
+#~ msgid "msg_esportazione_completata_c"
+#~ msgstr "Export completed successfully!"
+
+#~ msgid "msg_esportazione_di_var_recor"
+#~ msgstr "Export of {var0} records completed successfully!"
+
+#~ msgid "msg_funzionalit_non_disponibi"
+#~ msgstr "Feature not available."
+
+#~ msgid "msg_il_documento_corrente_sta"
+#~ msgstr "The current document was deleted by another user."
+
+#~ msgid "msg_il_server_contiene_modifi"
+#~ msgstr "The server has more recent changes. Use 'Receive' to update your archive before sending."
+
+#~ msgid "msg_importati_var_record_con_"
+#~ msgstr "{var0} records imported successfully!"
+
+#~ msgid "msg_impossibile_aprire_la_car"
+#~ msgstr "Cannot open folder in File Explorer."
+
+#~ msgid "msg_impostazioni_cloud_salvat"
+#~ msgstr "Cloud settings saved."
+
+#~ msgid "msg_invio_modifiche_al_server"
+#~ msgstr "Sending changes to server..."
+
+#~ msgid "msg_invito_inviato_con_succes"
+#~ msgstr "Invite sent successfully to {var0}!"
+
+#~ msgid "msg_l_archivio_copiato_vuoto"
+#~ msgstr "The copied archive is empty."
+
+#~ msgid "msg_l_archivio_ora_scollegato"
+#~ msgstr "The Archive is now unlinked and strictly local."
+
+#~ msgid "msg_l_archivio_stato_sincroni"
+#~ msgstr "The archive has been synchronized in real time."
+
+#~ msgid "msg_l_archivio_vuoto_nulla_da"
+#~ msgstr "The archive is empty, nothing to export."
+
+#~ msgid "msg_la_directory_degli_allega"
+#~ msgstr "The attachments directory was reset to its default (inside the archive)."
+
+#~ msgid "msg_modifiche_inviate_con_suc"
+#~ msgstr "Changes sent successfully!"
+
+#~ msgid "msg_nessun_database_trovato_n"
+#~ msgstr "No database found in the selected Archive."
+
+#~ msgid "msg_nessun_nuovo_aggiornament"
+#~ msgstr "No new updates found."
+
+#~ msgid "msg_nessuna_azione_da_annulla"
+#~ msgstr "No actions to undo."
+
+#~ msgid "msg_nessuna_differenza_rispet"
+#~ msgstr "No difference compared to the current version."
+
+#~ msgid "msg_nessuna_modifica_rilevata"
+#~ msgstr "No changes detected in main fields."
+
+#~ msgid "msg_nessuna_nuova_modifica_su"
+#~ msgstr "No new changes on server. You are up to date."
+
+#~ msgid "msg_nome_collaboratore_salvat"
+#~ msgstr "Collaborator name saved."
+
+#~ msgid "msg_pulizia_completata_file_r"
+#~ msgstr "Cleanup completed! Files removed: {var0} locally, {var1} on Drive."
+
+#~ msgid "msg_questo_archivio_non_colle"
+#~ msgstr "This archive is not connected to a Hub repository."
+
+#~ msgid "msg_record_copiato_tasto_dest"
+#~ msgstr "Record copied. Right-click to paste it into a folder."
+
+#~ msgid "msg_record_tagliato_tasto_des"
+#~ msgstr "Record cut. Right-click to move it to another archive."
+
+#~ msgid "msg_revisione_vuota_o_non_val"
+#~ msgstr "Empty or invalid revision."
+
+#~ msgid "msg_ricezione_modifiche_dall_"
+#~ msgstr "Receiving changes from Hub..."
+
+#~ msgid "msg_rimozione_di_var_in_corso"
+#~ msgstr "Removing {var0}..."
+
+#~ msgid "msg_scaricamento_archivio"
+#~ msgstr "Downloading archive..."
+
+#~ msgid "msg_scaricamento_completato"
+#~ msgstr "Download completed!"
+
+#~ msgid "msg_segnalazione_inviata_con_"
+#~ msgstr "Report sent successfully!"
+
+#~ msgid "msg_seleziona_il_percorso_in_"
+#~ msgstr "Select the path to download the archive."
+
+#~ msgid "msg_sincronizzazione"
+#~ msgstr "Syncing..."
+
+#~ msgid "msg_sincronizzazione_annullat"
+#~ msgstr "Sync cancelled. Restoring local version."
+
+#~ msgid "msg_sincronizzazione_completa"
+#~ msgstr "Sync completed successfully!"
+
+#~ msgid "msg_var_record_copiati_negli_"
+#~ msgstr "{var0} records copied to ArchiView clipboard. Right-click to paste them into another archive."
+
+#~ msgid "msg_var_record_duplicati_con_"
+#~ msgstr "{var0} records duplicated successfully!"
+
+#~ msgid "msg_var_record_eliminati"
+#~ msgstr "{var0} record deleted."
+
+#~ msgid "msg_var_record_spostati_con_s"
+#~ msgstr "{var0} records moved successfully!"
+
+#~ msgid "msg_var_record_tagliati_tasto"
+#~ msgstr "{var0} records cut. Right-click to move them to another archive."
+
+#~ msgid "msg_var_stato_rimosso_con_suc"
+#~ msgstr "{var0} has been removed successfully."
+
+#~ msgid "msg_vault_ripristinato_alla_v"
+#~ msgstr "✅ Vault restored to the selected version!"
+
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "no_attachment"
@@ -1444,6 +1781,11 @@ msgstr "Subject of the document"
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_operation_progress"
 msgstr "Operation in progress"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "a11y_operation_done"
+msgstr "Operation finished"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1807,11 +2149,6 @@ msgstr "Now select the \"Transcribe\" button on a card to launch the environment
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
-msgid "placeholder_tags"
-msgstr "Select tags..."
-
-#. js-lingui-explicit-id
-#: src/renderer/js/logic/i18n.ts
 msgid "btn_yes_proceed"
 msgstr "Yes, proceed"
 
@@ -1863,6 +2200,16 @@ msgstr "Syncing..."
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
+msgid "a11y_sync_attachments_on"
+msgstr "Attachment sync enabled"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "a11y_sync_attachments_off"
+msgstr "Attachment sync disabled"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
 msgid "settings_autofetch_title"
 msgstr "Automatic Synchronization (Autofetch)"
 
@@ -1875,6 +2222,11 @@ msgstr "Google Drive Synchronization"
 #: src/renderer/js/logic/i18n.ts
 msgid "tut_cloud_sync_title"
 msgstr "Remote Synchronization"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "btn_syncing"
+msgstr "Syncing..."
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1994,6 +2346,11 @@ msgstr "Dark Themes"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
+msgid "cloud_status_type"
+msgstr "Type"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
 msgid "field_tipo_di_atto"
 msgstr "Type of Deed"
 
@@ -2032,6 +2389,11 @@ msgstr "Title or short description"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
+msgid "tooltip_back"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
 msgid "btn_transcribe"
 msgstr "Transcribe"
 
@@ -2049,6 +2411,23 @@ msgstr "Transcription saved successfully."
 #: src/renderer/js/logic/i18n.ts
 msgid "modal_cloud_upload_desc"
 msgstr "Transform this local archive into a cloud archive to sync and share it."
+
+#~ msgid "tut_history_desc"
+#~ msgstr "Click here to view the history of revisions saved on the Cloud."
+
+#~ msgid "tut_history_panel_desc"
+#~ msgstr "From this panel you can browse old versions of the database, open them in read-only mode, and restore your archive to a previous version."
+
+#~ msgid "tut_history_panel_title"
+#~ msgstr "History Panel"
+
+#~ msgid "tut_history_title"
+#~ msgstr "Cloud Version History"
+
+#. js-lingui-explicit-id
+#: src/renderer/js/logic/i18n.ts
+msgid "cloud_status_last_sync"
+msgstr "Last sync"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2083,8 +2462,8 @@ msgstr "Use another Google account"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_val_beni_dinamici"
-msgstr "Value (e.g. 10 florins)"
-"\n"
+msgstr ""
+"Value (e.g. 10 florins)\n"
 "#. js-lingui-explicit-id\n"
 "#: src/renderer/js/logic/i18n.ts\n"
 "msgid \"btn_select_folder\"\n"
@@ -2210,312 +2589,3 @@ msgstr "Versions saved on Google Drive"
 #: src/renderer/js/logic/i18n.ts
 msgid "modal_media_title"
 msgstr "Media Viewer"
-
-msgid "msg_l_archivio_stato_sincroni"
-msgstr "The archive has been synchronized in real time."
-
-msgid "msg_benvenuto_nell_archivio_c"
-msgstr "Welcome to the Shared Archive! Sign in to Google Drive to download data."
-
-msgid "dialog_export_zip"
-msgstr "Export Backup as ZIP"
-
-msgid "msg_esportazione_completata_c"
-msgstr "Export completed successfully!"
-
-msgid "msg_errore_in_esportazione"
-msgstr "Error during export: "
-
-msgid "msg_l_archivio_vuoto_nulla_da"
-msgstr "The archive is empty, nothing to export."
-
-msgid "msg_esportazione_di_var_recor"
-msgstr "Export of {var0} records completed successfully!"
-
-msgid "dialog_import_zip"
-msgstr "Import Archive JSON"
-
-msgid "msg_importati_var_record_con_"
-msgstr "{var0} records imported successfully!"
-
-msgid "msg_errore_in_importazione"
-msgstr "Error during import: "
-
-msgid "msg_var_record_eliminati"
-msgstr "{var0} record deleted."
-
-msgid "msg_var_record_copiati_negli_"
-msgstr "{var0} records copied to ArchiView clipboard. Right-click to paste them into another archive."
-
-msgid "msg_var_record_tagliati_tasto"
-msgstr "{var0} records cut. Right-click to move them to another archive."
-
-msgid "msg_cartella_copiata_tasto_de"
-msgstr "Folder copied. Right-click on another folder to paste it."
-
-msgid "msg_impossibile_aprire_la_car"
-msgstr "Cannot open folder in File Explorer."
-
-msgid "msg_cartella_tagliata_tasto_d"
-msgstr "Folder cut. Right-click to move it."
-
-msgid "msg_record_copiato_tasto_dest"
-msgstr "Record copied. Right-click to paste it into a folder."
-
-msgid "msg_record_tagliato_tasto_des"
-msgstr "Record cut. Right-click to move it to another archive."
-
-msgid "msg_archivio_spostato_con_suc"
-msgstr "Archive moved successfully!"
-
-msgid "msg_l_archivio_copiato_vuoto"
-msgstr "The copied archive is empty."
-
-msgid "msg_archivio_duplicato_con_su"
-msgstr "Archive duplicated successfully ({var0} records)!"
-
-msgid "msg_errore_in_duplicazione_ar"
-msgstr "Error during archive duplication: "
-
-msgid "msg_var_record_spostati_con_s"
-msgstr "{var0} records moved successfully!"
-
-msgid "msg_var_record_duplicati_con_"
-msgstr "{var0} records duplicated successfully!"
-
-msgid "msg_errore_in_incolla"
-msgstr "Error pasting: "
-
-msgid "msg_nessuna_azione_da_annulla"
-msgstr "No actions to undo."
-
-msgid "msg_annullato_var"
-msgstr "Undone: {var0}"
-
-msgid "msg_errore_durante_l_annullam"
-msgstr "Error during undo."
-
-msgid "msg_il_documento_corrente_sta"
-msgstr "The current document was deleted by another user."
-
-msgid "msg_caricamento_revisione"
-msgstr "Loading revision..."
-
-msgid "msg_revisione_vuota_o_non_val"
-msgstr "Empty or invalid revision."
-
-msgid "msg_nessuna_differenza_rispet"
-msgstr "No difference compared to the current version."
-
-msgid "msg_errore_nel_caricamento_de"
-msgstr "Error loading revision: "
-
-msgid "msg_vault_ripristinato_alla_v"
-msgstr "✅ Vault restored to the selected version!"
-
-msgid "msg_errore_durante_il_riprist"
-msgstr "Error during restore: "
-
-msgid "msg_segnalazione_inviata_con_"
-msgstr "Report sent successfully!"
-
-msgid "msg_errore_durante_l_invio_de"
-msgstr "Error sending report."
-
-msgid "msg_errore_di_rete_durante_l_"
-msgstr "Network error during send."
-
-msgid "msg_funzionalit_non_disponibi"
-msgstr "Feature not available."
-
-msgid "tut_history_title"
-msgstr "Cloud Version History"
-
-msgid "tut_history_desc"
-msgstr "Click here to view the history of revisions saved on the Cloud."
-
-msgid "tut_history_panel_title"
-msgstr "History Panel"
-
-msgid "tut_history_panel_desc"
-msgstr "From this panel you can browse old versions of the database, open them in read-only mode, and restore your archive to a previous version."
-
-msgid "msg_errore"
-msgstr "Error: "
-
-msgid "msg_dlg_cambia_account_google"
-msgstr "Change Google Account"
-
-msgid "msg_dlg_questo_forzer_l_uso_d"
-msgstr "This will force the use of a specific Google account ONLY for this Archive. Do you want to proceed?"
-
-msgid "msg_rimozione_di_var_in_corso"
-msgstr "Removing {var0}..."
-
-msgid "msg_var_stato_rimosso_con_suc"
-msgstr "{var0} has been removed successfully."
-
-msgid "msg_errore_durante_la_rimozio"
-msgstr "Error during removal: {var0}"
-
-msgid "msg_codice_copiato_negli_appu"
-msgstr "Code copied to clipboard!"
-
-msgid "msg_invito_inviato_con_succes"
-msgstr "Invite sent successfully to {var0}!"
-
-msgid "msg_pulizia_completata_file_r"
-msgstr "Cleanup completed! Files removed: {var0} locally, {var1} on Drive."
-
-msgid "msg_errore_durante_la_pulizia"
-msgstr "Error during cleanup: "
-
-msgid "msg_sincronizzazione_annullat"
-msgstr "Sync cancelled. Restoring local version."
-
-msgid "msg_nessuna_modifica_rilevata"
-msgstr "No changes detected in main fields."
-
-msgid "msg_autenticazione_e_ricerca_"
-msgstr "Authenticating and searching for archives..."
-
-msgid "msg_errore_cloud"
-msgstr "Cloud Error: "
-
-msgid "dialog_select_folder"
-msgstr "Select the location for the new folder"
-
-msgid "msg_compila_tutti_i_campi"
-msgstr "Please fill all fields."
-
-msgid "msg_connessione_all_archivio_"
-msgstr "Connecting to Archive..."
-
-msgid "msg_connesso_con_successo_ria"
-msgstr "Connected successfully! Restarting..."
-
-msgid "msg_scaricamento_archivio"
-msgstr "Downloading archive..."
-
-msgid "msg_nessun_database_trovato_n"
-msgstr "No database found in the selected Archive."
-
-msgid "msg_archivio_scaricato_selezi"
-msgstr "Archive downloaded! Select where to save it on your PC."
-
-msgid "msg_archivio_ripristinato_con"
-msgstr "Archive restored successfully! Restarting..."
-
-msgid "msg_attenzione_l_allegato_pot"
-msgstr "Warning: the attachment might be corrupted or modified (Hash mismatch)."
-
-msgid "msg_ci_sono_nuovi_aggiornamen"
-msgstr "There are new updates to download!"
-
-msgid "msg_nessun_nuovo_aggiornament"
-msgstr "No new updates found."
-
-msgid "msg_errore_durante_il_fetch"
-msgstr "Error during fetch: "
-
-msgid "msg_apri_il_browser_per_compl"
-msgstr "Open browser to complete sign-in..."
-
-msgid "msg_autenticazione_completata"
-msgstr "Authentication completed!"
-
-msgid "msg_errore_durante_l_autentic"
-msgstr "Error during authentication"
-
-msgid "msg_disconnesso_da_google_dri"
-msgstr "Disconnected from Google Drive."
-
-msgid "msg_sincronizzazione_completa"
-msgstr "Sync completed successfully!"
-
-msgid "msg_conflitto_sul_cloud_un_al"
-msgstr "Cloud conflict: another user saved. Auto-merging..."
-
-msgid "msg_conflitto_risolto_sincron"
-msgstr "Conflict resolved! Sync completed safely."
-
-msgid "msg_errore_durante_la_risoluz"
-msgstr "Error during conflict resolution: "
-
-msgid "msg_errore_durante_la_sincron"
-msgstr "Error during sync: "
-
-msgid "msg_scaricamento_completato"
-msgstr "Download completed!"
-
-msgid "msg_errore_durante_lo_scarica"
-msgstr "Error downloading: "
-
-msgid "msg_caricamento_completato_in"
-msgstr "Upload completed safely!"
-
-msgid "msg_conflitto_risolto_caricam"
-msgstr "Conflict resolved! Upload completed safely."
-
-msgid "msg_errore_durante_il_caricam"
-msgstr "Error uploading: "
-
-msgid "msg_l_archivio_ora_scollegato"
-msgstr "The Archive is now unlinked and strictly local."
-
-msgid "msg_errore_durante_la_disconn"
-msgstr "Error disconnecting from cloud: "
-
-msgid "msg_questo_archivio_non_colle"
-msgstr "This archive is not connected to a Hub repository."
-
-msgid "msg_ricezione_modifiche_dall_"
-msgstr "Receiving changes from Hub..."
-
-msgid "msg_nessuna_nuova_modifica_su"
-msgstr "No new changes on server. You are up to date."
-
-msgid "msg_dati_scaricati_e_fusi_con"
-msgstr "Data downloaded and merged locally successfully."
-
-msgid "msg_attenzione_rilevati_confl"
-msgstr "Warning: Sync conflicts detected from server. Click 'Receive' to resolve."
-
-msgid "msg_attenzione_alcuni_file_so"
-msgstr "Warning: Some files were deleted on the server. Click 'Receive' to check."
-
-msgid "msg_dati_sincronizzati_automa"
-msgstr "Data automatically synced from server."
-
-msgid "msg_invio_modifiche_al_server"
-msgstr "Sending changes to server..."
-
-msgid "msg_il_server_contiene_modifi"
-msgstr "The server has more recent changes. Use 'Receive' to update your archive before sending."
-
-msgid "msg_modifiche_inviate_con_suc"
-msgstr "Changes sent successfully!"
-
-msgid "msg_sincronizzazione"
-msgstr "Syncing..."
-
-msgid "msg_connessione_al_repository"
-msgstr "Connecting to repository..."
-
-msgid "msg_seleziona_il_percorso_in_"
-msgstr "Select the path to download the archive."
-
-msgid "msg_archivio_clonato_con_succ"
-msgstr "Archive cloned successfully! Restarting..."
-
-msgid "msg_impostazioni_cloud_salvat"
-msgstr "Cloud settings saved."
-
-msgid "msg_nome_collaboratore_salvat"
-msgstr "Collaborator name saved."
-
-msgid "msg_directory_allegati_locale"
-msgstr "Local attachments directory configured successfully."
-
-msgid "msg_la_directory_degli_allega"
-msgstr "The attachments directory was reset to its default (inside the archive)."

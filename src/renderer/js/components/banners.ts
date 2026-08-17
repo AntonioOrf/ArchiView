@@ -4,9 +4,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('update-banner')) {
             const html = `
-    <div id="update-banner" class="hidden-tab w-full bg-sky-600 text-white px-4 py-3 flex items-center justify-between shadow-md z-50 shrink-0 mb-6 rounded-sm border border-sky-700">
+    <div id="update-banner" class="hidden-tab w-full bg-sky-600 text-white px-4 py-3 flex items-center justify-between shadow-md z-sticky shrink-0 mb-6 rounded-sm border border-sky-700">
         <div class="flex items-center gap-2 text-sm font-medium">
-            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+            <i data-lucide="download" class="w-5 h-5"></i>
             <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
         </div>
         <div class="flex gap-2 shrink-0 items-center">
@@ -16,8 +16,21 @@
         </div>
     </div>
 
+    <!-- Invito al tutorial: NON modale. Prima era un modal-overlay a tutto schermo
+         aperto 1500ms dopo l'avvio, che intercettava ogni click sull'app. -->
+    <div id="tutorial-banner" class="hidden-tab w-full px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-md shrink-0 mt-4 rounded-sm" style="background-color: var(--color-primary-light); border: 1px solid var(--color-primary-border); color: var(--color-primary-hover);">
+        <div class="flex items-center gap-2 text-sm font-medium min-w-0">
+            <i data-lucide="help-circle" class="w-5 h-5 shrink-0"></i>
+            <span data-i18n="tutorial_invite_text">Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?</span>
+        </div>
+        <div class="flex gap-2 shrink-0 items-center">
+            <button onclick="avviaTutorialDaInvito()" class="btn btn-primary text-xs py-1.5 px-3" data-i18n="btn_tutorial_start">Sì, avvia</button>
+            <button onclick="rifiutaInvitoTutorial()" class="btn btn-ghost text-xs py-1.5 px-3" data-i18n="btn_tutorial_dismiss">No, grazie</button>
+        </div>
+    </div>
+
     <!-- Modal Note di Rilascio -->
-    <div id="release-notes-modal" class="modal-overlay hidden-tab z-200">
+    <div id="release-notes-modal" class="modal-overlay hidden-tab z-modal-nested">
         <div class="modal-window max-w-lg bg-white dark:bg-stone-900 overflow-hidden flex flex-col max-h-[80vh]">
             <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-800">
                 <h3 class="modal-title">
@@ -32,7 +45,7 @@
         </div>
     </div>
 
-    <div id="info-confirm-banner" class="modal-overlay hidden-tab z-110">
+    <div id="info-confirm-banner" class="modal-overlay hidden-tab z-modal-alert">
         <div class="modal-window max-w-sm">
             <div class="modal-header" style="background-color: var(--color-primary-light); border-color: var(--color-primary-border);">
                 <i data-lucide="info" class="w-6 h-6" style="color: var(--color-primary);"></i>
@@ -48,7 +61,7 @@
         </div>
     </div>
 
-    <div id="bottom-confirm-banner" class="modal-overlay hidden-tab z-110">
+    <div id="bottom-confirm-banner" class="modal-overlay hidden-tab z-modal-alert">
         <div class="modal-window max-w-sm">
             <div class="modal-header" style="background-color: var(--color-danger-light); border-color: #fca5a5;">
                 <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>

@@ -2,14 +2,15 @@
 window.driveStatus = { isAuthenticated: false, user: null };
 window.autofetchIntervalId = null;
 
+window.modificheInEntrata = false;
+
+// Fase 3.4 — non esiste più un indicatore separato nell'header: lo stato vive qui e il
+// bottone cloud unico lo legge. Prima renderSourceControl deduceva "ci sono aggiornamenti"
+// dalla classe CSS di un div, cioè dalla presentazione.
 window.impostaModificheInEntrata = function(stato) {
-    const ind = document.getElementById('incoming-updates-indicator');
-    if (ind) {
-        if (stato) ind.classList.remove('hidden');
-        else ind.classList.add('hidden');
-        ind.classList.add('flex');
-        if (!stato) ind.classList.remove('flex');
-    }
+    window.modificheInEntrata = !!stato;
+    if (window.statoCloud) window.statoCloud.inEntrata = !!stato;
+    if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 };
 
 window.toggleSyncProgress = function(show, titleKey = 'sync_in_progress') {
@@ -34,12 +35,13 @@ window.toggleSyncProgress = function(show, titleKey = 'sync_in_progress') {
         }
     }
 
-    // P3.6 — durante un'operazione cloud disabilita i bottoni Fetch/Pull/Push per evitare doppi-click
-    document.querySelectorAll('#cloud-buttons-container button').forEach(b => {
-        b.disabled = show;
-        b.classList.toggle('opacity-50', show);
-        b.classList.toggle('cursor-not-allowed', show);
-    });
+    // P3.6 — durante un'operazione cloud le voci Fetch/Scarica/Carica sono disabilitate
+    // (evita doppi-click). Ora passa dallo stato: il popover le legge quando si apre e il
+    // bottone mostra "Sincronizzazione…". Se il popover è già aperto va chiuso, altrimenti
+    // resterebbe a video con voci che non corrispondono più allo stato.
+    if (window.statoCloud) window.statoCloud.occupato = !!show;
+    if (show && typeof window.chiudiMenuContestuale === 'function') window.chiudiMenuContestuale(false);
+    if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 };
 
 window.updateSyncProgress = function(percent, text) {
@@ -205,8 +207,12 @@ window.controllaModificheInEntrata = async function(manual = false) {
                 if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_nessun_nuovo_aggiornament", "Nessun nuovo aggiornamento trovato."), "success");
             }
             if (manual) window.hasFetchedBeforeDownload = true;
+            window.azzeraErroreCloud();
         } catch (e) {
             console.error("Errore controllo aggiornamenti in entrata", e);
+            // Anche l'autofetch silenzioso deve lasciare traccia: il toast lo vede solo chi
+            // ha premuto Fetch, il bottone di stato lo vede sempre.
+            window.impostaErroreCloud(e.message);
             if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_fetch", "Errore durante il fetch: ") + e.message, "error");
         } finally {
             if (manual) window.toggleSyncProgress(false);
@@ -268,6 +274,10 @@ async function aggiornaStatoDrive() {
             user: statusResult?.user || null,
             unauthorizedVault: statusResult?.unauthorizedVault || false
         };
+
+        // Un vault Hub non passa da Drive: lì l'autenticazione è la presenza di hubConfig.
+        window.statoCloud.autenticato = window.driveStatus.isAuthenticated || !!window.hubConfig;
+        if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 
         if (typeof checkDriveStatusVisual === 'function') {
             checkDriveStatusVisual();
@@ -361,6 +371,12 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
     if (apiCloud) {
         const btn = document.getElementById('btn-drive-sync');
         if (btn) btn.disabled = true;
+        // Anche il gemello nel modal Cloud: senza stato di attesa lì il click sembra non fare nulla
+        // e nulla impedisce di lanciare due sync sovrapposte.
+        const btnModal = document.getElementById('btn-cloud-drive-sync');
+        if (window.impostaStatoCaricamentoCloud) {
+            window.impostaStatoCaricamentoCloud(btnModal, true, window.t('btn_syncing', 'Sincronizzazione...'));
+        }
         window.toggleSyncProgress(true, 'sync_in_progress');
         
         try {
@@ -456,6 +472,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_sincron", "Conflitto risolto! Sincronizzazione completata in sicurezza."), "success");
                     inviaPingPusher();
                 } catch(retryErr) {
+                    window.impostaErroreCloud(retryErr.message);
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
                 }
             } else if (e.message && e.message.includes('ACCESSO_NEGATO_VAULT')) {
@@ -476,6 +493,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             }
         } finally {
             if (btn) btn.disabled = false;
+            if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btnModal, false);
             window.toggleSyncProgress(false);
         }
     }
@@ -527,9 +545,11 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                     console.error("Errore sync allegati:", attErr);
                 }
             }
+            window.azzeraErroreCloud();
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_scaricamento_completato", "Scaricamento completato!"), "success");
         } catch (e) {
             console.error(e);
+            window.impostaErroreCloud(e.message);
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_lo_scarica", "Errore durante lo scaricamento: ") + e.message, "error");
         } finally {
             window.toggleSyncProgress(false);
@@ -589,6 +609,7 @@ window.caricaSulCloud = async function(silent = false) {
 
             if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
             
+            window.azzeraErroreCloud();
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_completato_in", "Caricamento completato in sicurezza!"), "success");
             inviaPingPusher();
         } catch (e) {
@@ -631,12 +652,14 @@ window.caricaSulCloud = async function(silent = false) {
                     window.incomingStructuralChanges = [];
                     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
+                    window.azzeraErroreCloud();
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_caricam", "Conflitto risolto! Caricamento completato in sicurezza."), "success");
                     inviaPingPusher();
                 } catch(retryErr) {
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
                 }
             } else {
+                window.impostaErroreCloud(e.message);
                 if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_caricam", "Errore durante il caricamento: ") + e.message, "error");
             }
         } finally {
@@ -725,8 +748,9 @@ window.trasformaInCondiviso = async function() {
 }
 window.trasformaInPersonale = async function() {
     const btn = document.getElementById('btn-trasforma-personale');
-    if(btn) btn.disabled = true;
-    
+    if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, true, window.t('btn_activating', 'Attivazione in corso...'));
+    else if (btn) btn.disabled = true;
+
     if (typeof mostraProgressoCloud === 'function') {
         mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso..."));
     }
@@ -751,14 +775,17 @@ window.trasformaInPersonale = async function() {
             mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')..."));
         }
         await window.sincronizzaGoogleDrive(true);
-        
+
         if (typeof apriCloudModal === 'function') {
-            apriCloudModal();
+            await apriCloudModal();
         }
     } catch(e) {
         mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
-        if(btn) btn.disabled = false;
     } finally {
+        // Ripristino sempre, anche a buon fine: il bottone resta nel DOM (solo nascosto)
+        // e riemergeva disabilitato se in seguito si tornava a un vault locale.
+        if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, false);
+        else if (btn) btn.disabled = false;
         if (typeof nascondiProgressoCloud === 'function') {
             nascondiProgressoCloud();
         }

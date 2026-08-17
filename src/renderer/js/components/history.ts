@@ -149,7 +149,7 @@ window.renderHistoryList = async function() {
             const li = document.createElement('li');
             li.className = `flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 ${isCurrent ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-stone-50 dark:hover:bg-stone-800/30'} cursor-context-menu select-none transition-colors`;
             li.dataset.revisionId = rev.id;
-            li.title = 'Clicca per le azioni disponibili';
+            li.title = window.t('tooltip_click_for_actions', 'Clicca per le azioni disponibili');
 
             li.innerHTML = `
                 <i data-lucide="${isCurrent ? 'git-commit-horizontal' : 'clock'}" class="w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-amber-500' : 'text-stone-400'}"></i>
@@ -249,7 +249,10 @@ function apriDiffRevisioneModal(diffs, label, leftLabel, rightLabel) {
 
         const overlay = document.createElement('div');
         overlay.id = 'history-diff-modal';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:center;justify-content:center;';
+        // Fase 5.3 — classe modal-overlay: focus trap, Esc e ripristino del fuoco
+        // arrivano dal gestore centralizzato invece di mancare del tutto.
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;';
 
         overlay.innerHTML = `
             <div style="background:${bg};border-radius:10px;border:1px solid ${borderColor};box-shadow:0 24px 64px rgba(0,0,0,0.4);max-width:700px;width:calc(100% - 2rem);max-height:90vh;display:flex;flex-direction:column;">
@@ -311,6 +314,7 @@ function apriDiffRevisioneModal(diffs, label, leftLabel, rightLabel) {
         body.innerHTML = htmlDiff;
 
         const close = () => overlay.remove();
+        window.chiudiHistoryDiffModal = close;
         overlay.querySelector('#hist-close-btn').onclick = close;
         overlay.querySelector('#hist-close-btn2').onclick = close;
         overlay.querySelector('#hist-prev-btn').onclick = () => { if (idx > 0) { idx--; renderModal(); } };
@@ -451,7 +455,7 @@ async function renderHubHistoryList(list) {
 
             const li = document.createElement('li');
             li.className = `flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 ${isCurrent ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-stone-50 dark:hover:bg-stone-800/30'} cursor-context-menu select-none transition-colors`;
-            li.title = 'Clicca per le azioni disponibili';
+            li.title = window.t('tooltip_click_for_actions', 'Clicca per le azioni disponibili');
 
             const icon = document.createElement('i');
             icon.dataset.lucide = isCurrent ? 'git-commit-horizontal' : 'git-commit-vertical';

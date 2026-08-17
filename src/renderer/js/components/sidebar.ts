@@ -1,6 +1,17 @@
 // @ts-nocheck
 // --- SIDEBAR ---
 
+/**
+ * Etichetta della radice virtuale (percorso ''). Preferisce il nome del vault già
+ * mostrato nello switcher: la radice È il vault, non una cartella dentro di esso.
+ */
+function etichettaRadice() {
+    const el = document.getElementById('current-vault-name');
+    const nome = el ? (el.textContent || '').trim() : '';
+    return nome || window.t('folder_root_label', 'Archivio');
+}
+window.etichettaRadice = etichettaRadice;
+
 function renderSidebar() {
     const container = document.getElementById('folder-list');
     container.innerHTML = window.sanitizeHTML('');
@@ -28,15 +39,79 @@ function renderSidebar() {
         folderIndex.get(key)!.push(m);
     }
 
-    // Funzione ricorsiva per renderizzare
-    function renderNode(nodeName, nodeObj, parentEl, profondita) {
-        const fullPath = nodeObj.path;
-        const filesInFolder = folderIndex.get(fullPath) || [];
-        filesInFolder.sort((a, b) => {
+    const fileOrdinati = (path) => {
+        const files = (folderIndex.get(path) || []).slice();
+        files.sort((a, b) => {
             const valA = a.segnatura || a.titolo || '';
             const valB = b.segnatura || b.titolo || '';
             return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
         });
+        return files;
+    };
+
+    // Riga di un record nell'albero. Estratta da renderNode perché la usa anche la
+    // radice virtuale, che non è un nodo dell'albero delle cartelle.
+    function creaRigaFile(m, fullPath, profondita) {
+        const fileRow = document.createElement('div');
+        const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
+
+        fileRow.className = `group flex items-center gap-1.5 p-1 rounded-sm cursor-pointer transition-colors text-xs ${isSelected ? 'bg-amber-100 text-amber-900 font-semibold' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'}`;
+        fileRow.style.paddingLeft = `${profondita * 1.25 + 1.25}rem`;
+
+        fileRow.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!window.selectedRecords.includes(m.id)) {
+                window.selectItem(m.id, e);
+            }
+            if (typeof showRecordContextMenu === 'function') {
+                showRecordContextMenu(e, m.id);
+            }
+        };
+
+        fileRow.onclick = (e) => {
+            e.stopPropagation();
+            if (window.cartellaAttuale !== fullPath) {
+                window.cartellaAttuale = fullPath;
+                // Il record deve comparire nella vista della sua cartella
+                window.azzeraFiltriRicerca();
+            }
+            // Sempre, non solo al cambio cartella: si può arrivare qui dal tab
+            // 'add' o 'trascrizione', dove la griglia non è nemmeno visibile.
+            if (typeof switchTab === 'function') switchTab('list');
+
+            if (typeof window.selectItem === 'function') {
+                window.selectItem(m.id, e); // ri-renderizza sidebar + griglia (sincrono)
+            }
+
+            // In multi-selezione (ctrl/shift) lo scroll disorienterebbe.
+            // switchTab può abortire su form sporco: in quel caso view-list è
+            // ancora nascosta e non c'è nulla da rivelare.
+            const vList = document.getElementById('view-list');
+            const isListaVisibile = vList && !vList.classList.contains('hidden-tab');
+            if (!e.ctrlKey && !e.metaKey && !e.shiftKey && isListaVisibile) {
+                window.rivelaRecordNellaGriglia(m.id);
+            }
+        };
+
+        const titoloFile = escapeHTML(m.segnatura || m.titolo || 'Senza Titolo');
+
+        fileRow.draggable = true;
+        fileRow.ondragstart = (e) => {
+            e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'manoscritto', id: m.id }));
+            e.dataTransfer.effectAllowed = 'move';
+            fileRow.classList.add('opacity-50');
+        };
+        fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
+
+        fileRow.innerHTML = window.sanitizeHTML(`<i data-lucide="file-text" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i><span class="truncate">${titoloFile}</span>`);
+        return fileRow;
+    }
+
+    // Funzione ricorsiva per renderizzare
+    function renderNode(nodeName, nodeObj, parentEl, profondita) {
+        const fullPath = nodeObj.path;
+        const filesInFolder = fileOrdinati(fullPath);
         const hasChildren = Object.keys(nodeObj.children).length > 0 || filesInFolder.length > 0;
         const isAttuale = fullPath === window.cartellaAttuale;
 
@@ -113,31 +188,23 @@ function renderSidebar() {
         riga.appendChild(spanToggle);
         riga.appendChild(testo);
         
+        // Fase 4.1 — un solo "⋯" al posto di rinomina+elimina: apre lo STESSO menu del
+        // tasto destro, quindi rinomina, apri in Esplora, copia/taglia/incolla e "crea
+        // scheda qui" smettono di essere raggiungibili solo col tasto destro.
+        // opacity-0 su hover ma focus-within lo rivela: resta raggiungibile da tastiera.
         const actionContainer = document.createElement('div');
-        actionContainer.className = "opacity-0 group-hover:opacity-100 flex items-center transition-all";
-        
-        const btnRename = document.createElement('button');
-        btnRename.className = "p-1 rounded mr-1 sidebar-action-btn rename";
-        btnRename.innerHTML = window.sanitizeHTML(`<i data-lucide="pencil" class="w-3.5 h-3.5"></i>`);
-        btnRename.onclick = (e) => {
-            e.stopPropagation();
-            if (typeof window.rinominaCartellaDaSidebar === 'function') {
-                window.rinominaCartellaDaSidebar(fullPath);
-            }
-        };
-        actionContainer.appendChild(btnRename);
+        actionContainer.className = "opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center transition-all";
 
-        const btnDelete = document.createElement('button');
-        btnDelete.className = "p-1 rounded sidebar-action-btn delete";
-        btnDelete.innerHTML = window.sanitizeHTML(`<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`);
-        btnDelete.onclick = (e) => {
-            e.stopPropagation();
-            if (typeof window.eliminaCartellaDaSidebar === 'function') {
-                window.eliminaCartellaDaSidebar(fullPath);
+        const btnOverflow = window.creaBottoneOverflow(
+            () => window.vociMenuCartella(fullPath),
+            {
+                className: "p-1.5 rounded sidebar-action-btn rename",
+                iconClass: "w-3.5 h-3.5",
+                label: window.t('tooltip_folder_actions', 'Azioni cartella') + ': ' + nodeName
             }
-        };
-        actionContainer.appendChild(btnDelete);
-        
+        );
+        actionContainer.appendChild(btnOverflow);
+
         riga.appendChild(actionContainer);
 
         riga.onclick = () => {
@@ -162,63 +229,7 @@ function renderSidebar() {
 
             // Render dei file
             filesInFolder.forEach(m => {
-                const fileRow = document.createElement('div');
-                const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
-                
-                fileRow.className = `group flex items-center gap-1.5 p-1 rounded-sm cursor-pointer transition-colors text-xs ${isSelected ? 'bg-amber-100 text-amber-900 font-semibold' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'}`;
-                fileRow.style.paddingLeft = `${(profondita + 1) * 1.25 + 1.25}rem`;
-                
-                fileRow.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!window.selectedRecords.includes(m.id)) {
-                        window.selectItem(m.id, e);
-                    }
-                    if (typeof showRecordContextMenu === 'function') {
-                        showRecordContextMenu(e, m.id);
-                    }
-                };
-
-                fileRow.onclick = (e) => {
-                    e.stopPropagation();
-                    if (window.cartellaAttuale !== fullPath) {
-                        window.cartellaAttuale = fullPath;
-                        // Il record deve comparire nella vista della sua cartella
-                        window.azzeraFiltriRicerca();
-                    }
-                    // Sempre, non solo al cambio cartella: si può arrivare qui dal tab
-                    // 'add' o 'trascrizione', dove la griglia non è nemmeno visibile.
-                    if (typeof switchTab === 'function') switchTab('list');
-
-                    if (typeof window.selectItem === 'function') {
-                        window.selectItem(m.id, e); // ri-renderizza sidebar + griglia (sincrono)
-                    }
-
-                    // In multi-selezione (ctrl/shift) lo scroll disorienterebbe.
-                    // switchTab può abortire su form sporco: in quel caso view-list è
-                    // ancora nascosta e non c'è nulla da rivelare.
-                    const vList = document.getElementById('view-list');
-                    const isListaVisibile = vList && !vList.classList.contains('hidden-tab');
-                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && isListaVisibile) {
-                        window.rivelaRecordNellaGriglia(m.id);
-                    }
-                };
-                
-
-
-                const iconaFile = 'file-text';
-                const titoloFile = escapeHTML(m.segnatura || m.titolo || 'Senza Titolo');
-                
-                fileRow.draggable = true;
-                fileRow.ondragstart = (e) => {
-                    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'manoscritto', id: m.id }));
-                    e.dataTransfer.effectAllowed = 'move';
-                    fileRow.classList.add('opacity-50');
-                };
-                fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
-
-                fileRow.innerHTML = window.sanitizeHTML(`<i data-lucide="${iconaFile}" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i><span class="truncate">${titoloFile}</span>`);
-                childContainer.appendChild(fileRow);
+                childContainer.appendChild(creaRigaFile(m, fullPath, profondita + 1));
             });
 
             div.appendChild(childContainer);
@@ -228,13 +239,122 @@ function renderSidebar() {
     }
 
     const fragment = document.createDocumentFragment();
-    Object.keys(root).sort((a, b) => {
-        if (a === 'Generale') return -1;
-        if (b === 'Generale') return 1;
-        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    }).forEach(k => renderNode(k, root[k], fragment, 0));
-    
+
+    fragment.appendChild(creaRigaRadice());
+
+    Object.keys(root)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+        .forEach(k => renderNode(k, root[k], fragment, 0));
+
+    if (appData.cartelle.length === 0 && (folderIndex.get('') || []).length === 0) {
+        const vuoto = document.createElement('div');
+        vuoto.className = 'p-4 text-xs text-stone-400 dark:text-stone-500 italic text-center';
+        vuoto.textContent = window.t('empty_no_folders', 'Nessuna cartella. Le schede restano nella radice finché non ne crei una.');
+        fragment.appendChild(vuoto);
+    }
+
     container.appendChild(fragment);
+
+    // Riga della radice virtuale: rappresenta il percorso '' (nessuna cartella).
+    // Non esiste in appData.cartelle e non viene sincronizzata: è solo il modo di
+    // rendere selezionabili e visibili le schede non archiviate.
+    function creaRigaRadice() {
+        const filesRadice = fileOrdinati('');
+        const isAttuale = window.cartellaAttuale === '';
+        const isExpanded = window.cartelleEspanse.has('');
+
+        const div = document.createElement('div');
+        div.className = 'flex flex-col';
+
+        const riga = document.createElement('div');
+        riga.id = 'folder-root-row';
+        riga.className = `group flex items-center gap-1 p-1.5 rounded-sm cursor-pointer transition-colors text-sm sidebar-row ${isAttuale ? 'active' : ''}`;
+        riga.style.paddingLeft = '0.25rem';
+
+        riga.oncontextmenu = (e) => {
+            if (typeof window.showSidebarFolderContextMenu === 'function') {
+                window.showSidebarFolderContextMenu(e, '');
+            }
+        };
+
+        // Drop verso la radice: sposta record e cartelle al primo livello
+        riga.ondragover = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+            riga.classList.add('ring-2', 'ring-amber-500', 'bg-amber-50');
+        };
+        riga.ondragleave = (e) => {
+            e.stopPropagation();
+            riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
+        };
+        riga.ondrop = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                if (data.type === 'folder' && typeof spostaCartella !== 'undefined') {
+                    spostaCartella(data.path, 'ROOT');
+                } else if (data.type === 'manoscritto' && typeof spostaManoscritto !== 'undefined') {
+                    spostaManoscritto(data.id, '');
+                }
+            } catch (err) { console.error(err); }
+        };
+
+        const spanToggle = document.createElement('span');
+        spanToggle.className = 'w-5 h-5 flex items-center justify-center shrink-0';
+        if (filesRadice.length > 0) {
+            spanToggle.innerHTML = window.sanitizeHTML(`<i data-lucide="${isExpanded ? 'chevron-down' : 'chevron-right'}" class="w-4 h-4 sidebar-chevron transition-colors"></i>`);
+            spanToggle.onclick = (e) => {
+                e.stopPropagation();
+                if (isExpanded) window.cartelleEspanse.delete('');
+                else window.cartelleEspanse.add('');
+                renderSidebar();
+                if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
+            };
+        }
+
+        const testo = document.createElement('span');
+        testo.className = 'truncate flex items-center gap-1.5 flex-1 select-none font-medium';
+        testo.innerHTML = window.sanitizeHTML(`<i data-lucide="library" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${escapeHTML(etichettaRadice())}`);
+
+        // Stesso "⋯" delle cartelle: le azioni della radice (crea scheda/cartella,
+        // incolla) devono essere raggiungibili da tastiera, non solo col tasto destro.
+        const actionContainer = document.createElement('div');
+        actionContainer.className = 'opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center transition-all';
+        actionContainer.appendChild(window.creaBottoneOverflow(
+            () => window.vociMenuCartella(''),
+            {
+                className: 'p-1.5 rounded sidebar-action-btn rename',
+                iconClass: 'w-3.5 h-3.5',
+                label: window.t('tooltip_folder_actions', 'Azioni cartella') + ': ' + etichettaRadice()
+            }
+        ));
+
+        riga.appendChild(spanToggle);
+        riga.appendChild(testo);
+        riga.appendChild(actionContainer);
+
+        riga.onclick = () => {
+            window.cartellaAttuale = '';
+            window.cartelleEspanse.add('');
+            window.azzeraFiltriRicerca();
+            switchTab('list');
+            renderSidebar();
+            renderMain();
+        };
+
+        div.appendChild(riga);
+
+        if (filesRadice.length > 0 && isExpanded) {
+            const childContainer = document.createElement('div');
+            filesRadice.forEach(m => childContainer.appendChild(creaRigaFile(m, '', 0)));
+            div.appendChild(childContainer);
+        }
+
+        return div;
+    }
 
     // Imposta l'intera zona del container come drop per il root
     container.ondragover = (e) => { e.preventDefault(); container.classList.add('bg-stone-100'); };
@@ -270,11 +390,15 @@ function renderSidebar() {
 function aggiornaSelectCartelle() {
     const select = document.getElementById('form-cartella');
     select.innerHTML = window.sanitizeHTML('');
-    [...appData.cartelle].sort((a, b) => {
-        if (a === 'Generale') return -1;
-        if (b === 'Generale') return 1;
-        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    }).forEach(c => {
+
+    // Radice come prima opzione: si può salvare una scheda senza sceglierle una cartella
+    const optRadice = document.createElement('option');
+    optRadice.value = '';
+    optRadice.textContent = etichettaRadice();
+    if (!window.cartellaAttuale) optRadice.selected = true;
+    select.appendChild(optRadice);
+
+    [...appData.cartelle].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c;
         // Sostituisce la barra con una freccia per estetica nel menu a tendina
@@ -291,6 +415,62 @@ function toggleSidebar() {
     sidebar.classList.toggle('hidden-tab');
 }
 
+/** Apre il pannello richiesto senza mai chiuderlo (switchSidebarTab e' un toggle). */
+// --- Fase 5.2: i 5 pulsanti dell'header sono un tablist vero ---
+// `tabName === null` = sidebar chiusa: nessun tab selezionato, ma il gruppo resta
+// raggiungibile con Tab perché il primo pulsante conserva tabindex 0 (roving tabindex).
+function tabSidebar() {
+    return Array.from(document.querySelectorAll('#sidebar-tablist [role="tab"]'))
+        .filter(b => b.offsetParent !== null);   // i tab cloud sono nascosti su vault locale
+}
+
+function aggiornaStatoTab(tabName) {
+    const tutti = Array.from(document.querySelectorAll('#sidebar-tablist [role="tab"]'));
+    tutti.forEach(btn => {
+        const attivo = btn.dataset.tab === tabName;
+        btn.classList.toggle('tab-active', attivo);
+        btn.setAttribute('aria-selected', attivo ? 'true' : 'false');
+        // aria-expanded resta accanto ad aria-selected: qui dice anche se il pannello
+        // (cioè l'intera sidebar) è aperto, informazione che aria-selected da solo non dà.
+        btn.setAttribute('aria-expanded', attivo ? 'true' : 'false');
+        btn.tabIndex = attivo ? 0 : -1;
+    });
+    if (!tabName) {
+        const visibili = tabSidebar();
+        if (visibili.length) visibili[0].tabIndex = 0;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tablist = document.getElementById('sidebar-tablist');
+    if (!tablist) return;
+    aggiornaStatoTab(null);
+    tablist.addEventListener('keydown', (e) => {
+        const visibili = tabSidebar();
+        if (!visibili.length) return;
+        const i = visibili.indexOf(document.activeElement);
+        let prossimo = -1;
+        if (e.key === 'ArrowRight') prossimo = (i + 1 + visibili.length) % visibili.length;
+        else if (e.key === 'ArrowLeft') prossimo = (i - 1 + visibili.length) % visibili.length;
+        else if (e.key === 'Home') prossimo = 0;
+        else if (e.key === 'End') prossimo = visibili.length - 1;
+        else return;
+        e.preventDefault();
+        // Manual activation: le frecce spostano solo il fuoco, l'apertura resta a
+        // Invio/Spazio. Aprire un pannello a ogni freccia farebbe partire renderHistoryList
+        // (che interroga il cloud) mentre l'utente sta solo scorrendo.
+        visibili.forEach(b => { b.tabIndex = -1; });
+        visibili[prossimo].tabIndex = 0;
+        visibili[prossimo].focus();
+    });
+});
+
+window.apriSidebarTab = function(tabName) {
+    const sidebar = document.getElementById('sidebar');
+    const gia = tabName === _currentSidebarTab && !sidebar.classList.contains('hidden-tab');
+    if (!gia) switchSidebarTab(tabName);
+};
+
 function switchSidebarTab(tabName) {
     const sidebar = document.getElementById('sidebar');
     const isCurrentlyHidden = sidebar.classList.contains('hidden-tab');
@@ -298,17 +478,16 @@ function switchSidebarTab(tabName) {
     // Se clicco la stessa tab e la sidebar è aperta, la chiudo
     if (tabName === _currentSidebarTab && !isCurrentlyHidden) {
         sidebar.classList.add('hidden-tab');
+        // L'active state deve seguire la visibilità reale del pannello: lasciarlo acceso
+        // su una sidebar chiusa fa sembrare "rotto" il pulsante (nulla cambia al click).
+        aggiornaStatoTab(null);
         return;
     }
 
     // Altrimenti apro la sidebar e cambio tab
     sidebar.classList.remove('hidden-tab');
     _currentSidebarTab = tabName;
-
-    // Active state visivo sul bottone tab corrispondente
-    document.querySelectorAll('[data-tab]').forEach(btn => btn.classList.remove('tab-active'));
-    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    if (activeBtn) activeBtn.classList.add('tab-active');
+    aggiornaStatoTab(tabName);
 
     document.getElementById('sidebar-folders').classList.add('hidden-tab');
     document.getElementById('sidebar-search').classList.add('hidden-tab');
@@ -353,8 +532,7 @@ window.renderSourceControl = function() {
     const modificati = appData.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
     const incoming = window.incomingChanges || [];
 
-    const incomingIndicator = document.getElementById('incoming-updates-indicator');
-    const hasIncomingUpdates = incomingIndicator && !incomingIndicator.classList.contains('hidden');
+    const hasIncomingUpdates = !!window.modificheInEntrata;
 
     let totalCount = modificati.length + incoming.length;
     if (hasIncomingUpdates && incoming.length === 0) totalCount += 1;
@@ -421,7 +599,7 @@ window.renderSourceControl = function() {
         const li = document.createElement('li');
         li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer border-b border-stone-100 dark:border-stone-800/50 last:border-0";
         
-        li.title = "Clicca per mostrare le modifiche";
+        li.title = window.t('tooltip_click_show_changes', 'Clicca per mostrare le modifiche');
         li.onclick = (e) => {
             e.stopPropagation();
             if (isIncoming) {
@@ -592,17 +770,18 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     const vaultName = pathToRemove.split(/[\\/\\\\]/).pop();
     
     const modalHtml = `
-        <div id="vault-delete-modal" class="modal-overlay z-150 flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        <div id="vault-delete-modal" class="modal-overlay z-modal-alert flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
             <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl">
                 <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
-                <h3 class="text-xl font-bold mb-2">Rimuovi Archivio</h3>
+                <h3 class="text-xl font-bold mb-2">${escapeHTML(window.t('modal_vault_remove_title', 'Rimuovi Archivio'))}</h3>
                 <p class="text-sm text-stone-600 mb-6">
-                    Vuoi solo rimuovere l'Archivio <strong>${vaultName}</strong> dall'elenco o eliminare definitivamente tutti i suoi file dal computer?
+                    ${window.t('modal_vault_remove_desc', "Vuoi solo rimuovere l'Archivio {var0} dall'elenco o eliminare definitivamente tutti i suoi file dal computer?")
+                        .replace('{var0}', '<strong>' + escapeHTML(vaultName) + '</strong>')}
                 </p>
                 <div class="flex flex-col gap-2">
-                    <button id="btn-delete-files" class="btn btn-danger w-full justify-center">Sì, elimina anche i file</button>
-                    <button id="btn-remove-list" class="btn btn-secondary w-full justify-center">Rimuovi solo dall'elenco</button>
-                    <button id="btn-cancel-delete" class="btn btn-ghost w-full justify-center mt-2">Annulla</button>
+                    <button id="btn-delete-files" class="btn btn-danger w-full justify-center">${escapeHTML(window.t('btn_vault_delete_files', 'Sì, elimina anche i file'))}</button>
+                    <button id="btn-remove-list" class="btn btn-secondary w-full justify-center">${escapeHTML(window.t('btn_vault_remove_list', "Rimuovi solo dall'elenco"))}</button>
+                    <button id="btn-cancel-delete" data-modal-cancel class="btn btn-ghost w-full justify-center mt-2" data-i18n="btn_cancel">Annulla</button>
                 </div>
             </div>
         </div>
@@ -696,7 +875,7 @@ window.aggiornaListaVault = async function() {
                         delBtn.className = 'p-1 rounded hover:bg-red-100 text-stone-400 hover:text-red-600 transition-colors shrink-0 opacity-50 hover:opacity-100';
                         delBtn.innerHTML = window.sanitizeHTML('<i data-lucide="x" class="w-3.5 h-3.5"></i>');
                         delBtn.onclick = (e) => window.rimuoviVaultDallaLista(e, path);
-                        delBtn.title = "Rimuovi dalla lista";
+                        delBtn.title = window.t('tooltip_remove_from_list', 'Rimuovi dalla lista');
                         divContainer.appendChild(delBtn);
                     }
                     

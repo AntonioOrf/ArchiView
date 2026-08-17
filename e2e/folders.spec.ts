@@ -84,6 +84,41 @@ test.describe('Cartelle', () => {
     expect(appData.cartelle).not.toContain('ConSchedeDaEliminare');
   });
 
+  // Radice virtuale: nessuna cartella viene creata automaticamente all'apertura
+  // di un vault nuovo, e le schede senza cartella restano comunque raggiungibili.
+  test('vault nuovo: nessuna cartella auto-creata, solo la riga radice', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
+
+    const appData = await getAppData(page);
+    expect(appData.cartelle).toEqual([]);
+    await expect(page.locator('#folder-root-row')).toBeVisible();
+    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(1);
+  });
+
+  test('scheda creata senza cartelle finisce nella radice ed è visibile', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
+    await createItemViaForm(page, 'MS-RADICE-001');
+
+    const appData = await getAppData(page);
+    expect(appData.manoscritti.find((m: any) => m.segnatura === 'MS-RADICE-001').cartella).toBe('');
+    expect(appData.cartelle).toEqual([]);
+    await expect(page.locator('main')).toContainText('MS-RADICE-001');
+  });
+
+  test('eliminare l\'ultima cartella riporta alla radice senza errori', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
+    await createFolder(page, 'Unica');
+
+    await page.evaluate(() => (window as any).eliminaCartellaDaSidebar('Unica'));
+    await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
+    await page.locator('#btn-bottom-confirm-yes').click();
+
+    const appData = await getAppData(page);
+    expect(appData.cartelle).toEqual([]);
+    expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
+    await expect(page.locator('#folder-root-row')).toBeVisible();
+  });
+
   test('validazione: nome cartella vuoto mostra errore e non chiude il modal', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
     await page.evaluate(() => (window as any).aggiungiCartella());

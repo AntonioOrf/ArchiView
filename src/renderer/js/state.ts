@@ -1,6 +1,7 @@
 // @ts-nocheck
 let appData = {
-    cartelle: ['Generale'], 
+    // Nessuna cartella predefinita: '' è la radice virtuale del vault (vedi renderSidebar)
+    cartelle: [],
     manoscritti: [],
     tipiDocumento: [
         { id: 'imbreviature', nome: 'Imbreviature Notarili', campi: ['Marginalia', 'Notaio', 'dataCronica', 'dataTopica', 'attori_dinamici', 'tipo_di_atto', 'oggetto', 'elementi_economici'] },
@@ -9,7 +10,7 @@ let appData = {
     ],
     trascrizioneEditorWidth: '50%'
 };
-window.cartellaAttuale = 'Generale';
+window.cartellaAttuale = '';
 
 async function initData() {
     if (window.apiBrowser) {
@@ -17,7 +18,7 @@ async function initData() {
         if (datiSalvati) {
             // Migrazione: Se il file vecchio era solo un array (lista piatta), lo converte nel nuovo formato
             if (Array.isArray(datiSalvati)) {
-                appData.manoscritti = datiSalvati.map(m => ({...m, cartella: 'Generale', tipoDocumento: 'manoscritto'}));
+                appData.manoscritti = datiSalvati.map(m => ({...m, cartella: '', tipoDocumento: 'manoscritto'}));
                 await window.apiBrowser.salvaDati(appData); // Salva subito il nuovo formato
             } else {
                 // Formato già corretto
@@ -29,11 +30,11 @@ async function initData() {
             appData.baseObjects = datiBaseSalvati;
         }
     }
-    // Assicuriamoci che esista sempre almeno una cartella
-    if (!appData.cartelle || appData.cartelle.length === 0) {
-        appData.cartelle = ['Generale'];
+    // L'albero può restare vuoto: i record senza cartella vivono nella radice virtuale ('')
+    if (!appData.cartelle) {
+        appData.cartelle = [];
     }
-    
+
     if (!appData.tipiDocumento) {
         appData.tipiDocumento = [];
     }
@@ -64,7 +65,7 @@ async function initData() {
     appData.manoscritti.forEach(m => {
         // Se un record vecchio usava 'manoscritto', lo passiamo a un modello compatibile o al primo
         if (!m.tipoDocumento || m.tipoDocumento === 'manoscritto') m.tipoDocumento = 'imbreviature';
-        if (!m.cartella) m.cartella = 'Generale';
+        if (!m.cartella) m.cartella = '';
     });
     
     if (!appData.trascrizioneEditorWidth) appData.trascrizioneEditorWidth = '50%';
@@ -96,13 +97,8 @@ async function initData() {
 
 window.impostaModifichePendenti = function(stato) {
     window.modificheLocaliPendenti = stato;
-    const ind = document.getElementById('pending-changes-indicator');
-    if (ind) {
-        if (stato) ind.classList.remove('hidden');
-        else ind.classList.add('hidden');
-        ind.classList.add('flex'); // Assicura che diventi flex se visibile
-        if (!stato) ind.classList.remove('flex'); // Rimuove flex se nascosto
-    }
+    if (window.statoCloud) window.statoCloud.pendenti = !!stato;
+    if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 };
 
 // Gestore Annullamento (Undo)

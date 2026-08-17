@@ -46,8 +46,8 @@ test.describe('Tag e Ricerca', () => {
       const w = window as any;
       // @ts-ignore
       appData.manoscritti.push(
-        { id: crypto.randomUUID(), cartella: 'Generale', tipoDocumento: 'manoscritto', segnatura: 'A', tags: 'rosso, grande', allegati: [], lastModified: Date.now() },
-        { id: crypto.randomUUID(), cartella: 'Generale', tipoDocumento: 'manoscritto', segnatura: 'B', tags: 'rosso, piccolo', allegati: [], lastModified: Date.now() },
+        { id: crypto.randomUUID(), cartella: '', tipoDocumento: 'manoscritto', segnatura: 'A', tags: 'rosso, grande', allegati: [], lastModified: Date.now() },
+        { id: crypto.randomUUID(), cartella: '', tipoDocumento: 'manoscritto', segnatura: 'B', tags: 'rosso, piccolo', allegati: [], lastModified: Date.now() },
       );
       await w.Store.commit();
     });

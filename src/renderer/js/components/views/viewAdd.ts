@@ -7,15 +7,15 @@
             const html = `
             <div id="view-add" class="hidden-tab fade-in max-w-2xl mx-auto pb-10">
                 <div class="flex items-center gap-3 mb-4">
-                    <button id="btn-back-to-list" onclick="if(typeof switchTab === 'function') switchTab('list');" class="text-stone-500 hover:text-amber-700 p-1.5 bg-stone-100 hover:bg-amber-100 rounded-sm transition-colors" title="Torna alla lista">
+                    <button id="btn-back-to-list" onclick="if(typeof switchTab === 'function') switchTab('list');" class="text-stone-500 hover:text-amber-700 p-1.5 bg-stone-100 hover:bg-amber-100 rounded-sm transition-colors" data-i18n-title="tooltip_back_to_list" data-i18n-aria-label="tooltip_back_to_list" title="Torna alla lista" aria-label="Torna alla lista">
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </button>
                     <h2 id="form-title" class="text-2xl font-semibold text-amber-800" data-i18n="title_new_record">Compila Nuova Scheda</h2>
                 </div>
                 
-                <div class="sticky top-2 z-40 flex justify-end gap-3 mb-4 pointer-events-none" style="margin-left: -1rem; margin-right: -1rem; padding-right: 1rem;">
+                <div class="sticky top-2 z-sticky flex justify-end gap-3 mb-4 pointer-events-none" style="margin-left: -1rem; margin-right: -1rem; padding-right: 1rem;">
                     <button style="pointer-events: auto;" type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden btn bg-stone-200 hover:bg-stone-300 text-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600 dark:text-stone-200 py-2 px-4 text-sm whitespace-nowrap shadow-md border border-stone-300 dark:border-stone-600 rounded-md transition-colors" data-i18n="btn_cancel_edit">Annulla</button>
-                    <button style="pointer-events: auto;" type="submit" form="manoscritto-form" id="btn-submit-form" class="btn btn-primary py-2 px-6 text-sm whitespace-nowrap shadow-md rounded-md">
+                    <button style="pointer-events: auto;" type="submit" form="manoscritto-form" id="btn-submit-form" data-shortcut="Ctrl+S" data-i18n-title="tooltip_save_record" title="Salva la scheda" class="btn btn-primary py-2 px-6 text-sm whitespace-nowrap shadow-md rounded-md">
                         <i data-lucide="save" class="w-4 h-4 mr-1 hidden sm:inline-block"></i>
                         <span id="testo-btn-submit" data-i18n="btn_save_record">Salva Scheda</span>
                     </button>

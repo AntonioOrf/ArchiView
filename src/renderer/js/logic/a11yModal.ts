@@ -17,7 +17,10 @@
     function isVisible(el) {
         if (!el || SKIP_IDS.has(el.id)) return false;
         if (el.classList.contains('hidden-tab') || el.classList.contains('hidden')) return false;
-        return el.offsetParent !== null;
+        // NON usare offsetParent: per un elemento `position: fixed` è null per definizione,
+        // e ogni .modal-overlay è fixed. Con quel test isVisible restituiva sempre false,
+        // quindi onOpen/onClose e il focus-trap non si attivavano su NESSUN modale.
+        return el.getClientRects().length > 0;
     }
 
     // Durante un tour driver.js (body.driver-active) è driver a gestire focus/overlay e ad

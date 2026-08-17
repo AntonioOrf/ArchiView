@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @source "../";
 
+/* I temi si applicano con una classe su <html> (vedi cambiaTemaSelezionato), non con
+   prefers-color-scheme: senza questa dichiarazione ogni utility dark:* del progetto
+   resta inerte e i temi scuri mostrano i colori chiari. Solo i due temi scuri:
+   .amber-light-theme è chiaro e deve restare fuori. */
+@custom-variant dark (&:where(.dark-theme, .dark-theme *, .blue-dark-theme, .blue-dark-theme *));
+
 .driver-popover-close-btn { display: block !important; }  
 
 /* FIX CURSORE: In alcuni ambienti il cursore scompare sui temi chiari */

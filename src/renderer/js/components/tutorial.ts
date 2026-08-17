@@ -18,7 +18,6 @@ window.avviaTutorial = async function () {
         return;
     }
 
-    const cloudButtons = document.getElementById('cloud-buttons-container');
     // isCloud viene riletto dopo gli await per evitare race con aggiornaVisibilitaCloud()
     let isTutorialWorkspace = false;
     if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
@@ -28,7 +27,7 @@ window.avviaTutorial = async function () {
         }
     }
     // Rileggiamo isCloud e isAuthenticated dopo l'await, quando il DOM è sicuramente aggiornato
-    const isCloud = cloudButtons && !cloudButtons.classList.contains('hidden');
+    const isCloud = !!(window.statoCloud && window.statoCloud.vaultCloud);
     const isAuthenticated = !!(window.driveStatus && window.driveStatus.isAuthenticated);
 
     if (typeof appData !== 'undefined' && !isTutorialWorkspace) {
@@ -58,13 +57,15 @@ window.avviaTutorial = async function () {
                 );
                 return;
             } else {
+                // appData.cartelle è un array di PERCORSI (stringhe): inserirci un
+                // oggetto faceva esplodere renderSidebar al primo percorso.split('/').
                 if (!appData.cartelle) appData.cartelle = [];
-                if (!appData.cartelle.find(c => c.nome === 'Tutorial')) {
-                    appData.cartelle.push({ id: 'cartella-tutorial', nome: 'Tutorial', createdAt: new Date().toISOString() });
+                if (!appData.cartelle.includes('Tutorial')) {
+                    appData.cartelle.push('Tutorial');
                 }
                 appData.manoscritti.push({
                     id: 'test-doc-tutorial',
-                    cartella: 'cartella-tutorial',
+                    cartella: 'Tutorial',
                     tipo: 'Manoscritto',
                     titolo: 'Esempio di Scheda',
                     segnatura: 'Documento di Esempio',
@@ -138,7 +139,7 @@ window.avviaTutorial = async function () {
             element: 'header',
             popover: {
                 title: window.t('tut_toolbar_title', 'Barra degli Strumenti Globale'),
-                description: window.t('tut_toolbar_desc', 'Quest\'area consente la navigazione rapida tra le sezioni principali e l\'accesso alle funzioni di gestione dell\'archivio.'),
+                description: window.t('tut_toolbar_desc', 'A sinistra i pannelli di navigazione (cartelle, ricerca, tag, modifiche, storico); a destra lo stato della sincronizzazione cloud. Le azioni sui documenti sono nella barra sopra l\'elenco.'),
                 side: "bottom",
                 align: 'start'
             }
@@ -213,10 +214,10 @@ window.avviaTutorial = async function () {
 
     if (isCloud) {
         steps.push({
-            element: '#cloud-buttons-container',
+            element: '#cloud-status-btn',
             popover: {
                 title: window.t('tut_cloud_sync_title', 'Sincronizzazione Remota'),
-                description: window.t('tut_cloud_sync_desc', 'Strumenti per la gestione del repository Cloud: utilizza "Fetch" per verificare la presenza di aggiornamenti, "Scarica" per allineare il database locale e "Carica" per pubblicare le tue revisioni.'),
+                description: window.t('tut_cloud_sync_desc', 'Qui vedi in una riga lo stato dell\'archivio remoto: sincronizzato, aggiornamenti in entrata o modifiche locali da inviare. Il clic apre Fetch, Scarica, Carica e il collegamento al Controllo Modifiche.'),
                 side: "bottom",
                 align: 'start'
             }
@@ -266,7 +267,7 @@ window.avviaTutorial = async function () {
             element: '#sidebar-cloud-btn',
             popover: {
                 title: window.t('tut_cloud_integration_title', 'Integrazione Cloud'),
-                description: window.t('tut_cloud_integration_desc', 'L\'archivio corrente è configurato in modalità locale. Seleziona l\'icona Cloud nell\'angolo in basso a sinistra per esplorare le opzioni di connettività.'),
+                description: window.t('tut_cloud_integration_desc', 'L\'archivio corrente è configurato in modalità locale. Seleziona l\'icona Condivisione in basso a sinistra per esplorare le opzioni di connettività.'),
                 side: "right",
                 align: 'start',
                 showButtons: ['close']

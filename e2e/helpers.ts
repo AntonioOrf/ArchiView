@@ -84,7 +84,7 @@ export async function seedItems(
       ids.push(id);
       data.manoscritti.push({
         id,
-        cartella: opts.cartella || 'Generale',
+        cartella: opts.cartella ?? '',
         tipoDocumento: opts.tipoDocumento || 'manoscritto',
         segnatura: `Seed-${String(i).padStart(3, '0')}`,
         tags: opts.tagPrefix ? `${opts.tagPrefix}-${i % 3}` : '',
@@ -177,7 +177,7 @@ export async function expectToast(page: Page, text?: string): Promise<void> {
 export async function injectConflict(page: Page, campo = 'segnatura'): Promise<void> {
   await page.evaluate((campoConflitto) => {
     const w = window as any;
-    const base = { id: 'conflict-1', segnatura: 'Base', cartella: 'Generale', tipoDocumento: 'manoscritto' };
+    const base = { id: 'conflict-1', segnatura: 'Base', cartella: '', tipoDocumento: 'manoscritto' };
     const baseHash = w.getRecordHash(base);
     const local = { ...base, [campoConflitto]: 'Valore Locale' };
     const external = { ...base, [campoConflitto]: 'Valore Cloud' };

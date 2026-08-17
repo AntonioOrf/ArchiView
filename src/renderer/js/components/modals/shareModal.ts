@@ -7,7 +7,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('share-modal')) return;
         const html = `
-    <div id="share-modal" class="modal-overlay hidden-tab z-60 fixed inset-0 flex items-center justify-center">
+    <div id="share-modal" class="modal-overlay hidden-tab z-modal-nested fixed inset-0 flex items-center justify-center">
         <div class="modal-window w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-700">
                 <h3 class="modal-title text-stone-800 dark:text-stone-100 flex items-center gap-2">
@@ -105,8 +105,8 @@
                         <h4 class="text-sm font-bold mb-1 text-stone-800 dark:text-stone-200"><span data-i18n="share_sync_title">Sincronizzazione</span></h4>
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_sync_desc">Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.</span></p>
                         <div class="flex gap-2.5">
-                            <button onclick="riceviModificheHub()" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="download-cloud" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
-                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span class="flex items-center"><i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
+                            <button onclick="riceviModificheHub()" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
+                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
                         </div>
                     </div>
                     <div id="share-member-attachments-box"></div>
@@ -148,8 +148,8 @@
                         <h4 class="text-sm font-bold mb-1 text-stone-800 dark:text-stone-200"><span data-i18n="share_sync_title">Sincronizzazione</span></h4>
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_sync_desc">Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.</span></p>
                         <div class="flex gap-2.5">
-                            <button onclick="riceviModificheHub()" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="download-cloud" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
-                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span class="flex items-center"><i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
+                            <button onclick="riceviModificheHub()" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
+                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
                         </div>
                     </div>
 

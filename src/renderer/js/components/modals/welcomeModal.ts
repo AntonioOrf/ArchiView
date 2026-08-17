@@ -4,7 +4,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('welcome-modal')) {
             const html = `
-    <div id="welcome-modal" class="modal-overlay hidden-tab z-70 bg-stone-900/80 backdrop-blur-sm">
+    <div id="welcome-modal" class="modal-overlay hidden-tab z-modal-nested bg-stone-900/80 backdrop-blur-sm">
         <div class="modal-window max-w-lg p-8 text-center shadow-2xl border-2 border-stone-200 relative">
             <button id="welcome-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 hidden transition-colors" onclick="chiudiWelcomeModal()" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
                 <i data-lucide="x" class="w-5 h-5"></i>
@@ -169,7 +169,7 @@
                     <button onclick="nascondiCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
-                    <button onclick="eseguiRipristinoCloudGlobale()" class="btn btn-secondary text-sm shadow-sm" title="Se non vedi il tuo archivio, cerca in tutto il Drive" data-i18n-title="title_search_everywhere"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>
+                    <button onclick="eseguiRipristinoCloudGlobale()" class="btn btn-secondary text-sm shadow-sm" data-i18n-title="title_search_everywhere" title="Se non vedi il tuo archivio, cerca in tutto il Drive"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>
                 </div>
             </div>
         </div>

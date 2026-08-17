@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { i18n } from "@lingui/core";
 import { messages as enMessages } from "../../locales/en/messages.js";
 import { messages as itMessages } from "../../locales/it/messages.js";
@@ -195,6 +195,20 @@ function _linguiExtraction() {
     i18n._({ id: "btn_sync_now", message: "Sincronizza Ora" });
     i18n._({ id: "label_sync_attachments", message: "Sincronizza allegati automaticamente (PDF/Immagini)" });
     i18n._({ id: "label_advanced_options", message: "Opzioni avanzate" });
+    // Cloud: riepilogo di stato, stati di caricamento e annunci per screen reader
+    i18n._({ id: "modal_cloud_title_backup", message: "Backup personale su Google Drive" });
+    i18n._({ id: "modal_cloud_title_shared", message: "Archivio condiviso su Google Drive" });
+    i18n._({ id: "cloud_shared_hint", message: "I permessi Drive non sono revocabili singolarmente: chi ha il link mantiene l'accesso. Passa all'archivio condiviso per inviti revocabili." });
+    i18n._({ id: "cloud_status_type", message: "Tipo" });
+    i18n._({ id: "cloud_status_type_backup", message: "Backup personale" });
+    i18n._({ id: "cloud_status_type_shared", message: "Archivio condiviso (legacy)" });
+    i18n._({ id: "cloud_status_account", message: "Account" });
+    i18n._({ id: "cloud_status_last_sync", message: "Ultima sincronizzazione" });
+    i18n._({ id: "btn_syncing", message: "Sincronizzazione..." });
+    i18n._({ id: "btn_activating", message: "Attivazione in corso..." });
+    i18n._({ id: "a11y_sync_attachments_on", message: "Sincronizzazione allegati attivata" });
+    i18n._({ id: "a11y_sync_attachments_off", message: "Sincronizzazione allegati disattivata" });
+    i18n._({ id: "a11y_operation_done", message: "Operazione terminata" });
     i18n._({ id: "btn_convert_backup_private", message: "Converti in Backup Personale" });
     i18n._({ id: "btn_convert_shared", message: "Converti in Archivio Condiviso" });
     i18n._({ id: "btn_use_another_account", message: "Usa un altro account Google" });
@@ -451,6 +465,31 @@ function _linguiExtraction() {
 
 // Wrapper per compatibilità con il codice esistente
 const customEn = {
+    // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
+    "btn_new_record": "New record",
+    "btn_new_folder": "New archive",
+    "btn_import": "Import",
+    "tooltip_new_model": "Create a new document model",
+    "tooltip_export_folder": "Export this archive as ZIP",
+    "tooltip_delete_folder": "Delete this archive",
+    "tooltip_delete_folder_not_empty": "You can only delete an empty archive",
+    "tooltip_delete_folder_root": "The archive root cannot be deleted",
+    "folder_root_label": "Archive",
+    "empty_no_folders": "No folders yet. Records stay in the root until you create one.",
+    "tooltip_sharing": "Sharing and collaborators",
+    "nav_panels": "Panels",
+    "tooltip_save_record": "Save the record",
+    "tooltip_back_to_list": "Back to the list",
+    "tooltip_resize": "Drag to resize",
+    "label_not_editable": "Not editable",
+    "tutorial_invite_text": "Want a quick tour of the main features?",
+    "btn_tutorial_start": "Yes, start",
+    "btn_tutorial_dismiss": "No, thanks",
+    "label_active_filters": "Active filters",
+    "filter_search": "Search",
+    "filter_remove_search": "Clear the search",
+    "filter_remove_tag": "Remove this tag",
+    "btn_clear_filters": "Clear all filters",
     "msg_export_success_count": "Export of {var0} records completed successfully!",
     "msg_import_success_count": "{var0} records imported successfully!",
     "msg_delete_count": "{var0} records deleted.",
@@ -627,9 +666,22 @@ const customEn = {
     "cloud_user_fallback": "User",
     "confirm_remove_access": "Are you sure you want to remove access for {var0}?",
     "cloud_invite_email_desc": "Enter the Google email address of the person to invite to the Archive:",
-    "confirm_clean_orphans_desc": "This operation will permanently delete from your PC and Google Drive all attachments no longer associated with any record in the current database. Do you want to proceed?",
+    "confirm_clean_orphans_desc": "This operation will permanently delete from your PC and Google Drive all attachments no longer associated with any record in the current database. This cannot be undone. Do you want to proceed?",
     "btn_delete_orphans": "Delete orphan files",
     "cloud_cleaning_in_progress": "Cleaning in progress...",
+    "modal_cloud_title_backup": "Personal backup on Google Drive",
+    "modal_cloud_title_shared": "Shared archive on Google Drive",
+    "cloud_shared_hint": "Drive permissions cannot be revoked individually: anyone with the link keeps access. Switch to a shared archive for revocable invites.",
+    "cloud_status_type": "Type",
+    "cloud_status_type_backup": "Personal backup",
+    "cloud_status_type_shared": "Shared archive (legacy)",
+    "cloud_status_account": "Account",
+    "cloud_status_last_sync": "Last sync",
+    "btn_syncing": "Syncing...",
+    "btn_activating": "Activating...",
+    "a11y_sync_attachments_on": "Attachment sync enabled",
+    "a11y_sync_attachments_off": "Attachment sync disabled",
+    "a11y_operation_done": "Operation finished",
     "merge_conflict_modal_title": "Sync Conflicts Detected",
     "merge_conflicts_to_resolve": "Conflicts to resolve:",
     "merge_all_resolved": "All conflicts have been resolved!",
@@ -703,6 +755,56 @@ const customEn = {
     "tooltip_move_up": "Move up",
     "tooltip_move_down": "Move down",
     "tooltip_delete": "Delete",
+    "cloud_action_enable_short": "Enable cloud",
+    "cloud_action_connect_short": "Connect",
+    "cloud_action_retry": "Retry",
+    "cloud_action_receive": "Receive",
+    "cloud_action_send": "Send",
+    "cloud_action_check": "Check",
+    "cloud_action_fetch": "Check for updates",
+    "cloud_click_hint": "click for the sync actions",
+    "tooltip_click_for_actions": "Click for available actions",
+    "tooltip_click_show_changes": "Click to show the changes",
+    "tooltip_remove_from_list": "Remove from the list",
+    "modal_vault_remove_title": "Remove archive",
+    "modal_vault_remove_desc": "Do you want to remove the archive {var0} from the list only, or permanently delete all its files from this computer?",
+    "btn_vault_delete_files": "Yes, delete the files too",
+    "btn_vault_remove_list": "Remove from the list only",
+    "cloud_state_local_only": "Local only",
+    "cloud_state_syncing": "Syncing…",
+    "cloud_state_offline": "Offline",
+    "cloud_state_error": "Sync error",
+    "cloud_state_disconnected": "Not connected",
+    "cloud_state_incoming": "Incoming updates",
+    "cloud_state_incoming_n": "{var0} incoming",
+    "cloud_state_pending": "Local changes to upload",
+    "cloud_state_pending_n": "{var0} to upload",
+    "cloud_state_synced": "Synced",
+    "cloud_action_enable": "Enable cloud for this archive",
+    "cloud_action_connect": "Connect cloud account",
+    "cloud_action_view_changes": "View changes",
+    "cloud_action_history": "Version history",
+    "cloud_busy_hint": "Sync in progress",
+    "cloud_disconnected_hint": "Cloud account not connected",
+    "tut_cloud_sync_desc": "This one line shows the state of the remote archive: synced, incoming updates, or local changes to upload. Clicking it opens Fetch, Download, Upload and the link to Source Control.",
+    "menu_edit_record": "Rename / Edit",
+    "menu_copy": "Copy",
+    "menu_cut": "Cut",
+    "menu_paste": "Paste",
+    "menu_paste_here": "Paste here",
+    "menu_paste_folder_here": "Paste folder here",
+    "menu_new_record_here": "New record here",
+    "menu_new_folder_here": "New folder here",
+    "menu_rename_folder": "Rename folder",
+    "menu_open_in_explorer": "Open in File Explorer",
+    "menu_copy_folder": "Copy folder",
+    "menu_cut_folder": "Cut folder",
+    "menu_delete_folder": "Delete folder",
+    "tooltip_more_actions": "More actions",
+    "tooltip_folder_actions": "Folder actions",
+    "btn_clear_selection": "Clear selection",
+    "selection_count_one": "1 record selected",
+    "selection_count_many": "{var0} records selected",
     "vault_type_shared": "Shared",
     "vault_type_backup": "Personal Backup",
     "vault_type_local": "Local",
@@ -817,6 +919,31 @@ const customEn = {
 };
 
 const customIt = {
+    // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
+    "btn_new_record": "Nuova scheda",
+    "btn_new_folder": "Nuovo archivio",
+    "btn_import": "Importa",
+    "tooltip_new_model": "Crea un nuovo modello di documento",
+    "tooltip_export_folder": "Esporta questo archivio in ZIP",
+    "tooltip_delete_folder": "Elimina questo archivio",
+    "tooltip_delete_folder_not_empty": "Puoi eliminare solo un archivio vuoto",
+    "tooltip_delete_folder_root": "La radice dell'archivio non può essere eliminata",
+    "folder_root_label": "Archivio",
+    "empty_no_folders": "Nessuna cartella. Le schede restano nella radice finché non ne crei una.",
+    "tooltip_sharing": "Condivisione e collaboratori",
+    "nav_panels": "Pannelli",
+    "tooltip_save_record": "Salva la scheda",
+    "tooltip_back_to_list": "Torna alla lista",
+    "tooltip_resize": "Trascina per ridimensionare",
+    "label_not_editable": "Non modificabile",
+    "tutorial_invite_text": "Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?",
+    "btn_tutorial_start": "Sì, avvia",
+    "btn_tutorial_dismiss": "No, grazie",
+    "label_active_filters": "Filtri attivi",
+    "filter_search": "Ricerca",
+    "filter_remove_search": "Rimuovi la ricerca",
+    "filter_remove_tag": "Rimuovi questo tag",
+    "btn_clear_filters": "Azzera tutti i filtri",
     "dialog_select_folder": "Seleziona la posizione per il nuovo archivio",
     "dialog_export_zip": "Esporta Backup in ZIP",
     "dialog_import_zip": "Importa Archivio JSON",
@@ -897,9 +1024,22 @@ const customIt = {
     "cloud_user_fallback": "Utente",
     "confirm_remove_access": "Sei sicuro di voler rimuovere l'accesso a {var0}?",
     "cloud_invite_email_desc": "Inserisci l'indirizzo email (Google) della persona da invitare all'Archivio:",
-    "confirm_clean_orphans_desc": "Questa operazione eliminerà definitivamente dal PC e da Google Drive tutti gli allegati che non sono più associati a nessuna scheda nel database corrente. Vuoi procedere?",
+    "confirm_clean_orphans_desc": "Questa operazione eliminerà definitivamente dal PC e da Google Drive tutti gli allegati che non sono più associati a nessuna scheda nel database corrente. L'operazione è irreversibile. Vuoi procedere?",
     "btn_delete_orphans": "Elimina file orfani",
     "cloud_cleaning_in_progress": "Pulizia in corso...",
+    "modal_cloud_title_backup": "Backup personale su Google Drive",
+    "modal_cloud_title_shared": "Archivio condiviso su Google Drive",
+    "cloud_shared_hint": "I permessi Drive non sono revocabili singolarmente: chi ha il link mantiene l'accesso. Passa all'archivio condiviso per inviti revocabili.",
+    "cloud_status_type": "Tipo",
+    "cloud_status_type_backup": "Backup personale",
+    "cloud_status_type_shared": "Archivio condiviso (legacy)",
+    "cloud_status_account": "Account",
+    "cloud_status_last_sync": "Ultima sincronizzazione",
+    "btn_syncing": "Sincronizzazione...",
+    "btn_activating": "Attivazione in corso...",
+    "a11y_sync_attachments_on": "Sincronizzazione allegati attivata",
+    "a11y_sync_attachments_off": "Sincronizzazione allegati disattivata",
+    "a11y_operation_done": "Operazione terminata",
     "merge_conflict_modal_title": "Conflitti di Sincronizzazione Rilevati",
     "merge_conflicts_to_resolve": "Conflitti da risolvere:",
     "merge_all_resolved": "Tutti i conflitti sono stati risolti!",
@@ -973,6 +1113,56 @@ const customIt = {
     "tooltip_move_up": "Sposta su",
     "tooltip_move_down": "Sposta giù",
     "tooltip_delete": "Elimina",
+    "cloud_action_enable_short": "Attiva cloud",
+    "cloud_action_connect_short": "Connetti",
+    "cloud_action_retry": "Riprova",
+    "cloud_action_receive": "Ricevi",
+    "cloud_action_send": "Invia",
+    "cloud_action_check": "Controlla",
+    "cloud_action_fetch": "Controlla aggiornamenti",
+    "cloud_click_hint": "clicca per le azioni di sincronizzazione",
+    "tooltip_click_for_actions": "Clicca per le azioni disponibili",
+    "tooltip_click_show_changes": "Clicca per mostrare le modifiche",
+    "tooltip_remove_from_list": "Rimuovi dalla lista",
+    "modal_vault_remove_title": "Rimuovi Archivio",
+    "modal_vault_remove_desc": "Vuoi solo rimuovere l'Archivio {var0} dall'elenco o eliminare definitivamente tutti i suoi file dal computer?",
+    "btn_vault_delete_files": "Sì, elimina anche i file",
+    "btn_vault_remove_list": "Rimuovi solo dall'elenco",
+    "cloud_state_local_only": "Solo locale",
+    "cloud_state_syncing": "Sincronizzazione…",
+    "cloud_state_offline": "Offline",
+    "cloud_state_error": "Errore di sincronizzazione",
+    "cloud_state_disconnected": "Non connesso",
+    "cloud_state_incoming": "Aggiornamenti in entrata",
+    "cloud_state_incoming_n": "{var0} in entrata",
+    "cloud_state_pending": "Modifiche locali da inviare",
+    "cloud_state_pending_n": "{var0} da inviare",
+    "cloud_state_synced": "Sincronizzato",
+    "cloud_action_enable": "Attiva il cloud per questo archivio",
+    "cloud_action_connect": "Connetti account cloud",
+    "cloud_action_view_changes": "Vedi modifiche",
+    "cloud_action_history": "Storico versioni",
+    "cloud_busy_hint": "Sincronizzazione in corso",
+    "cloud_disconnected_hint": "Account cloud non connesso",
+    "tut_cloud_sync_desc": "Qui vedi in una riga lo stato dell’archivio remoto: sincronizzato, aggiornamenti in entrata o modifiche locali da inviare. Il clic apre Fetch, Scarica, Carica e il collegamento al Controllo Modifiche.",
+    "menu_edit_record": "Rinomina / Modifica",
+    "menu_copy": "Copia",
+    "menu_cut": "Taglia",
+    "menu_paste": "Incolla",
+    "menu_paste_here": "Incolla qui",
+    "menu_paste_folder_here": "Incolla cartella qui",
+    "menu_new_record_here": "Crea nuova scheda qui",
+    "menu_new_folder_here": "Crea nuova cartella qui",
+    "menu_rename_folder": "Rinomina cartella",
+    "menu_open_in_explorer": "Apri in Esplora Risorse",
+    "menu_copy_folder": "Copia cartella",
+    "menu_cut_folder": "Taglia cartella",
+    "menu_delete_folder": "Elimina cartella",
+    "tooltip_more_actions": "Altre azioni",
+    "tooltip_folder_actions": "Azioni cartella",
+    "btn_clear_selection": "Deseleziona",
+    "selection_count_one": "1 scheda selezionata",
+    "selection_count_many": "{var0} schede selezionate",
     "vault_type_shared": "Condiviso",
     "vault_type_backup": "Backup Personale",
     "vault_type_local": "Locale",
@@ -1133,6 +1323,10 @@ window.applicaTraduzioniHtml = function() {
         const key = el.getAttribute('data-i18n-aria-label');
         el.setAttribute('aria-label', window.t(key, el.getAttribute('aria-label') || key));
     });
+
+    // Le scorciatoie vanno riapplicate qui: le righe sopra hanno appena riscritto
+    // title e aria-label dalle chiavi, cancellando il suffisso precedente.
+    if (typeof window.applicaScorciatoieTooltip === 'function') window.applicaScorciatoieTooltip();
 }
 
 // Applica le traduzioni all'avvio

@@ -1,23 +1,15 @@
         <aside id="sidebar" class="w-full md:w-72 shrink-0 panel-glass flex flex-col h-full overflow-hidden transition-all duration-300">
             
-            <div id="sidebar-folders" class="flex flex-col flex-1 min-h-0">
+            <div id="sidebar-folders" role="tabpanel" aria-labelledby="btn-tab-folders" class="flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 flex justify-between items-center shrink-0">
                     <h2 class="font-bold flex items-center gap-2">
                         <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span></h2>
-                    <div class="flex gap-1.5">
-                        <button onclick="importaManoscritto()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" data-i18n-title="tooltip_import" data-i18n-aria-label="tooltip_import" title="Importa Schedatura (da ZIP)">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="aggiungiCartella()" class="btn btn-primary btn-icon" style="padding: 0.25rem;" data-i18n-title="tooltip_add_folder" data-i18n-aria-label="tooltip_add_folder" title="Crea nuovo archivio">
-                            <i data-lucide="folder-plus" class="w-4 h-4"></i>
-                        </button>
-                    </div>
                 </div>
                 <div id="folder-list" class="flex-1 p-3 overflow-y-auto custom-scroll space-y-1">
                 </div>
             </div>
 
-            <div id="sidebar-search" class="hidden-tab flex flex-col flex-1 min-h-0">
+            <div id="sidebar-search" role="tabpanel" aria-labelledby="btn-tab-search" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-3">
                         <i data-lucide="search" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_search">Ricerca Globale</span></h2>
@@ -31,7 +23,7 @@
                 </div>
             </div>
 
-            <div id="sidebar-tags" class="hidden-tab flex flex-col flex-1 min-h-0">
+            <div id="sidebar-tags" role="tabpanel" aria-labelledby="btn-tab-tags" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-3">
                         <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span></h2>
@@ -46,7 +38,7 @@
                 </div>
             </div>
 
-            <div id="sidebar-source-control" class="hidden-tab flex flex-col flex-1 min-h-0">
+            <div id="sidebar-source-control" role="tabpanel" aria-labelledby="btn-tab-source-control" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-1">
                         <i data-lucide="git-pull-request" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_source_control">Controllo Modifiche</span>
@@ -61,7 +53,7 @@
                 </ul>
             </div>
 
-            <div id="sidebar-history" class="hidden-tab flex flex-col flex-1 min-h-0">
+            <div id="sidebar-history" role="tabpanel" aria-labelledby="btn-tab-history" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-1">
                         <i data-lucide="history" class="w-5 h-5 text-amber-700"></i> <span data-i18n="sidebar_cloud_history">Storico Cloud</span>
@@ -95,8 +87,13 @@
                     <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
-                    <button id="sidebar-cloud-btn" onclick="if(window.apriShareModal) apriShareModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_cloud_sync" data-i18n-aria-label="tooltip_cloud_sync" title="Cloud & Sincronizzazione">
-                        <i data-lucide="cloud" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    <!-- Icona coerente con l'azione: apre la CONDIVISIONE, non la sincronizzazione
+                         (la nuvola resta riservata al cloud, in Zona 2). -->
+                    <button id="sidebar-cloud-btn" onclick="if(window.apriShareModal) apriShareModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
+                        <i data-lucide="users" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    </button>
+                    <button onclick="if(window.avviaTutorial) window.avviaTutorial()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial">
+                        <i data-lucide="help-circle" class="w-5 h-5"></i>
                     </button>
                     <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
                         <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
@@ -104,7 +101,7 @@
                 </div>
 
                 <!-- Popover Vault Switcher -->
-                <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white dark:bg-stone-800 rounded-md shadow-2xl border border-stone-200 dark:border-stone-700 p-1.5 z-50 flex flex-col max-h-64">
+                <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white dark:bg-stone-800 rounded-md shadow-2xl border border-stone-200 dark:border-stone-700 p-1.5 z-dropdown flex flex-col max-h-64">
                     <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
                     <div class="w-full h-px bg-stone-200 my-1.5"></div>
                     <button onclick="mostraWelcomeModal(); toggleVaultSwitcher(new Event('click'));" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
