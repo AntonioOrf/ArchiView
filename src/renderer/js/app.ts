@@ -59,6 +59,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (error) {
         console.error("FATAL ERROR", error);
+    } finally {
+        // Segnale di "app pronta": l'HTML statico (header, sidebar, welcome modal) è nel
+        // documento fin dal primo frame, quindi la sua comparsa non dice nulla su quali
+        // script siano già stati eseguiti. Chi automatizza l'app deve poter distinguere
+        // le due cose invece di dedurle da un elemento visibile.
+        // Nel finally: anche un avvio andato male è "finito", e restare in attesa per
+        // sempre nasconderebbe l'errore vero dietro un timeout.
+        window.__appPronta = true;
+        document.dispatchEvent(new CustomEvent('archiview:pronta'));
     }
 });
 
@@ -1021,15 +1030,15 @@ window.voceMenuIncolla = function(folderPath) {
 
 window.vociMenuCartella = function(folderPath) {
     // La radice virtuale ('') non è una cartella vera: si può creare dentro e incollare,
-    // ma non rinominare/copiare/eliminare. 'ROOT' = click a vuoto nell'area della sidebar.
+    // ma non rinominare/copiare/eliminare. 'ROOT' = click a vuoto nell'area della sidebar,
+    // che è la stessa cosa della radice: senza una riga dedicata nell'albero, quel menu è
+    // l'unico posto da cui nasce la prima cartella di un archivio vuoto.
     const isRadice = folderPath === '' || folderPath === 'ROOT';
-    const isAreaVuota = folderPath === 'ROOT';
+    const percorsoCreazione = isRadice ? '' : folderPath;
     const voci = [];
 
-    if (!isAreaVuota) {
-        voci.push({ label: window.t('menu_new_record_here', 'Crea nuova scheda'), icon: 'file-plus', onSelect: () => window.creaSchedaContext(folderPath) });
-        voci.push({ label: window.t('menu_new_folder_here', 'Crea nuova cartella'), icon: 'folder-plus', onSelect: () => window.mostraAggiungiCartellaContext(folderPath) });
-    }
+    voci.push({ label: window.t('menu_new_record_here', 'Crea nuova scheda'), icon: 'file-plus', onSelect: () => window.creaSchedaContext(percorsoCreazione) });
+    voci.push({ label: window.t('menu_new_folder_here', 'Crea nuova cartella'), icon: 'folder-plus', onSelect: () => window.mostraAggiungiCartellaContext(percorsoCreazione) });
 
     if (!isRadice) {
         voci.push({ separator: true });

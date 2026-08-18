@@ -84,15 +84,41 @@ test.describe('Cartelle', () => {
     expect(appData.cartelle).not.toContain('ConSchedeDaEliminare');
   });
 
-  // Radice virtuale: nessuna cartella viene creata automaticamente all'apertura
-  // di un vault nuovo, e le schede senza cartella restano comunque raggiungibili.
-  test('vault nuovo: nessuna cartella auto-creata, solo la riga radice', async ({ page, userDataDir }) => {
+  // Radice virtuale: nessuna cartella viene creata automaticamente all'apertura di un
+  // vault nuovo. L'albero mostra solo cartelle, quindi resta proprio vuoto.
+  test('vault nuovo: nessuna cartella auto-creata, albero vuoto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
 
     const appData = await getAppData(page);
     expect(appData.cartelle).toEqual([]);
-    await expect(page.locator('#folder-root-row')).toBeVisible();
-    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(1);
+    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
+  });
+
+  test('il tasto destro nell\'area vuota crea la prima cartella', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
+
+    await page.evaluate(() => (window as any).showSidebarFolderContextMenu(
+      new MouseEvent('contextmenu', { clientX: 40, clientY: 200 }), 'ROOT'));
+    await page.locator('#custom-context-menu [role="menuitem"]', { hasText: /Crea nuova cartella|New folder/i }).click();
+
+    await expect(page.locator('#folder-modal')).toBeVisible();
+    await page.locator('#folder-name-input').fill('Prima');
+    await page.evaluate(() => (window as any).confermaAggiungiCartella());
+
+    expect((await getAppData(page)).cartelle).toEqual(['Prima']);
+    await expect(page.locator('#folder-list')).toContainText('Prima');
+  });
+
+  test('click nell\'area vuota della sidebar torna alla radice', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
+    await createFolder(page, 'Notarile');
+    expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('Notarile');
+
+    const box = (await page.locator('#sidebar-folders').boundingBox())!;
+    await page.mouse.click(box.x + 20, box.y + box.height - 12);
+
+    expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
   });
 
   test('scheda creata senza cartelle finisce nella radice ed è visibile', async ({ page, userDataDir }) => {
@@ -116,7 +142,7 @@ test.describe('Cartelle', () => {
     const appData = await getAppData(page);
     expect(appData.cartelle).toEqual([]);
     expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
-    await expect(page.locator('#folder-root-row')).toBeVisible();
+    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(0);
   });
 
   test('validazione: nome cartella vuoto mostra errore e non chiude il modal', async ({ page, userDataDir }) => {

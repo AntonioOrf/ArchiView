@@ -14,6 +14,16 @@ export async function createLocalWorkspace(
   // La welcome modal deve essere visibile al primo avvio.
   await expect(page.locator('#welcome-modal')).toBeVisible();
 
+  // ...ma "visibile" non vuol dire "pronta": la modal vive nell'HTML statico, mentre le
+  // funzioni che i test invocano arrivano da script defer caricati dopo. Senza questa
+  // attesa, al primo avvio dopo una build (cache fredda) l'intera suite falliva con
+  // "window.t is not a function" — un rosso che sembra flakiness e non lo è.
+  await page.waitForFunction(
+    () => typeof (window as any).t === 'function' && typeof (window as any).creaCartellaIniziale === 'function',
+    null,
+    { timeout: 15_000 },
+  );
+
   // Apri il form "Crea Nuova Cartella Locale".
   await page.locator('#welcome-buttons button', { hasText: 'Crea Nuova Cartella Locale' }).click();
   await expect(page.locator('#welcome-create-form')).toBeVisible();
@@ -30,6 +40,11 @@ export async function createLocalWorkspace(
   // Il main process ricarica la finestra: attendi l'app pronta (header + niente welcome).
   await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('#welcome-modal')).toBeHidden();
+
+  // Anche qui l'HTML statico mente: #btn-tab-add sta nel documento dal primo frame.
+  // __appPronta è alzato in coda all'init di app.js, cioè quando ogni script defer ha
+  // girato — l'unico momento in cui invocare le funzioni globali dell'app è sicuro.
+  await page.waitForFunction(() => (window as any).__appPronta === true, null, { timeout: 15_000 });
 
   // Al primo avvio l'app mostra il changelog (versione mai vista) e talvolta un banner
   // di conferma: entrambi sono overlay che intercettano i click. Vanno chiusi.

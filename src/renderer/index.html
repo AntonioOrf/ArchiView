@@ -35,6 +35,17 @@
         </main>
     </div>
 
+    <!-- FONDAMENTA, prima di ogni altro script dell'app. Gli script defer girano in ordine
+         di documento: con i18n in coda esisteva una finestra — breve a cache calda, lunga
+         al primo avvio dopo un aggiornamento — in cui la welcome modal era gia' visibile e
+         cliccabile ma window.t non c'era ancora, e creaCartellaIniziale() moriva con
+         "t is not a function" facendo fallire in silenzio la creazione dell'archivio.
+         Le due vanno insieme e in quest'ordine: i modali chiamano applicaTraduzioniHtml()
+         gia' in fase di init, e quella usa sia window.t (i18n) sia window.sanitizeHTML
+         (utils). Spostare solo i18n rompe i modali invece di sistemarli. -->
+    <script defer src="js/logic/i18n.js"></script>
+    <script defer src="js/logic/utils.js"></script>
+
     <!-- Nuovi componenti Modali -->
     <script defer src="js/components/modals/welcomeModal.js"></script>
     <script defer src="js/components/modals/imagePdfModal.js"></script>
@@ -60,12 +71,10 @@
     <script defer src="js/components/views/viewTrascrizione.js"></script>
     <script defer src="js/components/tutorial.js"></script>
 
-    <!-- Script Application -->
-    <script defer src="js/logic/i18n.js"></script>
+    <!-- Script Application (i18n.js è caricato prima dei componenti, vedi sopra) -->
     <script defer src="js/state.js"></script>
     <script defer src="js/store.js"></script>
-    <!-- Logic -->
-    <script defer src="js/logic/utils.js"></script>
+    <!-- Logic (utils.js e' gia' caricato insieme a i18n.js fra le fondamenta) -->
     <script defer src="js/logic/foldersLogic.js"></script>
     <script defer src="js/logic/itemsLogic.js"></script>
     <script defer src="js/logic/attachmentsLogic.js"></script>
