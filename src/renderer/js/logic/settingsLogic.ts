@@ -25,6 +25,10 @@ window.apriImpostazioni = async function() {
             }
         }
         
+        // Modalità prestazioni ridotte (preferenza globale, file in userData)
+        const perfToggle = document.getElementById('settings-low-perf');
+        if (perfToggle) perfToggle.checked = !!window.modalitaPrestazioniRidotte;
+
         // Aggiorna percorso allegati
         const attachmentsPathDiv = document.getElementById('settings-attachments-path');
         const btnRestore = document.getElementById('btn-restore-attachments');

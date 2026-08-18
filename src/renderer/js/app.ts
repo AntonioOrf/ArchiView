@@ -1,6 +1,9 @@
 // @ts-nocheck
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Prima di qualunque render: decide se animazioni e pagine lunghe sono ammesse.
+        if (window.initModalitaPrestazioni) await window.initModalitaPrestazioni();
+
         if (window.modalsHtml) {
             document.body.insertAdjacentHTML('afterbegin', window.modalsHtml);
         }
@@ -529,7 +532,11 @@ async function avviaApp() {
     });
 
     if (window.apiBrowser && window.apiBrowser.onRequestClose) {
-        window.apiBrowser.onRequestClose(() => {
+        window.apiBrowser.onRequestClose(async () => {
+            // Chiusura: qualunque salvataggio differito deve finire su disco prima di uscire.
+            if (typeof window.flushSalvataggio === 'function') {
+                try { await window.flushSalvataggio(); } catch (e) { console.error("Errore nel flush di chiusura:", e); }
+            }
             const isEditingRecord = window.isFormDirty && !document.getElementById('view-add')?.classList.contains('hidden-tab');
             
             if (window.trascrizioneNonSalvata) {
@@ -701,6 +708,8 @@ if (window.apiBrowser && window.apiBrowser.onInviteUrl) {
 
 window.esportaManoscritto = async function(id) {
     if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
+    // Il main legge il DB dal disco: flush del salvataggio differito.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip([id]);
     if (res.success) {
         if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_completata_c", "Esportazione completata con successo!"), "success");
@@ -724,6 +733,8 @@ window.esportaSpecificaCartella = async function(folderName) {
         return;
     }
     const ids = manoscrittiInCartella.map(m => m.id);
+    // Il main legge il DB dal disco: flush del salvataggio differito.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(ids);
     if (res.success) {
         if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
@@ -860,6 +871,8 @@ window.azzeraSelezione = function() {
 window.esportaSelezionati = async function() {
     if (window.selectedRecords.length === 0) return;
     if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
+    // Il main legge il DB dal disco: flush del salvataggio differito.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(window.selectedRecords);
     if (res.success) {
         if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
@@ -1154,6 +1167,8 @@ window.incollaRecord = async function(targetFolderOverride) {
         const baseTarget = (targetFolder === 'ROOT' || targetFolder === '') ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
 
         if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
+        // Il main legge il DB dal disco: flush del salvataggio differito.
+        if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
         const res = await window.apiBrowser.duplicateRecords(idsToCopy, baseTarget);
 
         if (res.success) {
@@ -1209,6 +1224,8 @@ window.incollaRecord = async function(targetFolderOverride) {
     if (!window.copiedRecordIds || window.copiedRecordIds.length === 0) return;
     if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
     
+    // Il main legge il DB dal disco: flush del salvataggio differito.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.duplicateRecords(window.copiedRecordIds, targetFolder);
     
     if (res.success) {

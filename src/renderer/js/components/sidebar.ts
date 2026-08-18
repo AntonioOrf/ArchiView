@@ -12,8 +12,50 @@ function etichettaRadice() {
 }
 window.etichettaRadice = etichettaRadice;
 
+// --- Memoizzazione dell'albero ------------------------------------------------
+// La sidebar veniva ricostruita da zero a ogni commit dello Store, anche per il CRUD di
+// un singolo record: con migliaia di schede sono migliaia di nodi DOM buttati e rifatti.
+// Calcoliamo una firma economica di tutto ciò che l'albero disegna davvero; se è
+// invariata, il DOM esistente è già corretto e il render viene saltato.
+let _sidebarSignature = null;
+
+// Separatori non stampabili: non possono comparire nei dati e mantengono la firma compatta.
+const SEP_CAMPO = String.fromCharCode(1);
+const SEP_RIGA = String.fromCharCode(2);
+const SEP_BLOCCO = String.fromCharCode(3);
+
+window.invalidaCacheSidebar = function() {
+    _sidebarSignature = null;
+};
+
+function calcolaFirmaSidebar() {
+    const parti = [
+        window.linguaAttuale || '',
+        window.cartellaAttuale || '',
+        (appData.cartelle || []).join('|'),
+        Array.from(window.cartelleEspanse || []).join('|'),
+        (window.selectedRecords || []).join('|')
+    ];
+    // Dei record contano solo id, cartella ed etichetta mostrata nell'albero.
+    let righe = '';
+    for (const m of (appData.manoscritti || [])) {
+        righe += m.id + SEP_CAMPO + (m.cartella || '') + SEP_CAMPO + (m.segnatura || m.titolo || '') + SEP_RIGA;
+    }
+    parti.push(righe);
+    return parti.join(SEP_BLOCCO);
+}
+
 function renderSidebar() {
     const container = document.getElementById('folder-list');
+
+    const firma = calcolaFirmaSidebar();
+    if (firma === _sidebarSignature && container.childElementCount > 0) {
+        // Lo stato di sync non fa parte della firma: quel pannello si aggiorna comunque.
+        if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+        return;
+    }
+    _sidebarSignature = firma;
+
     container.innerHTML = window.sanitizeHTML('');
 
     // Normalizza cartelle PRIMA del render (non come side-effect nel mezzo)

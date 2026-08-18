@@ -3,6 +3,31 @@
 window.pusherInstance = null;
 window.pusherChannel = null;
 
+// Pusher non è più caricato staticamente da index.html: lo script CDN veniva scaricato a ogni
+// avvio (e falliva offline) anche per vault locali. Lo iniettiamo solo quando serve davvero.
+const PUSHER_CDN = 'https://js.pusher.com/8.2.0/pusher.min.js';
+let pusherLoadPromise = null;
+
+function caricaPusherSdk() {
+    if (window.Pusher) return Promise.resolve(true);
+    if (pusherLoadPromise) return pusherLoadPromise;
+
+    pusherLoadPromise = new Promise((resolve) => {
+        const tag = document.createElement('script');
+        tag.src = PUSHER_CDN;
+        tag.async = true;
+        tag.onload = () => resolve(!!window.Pusher);
+        tag.onerror = () => {
+            // Offline o CDN irraggiungibile: il realtime resta spento, il resto dell'app funziona.
+            pusherLoadPromise = null;
+            console.warn("Impossibile caricare l'SDK Pusher: sincronizzazione realtime disattivata.");
+            resolve(false);
+        };
+        document.head.appendChild(tag);
+    });
+    return pusherLoadPromise;
+}
+
 async function inizializzaRealTime() {
     if (!window.apiBrowser || !window.apiBrowser.getVaultConfig) return;
 
@@ -20,8 +45,10 @@ async function inizializzaRealTime() {
         return;
     }
 
-    // Inizializza Pusher
-    window.pusherInstance = new Pusher(rt.pusherKey, {
+    // Inizializza Pusher (SDK caricato on-demand)
+    if (!(await caricaPusherSdk())) return;
+
+    window.pusherInstance = new window.Pusher(rt.pusherKey, {
         cluster: rt.pusherCluster
     });
 
@@ -58,7 +85,7 @@ async function inizializzaRealTime() {
 window.myAppInstanceId = window.myAppInstanceId || Math.random().toString(36).substring(2, 15);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Aspetta che le librerie esterne siano caricate
+    // Fuori dal percorso critico di avvio: l'SDK viene scaricato solo se la config lo richiede.
     setTimeout(inizializzaRealTime, 1000);
 });
 
@@ -86,7 +113,7 @@ window.salvaImpostazioniDrive = async function() {
 
     // Riavvia Realtime
     if(driveAutofetch) {
-        avviaPusherRealtime();
+        inizializzaRealTime();
     } else {
         if(window.pusherInstance) {
             window.pusherInstance.disconnect();

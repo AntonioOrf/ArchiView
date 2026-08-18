@@ -85,3 +85,21 @@ a, button, select, [role="button"], .cursor-pointer {
 .driver-popover-progress-text {
     color: var(--color-text-muted, #78716c) !important;
 }
+/* --- Modalità "Prestazioni ridotte" (classe .perf-low su <html>) ---------------
+   Su hardware debole le transizioni globali e le animazioni di comparsa costano
+   repaint continui: qui vengono azzerate, non solo accorciate. */
+html.perf-low *,
+html.perf-low *::before,
+html.perf-low *::after {
+    transition: none !important;
+    animation: none !important;
+}
+
+html.perf-low {
+    scroll-behavior: auto !important;
+}
+
+html.perf-low .fade-in {
+    opacity: 1;
+    transform: none;
+}

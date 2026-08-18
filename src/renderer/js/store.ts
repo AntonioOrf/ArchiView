@@ -7,11 +7,16 @@ window.Store = {
     get deletedIds() { return appData?.deletedIds || []; },
     get deletedCartelle() { return appData?.deletedCartelle || []; },
 
+    // Render prima, disco dopo: la scrittura dell'intero DB non deve stare tra il click
+    // dell'utente e l'aggiornamento della UI. Il salvataggio è differito e coalescente
+    // (vedi state.ts); i flussi che leggono il file dal disco chiamano flushSalvataggio().
     async commit() {
-        if (typeof window.salvaTutto === 'function') await window.salvaTutto();
+        if (typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
         if (typeof window.normalizzaCartelle === 'function') window.normalizzaCartelle();
         if (typeof window.renderSidebar === 'function') window.renderSidebar();
         if (typeof window.renderMain === 'function') window.renderMain();
+        if (typeof window.salvaTuttoDifferito === 'function') window.salvaTuttoDifferito();
+        else if (typeof window.salvaTutto === 'function') await window.salvaTutto();
     },
 
     async addManoscritto(m) {

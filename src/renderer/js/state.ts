@@ -133,19 +133,70 @@ window.gestoreAnnullamento = {
     }
 };
 
-async function salvaTutto() {
-    if (window.apiBrowser) {
-        await window.apiBrowser.salvaDati(appData);
-        
-        // Segnala modifiche pendenti se siamo connessi al cloud
-        if (window.driveStatus && window.driveStatus.isAuthenticated) {
-            if (typeof window.impostaModifichePendenti === 'function') {
-                window.impostaModifichePendenti(true);
-            }
+// --- Salvataggio coalescente -------------------------------------------------
+// Il DB viene riscritto per intero a ogni CRUD: su HDD lenti una raffica di operazioni
+// (multi-delete, merge, rinomina cartella) bloccava l'UI per una scrittura ciascuna.
+// Qui le scritture sono serializzate in catena e coalescibili: `salvaTuttoDifferito()`
+// rimanda di SAVE_DEBOUNCE_MS e riparte a ogni nuova modifica, `salvaTutto()` scrive
+// subito (flush), e nessuna scrittura può sovrapporsi a un'altra.
+const SAVE_DEBOUNCE_MS = 400;
+let saveTimer = null;
+let saveDirty = false;
+let saveChain = Promise.resolve();
+
+async function eseguiSalvataggio() {
+    // Rete di sicurezza per le mutazioni che non passano da Store.commit().
+    if (typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
+    if (!window.apiBrowser) return;
+
+    // Validazione lato renderer: il main riceve la stringa già serializzata e non la ri-parsa.
+    if (!appData || !Array.isArray(appData.manoscritti) || !Array.isArray(appData.cartelle)) {
+        throw new Error("Stato in memoria non valido: salvataggio annullato.");
+    }
+
+    // Serializzazione unica: evita structured-clone dell'intero DB via IPC + stringify nel main.
+    const payload = JSON.stringify(appData);
+    const res = await window.apiBrowser.salvaDati(payload);
+    if (res && res.success === false) throw new Error(res.error || "Salvataggio fallito");
+
+    // Segnala modifiche pendenti se siamo connessi al cloud
+    if (window.driveStatus && window.driveStatus.isAuthenticated) {
+        if (typeof window.impostaModifichePendenti === 'function') {
+            window.impostaModifichePendenti(true);
         }
-        
     }
 }
+
+function salvaTutto() {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    saveDirty = false;
+    const p = saveChain.then(eseguiSalvataggio, eseguiSalvataggio);
+    saveChain = p.catch(() => {});
+    return p;
+}
+window.salvaTutto = salvaTutto;
+
+// Salvataggio differito: usato da Store.commit(), che rende l'UI prima di toccare il disco.
+window.salvaTuttoDifferito = function(delay = SAVE_DEBOUNCE_MS) {
+    saveDirty = true;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        saveTimer = null;
+        salvaTutto().catch(err => {
+            console.error("Errore nel salvataggio differito:", err);
+            if (typeof mostraMessaggio === 'function') {
+                mostraMessaggio(window.t("msg_errore_salvataggio", "Errore nel salvataggio dei dati: ") + (err.message || err), "error");
+            }
+        });
+    }, delay);
+};
+
+// Da chiamare prima di qualsiasi operazione che legga il DB dal disco (upload cloud,
+// export, chiusura app): garantisce che il differito sia già finito su file.
+window.flushSalvataggio = function() {
+    if (saveTimer || saveDirty) return salvaTutto();
+    return saveChain;
+};
 window.sincronizzaEUnisciDati = async function(nuovoDati) {
     if (!nuovoDati) return;
     

@@ -339,7 +339,10 @@ window.inviaModificheHub = async function() {
     }
 
     mostraMessaggio(window.t("msg_invio_modifiche_al_server", "Invio modifiche al server..."), "info");
-    
+
+    // Il push usa appData in memoria, ma la sync allegati che segue legge il DB dal disco.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
+
     try {
         const repoId = window.hubConfig.repoId;
         const key = window.hubConfig.repoKey;
@@ -505,6 +508,8 @@ let _ultimoErroreAllegatiHub = null;
 window.sincronizzaAllegatiHub = async function(isSilent = true) {
     if (!window.hubConfig || !window.apiBrowser?.syncHubAttachments) return null;
     if (window.hubConfig.attachmentsMode === 'off') return null;
+    // Il main legge database_manoscritti.json per sapere quali allegati indicizzare.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     try {
         const r = await window.apiBrowser.syncHubAttachments();
         if (!r || !r.ok) {

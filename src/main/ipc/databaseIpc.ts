@@ -34,6 +34,15 @@ function startWatcher() {
   }
 }
 
+// Validazione a basso costo del payload già serializzato: evita di ri-parsare l'intero DB
+// nel main solo per accertarsi che non sia spazzatura (il renderer valida l'oggetto prima
+// di serializzarlo). Controlla involucro + presenza delle due collezioni obbligatorie.
+function isValidSerializedDatabase(json) {
+  if (typeof json !== 'string' || json.length < 2) return false;
+  if (json.charCodeAt(0) !== 123 /* { */ || json.charCodeAt(json.length - 1) !== 125 /* } */) return false;
+  return /"manoscritti"\s*:\s*\[/.test(json) && /"cartelle"\s*:\s*\[/.test(json);
+}
+
 function isValidDatabase(dati) {
   if (!dati || typeof dati !== 'object') return false;
   if (!Array.isArray(dati.manoscritti)) return false;
@@ -59,17 +68,39 @@ function setupDatabaseIpc() {
   ipcMain.handle('salva-dati', async (event, dati) => {
     try {
       if (!state.dataFilePath) throw new Error("Percorso file dati non impostato");
-      
-      if (!isValidDatabase(dati)) {
-        throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
+
+      // Il renderer invia il DB già serializzato: una sola serializzazione invece di
+      // structured-clone dell'intero oggetto via IPC + JSON.stringify qui.
+      // Il ramo oggetto resta per retro-compatibilità con eventuali chiamanti legacy.
+      let payload;
+      if (typeof dati === 'string') {
+        if (!isValidSerializedDatabase(dati)) {
+          throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
+        }
+        payload = dati;
+      } else {
+        if (!isValidDatabase(dati)) {
+          throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
+        }
+        payload = JSON.stringify(dati);
       }
 
       isSavingSelf = true;
-      await fsp.writeFile(state.dataFilePath, JSON.stringify(dati));
-      
-      if (!watcher) {
-        startWatcher();
+
+      // Scrittura atomica: file temporaneo + rename. Su macchine lente un crash a metà
+      // write() lasciava il database troncato e irrecuperabile.
+      const tmpPath = `${state.dataFilePath}.tmp`;
+      const fh = await fsp.open(tmpPath, 'w');
+      try {
+        await fh.writeFile(payload, 'utf8');
+        await fh.sync();
+      } finally {
+        await fh.close();
       }
+      await fsp.rename(tmpPath, state.dataFilePath);
+
+      // Il rename sostituisce l'inode: il watcher va riagganciato al nuovo file.
+      startWatcher();
 
       // Restituisce il controllo dopo un piccolo delay per far passare l'evento di scrittura del filesystem
       setTimeout(() => {
@@ -77,9 +108,9 @@ function setupDatabaseIpc() {
       }, 1000);
 
       return { success: true };
-    } catch (error) { 
+    } catch (error) {
       isSavingSelf = false;
-      return { success: false, error: error.message }; 
+      return { success: false, error: error.message };
     }
   });
 

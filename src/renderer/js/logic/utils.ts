@@ -187,3 +187,42 @@ window.espandiAntenati = function(percorso) {
     });
 };
 
+// --- Modalità "prestazioni ridotte" -------------------------------------------
+// Flag globale letto dal file di configurazione in userData (vedi src/main/perfConfig.ts).
+// Quando è attivo: niente animazioni/transizioni, scroll istantaneo, pagine più corte.
+window.modalitaPrestazioniRidotte = false;
+
+window.comportamentoScroll = function() {
+    return window.modalitaPrestazioniRidotte ? 'auto' : 'smooth';
+};
+
+window.applicaModalitaPrestazioni = function(attiva) {
+    window.modalitaPrestazioniRidotte = !!attiva;
+    document.documentElement.classList.toggle('perf-low', !!attiva);
+};
+
+window.initModalitaPrestazioni = async function() {
+    if (!window.apiBrowser || !window.apiBrowser.getPerfMode) return;
+    try {
+        const cfg = await window.apiBrowser.getPerfMode();
+        window.applicaModalitaPrestazioni(cfg && cfg.lowPerf);
+    } catch (e) {
+        console.warn("Lettura modalità prestazioni fallita:", e);
+    }
+};
+
+// Il cambio richiede il riavvio solo per l'accelerazione hardware: il resto è immediato.
+window.cambiaModalitaPrestazioni = async function(attiva) {
+    window.applicaModalitaPrestazioni(attiva);
+    if (window.apiBrowser && window.apiBrowser.setPerfMode) {
+        const res = await window.apiBrowser.setPerfMode(!!attiva);
+        if (res && res.success === false) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio("Impossibile salvare la preferenza: " + res.error, "error");
+            return;
+        }
+    }
+    if (typeof renderMain === 'function') renderMain();
+    if (typeof mostraMessaggio === 'function') {
+        mostraMessaggio(window.t("msg_perf_mode_saved", "Preferenza salvata. Riavvia l'app per applicare anche la disattivazione dell'accelerazione hardware."), "info");
+    }
+};
