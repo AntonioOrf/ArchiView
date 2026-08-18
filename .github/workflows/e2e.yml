@@ -16,7 +16,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # 24, non 22: package-lock.json e' generato da npm 11 (node 24), che pota le
+          # dipendenze del sottoalbero opzionale @tailwindcss/oxide-wasm32-wasi. L'npm 10
+          # di node 22 valida quell'albero alla lettera e "npm ci" muore in 4s con
+          # "Missing: @emnapi/core ... from lock file". Se qui si torna a 22, il lockfile
+          # va rigenerato con npm 10 — ma il primo "npm install" locale lo riporterebbe
+          # com'e' ora. Tenere allineato al npm di sviluppo e' l'unica versione stabile.
+          node-version: 24
           cache: "npm"
 
       - name: Installa le dipendenze
