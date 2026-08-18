@@ -69,6 +69,15 @@
                         </div>
 
                         <div class="border-t border-stone-200 pt-6">
+                            <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_perf_title">Prestazioni ridotte</span></h4>
+                            <p class="text-sm text-stone-600 mb-3" data-i18n="settings_perf_desc">Per computer poco potenti: disattiva animazioni e accelerazione hardware e mostra meno schede per pagina. L'accelerazione hardware cambia al riavvio.</p>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="settings-low-perf" onchange="cambiaModalitaPrestazioni(this.checked)" class="w-4 h-4 accent-amber-600">
+                                <span class="text-sm text-stone-700" data-i18n="settings_perf_toggle">Attiva modalità prestazioni ridotte</span>
+                            </label>
+                        </div>
+
+                        <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_lang">Lingua / Language</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_lang_desc">Scegli la lingua dell'applicazione.</p>
                             <select id="settings-language" onchange="cambiaLingua(this.value)" class="form-input w-full p-2 bg-stone-50 border border-stone-200 rounded-sm text-stone-800">

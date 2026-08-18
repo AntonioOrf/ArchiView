@@ -20,6 +20,9 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     onRequestClose: (callback) => ipcRenderer.on('request-close', () => callback()),
     confirmClose: () => ipcRenderer.send('confirm-close'),
 
+    getPerfMode: () => ipcRenderer.invoke('get-perf-mode'),
+    setPerfMode: (lowPerf) => ipcRenderer.invoke('set-perf-mode', lowPerf),
+
     getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
     getVaultConfig: () => ipcRenderer.invoke('get-vault-config'),
     setVaultType: (payload) => ipcRenderer.invoke('set-vault-type', payload),

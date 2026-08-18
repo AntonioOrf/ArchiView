@@ -390,6 +390,8 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             }
 
             // 2. Carica le modifiche locali unite (upload)
+            // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
+            if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
             const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
             
             try {
@@ -442,6 +444,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                         }
                         window.lastDriveModifiedTime = retryData.driveModifiedTime;
                     }
+                    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
                     const newRetryTime = await apiCloud.sync(window.lastDriveModifiedTime);
                     try {
                         if (apiCloud.syncAttachments) {
@@ -578,6 +581,8 @@ window.caricaSulCloud = async function(silent = false) {
             }
 
             // Ora carichiamo il risultato del merge
+            // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
+            if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
             const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
             
             try {
@@ -625,6 +630,7 @@ window.caricaSulCloud = async function(silent = false) {
                         }
                         window.lastDriveModifiedTime = retryData.driveModifiedTime;
                     }
+                    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
                     const newRetryTime = await apiCloud.sync(window.lastDriveModifiedTime);
                     try {
                         if (apiCloud.syncAttachments) {

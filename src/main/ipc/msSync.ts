@@ -4,8 +4,6 @@ const fs = require('fs');
 const http = require('http');
 const { state, initWorkspace, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../workspaceManager');
 const tokenStore = require('../cloudTokenStore');
-const { PublicClientApplication, CryptoProvider } = require('@azure/msal-node');
-const { Client } = require('@microsoft/microsoft-graph-client');
 const { safeAttachmentPathOrNull } = require('./pathSafety');
 
 const REDIRECT_URI = 'http://localhost:3457/redirect';
@@ -77,12 +75,15 @@ function initMsal() {
       }
     };
 
+    // Lazy require: msal-node pesa decine di MB di heap ed è inutile per vault locali/Google.
+    const { PublicClientApplication } = require('@azure/msal-node');
     msalClient = new PublicClientApplication(msalConfig);
   }
 }
 
 async function getGraphClient() {
   if (!graphClient) {
+     const { Client } = require('@microsoft/microsoft-graph-client');
      graphClient = Client.init({
        authProvider: async (done) => {
          try {
@@ -142,6 +143,7 @@ async function authenticateDrive(forceLocal = false) {
     try {
     try { initMsal(); } catch(e) { return reject(e); }
 
+    const { CryptoProvider } = require('@azure/msal-node');
     const cryptoProvider = new CryptoProvider();
     const { verifier, challenge } = await cryptoProvider.generatePkceCodes();
 

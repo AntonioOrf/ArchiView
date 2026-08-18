@@ -13,11 +13,11 @@
     "copy-assets": "shx mkdir -p out/renderer && node scripts/build-html.js && shx cp -r src/renderer/css src/renderer/vendor out/renderer/",
     "extract": "lingui extract",
     "compile": "lingui compile",
-    "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets",
+    "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets && node scripts/build-renderer-bundle.js",
     "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
     "pretest:unit": "tsc",
-    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js",
+    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js && node test/zipStreaming.test.js",
     "test:e2e": "playwright test",
     "pretest:e2e": "npm run build-css && npm run build-ts",
     "pack": "npm run build-css && npm run build-ts && electron-builder --win",
@@ -74,9 +74,9 @@
   },
   "devDependencies": {
     "@lingui/cli": "^6.1.0",
-    "@playwright/test": "^1.50.0",
     "@lingui/conf": "^6.1.0",
     "@lingui/format-po": "^6.1.0",
+    "@playwright/test": "^1.50.0",
     "@tailwindcss/cli": "^4.3.0",
     "@types/archiver": "^7.0.0",
     "@types/dompurify": "^3.0.5",
@@ -94,11 +94,11 @@
     "@azure/msal-node": "^5.2.2",
     "@lingui/core": "^6.1.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
-    "adm-zip": "^0.6.0",
     "archiver": "^8.0.0",
     "dompurify": "^3.4.12",
     "electron-updater": "^6.8.3",
-    "googleapis": "^173.0.0"
+    "googleapis": "^173.0.0",
+    "yauzl": "^2.10.0"
   },
   "overrides": {
     "esbuild": "^0.28.1"

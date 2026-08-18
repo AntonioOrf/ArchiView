@@ -6,6 +6,14 @@ const { pathToFileURL } = require('url');
 // Deve precedere il require di workspaceManager (che legge userData a import-time).
 require('./e2eBootstrap');
 
+// Modalità "prestazioni ridotte": la disattivazione dell'accelerazione hardware deve
+// avvenire prima di app.ready, quindi il flag si legge dal file dedicato in userData.
+const { leggiPerfConfig } = require('./perfConfig');
+const perfConfig = leggiPerfConfig();
+if (perfConfig.lowPerf) {
+  app.disableHardwareAcceleration();
+}
+
 if (process.platform === 'win32' && app.isPackaged) {
   app.setAppUserModelId("com.antonioorf.archiview");
 }
@@ -39,12 +47,16 @@ function createWindow() {
     title: "ArchiView",
     icon: iconPath,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
+    // Mostrata solo su 'ready-to-show': niente flash bianco né repaint multipli su HW lento.
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
+
+  state.mainWindow.once('ready-to-show', () => state.mainWindow.show());
 
   state.mainWindow.setMenuBarVisibility(false);
   const indexPath = path.join(__dirname, '..', 'renderer', 'index.html');
@@ -63,12 +75,15 @@ function createWindow() {
     event.preventDefault();
   });
 
-  state.mainWindow.webContents.on('console-message', (event, ...args) => {
-    const msg = event.message ?? args[1];
-    const ln = event.line ?? args[2];
-    const src = event.sourceId ?? args[3];
-    console.log(`[RENDERER] ${msg} (${src}:${ln})`);
-  });
+  // Solo in dev: in produzione ogni console.log del renderer costerebbe un round-trip IPC.
+  if (!app.isPackaged) {
+    state.mainWindow.webContents.on('console-message', (event, ...args) => {
+      const msg = event.message ?? args[1];
+      const ln = event.line ?? args[2];
+      const src = event.sourceId ?? args[3];
+      console.log(`[RENDERER] ${msg} (${src}:${ln})`);
+    });
+  }
 
   // Sicurezza: blocca l'apertura di finestre popup
   state.mainWindow.webContents.setWindowOpenHandler((details) => {

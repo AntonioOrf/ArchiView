@@ -437,7 +437,7 @@ window.avviaTutorial = async function () {
         onHighlighted: () => {
             setTimeout(() => {
                 const main = document.querySelector('main');
-                if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+                if (main) main.scrollTo({ top: 0, behavior: window.comportamentoScroll() });
             }, 50);
             stepAC?.abort();
             stepAC = new AbortController();

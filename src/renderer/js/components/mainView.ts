@@ -2,18 +2,62 @@
 // Campi su cui viene eseguita la ricerca testuale (whitelist esplicita)
 const SEARCH_FIELDS = ['segnatura', 'titolo', 'autore', 'datazione', 'supporto', 'incipit', 'explicit', 'note', 'tags', 'trascrizione', 'descrizione', 'provenienza', 'contenuto', 'lingua'];
 
-function objectContainsString(m, str) {
+// --- Cache del testo indicizzato ---------------------------------------------
+// La ricerca scansionava tutti i campi di tutti i record ad ogni keystroke (incluse le
+// trascrizioni, con strip-HTML via regex per record): O(dimensione DB) per battuta.
+// Qui il testo ripulito e in minuscolo è calcolato una volta per record e invalidato
+// a ogni commit dello Store tramite un contatore di generazione.
+const SNIPPET_SKIP_FIELDS = new Set(['id', 'cartella', 'allegati', 'tipoDocumento']);
+let searchCacheGen = 0;
+let searchCache = new WeakMap();
+
+// Chiamata da Store.commit(): i testi cache-ati potrebbero non riflettere più i record.
+window.invalidaCacheRicerca = function() {
+    searchCacheGen++;
+};
+
+function getSearchIndex(m) {
+    const cached = searchCache.get(m);
+    if (cached && cached.gen === searchCacheGen) return cached;
+
+    // Campi per i suggerimenti: tutti i testuali, con segnatura/titolo in testa.
+    const fields = [];
+    for (const key of Object.keys(m)) {
+        if (SNIPPET_SKIP_FIELDS.has(key)) continue;
+        const v = m[key];
+        if (v === null || v === undefined) continue;
+        if (typeof v !== 'string' && typeof v !== 'number') continue;
+        const clean = String(v).replace(/<[^>]*>/g, '');
+        if (!clean) continue;
+        fields.push({ key, readable: key.charAt(0).toUpperCase() + key.slice(1), clean, lower: clean.toLowerCase() });
+    }
+    const priority = (k) => (k === 'segnatura' ? 0 : k === 'titolo' ? 1 : 2);
+    fields.sort((a, b) => priority(a.key) - priority(b.key));
+
+    // Fieno per il filtro della griglia (whitelist SEARCH_FIELDS).
+    let hay = '';
     for (const k of SEARCH_FIELDS) {
         const v = m[k];
-        if (!v) continue;
-        if (typeof v === 'string' && v.toLowerCase().includes(str)) return true;
-        if (typeof v === 'number' && v.toString().includes(str)) return true;
+        if (typeof v === 'string') hay += v.toLowerCase() + '\n';
+        else if (typeof v === 'number') hay += v + '\n';
     }
-    return false;
+
+    const entry = { gen: searchCacheGen, fields, hay };
+    searchCache.set(m, entry);
+    return entry;
+}
+
+function objectContainsString(m, str) {
+    return getSearchIndex(m).hay.includes(str);
 }
 
 window.currentPage = 0;
-const PAGE_SIZE = 50;
+// In modalità prestazioni ridotte si dimezza la pagina: meno card in DOM per render.
+const PAGE_SIZE_STANDARD = 50;
+const PAGE_SIZE_RIDOTTO = 25;
+function pageSize() {
+    return window.modalitaPrestazioniRidotte ? PAGE_SIZE_RIDOTTO : PAGE_SIZE_STANDARD;
+}
 
 // Calcola l'elenco dei manoscritti visibili nella griglia secondo gli stessi
 // criteri di renderMain (cartella + ricerca + tag). Esposto su window così che
@@ -239,9 +283,10 @@ function renderMain(resetPage = true) {
         document.getElementById('empty-state').classList.add('hidden');
 
         // Paginazione
-        const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+        const dimPagina = pageSize();
+        const totalPages = Math.ceil(filtered.length / dimPagina);
         if (window.currentPage >= totalPages) window.currentPage = Math.max(0, totalPages - 1);
-        const paginated = filtered.slice(window.currentPage * PAGE_SIZE, (window.currentPage + 1) * PAGE_SIZE);
+        const paginated = filtered.slice(window.currentPage * dimPagina, (window.currentPage + 1) * dimPagina);
 
         if (paginationControls) {
             if (totalPages > 1) {
@@ -472,33 +517,31 @@ function switchTab(tab) {
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 }
 
+// Costruisce lo snippet evidenziato partendo dal testo già ripulito e minuscolizzato.
+function buildSnippet(clean, lower, search) {
+    const idx = lower.indexOf(search);
+    if (idx === -1) return null;
+
+    // Estrai una frase più lunga
+    const start = Math.max(0, idx - 60);
+    const end = Math.min(clean.length, idx + search.length + 80);
+    let snippet = clean.substring(start, end).trim();
+
+    if (start > 0) snippet = '...' + snippet;
+    if (end < clean.length) snippet = snippet + '...';
+
+    snippet = escapeHTML(snippet);
+    const escapedSearch = escapeHTML(search);
+
+    // Evidenzia la parola trovata
+    const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return snippet.replace(regex, '<span class="bg-amber-200 text-amber-900 font-bold px-0.5 rounded">$1</span>');
+}
+
 function extractSnippet(val, search) {
     if (!val) return null;
-    const strVal = val.toString();
-    
-    const cleanText = strVal.replace(/<[^>]*>/g, '');
-    
-    const lowerStr = cleanText.toLowerCase();
-    const idx = lowerStr.indexOf(search);
-    
-    if (idx !== -1) {
-        // Estrai una frase più lunga
-        const start = Math.max(0, idx - 60);
-        const end = Math.min(cleanText.length, idx + search.length + 80);
-        let snippet = cleanText.substring(start, end).trim();
-        
-        if (start > 0) snippet = '...' + snippet;
-        if (end < cleanText.length) snippet = snippet + '...';
-
-        snippet = escapeHTML(snippet);
-        const escapedSearch = escapeHTML(search);
-
-        // Evidenzia la parola trovata
-        const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        snippet = snippet.replace(regex, '<span class="bg-amber-200 text-amber-900 font-bold px-0.5 rounded">$1</span>');
-        return snippet;
-    }
-    return null;
+    const clean = val.toString().replace(/<[^>]*>/g, '');
+    return buildSnippet(clean, clean.toLowerCase(), search);
 }
 
 function renderSearchSuggestions() {
@@ -513,29 +556,15 @@ function renderSearchSuggestions() {
 
     const matches = [];
     for (const m of appData.manoscritti) {
-        let matchFound = null;
-        const keys = Object.keys(m);
-        
-        // Ordiniamo le chiavi per dare priorità a segnatura e titolo
-        keys.sort((a, b) => {
-            if (a === 'segnatura') return -1;
-            if (b === 'segnatura') return 1;
-            if (a === 'titolo') return -1;
-            if (b === 'titolo') return 1;
-            return 0;
-        });
-
-        for (const key of keys) {
-            if (key === 'id' || key === 'cartella' || key === 'allegati' || key === 'tipoDocumento') continue;
-            const snippet = extractSnippet(m[key], search);
+        const index = getSearchIndex(m);
+        for (const f of index.fields) {
+            // Confronto su stringhe già ripulite e minuscole: nessuna regex per record.
+            if (f.lower.indexOf(search) === -1) continue;
+            const snippet = buildSnippet(f.clean, f.lower, search);
             if (snippet) {
-                let readableKey = key.charAt(0).toUpperCase() + key.slice(1);
-                matchFound = { item: m, key: readableKey, snippet: snippet };
+                matches.push({ item: m, key: f.readable, snippet });
                 break; // Mostriamo solo il primo campo in cui matcha per questo documento
             }
-        }
-        if (matchFound) {
-            matches.push(matchFound);
         }
         if (matches.length >= 15) break; // Massimo 15 suggerimenti
     }
@@ -563,14 +592,14 @@ function renderSearchSuggestions() {
 
 /**
  * Porta l'utente sulla card di un record nella griglia di destra: salta alla pagina
- * corretta (la griglia è paginata a PAGE_SIZE, altrimenti la card non è nel DOM),
+ * corretta (la griglia è paginata, altrimenti la card non è nel DOM),
  * scrolla e la evidenzia. Usata dai suggerimenti di ricerca e dall'albero a sinistra.
  */
 window.rivelaRecordNellaGriglia = function(id) {
     const filtrati = window.getManoscrittiFiltrati();
     const idx = filtrati.findIndex(x => x.id === id);
     if (idx !== -1) {
-        const paginaTarget = Math.floor(idx / PAGE_SIZE);
+        const paginaTarget = Math.floor(idx / pageSize());
         if (window.currentPage !== paginaTarget) {
             window.currentPage = paginaTarget;
             renderMain(false);
@@ -587,7 +616,7 @@ window.rivelaRecordNellaGriglia = function(id) {
         return;
     }
 
-    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    targetCard.scrollIntoView({ behavior: window.comportamentoScroll(), block: 'center' });
     // Evidenziazione temporanea per indicare quale scheda è stata raggiunta
     targetCard.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
     const oldShadow = targetCard.style.boxShadow;
@@ -605,5 +634,5 @@ window.cambiaPagina = function(dir) {
     renderMain(false);
     // Scrolla la vista all'inizio
     const viewList = document.getElementById('view-list');
-    if (viewList) viewList.scrollTo({ top: 0, behavior: 'smooth' });
+    if (viewList) viewList.scrollTo({ top: 0, behavior: window.comportamentoScroll() });
 };

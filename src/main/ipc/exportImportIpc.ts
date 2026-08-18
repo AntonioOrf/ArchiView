@@ -1,9 +1,8 @@
 const { ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const archiver = require('archiver');
-const AdmZip = require('adm-zip');
 const { state } = require('../workspaceManager');
+const { extractZipStreaming } = require('./zipStreaming');
 
 function setupExportImportIpc() {
   ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
@@ -50,6 +49,8 @@ function setupExportImportIpc() {
     // Crea lo zip
     return new Promise((resolve) => {
         const output = fs.createWriteStream(result.filePath);
+        // Lazy require: archiver serve solo qui, non a ogni avvio dell'app.
+        const archiver = require('archiver');
         const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
         
         output.on('close', () => resolve({ success: true, count: toExport.length }));
@@ -90,36 +91,23 @@ function setupExportImportIpc() {
     const zipPath = result.filePaths[0];
     
     try {
-        const zip = new AdmZip(zipPath);
-        const zipEntries = zip.getEntries();
-        
-        const jsonEntry = zipEntries.find(e => e.entryName === 'schedatura.json');
-        if (!jsonEntry) return { success: false, error: 'File non valido: manca schedatura.json' };
-        
-        const data = JSON.parse(zip.readAsText(jsonEntry));
-        if (!data.manoscritti || !Array.isArray(data.manoscritti)) return { success: false, error: 'Formato JSON non valido' };
-        
-        // Leggi DB attuale
-        const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
-        
-        // Estrai gli allegati
-        const allegatiDir = path.join(state.workspacePath, 'allegati_manoscritti');
-        if (!fs.existsSync(allegatiDir)) fs.mkdirSync(allegatiDir, { recursive: true });
-        
-        for (const entry of zipEntries) {
-            if (entry.entryName.startsWith('allegati/') && !entry.isDirectory) {
-                const attName = path.basename(entry.entryName);
-                const attPath = path.join(allegatiDir, attName);
-                if (!fs.existsSync(attPath)) {
-                    zip.extractEntryTo(entry.entryName, allegatiDir, false, true, false, attName);
-                }
-            }
+        // Estrazione in streaming (yauzl, lazyEntries): l'archivio non viene mai caricato
+        // interamente in RAM, requisito su macchine con 4GB dove AdmZip mandava in swap.
+        const estratto = await extractZipStreaming(zipPath, path.join(state.workspacePath, 'allegati_manoscritti'));
+        if (!estratto.json) return { success: false, error: 'File non valido: manca schedatura.json' };
+
+        let data;
+        try {
+            data = JSON.parse(estratto.json);
+        } catch (e) {
+            return { success: false, error: 'Formato JSON non valido' };
         }
-        
+        if (!data.manoscritti || !Array.isArray(data.manoscritti)) return { success: false, error: 'Formato JSON non valido' };
+
         return { success: true, manoscritti: data.manoscritti };
     } catch (e) {
-        let errorMsg = e.message;
-        if (errorMsg.includes('Invalid or unsupported zip format')) {
+        let errorMsg = e.message || String(e);
+        if (/invalid|not a zip|end of central directory/i.test(errorMsg)) {
             errorMsg = "File ZIP non valido, corrotto, oppure generato incorrettamente. Assicurati che sia un'esportazione valida di ArchiView e non superi i limiti di memoria.";
         }
         return { success: false, error: errorMsg };
