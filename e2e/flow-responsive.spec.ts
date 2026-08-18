@@ -49,8 +49,9 @@ test.describe('Percorsi di verifica', () => {
     });
     await expect(filtri).toBeVisible();
     await expect(filtri).toContainText('pergamena');
-    // La radice virtuale è selezionabile come qualsiasi cartella e azzera i filtri.
-    await page.locator('#folder-root-row').click();
+    // Il click nell'area vuota dell'albero esce da ogni cartella e azzera i filtri.
+    const box = (await page.locator('#sidebar-folders').boundingBox())!;
+    await page.mouse.click(box.x + 20, box.y + box.height - 12);
     await expect(filtri).toBeHidden();
     const etichettaRadice = await page.evaluate(() => (window as any).etichettaRadice());
     await expect(page.locator('#titolo-cartella-attuale')).toHaveText(etichettaRadice);

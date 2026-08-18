@@ -2,13 +2,13 @@
 // --- SIDEBAR ---
 
 /**
- * Etichetta della radice virtuale (percorso ''). Preferisce il nome del vault già
- * mostrato nello switcher: la radice È il vault, non una cartella dentro di esso.
+ * Etichetta della radice virtuale (percorso ''). Deliberatamente NON il nome del vault:
+ * quello è già nel selettore archivio in fondo alla sidebar, e ripeterlo qui — e di nuovo
+ * come titolo della vista — direbbe tre volte la stessa cosa. Qui serve dire *dove sei*
+ * nell'albero, non *in quale archivio*.
  */
 function etichettaRadice() {
-    const el = document.getElementById('current-vault-name');
-    const nome = el ? (el.textContent || '').trim() : '';
-    return nome || window.t('folder_root_label', 'Archivio');
+    return window.t('folder_root_label', 'Radice');
 }
 window.etichettaRadice = etichettaRadice;
 
@@ -238,123 +238,17 @@ function renderSidebar() {
         parentEl.appendChild(div);
     }
 
+    // L'albero mostra SOLO cartelle: la radice ('') non ha una riga propria. Senza
+    // cartelle il pannello resta vuoto, e le schede non archiviate si vedono comunque
+    // nella griglia. Per tornare alla radice basta cliccare l'area vuota; per creare
+    // la prima cartella, il tasto destro lì dentro.
     const fragment = document.createDocumentFragment();
-
-    fragment.appendChild(creaRigaRadice());
 
     Object.keys(root)
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
         .forEach(k => renderNode(k, root[k], fragment, 0));
 
-    if (appData.cartelle.length === 0 && (folderIndex.get('') || []).length === 0) {
-        const vuoto = document.createElement('div');
-        vuoto.className = 'p-4 text-xs text-stone-400 dark:text-stone-500 italic text-center';
-        vuoto.textContent = window.t('empty_no_folders', 'Nessuna cartella. Le schede restano nella radice finché non ne crei una.');
-        fragment.appendChild(vuoto);
-    }
-
     container.appendChild(fragment);
-
-    // Riga della radice virtuale: rappresenta il percorso '' (nessuna cartella).
-    // Non esiste in appData.cartelle e non viene sincronizzata: è solo il modo di
-    // rendere selezionabili e visibili le schede non archiviate.
-    function creaRigaRadice() {
-        const filesRadice = fileOrdinati('');
-        const isAttuale = window.cartellaAttuale === '';
-        const isExpanded = window.cartelleEspanse.has('');
-
-        const div = document.createElement('div');
-        div.className = 'flex flex-col';
-
-        const riga = document.createElement('div');
-        riga.id = 'folder-root-row';
-        riga.className = `group flex items-center gap-1 p-1.5 rounded-sm cursor-pointer transition-colors text-sm sidebar-row ${isAttuale ? 'active' : ''}`;
-        riga.style.paddingLeft = '0.25rem';
-
-        riga.oncontextmenu = (e) => {
-            if (typeof window.showSidebarFolderContextMenu === 'function') {
-                window.showSidebarFolderContextMenu(e, '');
-            }
-        };
-
-        // Drop verso la radice: sposta record e cartelle al primo livello
-        riga.ondragover = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.dataTransfer.dropEffect = 'move';
-            riga.classList.add('ring-2', 'ring-amber-500', 'bg-amber-50');
-        };
-        riga.ondragleave = (e) => {
-            e.stopPropagation();
-            riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
-        };
-        riga.ondrop = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            riga.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
-            try {
-                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                if (data.type === 'folder' && typeof spostaCartella !== 'undefined') {
-                    spostaCartella(data.path, 'ROOT');
-                } else if (data.type === 'manoscritto' && typeof spostaManoscritto !== 'undefined') {
-                    spostaManoscritto(data.id, '');
-                }
-            } catch (err) { console.error(err); }
-        };
-
-        const spanToggle = document.createElement('span');
-        spanToggle.className = 'w-5 h-5 flex items-center justify-center shrink-0';
-        if (filesRadice.length > 0) {
-            spanToggle.innerHTML = window.sanitizeHTML(`<i data-lucide="${isExpanded ? 'chevron-down' : 'chevron-right'}" class="w-4 h-4 sidebar-chevron transition-colors"></i>`);
-            spanToggle.onclick = (e) => {
-                e.stopPropagation();
-                if (isExpanded) window.cartelleEspanse.delete('');
-                else window.cartelleEspanse.add('');
-                renderSidebar();
-                if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
-            };
-        }
-
-        const testo = document.createElement('span');
-        testo.className = 'truncate flex items-center gap-1.5 flex-1 select-none font-medium';
-        testo.innerHTML = window.sanitizeHTML(`<i data-lucide="library" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${escapeHTML(etichettaRadice())}`);
-
-        // Stesso "⋯" delle cartelle: le azioni della radice (crea scheda/cartella,
-        // incolla) devono essere raggiungibili da tastiera, non solo col tasto destro.
-        const actionContainer = document.createElement('div');
-        actionContainer.className = 'opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center transition-all';
-        actionContainer.appendChild(window.creaBottoneOverflow(
-            () => window.vociMenuCartella(''),
-            {
-                className: 'p-1.5 rounded sidebar-action-btn rename',
-                iconClass: 'w-3.5 h-3.5',
-                label: window.t('tooltip_folder_actions', 'Azioni cartella') + ': ' + etichettaRadice()
-            }
-        ));
-
-        riga.appendChild(spanToggle);
-        riga.appendChild(testo);
-        riga.appendChild(actionContainer);
-
-        riga.onclick = () => {
-            window.cartellaAttuale = '';
-            window.cartelleEspanse.add('');
-            window.azzeraFiltriRicerca();
-            switchTab('list');
-            renderSidebar();
-            renderMain();
-        };
-
-        div.appendChild(riga);
-
-        if (filesRadice.length > 0 && isExpanded) {
-            const childContainer = document.createElement('div');
-            filesRadice.forEach(m => childContainer.appendChild(creaRigaFile(m, '', 0)));
-            div.appendChild(childContainer);
-        }
-
-        return div;
-    }
 
     // Imposta l'intera zona del container come drop per il root
     container.ondragover = (e) => { e.preventDefault(); container.classList.add('bg-stone-100'); };
@@ -365,11 +259,26 @@ function renderSidebar() {
         try {
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
             if (data.type === 'folder' && typeof spostaCartella !== 'undefined') spostaCartella(data.path, 'ROOT');
+            // Trascinare una scheda fuori da ogni cartella la riporta alla radice:
+            // senza una riga radice, questo è l'unico gesto che lo consente.
+            else if (data.type === 'manoscritto' && typeof spostaManoscritto !== 'undefined') spostaManoscritto(data.id, '');
         } catch(err) {}
     };
 
     const sidebarFoldersContainer = document.getElementById('sidebar-folders');
     if (sidebarFoldersContainer) {
+        // Click nel vuoto = esci da ogni cartella. Senza una riga radice sarebbe
+        // altrimenti impossibile tornare a vedere le schede non archiviate.
+        sidebarFoldersContainer.onclick = (e) => {
+            if (e.target.closest('.sidebar-row') || e.target.closest('button')) return;
+            if (window.cartellaAttuale === '') return;
+            window.cartellaAttuale = '';
+            window.azzeraFiltriRicerca();
+            if (typeof switchTab === 'function') switchTab('list');
+            renderSidebar();
+            renderMain();
+            if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
+        };
         sidebarFoldersContainer.oncontextmenu = (e) => {
             // Seleziona il click solo se non è all'interno di una sidebar-row
             const closestRow = e.target.closest('.sidebar-row');

@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { createLocalWorkspace, seedItems } from './helpers';
+import { createLocalWorkspace, createFolder, seedItems } from './helpers';
 import * as path from 'path';
 
 // Fase 5 — coerenza tecnica e accessibilità.
@@ -106,6 +106,8 @@ test.describe('Accessibilità e scala z-index', () => {
     expect(overflowCard!.width).toBeGreaterThanOrEqual(31.9);
     expect(overflowCard!.height).toBeGreaterThanOrEqual(31.9);
 
+    // L'albero mostra solo cartelle: senza crearne una non ci sono righe da misurare.
+    await createFolder(page, 'Notarile');
     const riga = page.locator('#folder-list .sidebar-row').first();
     await riga.hover();
     const overflowCartella = await riga.locator('button[aria-haspopup="menu"]').boundingBox();
