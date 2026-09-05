@@ -1,8 +1,27 @@
 const path = require('path');
 const fs = require('fs');
 const { state, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
-const { driveState, loadSavedTokens, authenticateDrive } = require('./auth');
+const { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } = require('./auth');
 const { getOrCreateFolder, uploadFile } = require('./fileOps');
+
+// Verifica che la cartella del vault sia raggiungibile con l'account attualmente autenticato.
+// Senza questo probe una cartella inaccessibile produce solo una files.list vuota, indistinguibile
+// da "nessun database ancora caricato".
+async function assertVaultFolderAccessible(vaultFolderId: string): Promise<void> {
+  try {
+    await driveState.drive.files.get({ fileId: vaultFolderId, fields: 'id', supportsAllDrives: true });
+  } catch (err: any) {
+    const kind = classifyDriveFolderError(err);
+    if (kind === 'forbidden') throw new Error(ERR_VAULT_FORBIDDEN);
+    if (kind === 'notfound') throw new Error(ERR_VAULT_NOTFOUND);
+    throw err;
+  }
+}
+
+// true se il vault è già dichiarato cloud (shared o backup personale).
+function isCloudVault(s: any): boolean {
+  return !!(s && (s.isSharedVault || s.isPersonalCloud));
+}
 
 async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3): Promise<any> {
   let delay = 1000;
@@ -96,6 +115,7 @@ async function pullFromDrive(vaultFolderId: string | null = null): Promise<any |
   let lastModifyingUser: any = null;
 
   if (actualVaultFolderId) {
+    await assertVaultFolderAccessible(actualVaultFolderId);
     const res = await withDriveRetry(() => driveState.drive.files.list({
       q: `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`,
       spaces: 'drive',
@@ -111,6 +131,8 @@ async function pullFromDrive(vaultFolderId: string | null = null): Promise<any |
       if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
     }
   } else if (state.workspacePath) {
+    // Nessuna cartella Drive associata: legittimo solo alla prima pubblicazione del vault.
+    // Il renderer avvisa (pull vuoto) invece di annunciare una sincronizzazione riuscita.
     return null;
   }
 
@@ -160,22 +182,18 @@ async function syncToDrive(parentModifiedTime: number | null = null): Promise<nu
   }
 
   let projectFolderId: string | null = null;
+  let flags: any = {};
   try {
-    const s = getActiveVaultFlags();
-    if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
+    flags = getActiveVaultFlags();
+    if (isCloudVault(flags) && flags.sharedVaultId) projectFolderId = flags.sharedVaultId;
   } catch (e) { console.error("Errore lettura settings:", e); }
 
   if (!projectFolderId) {
+    // getOrCreateFolder invece della files.create diretta: se la cartella con quel nome esiste già
+    // sull'account (creata da un altro PC dello stesso utente) viene RIUSATA e non duplicata.
+    // La create diretta faceva nascere una seconda cartella omonima e i due PC divergevano.
     const rootFolderId = await getOrCreateFolder('ArchiView');
-    const folder = await driveState.drive.files.create({
-      requestBody: {
-        name: path.basename(state.workspacePath) + '_ArchiView',
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [rootFolderId]
-      },
-      fields: 'id'
-    });
-    projectFolderId = folder.data.id;
+    projectFolderId = await getOrCreateFolder(path.basename(state.workspacePath) + '_ArchiView', rootFolderId);
     try {
       const s = getActiveVaultFlags();
       s.sharedVaultId = projectFolderId;

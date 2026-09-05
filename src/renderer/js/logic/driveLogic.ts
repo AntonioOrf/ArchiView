@@ -75,8 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (loginBtn) loginBtn.classList.add('hidden');
                 if (logoutBtn) logoutBtn.classList.remove('hidden');
                 if (syncBtn) syncBtn.classList.remove('hidden');
-                
-                if (typeof checkDriveStatusVisual === 'function') checkDriveStatusVisual();
             }
         });
     }
@@ -232,38 +230,6 @@ window.avviaAutofetchDrive = async function() {
     setTimeout(() => window.controllaModificheInEntrata(), 5000);
 };
 
-window.checkDriveStatusVisual = async function() {
-    const apiCloud = await window.getApiCloud();
-    if (apiCloud) {
-        // Usa i nuovi ID del Cloud Modal
-        const statusText = document.getElementById('cloud-drive-status');
-        const btnLogin = document.getElementById('btn-cloud-drive-login');
-        const btnLogout = document.getElementById('btn-cloud-drive-logout');
-        const btnSync = document.getElementById('btn-cloud-drive-sync');
-
-        if (!statusText) return;
-
-        try {
-            const statusResult = await apiCloud.status();
-            const isAuth = statusResult?.isAuthenticated || false;
-            if (isAuth) {
-                statusText.innerHTML = window.sanitizeHTML('<span class="text-green-600 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Connesso al Cloud</span>');
-                if(btnLogin) btnLogin.classList.add('hidden');
-                if(btnLogout) btnLogout.classList.remove('hidden');
-                if(btnSync) btnSync.classList.remove('hidden');
-            } else {
-                statusText.innerHTML = window.sanitizeHTML(`<span class="text-stone-500 flex items-center gap-2"><i data-lucide="cloud-off" class="w-4 h-4"></i> ${escapeHTML(window.t('settings_drive_not_connected', 'Non Connesso'))}</span>`);
-                if(btnLogin) btnLogin.classList.remove('hidden');
-                if(btnLogout) btnLogout.classList.add('hidden');
-                if(btnSync) btnSync.classList.add('hidden');
-            }
-            if (window.lucide) lucide.createIcons();
-        } catch (e) {
-            statusText.textContent = window.t('settings_drive_status_error', 'Errore di controllo stato');
-        }
-    }
-};
-
 async function aggiornaStatoDrive() {
     window.aggiornaStatoDrive = aggiornaStatoDrive;
     const apiCloud = await window.getApiCloud();
@@ -279,10 +245,6 @@ async function aggiornaStatoDrive() {
         window.statoCloud.autenticato = window.driveStatus.isAuthenticated || !!window.hubConfig;
         if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 
-        if (typeof checkDriveStatusVisual === 'function') {
-            checkDriveStatusVisual();
-        }
-        
         if (window.driveStatus.isAuthenticated) {
             if (typeof window.avviaAutofetchDrive === 'function') window.avviaAutofetchDrive();
         }
@@ -295,7 +257,7 @@ async function aggiornaStatoDrive() {
 
         if (section) {
             if (window.driveStatus.isAuthenticated) {
-                statusText.innerHTML = window.sanitizeHTML(`<span class="text-green-600 font-semibold">Connesso come: ${window.driveStatus.user}</span>`);
+                statusText.innerHTML = window.sanitizeHTML(`<span class="text-green-600 font-semibold">Connesso come: ${escapeHTML(window.driveStatus.user || '')}</span>`);
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
                 syncBtn.classList.remove('hidden');
@@ -348,17 +310,144 @@ window.loginGoogleDrive = async function(forceLocal = false) {
     await window.loginCloud('google', forceLocal);
 };
 
+// Riconnessione dallo stato "Non connesso" della barra di sync: porta DIRETTAMENTE al login nel
+// browser. Prima quel bottone apriva il modal Cloud, che per un vault già cloud non espone alcun
+// controllo di accesso: un vicolo cieco.
+//
+// forceLocal=true è deliberato: attiva skipCheck in authenticateDrive e forza
+// prompt='select_account consent', quindi il browser si apre SEMPRE. Senza, un token residuo ma
+// inservibile farebbe risolvere l'auth dallo short-circuit "già autenticato" senza aprire nulla —
+// esattamente il sintomo da cui nasce questa richiesta. Essendo lo stato già "non connesso",
+// non stiamo sacrificando un refresh silenzioso utile.
+window.connettiAccountCloud = async function() {
+    let provider = 'google';
+    try {
+        if (window.apiSettings) {
+            const settings = await window.apiSettings.get();
+            if (settings.cloudProvider === 'microsoft' && window.apiMicrosoft) provider = 'microsoft';
+        }
+    } catch (e) { /* provider non leggibile → Google, il default dell'app */ }
+
+    await window.loginCloud(provider, true);
+    if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
+
+    // Se il login è partito dal modal Cloud, il suo riepilogo mostra ancora "Non connesso":
+    // riaprirlo lo ripopola con lo stato appena aggiornato.
+    const modal = document.getElementById('cloud-modal');
+    if (modal && !modal.classList.contains('hidden-tab') && typeof window.apriCloudModal === 'function') {
+        await window.apriCloudModal();
+    }
+};
+
 window.logoutGoogleDrive = async function() {
     const apiCloud = await window.getApiCloud();
     if (apiCloud) {
         try {
             await apiCloud.logout();
+
+            // Reset esplicito dello stato locale: aggiornaStatoDrive() da solo non basta se il
+            // main risponde lentamente, e soprattutto l'autofetch continuava a girare dopo la
+            // disconnessione interrogando il cloud con un account che non c'è più.
+            window.driveStatus = { isAuthenticated: false, user: null, unauthorizedVault: false };
+            if (window.autofetchIntervalId) {
+                clearInterval(window.autofetchIntervalId);
+                window.autofetchIntervalId = null;
+            }
+            window.driveAuthPromise = null;
+
             await aggiornaStatoDrive();
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_disconnesso_da_google_dri", "Disconnesso da Google Drive."), "info");
         } catch (e) {
             console.error(e);
         }
     }
+};
+
+// Ricollega QUESTO workspace a una cartella già presente sotto ArchiView/ nel Drive dell'utente.
+// Scenario tipico: due PC dello stesso account finiti su cartelle Drive diverse, quindi ognuno
+// sincronizza con un archivio che l'altro non vede. Riscrive il solo sharedVaultId: set-vault-type
+// accetta già un id esplicito, quindi non serve nuovo IPC né si tocca il tipo di vault.
+window.collegaArchivioEsistenteDrive = async function() {
+    if (!window.apiDrive || !window.apiBrowser) return;
+    const section = document.getElementById('cloud-relink-section');
+    const list = document.getElementById('cloud-relink-list');
+    if (!section || !list) return;
+
+    document.getElementById('cloud-local-section')?.classList.add('hidden-tab');
+    document.getElementById('cloud-shared-section')?.classList.add('hidden-tab');
+    section.classList.remove('hidden-tab');
+    list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-stone-500 p-4 text-center">${escapeHTML(window.t('msg_ricerca_archivi_drive', 'Ricerca degli archivi sul tuo Drive...'))}</p>`);
+
+    try {
+        await window.apiDrive.auth();
+        const vaults = await window.apiDrive.listVaults();
+        const cfg = await window.apiBrowser.getVaultConfig();
+        const currentId = (cfg && cfg.sync && cfg.sync.sharedVaultId) || null;
+
+        list.innerHTML = window.sanitizeHTML('');
+        if (!vaults || vaults.length === 0) {
+            list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-stone-500 p-4 text-center">${escapeHTML(window.t('msg_no_archive_found_drive', 'Nessun Archivio trovato nella cartella ArchiView sul tuo Drive.'))}</p>`);
+            return;
+        }
+
+        vaults.forEach(v => {
+            const isCurrent = v.id === currentId;
+            const div = document.createElement('div');
+            div.className = "p-3 border rounded-lg flex justify-between items-center gap-3 " +
+                (isCurrent
+                    ? "border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/60 dark:bg-emerald-900/20"
+                    : "border-stone-200 dark:border-stone-700 cursor-pointer hover:border-blue-400 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-all");
+            const dateStr = v.modifiedTime ? new Date(v.modifiedTime).toLocaleDateString() : '—';
+            div.innerHTML = window.sanitizeHTML(`
+                <div class="flex items-center gap-3 min-w-0">
+                    <i data-lucide="folder-cloud" class="w-5 h-5 shrink-0 text-blue-600"></i>
+                    <div class="min-w-0 text-left">
+                        <div class="font-medium truncate">${escapeHTML(v.name || '')}</div>
+                        <div class="text-xs text-stone-500">${escapeHTML(window.t('label_modified', 'Modificato:'))} ${escapeHTML(dateStr)}</div>
+                    </div>
+                </div>
+                ${isCurrent
+                    ? `<span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0">${escapeHTML(window.t('label_currently_linked', 'Collegato'))}</span>`
+                    : `<i data-lucide="chevron-right" class="w-4 h-4 text-stone-400 shrink-0"></i>`}
+            `);
+            if (!isCurrent) div.onclick = () => confermaCollegamentoArchivio(v, cfg);
+            list.appendChild(div);
+        });
+        if (window.lucide) lucide.createIcons({ nodes: [list] });
+    } catch (e) {
+        list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-red-600 p-4 text-center">${escapeHTML(e.message || String(e))}</p>`);
+    }
+};
+
+function confermaCollegamentoArchivio(vault, cfg) {
+    // Il ricollegamento cambia la sorgente dati del workspace: la prima sync dopo il cambio
+    // fonde il contenuto remoto con quello locale, quindi va confermato esplicitamente.
+    const msg = window.t("msg_dlg_ricollega_archivio", "Collegare questo archivio alla cartella Drive \"") + (vault.name || '') +
+        window.t("msg_dlg_ricollega_archivio2", "\"? Alla prossima sincronizzazione i dati verranno uniti a quelli di quella cartella.");
+    const esegui = async () => {
+        try {
+            if (typeof mostraProgressoCloud === 'function') {
+                mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_relink", "Collegamento all'archivio su Drive..."));
+            }
+            const tipo = (cfg && cfg.vaultType && cfg.vaultType !== 'local') ? cfg.vaultType : 'backup';
+            await window.apiBrowser.setVaultType({ vaultType: tipo, sharedVaultId: vault.id, driveAutofetch: true });
+            if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
+            window.chiudiCollegaArchivioDrive();
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_collegato", "Archivio collegato. Sincronizzazione in corso..."), "success");
+            await window.sincronizzaGoogleDrive();
+        } catch (e) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
+        } finally {
+            if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
+        }
+    };
+    if (typeof window.mostraBottomConfirm === 'function') window.mostraBottomConfirm(msg, esegui);
+    else if (confirm(msg)) esegui();
+}
+
+window.chiudiCollegaArchivioDrive = function() {
+    document.getElementById('cloud-relink-section')?.classList.add('hidden-tab');
+    if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
 };
 
 window.sincronizzaGoogleDrive = async function(silent = false) {
@@ -387,6 +476,11 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                     await window.sincronizzaEUnisciDati(driveData.database);
                 }
                 window.lastDriveModifiedTime = driveData.driveModifiedTime;
+            } else if (!silent && typeof mostraMessaggio === 'function') {
+                // Il download non ha trovato nulla: legittimo alla prima pubblicazione, ma se
+                // l'archivio esiste già su un altro PC è il sintomo di una cartella Drive sbagliata.
+                // Prima si proseguiva in silenzio fino a "Sincronizzazione completata con successo".
+                mostraMessaggio(window.t("msg_nessun_db_sul_cloud", "Nessun database trovato sul Cloud: viene caricata la copia locale. Se questo archivio esiste già su un altro PC, verifica dal menu Cloud di essere collegato alla stessa cartella Drive."), "warning");
             }
 
             // 2. Carica le modifiche locali unite (upload)

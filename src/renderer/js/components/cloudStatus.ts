@@ -68,6 +68,13 @@ window.calcolaStatoCloud = function() {
     return { chiave: 'ok', label: window.t('cloud_state_synced', 'Sincronizzato'), icona: 'cloud-check' };
 };
 
+// Avvio del login cloud, con l'apertura del modal come ripiego se driveLogic non fosse ancora
+// caricato. Usato sia dall'azione principale che dalla voce di popover: una sola destinazione.
+function avviaConnessioneCloud() {
+    if (typeof window.connettiAccountCloud === 'function') return window.connettiAccountCloud();
+    if (typeof window.apriCloudModal === 'function') return window.apriCloudModal();
+}
+
 /**
  * L'azione che quello stato richiede, quella che l'utente vorrebbe fare adesso.
  * Sta nell'header con l'etichetta scritta: le altre due restano nel popover.
@@ -77,8 +84,10 @@ window.azionePrincipaleCloud = function(chiave) {
     switch (chiave) {
         case 'locale':
             return { label: window.t('cloud_action_enable_short', 'Attiva cloud'), icon: 'cloud-cog', onSelect: () => window.apriCloudModal && window.apriCloudModal() };
+        // "Connetti" porta direttamente al login nel browser: per un vault già cloud il modal
+        // non espone alcun controllo di accesso, quindi mandarci l'utente era un vicolo cieco.
         case 'disconnesso':
-            return { label: window.t('cloud_action_connect_short', 'Connetti'), icon: 'cloud-cog', onSelect: () => window.apriCloudModal && window.apriCloudModal() };
+            return { label: window.t('cloud_action_connect_short', 'Connetti'), icon: 'cloud-cog', onSelect: () => avviaConnessioneCloud() };
         case 'errore':
             return { label: window.t('cloud_action_retry', 'Riprova'), icon: 'refresh-cw', onSelect: () => window.controllaModificheInEntrata(true) };
         case 'entrata':
@@ -204,7 +213,7 @@ window.apriPopoverCloud = function(btn) {
         voci.push({
             label: window.t('cloud_action_connect', 'Connetti account cloud'),
             icon: 'cloud-cog',
-            onSelect: () => { if (typeof window.apriCloudModal === 'function') window.apriCloudModal(); }
+            onSelect: () => avviaConnessioneCloud()
         });
     }
 
