@@ -54,6 +54,24 @@ function getLocalTokenPath(): string | null {
   return tokenStore.tokenPathFor('google', key);
 }
 
+// --- Classificazione errori di accesso alla cartella vault ---
+
+// La stessa discriminazione serviva in authenticateDrive, checkDriveStatus e pullFromDrive:
+// centralizzata qui (auth.ts non dipende da vaultOps/fileOps, quindi niente require circolari).
+function classifyDriveFolderError(err: any): 'forbidden' | 'notfound' | null {
+  const status = err?.code || err?.status || err?.response?.status;
+  const msg = (err?.message || '').toLowerCase();
+  if (status === 403 || msg.includes('forbidden') || msg.includes('insufficientpermissions') ||
+      msg.includes('insufficientfilepermissions') || msg.includes('caller does not have permission')) {
+    return 'forbidden';
+  }
+  if (status === 404 || msg.includes('file not found')) return 'notfound';
+  return null;
+}
+
+const ERR_VAULT_FORBIDDEN = "ACCESSO_NEGATO_VAULT: Questo account Google non è autorizzato ad accedere all'archivio condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario.";
+const ERR_VAULT_NOTFOUND = "L'archivio condiviso non esiste o è stato eliminato. Richiedi un nuovo invito al proprietario.";
+
 // --- Auth Logging ---
 
 function logAuthEvent(message: string): void {
@@ -210,16 +228,14 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
             try {
               await driveState.drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
             } catch (err: any) {
-              const errStatus = err.code || err.status || (err.response && err.response.status);
-              const msg = (err.message || '').toLowerCase();
-              if (errStatus === 403 || msg.includes('forbidden') || msg.includes('insufficientpermissions') || msg.includes('insufficientfilepermissions') || msg.includes('caller does not have permission')) {
-                return reject(new Error("ACCESSO_NEGATO_VAULT: Questo account Google non è autorizzato ad accedere all'archivio condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario."));
-              }
-              if (errStatus === 404 || msg.includes('file not found')) {
-                return reject(new Error("L'archivio condiviso non esiste o è stato eliminato. Richiedi un nuovo invito al proprietario."));
-              }
+              const kind = classifyDriveFolderError(err);
+              if (kind === 'forbidden') return reject(new Error(ERR_VAULT_FORBIDDEN));
+              if (kind === 'notfound') return reject(new Error(ERR_VAULT_NOTFOUND));
             }
           }
+          // Percorso "già autenticato": risolve SENZA aprire il browser. Va tracciato, altrimenti
+          // un click su "Accedi" che non apre nulla resta inspiegabile in diagnostica.
+          logAuthEvent("AUTH: token già validi, login saltato (nessun browser aperto).");
           return resolve(true);
         } catch (e: any) {
           // Distingui errori di autenticazione (401/invalid_grant) da errori transienti
@@ -374,14 +390,55 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
 }
 
 async function logoutDrive(): Promise<boolean> {
-  if (state.workspacePath) {
-    const localTokenPath = getLocalTokenPath();
-    if (localTokenPath && fs.existsSync(localTokenPath)) fs.unlinkSync(localTokenPath);
-  } else {
-    const globalTokenPath = getGlobalTokenPath();
-    if (globalTokenPath && fs.existsSync(globalTokenPath)) fs.unlinkSync(globalTokenPath);
+  // Il logout deve rimuovere OGNI traccia locale del token, non solo quella del vault attivo:
+  // getLocalTokenPath() è null per i workspace non-vault (activeVaultKey()==='global') e in quel
+  // caso il vecchio codice non cancellava nulla, mentre loadSavedTokens() ricopia comunque il
+  // token globale su quello locale → l'account restava collegato dopo la "disconnessione".
+  const localTokenPath = getLocalTokenPath();
+  const globalTokenPath = getGlobalTokenPath();
+
+  // Revoca best-effort lato Google PRIMA di cancellare i file: senza refresh_token non
+  // potremmo più revocare. Rete assente o grant già revocato non devono bloccare il logout locale.
+  try {
+    for (const p of new Set([localTokenPath, globalTokenPath])) {
+      if (!p || !fs.existsSync(p)) continue;
+      const tok = readTokenFile(p) as any;
+      const toRevoke = tok && (tok.refresh_token || tok.access_token);
+      if (!toRevoke) continue;
+      try { initGoogle(); } catch (e) { break; }
+      if (!driveState.oauth2Client) break;
+      await driveState.oauth2Client.revokeToken(toRevoke);
+      logAuthEvent("LOGOUT: token revocato su Google (" + p + ").");
+      break; // local e global appartengono allo stesso grant: una revoca basta
+    }
+  } catch (e: any) {
+    logAuthEvent("LOGOUT: revoca su Google fallita (non bloccante): " + e.message);
   }
-  if (driveState.oauth2Client) driveState.oauth2Client.setCredentials(null);
+
+  for (const p of new Set([localTokenPath, globalTokenPath])) {
+    try {
+      if (p && fs.existsSync(p)) {
+        fs.unlinkSync(p);
+        logAuthEvent("LOGOUT: token rimosso -> " + p);
+      }
+    } catch (e: any) {
+      logAuthEvent("LOGOUT: impossibile rimuovere " + p + ": " + e.message);
+    }
+  }
+
+  // Teardown dello stato in memoria. Azzerare googleInstance è ciò che permette a initGoogle()
+  // di ricostruire il client e RI-REGISTRARE il listener 'tokens': tenere l'oggetto vecchio
+  // con sole credenziali svuotate lasciava attivo un listener legato al grant precedente.
+  try { if (driveState.localServer) driveState.localServer.close(); } catch (e) { /* best-effort */ }
+  driveState.localServer = null;
+  if (driveState.oauth2Client) {
+    try { driveState.oauth2Client.setCredentials(null); } catch (e) { /* best-effort */ }
+    try { driveState.oauth2Client.removeAllListeners('tokens'); } catch (e) { /* best-effort */ }
+  }
+  driveState.oauth2Client = null;
+  driveState.drive = null;
+  driveState.googleInstance = null;
+
   return true;
 }
 
@@ -402,9 +459,7 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
       try {
         await driveState.drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
       } catch (err: any) {
-        const errStatus = err.code || err.status || (err.response && err.response.status);
-        const msg = (err.message || '').toLowerCase();
-        if (errStatus === 403 || msg.includes('forbidden') || msg.includes('insufficientpermissions') || msg.includes('insufficientfilepermissions') || msg.includes('caller does not have permission')) {
+        if (classifyDriveFolderError(err) === 'forbidden') {
           logAuthEvent(`ACCESSO_NEGATO_VAULT: account ${userEmail} non autorizzato per vault ${settings.sharedVaultId}`);
           return { isAuthenticated: true, user: userEmail, unauthorizedVault: true };
         }
@@ -420,6 +475,7 @@ module.exports = {
   writeTokenFile, readTokenFile,
   getGlobalTokenPath, getLocalTokenPath,
   logAuthEvent,
+  classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND,
   initGoogle, loadSavedTokens,
   authenticateDrive, logoutDrive, checkDriveStatus
 };

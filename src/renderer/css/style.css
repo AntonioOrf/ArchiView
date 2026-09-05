@@ -561,32 +561,22 @@ button, .btn {
     background-color: var(--color-primary-light);
 }
 
-/* Cloud modal — superfici e accenti tema-aware.
-   Le utility Tailwind `dark:` seguono prefers-color-scheme, non la classe .dark-theme che
-   l'app applica: nei temi scuri restituivano fondi chiari e testi illeggibili. Qui si passa
-   dai token, che sono l'unica cosa che cambia davvero con il tema scelto. */
-.cloud-panel {
-    background-color: var(--color-bg-base);
-    border: 1px solid var(--color-border-light);
-}
-.cloud-muted { color: var(--color-text-muted); }
-.cloud-strong { color: var(--color-text-secondary); }
+/* Cloud modal.
+   Le superfici e gli accenti su misura (.cloud-panel, .cloud-variant-*, .cloud-icon-wrap,
+   .cloud-strong/.cloud-muted/.cloud-accent) sono state rimosse col restyle: nascevano da un
+   tempo in cui le utility `dark:` seguivano prefers-color-scheme invece della classe di tema
+   dell'app. Oggi `@custom-variant dark` in input.css le lega a .dark-theme/.blue-dark-theme, e
+   il blocco di remap più in basso copre le utility neutre dentro .modal-window: il modal usa
+   quindi Tailwind come il resto dell'app. Qui resta solo ciò che Tailwind non può esprimere. */
+
 /* .btn centra il contenuto e style.css è caricato dopo tailwind.css: senza questa regola
    l'utility justify-start non ha effetto e le voci dell'elenco azioni restano centrate. */
 #cloud-shared-section .btn.justify-start {
     justify-content: flex-start;
     text-align: left; /* etichette su due righe restavano centrate rispetto all'icona */
 }
-.cloud-accent { color: var(--color-primary); }
 .cloud-danger { color: var(--color-danger); }
 .cloud-danger:hover { background-color: var(--color-danger-light); color: var(--color-danger-hover); }
-
-/* Le due varianti si distinguono per bordo e icona: il fondo resta neutro, così il testo
-   mantiene lo stesso rapporto di contrasto in tutti e quattro i temi. */
-.cloud-variant-backup { border-color: var(--color-primary-border); }
-.cloud-variant-backup .cloud-icon-wrap { background-color: var(--color-primary-light); color: var(--color-primary); }
-.cloud-variant-legacy { border-color: var(--color-warning-border); }
-.cloud-variant-legacy .cloud-icon-wrap { background-color: var(--color-warning-light); color: var(--color-warning); }
 
 /* Focus accessibilità tastiera */
 .btn:focus-visible {

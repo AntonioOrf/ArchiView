@@ -1,16 +1,6 @@
 // @ts-nocheck
 
 (function() {
-    // Varianti della sezione "cloud attivo": cambia SOLO una classe, i colori stanno in
-    // style.css e passano dai token del tema. Due motivi, entrambi appresi sul campo:
-    // riscrivere className azzerava shrink-0 sull'icona e trasformava il contenitore a due
-    // colonne in una colonna centrata; e le utility con accento fisso (bg-blue-50/50)
-    // restano chiare in tutti e tre i temi scuri.
-    const VARIANTI = {
-        backup: { classe: 'cloud-variant-backup', icona: 'shield-check' },
-        legacy: { classe: 'cloud-variant-legacy', icona: 'users' }
-    };
-
     // Cambia la chiave i18n di un elemento già tradotto. Serve resettare anche data-i18n-default,
     // altrimenti applicaTraduzioniHtml continuerebbe a usare come fallback il testo della chiave
     // precedente (catturato alla prima traduzione).
@@ -21,14 +11,21 @@
         el.textContent = window.t(key, fallback);
     }
 
-    function applicaVariante(nome) {
-        const altro = nome === 'backup' ? VARIANTI.legacy : VARIANTI.backup;
-        const v = VARIANTI[nome];
-        const section = document.getElementById('cloud-shared-section');
+    // Intestazione della sezione attiva: icona coerente col tipo di archivio e, sotto il titolo,
+    // l'account Google collegato. checkDriveStatus ripiega sulla stringa 'Utente (Drive)' quando
+    // about.get fallisce sotto scope drive.file: la mostriamo così com'è, senza fingere un'email.
+    function renderIntestazioneCloud(vaultType) {
         const icon = document.getElementById('cloud-active-icon');
+        if (icon) icon.setAttribute('data-lucide', vaultType === 'backup' ? 'shield-check' : 'users');
 
-        if (section) { section.classList.remove(altro.classe); section.classList.add(v.classe); }
-        if (icon) icon.setAttribute('data-lucide', v.icona);
+        const riga = document.getElementById('cloud-active-account');
+        if (!riga) return;
+        const connesso = !!(window.driveStatus && window.driveStatus.isAuthenticated);
+        const account = window.driveStatus && window.driveStatus.user;
+        riga.textContent = connesso && account
+            ? account
+            : window.t('settings_drive_not_connected', 'Non Connesso');
+        riga.title = riga.textContent;
     }
 
     // Stato di caricamento uniforme per i bottoni async: disabled + aria-busy + spinner.
@@ -69,8 +66,9 @@
                 : window.t('cloud_status_type_shared', 'Archivio condiviso (legacy)')
         ]);
 
-        const account = window.driveStatus && window.driveStatus.user;
-        if (account) righe.push(['user', window.t('cloud_status_account', 'Account'), account]);
+        // L'account non si ripete qui: vive nell'intestazione della sezione (vedi
+        // renderIntestazioneCloud), dove è in evidenza invece che in fondo a un elenco.
+        const connesso = !!(window.driveStatus && window.driveStatus.isAuthenticated);
 
         const ultimo = settings && settings.lastSyncTime;
         if (ultimo) {
@@ -98,6 +96,23 @@
             box.appendChild(riga);
         }
 
+        // Senza sessione valida il modal deve offrire l'accesso, altrimenti resta un vicolo cieco:
+        // le azioni di sync qui sopra falliscono tutte finché non si è autenticati.
+        if (!connesso) {
+            const azione = document.createElement('button');
+            azione.type = 'button';
+            azione.id = 'btn-cloud-login';
+            azione.className = 'btn btn-primary w-full justify-center py-2 text-sm mt-1';
+            azione.onclick = () => window.connettiAccountCloud && window.connettiAccountCloud();
+            const ico = document.createElement('i');
+            ico.setAttribute('data-lucide', 'log-in');
+            ico.setAttribute('aria-hidden', 'true');
+            ico.className = 'w-4 h-4 mr-2 shrink-0';
+            azione.appendChild(ico);
+            azione.appendChild(document.createTextNode(window.t('btn_cloud_login', 'Accedi a Google Drive')));
+            box.appendChild(azione);
+        }
+
         if (window.lucide) window.lucide.createIcons({ nodes: [box] });
     }
 
@@ -116,84 +131,101 @@
             <div class="modal-body p-6 flex-1 overflow-y-auto custom-scroll min-h-0">
 
                 <!-- SEZIONE VAULT LOCALE (Non Condiviso) -->
-                <div id="cloud-local-section" class="cloud-panel flex flex-col items-center text-center p-6 rounded-md">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
-                        <i data-lucide="shield-check" class="w-6 h-6" aria-hidden="true"></i>
+                <div id="cloud-local-section" class="text-center py-4">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="shield-check" class="w-7 h-7" aria-hidden="true"></i>
                     </div>
-                    <h4 class="text-xl font-semibold mb-2"><span data-i18n="modal_cloud_activate_title">Backup personale su Google Drive</span></h4>
-                    <p class="text-sm cloud-strong mb-4 max-w-xl">
-                        <span data-i18n="modal_cloud_activate_desc">Copia privata dell'archivio sul tuo Google Drive. Per lavorare insieme ai colleghi usa invece "Condividi questo archivio" dalla barra laterale.</span>
+                    <h3 class="text-xl font-serif font-semibold mb-2 text-stone-800 dark:text-stone-100"><span data-i18n="modal_cloud_activate_title">Backup personale su Google Drive</span></h3>
+                    <p class="text-sm text-stone-600 dark:text-stone-400 max-w-sm mx-auto mb-6">
+                        <span data-i18n="modal_cloud_activate_desc_short">Una copia privata dell'archivio sul tuo Google Drive, accessibile solo a te.</span>
                     </p>
-                    <div class="w-full max-w-md">
-                        <button type="button" onclick="trasformaInPersonale()" id="btn-trasforma-personale" class="btn py-2.5 px-4 w-full justify-center text-sm shadow-sm text-white bg-blue-600 hover:bg-blue-700 border border-blue-700">
+                    <div class="flex flex-col gap-3 max-w-xs mx-auto">
+                        <button type="button" onclick="trasformaInPersonale()" id="btn-trasforma-personale" class="btn btn-block justify-center py-3 text-sm text-white bg-blue-600 hover:bg-blue-700 border border-blue-700">
                             <i data-lucide="shield-check" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_backup_private">Backup Personale (Google Drive)</span>
                         </button>
+                        <button type="button" onclick="chiudiCloudModal(); if(window.apriShareModal) apriShareModal();" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 mt-1">
+                            <span data-i18n="cloud_local_share_link">Vuoi invece lavorarci insieme ai colleghi? Condividi l'archivio</span>
+                        </button>
                     </div>
-                    <div id="cloud-transform-status" class="cloud-accent mt-4 text-sm font-medium hidden-tab flex items-center justify-center gap-2">
+                    <div id="cloud-transform-status" class="text-blue-600 dark:text-blue-400 mt-4 text-sm font-medium hidden-tab flex items-center justify-center gap-2">
                         <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0" aria-hidden="true"></i> <span data-i18n="msg_operation_progress">Operazione in corso</span>...
                     </div>
                 </div>
 
                 <!-- SEZIONE VAULT CONDIVISO/PERSONALE ATTIVO -->
-                <div id="cloud-shared-section" class="hidden-tab flex flex-col gap-5 p-6 border rounded-md transition-colors duration-300">
+                <div id="cloud-shared-section" class="hidden-tab flex flex-col gap-4">
 
-                    <!-- RIGA TOP: Icona + titolo + desc orizzontali -->
-                    <div class="flex items-center gap-4">
-                        <div id="cloud-active-icon-wrapper" class="cloud-icon-wrap w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300">
-                            <i id="cloud-active-icon" data-lucide="cloud" class="w-7 h-7" aria-hidden="true"></i>
+                    <!-- INTESTAZIONE: identità dell'archivio + account Google collegato.
+                         L'email sta qui e non solo nel riepilogo: è il dato che dice QUALE Drive
+                         si sta usando, la prima cosa da controllare quando due PC divergono. -->
+                    <div class="flex items-center gap-3.5 p-4 rounded-lg border border-blue-200 dark:border-blue-700/50 bg-blue-50/60 dark:bg-blue-900/20">
+                        <div class="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                            <i id="cloud-active-icon" data-lucide="cloud" class="w-6 h-6" aria-hidden="true"></i>
                         </div>
                         <div class="flex-1 min-w-0 text-left">
-                            <h4 class="text-lg font-bold" id="cloud-active-title" data-i18n="modal_cloud_active_title">Cloud Attivo</h4>
-                            <p class="text-sm cloud-strong" id="cloud-active-desc" data-i18n="modal_cloud_active_desc">Questo Archivio è sincronizzato.</p>
+                            <p class="font-serif text-base font-semibold text-stone-800 dark:text-stone-100" id="cloud-active-title" data-i18n="modal_cloud_active_title">Cloud Attivo</p>
+                            <p class="text-xs text-stone-500 dark:text-stone-400 truncate" id="cloud-active-account"></p>
                         </div>
-                        <button type="button" onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary px-5 py-2.5 font-medium shrink-0">
+                        <button type="button" onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary px-4 py-2.5 font-medium shrink-0">
                             <i data-lucide="refresh-cw" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_sync_now">Sincronizza Ora</span>
                         </button>
                     </div>
 
-                    <!-- CORPO A DUE COLONNE (impilate sotto md) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                    <p class="text-sm text-stone-600 dark:text-stone-400" id="cloud-active-desc" data-i18n="modal_cloud_active_desc">Questo Archivio è sincronizzato.</p>
 
-                        <!-- COLONNA SINISTRA: Impostazioni e azioni avanzate -->
-                        <div class="flex flex-col gap-3">
-                            <label for="cloud-sync-attachments" class="cloud-panel flex items-center gap-2 p-3 rounded-md cursor-pointer">
-                                <input type="checkbox" id="cloud-sync-attachments" onchange="toggleSyncAttachments(this.checked)" class="w-4 h-4 text-blue-600 rounded border-stone-300 shrink-0">
-                                <span class="text-sm leading-snug" style="color: var(--color-text-main);" data-i18n="label_sync_attachments">Sincronizza allegati automaticamente (PDF/Immagini)</span>
-                            </label>
+                    <!-- STATO: riepilogo + (se disconnesso) bottone di accesso -->
+                    <div class="flex flex-col gap-2 p-4 rounded-lg bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700 text-sm text-stone-600 dark:text-stone-400">
+                        <div id="cloud-status-summary" class="flex flex-col gap-2"></div>
+                    </div>
 
-                            <details class="group pt-1">
-                                <summary class="cloud-strong flex items-center gap-1.5 py-1.5 px-1 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer select-none">
-                                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-90" aria-hidden="true"></i> <span data-i18n="label_advanced_options">Opzioni avanzate</span>
-                                </summary>
-                                <div class="flex flex-col gap-1.5 mt-1.5">
-                                    <button type="button" onclick="trasformaInPersonale()" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm">
-                                        <i data-lucide="shield" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_convert_backup_private">Converti in Backup Personale</span>
-                                    </button>
-                                    <button type="button" onclick="migraVaultSuHub()" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                                        <i data-lucide="server" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_migrate_hub">Passa all'archivio condiviso</span>
-                                    </button>
-                                    <button type="button" onclick="cambiaAccountGoogleVault()" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm">
-                                        <i data-lucide="user-plus" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_use_another_account">Usa un altro account Google</span>
-                                    </button>
+                    <label for="cloud-sync-attachments" class="flex items-center gap-2.5 p-3 rounded-lg border border-stone-200 dark:border-stone-700 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/40">
+                        <input type="checkbox" id="cloud-sync-attachments" onchange="toggleSyncAttachments(this.checked)" class="w-4 h-4 text-blue-600 rounded border-stone-300 shrink-0">
+                        <span class="text-sm leading-snug text-stone-700 dark:text-stone-300" data-i18n="label_sync_attachments">Sincronizza allegati automaticamente (PDF/Immagini)</span>
+                    </label>
 
-                                    <!-- Azioni irreversibili: separate e già rosse a riposo, non solo in hover -->
-                                    <hr class="my-1 border-stone-200">
-                                    <button type="button" onclick="pulisciAllegatiOrfani()" id="btn-cloud-clean-orphans" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
-                                        <i data-lucide="trash-2" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_clean_ghosts">Pulisci file inutilizzati</span>
-                                    </button>
-                                    <button type="button" onclick="scollegaCloud()" id="btn-disconnect-cloud" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
-                                        <i data-lucide="unlink" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_disconnect_cloud">Scollega dal Cloud</span>
-                                    </button>
-                                </div>
-                            </details>
+                    <details class="group">
+                        <summary class="text-stone-500 dark:text-stone-400 flex items-center gap-1.5 py-1.5 px-1 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer select-none">
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-90" aria-hidden="true"></i> <span data-i18n="label_advanced_options">Opzioni avanzate</span>
+                        </summary>
+                        <div class="flex flex-col gap-1.5 mt-1.5">
+                            <button type="button" onclick="collegaArchivioEsistenteDrive()" id="btn-cloud-relink" class="btn btn-ghost justify-start py-2 text-sm">
+                                <i data-lucide="link" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_relink_drive_vault">Collega a un archivio esistente su Drive</span>
+                            </button>
+                            <button type="button" onclick="cambiaAccountGoogleVault()" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm">
+                                <i data-lucide="user-plus" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_use_another_account">Usa un altro account Google</span>
+                            </button>
+                            <button type="button" onclick="apriMigrazioneDaCloudModal()" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                                <i data-lucide="server" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_migrate_hub">Passa all'archivio condiviso</span>
+                            </button>
+                            <button type="button" onclick="trasformaInPersonale()" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm">
+                                <i data-lucide="shield" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_convert_backup_private">Converti in Backup Personale</span>
+                            </button>
+
+                            <!-- Azioni irreversibili: separate e già rosse a riposo, non solo in hover -->
+                            <hr class="my-1 border-stone-200">
+                            <button type="button" onclick="pulisciAllegatiOrfani()" id="btn-cloud-clean-orphans" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
+                                <i data-lucide="trash-2" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_clean_ghosts">Pulisci file inutilizzati</span>
+                            </button>
+                            <button type="button" onclick="scollegaCloud()" id="btn-disconnect-cloud" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
+                                <i data-lucide="unlink" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_disconnect_cloud">Scollega dal Cloud</span>
+                            </button>
                         </div>
+                    </details>
 
-                        <!-- COLONNA DESTRA: stato/riepilogo -->
-                        <div class="cloud-panel cloud-strong flex flex-col gap-3 p-4 rounded-lg text-sm">
-                            <div id="cloud-status-summary" class="flex flex-col gap-2"></div>
-                            <p class="flex items-start gap-2 pt-1 border-t border-stone-200"><i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-stone-400" aria-hidden="true"></i> <span id="cloud-hint" data-i18n="cloud_backup_hint">Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.</span></p>
-                        </div>
+                    <p class="flex items-start gap-2 text-xs text-stone-500 dark:text-stone-400 pt-1"><i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-stone-400" aria-hidden="true"></i> <span id="cloud-hint" data-i18n="cloud_backup_hint">Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.</span></p>
+                </div>
 
+                <!-- SEZIONE RICOLLEGA A UN ARCHIVIO DRIVE ESISTENTE -->
+                <!-- Serve quando due PC dello stesso utente sono finiti su cartelle Drive diverse:
+                     elenca gli archivi già presenti sull'account e riscrive il solo sharedVaultId. -->
+                <div id="cloud-relink-section" class="hidden-tab flex flex-col gap-4">
+                    <div class="text-left">
+                        <h3 class="text-lg font-serif font-semibold text-stone-800 dark:text-stone-100" data-i18n="modal_cloud_relink_title">Collega a un archivio esistente su Drive</h3>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1" data-i18n="modal_cloud_relink_desc">Scegli la cartella su Drive con cui questo archivio deve sincronizzarsi. Usalo se un altro PC lavora già su un archivio che qui non vedi.</p>
+                    </div>
+                    <div id="cloud-relink-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto custom-scroll"></div>
+                    <div class="flex justify-end">
+                        <button type="button" onclick="chiudiCollegaArchivioDrive()" class="btn btn-ghost py-2 text-sm" data-i18n="btn_cancel">Annulla</button>
                     </div>
                 </div>
 
@@ -277,6 +309,9 @@
         const sharedSection = document.getElementById('cloud-shared-section');
         const titoloModal = document.getElementById('cloud-modal-title');
 
+        // La sezione di ricollegamento è transitoria: riaprire il modal deve tornare alla vista base.
+        document.getElementById('cloud-relink-section')?.classList.add('hidden-tab');
+
         if (vaultConfig.vaultType === 'local') {
             if (localSection) localSection.classList.remove('hidden-tab');
             if (sharedSection) sharedSection.classList.add('hidden-tab');
@@ -295,8 +330,9 @@
         const hint = document.getElementById('cloud-hint');
         const btnSwitchPersonal = document.getElementById('btn-switch-personal');
 
+        renderIntestazioneCloud(vaultConfig.vaultType);
+
         if (vaultConfig.vaultType === 'backup') {
-            applicaVariante('backup');
             impostaChiaveI18n(titoloModal, 'modal_cloud_title_backup', 'Backup personale su Google Drive');
             impostaChiaveI18n(title, 'modal_cloud_backup_active', 'Backup Personale Attivo');
             impostaChiaveI18n(desc, 'modal_cloud_backup_desc', 'Questo Archivio è sincronizzato nel tuo Cloud privato. Nessun altro ha accesso.');
@@ -304,7 +340,6 @@
             if (btnSwitchPersonal) btnSwitchPersonal.classList.add('hidden-tab');
         } else {
             // Vault Drive condiviso legacy: la collaborazione è passata all'Hub, si punta alla migrazione.
-            applicaVariante('legacy');
             impostaChiaveI18n(titoloModal, 'modal_cloud_title_shared', 'Archivio condiviso su Google Drive');
             impostaChiaveI18n(title, 'modal_cloud_shared_active', 'Archivio Condiviso Attivo');
             impostaChiaveI18n(desc, 'modal_cloud_shared_legacy_desc', 'Archivio condiviso su Google Drive (legacy). Migra su Hub per inviti revocabili e sincronizzazione in tempo reale.');
@@ -340,6 +375,22 @@
 
     window.chiudiCloudModal = function() {
         document.getElementById('cloud-modal').classList.add('hidden-tab');
+    };
+
+    // La migrazione è a senso unico: passa dal pannello di conferma del modal Condivisione,
+    // che ne elenca le conseguenze. Prima il bottone chiamava migraVaultSuHub() a nudo.
+    window.apriMigrazioneDaCloudModal = async function() {
+        window.chiudiCloudModal();
+        const modal = document.getElementById('share-modal');
+        if (!modal || typeof window.mostraStatoShare !== 'function') {
+            // Senza il modal Condivisione la conferma la chiede migraVaultSuHub stesso.
+            if (typeof window.migraVaultSuHub === 'function') await window.migraVaultSuHub();
+            return;
+        }
+        modal.classList.remove('hidden-tab');
+        window.mostraStatoShare('share-state-migrate');
+        if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
+        if (window.lucide) lucide.createIcons({ nodes: [modal] });
     };
 
     window.pulisciAllegatiOrfani = async function() {

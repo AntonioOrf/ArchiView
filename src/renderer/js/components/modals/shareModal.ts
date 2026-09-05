@@ -47,28 +47,11 @@
                     </div>
                 </div>
 
-                <!-- STATO: ARCHIVIO GOOGLE DRIVE LEGACY -->
-                <div id="share-state-drive" class="hidden-tab flex flex-col gap-4">
-                    <div class="flex items-center gap-3.5 p-4 rounded-lg border border-blue-200 dark:border-blue-700/50 bg-blue-50/60 dark:bg-blue-900/20">
-                        <div class="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0"><i data-lucide="cloud" class="w-6 h-6"></i></div>
-                        <div class="min-w-0">
-                            <p class="font-serif text-base font-semibold text-stone-800 dark:text-stone-100"><span data-i18n="share_drive_title">Archivio su Google Drive</span></p>
-                            <p class="text-xs text-stone-500 dark:text-stone-400"><span data-i18n="share_drive_sub">condivisione tramite permessi Drive</span></p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-2.5 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 text-sm text-stone-700 dark:text-stone-300">
-                        <i data-lucide="info" class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"></i>
-                        <span data-i18n="share_drive_note">La condivisione ora avviene tramite l'archivio condiviso di ArchiView: inviti con un semplice link, revoca immediata, aggiornamenti automatici.</span>
-                    </div>
-                    <button onclick="apriPannelloMigrazioneShare()" class="btn btn-block justify-center py-3 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700">
-                        <i data-lucide="server" class="w-4 h-4 mr-2"></i> <span data-i18n="share_drive_migrate">Passa all'archivio condiviso</span>
-                    </button>
-                    <button onclick="chiudiShareModal(); if(window.apriCloudModal) apriCloudModal();" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 text-center mx-auto">
-                        <span data-i18n="share_drive_manage_backup_link">Gestisci il backup su Google Drive</span>
-                    </button>
-                </div>
-
-                <!-- STATO: PANNELLO DI MIGRAZIONE (Drive legacy -> archivio condiviso) -->
+                <!-- STATO: PANNELLO DI MIGRAZIONE (Drive -> archivio condiviso) -->
+                <!-- Ci si arriva dalle Opzioni avanzate del modal Google Drive. Lo stato
+                     "share-state-drive" che lo precedeva è stato rimosso: annunciava ai vecchi
+                     utenti il passaggio all'archivio condiviso, un avviso di transizione ormai
+                     inutile che intercettava anche chi usa Drive solo come backup personale. -->
                 <div id="share-state-migrate" class="hidden-tab flex flex-col gap-4 text-center py-4">
                     <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
                         <i data-lucide="server" class="w-7 h-7"></i>
@@ -80,7 +63,7 @@
                         <li><span data-i18n="share_migrate_bullet3">I collaboratori attuali dovranno ricevere un nuovo link di invito.</span></li>
                     </ul>
                     <div class="flex gap-2.5 justify-center max-w-xs mx-auto w-full pt-2">
-                        <button onclick="mostraStatoShare('share-state-drive')" class="btn btn-secondary flex-1 justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span data-i18n="btn_cancel">Annulla</span></button>
+                        <button onclick="chiudiShareModal(); if(window.apriCloudModal) apriCloudModal();" class="btn btn-secondary flex-1 justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span data-i18n="btn_cancel">Annulla</span></button>
                         <button onclick="confermaMigrazioneShare()" class="btn flex-1 justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span data-i18n="btn_continue">Continua</span></button>
                     </div>
                 </div>
@@ -204,7 +187,7 @@
     });
 
     function mostraStatoShare(id) {
-        ['share-state-loading', 'share-state-local', 'share-state-drive', 'share-state-migrate', 'share-state-member', 'share-state-owner']
+        ['share-state-loading', 'share-state-local', 'share-state-migrate', 'share-state-member', 'share-state-owner']
             .forEach(s => document.getElementById(s)?.classList.toggle('hidden-tab', s !== id));
     }
     window.mostraStatoShare = mostraStatoShare;
@@ -212,11 +195,21 @@
     window.apriShareModal = async function() {
         const modal = document.getElementById('share-modal');
         if (!modal) return;
-        modal.classList.remove('hidden-tab');
-        if (window.lucide) lucide.createIcons({ nodes: [modal] });
 
+        // La config va letta PRIMA di rivelare il modal: un vault Drive viene dirottato sul suo
+        // modal dedicato, e mostrarlo prima di deciderlo lo farebbe lampeggiare a vuoto.
         const vaultConfig = window.apiBrowser?.getVaultConfig ? await window.apiBrowser.getVaultConfig() : { vaultType: 'local' };
         const isHub = !!window.hubConfig || vaultConfig.provider === 'hub';
+
+        // Vault Google Drive: la gestione vive interamente nel modal Drive (inclusa la
+        // migrazione all'archivio condiviso, sotto Opzioni avanzate).
+        if (!isHub && vaultConfig.vaultType && vaultConfig.vaultType !== 'local') {
+            if (typeof window.apriCloudModal === 'function') await window.apriCloudModal();
+            return;
+        }
+
+        modal.classList.remove('hidden-tab');
+        if (window.lucide) lucide.createIcons({ nodes: [modal] });
 
         if (isHub && window.hubConfig) {
             mostraStatoShare('share-state-loading');
@@ -260,8 +253,6 @@
                 applyAutofetch('share-member');
                 mostraStatoShare('share-state-member');
             }
-        } else if (vaultConfig.vaultType && vaultConfig.vaultType !== 'local') {
-            mostraStatoShare('share-state-drive');
         } else {
             const nameInput = document.getElementById('share-hub-name');
             if (nameInput && !nameInput.value) nameInput.value = window.nomeVaultDefault ? await window.nomeVaultDefault() : '';
