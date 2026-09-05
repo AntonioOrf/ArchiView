@@ -1,3 +1,13 @@
+## ArchiView 2.4.4 — Ripristino archivio da Google Drive
+
+Aggiornamento correttivo per chi recupera un archivio dal cloud su un nuovo computer.
+
+### Correzioni
+
+- **Il ripristino di un archivio da Google Drive non funzionava.** Al momento dello scaricamento compariva l'errore `Cannot read properties of undefined (reading 'some')` e la procedura si interrompeva prima ancora di chiedere dove salvare l'archivio sul PC. Ora il download prosegue normalmente; se nella cartella selezionata non c'è alcun database, viene mostrato il consueto avviso invece di un errore tecnico.
+
+---
+
 ## ArchiView 2.4.3 — Google Drive: disconnessione, accesso e sincronizzazione
 
 Aggiornamento correttivo dedicato al collegamento con Google Drive. **Consigliato a chi usa Drive come backup o come archivio condiviso**, in particolare a chi lavora sullo stesso archivio da più computer.
