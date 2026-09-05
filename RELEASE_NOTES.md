@@ -1,3 +1,27 @@
+## ArchiView 2.4.3 — Google Drive: disconnessione, accesso e sincronizzazione
+
+Aggiornamento correttivo dedicato al collegamento con Google Drive. **Consigliato a chi usa Drive come backup o come archivio condiviso**, in particolare a chi lavora sullo stesso archivio da più computer.
+
+### Correzioni
+
+- **La disconnessione ora disconnette davvero.** Il comando confermava "Disconnessione avvenuta" ma l'account restava collegato: l'email continuava a comparire e la sessione era ancora attiva. Ora vengono rimosse tutte le credenziali dal computer e l'autorizzazione viene revocata anche sul tuo account Google.
+- **"Accedi" torna ad aprire il browser.** Dopo una disconnessione il pulsante non apriva più nulla, perché l'applicazione si riteneva ancora autenticata. Ora l'accesso riporta sempre alla schermata di scelta dell'account Google.
+- **"Connetti" dalla barra di sincronizzazione** portava a una finestra priva di qualsiasi comando di accesso, senza vie d'uscita. Ora avvia direttamente il login nel browser.
+- **Sincronizzazioni che non scaricavano nulla ma dichiaravano successo.** Se il computer puntava a una cartella di Drive diversa da quella degli altri, il download veniva saltato in silenzio e compariva comunque "Sincronizzazione completata". Ora l'applicazione avvisa e indica che cosa controllare.
+- **Cartelle duplicate su Drive.** Un secondo computer poteva creare una nuova cartella omonima invece di riusare quella esistente: da quel momento i due computer lavoravano su archivi separati pur usando lo stesso account Google. Ora la cartella già presente viene riutilizzata.
+
+### Novità
+
+- **Collega a un archivio esistente su Drive.** Nelle opzioni avanzate del pannello Google Drive: elenca gli archivi presenti sul tuo Drive e collega questo computer a quello giusto. È la riparazione per due PC finiti su cartelle diverse.
+- **Pannello Google Drive rinnovato.** Mostra in evidenza l'account collegato — utile per verificare a colpo d'occhio di essere sullo stesso account su tutti i computer — e, quando la sessione non è valida, offre subito il pulsante di accesso.
+- Aprendo **Condivisione** su un archivio Google Drive non compare più la schermata che invitava a passare all'archivio condiviso: si va direttamente alla gestione del backup. La conversione resta disponibile fra le opzioni avanzate.
+
+### Aggiornamenti tecnici
+
+- Dipendenze aggiornate: fast-uri 3.1.7, qs 6.16.0, @xmldom/xmldom 0.8.15.
+
+---
+
 ## ArchiView 2.4.2 — Ottimizzazione per hardware low-end
 
 Un importante aggiornamento dedicato alle prestazioni, che riduce i tempi di avvio e l'utilizzo di memoria, migliorando la fluidità su computer meno recenti o con archivi molto grandi.
