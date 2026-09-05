@@ -544,7 +544,9 @@
         try {
             const driveData = await window.apiDrive.pull(vaultId);
             
-            if (!driveData.files.some(f => f.name === 'database_manoscritti.json')) {
+            // pullFromDrive() restituisce { database, driveModifiedTime, lastModifyingUser } oppure null:
+            // non esiste alcun array `files`, quindi il vecchio controllo sollevava sempre TypeError.
+            if (!driveData || !driveData.database) {
                 mostraMessaggio(window.t("msg_nessun_database_trovato_n", "Nessun database trovato nell'Archivio selezionato."), "warning");
                 return;
             }
