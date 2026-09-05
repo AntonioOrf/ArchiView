@@ -18,7 +18,9 @@ Aggiornamento correttivo dedicato al collegamento con Google Drive. **Consigliat
 
 ### Aggiornamenti tecnici
 
-- Dipendenze aggiornate: fast-uri 3.1.7, qs 6.16.0, @xmldom/xmldom 0.8.15.
+- **Electron 44.2.0** (da 39.8.10): il motore su cui gira l'applicazione fa un salto importante e porta con sé le correzioni di sicurezza di Chromium accumulate in cinque versioni principali. Nessun cambiamento visibile nell'uso quotidiano.
+- Risolte tutte le vulnerabilità note nelle dipendenze di sviluppo (`npm audit`: 0 su 568 pacchetti).
+- Altre dipendenze aggiornate: fast-uri 3.1.7, qs 6.16.0, @xmldom/xmldom 0.8.15, browserslist 4.28.9.
 
 ---
 

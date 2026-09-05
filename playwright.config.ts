@@ -21,7 +21,10 @@ export default defineConfig({
   // I runner GitHub hanno 2-4 core: 2 è il tetto utile lì. In locale metà dei core logici.
   workers: process.env.CI ? 2 : '50%',
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // Un tentativo anche in locale: con più Electron in avvio simultaneo un test di riavvio può
+  // saltare per pura contesa (visto una volta su tre corse complete, verde 15/15 in isolamento).
+  // Non nasconde nulla — Playwright riporta comunque questi test come "flaky" nel riepilogo.
+  retries: 1,
   // 45s e non 30: con più Electron in avvio simultaneo la contesa su CPU e I/O allunga il singolo
   // lancio, e un timeout tarato sul caso seriale diventa una sorgente di falsi rossi.
   timeout: 45_000,

@@ -41,6 +41,11 @@
                                 <p class="text-sm">Fra le opzioni avanzate trovi <strong class="text-stone-900 dark:text-stone-100">"Collega a un archivio esistente su Drive"</strong>: elenca gli archivi presenti sul tuo Drive e collega questo computer a quello giusto — la riparazione per due PC finiti su cartelle diverse.</p>
                             </div>
 
+                            <div>
+                                <h4 class="font-semibold text-lg border-b border-stone-200 dark:border-stone-700 pb-2 mb-3">Sotto il cofano</h4>
+                                <p class="text-sm">Il motore su cui gira ArchiView è stato aggiornato di cinque versioni principali (Electron 44), portando con sé tutte le correzioni di sicurezza di Chromium accumulate nel frattempo. Nessun cambiamento nell'uso quotidiano.</p>
+                            </div>
+
                         </div>
                         <div class="modal-footer border-t border-stone-200 dark:border-stone-800 p-4 flex justify-end shrink-0">
                             <button type="button" onclick="chiudiChangelogModal()" class="btn btn-primary px-6">Continua</button>
