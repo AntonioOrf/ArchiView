@@ -40,6 +40,13 @@ export async function launchApp(userDataDir: string): Promise<{ app: ElectronApp
     },
   });
   const page = await app.firstWindow();
+  // Da Electron 44 firstWindow() risolve PRIMA che loadFile() abbia navigato: si ottiene il
+  // documento iniziale vuoto, dove page.title() vale "Loading file:///...index.html" e ogni
+  // page.evaluate() muore con "Execution context was destroyed" appena parte la navigazione
+  // vera. I test che aspettano un locator non se ne accorgevano (Playwright ritenta oltre la
+  // navigazione), quelli che agiscono subito sulla pagina sì.
+  // Aspettare domcontentloaded da solo non basta: si riferirebbe al documento sbagliato.
+  await page.waitForURL(/index\.html$/, { timeout: 30_000 });
   await page.waitForLoadState('domcontentloaded');
   return { app, page };
 }
