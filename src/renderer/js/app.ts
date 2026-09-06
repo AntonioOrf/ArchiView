@@ -245,6 +245,35 @@ async function avviaApp() {
     }
 
     if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
+
+    // Ripristina il contesto di ricerca prima del primo render: altrimenti la griglia
+    // mostrerebbe l'archivio intero per un istante prima di filtrarsi. Che il filtro sia
+    // attivo resta evidente dai chip in `active-filters`, che includono l'azzeramento.
+    if (window.statoIniziale) {
+        const inputRicerca = document.getElementById('search-input');
+        if (inputRicerca && typeof window.statoIniziale.ricerca === 'string') {
+            inputRicerca.value = window.statoIniziale.ricerca;
+        }
+        if (Array.isArray(window.statoIniziale.tagAttivi)) {
+            window.activeTags = new Set(window.statoIniziale.tagAttivi);
+        }
+        // Ordinamento, modalità di vista e colonne della tabella: vanno ripristinati
+        // PRIMA di renderMain(), che li legge già al primo render.
+        // Nessuna validazione contro una lista di campi ammessi: non esiste più: si può
+        // ordinare per qualsiasi campo, incluso uno del tipo documento scelto da
+        // un'intestazione di tabella.
+        const sortSalvato = window.statoIniziale.sort;
+        if (sortSalvato && typeof sortSalvato.campo === 'string' && sortSalvato.campo) {
+            window.sortState = { campo: sortSalvato.campo, dir: sortSalvato.dir === 'desc' ? 'desc' : 'asc' };
+        }
+        if (window.statoIniziale.vista === 'tabella' || window.statoIniziale.vista === 'griglia') {
+            window.vistaLista = window.statoIniziale.vista;
+        }
+        if (window.statoIniziale.colonneTabella && typeof window.statoIniziale.colonneTabella === 'object') {
+            window.colonneTabella = window.statoIniziale.colonneTabella;
+        }
+    }
+
     renderSidebar();
     renderMain();
     
@@ -844,28 +873,33 @@ window.selectItem = function(id, event) {
 
     if (typeof renderSidebar === 'function') renderSidebar();
     if (typeof renderMain === 'function') renderMain();
-    window.aggiornaSelectionBar();
+    window.aggiornaStatoSelezione();
 };
 
-window.aggiornaSelectionBar = function() {
-    const bar = document.getElementById('selection-bar');
-    if (!bar) return;
+/**
+ * Aggiorna il solo indicatore testuale della selezione, accanto al contatore risultati.
+ * Sostituisce la vecchia barra di azioni multiple, che compariva sopra la lista a ogni
+ * selezione spingendo in basso le schede: le azioni ora vivono tutte nel menu del tasto
+ * destro (e nel "⋯" della card, che è lo stesso menu) — vedi vociMenuRecord.
+ */
+window.aggiornaStatoSelezione = function() {
+    const ind = document.getElementById('selection-indicator');
+    if (!ind) return;
     const n = (window.selectedRecords && window.selectedRecords.length) || 0;
-    // 'hidden' e 'flex' insieme: hidden vince su display:flex solo se flex non c'è.
-    bar.classList.toggle('hidden', n === 0);
-    bar.classList.toggle('flex', n > 0);
-    if (n > 0) {
-        const etichetta = n === 1
-            ? window.t('selection_count_one', '1 scheda selezionata')
-            : window.t('selection_count_many', '{var0} schede selezionate').replace('{var0}', String(n));
-        document.getElementById('selection-count').innerText = etichetta;
+    ind.classList.toggle('hidden', n === 0);
+    if (n === 0) {
+        ind.innerText = '';
+        return;
     }
+    ind.innerText = n === 1
+        ? window.t('selection_count_one', '1 scheda selezionata')
+        : window.t('selection_count_many', '{var0} schede selezionate').replace('{var0}', String(n));
 };
 
 window.azzeraSelezione = function() {
     window.selectedRecords = [];
     window.lastSelectedId = null;
-    window.aggiornaSelectionBar();
+    window.aggiornaStatoSelezione();
     if (typeof renderMain === 'function') renderMain();
     if (typeof renderSidebar === 'function') renderSidebar();
 };
@@ -879,7 +913,7 @@ window.esportaSelezionati = async function() {
     if (res.success) {
         if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
         window.selectedRecords = [];
-        window.aggiornaSelectionBar();
+        window.aggiornaStatoSelezione();
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
     } else if (!res.canceled) {
@@ -912,7 +946,7 @@ window.eliminaSelezionati = async function() {
             if (typeof renderSidebar === 'function') renderSidebar();
         }
         window.selectedRecords = [];
-        window.aggiornaSelectionBar();
+        window.aggiornaStatoSelezione();
         
         const ripristinaFn = async () => {
             const idsRipristinati = recordSalvati.map(r => r.id);
@@ -951,7 +985,7 @@ window.copiaSelezionati = function() {
     const count = window.copiedRecordIds.length;
     if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_copiati_negli_", "{var0} record copiati negli appunti di ArchiView. Tasto destro per incollarli in un altro archivio.").replace("{var0}", String(count)), "info");
     window.selectedRecords = [];
-    window.aggiornaSelectionBar();
+    window.aggiornaStatoSelezione();
     setTimeout(() => {
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
@@ -965,7 +999,7 @@ window.tagliaSelezionati = function() {
     const count = window.cutRecordIds.length;
     if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_tagliati_tasto", "{var0} record tagliati. Tasto destro per spostarli in un altro archivio.").replace("{var0}", String(count)), "info");
     window.selectedRecords = [];
-    window.aggiornaSelectionBar();
+    window.aggiornaStatoSelezione();
     setTimeout(() => {
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
@@ -984,7 +1018,7 @@ window.assicuraSelezioneRecord = function(id) {
         window.lastSelectedId = id;
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
-        window.aggiornaSelectionBar();
+        window.aggiornaStatoSelezione();
     }
 };
 
@@ -1002,6 +1036,17 @@ window.vociMenuRecord = function(id) {
     voci.push({ label: window.t('tooltip_export', 'Esporta') + suffisso, icon: 'upload', onSelect: () => window.esportaSelezionati() });
     voci.push({ separator: true });
     voci.push({ label: window.t('tooltip_delete', 'Elimina') + suffisso, icon: 'trash-2', danger: true, onSelect: () => window.eliminaSelezionati() });
+    // "Deseleziona" viveva solo nella barra rimossa: senza, con una selezione multipla non
+    // ci sarebbe più modo esplicito di azzerarla (il click su una card la sostituisce, ma
+    // non è la stessa cosa quando le schede selezionate sono su più pagine).
+    if (selCount > 0) {
+        voci.push({ separator: true });
+        voci.push({
+            label: window.t('btn_clear_selection', 'Deseleziona') + suffisso,
+            icon: 'x',
+            onSelect: () => window.azzeraSelezione()
+        });
+    }
     return voci;
 };
 

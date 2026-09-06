@@ -503,6 +503,103 @@ button, .btn {
     border: 1px solid var(--color-border-light);
 }
 
+/* Segmento attivo del selettore di vista (griglia/tabella): la vista in uso deve
+   leggersi dalla barra, non solo dal contenuto sotto. */
+/* Specificità 0,2,0 e non 0,1,0: `.btn-ghost:hover` vincerebbe sulla classe semplice, e
+   lo stato attivo sparirebbe proprio mentre il puntatore riposa sul segmento appena
+   cliccato — cioè nel momento in cui si guarda per capire se il click ha avuto effetto.
+   La variante :hover mantiene l'accento e schiarisce solo il bordo. */
+.btn.segmento-attivo,
+.btn.segmento-attivo:hover {
+    /* Colore d'accento, non un grigio più scuro: sui temi scuri la differenza fra
+       bg-panel e bg-hover è troppo tenue per dire quale vista è attiva a colpo d'occhio. */
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-hover);
+    border-color: var(--color-primary-border);
+    font-weight: 600;
+}
+.btn.segmento-attivo:hover {
+    border-color: var(--color-primary);
+}
+
+/* ============================================================
+   VISTA TABELLA (Fase 1.1)
+   Le righe devono portare .card-scheda e id="card-<id>": selezione multipla,
+   shift-range, menu contestuale e rivelaRecordNellaGriglia si agganciano a quei
+   due selettori, e riusarli fa funzionare tutto in tabella senza duplicare logica.
+   Il prezzo è che .card-scheda porta con sé lo stile della card (display:flex,
+   padding, bordi): qui va neutralizzato, altrimenti il layout di tabella salta.
+   Colori dalle variabili di tema, così i tre temi seguono senza varianti dark:*.
+   ============================================================ */
+.tabella-schede {
+    border-collapse: collapse;
+    color: var(--color-text-secondary);
+}
+.tabella-schede th,
+.tabella-schede td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-light);
+    vertical-align: top;
+}
+.tabella-schede thead th {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background-color: var(--color-bg-panel);
+    color: var(--color-text-main);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: bold;
+    white-space: nowrap;
+    border-bottom: 2px solid var(--color-border);
+}
+.tabella-schede thead th.ordinabile {
+    cursor: pointer;
+    user-select: none;
+}
+.tabella-schede thead th.ordinabile:hover {
+    background-color: var(--color-bg-hover);
+}
+/* Neutralizzazione dello stile card sulla riga (vedi nota in testa al blocco). */
+.tabella-schede tr.card-scheda {
+    display: table-row;
+    background-color: transparent;
+    padding: 0;
+    border: 0;
+    border-left: 0;
+    box-shadow: none;
+    transform: none;
+    cursor: pointer;
+}
+.tabella-schede tr.card-scheda:hover {
+    background-color: var(--color-bg-hover);
+    border-left: 0;
+    box-shadow: none;
+    transform: none;
+}
+.tabella-schede tr.card-scheda.riga-selezionata {
+    background-color: var(--color-primary-light);
+}
+.tabella-schede td.cella-segnatura {
+    font-weight: bold;
+    color: var(--color-text-main);
+    white-space: nowrap;
+}
+.tabella-schede td.cella-troncata {
+    max-width: 22rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tabella-schede td.cella-data {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
 /* Sidebar Tree View */
 .sidebar-row {
     color: var(--color-text-secondary);

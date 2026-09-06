@@ -32,7 +32,7 @@ function _linguiExtraction() {
     i18n._({ id: "btn_next", message: "Successiva" });
     i18n._({ id: "btn_cancel", message: "Annulla" });
     i18n._({ id: "btn_create_folder", message: "Crea Archivio" });
-    i18n._({ id: "btn_new_model", message: "Modello" });
+    i18n._({ id: "btn_new_model", message: "Nuovo modello" });
     i18n._({ id: "modal_create_type", message: "Crea Tipo Documento" });
     i18n._({ id: "label_select_model", message: "Seleziona modello o creane uno nuovo" });
     i18n._({ id: "model_custom", message: "Nuovo documento vuoto" });
@@ -47,6 +47,23 @@ function _linguiExtraction() {
     i18n._({ id: "field_titolo", message: "Titolo / Cont." });
     i18n._({ id: "field_note", message: "Note" });
     i18n._({ id: "field_prezzo", message: "Prezzo" });
+    // Fase 1.1 — ordinamento e vista tabellare
+    i18n._({ id: "field_segnatura", message: "Segnatura" });
+    i18n._({ id: "label_sort_by", message: "Ordina per" });
+    i18n._({ id: "tooltip_sort_by", message: "Criterio di ordinamento dell'elenco" });
+    i18n._({ id: "tooltip_sort_dir", message: "Inverti la direzione dell'ordinamento" });
+    i18n._({ id: "tooltip_sort_asc", message: "Ordine crescente: clicca per invertire" });
+    i18n._({ id: "tooltip_sort_desc", message: "Ordine decrescente: clicca per invertire" });
+    i18n._({ id: "tooltip_toggle_view", message: "Cambia modalità di visualizzazione" });
+    i18n._({ id: "tooltip_view_grid", message: "Passa alla vista a schede" });
+    i18n._({ id: "tooltip_view_table", message: "Passa alla vista tabella" });
+    i18n._({ id: "th_tags", message: "Tag" });
+    i18n._({ id: "th_attachments", message: "Allegati" });
+    i18n._({ id: "th_modified", message: "Modificato" });
+    i18n._({ id: "tooltip_columns", message: "Scegli le colonne visibili" });
+    i18n._({ id: "menu_columns", message: "Colonne visibili" });
+    i18n._({ id: "tooltip_new_record_type", message: "Scegli il tipo della nuova scheda" });
+    i18n._({ id: "menu_new_record_type", message: "Nuova scheda di tipo" });
     i18n._({ id: "label_custom_fields", message: "Campi aggiuntivi personalizzati" });
     i18n._({ id: "label_selected_fields", message: "Campi selezionati (trascina per riordinare)" });
     i18n._({ id: "placeholder_empty_fields", message: "Seleziona o aggiungi dei campi..." });
@@ -465,6 +482,25 @@ function _linguiExtraction() {
 
 // Wrapper per compatibilità con il codice esistente
 const customEn = {
+    // --- Fase 1.1: ordinamento e vista tabellare ---
+    "field_segnatura": "Shelfmark",
+    "label_sort_by": "Sort by",
+    "tooltip_sort_by": "Sort criterion for the list",
+    "tooltip_sort_dir": "Reverse sort direction",
+    "tooltip_sort_asc": "Ascending order: click to reverse",
+    "tooltip_sort_desc": "Descending order: click to reverse",
+    "tooltip_toggle_view": "Change display mode",
+    "tooltip_view_grid": "Switch to card view",
+    "tooltip_view_table": "Switch to table view",
+    "th_tags": "Tags",
+    "th_attachments": "Attachments",
+    "th_modified": "Modified",
+    "tooltip_columns": "Choose visible columns",
+    "menu_columns": "Visible columns",
+    "btn_new_model": "New model",
+    "tooltip_new_record_type": "Choose the type of the new record",
+    "menu_new_record_type": "New record of type",
+
     // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
     "btn_new_record": "New record",
     "btn_new_folder": "New archive",
@@ -923,6 +959,25 @@ const customEn = {
 };
 
 const customIt = {
+    // --- Fase 1.1: ordinamento e vista tabellare ---
+    "field_segnatura": "Segnatura",
+    "label_sort_by": "Ordina per",
+    "tooltip_sort_by": "Criterio di ordinamento dell'elenco",
+    "tooltip_sort_dir": "Inverti la direzione dell'ordinamento",
+    "tooltip_sort_asc": "Ordine crescente: clicca per invertire",
+    "tooltip_sort_desc": "Ordine decrescente: clicca per invertire",
+    "tooltip_toggle_view": "Cambia modalità di visualizzazione",
+    "tooltip_view_grid": "Passa alla vista a schede",
+    "tooltip_view_table": "Passa alla vista tabella",
+    "th_tags": "Tag",
+    "th_attachments": "Allegati",
+    "th_modified": "Modificato",
+    "tooltip_columns": "Scegli le colonne visibili",
+    "menu_columns": "Colonne visibili",
+    "btn_new_model": "Nuovo modello",
+    "tooltip_new_record_type": "Scegli il tipo della nuova scheda",
+    "menu_new_record_type": "Nuova scheda di tipo",
+
     // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
     "btn_new_record": "Nuova scheda",
     "btn_new_folder": "Nuovo archivio",
