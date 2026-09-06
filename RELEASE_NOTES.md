@@ -1,3 +1,35 @@
+## ArchiView 2.4.6 — Ordina, cerca e vedi l'archivio come vuoi
+
+Aggiornamento dedicato al lavoro quotidiano su archivi grandi: la lista ora si ordina, si può
+vedere come tabella, e la ricerca trova quello che prima si perdeva.
+
+### Novità
+
+- **La lista si ordina.** Fino a ieri le schede comparivano nell'ordine in cui erano state inserite, e basta. Ora si ordinano per segnatura, per data di modifica, per numero di allegati o per qualunque campo del modello in uso. L'ordinamento per segnatura è "naturale": `MS 2` viene prima di `MS 10`, non dopo come farebbe un ordine alfabetico. Le schede a cui manca il valore restano in fondo, anche invertendo l'ordine. La scelta viene ricordata alla riapertura.
+- **Nuova vista a tabella.** Accanto alla vista a schede c'è una vista a righe e colonne, con le colonne prese dai campi del modello: si clicca l'intestazione per ordinare, si ri-clicca per invertire. Dal menù "⋯" si sceglie quali colonne mostrare, e la scelta è ricordata per ciascun modello. Selezione multipla, trascinamento e tasto destro funzionano esattamente come sulle schede.
+- **Il menù di ordinamento propone solo i campi che le schede hanno davvero.** Fra i documenti fiscali non compare "Autore", che quel modello non prevede.
+- **Nuova scheda del tipo che vuoi, subito.** La freccia accanto a "Nuova scheda" apre il modulo già impostato sul modello scelto, senza doverlo cambiare dopo averlo aperto.
+- **Barra dei comandi riordinata.** In evidenza restano le azioni di ogni giorno; nuovo archivio, importazione, esportazione e scelta delle colonne sono raccolte nel menù "⋯". Sotto i 768 pixel di larghezza nulla sparisce più.
+
+### Ricerca
+
+- **Gli accenti non nascondono più le schede.** Cercando *Perugia* si trovano anche le schede che scrivono *Perùgia*, e viceversa: su testo medievale e latino la stessa parola ricorre in entrambe le forme. Vale anche per gli apostrofi curvi incollati da Word.
+- **Ricerca a più parole.** Scrivendo `notaio 1340` si ottengono le schede che contengono entrambi i termini, anche se stanno in campi diversi.
+- **Si cerca anche nei campi che hai creato tu** e negli elenchi di persone, beni, debiti, crediti e familiari: i nomi di persona, cioè ciò che si cerca più spesso, prima non venivano trovati.
+- **Ricerca e tag attivi vengono ricordati:** riaprendo l'applicazione si ritrova il contesto di lavoro, non l'archivio intero.
+- **Il pannello dei tag mostra quante schede usano ciascun tag.**
+
+### Correzioni
+
+- **Errore sugli allegati degli archivi condivisi.** Durante la sincronizzazione poteva comparire un errore `ENOENT` su file temporanei e alcuni allegati non venivano caricati: due sincronizzazioni sovrapposte si cancellavano a vicenda i file di lavoro. Ora vengono eseguite una alla volta.
+- **Il pannello "Novità" mostrava una versione vecchia.** L'elenco delle novità era scritto a mano e non veniva aggiornato: la 2.4.5 mostrava ancora quelle della 2.4.3. Ora è generato dalle note di rilascio, e non può più restare indietro.
+
+### Modifiche all'interfaccia
+
+- **La barra delle azioni sulla selezione è stata rimossa.** Compariva sopra l'elenco a ogni selezione, spingendo in basso le schede. Le stesse azioni — copia, taglia, esporta, elimina, deseleziona — sono nel menù del tasto destro, che le applica a tutte le schede selezionate. Quante ne hai selezionate è scritto accanto al conteggio dei risultati.
+
+---
+
 ## ArchiView 2.4.5 — Il modello resta quello che hai scelto
 
 Aggiornamento dedicato a chi scheda molti documenti dello stesso tipo di seguito.
