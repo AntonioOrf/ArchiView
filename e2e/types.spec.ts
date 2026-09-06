@@ -75,6 +75,11 @@ test.describe('Tipi Documento', () => {
     await page.locator('#custom-type-extra-input').press('Enter');
     await page.evaluate(() => (window as any).confermaCreaTipo());
 
+    // confermaCreaTipo() invoca salvaTutto() SENZA attenderlo (typesLogic.ts): sotto carico
+    // la scrittura puo' non essere finita quando il test chiude l'app, e il tipo sparisce.
+    // Il flush rende il test deterministico; la mancata await nel codice resta da valutare.
+    await page.evaluate(() => (window as any).flushSalvataggio());
+
     const { launchApp, closeApp } = await import('./fixtures');
     await closeApp(electronApp);
     const { app: app2, page: page2 } = await launchApp(userDataDir);

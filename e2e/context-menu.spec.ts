@@ -65,20 +65,34 @@ test.describe('Menu contestuale e overflow', () => {
     await expect(menu).toContainText('Crea nuova scheda');
   });
 
-  test('la barra di selezione compare con le azioni multiple', async ({ page, userDataDir }) => {
+  test('le azioni multiple stanno nel tasto destro, non in una barra', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Menu');
     const ids = await seedItems(page, 3);
 
-    await expect(page.locator('#selection-bar')).toBeHidden();
+    const indicatore = page.locator('#selection-indicator');
+    await expect(indicatore).toBeHidden();
+
     await page.evaluate((recIds) => {
       (window as any).selectedRecords = recIds;
-      (window as any).aggiornaSelectionBar();
+      (window as any).aggiornaStatoSelezione();
     }, ids.slice(0, 2));
 
-    const bar = page.locator('#selection-bar');
-    await expect(bar).toBeVisible();
-    await expect(page.locator('#selection-count')).toContainText('2');
-    await bar.locator('button', { hasText: 'Deseleziona' }).click();
-    await expect(bar).toBeHidden();
+    // La selezione si annuncia con un testo accanto al contatore: nessuna barra che
+    // spinge in basso le schede (era il motivo per cui è stata rimossa).
+    await expect(indicatore).toBeVisible();
+    await expect(indicatore).toContainText('2');
+    await expect(page.locator('#selection-bar')).toHaveCount(0);
+
+    // Tasto destro su una delle schede selezionate: le azioni valgono su tutte e due.
+    await page.locator(`#card-${ids[0]}`).click({ button: 'right' });
+    const menu = page.locator('#custom-context-menu');
+    await expect(menu).toBeVisible();
+    for (const voce of ['Copia (2)', 'Taglia (2)', 'Esporta (2)', 'Elimina (2)']) {
+      await expect(menu.locator('button', { hasText: voce })).toHaveCount(1);
+    }
+
+    await menu.locator('button', { hasText: /Deseleziona/ }).click();
+    await expect(indicatore).toBeHidden();
+    expect(await page.evaluate(() => (window as any).selectedRecords.length)).toBe(0);
   });
 });

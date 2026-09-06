@@ -109,10 +109,12 @@ async function hubApi(cfg: any, method: string, pathSuffix: string, body?: any):
   return res.json();
 }
 
-async function syncHubAttachments(): Promise<{
+type SyncAttachmentsResult = {
   uploaded: number; downloaded: number; unavailable: number; skippedUpload: boolean;
   hasLocalAttachments: boolean; notPublished: number; decryptFailed: number; errors: string[];
-}> {
+};
+
+async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
   if (!state.workspacePath) throw new Error("Nessun workspace aperto");
   const cfg = loadHubConfig();
   if (!cfg || !cfg.hubUrl || !cfg.repoId || !cfg.repoKey) throw new Error("Configurazione Hub assente o incompleta.");
@@ -300,6 +302,36 @@ async function syncHubAttachments(): Promise<{
       try { if (fs.existsSync(d)) fs.rmSync(d, { recursive: true, force: true }); } catch { /* best-effort */ }
     }
   }
+}
+
+// --- Serializzazione dei run ------------------------------------------------
+// Il `finally` di syncHubAttachmentsImpl cancella plainCache/encCache, che sono condivise
+// da tutto il workspace. I trigger sono sei e tutti fire-and-forget (avvio, dopo pull ×2,
+// dopo push, dopo creazione repo, click manuale): due run sovrapposti significano che il
+// cleanup del primo cancella i chunk cifrati che il secondo sta ancora caricando, e
+// l'upload fallisce con `ENOENT ... .archiview-hubchunks-enc\<hash>`. L'errore finiva in
+// `errors` e veniva mostrato all'utente mentre il download — che non tocca la cache —
+// riusciva regolarmente: il sintomo era "errore che appare benché l'allegato arrivi".
+//
+// Un run alla volta, con al più uno accodato: i trigger ravvicinati non devono
+// moltiplicare il lavoro, ma nemmeno perdere l'ultima richiesta (che può riguardare
+// allegati arrivati dopo l'inizio del run in corso).
+let runInCorso: Promise<SyncAttachmentsResult> | null = null;
+let runAccodato: Promise<SyncAttachmentsResult> | null = null;
+
+function syncHubAttachments(): Promise<SyncAttachmentsResult> {
+  if (!runInCorso) {
+    runInCorso = syncHubAttachmentsImpl().finally(() => { runInCorso = null; });
+    return runInCorso;
+  }
+  if (!runAccodato) {
+    // `catch` vuoto: il fallimento del run in corso non deve impedire quello accodato.
+    runAccodato = runInCorso.catch(() => undefined).then(() => {
+      runAccodato = null;
+      return syncHubAttachments();
+    });
+  }
+  return runAccodato;
 }
 
 // ArchiView/_hubchunks/{repoId}/ sul Drive personale dell'uploader.

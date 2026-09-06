@@ -33,6 +33,59 @@ window.annunciaA11y = function(testo, priorita = 'polite') {
     requestAnimationFrame(() => { el.textContent = String(testo); });
 };
 
+/**
+ * Normalizzazione del testo per la ricerca: minuscole, diacritici rimossi, varianti
+ * tipografiche dell'apostrofo unificate.
+ * Su testo medievale e latino la stessa parola ricorre accentata e non ("Perugia"/"Perùgia",
+ * "podesta"/"podestà") e gli apostrofi curvi incollati da Word non corrispondono a quello
+ * che l'utente digita: senza questa normalizzazione la ricerca manca sistematicamente
+ * i record trascritti da un'altra fonte.
+ *
+ * Nota: preserva la lunghezza sul testo precomposto (NFD scompone il carattere accentato
+ * in base + segno, la strip lo ricompatta a 1 carattere), proprietà su cui si appoggiano
+ * gli offset degli snippet dei suggerimenti di ricerca.
+ */
+window.normalizzaTesto = function(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[\u2018\u2019\u02bc\u02b9\u2032]/g, "'");
+};
+
+/**
+ * Spezza la query in token normalizzati. Il filtro della griglia li richiede tutti (AND),
+ * così "notaio 1340" seleziona i record che contengono entrambi, anche in campi diversi.
+ */
+window.tokenizzaRicerca = function(str) {
+    const norm = window.normalizzaTesto(str).trim();
+    if (!norm) return [];
+    return norm.split(/\s+/).filter(Boolean);
+};
+
+/**
+ * Confronto naturale per le segnature: "MS 2" viene prima di "MS 10", non dopo.
+ * Un ordinamento lessicografico su segnature con numeri (cioè su quasi tutte) produce
+ * sequenze inutilizzabili, ed è la ragione per cui l'ordinamento alfabetico semplice
+ * non basta in un archivio.
+ *
+ * Delega a localeCompare con `numeric: true`, la stessa collazione già usata per le
+ * cartelle nella sidebar, ma normalizza prima gli accenti: senza, "Perùgia" e "Perugia"
+ * finiscono in due punti diversi della lista.
+ *
+ * I valori vuoti vanno SEMPRE in coda, in entrambe le direzioni: sono record incompleti,
+ * e vederseli in testa quando si inverte l'ordine è rumore, non informazione.
+ */
+window.confrontaNaturale = function(a, b) {
+    const sa = window.normalizzaTesto(a).trim();
+    const sb = window.normalizzaTesto(b).trim();
+    if (!sa && !sb) return 0;
+    if (!sa) return 1;
+    if (!sb) return -1;
+    return sa.localeCompare(sb, undefined, { numeric: true, sensitivity: 'base' });
+};
+
 window.salvaStatoPosizione = async function() {
     const vAdd = document.getElementById('view-add');
     const vTrasc = document.getElementById('view-trascrizione');
@@ -44,7 +97,16 @@ window.salvaStatoPosizione = async function() {
         cartella: typeof window.cartellaAttuale === 'string' ? window.cartellaAttuale : '',
         tab: tabAttuale,
         trascrizioneId: document.getElementById('trascrizione-id') ? document.getElementById('trascrizione-id').value : null,
-        cartelleEspanse: Array.from(window.cartelleEspanse)
+        cartelleEspanse: Array.from(window.cartelleEspanse),
+        // Ricerca e tag fanno parte del contesto di lavoro quanto la cartella: senza di
+        // loro, riaprendo l'app si ricomincia sempre dall'archivio intero.
+        ricerca: document.getElementById('search-input') ? document.getElementById('search-input').value : '',
+        tagAttivi: window.activeTags ? Array.from(window.activeTags) : [],
+        // Ordinamento e modalità di vista: sono preferenze di lavoro, non di sessione.
+        // Ritrovare la lista ordinata come la si era lasciata è metà del valore di 1.1.
+        sort: window.sortState ? { campo: window.sortState.campo, dir: window.sortState.dir } : null,
+        vista: window.vistaLista || 'griglia',
+        colonneTabella: window.colonneTabella || {}
     };
     
     if (window.apiSettings) {

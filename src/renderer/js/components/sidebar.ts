@@ -692,7 +692,14 @@ function renderTagList() {
             renderMain();
             renderTagList();
         };
-        btn.innerHTML = window.sanitizeHTML(`<span>#${escapeHTML(tag)}</span>`);
+        // Il conteggio era già calcolato ma mai reso: senza, non si distingue un tag
+        // usato una volta per errore da uno che descrive mezzo archivio.
+        const conteggio = tagCount[tag] || 0;
+        btn.innerHTML = window.sanitizeHTML(
+            `<span class="truncate">#${escapeHTML(tag)}</span>` +
+            `<span class="shrink-0 ml-2 text-xs tabular-nums ${isActive ? 'text-amber-700' : 'text-stone-400'}">${conteggio}</span>`
+        );
+        btn.setAttribute('aria-label', `#${tag} (${conteggio})`);
         fragment.appendChild(btn);
     });
     container.appendChild(fragment);

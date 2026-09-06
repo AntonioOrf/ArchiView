@@ -111,4 +111,28 @@ test.describe('Pannelli sidebar', () => {
 
     expect(fs.existsSync(path.join(userDataDir, 'wsA', 'ArchivioRimuovi'))).toBe(true);
   });
+
+  test('elimina anche i file rimuove l\'archivio dal disco e chiude il modal', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'wsA'), 'ArchivioDaCancellare');
+    await page.evaluate((basePath) =>
+      (window as any).apiBrowser.createWorkspaceInPath(basePath, 'ArchivioB3', null),
+    path.join(userDataDir, 'wsB3'));
+    await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });
+    await dismissOverlays(page);
+
+    const percorso = path.join(userDataDir, 'wsA', 'ArchivioDaCancellare');
+    expect(fs.existsSync(percorso)).toBe(true);
+
+    await page.evaluate(() => (window as any).toggleVaultSwitcher());
+    const row = page.locator('#vault-switcher-list div', { hasText: 'ArchivioDaCancellare' }).first();
+    await row.locator('button').click();
+
+    await expect(page.locator('#vault-delete-modal')).toBeVisible();
+    await page.locator('#btn-delete-files').click();
+
+    // Il ramo distruttivo non era coperto: verifica che il modal si chiuda davvero
+    // (non resti a coprire lo schermo) e che la voce sparisca dall'elenco.
+    await expect(page.locator('#vault-delete-modal')).toBeHidden();
+    await expect(page.locator('#vault-switcher-list')).not.toContainText('ArchivioDaCancellare');
+  });
 });

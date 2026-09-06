@@ -75,6 +75,7 @@ Gemini.md
 artifacts/
 REFACTOR_EXECCOMMAND_TODO.md
 PERF_LOWEND_TODO.md
+ROADMAP.md
 
 # Test unit locali di sicurezza
 test/pathSafety.test.js
