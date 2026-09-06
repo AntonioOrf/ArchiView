@@ -64,6 +64,8 @@ async function handleFormSubmit(e) {
 
     const cartellaScelta = document.getElementById('form-cartella').value;
     const tipoId = document.getElementById('form-tipo-documento').value;
+    // Memorizza il modello per precompilare la prossima scheda nuova.
+    if (window.salvaUltimoTipoDocumento) window.salvaUltimoTipoDocumento(tipoId);
     
     const tipo = appData.tipiDocumento.find(t => t.id === tipoId) || appData.tipiDocumento[0];
     const dynamicData = {};
