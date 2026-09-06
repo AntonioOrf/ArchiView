@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
             const workspace = await window.apiBrowser.getWorkspacePath();
+            // Chiave per le preferenze locali per-archivio (es. ultimo modello usato).
+            window.percorsoWorkspace = workspace || '';
             
             if (!workspace) {
                 if (typeof mostraWelcomeModal === 'function') {

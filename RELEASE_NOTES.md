@@ -1,3 +1,13 @@
+## ArchiView 2.4.5 — Il modello resta quello che hai scelto
+
+Aggiornamento dedicato a chi scheda molti documenti dello stesso tipo di seguito.
+
+### Novità
+
+- **L'applicazione ricorda l'ultimo modello usato.** Aprendo una nuova scheda, il campo "Tipo Documento" si presenta già impostato sul modello con cui stavi lavorando, invece di tornare ogni volta a "Imbreviature Notarili". La scelta viene memorizzata sia quando salvi una scheda sia appena cambi modello dal menù, ed è ricordata separatamente per ogni archivio. Resta su questo computer: non viene sincronizzata né condivisa con gli altri collaboratori. Se il modello ricordato viene nel frattempo eliminato, si riparte dal primo della lista.
+
+---
+
 ## ArchiView 2.4.4 — Ripristino archivio da Google Drive
 
 Aggiornamento correttivo per chi recupera un archivio dal cloud su un nuovo computer.

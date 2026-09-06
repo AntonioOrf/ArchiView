@@ -1,7 +1,48 @@
 // @ts-nocheck
+// --- Memoria dell'ultimo modello usato ---------------------------------------
+// Preferenza puramente locale (per-macchina, per-workspace): NON entra in appData,
+// altrimenti finirebbe nel file sincronizzato generando diff inutili fra collaboratori.
+function _chiaveUltimoTipo() {
+    return 'ultimoTipoDocumento:' + (window.percorsoWorkspace || '');
+}
+
+function leggiUltimoTipoDocumento() {
+    try {
+        return localStorage.getItem(_chiaveUltimoTipo()) || null;
+    } catch (e) {
+        // localStorage puo' lanciare (storage disabilitato/quota): la memoria e' opzionale.
+        return null;
+    }
+}
+
+window.salvaUltimoTipoDocumento = function(tipoId) {
+    if (!tipoId) return;
+    try {
+        localStorage.setItem(_chiaveUltimoTipo(), tipoId);
+    } catch (e) { /* preferenza non critica: ignora */ }
+};
+
+// Riporta la select sull'ultimo modello usato, se esiste ancora fra i tipi disponibili.
+// Ritorna true se il valore e' cambiato (il chiamante decide quando ridisegnare i campi).
+function applicaUltimoTipoDocumento() {
+    const select = document.getElementById('form-tipo-documento');
+    if (!select) return false;
+    const ultimo = leggiUltimoTipoDocumento();
+    if (!ultimo || select.value === ultimo) return false;
+    if (!appData.tipiDocumento.some(t => t.id === ultimo)) return false;
+    select.value = ultimo;
+    return true;
+}
+
 function aggiornaSelectTipiDocumento() {
     const select = document.getElementById('form-tipo-documento');
     if (!select) return;
+    // 'change' non scatta sulle assegnazioni programmatiche: qui arriva solo la scelta
+    // esplicita dell'utente, che va memorizzata subito (anche se poi non salva la scheda).
+    if (!select.dataset.memoriaTipo) {
+        select.dataset.memoriaTipo = '1';
+        select.addEventListener('change', () => window.salvaUltimoTipoDocumento(select.value));
+    }
     select.innerHTML = '';
     appData.tipiDocumento.forEach(tipo => {
         const opt = document.createElement('option');
@@ -11,6 +52,8 @@ function aggiornaSelectTipiDocumento() {
         select.appendChild(opt);
     });
     if (appData.tipiDocumento.length > 0) {
+        // Solo su scheda nuova: in modifica il tipo lo imposta editItem().
+        if (!document.getElementById('form-id').value) applicaUltimoTipoDocumento();
         renderDynamicFields();
     }
 }
@@ -135,6 +178,8 @@ function resetForm() {
 
     // Reimposta la select sulla cartella in cui si stava navigando
     document.getElementById('form-cartella').value = window.cartellaAttuale;
+    // ...e sul modello usato per ultimo, cosi' da non doverlo riselezionare ogni volta
+    if (applicaUltimoTipoDocumento()) renderDynamicFields();
     document.getElementById('form-title').textContent = window.t('title_new_record', 'Compila Nuova Scheda');
     
     // Aggiorna le icone (es. arrow-left) in caso siano state resettate
