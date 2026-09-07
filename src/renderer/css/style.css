@@ -503,6 +503,39 @@ button, .btn {
     border: 1px solid var(--color-border-light);
 }
 
+/* Badge del conteggio sul pulsante Filtri (Fase 1.3). Posizionato in assoluto sopra
+   l'angolo del pulsante: in linea allargherebbe il bottone a ogni filtro aggiunto,
+   facendo saltare la barra azioni. Il pulsante porta gia' `relative`. */
+.badge-conteggio {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    padding: 0 0.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 9999px;
+    background-color: var(--color-primary);
+    /* Non `#fff` fisso: nei temi scuri `--color-primary` e' un colore CHIARO (azzurro,
+       arancio) e il bianco vi starebbe sotto 3:1. Il fondo del pannello e' per
+       costruzione l'opposto del primario in ogni tema, quindi il contrasto regge
+       ovunque senza una variabile in piu'. */
+    color: var(--color-bg-panel);
+}
+
+/* style.css e' caricato DOPO tailwind.css: senza questa riga il `display:inline-flex`
+   qui sopra batte l'utility `.hidden` a parita' di specificita' e il badge resterebbe
+   visibile (vuoto) anche a zero filtri. E' la stessa trappola gia' incontrata con
+   `hidden` sui .btn (Fase 1.1) e con `position` sul viewport immagini (Fase 1.2). */
+.badge-conteggio.hidden {
+    display: none;
+}
+
 /* Segmento attivo del selettore di vista (griglia/tabella): la vista in uso deve
    leggersi dalla barra, non solo dal contenuto sotto. */
 /* Specificità 0,2,0 e non 0,1,0: `.btn-ghost:hover` vincerebbe sulla classe semplice, e
@@ -864,3 +897,238 @@ summary:focus:not(:focus-visible) { outline: none; }
 .z-modal-critical { z-index: var(--z-modal-critical); }
 .z-toast { z-index: var(--z-toast); }
 .z-menu { z-index: var(--z-menu); }
+
+/* ============================================================
+   VISUALIZZATORE IMMAGINI (Fase 1.2) — imageViewer.ts
+   Un solo blocco per i due host (modal #image-modal e pannello della trascrizione):
+   il componente e' identico, quindi lo e' anche il suo stile.
+   Colori scuri fissi e non variabili di tema: entrambi gli host mostrano la carta su
+   fondo scuro in tutti e tre i temi, e una barra che cambia colore col tema, sopra la
+   stessa immagine, sarebbe incoerente.
+   ============================================================ */
+.iv-viewport {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    /* touch-action: senza questo il browser intercetta il drag come scroll/pinch e il
+       pan del pointerdown non riceve piu' i pointermove. */
+    touch-action: none;
+    outline: none;
+}
+.iv-viewport:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+}
+.iv-img {
+    /* Il transform e' l'unica cosa che muove l'immagine: la transizione va sul solo
+       filtro e non su transform, o il pan col mouse arriverebbe in ritardo sul cursore. */
+    transition: filter 0.15s linear;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+.iv-viewport.iv-trascinabile .iv-img { cursor: grab; }
+.iv-viewport.iv-in-trascinamento .iv-img { cursor: grabbing; }
+
+.iv-barra,
+.iv-pannello-filtri {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    background-color: rgba(28, 25, 23, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    color: #e7e5e4;
+}
+.iv-barra {
+    bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.25rem;
+    /* La barra copre il bordo inferiore della carta: a riposo si attenua, al passaggio
+       del mouse (o col fuoco da tastiera dentro il viewport) torna piena. */
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+}
+.iv-viewport:hover .iv-barra,
+.iv-viewport:focus-within .iv-barra { opacity: 1; }
+
+.iv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: var(--radius-sm);
+    color: #e7e5e4;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+.iv-btn:hover { background-color: rgba(255, 255, 255, 0.15); }
+.iv-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+.iv-btn svg { width: 1rem; height: 1rem; }
+.iv-btn-testo {
+    width: auto;
+    padding: 0 0.4rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+.iv-percento {
+    min-width: 3.25rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: #d6d3d1;
+    user-select: none;
+}
+.iv-sep {
+    width: 1px;
+    height: 1.1rem;
+    margin: 0 0.25rem;
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.iv-pannello-filtri {
+    bottom: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    min-width: 15rem;
+}
+.iv-filtro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.iv-filtro input[type="range"] { width: 8.5rem; accent-color: var(--color-primary); }
+.iv-filtro-check { justify-content: flex-start; cursor: pointer; }
+
+/* Il viewport della trascrizione deve riempire il riquadro dell'anteprima, non stringersi
+   sull'immagine: se resta grande quanto la carta, `overflow: hidden` ritaglia la barra dei
+   comandi, che ha un box ma e' invisibile e non cliccabile.
+   La regola sta QUI e non come utility `absolute inset-0` sull'elemento: .iv-viewport
+   dichiara position:relative in style.css, caricato DOPO tailwind.css, e vincerebbe a
+   parita' di specificita' (stessa trappola di `hidden` sui .btn, Fase 1.1). */
+#trasc-img-viewport {
+    position: absolute;
+    inset: 0;
+}
+
+/* ============================================================
+   COMMAND PALETTE E SCORCIATOIE (Fase 1.4) — commandPalette.ts
+   Colori dalle variabili di tema, non `dark:` sparse: la palette è un pannello
+   dell'applicazione come gli altri, e i tre temi devono seguirla senza una seconda
+   tavolozza da tenere allineata a mano.
+   ============================================================ */
+.cp-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(3px);
+    display: flex;
+    justify-content: center;
+    /* Ancorata in alto e non centrata: l'elenco cresce verso il basso, e una finestra
+       centrata verticalmente si sposterebbe sotto le dita a ogni battuta. */
+    align-items: flex-start;
+    padding: 10vh 1rem 1rem;
+    /* Sopra i menu contestuali: la palette può essere aperta mentre uno è aperto, e
+       finirebbe altrimenti dietro di esso. */
+    z-index: calc(var(--z-menu) + 10);
+}
+.cp-box {
+    width: 100%;
+    max-width: 34rem;
+    display: flex;
+    flex-direction: column;
+    max-height: min(70vh, 34rem);
+    background-color: var(--color-bg-panel);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+.cp-riga-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-light);
+    flex-shrink: 0;
+}
+.cp-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    color: var(--color-text-main);
+}
+.cp-lista {
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    flex: 1;
+    min-height: 0;
+}
+.cp-gruppo {
+    padding: 0.4rem 1rem 0.2rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+}
+.cp-voce {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+}
+/* Una classe e non :hover: la riga attiva si sposta anche con le frecce, e due
+   evidenziazioni indipendenti (puntatore fermo su una riga, tastiera su un'altra)
+   direbbero all'utente che Invio farà una cosa che non farà. `onmousemove` allinea
+   il puntatore alla selezione, così la classe resta l'unica verità. */
+.cp-voce.cp-attiva {
+    background-color: var(--color-primary-light);
+    color: var(--color-text-main);
+    box-shadow: inset 3px 0 0 var(--color-primary);
+}
+.cp-piede {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.45rem 1rem;
+    border-top: 1px solid var(--color-border-light);
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+.cp-piede span { display: inline-flex; align-items: center; gap: 0.25rem; }
+.cp-kbd {
+    display: inline-block;
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--color-border-light);
+    border-bottom-width: 2px;
+    border-radius: 0.25rem;
+    background-color: var(--color-bg-base);
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    white-space: nowrap;
+}

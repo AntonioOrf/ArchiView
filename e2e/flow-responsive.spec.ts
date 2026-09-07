@@ -63,7 +63,9 @@ test.describe('Percorsi di verifica', () => {
     await page.setViewportSize({ width: 700, height: 800 });
 
     // Zona 1 (navigazione), Zona 2 (stato cloud), Zona 3 (azioni di contesto).
-    for (const sel of ['#btn-tab-folders', '#btn-tab-search', '#btn-tab-tags', '#cloud-status-btn', '#btn-tab-add', '#btn-delete-folder']) {
+    // `#context-overflow-slot button` al posto del cestino: "Elimina archivio" è dentro
+    // quel menu dalla revisione della barra, e la funzione non deve sparire sotto i 768px.
+    for (const sel of ['#btn-tab-folders', '#btn-tab-search', '#btn-tab-tags', '#cloud-status-btn', '#btn-tab-add', '#btn-filtri', '#context-overflow-slot button']) {
       await expect(page.locator(sel)).toBeVisible();
     }
     // Zona 4: le azioni sull'oggetto restano raggiungibili dal "⋯".

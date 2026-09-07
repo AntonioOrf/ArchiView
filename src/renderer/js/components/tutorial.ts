@@ -413,6 +413,42 @@ window.avviaTutorial = async function () {
         }
     });
 
+    // Fase 1 — le tre funzioni della vista elenco che il tutorial non nominava affatto.
+    // Stanno QUI, subito dopo il ritorno alla navigazione: sono i comandi della barra
+    // sopra l'elenco, e spiegarli prima di aver riportato l'utente sulla lista
+    // significherebbe indicare pulsanti che in quel momento non sono a schermo.
+    steps.push({
+        element: '#btn-vista-tabella',
+        popover: {
+            title: window.t('tut_sort_title', 'Ordinamento e Vista Tabellare'),
+            description: window.t('tut_sort_desc', 'L\'elenco può essere ordinato per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla vista tabellare, dove ogni intestazione di colonna è essa stessa un comando di ordinamento e le colonne visibili sono configurabili per tipo di documento.'),
+            side: "bottom",
+            align: 'end'
+        }
+    });
+
+    steps.push({
+        element: '#btn-filtri',
+        popover: {
+            title: window.t('tut_filters_title', 'Filtri Avanzati e Ricerche Salvate'),
+            description: window.t('tut_filters_desc', 'Oltre alla ricerca testuale è possibile restringere l\'elenco per tipo di documento, sottoarchivi, intervallo di data di modifica, presenza di allegati o di trascrizione. Nel campo di ricerca è ammessa inoltre la sintassi campo:valore (per esempio notaio:rossi). Una combinazione di filtri può essere salvata con un nome e richiamata in seguito.'),
+            side: "bottom",
+            align: 'end'
+        }
+    });
+
+    steps.push({
+        // Il "⋯" è costruito al primo render della lista: se manca, driver.js ripiega
+        // sul popover centrato e il passo resta comunque leggibile.
+        element: '#context-overflow-slot button',
+        popover: {
+            title: window.t('tut_palette_title', 'Comandi Rapidi'),
+            description: window.t('tut_palette_desc', 'La combinazione Ctrl+K apre l\'elenco dei comandi: da un unico campo si raggiunge una scheda, un archivio, una nuova scheda di un tipo specifico o qualsiasi altra azione dell\'applicazione. Il tasto ? mostra l\'elenco completo delle scorciatoie disponibili. Entrambi sono richiamabili anche da questo menu.'),
+            side: "bottom",
+            align: 'end'
+        }
+    });
+
     steps.push({
         element: '.tutorial-modifica-btn',
         popover: {
@@ -469,6 +505,34 @@ window.avviaTutorial = async function () {
         }
     });
 
+    // Fase 1.2 — il visualizzatore. Va PRIMA del passo sull'ambiente di trascrizione,
+    // non dopo: quello avanza al click sulla freccia "torna all'archivio", cioè quando
+    // la vista è già stata lasciata, e un passo successivo punterebbe a un pannello non
+    // più a schermo.
+    //
+    // `:not(.hidden-tab)` non è cosmesi: il pannello dell'allegato esiste sempre nel DOM
+    // ma è nascosto quando la scheda non ha allegati. Con il selettore nudo driver.js
+    // troverebbe un elemento a dimensione zero e illuminerebbe il nulla; senza
+    // corrispondenza ripiega invece sul popover centrato, e il passo resta leggibile.
+    steps.push({
+        element: '#trascrizione-allegato-panel:not(.hidden-tab)',
+        popover: {
+            title: window.t('tut_viewer_title', 'Analisi dell\'Immagine'),
+            description: window.t('tut_viewer_desc', 'L\'anteprima dell\'allegato dispone di ingrandimento (rotella del mouse o tasti + e −), trascinamento, rotazione a 90° (tasto R) e adattamento alla pagina o alla larghezza. I comandi di luminosità, contrasto e negativo sono destinati alla lettura di scritture di difficile decifrazione. Con Alt+← e Alt+→ si scorrono gli allegati della scheda.'),
+            side: "right",
+            align: 'start'
+        },
+        onPrevClick: () => {
+            // Si torna al pulsante "Trascrivi", che vive nella lista: la vista di
+            // trascrizione va chiusa prima, o il passo precedente resterebbe coperto.
+            const vList = document.getElementById('view-list');
+            if (vList && vList.classList.contains('hidden-tab') && window.switchTab) {
+                window.switchTab('list');
+            }
+            setTimeout(() => window.dInstance?.movePrevious(), 150);
+        }
+    });
+
     steps.push({
         element: '#view-trascrizione',
         popover: {
@@ -484,11 +548,9 @@ window.avviaTutorial = async function () {
             const backBtn = document.getElementById('btn-back-to-list-trasc');
             if (backBtn) backBtn.addEventListener('click', () => setTimeout(() => window.dInstance?.moveNext(), 150), { once: true, signal: stepAC.signal });
         },
+        // Il passo precedente è ora il visualizzatore, che vive in QUESTA vista: chiuderla
+        // qui riporterebbe alla lista per poi illuminare un pannello non più a schermo.
         onPrevClick: () => {
-            const vList = document.getElementById('view-list');
-            if (vList && vList.classList.contains('hidden-tab') && window.switchTab) {
-                window.switchTab('list');
-            }
             setTimeout(() => window.dInstance?.movePrevious(), 150);
         }
     });

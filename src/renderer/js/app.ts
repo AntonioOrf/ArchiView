@@ -272,6 +272,24 @@ async function avviaApp() {
         if (window.statoIniziale.colonneTabella && typeof window.statoIniziale.colonneTabella === 'object') {
             window.colonneTabella = window.statoIniziale.colonneTabella;
         }
+        // Fase 1.3. I filtri avanzati vanno ripristinati insieme a ricerca e tag: sono
+        // parte dello stesso contesto, e ritrovarne solo metà è peggio che non
+        // ritrovarne nessuno. Le chiavi si prendono una per una dallo stato salvato,
+        // così un appState scritto da una versione precedente non introduce campi ignoti.
+        const fSalvati = window.statoIniziale.filtriAvanzati;
+        if (fSalvati && typeof fSalvati === 'object') {
+            window.filtriAvanzati = {
+                tipo: typeof fSalvati.tipo === 'string' ? fSalvati.tipo : '',
+                sottocartelle: !!fSalvati.sottocartelle,
+                daData: typeof fSalvati.daData === 'string' ? fSalvati.daData : '',
+                aData: typeof fSalvati.aData === 'string' ? fSalvati.aData : '',
+                allegati: fSalvati.allegati === 'si' || fSalvati.allegati === 'no' ? fSalvati.allegati : '',
+                trascrizione: fSalvati.trascrizione === 'si' || fSalvati.trascrizione === 'no' ? fSalvati.trascrizione : ''
+            };
+        }
+        if (Array.isArray(window.statoIniziale.ricercheSalvate)) {
+            window.ricercheSalvate = window.statoIniziale.ricercheSalvate.filter(r => r && r.id && r.nome);
+        }
     }
 
     renderSidebar();

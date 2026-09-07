@@ -40,27 +40,9 @@ function getSearchFields() {
     return searchFieldsCache;
 }
 
-/**
- * Riduce a testo il valore di un campo. Oltre a stringhe e numeri gestisce le
- * dynamic_list (attori, beni, debiti, crediti, familiari): sono coppie {k, v} e
- * contengono i nomi di persona, cioè proprio ciò che si cerca più spesso in un
- * archivio notarile, ma finora non finivano nell'indice.
- */
-function testoIndicizzabile(v) {
-    if (v === null || v === undefined) return '';
-    if (typeof v === 'string') return v;
-    if (typeof v === 'number') return String(v);
-    if (Array.isArray(v)) {
-        let out = '';
-        for (const el of v) {
-            if (el === null || el === undefined) continue;
-            if (typeof el === 'string' || typeof el === 'number') out += el + ' ';
-            else if (typeof el === 'object') out += (el.k || '') + ' ' + (el.v || '') + ' ';
-        }
-        return out;
-    }
-    return '';
-}
+// `testoIndicizzabile` vive in logic/utils.ts (Fase 1.3): la usano sia questo indice sia
+// il filtro `campo:valore`, e due copie divergerebbero al primo tipo di campo nuovo.
+const testoIndicizzabile = (v) => window.testoIndicizzabile(v);
 
 function getSearchIndex(m) {
     const cached = searchCache.get(m);
@@ -107,6 +89,11 @@ function objectMatchesTokens(m, tokens) {
     }
     return true;
 }
+// Contratto esplicito verso la command palette (Fase 1.4), che cerca fra le schede con
+// lo stesso predicato e la stessa cache della griglia. Nel bundle concatenato la
+// dichiarazione qui sopra sarebbe già globale, ma appoggiarsi a quello significherebbe
+// far dipendere un altro file da un dettaglio del build, non da un'interfaccia.
+window.objectMatchesTokens = objectMatchesTokens;
 
 // --- Ordinamento -------------------------------------------------------------
 // Fino alla 2.4.5 la lista non era ordinata affatto: l'ordine era quello di inserimento
@@ -183,9 +170,19 @@ function pageSize() {
 // criteri di renderMain (cartella + ricerca + tag). Esposto su window così che
 // altri componenti (es. suggerimenti di ricerca) possano localizzare un record.
 window.getManoscrittiFiltrati = function() {
-    const tokens = window.tokenizzaRicerca(document.getElementById('search-input').value);
+    // La query è analizzata, non più solo spezzata: i vincoli `campo:valore` non possono
+    // passare per il "fieno" dell'indice, che concatena tutti i campi (vedi analizzaQuery).
+    const query = window.analizzaQuery(document.getElementById('search-input').value);
+    const tokens = query.testo;
     window.activeTags = window.activeTags || new Set();
-    const isGlobalSearch = tokens.length > 0 || window.activeTags.size > 0;
+    const filtri = window.filtriAvanzati || {};
+    const nAvanzati = window.contaFiltriAvanzati(filtri);
+
+    // "Ricerca globale" = il filtro scavalca la cartella selezionata. I filtri avanzati NON
+    // la attivano: "ha allegati" è un restringimento della vista corrente, non un motivo per
+    // saltare all'archivio intero. L'unica eccezione è `sottocartelle`, che è per definizione
+    // un allargamento della cartella e resta gestita in matchCartella.
+    const isGlobalSearch = tokens.length > 0 || query.campi.length > 0 || window.activeTags.size > 0;
 
     // I tag attivi si normalizzano una volta sola, non per ogni record: dentro il filtro
     // sarebbero N×T normalizzazioni per render, proprio sui vault grandi dove pesa di più.
@@ -194,7 +191,11 @@ window.getManoscrittiFiltrati = function() {
         : null;
 
     const filtrati = appData.manoscritti.filter(m => {
-        const matchCartella = isGlobalSearch ? true : m.cartella === window.cartellaAttuale;
+        let matchCartella;
+        if (isGlobalSearch) matchCartella = true;
+        else if (filtri.sottocartelle) matchCartella = window.cartellaNelSottoalbero(m.cartella, window.cartellaAttuale);
+        else matchCartella = m.cartella === window.cartellaAttuale;
+
         const matchSearch = tokens.length === 0 || objectMatchesTokens(m, tokens);
 
         let matchTag = true;
@@ -208,32 +209,33 @@ window.getManoscrittiFiltrati = function() {
             }
         }
 
-        return matchCartella && matchSearch && matchTag;
+        if (!(matchCartella && matchSearch && matchTag)) return false;
+        if (query.campi.length > 0 && !window.recordPassaCampi(m, query.campi)) return false;
+        // Il predicato avanzato è l'ultimo: è il più costoso (strip HTML della
+        // trascrizione) e va pagato solo sui record già sopravvissuti al resto.
+        if (nAvanzati > 0 && !window.recordPassaFiltri(m, filtri)) return false;
+        return true;
     });
 
     return ordinaManoscritti(filtrati);
 };
 
 /**
- * Abilita "Elimina archivio" solo quando l'operazione è davvero possibile, spiegando
- * nel tooltip il motivo del blocco invece di far sparire il pulsante.
+ * "Elimina archivio" è possibile solo su una cartella vuota che non sia la radice.
+ * La voce resta comunque ELENCATA quando non lo è, disabilitata e con la spiegazione nel
+ * titolo: una voce che sparisce lascia l'utente a chiedersi dove sia finito il comando.
  */
-function aggiornaStatoEliminaCartella() {
-    const btn = document.getElementById('btn-delete-folder');
-    if (!btn) return;
-
+function statoEliminaCartella() {
     const cartella = window.cartellaAttuale;
     const vuota = !appData.manoscritti.some(m => m.cartella === cartella);
     const isRadice = !cartella;
-    const abilitato = vuota && !isRadice;
 
-    btn.disabled = !abilitato;
     let motivo;
     if (isRadice) motivo = window.t('tooltip_delete_folder_root', "La radice dell'archivio non può essere eliminata");
     else if (!vuota) motivo = window.t('tooltip_delete_folder_not_empty', 'Puoi eliminare solo un archivio vuoto');
     else motivo = window.t('tooltip_delete_folder', 'Elimina questo archivio');
-    btn.title = motivo;
-    btn.setAttribute('aria-label', motivo);
+
+    return { abilitato: vuota && !isRadice, motivo };
 }
 
 /**
@@ -286,15 +288,59 @@ function renderIntestazioneVista(isGlobalSearch, search) {
     renderFiltriAttivi(search);
 }
 
-/** Chip dei filtri attivi (ricerca + tag), ognuno rimovibile senza aprire la sidebar. */
+/**
+ * Traduce i filtri avanzati impostati in descrizioni da chip. Restituisce anche la
+ * `chiave` perché il chip sappia quale filtro azzerare quando lo si rimuove.
+ */
+function descriviFiltriAvanzati(filtri) {
+    const out = [];
+    if (!filtri) return out;
+    const T = (k, d) => window.t(k, d);
+
+    if (filtri.tipo) {
+        const tipo = (appData.tipiDocumento || []).find(t => t.id === filtri.tipo);
+        const nome = tipo
+            ? (window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome)
+            : filtri.tipo;
+        out.push({ chiave: 'tipo', icona: 'file-text', testo: T('filter_type', 'Tipo') + ': ' + nome });
+    }
+    if (filtri.sottocartelle) {
+        out.push({ chiave: 'sottocartelle', icona: 'folder-tree', testo: T('filter_subfolders', 'Includi sottoarchivi') });
+    }
+    if (filtri.daData) {
+        out.push({ chiave: 'daData', icona: 'calendar', testo: T('filter_from', 'Dal') + ' ' + filtri.daData });
+    }
+    if (filtri.aData) {
+        out.push({ chiave: 'aData', icona: 'calendar', testo: T('filter_to', 'Al') + ' ' + filtri.aData });
+    }
+    if (filtri.allegati) {
+        out.push({
+            chiave: 'allegati',
+            icona: 'paperclip',
+            testo: filtri.allegati === 'si' ? T('filter_has_attachments', 'Con allegati') : T('filter_no_attachments', 'Senza allegati')
+        });
+    }
+    if (filtri.trascrizione) {
+        out.push({
+            chiave: 'trascrizione',
+            icona: 'pen-line',
+            testo: filtri.trascrizione === 'si' ? T('filter_has_transcription', 'Con trascrizione') : T('filter_no_transcription', 'Senza trascrizione')
+        });
+    }
+    return out;
+}
+
+/** Chip dei filtri attivi (ricerca + tag + filtri avanzati), ognuno rimovibile in loco. */
 function renderFiltriAttivi(search) {
     const bar = document.getElementById('active-filters');
     if (!bar) return;
 
     const tags = window.activeTags ? [...window.activeTags] : [];
+    const filtri = window.filtriAvanzati || {};
+    const avanzati = descriviFiltriAvanzati(filtri);
     bar.innerHTML = '';
 
-    if (!search && tags.length === 0) {
+    if (!search && tags.length === 0 && avanzati.length === 0) {
         bar.classList.add('hidden');
         bar.classList.remove('flex');
         return;
@@ -345,7 +391,16 @@ function renderFiltriAttivi(search) {
         });
     });
 
-    if (search || tags.length > 1) {
+    // I filtri avanzati vivono dentro un pannello che sta chiuso quasi sempre: senza un
+    // chip per ciascuno, l'unico segnale di un filtro attivo sarebbe una lista più corta
+    // del previsto, cioè nessun segnale.
+    avanzati.forEach(f => {
+        chip(f.icona, f.testo, window.t('filter_remove_advanced', 'Rimuovi questo filtro'), () => {
+            window.applicaFiltriAvanzati({ [f.chiave]: f.chiave === 'sottocartelle' ? false : '' });
+        });
+    });
+
+    if (search || tags.length > 1 || avanzati.length > 0) {
         const clear = document.createElement('button');
         clear.type = 'button';
         clear.className = 'text-xs font-medium text-stone-500 hover:text-red-600 underline ml-1';
@@ -598,11 +653,40 @@ window.apriMenuNuovaScheda = function(ancora) {
  * al click (creaBottoneOverflow) così "Colonne visibili" compare solo in tabella.
  */
 function vociMenuContesto() {
+    const elimina = statoEliminaCartella();
     const voci = [
         { label: window.t('btn_new_folder', 'Nuovo archivio'), icon: 'folder-plus', onSelect: () => aggiungiCartella() },
         { label: window.t('btn_import', 'Importa'), icon: 'download', onSelect: () => importaManoscritto() },
-        { label: window.t('btn_export_folder', 'Esporta Cartella'), icon: 'upload', onSelect: () => esportaCartellaAttuale() }
+        { label: window.t('btn_export_folder', 'Esporta Cartella'), icon: 'upload', onSelect: () => esportaCartellaAttuale() },
+        { separator: true },
+        // Azione distruttiva, quindi in fondo e staccata: nel menu non c'è la distanza
+        // fisica che la separava dagli altri pulsanti nella barra.
+        {
+            label: window.t('btn_delete_folder', 'Elimina questo archivio'),
+            icon: 'trash',
+            danger: true,
+            disabled: !elimina.abilitato,
+            title: elimina.motivo,
+            onSelect: () => eliminaCartellaAttuale()
+        }
     ];
+    // Fase 1.4: la palette e l'elenco dei tasti non si scoprirebbero altrimenti — una
+    // scorciatoia non documentata è una scorciatoia che non esiste.
+    voci.splice(3, 0,
+        { separator: true },
+        {
+            label: window.t('cp_title', 'Comandi'),
+            icon: 'terminal',
+            shortcut: 'Ctrl+K',
+            onSelect: () => window.apriCommandPalette()
+        },
+        {
+            label: window.t('cp_shortcuts', 'Scorciatoie da tastiera'),
+            icon: 'keyboard',
+            shortcut: '?',
+            onSelect: () => window.apriScorciatoie()
+        }
+    );
     if (window.vistaLista === 'tabella') {
         voci.push({ separator: true });
         voci.push({
@@ -700,6 +784,24 @@ function aggiornaControlliLista(records) {
         s.el.classList.toggle('segmento-attivo', s.attivo);
     }
 
+    // Badge del pulsante Filtri: quanti filtri avanzati sono attivi. È l'unico segnale
+    // permanente, perché il pannello sta chiuso e i chip scorrono via con la lista.
+    const btnFiltri = document.getElementById('btn-filtri');
+    if (btnFiltri) {
+        const n = window.contaFiltriAvanzati(window.filtriAvanzati);
+        const badge = document.getElementById('badge-filtri');
+        if (badge) {
+            badge.textContent = n > 0 ? String(n) : '';
+            badge.classList.toggle('hidden', n === 0);
+        }
+        btnFiltri.classList.toggle('segmento-attivo', n > 0);
+        const etichetta = n > 0
+            ? window.t('tooltip_filters_active', 'Filtri avanzati ({var0} attivi)').replace('{var0}', String(n))
+            : window.t('tooltip_filters', 'Filtri avanzati e ricerche salvate');
+        btnFiltri.title = etichetta;
+        btnFiltri.setAttribute('aria-label', etichetta);
+    }
+
     // Il "⋯" si costruisce una volta sola: le voci sono valutate al click, quindi il menu
     // resta aggiornato senza ricreare il pulsante a ogni render (che perderebbe il focus).
     const slot = document.getElementById('context-overflow-slot');
@@ -739,7 +841,6 @@ function renderMain(resetPage = true) {
 
     // Zona 3: "Elimina archivio" ha posizione fissa nella barra azioni e cambia solo
     // stato (prima appariva/spariva dentro l'empty state, quindi si spostava da sola).
-    aggiornaStatoEliminaCartella();
 
     // I criteri di ordinamento dipendono dai tipi presenti fra i risultati: vanno
     // ricalcolati dopo il filtro, non prima.
