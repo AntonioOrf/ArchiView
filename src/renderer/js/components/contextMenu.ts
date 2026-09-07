@@ -3,7 +3,8 @@
 // Unica implementazione per: menu record, menu cartella sidebar, menu sfondo lista,
 // pulsanti overflow "⋯". Sostituisce l'HTML generato a mano in 3 punti di app.ts.
 //
-// Voci: { label, icon?, onSelect, danger?, disabled?, title? } oppure { separator: true }.
+// Voci: { label, icon?, onSelect, danger?, disabled?, title?, shortcut? } oppure
+// { separator: true }.
 // Origine: MouseEvent (coordinate del puntatore) oppure HTMLElement (ancoraggio sotto).
 //
 // Tastiera: frecce su/giù (saltano le voci disabilitate), Home/End, Invio/Spazio,
@@ -133,6 +134,15 @@ window.apriMenuContestuale = function(origine, voci) {
         span.className = 'truncate';
         span.textContent = voce.label;   // textContent: nessuna interpolazione di HTML
         btn.appendChild(span);
+
+        // `shortcut` (Fase 1.4): la combinazione accanto alla voce è il solo posto in cui
+        // un utente scopre una scorciatoia mentre sta già usando il comando col mouse.
+        if (voce.shortcut) {
+            const kbd = document.createElement('kbd');
+            kbd.className = 'cp-kbd ml-auto';
+            kbd.textContent = voce.shortcut;
+            btn.appendChild(kbd);
+        }
 
         btn.onclick = (ev) => {
             ev.preventDefault();

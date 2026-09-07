@@ -54,7 +54,12 @@
                 <div id="trascrizione-thumbnails" class="flex gap-2 p-2 bg-stone-100 border-b border-stone-300 overflow-x-auto hidden-tab shrink-0"></div>
                 <div class="flex-1 relative flex justify-center items-center overflow-hidden group">
                     <button id="btn-prev-allegato" onclick="cambiaAllegatoRelativo(-1)" data-i18n-title="tooltip_prev" data-i18n-aria-label="tooltip_prev" class="btn btn-icon absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-                    <img id="trasc-img-preview" alt="" class="max-w-full max-h-full object-contain hidden" />
+                    <!-- Fase 1.2 — stesso viewport del modal (zoom/pan/rotazione/filtri):
+                         un solo componente, imageViewer.ts. Visibilità con hidden-tab, non
+                         con la utility hidden (vedi nota in imagePdfModal.ts). -->
+                    <div id="trasc-img-viewport" class="iv-viewport hidden-tab" tabindex="0">
+                        <img id="trasc-img-preview" alt="" class="max-w-full max-h-full object-contain" />
+                    </div>
                     <iframe id="trasc-pdf-preview" class="w-full h-full bg-white hidden" src=""></iframe>
                     <button id="btn-next-allegato" onclick="cambiaAllegatoRelativo(1)" data-i18n-title="tooltip_next" data-i18n-aria-label="tooltip_next" class="btn btn-icon absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
                     <div id="trasc-no-allegato" class="text-center p-8 hidden">

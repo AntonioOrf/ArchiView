@@ -19,13 +19,13 @@ async function apriTrascrizione(id) {
     const imgPreview = document.getElementById('trasc-img-preview');
     const pdfPreview = document.getElementById('trasc-pdf-preview');
     const noAllegato = document.getElementById('trasc-no-allegato');
-    
-    imgPreview.classList.add('hidden');
+
+    window.nascondiAnteprimaImmagine();
     pdfPreview.classList.add('hidden');
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
     pdfPreview.src = '';
-    
+
     const thumbContainer = document.getElementById('trascrizione-thumbnails');
     if (thumbContainer) thumbContainer.innerHTML = window.sanitizeHTML('');
     
@@ -196,13 +196,13 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     const imgPreview = document.getElementById('trasc-img-preview');
     const pdfPreview = document.getElementById('trasc-pdf-preview');
     const noAllegato = document.getElementById('trasc-no-allegato');
-    
-    imgPreview.classList.add('hidden');
+
+    window.nascondiAnteprimaImmagine();
     pdfPreview.classList.add('hidden');
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
     pdfPreview.src = '';
-    
+
     if (!nome) {
         noAllegato.classList.remove('hidden');
         return;
@@ -287,8 +287,32 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     } else {
         const altName = (m && m.allegati && m.allegati[index] && m.allegati[index].originalName) || window.t('attachment_image', 'Immagine');
         imgPreview.alt = altName;
+        window.mostraAnteprimaImmagine();
+        // Sorgente DOPO aver reso visibile il viewport: l'adattamento si calcola sul `load`
+        // e a pannello nascosto le dimensioni di layout sono zero.
         imgPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now();
-        imgPreview.classList.remove('hidden');
+    }
+};
+
+// Visibilità dell'anteprima immagine della trascrizione. Sta qui, in un solo punto, perché
+// il viewport (Fase 1.2) va commutato con `hidden-tab` e va attivato al primo uso: i tre
+// call site che prima facevano `imgPreview.classList.add('hidden')` avrebbero dovuto
+// ricordarsene ciascuno.
+window.nascondiAnteprimaImmagine = function() {
+    const viewport = document.getElementById('trasc-img-viewport');
+    if (!viewport) return;
+    viewport.classList.add('hidden-tab');
+    if (viewport._imageViewer) viewport._imageViewer.reimposta();
+};
+
+window.mostraAnteprimaImmagine = function() {
+    const viewport = document.getElementById('trasc-img-viewport');
+    const img = document.getElementById('trasc-img-preview');
+    if (!viewport || !img) return;
+    viewport.classList.remove('hidden-tab');
+    if (window.attivaVisualizzatoreImmagini) {
+        const viewer = window.attivaVisualizzatoreImmagini(viewport, img);
+        if (viewer) viewer.reimposta();
     }
 };
 

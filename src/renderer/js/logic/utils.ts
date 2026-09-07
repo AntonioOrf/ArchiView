@@ -65,6 +65,173 @@ window.tokenizzaRicerca = function(str) {
 };
 
 /**
+ * Riduce a testo il valore di un campo, qualunque forma abbia. Oltre a stringhe e numeri
+ * gestisce le dynamic_list (attori, beni, debiti, crediti, familiari): sono coppie {k, v}
+ * e contengono i nomi di persona, cioè ciò che si cerca più spesso in un archivio notarile.
+ *
+ * Vive qui, non in mainView, perché la usano due consumatori: l'indice della ricerca
+ * testuale e il filtro `campo:valore` della 1.3. Due copie divergerebbero al primo tipo
+ * di campo nuovo, e la ricerca per campo direbbe il falso proprio dove la griglia dice
+ * il vero.
+ */
+window.testoIndicizzabile = function(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number') return String(v);
+    if (Array.isArray(v)) {
+        let out = '';
+        for (const el of v) {
+            if (el === null || el === undefined) continue;
+            if (typeof el === 'string' || typeof el === 'number') out += el + ' ';
+            else if (typeof el === 'object') out += (el.k || '') + ' ' + (el.v || '') + ' ';
+        }
+        return out;
+    }
+    return '';
+};
+
+/**
+ * Analizza la query in tre parti: token liberi, frasi fra virgolette e vincoli
+ * `campo:valore` (con `campo:"valore con spazi"`).
+ *
+ * `tokenizzaRicerca` resta la forma semplice — è ancora ciò che serve ai suggerimenti —
+ * e non è stata estesa: la sua uscita è un array di stringhe, contratto su cui si
+ * appoggia già dell'altro codice. Qui l'uscita è strutturata perché i vincoli per campo
+ * non si possono applicare al "fieno" unico dell'indice: quello concatena tutti i campi,
+ * quindi `notaio:rossi` vi troverebbe un Rossi citato nelle note.
+ *
+ * Un `campo:` senza valore (cioè la query a metà digitazione) viene ignorato invece di
+ * diventare un token letterale che non corrisponde a nulla e svuota la lista.
+ */
+window.analizzaQuery = function(str) {
+    const esito = { testo: [], campi: [] };
+    const norm = window.normalizzaTesto(str);
+    if (!norm || !norm.trim()) return esito;
+
+    const re = /([\w\-]+):"([^"]*)"|([\w\-]+):(\S+)|([\w\-]+):(?=\s|$)|"([^"]*)"|(\S+)/g;
+    let m;
+    while ((m = re.exec(norm)) !== null) {
+        if (m[1] !== undefined) {
+            const v = m[2].trim();
+            if (v) esito.campi.push({ campo: m[1], valore: v });
+        } else if (m[3] !== undefined) {
+            esito.campi.push({ campo: m[3], valore: m[4] });
+        } else if (m[5] !== undefined) {
+            continue; // `campo:` ancora senza valore
+        } else if (m[6] !== undefined) {
+            const v = m[6].trim();
+            if (v) esito.testo.push(v);
+        } else if (m[7] !== undefined) {
+            esito.testo.push(m[7]);
+        }
+    }
+    return esito;
+};
+
+// Nomi che l'utente scrive naturalmente ma che nel record hanno un'altra chiave.
+// `tipo:` è il caso che conta: nessuno digiterebbe `tipodocumento:`.
+const ALIAS_CAMPI_QUERY = {
+    tag: 'tags',
+    tipo: 'tipodocumento',
+    archivio: 'cartella',
+    modificato: 'lastmodified'
+};
+
+/**
+ * Il record soddisfa TUTTI i vincoli `campo:valore`. Il confronto sul nome del campo è
+ * normalizzato (i tipi documento hanno campi come `Notaio` e `Marginalia`, con la
+ * maiuscola), e un campo che il record non possiede lo esclude: `notaio:rossi` deve
+ * restituire schede notarili, non tutte quelle prive di quel campo.
+ */
+window.recordPassaCampi = function(m, campi) {
+    if (!campi || campi.length === 0) return true;
+    for (const f of campi) {
+        const cercato = ALIAS_CAMPI_QUERY[f.campo] || f.campo;
+        let trovato = false;
+        let corrisponde = false;
+        for (const chiave of Object.keys(m)) {
+            if (window.normalizzaTesto(chiave) !== cercato) continue;
+            trovato = true;
+            if (window.normalizzaTesto(window.testoIndicizzabile(m[chiave])).includes(f.valore)) {
+                corrisponde = true;
+                break;
+            }
+        }
+        if (!trovato || !corrisponde) return false;
+    }
+    return true;
+};
+
+/**
+ * Filtri avanzati (Fase 1.3): tipo documento, intervallo di data modifica, presenza di
+ * allegati, presenza di trascrizione. Funzione PURA e senza effetti sul record — in
+ * particolare NON usa `normalizzaAllegati`, che scriverebbe `m.allegati = []` su ogni
+ * record scorso: un predicato di filtro che muta il database è un difetto, non una
+ * scorciatoia.
+ *
+ * La cartella non è qui: dipende dalla vista corrente e resta in getManoscrittiFiltrati.
+ */
+window.recordPassaFiltri = function(m, filtri) {
+    if (!filtri) return true;
+
+    if (filtri.tipo && (m.tipoDocumento || 'manoscritto') !== filtri.tipo) return false;
+
+    if (filtri.allegati === 'si' || filtri.allegati === 'no') {
+        const n = Array.isArray(m.allegati) ? m.allegati.length : (m.allegato ? 1 : 0);
+        if (filtri.allegati === 'si' && n === 0) return false;
+        if (filtri.allegati === 'no' && n > 0) return false;
+    }
+
+    if (filtri.trascrizione === 'si' || filtri.trascrizione === 'no') {
+        // Un contenteditable svuotato lascia `<br>` o `<p></p>`: senza strip dei tag,
+        // "ha trascrizione" sarebbe vero per ogni scheda mai aperta in trascrizione.
+        const testo = String(m.trascrizione || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+        if (filtri.trascrizione === 'si' && !testo) return false;
+        if (filtri.trascrizione === 'no' && testo) return false;
+    }
+
+    if (filtri.daData || filtri.aData) {
+        // Un record senza `lastModified` non ha una data da confrontare: chiedere un
+        // intervallo e vederselo comparire dentro sarebbe peggio che non vederlo.
+        const ts = Number(m.lastModified) || 0;
+        if (!ts) return false;
+        if (filtri.daData) {
+            const d = Date.parse(filtri.daData + 'T00:00:00');
+            if (!isNaN(d) && ts < d) return false;
+        }
+        if (filtri.aData) {
+            // Estremo superiore INCLUSIVO: 'aData' è un giorno, non un istante, e
+            // "fino al 5" deve contenere le modifiche fatte il 5 alle 18:00.
+            const d = Date.parse(filtri.aData + 'T23:59:59.999');
+            if (!isNaN(d) && ts > d) return false;
+        }
+    }
+
+    return true;
+};
+
+/** `base` vuota = radice virtuale: il suo sottoalbero è l'archivio intero. */
+window.cartellaNelSottoalbero = function(cartella, base) {
+    const c = typeof cartella === 'string' ? cartella : '';
+    const b = typeof base === 'string' ? base : '';
+    if (!b) return true;
+    return c === b || c.indexOf(b + '/') === 0;
+};
+
+/** Filtri avanzati impostati, per il badge del pulsante e per i chip. Puro. */
+window.contaFiltriAvanzati = function(filtri) {
+    if (!filtri) return 0;
+    let n = 0;
+    if (filtri.tipo) n++;
+    if (filtri.sottocartelle) n++;
+    if (filtri.daData) n++;
+    if (filtri.aData) n++;
+    if (filtri.allegati) n++;
+    if (filtri.trascrizione) n++;
+    return n;
+};
+
+/**
  * Confronto naturale per le segnature: "MS 2" viene prima di "MS 10", non dopo.
  * Un ordinamento lessicografico su segnature con numeri (cioè su quasi tutte) produce
  * sequenze inutilizzabili, ed è la ragione per cui l'ordinamento alfabetico semplice
@@ -106,7 +273,13 @@ window.salvaStatoPosizione = async function() {
         // Ritrovare la lista ordinata come la si era lasciata è metà del valore di 1.1.
         sort: window.sortState ? { campo: window.sortState.campo, dir: window.sortState.dir } : null,
         vista: window.vistaLista || 'griglia',
-        colonneTabella: window.colonneTabella || {}
+        colonneTabella: window.colonneTabella || {},
+        // Fase 1.3. I filtri avanzati sono contesto di lavoro come la ricerca; le
+        // ricerche salvate sono invece una preferenza duratura, ma vivono nello stesso
+        // appState perché sono per workspace e NON vanno sincronizzate: una ricerca
+        // salvata cita cartelle e tipi che sull'altro PC possono non esistere.
+        filtriAvanzati: window.filtriAvanzati || null,
+        ricercheSalvate: Array.isArray(window.ricercheSalvate) ? window.ricercheSalvate : []
     };
     
     if (window.apiSettings) {
@@ -194,6 +367,11 @@ window.azzeraFiltriRicerca = function() {
     if (input) input.value = '';
 
     if (window.activeTags) window.activeTags.clear();
+
+    // "Azzera tutti i filtri" deve azzerarli TUTTI: lasciare in piedi quelli avanzati
+    // (invisibili finché non si apre il pannello) è il modo più rapido per far credere
+    // all'utente che l'archivio si sia svuotato.
+    if (typeof window.azzeraFiltriAvanzati === 'function') window.azzeraFiltriAvanzati(false);
 
     const btnClearTag = document.getElementById('btn-clear-tag');
     if (btnClearTag) btnClearTag.classList.add('hidden');

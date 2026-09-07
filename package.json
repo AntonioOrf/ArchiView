@@ -17,7 +17,7 @@
     "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
     "pretest:unit": "tsc",
-    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js && node test/zipStreaming.test.js && node test/searchNormalize.test.js && node test/naturalSort.test.js && node test/hubAttachmentsSerial.test.js && node test/buildChangelog.test.js && node test/e2eProjects.test.js",
+    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js && node test/zipStreaming.test.js && node test/searchNormalize.test.js && node test/naturalSort.test.js && node test/queryFilters.test.js && node test/imageViewerFit.test.js && node test/commandPalette.test.js && node test/hubAttachmentsSerial.test.js && node test/buildChangelog.test.js && node test/e2eProjects.test.js",
     "test:e2e": "playwright test",
     "pretest:e2e": "npm run build-css && npm run build-ts",
     "test:e2e:smoke": "playwright test --project=smoke",

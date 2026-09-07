@@ -160,7 +160,6 @@ test.describe('Ordinamento e vista tabella', () => {
     // Restano per esteso solo le due azioni quotidiane più i controlli di vista.
     await expect(page.locator('#btn-tab-add')).toBeVisible();
     await expect(page.locator('#btn-nuova-scheda-tipo')).toBeVisible();
-    await expect(page.locator('#btn-delete-folder')).toBeVisible();
 
     // Le azioni rare non sono più pulsanti a sé: stanno nel "⋯".
     const barra = page.locator('#context-actions');
@@ -169,7 +168,7 @@ test.describe('Ordinamento e vista tabella', () => {
     await page.locator('#context-overflow-slot button').click();
     const menu = page.locator('#custom-context-menu');
     await expect(menu).toBeVisible();
-    for (const voce of [/Nuovo archivio/, /Importa/, /Esporta/]) {
+    for (const voce of [/Nuovo archivio/, /Importa/, /Esporta/, /Elimina quest/]) {
       await expect(menu.locator('button', { hasText: voce })).toHaveCount(1);
     }
     // "Colonne visibili" compare solo dove esistono colonne: qui siamo a schede.

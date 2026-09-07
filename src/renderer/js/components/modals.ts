@@ -9,23 +9,37 @@ window.apriPdfInterno = async function(fileName) {
 function apriModal(sorgente, tipo = 'img') {
     const modalImg = document.getElementById('modal-img');
     const modalPdf = document.getElementById('modal-pdf');
-    modalImg.classList.add('hidden');
+    const viewport = document.getElementById('modal-img-viewport');
+    if (viewport) viewport.classList.add('hidden-tab');
     modalPdf.classList.add('hidden');
 
     if (tipo === 'pdf') {
         modalPdf.src = sorgente;
         modalPdf.classList.remove('hidden');
+        document.getElementById('image-modal').classList.remove('hidden-tab');
     } else {
+        // L'overlay va reso visibile PRIMA di assegnare la sorgente: il visualizzatore
+        // calcola l'adattamento sull'evento `load`, e a viewport nascosto le dimensioni
+        // di layout sono zero (fit sbagliato, immagine fuori campo al primo zoom).
+        document.getElementById('image-modal').classList.remove('hidden-tab');
+        if (viewport) {
+            viewport.classList.remove('hidden-tab');
+            if (window.attivaVisualizzatoreImmagini) {
+                const viewer = window.attivaVisualizzatoreImmagini(viewport, modalImg);
+                if (viewer) viewer.reimposta();
+            }
+        }
         modalImg.alt = window.t('attachment_image', 'Immagine');
         modalImg.src = sorgente;
-        modalImg.classList.remove('hidden');
+        if (viewport) viewport.focus({ preventScroll: true });
     }
-    document.getElementById('image-modal').classList.remove('hidden-tab');
 }
 
 function chiudiModal() {
     document.getElementById('image-modal').classList.add('hidden-tab');
     document.getElementById('modal-pdf').src = '';
+    const viewport = document.getElementById('modal-img-viewport');
+    if (viewport && viewport._imageViewer) viewport._imageViewer.reimposta();
 }
 
 window.apriRenameModal = function(nomeAttuale, callback) {

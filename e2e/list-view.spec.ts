@@ -97,7 +97,7 @@ test.describe('Vista Lista', () => {
     await expect(page.locator('.card-scheda')).toHaveCount(50);
   });
 
-  test('#btn-delete-folder elimina la cartella corrente vuota', async ({ page, userDataDir }) => {
+  test('"Elimina archivio" del menu "..." elimina la cartella corrente vuota', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'List');
     await page.evaluate(() => (window as any).aggiungiCartella());
     await page.locator('#folder-name-input').fill('DaEliminare');
@@ -109,8 +109,10 @@ test.describe('Vista Lista', () => {
       (window as any).renderMain();
     });
 
-    await expect(page.locator('#btn-delete-folder')).toBeVisible();
-    await page.locator('#btn-delete-folder').click();
+    // Non è più un pulsante a sé nella barra: azione rara e distruttiva, vive nel "...".
+    await expect(page.locator('#btn-delete-folder')).toHaveCount(0);
+    await page.locator('#context-overflow-slot button').click();
+    await page.locator('#custom-context-menu button', { hasText: /Elimina quest|Delete this/ }).click();
 
     await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
     await page.locator('#btn-bottom-confirm-yes').click();

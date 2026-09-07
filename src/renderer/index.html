@@ -67,6 +67,9 @@
     <script defer src="js/components/modals/diffModal.js"></script>
     
     <!-- Nuovi componenti Viste e Banners -->
+    <!-- Visualizzatore immagini (Fase 1.2): usato sia dal modal allegati sia dal pannello
+         della trascrizione, quindi caricato prima di entrambi. -->
+    <script defer src="js/components/imageViewer.js"></script>
     <script defer src="js/components/banners.js"></script>
     <script defer src="js/components/views/viewList.js"></script>
     <script defer src="js/components/views/viewAdd.js"></script>
@@ -88,6 +91,13 @@
     <script defer src="js/logic/realtimeLogic.js"></script>
 
     <script defer src="js/components/contextMenu.js"></script>
+    <!-- Filtri avanzati e ricerche salvate (Fase 1.3): i predicati stanno in
+         logic/utils.js, qui c'e' solo il pannello. -->
+    <script defer src="js/components/filtersPanel.js"></script>
+    <!-- Command palette e pannello delle scorciatoie (Fase 1.4): dopo contextMenu e
+         filtersPanel, di cui riusa i comandi, e prima di mainView/app, che non la
+         invocano al caricamento ma solo in risposta a un tasto. -->
+    <script defer src="js/components/commandPalette.js"></script>
     <script defer src="js/components/cloudStatus.js"></script>
     <script defer src="js/components/toasts.js"></script>
     <script defer src="js/components/modals.js"></script>

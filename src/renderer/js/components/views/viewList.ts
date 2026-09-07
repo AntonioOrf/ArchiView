@@ -44,20 +44,40 @@
                                 <i data-lucide="chevron-down" class="w-4 h-4"></i>
                             </button>
                         </div>
-                        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm" data-i18n-title="tooltip_new_model">
-                            <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span data-i18n="btn_new_model">Nuovo modello</span>
+                        <!-- L'etichetta cade sotto i 1280px: la barra deve stare su UNA riga,
+                             e andare a capo costava piu' della parola. Il nome accessibile
+                             resta (aria-label), quindi il pulsante non diventa muto. -->
+                        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm"
+                                data-i18n-title="tooltip_new_model" data-i18n-aria-label="btn_new_model">
+                            <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span class="hidden xl:inline" data-i18n="btn_new_model">Nuovo modello</span>
                         </button>
 
                         <!-- Controlli di vista, a destra e staccati dalle azioni di creazione:
                              non creano nulla, cambiano solo come si guarda l'elenco. -->
                         <div class="ml-auto flex flex-wrap items-center gap-2">
+                            <!-- Filtri avanzati e ricerche salvate (Fase 1.3). Sta con i
+                                 controlli di vista, non con le azioni di creazione: non crea
+                                 nulla, restringe ciò che si guarda. Il badge dice quanti
+                                 filtri sono attivi anche a pannello chiuso. -->
+                            <button id="btn-filtri" onclick="window.apriPannelloFiltri(this)"
+                                    class="btn btn-ghost border border-stone-200 dark:border-stone-700 relative"
+                                    aria-haspopup="dialog" aria-expanded="false"
+                                    data-i18n-title="tooltip_filters" data-i18n-aria-label="tooltip_filters">
+                                <i data-lucide="filter" class="w-4 h-4"></i>
+                                <span class="sr-only" data-i18n="btn_filters">Filtri</span>
+                                <span id="badge-filtri" class="hidden badge-conteggio"></span>
+                            </button>
+
                             <!-- Ordinamento esplicito: serve SOLO nella vista a schede, dove non
                                  esistono intestazioni da cliccare. In tabella si ordina dall'header
                                  della colonna, e questi due controlli sarebbero un doppione. -->
                             <div id="controlli-ordinamento" class="flex items-center gap-2">
                                 <label for="select-ordinamento" class="sr-only" data-i18n="label_sort_by">Ordina per</label>
+                                <!-- Larghezza limitata: il select si dimensiona sull'opzione
+                                     piu' lunga, e un campo custom dal nome chilometrico
+                                     spingeva da solo la barra a capo. -->
                                 <select id="select-ordinamento" onchange="window.impostaOrdinamento(this.value)"
-                                        class="btn btn-ghost border border-stone-200 dark:border-stone-700 py-1"
+                                        class="btn btn-ghost border border-stone-200 dark:border-stone-700 py-1 max-w-[8rem] truncate"
                                         data-i18n-title="tooltip_sort_by" data-i18n-aria-label="label_sort_by"></select>
                                 <button id="btn-ordinamento-dir" onclick="window.invertiDirezioneOrdinamento()"
                                         class="btn btn-ghost border border-stone-200 dark:border-stone-700"
@@ -81,13 +101,14 @@
                                 </button>
                             </div>
 
-                            <button onclick="eliminaCartellaAttuale()" id="btn-delete-folder" class="btn btn-ghost border border-stone-200 dark:border-stone-700 text-red-600 hover:text-red-800 disabled:opacity-40 disabled:cursor-not-allowed" data-i18n-title="tooltip_delete_folder">
-                                <i data-lucide="trash" class="w-4 h-4"></i> <span class="sr-only" data-i18n="btn_delete_folder">Elimina questo archivio</span>
-                            </button>
-
-                            <!-- "..." : nuovo archivio, importa, esporta, colonne. Stesso
-                                 pulsante e stesso menu delle azioni sulla card (creaBottoneOverflow),
-                                 popolato da mainView perche' le voci dipendono dalla vista. -->
+                            <!-- Il cestino "Elimina archivio" NON e' piu' un pulsante a se':
+                                 e' un'azione rara e distruttiva, e a schede la barra finiva
+                                 su due righe. Vive nel "..." insieme alle altre azioni rare,
+                                 con lo stesso stato disabilitato e la stessa spiegazione.
+                                 "..." : nuovo archivio, importa, esporta, elimina, colonne.
+                                 Stesso pulsante e stesso menu delle azioni sulla card
+                                 (creaBottoneOverflow), popolato da mainView perche' le voci
+                                 dipendono dalla vista. -->
                             <span id="context-overflow-slot" class="flex"></span>
                         </div>
                     </div>

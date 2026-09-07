@@ -62,6 +62,93 @@ function _linguiExtraction() {
     i18n._({ id: "th_modified", message: "Modificato" });
     i18n._({ id: "tooltip_columns", message: "Scegli le colonne visibili" });
     i18n._({ id: "menu_columns", message: "Colonne visibili" });
+    // Fase 1 — passi del tutorial su ordinamento, filtri, comandi rapidi e visualizzatore
+    i18n._({ id: "tut_sort_title", message: "Ordinamento e Vista Tabellare" });
+    i18n._({ id: "tut_sort_desc", message: "L’elenco può essere ordinato per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla vista tabellare, dove ogni intestazione di colonna è essa stessa un comando di ordinamento e le colonne visibili sono configurabili per tipo di documento." });
+    i18n._({ id: "tut_filters_title", message: "Filtri Avanzati e Ricerche Salvate" });
+    i18n._({ id: "tut_filters_desc", message: "Oltre alla ricerca testuale è possibile restringere l’elenco per tipo di documento, sottoarchivi, intervallo di data di modifica, presenza di allegati o di trascrizione. Nel campo di ricerca è ammessa inoltre la sintassi campo:valore (per esempio notaio:rossi). Una combinazione di filtri può essere salvata con un nome e richiamata in seguito." });
+    i18n._({ id: "tut_palette_title", message: "Comandi Rapidi" });
+    i18n._({ id: "tut_palette_desc", message: "La combinazione Ctrl+K apre l’elenco dei comandi: da un unico campo si raggiunge una scheda, un archivio, una nuova scheda di un tipo specifico o qualsiasi altra azione dell’applicazione. Il tasto ? mostra l’elenco completo delle scorciatoie disponibili. Entrambi sono richiamabili anche da questo menu." });
+    i18n._({ id: "tut_viewer_title", message: "Analisi dell’Immagine" });
+    i18n._({ id: "tut_viewer_desc", message: "L’anteprima dell’allegato dispone di ingrandimento (rotella del mouse o tasti + e −), trascinamento, rotazione a 90° (tasto R) e adattamento alla pagina o alla larghezza. I comandi di luminosità, contrasto e negativo sono destinati alla lettura di scritture di difficile decifrazione. Con Alt+← e Alt+→ si scorrono gli allegati della scheda." });
+    // Fase 1.4 — command palette e scorciatoie
+    i18n._({ id: "cp_title", message: "Comandi" });
+    i18n._({ id: "cp_placeholder", message: "Cerca un comando, una scheda o una cartella…" });
+    i18n._({ id: "cp_empty", message: "Nessun comando corrisponde." });
+    i18n._({ id: "cp_error", message: "Comando non riuscito." });
+    i18n._({ id: "cp_group_actions", message: "Azioni" });
+    i18n._({ id: "cp_group_records", message: "Vai alla scheda" });
+    i18n._({ id: "cp_group_folders", message: "Vai alla cartella" });
+    i18n._({ id: "cp_search", message: "Cerca nell’archivio" });
+    i18n._({ id: "cp_view_grid", message: "Passa alla vista a schede" });
+    i18n._({ id: "cp_view_table", message: "Passa alla vista a tabella" });
+    i18n._({ id: "cp_changelog", message: "Novità di questa versione" });
+    i18n._({ id: "cp_shortcuts", message: "Scorciatoie da tastiera" });
+    i18n._({ id: "cp_hint_move", message: "scorri" });
+    i18n._({ id: "cp_hint_run", message: "esegui" });
+    i18n._({ id: "cp_hint_close", message: "chiudi" });
+    i18n._({ id: "untitled_record", message: "Senza titolo" });
+    i18n._({ id: "shortcut_group_general", message: "Generali" });
+    i18n._({ id: "shortcut_group_selection", message: "Selezione" });
+    i18n._({ id: "shortcut_group_transcription", message: "Trascrizione" });
+    i18n._({ id: "shortcut_group_viewer", message: "Visualizzatore immagini" });
+    i18n._({ id: "shortcut_palette", message: "Apri i comandi" });
+    i18n._({ id: "shortcut_help", message: "Mostra questo elenco" });
+    i18n._({ id: "shortcut_search", message: "Vai alla ricerca" });
+    i18n._({ id: "shortcut_new", message: "Nuova scheda" });
+    i18n._({ id: "shortcut_save", message: "Salva la scheda o la trascrizione aperta" });
+    i18n._({ id: "shortcut_undo", message: "Annulla l’ultima azione" });
+    i18n._({ id: "shortcut_esc", message: "Chiudi la finestra in primo piano, o svuota la ricerca" });
+    i18n._({ id: "shortcut_multi", message: "Aggiungi o togli una scheda dalla selezione" });
+    i18n._({ id: "shortcut_range", message: "Seleziona l’intervallo fino alla scheda cliccata" });
+    i18n._({ id: "shortcut_menu", message: "Menu delle azioni sulla scheda o sulla cartella" });
+    i18n._({ id: "shortcut_prev_att", message: "Allegato precedente" });
+    i18n._({ id: "shortcut_next_att", message: "Allegato successivo" });
+    i18n._({ id: "shortcut_fullscreen", message: "Allegato a schermo intero" });
+    i18n._({ id: "shortcut_zoom", message: "Ingrandisci o riduci" });
+    i18n._({ id: "shortcut_fit", message: "Adatta alla pagina" });
+    i18n._({ id: "shortcut_real", message: "Dimensione reale (1:1)" });
+    i18n._({ id: "shortcut_rotate", message: "Ruota di 90° (con Maiusc: in senso opposto)" });
+    i18n._({ id: "shortcut_pan", message: "Sposta l’immagine" });
+    // Fase 1.3 — filtri avanzati e ricerche salvate
+    i18n._({ id: "btn_filters", message: "Filtri" });
+    i18n._({ id: "tooltip_filters", message: "Filtri avanzati e ricerche salvate" });
+    i18n._({ id: "tooltip_filters_active", message: "Filtri avanzati ({var0} attivi)" });
+    i18n._({ id: "filter_type", message: "Tipo" });
+    i18n._({ id: "filter_subfolders", message: "Includi sottoarchivi" });
+    i18n._({ id: "filter_from", message: "Dal" });
+    i18n._({ id: "filter_to", message: "Al" });
+    i18n._({ id: "filter_attachments", message: "Allegati" });
+    i18n._({ id: "filter_transcription", message: "Trascrizione" });
+    i18n._({ id: "filter_any", message: "Qualsiasi" });
+    i18n._({ id: "filter_yes", message: "Sì" });
+    i18n._({ id: "filter_no", message: "No" });
+    i18n._({ id: "filter_has_attachments", message: "Con allegati" });
+    i18n._({ id: "filter_no_attachments", message: "Senza allegati" });
+    i18n._({ id: "filter_has_transcription", message: "Con trascrizione" });
+    i18n._({ id: "filter_no_transcription", message: "Senza trascrizione" });
+    i18n._({ id: "filter_remove_advanced", message: "Rimuovi questo filtro" });
+    i18n._({ id: "filter_query_hint", message: "Nella ricerca puoi scrivere campo:valore — per esempio notaio:rossi, tag:pergamena, oppure \"frase esatta\"." });
+    i18n._({ id: "btn_clear_advanced", message: "Azzera i filtri" });
+    i18n._({ id: "label_saved_searches", message: "Ricerche salvate" });
+    i18n._({ id: "empty_saved_searches", message: "Nessuna ricerca salvata." });
+    i18n._({ id: "placeholder_saved_search", message: "Nome della ricerca" });
+    i18n._({ id: "btn_save_search", message: "Salva" });
+    i18n._({ id: "btn_delete_saved_search", message: "Elimina questa ricerca" });
+    i18n._({ id: "msg_saved_search", message: "Ricerca salvata." });
+    // Fase 1.2 — visualizzatore immagini
+    i18n._({ id: "tooltip_zoom_in", message: "Ingrandisci (+)" });
+    i18n._({ id: "tooltip_zoom_out", message: "Riduci (-)" });
+    i18n._({ id: "tooltip_rotate_left", message: "Ruota a sinistra (Maiusc+R)" });
+    i18n._({ id: "tooltip_rotate_right", message: "Ruota a destra (R)" });
+    i18n._({ id: "tooltip_fit_page", message: "Adatta alla pagina (0)" });
+    i18n._({ id: "tooltip_fit_width", message: "Adatta alla larghezza" });
+    i18n._({ id: "tooltip_zoom_real", message: "Dimensione reale, 1:1 (1)" });
+    i18n._({ id: "tooltip_image_filters", message: "Luminosità, contrasto e negativo" });
+    i18n._({ id: "tooltip_view_reset", message: "Ripristina la vista" });
+    i18n._({ id: "label_brightness", message: "Luminosità" });
+    i18n._({ id: "label_contrast", message: "Contrasto" });
+    i18n._({ id: "label_invert", message: "Inverti (negativo)" });
     i18n._({ id: "tooltip_new_record_type", message: "Scegli il tipo della nuova scheda" });
     i18n._({ id: "menu_new_record_type", message: "Nuova scheda di tipo" });
     i18n._({ id: "label_custom_fields", message: "Campi aggiuntivi personalizzati" });
@@ -500,6 +587,97 @@ const customEn = {
     "btn_new_model": "New model",
     "tooltip_new_record_type": "Choose the type of the new record",
     "menu_new_record_type": "New record of type",
+
+    // --- Fase 1: passi del tutorial sulle funzioni della vista elenco ---
+    "tut_sort_title": "Sorting and Table View",
+    "tut_sort_desc": "The list can be sorted by shelfmark, by a field of the document type, by modification date or by number of attachments. This control switches between the card grid and the table view, where every column header is itself a sorting command and the visible columns are configurable per document type.",
+    "tut_filters_title": "Advanced Filters and Saved Searches",
+    "tut_filters_desc": "Besides full-text search, the list can be narrowed by document type, subfolders, modification date range, presence of attachments or of a transcription. The search box also accepts the field:value syntax (for example notaio:rossi). A combination of filters can be saved under a name and recalled later.",
+    "tut_palette_title": "Quick Commands",
+    "tut_palette_desc": "Ctrl+K opens the command list: from a single box you can reach a record, an archive, a new record of a specific type, or any other action of the application. The ? key shows the full list of available shortcuts. Both are also reachable from this menu.",
+    "tut_viewer_title": "Image Analysis",
+    "tut_viewer_desc": "The attachment preview supports zooming (mouse wheel or the + and − keys), panning, 90° rotation (R key) and fit to page or to width. The brightness, contrast and negative controls are meant for reading hard-to-decipher scripts. Alt+← and Alt+→ move through the attachments of the record.",
+
+    // --- Fase 1.4: command palette e scorciatoie ---
+    "cp_title": "Commands",
+    "cp_placeholder": "Search a command, a record or a folder…",
+    "cp_empty": "No matching command.",
+    "cp_error": "Command failed.",
+    "cp_group_actions": "Actions",
+    "cp_group_records": "Go to record",
+    "cp_group_folders": "Go to folder",
+    "cp_search": "Search the archive",
+    "cp_view_grid": "Switch to card view",
+    "cp_view_table": "Switch to table view",
+    "cp_changelog": "What’s new in this version",
+    "cp_shortcuts": "Keyboard shortcuts",
+    "cp_hint_move": "move",
+    "cp_hint_run": "run",
+    "cp_hint_close": "close",
+    "untitled_record": "Untitled",
+    "shortcut_group_general": "General",
+    "shortcut_group_selection": "Selection",
+    "shortcut_group_transcription": "Transcription",
+    "shortcut_group_viewer": "Image viewer",
+    "shortcut_palette": "Open the commands",
+    "shortcut_help": "Show this list",
+    "shortcut_search": "Jump to the search box",
+    "shortcut_new": "New record",
+    "shortcut_save": "Save the open record or transcription",
+    "shortcut_undo": "Undo the last action",
+    "shortcut_esc": "Close the topmost window, or clear the search",
+    "shortcut_multi": "Add or remove a record from the selection",
+    "shortcut_range": "Select the range up to the clicked record",
+    "shortcut_menu": "Actions menu for the record or the folder",
+    "shortcut_prev_att": "Previous attachment",
+    "shortcut_next_att": "Next attachment",
+    "shortcut_fullscreen": "Attachment full screen",
+    "shortcut_zoom": "Zoom in or out",
+    "shortcut_fit": "Fit to page",
+    "shortcut_real": "Actual size (1:1)",
+    "shortcut_rotate": "Rotate by 90° (with Shift: the other way)",
+    "shortcut_pan": "Pan the image",
+
+    // --- Fase 1.3: filtri avanzati e ricerche salvate ---
+    "btn_filters": "Filters",
+    "tooltip_filters": "Advanced filters and saved searches",
+    "tooltip_filters_active": "Advanced filters ({var0} active)",
+    "filter_type": "Type",
+    "filter_subfolders": "Include subfolders",
+    "filter_from": "From",
+    "filter_to": "To",
+    "filter_attachments": "Attachments",
+    "filter_transcription": "Transcription",
+    "filter_any": "Any",
+    "filter_yes": "Yes",
+    "filter_no": "No",
+    "filter_has_attachments": "With attachments",
+    "filter_no_attachments": "Without attachments",
+    "filter_has_transcription": "With transcription",
+    "filter_no_transcription": "Without transcription",
+    "filter_remove_advanced": "Remove this filter",
+    "filter_query_hint": "In the search box you can type field:value — for example notaio:rossi, tag:parchment, or \"exact phrase\".",
+    "btn_clear_advanced": "Clear filters",
+    "label_saved_searches": "Saved searches",
+    "empty_saved_searches": "No saved searches.",
+    "placeholder_saved_search": "Search name",
+    "btn_save_search": "Save",
+    "btn_delete_saved_search": "Delete this search",
+    "msg_saved_search": "Search saved.",
+
+    // --- Fase 1.2: visualizzatore immagini ---
+    "tooltip_zoom_in": "Zoom in (+)",
+    "tooltip_zoom_out": "Zoom out (-)",
+    "tooltip_rotate_left": "Rotate left (Shift+R)",
+    "tooltip_rotate_right": "Rotate right (R)",
+    "tooltip_fit_page": "Fit page (0)",
+    "tooltip_fit_width": "Fit width",
+    "tooltip_zoom_real": "Actual size, 1:1 (1)",
+    "tooltip_image_filters": "Brightness, contrast and negative",
+    "tooltip_view_reset": "Reset the view",
+    "label_brightness": "Brightness",
+    "label_contrast": "Contrast",
+    "label_invert": "Invert (negative)",
 
     // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
     "btn_new_record": "New record",
@@ -977,6 +1155,97 @@ const customIt = {
     "btn_new_model": "Nuovo modello",
     "tooltip_new_record_type": "Scegli il tipo della nuova scheda",
     "menu_new_record_type": "Nuova scheda di tipo",
+
+    // --- Fase 1: passi del tutorial sulle funzioni della vista elenco ---
+    "tut_sort_title": "Ordinamento e Vista Tabellare",
+    "tut_sort_desc": "L’elenco può essere ordinato per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla vista tabellare, dove ogni intestazione di colonna è essa stessa un comando di ordinamento e le colonne visibili sono configurabili per tipo di documento.",
+    "tut_filters_title": "Filtri Avanzati e Ricerche Salvate",
+    "tut_filters_desc": "Oltre alla ricerca testuale è possibile restringere l’elenco per tipo di documento, sottoarchivi, intervallo di data di modifica, presenza di allegati o di trascrizione. Nel campo di ricerca è ammessa inoltre la sintassi campo:valore (per esempio notaio:rossi). Una combinazione di filtri può essere salvata con un nome e richiamata in seguito.",
+    "tut_palette_title": "Comandi Rapidi",
+    "tut_palette_desc": "La combinazione Ctrl+K apre l’elenco dei comandi: da un unico campo si raggiunge una scheda, un archivio, una nuova scheda di un tipo specifico o qualsiasi altra azione dell’applicazione. Il tasto ? mostra l’elenco completo delle scorciatoie disponibili. Entrambi sono richiamabili anche da questo menu.",
+    "tut_viewer_title": "Analisi dell’Immagine",
+    "tut_viewer_desc": "L’anteprima dell’allegato dispone di ingrandimento (rotella del mouse o tasti + e −), trascinamento, rotazione a 90° (tasto R) e adattamento alla pagina o alla larghezza. I comandi di luminosità, contrasto e negativo sono destinati alla lettura di scritture di difficile decifrazione. Con Alt+← e Alt+→ si scorrono gli allegati della scheda.",
+
+    // --- Fase 1.4: command palette e scorciatoie ---
+    "cp_title": "Comandi",
+    "cp_placeholder": "Cerca un comando, una scheda o una cartella…",
+    "cp_empty": "Nessun comando corrisponde.",
+    "cp_error": "Comando non riuscito.",
+    "cp_group_actions": "Azioni",
+    "cp_group_records": "Vai alla scheda",
+    "cp_group_folders": "Vai alla cartella",
+    "cp_search": "Cerca nell’archivio",
+    "cp_view_grid": "Passa alla vista a schede",
+    "cp_view_table": "Passa alla vista a tabella",
+    "cp_changelog": "Novità di questa versione",
+    "cp_shortcuts": "Scorciatoie da tastiera",
+    "cp_hint_move": "scorri",
+    "cp_hint_run": "esegui",
+    "cp_hint_close": "chiudi",
+    "untitled_record": "Senza titolo",
+    "shortcut_group_general": "Generali",
+    "shortcut_group_selection": "Selezione",
+    "shortcut_group_transcription": "Trascrizione",
+    "shortcut_group_viewer": "Visualizzatore immagini",
+    "shortcut_palette": "Apri i comandi",
+    "shortcut_help": "Mostra questo elenco",
+    "shortcut_search": "Vai alla ricerca",
+    "shortcut_new": "Nuova scheda",
+    "shortcut_save": "Salva la scheda o la trascrizione aperta",
+    "shortcut_undo": "Annulla l’ultima azione",
+    "shortcut_esc": "Chiudi la finestra in primo piano, o svuota la ricerca",
+    "shortcut_multi": "Aggiungi o togli una scheda dalla selezione",
+    "shortcut_range": "Seleziona l’intervallo fino alla scheda cliccata",
+    "shortcut_menu": "Menu delle azioni sulla scheda o sulla cartella",
+    "shortcut_prev_att": "Allegato precedente",
+    "shortcut_next_att": "Allegato successivo",
+    "shortcut_fullscreen": "Allegato a schermo intero",
+    "shortcut_zoom": "Ingrandisci o riduci",
+    "shortcut_fit": "Adatta alla pagina",
+    "shortcut_real": "Dimensione reale (1:1)",
+    "shortcut_rotate": "Ruota di 90° (con Maiusc: in senso opposto)",
+    "shortcut_pan": "Sposta l’immagine",
+
+    // --- Fase 1.3: filtri avanzati e ricerche salvate ---
+    "btn_filters": "Filtri",
+    "tooltip_filters": "Filtri avanzati e ricerche salvate",
+    "tooltip_filters_active": "Filtri avanzati ({var0} attivi)",
+    "filter_type": "Tipo",
+    "filter_subfolders": "Includi sottoarchivi",
+    "filter_from": "Dal",
+    "filter_to": "Al",
+    "filter_attachments": "Allegati",
+    "filter_transcription": "Trascrizione",
+    "filter_any": "Qualsiasi",
+    "filter_yes": "Sì",
+    "filter_no": "No",
+    "filter_has_attachments": "Con allegati",
+    "filter_no_attachments": "Senza allegati",
+    "filter_has_transcription": "Con trascrizione",
+    "filter_no_transcription": "Senza trascrizione",
+    "filter_remove_advanced": "Rimuovi questo filtro",
+    "filter_query_hint": "Nella ricerca puoi scrivere campo:valore — per esempio notaio:rossi, tag:pergamena, oppure \"frase esatta\".",
+    "btn_clear_advanced": "Azzera i filtri",
+    "label_saved_searches": "Ricerche salvate",
+    "empty_saved_searches": "Nessuna ricerca salvata.",
+    "placeholder_saved_search": "Nome della ricerca",
+    "btn_save_search": "Salva",
+    "btn_delete_saved_search": "Elimina questa ricerca",
+    "msg_saved_search": "Ricerca salvata.",
+
+    // --- Fase 1.2: visualizzatore immagini ---
+    "tooltip_zoom_in": "Ingrandisci (+)",
+    "tooltip_zoom_out": "Riduci (-)",
+    "tooltip_rotate_left": "Ruota a sinistra (Maiusc+R)",
+    "tooltip_rotate_right": "Ruota a destra (R)",
+    "tooltip_fit_page": "Adatta alla pagina (0)",
+    "tooltip_fit_width": "Adatta alla larghezza",
+    "tooltip_zoom_real": "Dimensione reale, 1:1 (1)",
+    "tooltip_image_filters": "Luminosità, contrasto e negativo",
+    "tooltip_view_reset": "Ripristina la vista",
+    "label_brightness": "Luminosità",
+    "label_contrast": "Contrasto",
+    "label_invert": "Inverti (negativo)",
 
     // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
     "btn_new_record": "Nuova scheda",
