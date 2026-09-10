@@ -14,6 +14,7 @@ Internet serve solo se attivi la sincronizzazione o scarichi un aggiornamento.
 
 No. È l'avviso che Windows mostra a tutti i programmi non firmati con un certificato commerciale.
 Vedi [Installazione](/primi-passi/installazione#windows-ha-protetto-il-pc).
+
 ## I miei documenti finiscono su un server?
 
 Solo se sei tu ad attivare la sincronizzazione. In modalità locale — quella predefinita — i dati
