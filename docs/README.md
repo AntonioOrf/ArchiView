@@ -38,7 +38,13 @@ Oppure separatamente:
 
 ```bash
 npm run wiki:build
-firebase deploy --only hosting
+npx --yes firebase-tools deploy --only hosting
+```
+
+La prima volta serve l'autenticazione (una sola volta per macchina):
+
+```bash
+npx --yes firebase-tools login
 ```
 
 ## Nota sul nome del branch
