@@ -16,7 +16,8 @@ comandi e dal pulsante di esportazione dentro l'ambiente di trascrizione.
 | **BibTeX** | Citare in LaTeX |
 | **RIS** | Importare in Zotero, Mendeley, EndNote |
 
-![La finestra di esportazione con la scelta dell'ambito e dei cinque formati](/img/esporta-testo.png)
+![La finestra di esportazione con la scelta dell'ambito e dei cinque formati](/img/esporta-testo.png){.light-only}
+![La finestra di esportazione con la scelta dell'ambito e dei cinque formati](/img/esporta-testo-scuro.png){.dark-only}
 
 ## Che cosa esce
 
@@ -41,8 +42,8 @@ falsamente autorevole nell'articolo di qualcun altro.
 ## Citazioni
 
 BibTeX e RIS producono una voce per scheda, del tipo «manoscritto», con fondo, autore e data
-presi dalle intestazioni impostate per la stampa — sono lo stesso dato, e una seconda copia
-finirebbe per dire un fondo diverso nel `.bib` e sulla carta.
+presi dalle intestazioni impostate per la stampa: sono lo stesso dato, e una seconda copia
+finirebbe per indicare un fondo diverso nel `.bib` e sulla carta.
 
 Due accortezze già gestite:
 
@@ -55,5 +56,5 @@ L'anno viene estratto solo se plausibile: un numero di registro non finirà mai 
 
 ## Prima di esportare
 
-La trascrizione aperta viene salvata automaticamente: esporti l'ultima riga che hai battuto, non
-quella di prima.
+La trascrizione aperta viene salvata automaticamente: viene esportato anche l'ultimo testo
+scritto, non la versione precedente.

@@ -82,6 +82,11 @@
   margin: 8px 0;
 }
 
+/* Le schermate esistono in due versioni, chiara e scura: si mostra quella del tema
+   attivo. `html.dark` e' la classe che VitePress mette sulla radice. */
+html:not(.dark) .dark-only { display: none !important; }
+html.dark .light-only { display: none !important; }
+
 /* La riga in corsivo subito sotto un'immagine fa da didascalia. */
 .vp-doc img + em,
 .vp-doc p > img + br + em {

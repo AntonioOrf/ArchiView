@@ -15,7 +15,7 @@ ArchiView non si usa dal browser: è un programma che si installa sul computer.
 ## "Windows ha protetto il PC"
 
 Alla prima esecuzione Windows può mostrare un avviso azzurro di SmartScreen. Non è un errore né
-un virus: succede a tutti i programmi non firmati con un certificato commerciale (che costa
+un virus: riguarda tutti i programmi non firmati con un certificato commerciale (che costa
 diverse centinaia di euro l'anno e per un progetto gratuito non è sostenibile).
 
 Se hai scaricato il file dalla pagina ufficiale delle release, clicca su **Ulteriori

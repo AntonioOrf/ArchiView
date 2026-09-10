@@ -3,14 +3,19 @@
 Il pulsante **Trascrivi** su una scheda apre l'ambiente dedicato: l'immagine (o il PDF) del
 documento su un lato, l'editor di testo sull'altro.
 
+![L'ambiente di trascrizione: editor a sinistra, carta del documento a destra](/img/trascrizione.png){.light-only}
+![L'ambiente di trascrizione: editor a sinistra, carta del documento a destra](/img/trascrizione-scuro.png){.dark-only}
+
+*Il tema scuro è spesso più riposante per le sessioni lunghe di trascrizione.*
+
 ## Una trascrizione per carta
 
 Il testo appartiene alla **carta** che stai guardando, non alla scheda intera: cambiando
 allegato, l'editor segue. In alto compare l'indicazione «Carta 2 di 3», con il nome del file.
 
 Con `Alt+←` e `Alt+→` si passa da una carta all'altra, e il testo di ciascuna resta al suo posto.
-Quello che hai appena battuto viene messo al sicuro prima di ogni cambio di carta: non si perde
-nulla passando avanti e indietro.
+Il testo appena scritto viene salvato in memoria prima di ogni cambio di carta: non si perde
+nulla passando da una carta all'altra.
 
 Se la scheda non ha allegati, si scrive su un'unica trascrizione, come da sempre.
 
@@ -22,8 +27,8 @@ scritture difficili. `Alt+F` porta l'allegato a schermo intero.
 
 ## L'editor
 
-È un editor di testo: la formattazione disponibile nella barra serve a marcare quello che serve
-marcare. **Salva spesso con `Ctrl+S`** — è la scorciatoia più utile del programma.
+È un editor di testo: la barra offre la formattazione necessaria a marcare il testo dove serve.
+**Salva spesso con `Ctrl+S`**: è la scorciatoia più utile del programma.
 
 Il pulsante di esportazione porta il testo fuori dall'app in cinque formati: vedi
 [Esportare trascrizioni e citazioni](/esporta/testo-citazioni).

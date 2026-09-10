@@ -19,6 +19,9 @@ successive**, non solo quelle visibili a schermo.
 
 Con la selezione attiva, il menu del tasto destro applica l'azione a tutte le schede scelte:
 
+![La finestra delle azioni su più schede, con il conteggio delle schede interessate](/img/azioni-massa.png){.light-only}
+![La finestra delle azioni su più schede, con il conteggio delle schede interessate](/img/azioni-massa-scuro.png){.dark-only}
+
 | Azione | Scorciatoia |
 | --- | --- |
 | Spostare in un altro archivio | `Ctrl+Maiusc+M` |
@@ -32,7 +35,7 @@ Con la selezione attiva, il menu del tasto destro applica l'azione a tutte le sc
 La trascrizione non è fra i campi sostituibili: è testo formattato, e una sostituzione cieca lo
 rovinerebbe.
 
-Prima di confermare vedi **quante schede** verranno modificate — e nel trova&sostituisci
+Prima di confermare vedi **quante schede** verranno modificate e, nel trova e sostituisci,
 un'anteprima del risultato. Dopo l'operazione, `Ctrl+Z` la annulla per intero: è una sola azione,
 non trecento.
 

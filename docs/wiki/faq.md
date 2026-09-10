@@ -12,12 +12,13 @@ Internet serve solo se attivi la sincronizzazione o scarichi un aggiornamento.
 
 ## Windows dice che il file non è sicuro. È un virus?
 
-No. È l'avviso che Windows mostra a tutti i programmi non firmati con un certificato commerciale.
+No. È l'avviso che Windows mostra per tutti i programmi non firmati con un certificato
+commerciale.
 Vedi [Installazione](/primi-passi/installazione#windows-ha-protetto-il-pc).
 
 ## I miei documenti finiscono su un server?
 
-Solo se sei tu ad attivare la sincronizzazione. In modalità locale — quella predefinita — i dati
+Solo se sei tu ad attivare la sincronizzazione. In modalità locale, che è quella predefinita, i dati
 restano sul tuo disco e nessuno vi accede.
 
 ## Posso lavorare in due sullo stesso archivio?
@@ -28,8 +29,8 @@ persone modificano la stessa scheda, il programma mostra le due versioni e ti fa
 ## Posso usare ArchiView su due computer senza collaborare con nessuno?
 
 Sì, in due modi: convertendo l'archivio in **personale** (sincronizzato e con backup automatico),
-oppure copiando a mano la cartella di lavoro da una macchina all'altra — a patto di non lavorarci
-mai contemporaneamente.
+oppure copiando a mano la cartella di lavoro da una macchina all'altra, a condizione di non
+lavorarci mai contemporaneamente.
 
 ## Ho cancellato una scheda per sbaglio.
 
@@ -64,7 +65,7 @@ caso eccezionale. Se poi scopri che ti serve sempre, lo promuovi al modello.
 
 ## L'app riconosce il testo delle scansioni?
 
-Sì, con l'[OCR](/guida/ocr), che gira sul tuo computer. Funziona bene sulla stampa e sulle
+Sì, con l'[OCR](/guida/ocr), che viene eseguito sul tuo computer. Funziona bene sulla stampa e sulle
 scritture tarde e regolari; su una minuscola notarile trecentesca no. Serve soprattutto a
 **trovare** la carta giusta, non a sostituire la trascrizione.
 

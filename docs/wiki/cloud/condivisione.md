@@ -3,14 +3,17 @@
 La condivisione si apre dal pulsante **Condividi** sopra l'elenco o dal pulsante di condivisione
 in basso a sinistra.
 
+![La finestra di condivisione, con la creazione dell'archivio comune e l'ingresso tramite invito](/img/condivisione.png){.light-only}
+![La finestra di condivisione, con la creazione dell'archivio comune e l'ingresso tramite invito](/img/condivisione-scuro.png){.dark-only}
+
 ## Se sei tu a creare l'archivio condiviso
 
 1. Apri la condivisione e crea l'archivio comune: la tua copia locale viene caricata così com'è,
    allegati compresi.
 2. **Genera un invito** per ogni persona, dandogli un'etichetta (il nome del collega): serve a
    sapere, poi, quale accesso stai revocando.
-3. Manda l'invito come preferisci — è un codice che si può incollare, o un link che apre
-   direttamente ArchiView.
+3. Manda l'invito come preferisci: è un codice che si può incollare, oppure un collegamento che
+   apre direttamente ArchiView.
 
 Da titolare vedi l'elenco dei membri e puoi **revocare** l'accesso a ciascuno in qualsiasi
 momento: da quel momento la sua sincronizzazione smette di funzionare, con un messaggio esplicito.
@@ -25,8 +28,8 @@ codice unico girato a tutti si può solo revocare per tutti.
 1. Apri il link, oppure incolla il codice nella schermata di benvenuto.
 2. Scegli la **cartella locale** in cui tenere la tua copia dell'archivio.
 
-Fatto: hai una copia completa sul tuo computer, che lavora anche offline e si allinea quando c'è
-rete. Non serve alcun account Google né altra registrazione.
+A questo punto hai una copia completa sul tuo computer, utilizzabile anche offline, che si allinea
+quando la rete è disponibile. Non serve alcun account Google né altra registrazione.
 
 Da membro puoi ricevere, inviare e **uscire** dall'archivio; gli inviti restano al titolare.
 

@@ -28,8 +28,8 @@ sistema.
 ## Gli allegati sono copie
 
 Quando alleghi un'immagine o un PDF, il file viene **copiato** dentro `allegati_manoscritti`.
-L'originale può essere spostato o cancellato senza rompere la scheda — ma lo spazio occupato su
-disco raddoppia rispetto ai file di partenza.
+L'originale può essere spostato o cancellato senza compromettere la scheda, ma lo spazio occupato
+su disco raddoppia rispetto ai file di partenza.
 
 ## Cose da non fare
 

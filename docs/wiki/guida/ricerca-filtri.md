@@ -24,8 +24,8 @@ Scrivi il nome del campo seguito dai due punti:
 notaio:rossi
 ```
 
-Restituisce solo le schede in cui il campo *notaio* contiene «rossi» — non quelle che nominano
-Rossi in una nota, e nemmeno quelle che quel campo non ce l'hanno proprio.
+Restituisce solo le schede in cui il campo *notaio* contiene «rossi»: non quelle che nominano
+Rossi in una nota, né quelle prive di quel campo.
 
 Se il valore contiene spazi, virgolette:
 
@@ -55,7 +55,7 @@ Il pulsante dei filtri sopra l'elenco restringe le schede per:
 
 - **tipo di documento**;
 - **sottocartelle** (estende la ricerca al ramo, non solo alla cartella aperta);
-- **periodo del documento** — un intervallo di anni o un secolo, vedi
+- **periodo del documento**: un intervallo di anni o un secolo, vedi
   [Datazioni storiche](/guida/date-storiche);
 - **intervallo di data di modifica**;
 - **presenza di allegati**;
@@ -63,10 +63,11 @@ Il pulsante dei filtri sopra l'elenco restringe le schede per:
 - **presenza di OCR**;
 - **presenza di collegamenti** ad altre schede.
 
-![Il pannello dei filtri avanzati aperto, con tipo, periodo del documento, secolo, allegati, trascrizione, OCR e collegamenti](/img/filtri.png)
+![Il pannello dei filtri avanzati aperto, con tipo, periodo del documento, secolo, allegati, trascrizione, OCR e collegamenti](/img/filtri.png){.light-only}
+![Il pannello dei filtri avanzati aperto, con tipo, periodo del documento, secolo, allegati, trascrizione, OCR e collegamenti](/img/filtri-scuro.png){.dark-only}
 
 I filtri attivi restano visibili sopra l'elenco come etichette rimovibili, e il pulsante porta un
-contatore: non ti capiterà di credere che l'archivio sia vuoto quando è solo filtrato.
+contatore, così un archivio filtrato non può essere scambiato per un archivio vuoto.
 
 ::: tip Periodo del documento ≠ data di modifica
 Il primo è quando il documento è stato scritto, il secondo quando tu hai toccato la scheda.
@@ -94,7 +95,8 @@ Il comando apposito alterna la **griglia di schede** alla **vista tabellare**. I
 intestazione di colonna ordina (un secondo clic inverte) e le colonne visibili si scelgono dal
 menu «⋯» → «Colonne visibili», separatamente per ciascun tipo di documento.
 
-![La vista tabellare con le colonne segnatura, marginalia, notaio, data cronica, tag, allegati e data di modifica](/img/vista-tabella.png)
+![La vista tabellare con le colonne segnatura, marginalia, notaio, data cronica, tag, allegati e data di modifica](/img/vista-tabella.png){.light-only}
+![La vista tabellare con le colonne segnatura, marginalia, notaio, data cronica, tag, allegati e data di modifica](/img/vista-tabella-scuro.png){.dark-only}
 
-Per il controllo di un fondo intero la tabella è molto più leggibile della griglia — ed è anche
-quella che finisce nella [stampa in formato tabella](/esporta/stampa).
+Per il controllo di un fondo intero la tabella è molto più leggibile della griglia, ed è anche
+quella che viene ripresa dalla [stampa in formato tabella](/esporta/stampa).

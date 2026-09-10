@@ -11,6 +11,9 @@ modi diversi**, con il risultato che nessun filtro darà mai il conto giusto.
 Dalla finestra dei vocabolari (raggiungibile dalla palette dei comandi con `Ctrl+K`): elenco a
 sinistra, valori a destra, rinomina sul posto.
 
+![La finestra dei vocabolari controllati, con l'elenco a sinistra e i valori a destra](/img/vocabolari.png){.light-only}
+![La finestra dei vocabolari controllati, con l'elenco a sinistra e i valori a destra](/img/vocabolari-scuro.png){.dark-only}
+
 Per **legare** un vocabolario a un campo si usa l'editor del campo, dentro la gestione dei
 modelli: il campo diventa di tipo elenco e attinge da quel vocabolario.
 
@@ -19,8 +22,8 @@ modelli: il campo diventa di tipo elenco e attinge da quel vocabolario.
 Non serve interrompere la compilazione: dalla tendina si può aggiungere un valore nuovo al volo,
 e da quel momento è disponibile per tutte le schede.
 
-È il compromesso che rende i vocabolari usabili: un elenco che va chiuso in anticipo, prima di
-sapere che cosa contiene il fondo, verrebbe aggirato entro la seconda settimana.
+È il compromesso che rende i vocabolari utilizzabili: un elenco da chiudere in anticipo, prima
+di sapere che cosa contiene il fondo, verrebbe aggirato nel giro di pochi giorni.
 
 ## Regole da conoscere
 
@@ -28,7 +31,7 @@ sapere che cosa contiene il fondo, verrebbe aggirato entro la seconda settimana.
   vocabolario dopo che hai già schedato: la scheda deve restare salvabile.
 - **Togliere un valore dall'elenco non lo cancella dalle schede** che lo usavano.
 - **Eliminare un vocabolario libera i campi**: i valori vengono copiati dentro il campo, che
-  torna a essere un elenco autonomo. Senza, resterebbero tendine vuote — cioè campi non
+  torna a essere un elenco autonomo. Diversamente resterebbero tendine vuote, cioè campi non
   compilabili.
 - In un archivio condiviso i valori aggiunti da due persone **si sommano**: nessuno perde il
   proprio.

@@ -2,7 +2,8 @@
 
 Lo schermo di ArchiView è diviso in tre zone che restano sempre al loro posto.
 
-![La finestra principale di ArchiView: barra dei pannelli e albero delle cartelle a sinistra, elenco delle schede al centro](/img/vista-griglia.png)
+![La finestra principale di ArchiView: barra dei pannelli e albero delle cartelle a sinistra, elenco delle schede al centro](/img/vista-griglia.png){.light-only}
+![La finestra principale di ArchiView: barra dei pannelli e albero delle cartelle a sinistra, elenco delle schede al centro](/img/vista-griglia-scuro.png){.dark-only}
 
 *Le tre zone: pannelli e cartelle a sinistra, comandi in alto, schede al centro.*
 
@@ -39,7 +40,7 @@ scarico e invio. Su un archivio locale non c'è nulla da guardare.
 - il menu **«⋯»**, che raccoglie il resto: nuovo archivio, importa ed esporta, colonne visibili
   in tabella, cestino, elimina archivio.
 
-Ogni scheda ha due pulsanti diretti — **Modifica** e **Trascrivi** — e un «⋯» che è lo stesso
+Ogni scheda ha due pulsanti diretti, **Modifica** e **Trascrivi**, e un «⋯» che è lo stesso
 menu del tasto destro.
 
 Sotto l'elenco, il **contatore dei risultati**: quando una selezione è attiva, lì compare quante

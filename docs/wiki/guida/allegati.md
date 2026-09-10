@@ -12,6 +12,9 @@ l'originale, la scheda continua a funzionare.
 
 Il visore integrato apre immagini e PDF senza uscire dal programma. I comandi:
 
+![Il visore degli allegati affiancato all'editor, con la barra di zoom, rotazione e filtri](/img/trascrizione.png){.light-only}
+![Il visore degli allegati affiancato all'editor, con la barra di zoom, rotazione e filtri](/img/trascrizione-scuro.png){.dark-only}
+
 | Azione | Come |
 | --- | --- |
 | Ingrandire / ridurre | Rotella del mouse, oppure i tasti <kbd>+</kbd> e <kbd>-</kbd> |

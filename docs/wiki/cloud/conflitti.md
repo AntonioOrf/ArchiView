@@ -13,27 +13,27 @@ Un conflitto vero c'è solo quando due persone hanno cambiato **lo stesso campo*
 
 ## La finestra di risoluzione
 
-Mostra il campo conteso con le due versioni affiancate — la tua e quella del collega — e ti fa
+Mostra il campo conteso con le due versioni affiancate, la tua e quella del collega, e ti fa
 scegliere quale tenere, **una decisione per campo**.
 
 Il punto di partenza è già la scheda **fusa**, cioè con tutte le modifiche non in conflitto già
-incorporate: scegliendo per un campo non butti via il lavoro fatto dall'altro sui campi restanti.
+incorporate: scegliendo per un campo non perdi il lavoro fatto dall'altro sui campi restanti.
 
 ## Le cancellazioni
 
 Se qualcuno ha eliminato una scheda che tu hai modificato, l'app te lo dice invece di far
 sparire il tuo lavoro senza avviso.
 
-## Come averne il meno possibile
+## Come ridurne il numero
 
 1. **Scarica prima di iniziare.** Un conflitto nasce quasi sempre da una copia locale ferma a
    ieri.
 2. **Carica spesso.** Le modifiche accumulate per settimane sono conflitti in attesa.
 3. **Dividetevi il lavoro** per fondo o per serie, non per campo.
-4. Se sapete di dover lavorare in due sullo stesso documento, ditevelo: costa meno di una
-   risoluzione a posteriori.
+4. Se sapete di dover lavorare in due sullo stesso documento, concordatelo in anticipo: è più
+   rapido che risolvere il conflitto a posteriori.
 
-## Se hai scelto male
+## Se hai scelto la versione sbagliata
 
 `Ctrl+Z` subito dopo. Se te ne accorgi più tardi, la scheda ha una
 [cronologia](/dati/cestino-snapshot#4-cronologia-di-una-scheda) da cui recuperare la versione

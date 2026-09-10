@@ -6,14 +6,16 @@
 archivio, una nuova scheda di un tipo specifico o qualunque altra azione del programma.
 
 Non devi ricordare dove sta una funzione: scrivi quello che vuoi fare. Funziona anche per
-sinonimi — «backup» trova l'esportazione, «excel» trova l'import CSV.
+sinonimi: «backup» trova l'esportazione, «excel» trova l'import CSV.
 
-![La palette dei comandi aperta con la parola «esporta» digitata e i comandi corrispondenti](/img/comandi.png)
+![La palette dei comandi aperta con la parola «esporta» digitata e i comandi corrispondenti](/img/comandi.png){.light-only}
+![La palette dei comandi aperta con la parola «esporta» digitata e i comandi corrispondenti](/img/comandi-scuro.png){.dark-only}
 
 Il tasto `?` mostra l'**elenco completo e aggiornato** delle scorciatoie della tua versione.
 Entrambi sono raggiungibili anche dal menu «⋯» sopra l'elenco.
 
-![Il pannello delle scorciatoie da tastiera](/img/scorciatoie.png)
+![Il pannello delle scorciatoie da tastiera](/img/scorciatoie.png){.light-only}
+![Il pannello delle scorciatoie da tastiera](/img/scorciatoie-scuro.png){.dark-only}
 
 ::: tip
 Quando usi un comando dal menu del tasto destro, la sua scorciatoia è scritta accanto alla voce.

@@ -7,11 +7,11 @@ conoscerle **prima** di averne bisogno.
 
 `Ctrl+Z` annulla l'ultima azione, `Ctrl+Y` (o `Ctrl+Maiusc+Z`) la rifà.
 
-Coprono anche le operazioni grosse: un'importazione da CSV di duecento schede, una sostituzione
+Coprono anche le operazioni estese: un'importazione da CSV di duecento schede, una sostituzione
 di testo su un'intera selezione, la fusione di due tag sono **una sola azione annullabile**.
 
-Le scorciatoie non funzionano mentre stai scrivendo dentro un campo di testo — lì `Ctrl+Z`
-annulla la battitura, come ci si aspetta.
+Le scorciatoie non sono attive mentre stai scrivendo dentro un campo di testo: in quel caso
+`Ctrl+Z` annulla la digitazione, come ci si aspetta.
 
 ## 2. Cestino
 
@@ -21,8 +21,11 @@ si cambia nelle impostazioni). Da lì si ripristinano o si eliminano definitivam
 Si apre dal menu «⋯» sopra l'elenco, da **Impostazioni → Dati** e dalla palette dei comandi
 (`Ctrl+K` → «cestino» o «recupera»).
 
+![Il cestino, con le schede eliminate e i pulsanti per ripristinarle](/img/cestino.png){.light-only}
+![Il cestino, con le schede eliminate e i pulsanti per ripristinarle](/img/cestino-scuro.png){.dark-only}
+
 ::: tip Il cestino è tuo, non dell'archivio
-Non viene sincronizzato: in un archivio condiviso nessuno vede quello che hai buttato via, e
+Non viene sincronizzato: in un archivio condiviso nessuno vede ciò che hai eliminato, e
 svuotarlo qui non fa tornare le schede da un'altra macchina. L'eliminazione, quella sì, si
 propaga a tutti come sempre.
 :::
@@ -37,6 +40,9 @@ criteri si sommano, quindi hai sia il dettaglio delle ultime ore sia la storia d
 
 Si trovano nel pannello **Cronologia** della barra laterale, sezione «Snapshot locali». Ci sono
 sempre, anche senza alcuna sincronizzazione attiva.
+
+![Il pannello Cronologia con l'elenco degli snapshot locali](/img/cronologia.png){.light-only}
+![Il pannello Cronologia con l'elenco degli snapshot locali](/img/cronologia-scuro.png){.dark-only}
 
 Da lì puoi **ripristinare** l'archivio a una fotografia precedente. Il ripristino è pensato per
 sopravvivere alla sincronizzazione: le schede che tornano indietro vengono rifirmate e quelle
@@ -64,5 +70,5 @@ giorni, e per quanti giorni conservare il cestino.
 ## Che cosa non coprono
 
 Nessuna di queste reti protegge dal disco rotto o dalla cartella cancellata: cestino e snapshot
-vivono **dentro** la cartella di lavoro. Per quello serve una copia altrove — vedi
+vivono **dentro** la cartella di lavoro. Per quello serve una copia altrove: vedi
 [Backup, export e trasferimento](/dati/backup-export).

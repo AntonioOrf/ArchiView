@@ -34,9 +34,9 @@ Gli allegati vengono sincronizzati **cifrati**: chi ospita i file non è in grad
 
 Una riga riassume sempre la situazione:
 
-- **sincronizzato** — locale e remoto coincidono;
-- **aggiornamenti in entrata** — qualcuno ha caricato modifiche che tu non hai ancora;
-- **modifiche locali da inviare** — hai lavorato e non hai ancora caricato.
+- **sincronizzato**: locale e remoto coincidono;
+- **aggiornamenti in entrata**: qualcuno ha caricato modifiche che tu non hai ancora;
+- **modifiche locali da inviare**: hai lavorato e non hai ancora caricato.
 
 Cliccandoci si aprono i comandi: **controlla** (chiede se c'è qualcosa di nuovo, senza scaricare
 né inviare), **scarica**, **carica**, e il collegamento al Controllo modifiche.
@@ -46,7 +46,7 @@ né inviare), **scarica**, **carica**, e il collegamento al Controllo modifiche.
 1. **Scarica prima di iniziare** a lavorare.
 2. **Carica quando hai finito** una sessione, non una volta al mese: più a lungo si accumulano
    modifiche parallele, più conflitti ci saranno da risolvere.
-3. In gruppo, mettetevi d'accordo su chi lavora su quale fondo. I conflitti si evitano meglio di
+3. In gruppo, concordate chi lavora su quale fondo. I conflitti si evitano più facilmente di
    quanto si risolvano.
 
 Se due persone modificano la stessa scheda, l'app non sovrascrive nulla in silenzio: vedi

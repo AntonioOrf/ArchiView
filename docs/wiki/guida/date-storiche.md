@@ -1,7 +1,7 @@
 # Datazioni storiche
 
 Le date dei documenti d'archivio non sono date da calendario: sono `c. 1340`, `ante 1350`,
-`sec. XIV in.`, `1340-45`, `s.d.`. ArchiView le **interpreta** — senza mai riscriverle — e da
+`sec. XIV in.`, `1340-45`, `s.d.`. ArchiView le **interpreta**, senza mai riscriverle, e da
 quell'interpretazione ricava l'ordinamento cronologico e il filtro per periodo.
 
 ## Come si scrive una data
@@ -20,10 +20,12 @@ Scrivi come scriveresti in un regesto. L'app riconosce:
 | Secolo | `sec. XIV`, `sec. XIV in.`, `sec. XIV ex.`, `sec. XIV med.`, prima e seconda metà |
 | Senza data | `s.d.` |
 
-Sotto il campo, mentre scrivi, l'app dichiara **come ha letto** quello che hai battuto. È il
-punto più utile della funzione: vedi subito se l'ordinamento ti metterà dove ti aspetti.
+Sotto il campo, mentre scrivi, l'app dichiara **come ha letto** quello che hai scritto. È il
+punto più utile della funzione: verifichi subito se l'ordinamento collocherà la scheda dove ti
+aspetti.
 
-![Il campo Data Cronica con il riscontro dell'interpretazione sotto](/img/form-scheda.png)
+![Il campo Data Cronica con il riscontro dell'interpretazione sotto](/img/form-scheda.png){.light-only}
+![Il campo Data Cronica con il riscontro dell'interpretazione sotto](/img/form-scheda-scuro.png){.dark-only}
 
 ## Quello che non viene riconosciuto
 
@@ -41,7 +43,7 @@ Nell'elenco puoi ordinare per il campo data: le schede si dispongono in ordine c
 vero, non alfabetico. Senza questa interpretazione «12 maggio 1340» verrebbe prima di «3 aprile
 1290», perché 1 viene prima di 3.
 
-Le datazioni con solo il termine *ante* si ordinano sulla loro **fine** — non avendo un inizio,
+Le datazioni con il solo termine *ante* si ordinano sulla loro **fine**, non avendo un inizio:
 altrimenti finirebbero in testa all'archivio insieme ai documenti più antichi.
 
 ## Filtrare per periodo
@@ -63,7 +65,7 @@ Sono due filtri distinti, con icone e intestazioni diverse.
 - `circa` **non allarga** l'intervallo di cinque anni: è un'incertezza dichiarata, non una
   quantità che nessuno ha scritto.
 - L'interpretazione **non viene salvata** nella scheda: nel database resta il testo che hai
-  battuto. Se il riconoscimento migliorerà in una versione futura, le tue schede ne
+  scritto. Se il riconoscimento migliorerà in una versione futura, le tue schede ne
   beneficeranno senza che tu debba correggerle.
 - Un tipo di documento che non ha nessun campo di tipo data non compare mai nei risultati di un
   filtro per periodo: mostrarlo equivarrebbe a dire che quella scheda è del Trecento senza

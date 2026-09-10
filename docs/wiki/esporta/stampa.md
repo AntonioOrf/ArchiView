@@ -15,7 +15,8 @@ dei comandi.
 Il layout tabella rispetta le colonne che hai scelto di mostrare: configurale prima nella vista
 tabellare (menu «⋯» → «Colonne visibili»).
 
-![La finestra di stampa: cosa stampare, i tre formati, fondo, autore, data e le opzioni](/img/stampa.png)
+![La finestra di stampa: cosa stampare, i tre formati, fondo, autore, data e le opzioni](/img/stampa.png){.light-only}
+![La finestra di stampa: cosa stampare, i tre formati, fondo, autore, data e le opzioni](/img/stampa-scuro.png){.dark-only}
 
 ## Che cosa stampare
 
@@ -37,9 +38,8 @@ valgono per entrambe le strade, così l'anteprima e il file coincidono.
 
 ## Stampare quello che si ha davanti
 
-C'è anche una seconda strada: **stampa la vista corrente**. Prende la schermata così com'è —
-filtri e ordinamento compresi — e la mette su carta togliendo barra laterale, pulsanti e
-finestre.
+Esiste anche una seconda possibilità: **stampa la vista corrente**. Riporta su carta la schermata
+così com'è, filtri e ordinamento compresi, togliendo barra laterale, pulsanti e finestre.
 
 È la copia di lavoro di ciò che stai guardando; i tre layout sono invece documenti pensati per
 essere letti da qualcun altro.
@@ -48,8 +48,8 @@ essere letti da qualcun altro.
 
 - Le **miniature** degli allegati compaiono solo nel layout «scheda»: un inventario di trecento
   schede non deve caricare trecento immagini. Un allegato senza miniatura resta comunque
-  **elencato** — una scheda che dichiara tre carte e ne mostra due mentirebbe sul proprio
-  contenuto.
+  **elencato**: una scheda che dichiara tre carte e ne mostra due darebbe un'informazione falsa
+  sul proprio contenuto.
 - Le parole incerte di una **bozza OCR** restano marcate anche sulla carta: in stampa quella
   differenza conta.
 - La trascrizione in corso viene salvata prima di comporre il documento: stampi quello che hai

@@ -9,8 +9,8 @@ ArchiView include tre modelli predefiniti: **Imbreviature notarili**, **Atti giu
 **Documenti fiscali**.
 
 Puoi usarli così come sono, oppure **aggiungere** campi tuoi. I campi d'origine e il nome
-restano bloccati — sono riallineati a ogni avvio, quindi una modifica si disferebbe da sola —
-ma tutto ciò che aggiungi resta.
+restano bloccati, perché vengono riallineati a ogni avvio e una modifica si annullerebbe da sola;
+tutto ciò che aggiungi, invece, resta.
 
 ## Creare un modello tuo
 
@@ -39,8 +39,8 @@ condiviso da più modelli, invece di avere un elenco tutto suo.
 
 Due opzioni in più su ciascun campo:
 
-- **obbligatorio** — blocca il salvataggio se resta vuoto;
-- **unico** — non blocca, ma avvisa quando il valore esiste già in un'altra scheda.
+- **obbligatorio**: blocca il salvataggio se resta vuoto;
+- **unico**: non blocca, ma avvisa quando il valore esiste già in un'altra scheda.
 
 ::: tip
 Un campo numerico lasciato vuoto vale «non compilato», non zero. Un archivio in cui ogni campo
@@ -64,8 +64,8 @@ Si può fare anche a posteriori, e anche su molte schede insieme con `Ctrl+Maius
 
 ::: warning
 Cambiare tipo a una scheda già compilata può lasciare senza casa i valori dei campi che il nuovo
-modello non prevede. Prova prima su una scheda sola, o fai un backup — copiare la cartella di
-lavoro basta.
+modello non prevede. Prova prima su una scheda sola, oppure esegui un backup: è sufficiente
+copiare la cartella di lavoro.
 :::
 
 ## In un archivio condiviso

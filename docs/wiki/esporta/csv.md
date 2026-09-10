@@ -10,7 +10,7 @@ e nella palette dei comandi (`Ctrl+K` → «csv» o «excel»).
 
 Una riga per scheda. Le colonne sono:
 
-1. otto colonne fisse — segnatura, tipo di documento, cartella, tag, allegati, data di modifica,
+1. otto colonne fisse: segnatura, tipo di documento, cartella, tag, allegati, data di modifica,
    modificato da, creato da;
 2. tutti i campi dei modelli presenti fra le schede esportate;
 3. l'identificativo interno, come **ultima** colonna (è un codice illeggibile: in testa

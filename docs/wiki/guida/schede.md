@@ -6,16 +6,17 @@ allegati e la sua trascrizione.
 ## Creare una scheda
 
 1. Posizionati nella cartella in cui vuoi metterla.
-2. Usa **Nuova scheda** sopra l'elenco — il chevron accanto al pulsante permette di scegliere
-   subito il tipo di documento — oppure `Ctrl+N`, oppure `Ctrl+K` e scrivi «nuova scheda».
+2. Usa **Nuova scheda** sopra l'elenco (la freccia accanto al pulsante permette di scegliere
+   subito il tipo di documento), oppure `Ctrl+N`, oppure `Ctrl+K` e scrivi «nuova scheda».
 3. Scegli il **modello di documento**: da esso dipendono i campi che vedrai.
 
 ## Compilare i campi
 
-Il modulo mostra solo i campi previsti dal modello scelto — nessun formulario infinito da
-scorrere — e i comandi di salvataggio restano sempre visibili.
+Il modulo mostra solo i campi previsti dal modello scelto, senza formulari interminabili da
+scorrere, e i comandi di salvataggio restano sempre visibili.
 
-![Il modulo di compilazione di una scheda, con archivio, tipo di documento, segnatura e i campi del modello](/img/form-scheda.png)
+![Il modulo di compilazione di una scheda, con archivio, tipo di documento, segnatura e i campi del modello](/img/form-scheda.png){.light-only}
+![Il modulo di compilazione di una scheda, con archivio, tipo di documento, segnatura e i campi del modello](/img/form-scheda-scuro.png){.dark-only}
 
 *Sotto la data, l'app dichiara come l'ha letta: «Letta come: 1340 (circa)».*
 
@@ -27,8 +28,8 @@ Consigli pratici:
 
 - **La segnatura prima di tutto.** È il dato con cui ritroverai il documento e su cui si ordina
   l'elenco.
-- **Sii coerente con i nomi.** «Rossi, Giovanni» e «Giovanni Rossi» sono due voci diverse per il
-  programma. Se ti accorgi tardi di aver usato due grafie, l'[anagrafica](/guida/collegamenti)
+- **Mantieni coerenti le forme dei nomi.** «Rossi, Giovanni» e «Giovanni Rossi» sono due voci
+  distinte per il programma. Se ti accorgi tardi di aver usato due grafie, l'[anagrafica](/guida/collegamenti)
   le unifica in un minuto.
 - **I tag servono per le domande che ti farai dopo**, non per ripetere i campi. Vedi
   [Tag](/guida/tag).
@@ -59,7 +60,7 @@ Clic destro su una scheda nell'elenco (o il «⋯» sulla card, che è lo stesso
 | Voce | A che serve |
 | --- | --- |
 | Modifica / Trascrivi | Aprire i metadati o il testo |
-| Duplica | Documenti quasi identici — atti dello stesso rogito |
+| Duplica | Documenti quasi identici, come atti dello stesso rogito |
 | Sposta, Copia, Taglia | Riorganizzare l'archivio |
 | Collegate | I [rimandi ad altre schede](/guida/collegamenti) |
 | Cronologia | Come è cambiata nel tempo, vedi [Cestino e snapshot](/dati/cestino-snapshot) |

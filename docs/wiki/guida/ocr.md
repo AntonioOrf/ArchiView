@@ -7,8 +7,8 @@ immagine viene inviata a un servizio esterno.
 ::: warning Cosa aspettarsi
 L'OCR è nato per la stampa. Su una scrittura umanistica pulita e ben fotografata dà risultati
 utilizzabili; su una minuscola notarile corsiva del Trecento no. Trattalo come uno strumento di
-**ricerca** — trovare la carta giusta in duecento scansioni — non come un sostituto della
-trascrizione.
+**ricerca**, utile per individuare la carta giusta fra duecento scansioni, non come sostituto
+della trascrizione.
 :::
 
 ## Prima di tutto: installare una lingua
@@ -31,11 +31,15 @@ collega che non ha installato quella lingua non ne subisce le conseguenze.
 
 Dalla scheda, sull'allegato che ti interessa. Le opzioni:
 
+![La finestra dell'OCR, con la scelta delle lingue, della risoluzione e del numero di pagine](/img/ocr.png){.light-only}
+![La finestra dell'OCR, con la scelta delle lingue, della risoluzione e del numero di pagine](/img/ocr-scuro.png){.dark-only}
+
 - **lingue** da usare;
 - **risoluzione (dpi)** per i PDF: più alta significa più preciso e più lento;
 - **numero massimo di pagine**, per non lanciare un lavoro di un'ora su un registro intero.
 
-Il lavoro si può **annullare** mentre gira: ciò che è già stato riconosciuto resta.
+Il riconoscimento si può **annullare** mentre è in corso: ciò che è già stato letto viene
+conservato.
 
 ### Sui PDF, prima si cerca il testo vero
 
@@ -58,8 +62,8 @@ In due posti, con ruoli diversi:
    fondo intero.
 
 2. **Come bozza di trascrizione**, se lo chiedi: il testo viene messo nell'editor della carta
-   corrispondente. Se quella carta ha già una trascrizione, l'app chiede cosa fare —
-   **sostituisci**, **accoda** o **annulla** — e non sovrascrive mai in silenzio.
+   corrispondente. Se quella carta ha già una trascrizione, l'app chiede come procedere
+   (**sostituisci**, **accoda** o **annulla**) e non sovrascrive mai in silenzio.
 
 ### Le parole incerte si vedono
 
@@ -79,14 +83,14 @@ Si può lanciare il riconoscimento su una selezione di schede. In quel caso:
   ogni carta;
 - l'annullamento a metà conserva tutto ciò che è già stato riconosciuto.
 
-Su un fondo di qualche centinaio di scansioni è un lavoro da lasciar girare mentre fai
-altro — l'app resta usabile, ma sul computer sarà l'operazione più pesante in corso.
+Su un fondo di qualche centinaio di scansioni conviene avviarlo e lasciarlo procedere mentre si
+fa altro: l'app resta utilizzabile, ma sarà l'operazione più pesante in esecuzione sul computer.
 
 ## Metodo consigliato
 
 1. Prova su **tre o quattro carte rappresentative** prima di lanciare l'intero fondo: se il
    risultato è illeggibile, cambiare mano non lo migliorerà.
-2. Se la scrittura non si presta, usa comunque l'OCR sulle parti **stampate o tarde** (buste,
+2. Se la scrittura non è adatta, usa comunque l'OCR sulle parti **stampate o tarde** (buste,
    camicie, note di inventario moderne): spesso sono proprio quelle a contenere le segnature
    che cerchi.
-3. Usa `ocr:` per trovare la carta e la trascrizione manuale per il lavoro serio.
+3. Usa `ocr:` per individuare la carta, e la trascrizione manuale per il lavoro filologico.

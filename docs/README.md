@@ -26,6 +26,20 @@ Anteprima dal vivo, con ricarica automatica:
 npm run wiki:dev        # http://localhost:5173/wiki/
 ```
 
+## Gli screenshot
+
+Le schermate in `wiki/public/img/` non si ritagliano a mano: le genera uno script che pilota
+l'app vera con Playwright, su un archivio d'esempio temporaneo. Ogni schermata esiste in due
+versioni, chiara e scura (`nome.png` e `nome-scuro.png`); la pagina mostra quella del tema
+attivo grazie alle classi `light-only` / `dark-only`.
+
+Per rigenerarle tutte dopo un cambio di interfaccia, dal repository dell'app:
+
+```bash
+npm run build-css && npm run build-ts
+node scripts/wiki-screenshots.mjs
+```
+
 ## Pubblicare
 
 `public/wiki/` non è versionata: va rigenerata prima di ogni deploy.

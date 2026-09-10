@@ -23,6 +23,9 @@ in entrata. Non devi registrarlo due volte, e non c'è modo che le due metà div
 I due versi restano **distinti** di proposito: «rimanda a» e «è richiamata da» sono affermazioni
 diverse, e fonderle confonderebbe l'originale con la sua copia.
 
+![Il pannello delle schede collegate, con i rimandi in uscita e in entrata](/img/collegamenti.png){.light-only}
+![Il pannello delle schede collegate, con i rimandi in uscita e in entrata](/img/collegamenti-scuro.png){.dark-only}
+
 I rimandi in entrata si vedono ma non si modificano dalla scheda che li riceve: si tolgono dalla
 scheda che li ha scritti.
 
@@ -38,6 +41,9 @@ un minuto invece che da quaranta schede aperte a mano.
 Da ogni voce si arriva alle schede che la citano, e si possono conservare la grafia scelta e una
 nota.
 
+![L'anagrafica delle persone, con il numero di schede per ciascuna voce](/img/anagrafica.png){.light-only}
+![L'anagrafica delle persone, con il numero di schede per ciascuna voce](/img/anagrafica-scuro.png){.dark-only}
+
 ::: tip
 L'anagrafica non è la fonte del dato: si ricalcola dalle schede a ogni apertura. Se una persona
 sparisce dall'elenco è perché non compare più in nessuna scheda.
@@ -51,6 +57,9 @@ una domanda che quello non può porre: **che forma ha la rete**.
 Serve a vedere quali documenti formano un grappolo, quali restano isolati, quale scheda fa da
 perno. Su un fondo notarile è spesso il modo più rapido per accorgersi che tre carte
 apparentemente scollegate appartengono allo stesso affare.
+
+![Il grafo dei collegamenti: nodi per scheda, frecce per il verso del rimando](/img/grafo.png){.light-only}
+![Il grafo dei collegamenti: nodi per scheda, frecce per il verso del rimando](/img/grafo-scuro.png){.dark-only}
 
 Comandi:
 
