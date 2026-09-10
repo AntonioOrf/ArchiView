@@ -43,7 +43,14 @@ function _menuOnPointerDown(e) {
     if (_menuEl && !_menuEl.contains(e.target)) window.chiudiMenuContestuale(false);
 }
 
-function _menuOnScroll() { window.chiudiMenuContestuale(false); }
+function _menuOnScroll(e) {
+    // Lo scroll DENTRO il menu non deve chiuderlo: da quando le azioni in massa (Fase 1.5)
+    // hanno allungato il menu del record, su finestre basse il menu scorre, e con
+    // l'handler in capture ogni rotellina lo faceva sparire sotto il puntatore. Stessa
+    // lezione del pannello filtri (Fase 1.3).
+    if (_menuEl && e && e.target && e.target.nodeType === 1 && _menuEl.contains(e.target)) return;
+    window.chiudiMenuContestuale(false);
+}
 
 window.chiudiMenuContestuale = function(ripristinaFuoco = false) {
     if (!_menuEl) return;
@@ -85,7 +92,7 @@ window.apriMenuContestuale = function(origine, voci) {
     const menu = document.createElement('div');
     menu.id = 'custom-context-menu';
     menu.setAttribute('role', 'menu');
-    menu.className = 'fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-menu min-w-[190px] max-w-[280px] text-sm text-stone-800 dark:text-stone-100';
+    menu.className = 'fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-menu min-w-[190px] max-w-[280px] max-h-[85vh] overflow-y-auto custom-scroll text-sm text-stone-800 dark:text-stone-100';
     // Fuori schermo finché non è misurato: evita il salto visibile del riposizionamento.
     menu.style.left = '-9999px';
     menu.style.top = '0px';

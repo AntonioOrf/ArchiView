@@ -283,12 +283,25 @@ async function avviaApp() {
                 sottocartelle: !!fSalvati.sottocartelle,
                 daData: typeof fSalvati.daData === 'string' ? fSalvati.daData : '',
                 aData: typeof fSalvati.aData === 'string' ? fSalvati.aData : '',
+                // Fase 3.2 — periodo storico. Numeri conservati come stringhe, come gli
+                // altri controlli del pannello, e validati qui uno per uno.
+                daAnno: /^\d{3,4}$/.test(String(fSalvati.daAnno || '')) ? String(fSalvati.daAnno) : '',
+                aAnno: /^\d{3,4}$/.test(String(fSalvati.aAnno || '')) ? String(fSalvati.aAnno) : '',
                 allegati: fSalvati.allegati === 'si' || fSalvati.allegati === 'no' ? fSalvati.allegati : '',
                 trascrizione: fSalvati.trascrizione === 'si' || fSalvati.trascrizione === 'no' ? fSalvati.trascrizione : ''
             };
         }
         if (Array.isArray(window.statoIniziale.ricercheSalvate)) {
             window.ricercheSalvate = window.statoIniziale.ricercheSalvate.filter(r => r && r.id && r.nome);
+        }
+        // Fase 2.2 — intestazioni e opzioni di stampa (validate chiave per chiave dentro
+        // ripristinaImpostazioniStampa, come i filtri qui sopra).
+        if (typeof window.ripristinaImpostazioniStampa === 'function') {
+            window.ripristinaImpostazioniStampa(window.statoIniziale.stampa);
+        }
+        // Fasi 2.5/2.6 — formato preferito degli export testuali.
+        if (typeof window.ripristinaImpostazioniExportTesto === 'function') {
+            window.ripristinaImpostazioniExportTesto(window.statoIniziale.esportaTesto);
         }
     }
 
@@ -432,6 +445,7 @@ async function avviaApp() {
         'settings-modal': 'chiudiImpostazioni',
         'folder-modal': 'chiudiFolderModal',
         'new-type-modal': 'chiudiNewTypeModal',
+        'campo-proprio-modal': 'chiudiCampoProprioModal',
         'manage-types-modal': 'chiudiManageTypesModal',
         'delete-modal': 'chiudiDeleteModal',
         'unsaved-modal': 'chiudiUnsavedModal',
@@ -439,6 +453,13 @@ async function avviaApp() {
         'share-modal': 'chiudiShareModal',
         'changelog-modal': 'chiudiChangelogModal',
         'issue-modal': 'chiudiIssueModal',
+        'bulk-modal': 'chiudiAzioniMassa',
+        'tag-manager-modal': 'chiudiGestioneTag',
+        'vocab-modal': 'chiudiVocabolari',
+        'duplicati-modal': 'chiudiDuplicati',
+        'authority-modal': 'chiudiAnagrafica',
+        'relazioni-modal': 'chiudiCollegamenti',
+        'grafo-modal': 'chiudiGrafo',
         // Fase 5.3 — prima mancavano: Esc li nascondeva con il fallback `hidden-tab`,
         // che sui modali creati e rimossi al volo lasciava il nodo nel DOM, e sui
         // conflitti di sync abbandonava la callback di risoluzione senza annullarla.
@@ -484,6 +505,27 @@ async function avviaApp() {
         }
 
         if (typeof editingTypeId !== 'undefined') editingTypeId = null;
+        return true;
+    }
+
+    function inCampoDiTesto(el) {
+        if (!el) return false;
+        const tag = (el.tagName || '').toLowerCase();
+        return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+    }
+
+    /**
+     * Vero quando una scorciatoia che agisce sulle SCHEDE può scattare: fuori dai campi
+     * di testo (dove Ctrl+C, Canc e F2 hanno un significato loro), con nessun modale
+     * aperto, e senza una selezione di testo in corso — quella è quasi sempre un utente
+     * che sta copiando una segnatura dalla card, e rubargli Ctrl+C sarebbe il modo più
+     * rapido per rendere la scorciatoia odiosa.
+     */
+    function scorciatoiaSuSchede(e) {
+        if (inCampoDiTesto(document.activeElement)) return false;
+        if (document.querySelector('.modal-overlay:not(.hidden-tab)')) return false;
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed && String(sel).trim() !== '') return false;
         return true;
     }
 
@@ -547,6 +589,67 @@ async function avviaApp() {
             }
         }
 
+        // --- SCORCIATOIE SU SELEZIONE E AZIONI IN MASSA (Fase 1.5) ---
+        //
+        // Tutte guardate da `scorciatoiaSuSchede`: dentro un campo di testo Ctrl+C deve
+        // copiare il testo, non le schede, e sopra un modale aperto nessuna di queste
+        // deve agire su una lista che l'utente in quel momento non sta guardando.
+        if (scorciatoiaSuSchede(e)) {
+            const selezionate = (window.selectedRecords && window.selectedRecords.length) || 0;
+            const k = e.key.toLowerCase();
+            const ctrl = e.ctrlKey || e.metaKey;
+
+            // Ctrl+Maiusc+X va valutato PRIMA di Ctrl+X: `key` con Maiusc è comunque 'x',
+            // e senza questo ordine "cambia tipo" verrebbe intercettato da "taglia".
+            // Fase 2.1: Ctrl+Maiusc+E = CSV, accanto a Ctrl+E = ZIP. Va prima del blocco
+            // Ctrl+E per lo stesso motivo di Ctrl+Maiusc+X: `key` con Maiusc resta 'e'.
+            if (ctrl && e.shiftKey && k === 'e' && selezionate > 0) {
+                e.preventDefault();
+                window.esportaSelezionatiCsv('csv');
+                return;
+            }
+            if (ctrl && e.shiftKey && typeof window.apriAzioneMassa === 'function' && (k === 'm' || k === 't' || k === 'l')) {
+                e.preventDefault();
+                window.apriAzioneMassa(k === 'm' ? 'cartella' : (k === 't' ? 'tipo' : 'tag'));
+                return;
+            }
+            if (ctrl && !e.shiftKey && k === 'a') {
+                e.preventDefault();
+                window.selezionaTuttiIRisultati();
+                return;
+            }
+            if (ctrl && !e.shiftKey && k === 'd') {
+                e.preventDefault();
+                window.azzeraSelezione();
+                return;
+            }
+            if (ctrl && !e.shiftKey && k === 'h' && typeof window.apriAzioneMassa === 'function') {
+                e.preventDefault();
+                window.apriAzioneMassa('sostituisci');
+                return;
+            }
+            // Copia/taglia/esporta/elimina hanno senso solo con una selezione: senza,
+            // devono restare inerti e lasciare il tasto al comportamento nativo.
+            if (selezionate > 0) {
+                if (ctrl && !e.shiftKey && k === 'c') { e.preventDefault(); window.copiaSelezionati(); return; }
+                if (ctrl && !e.shiftKey && k === 'x') { e.preventDefault(); window.tagliaSelezionati(); return; }
+                if (ctrl && !e.shiftKey && k === 'e') { e.preventDefault(); window.esportaSelezionati(); return; }
+                if (e.key === 'Delete' && !ctrl) { e.preventDefault(); window.eliminaSelezionati(); return; }
+                if (e.key === 'F2' && selezionate === 1) { e.preventDefault(); window.editItem(window.selectedRecords[0]); return; }
+            }
+            if (ctrl && !e.shiftKey && k === 'v') {
+                const appunti = ((window.copiedRecordIds && window.copiedRecordIds.length) || 0)
+                    + ((window.cutRecordIds && window.cutRecordIds.length) || 0);
+                if (appunti > 0) {
+                    e.preventDefault();
+                    // `undefined` = cartella corrente, la stessa destinazione del tasto
+                    // destro sullo sfondo (vedi voceMenuIncolla).
+                    window.incollaRecord(undefined);
+                    return;
+                }
+            }
+        }
+
         // Esc -> Chiudi SOLO il modale in primo piano (non tutti in blocco) oppure
         // pulisci la barra di ricerca. La chiusura passa per gli handler dedicati così
         // da eseguire i cleanup (reset iframe PDF, callback di annullamento, ecc.).
@@ -571,6 +674,14 @@ async function avviaApp() {
                 searchInput.blur();
                 if (typeof renderMain === 'function') renderMain();
                 if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
+                return;
+            }
+
+            // Ultimo anello: Esc azzera la selezione. Va DOPO modali e ricerca — una
+            // selezione multipla costruita a fatica non deve sparire per un Esc dato a
+            // una finestra — ed è l'uscita che mancava a chi seleziona con Ctrl+A.
+            if ((window.selectedRecords && window.selectedRecords.length) > 0 && !inCampoDiTesto(document.activeElement)) {
+                window.azzeraSelezione();
             }
         }
     });
@@ -778,7 +889,7 @@ window.esportaSpecificaCartella = async function(folderName) {
         ? appData.manoscritti.filter(m => m.cartella === folderName || (m.cartella || '').startsWith(folderName + '/'))
         : appData.manoscritti.slice();
     if (manoscrittiInCartella.length === 0) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_vuoto_nulla_da", "L'archivio è vuoto, nulla da esportare."), "warning");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_vuoto_nulla_da", "La cartella è vuota, nulla da esportare."), "warning");
         return;
     }
     const ids = manoscrittiInCartella.map(m => m.id);
@@ -792,6 +903,88 @@ window.esportaSpecificaCartella = async function(folderName) {
     }
 };
 
+/**
+ * Fase 2.1 — Esportazione CSV/TSV. Le etichette (CONFIG_CAMPI tradotto) e i nomi dei tipi
+ * viaggiano col messaggio IPC: il main non ha accesso alla i18n né allo store del renderer.
+ */
+window.etichetteColonneExport = function() {
+    const et = {
+        id: window.t('col_id', 'ID'),
+        segnatura: window.t('th_signature', 'Segnatura'),
+        tipoDocumento: window.t('col_type', 'Tipo documento'),
+        cartella: window.t('th_folder', 'Cartella'),
+        tags: window.t('th_tags', 'Tag'),
+        allegati: window.t('th_attachments', 'Allegati'),
+        lastModified: window.t('th_modified', 'Modificato'),
+        modificatoDa: window.t('col_modified_by', 'Modificato da'),
+        creatoDa: window.t('col_created_by', 'Creato da'),
+        // Fase 2.4: `trascrizione` è una chiave di servizio e NON diventa mai una colonna
+        // dell'export, ma è una destinazione dell'import — e le due liste di etichette
+        // devono restare una sola, o import ed export chiamerebbero le cose in modo diverso.
+        trascrizione: window.t('th_transcription', 'Trascrizione')
+    };
+    // Le colonne dei campi riusano l'etichetta della vista tabella: un export che chiama
+    // le cose in modo diverso dalla UI costringe l'utente a ricostruire la corrispondenza.
+    const conf = window.CONFIG_CAMPI || {};
+    const etichetta = window.etichettaCampo || ((k) => (conf[k] && conf[k].label) || k);
+    const campi = new Set(Object.keys(conf));
+    ((typeof appData !== 'undefined' && appData.tipiDocumento) || []).forEach(t => (t.campi || []).forEach(c => campi.add(c)));
+    campi.forEach(k => { et[k] = etichetta(k); });
+    return et;
+};
+
+window.nomiTipiExport = function() {
+    const nomi = {};
+    ((typeof appData !== 'undefined' && appData.tipiDocumento) || []).forEach(t => {
+        const chiave = 'model_' + t.id;
+        const tradotto = window.t(chiave);
+        nomi[t.id] = tradotto && tradotto !== chiave ? tradotto : (t.nome || t.id);
+    });
+    return nomi;
+};
+
+window.esportaCsv = async function(ids, formato = 'csv') {
+    if (!window.apiBrowser || !window.apiBrowser.exportCsv) return;
+    if (!ids || ids.length === 0) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_vuoto_nulla_da", "La cartella è vuota, nulla da esportare."), "warning");
+        return;
+    }
+    // Il main legge il DB dal disco: flush del salvataggio differito.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
+    const res = await window.apiBrowser.exportCsv(ids, {
+        formato,
+        titolo: window.t('dialog_export_csv', 'Esporta in CSV/TSV'),
+        etichette: window.etichetteColonneExport(),
+        nomiTipi: window.nomiTipiExport(),
+        // Fase 3.1: i campi `sì/no` sono booleani nel record, e il main non conosce la
+        // i18n — senza queste due parole scriverebbe `true` in una colonna di Excel.
+        testi: { si: window.t('value_yes', 'Sì'), no: window.t('value_no', 'No') }
+    });
+    if (res && res.success) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
+    } else if (res && !res.canceled) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + (res.error || ''), "error");
+    }
+};
+
+/** CSV di una cartella e delle sue sottocartelle (radice = intero vault, come lo ZIP). */
+window.esportaCartellaCsvSpecifica = async function(folderName, formato = 'csv') {
+    const inCartella = folderName
+        ? appData.manoscritti.filter(m => m.cartella === folderName || (m.cartella || '').startsWith(folderName + '/'))
+        : appData.manoscritti.slice();
+    await window.esportaCsv(inCartella.map(m => m.id), formato);
+};
+
+/** CSV della cartella corrente. */
+window.esportaCartellaCsv = async function(formato = 'csv') {
+    await window.esportaCartellaCsvSpecifica(window.cartellaAttuale, formato);
+};
+
+/** CSV della selezione corrente: a differenza dello ZIP la selezione non viene azzerata. */
+window.esportaSelezionatiCsv = async function(formato = 'csv') {
+    await window.esportaCsv((window.selectedRecords || []).slice(), formato);
+};
+
 window.importaManoscritto = async function() {
     if (!window.apiBrowser || !window.apiBrowser.importZip) return;
     const res = await window.apiBrowser.importZip(window.t("dialog_import_zip", "Importa Archivio JSON"));
@@ -801,9 +994,13 @@ window.importaManoscritto = async function() {
         
         res.manoscritti.forEach(m => {
             if (existingIds.has(m.id)) {
-                m.id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
+                m.id = window.Model.nuovoId();
                 m.titolo = m.titolo ? m.titolo + ' (Copia)' : '';
             }
+            // Fase 3.0 — lo ZIP puo' venire da una versione vecchia dell'app: la scheda va
+            // portata alla forma corrente prima di entrare nell'archivio, o resterebbe
+            // l'unica non migrata (la migrazione gira all'apertura, non all'import).
+            window.Model.normalizzaScheda(m);
             // Essenziale: se l'utente aveva cancellato l'ID, lo stiamo importando esplicitamente, quindi va rimosso dai tombstone!
             if (appData.deletedIds) {
                 appData.deletedIds = appData.deletedIds.filter(id => id !== m.id);
@@ -947,7 +1144,12 @@ window.eliminaSelezionati = async function() {
         // Salviamo i record da eliminare
         const recordDaEliminare = appData.manoscritti.filter(m => window.selectedRecords.includes(m.id));
         const recordSalvati = JSON.parse(JSON.stringify(recordDaEliminare));
-        
+
+        // Fase 4.1 — copia nel cestino prima della rimozione (vedi logic/cestinoLogic.ts).
+        if (typeof window.cestinaRecord === 'function') {
+            await window.cestinaRecord(recordSalvati, window.origineCestino(count));
+        }
+
         appData.manoscritti = appData.manoscritti.filter(m => !window.selectedRecords.includes(m.id));
         
         // Gestione tombstones
@@ -980,8 +1182,22 @@ window.eliminaSelezionati = async function() {
             }
         };
         
+        // Fase 4.5 — ripetizione: rielimina gli id ancora presenti, ricopiandoli nel cestino.
+        const idsEliminati = recordSalvati.map(r => String(r.id));
+        const rifaiFn = async () => {
+            const vivi = appData.manoscritti.filter(m => idsEliminati.includes(String(m.id)));
+            if (vivi.length === 0) return;
+            if (typeof window.cestinaRecord === 'function') {
+                await window.cestinaRecord(vivi, window.origineCestino(vivi.length));
+            }
+            appData.manoscritti = appData.manoscritti.filter(m => !idsEliminati.includes(String(m.id)));
+            if (!appData.deletedIds) appData.deletedIds = [];
+            for (const id of idsEliminati) if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
+            if (window.Store) await window.Store.commit();
+        };
+
         if (window.gestoreAnnullamento) {
-            window.gestoreAnnullamento.registraAzione(`Eliminazione di ${count} record`, ripristinaFn);
+            window.gestoreAnnullamento.registraAzione(`Eliminazione di ${count} record`, ripristinaFn, rifaiFn);
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_eliminati", "{var0} record eliminati.").replace("{var0}", String(count)), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
         }
     };
@@ -1043,25 +1259,92 @@ window.assicuraSelezioneRecord = function(id) {
 window.vociMenuRecord = function(id) {
     const selCount = window.selectedRecords.length;
     const suffisso = selCount > 1 ? ` (${selCount})` : '';
+    // ETICHETTE A UNA O DUE PAROLE. Il menu è largo al massimo 280px e le voci con una
+    // scorciatoia ne lasciano ~150 al testo, che `truncate` taglia senza avvisare: con le
+    // dizioni per esteso metà colonna finiva in "Sposta in un arch…", "Cambia tipo di do…",
+    // "Aggiungi o rimuov…" — cioè tre voci che si distinguevano solo dall'icona.
+    // Allargare il menu non è la soluzione: coprirebbe la scheda su cui si sta agendo.
+    // La dizione estesa non si perde, va nel `title` della voce.
     const voci = [];
     if (selCount === 1) {
-        voci.push({ label: window.t('menu_edit_record', 'Rinomina / Modifica'), icon: 'edit-3', onSelect: () => window.editItem(id) });
+        voci.push({ label: window.t('menu_edit_short', 'Modifica'), title: window.t('menu_edit_record', 'Rinomina / Modifica'), icon: 'edit-3', shortcut: 'F2', onSelect: () => window.editItem(id) });
         voci.push({ label: window.t('btn_transcribe', 'Trascrivi'), icon: 'pen-line', onSelect: () => window.apriTrascrizione(id) });
+        // Fase 3.5 — la voce c'è sempre, anche senza collegamenti: è anche il modo di
+        // scoprire che non ce ne sono, che con un badge condizionale non si distingue da
+        // "non ho guardato".
+        if (typeof window.apriCollegamenti === 'function') {
+            voci.push({ label: window.t('menu_links', 'Collegate'), title: window.t('link_panel_title', 'Schede collegate'), icon: 'link', onSelect: () => window.apriCollegamenti(id) });
+        }
+        if (typeof window.apriGrafo === 'function') {
+            voci.push({ label: window.t('menu_graph', 'Grafo'), title: window.t('graph_title', 'Grafo dei collegamenti'), icon: 'git-fork', onSelect: () => window.apriGrafo() });
+        }
+        // Fase 4.3 — la voce c'è sempre, come "Collegate": è anche il modo di scoprire che
+        // di questa scheda non esiste ancora cronologia, cosa che una voce condizionale
+        // non distinguerebbe da "non ho guardato". Il modale lo dice a parole.
+        if (typeof window.apriStoriaRecord === 'function') {
+            voci.push({ label: window.t('menu_record_history', 'Cronologia'), title: window.t('rec_history_title', 'Cronologia della scheda'), icon: 'history', onSelect: () => window.apriStoriaRecord(id) });
+        }
+        // Fase 2.3 — solo se la scheda ha allegati: offrire l'OCR su una scheda senza
+        // immagini aprirebbe un modale capace solo di dire "non c'è niente da riconoscere",
+        // cioè un comando che non fa nulla. Stesso criterio della palette nella 1.4.
+        if (typeof window.apriOcrModal === 'function') {
+            // Lettura NON distruttiva: `normalizzaAllegati` scriverebbe `m.allegati = []`
+            // sul record, e costruire un menu non è un motivo per modificare il database
+            // (è la stessa trappola evitata in `recordPassaFiltri`, Fase 1.3).
+            const rec = appData.manoscritti.find(x => String(x.id) === String(id));
+            const conAllegati = !!(rec && ((Array.isArray(rec.allegati) && rec.allegati.length) || rec.allegato));
+            if (conAllegati) {
+                voci.push({ label: window.t('menu_ocr_short', 'Riconosci testo'), title: window.t('ocr_menu_entry', 'Riconosci testo (OCR)…'), icon: 'scan-text', onSelect: () => window.apriOcrModal(id, 0) });
+            }
+        }
         voci.push({ separator: true });
     }
-    voci.push({ label: window.t('menu_copy', 'Copia') + suffisso, icon: 'copy', onSelect: () => window.copiaSelezionati() });
-    voci.push({ label: window.t('menu_cut', 'Taglia') + suffisso, icon: 'scissors', onSelect: () => window.tagliaSelezionati() });
-    voci.push({ label: window.t('tooltip_export', 'Esporta') + suffisso, icon: 'upload', onSelect: () => window.esportaSelezionati() });
+    voci.push({ label: window.t('menu_copy', 'Copia') + suffisso, icon: 'copy', shortcut: 'Ctrl+C', onSelect: () => window.copiaSelezionati() });
+    voci.push({ label: window.t('menu_cut', 'Taglia') + suffisso, icon: 'scissors', shortcut: 'Ctrl+X', onSelect: () => window.tagliaSelezionati() });
+    voci.push({ label: window.t('menu_export_zip', 'Esporta ZIP') + suffisso, title: window.t('bulk_export_zip_full', 'Esporta la selezione in ZIP'), icon: 'upload', shortcut: 'Ctrl+E', onSelect: () => window.esportaSelezionati() });
+    voci.push({ label: window.t('menu_export_csv', 'Esporta CSV') + suffisso, title: window.t('bulk_export_csv', 'Esporta selezione in CSV'), icon: 'table', shortcut: 'Ctrl+Maiusc+E', onSelect: () => window.esportaSelezionatiCsv('csv') });
+    // Fase 2.2. `apriStampa('selezione')` e non la stampa immediata: il layout è una
+    // scelta, e stampare venti schede nel formato sbagliato costa carta vera.
+    if (typeof window.apriStampa === 'function') {
+        voci.push({ label: window.t('menu_print_short', 'Stampa') + suffisso, title: window.t('print_cmd_selection', 'Stampa la selezione'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa('selezione') });
+    }
+    // Fasi 2.5/2.6. Un'unica voce per cinque formati: la scelta fra RTF e BibTeX è una
+    // domanda del modale, non del menu — cinque voci qui renderebbero il menu illeggibile.
+    if (typeof window.apriEsportaTesto === 'function') {
+        voci.push({ label: window.t('menu_export_text', 'Esporta testo') + suffisso, title: window.t('tx_cmd_selection', 'Esporta la trascrizione o la citazione'), icon: 'file-output', onSelect: () => window.apriEsportaTesto('selezione') });
+    }
+
+    // Fase 1.5 — le azioni in massa vivono QUI e non in una barra: la barra della
+    // selezione era stata rimossa nella 1.1 perché spingeva in basso le schede a ogni
+    // click. Sotto un'intestazione, perché agiscono su TUTTA la selezione mentre le voci
+    // sopra ne agiscono anche su una sola: l'intestazione dice quante schede si stanno
+    // per cambiare, che è l'informazione che manca proprio nel momento del rischio.
+    if (typeof window.apriAzioneMassa === 'function') {
+        voci.push({ separator: true });
+        voci.push({ heading: true, label: selCount > 1
+            ? window.t('menu_bulk_on', 'Su {var0} schede').replace('{var0}', String(selCount))
+            : window.t('menu_bulk_on_one', 'Su questa scheda') });
+        voci.push({ label: window.t('menu_bulk_move', 'Sposta'), title: window.t('bulk_move_title', 'Sposta in una cartella'), icon: 'folder-input', shortcut: 'Ctrl+Maiusc+M', onSelect: () => window.apriAzioneMassa('cartella') });
+        voci.push({ label: window.t('menu_bulk_type', 'Cambia tipo'), title: window.t('bulk_type_title', 'Cambia tipo di documento'), icon: 'shapes', shortcut: 'Ctrl+Maiusc+T', onSelect: () => window.apriAzioneMassa('tipo') });
+        voci.push({ label: window.t('menu_bulk_tag', 'Modifica tag'), title: window.t('bulk_tag_title', 'Aggiungi o rimuovi tag'), icon: 'tags', shortcut: 'Ctrl+Maiusc+L', onSelect: () => window.apriAzioneMassa('tag') });
+        voci.push({ label: window.t('menu_bulk_replace', 'Sostituisci'), title: window.t('bulk_replace_title', 'Trova e sostituisci'), icon: 'replace', shortcut: 'Ctrl+H', onSelect: () => window.apriAzioneMassa('sostituisci') });
+        if (typeof window.ocrSelezionati === 'function') {
+            voci.push({ label: window.t('menu_bulk_ocr', 'OCR'), title: window.t('ocr_bulk_title', 'OCR delle schede selezionate'), icon: 'scan-text', onSelect: () => window.ocrSelezionati() });
+        }
+    }
+
     voci.push({ separator: true });
-    voci.push({ label: window.t('tooltip_delete', 'Elimina') + suffisso, icon: 'trash-2', danger: true, onSelect: () => window.eliminaSelezionati() });
+    voci.push({ label: window.t('tooltip_delete', 'Elimina') + suffisso, icon: 'trash-2', danger: true, shortcut: 'Canc', onSelect: () => window.eliminaSelezionati() });
     // "Deseleziona" viveva solo nella barra rimossa: senza, con una selezione multipla non
     // ci sarebbe più modo esplicito di azzerarla (il click su una card la sostituisce, ma
     // non è la stessa cosa quando le schede selezionate sono su più pagine).
     if (selCount > 0) {
         voci.push({ separator: true });
+        voci.push(window.voceSelezionaTutti());
         voci.push({
             label: window.t('btn_clear_selection', 'Deseleziona') + suffisso,
             icon: 'x',
+            shortcut: 'Ctrl+D',
             onSelect: () => window.azzeraSelezione()
         });
     }
@@ -1077,8 +1360,30 @@ window.showFolderContextMenu = function(e) {
     // Mostra solo se clicchiamo nello sfondo del view-list
     if (e.target.closest('.card-scheda')) return;
 
+    // Fase 1.5: "Seleziona tutti i risultati" ha bisogno di un punto di partenza che NON
+    // sia una scheda — cliccare su una la seleziona da sola — e lo sfondo della lista è
+    // l'unico posto in cui non c'è nulla di selezionato su cui il comando possa confondersi.
+    const voci = [window.voceSelezionaTutti()];
     const voceIncolla = window.voceMenuIncolla(null);
-    if (voceIncolla) window.apriMenuContestuale(e, [voceIncolla]);
+    if (voceIncolla) voci.push({ separator: true }, voceIncolla);
+    window.apriMenuContestuale(e, voci);
+};
+
+/**
+ * Voce condivisa fra il menu di una scheda e quello dello sfondo: la selezione totale è
+ * il presupposto di ogni azione in massa e deve raggiungersi da entrambi, senza che le
+ * due strade possano divergere sull'etichetta o sul conteggio.
+ */
+window.voceSelezionaTutti = function() {
+    const totale = typeof window.getManoscrittiFiltrati === 'function' ? window.getManoscrittiFiltrati().length : 0;
+    return {
+        label: window.t('menu_select_all_short', 'Seleziona tutto') + (totale > 0 ? ` (${totale})` : ''),
+        title: window.t('menu_select_all', 'Seleziona tutti i risultati'),
+        icon: 'check-square',
+        shortcut: 'Ctrl+A',
+        disabled: totale === 0,
+        onSelect: () => window.selezionaTuttiIRisultati()
+    };
 };
 
 // Voce "Incolla" condivisa fra sfondo lista e cartelle: null se non c'è nulla negli appunti.
@@ -1115,17 +1420,36 @@ window.vociMenuCartella = function(folderPath) {
     const percorsoCreazione = isRadice ? '' : folderPath;
     const voci = [];
 
-    voci.push({ label: window.t('menu_new_record_here', 'Crea nuova scheda'), icon: 'file-plus', onSelect: () => window.creaSchedaContext(percorsoCreazione) });
-    voci.push({ label: window.t('menu_new_folder_here', 'Crea nuova cartella'), icon: 'folder-plus', onSelect: () => window.mostraAggiungiCartellaContext(percorsoCreazione) });
+    voci.push({ label: window.t('menu_new_record_short', 'Nuova scheda'), title: window.t('menu_new_record_here', 'Crea nuova scheda'), icon: 'file-plus', onSelect: () => window.creaSchedaContext(percorsoCreazione) });
+    voci.push({ label: window.t('menu_new_folder_short', 'Nuova cartella'), title: window.t('menu_new_folder_here', 'Crea nuova cartella'), icon: 'folder-plus', onSelect: () => window.mostraAggiungiCartellaContext(percorsoCreazione) });
 
     if (!isRadice) {
         voci.push({ separator: true });
-        voci.push({ label: window.t('menu_rename_folder', 'Rinomina cartella'), icon: 'edit-2', onSelect: () => window.rinominaCartellaDaSidebar(folderPath) });
-        voci.push({ label: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) });
-        voci.push({ label: window.t('menu_open_in_explorer', 'Apri in Esplora Risorse'), icon: 'folder-open', onSelect: () => window.apriCartellaInEsploraRisorse(folderPath) });
+        voci.push({ label: window.t('menu_rename_short', 'Rinomina'), title: window.t('menu_rename_folder', 'Rinomina cartella'), icon: 'edit-2', onSelect: () => window.rinominaCartellaDaSidebar(folderPath) });
+        voci.push({ label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) });
+        voci.push({ label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('menu_export_folder_csv', 'Esporta cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsvSpecifica(folderPath, 'csv') });
+        // Fase 2.2 — la stampa di una cartella parte SEMPRE navigandoci dentro: gli ambiti
+        // del modale si calcolano sulla cartella corrente, e una stampa che dice "Archivio
+        // corrente" mentre ne stampa un altro sarebbe una trappola silenziosa.
+        if (typeof window.apriStampa === 'function') {
+            voci.push({ label: window.t('menu_print_short', 'Stampa'), title: window.t('menu_print_folder', 'Stampa cartella'), icon: 'printer', onSelect: () => {
+                window.vaiACartella(folderPath);
+                window.apriStampa('cartella');
+            } });
+        }
+        // Come la stampa: si NAVIGA prima nella cartella, perché l'ambito del modale si
+        // calcola sulla cartella corrente e un export che dice "Archivio corrente" mentre
+        // ne esporta un altro sarebbe una trappola silenziosa (lezione della 2.2).
+        if (typeof window.apriEsportaTesto === 'function') {
+            voci.push({ label: window.t('menu_export_text', 'Esporta testo'), title: window.t('menu_export_text_folder', 'Esporta il testo della cartella'), icon: 'file-output', onSelect: () => {
+                window.vaiACartella(folderPath);
+                window.apriEsportaTesto('cartella');
+            } });
+        }
+        voci.push({ label: window.t('menu_explorer_short', 'Esplora risorse'), title: window.t('menu_open_in_explorer', 'Apri in Esplora Risorse'), icon: 'folder-open', onSelect: () => window.apriCartellaInEsploraRisorse(folderPath) });
         voci.push({ separator: true });
-        voci.push({ label: window.t('menu_copy_folder', 'Copia cartella'), icon: 'copy', onSelect: () => window.copiaCartella(folderPath) });
-        voci.push({ label: window.t('menu_cut_folder', 'Taglia cartella'), icon: 'scissors', onSelect: () => window.tagliaCartella(folderPath) });
+        voci.push({ label: window.t('menu_copy', 'Copia'), title: window.t('menu_copy_folder', 'Copia cartella'), icon: 'copy', onSelect: () => window.copiaCartella(folderPath) });
+        voci.push({ label: window.t('menu_cut', 'Taglia'), title: window.t('menu_cut_folder', 'Taglia cartella'), icon: 'scissors', onSelect: () => window.tagliaCartella(folderPath) });
         voci.push({ label: window.t('menu_delete_folder', 'Elimina cartella'), icon: 'trash-2', danger: true, onSelect: () => window.eliminaCartellaDaSidebar(folderPath) });
     }
 
@@ -1220,7 +1544,7 @@ window.incollaRecord = async function(targetFolderOverride) {
         const manoscrittiDaCopiare = appData.manoscritti.filter(m => m.cartella === window.copiedFolderPath || (m.cartella && m.cartella.startsWith(prefix)));
         
         if (manoscrittiDaCopiare.length === 0) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_copiato_vuoto", "L'archivio copiato è vuoto."), "warning");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_copiato_vuoto", "La cartella copiata è vuota."), "warning");
             window.copiedFolderPath = null;
             return;
         }
@@ -1265,13 +1589,32 @@ window.incollaRecord = async function(targetFolderOverride) {
     // Se stiamo incollando record tagliati (Spostamento singolo/multiplo)
     if (window.cutRecordIds && window.cutRecordIds.length > 0) {
         let movedCount = 0;
+        // Fase 4.5 — si annota da DOVE veniva ogni scheda, non solo quante ne sono state
+        // spostate: uno spostamento multiplo può pescare da cartelle diverse, e riportarle
+        // tutte in una sola sarebbe un secondo spostamento sbagliato spacciato per undo.
+        const provenienza = [];
         appData.manoscritti.forEach(m => {
             if (window.cutRecordIds.includes(m.id)) {
+                provenienza.push({ id: String(m.id), cartella: m.cartella });
                 m.cartella = targetFolder;
                 movedCount++;
             }
         });
         if (movedCount > 0) {
+            const spostaIn = async (destinazioni) => {
+                for (const [id, cartella] of destinazioni) {
+                    const m = appData.manoscritti.find(x => String(x.id) === String(id));
+                    if (m) m.cartella = cartella;
+                }
+                if (window.Store) await window.Store.commit();
+            };
+            if (window.gestoreAnnullamento) {
+                window.gestoreAnnullamento.registraAzione(
+                    window.t('undo_move_records', 'Spostamento di {var0} schede').replace('{var0}', String(movedCount)),
+                    () => spostaIn(provenienza.map(p => [p.id, p.cartella])),
+                    () => spostaIn(provenienza.map(p => [p.id, targetFolder]))
+                );
+            }
             if (window.Store) {
                 await window.Store.commit();
             } else {
@@ -1351,17 +1694,21 @@ function mostraErroreAccessoNegato(account: string) {
 
 // Listeners globali per shortcut da tastiera
 document.addEventListener('keydown', (e) => {
-    // Gestione Ctrl+Z o Cmd+Z per annullare
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        // Preveniamo l'undo se siamo in un input text nativo
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        const isInput = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
-        
-        if (!isInput) {
-            e.preventDefault();
-            if (window.gestoreAnnullamento) {
-                window.gestoreAnnullamento.annullaUltimaAzione();
-            }
-        }
-    }
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const tasto = e.key.toLowerCase();
+    if (tasto !== 'z' && tasto !== 'y') return;
+
+    // Nessun undo dentro a un campo di testo: lì il comando è quello nativo del controllo,
+    // e rubarglielo significherebbe annullare l'ultima azione sull'ARCHIVIO mentre l'utente
+    // crede di annullare l'ultima parola che ha scritto.
+    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+    const isInput = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
+    if (isInput) return;
+    if (!window.gestoreAnnullamento) return;
+
+    e.preventDefault();
+    // Fase 4.5 — le due convenzioni per il redo (Ctrl+Y e Ctrl+Maiusc+Z) valgono entrambe:
+    // sono abitudini diverse di ambienti diversi, e chi arriva dall'una non trova l'altra.
+    if (tasto === 'y' || (tasto === 'z' && e.shiftKey)) window.gestoreAnnullamento.ripetiUltimaAzione();
+    else window.gestoreAnnullamento.annullaUltimaAzione();
 });

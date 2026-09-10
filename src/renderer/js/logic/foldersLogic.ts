@@ -133,6 +133,14 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
         const cartelleDaEliminare = appData.cartelle.filter(c => c === pathDaEliminare || c.startsWith(prefix));
         const recordSalvati = JSON.parse(JSON.stringify(manoscrittiDaEliminare));
 
+        // Fase 4.1 — le schede travolte dall'eliminazione dell'archivio finiscono nel
+        // cestino come quelle eliminate una per una: è anzi il caso in cui la rete serve di
+        // più, perché qui l'utente ne cancella molte con un gesto solo e il conteggio nella
+        // conferma è tutto ciò che ha visto di loro.
+        if (typeof window.cestinaRecord === 'function' && recordSalvati.length) {
+            await window.cestinaRecord(recordSalvati, nomeVisivo);
+        }
+
         // Elimina anche tutte le sottocartelle
         const foldersToDel = appData.cartelle.filter(c => c === pathDaEliminare || c.startsWith(prefix));
         appData.cartelle = appData.cartelle.filter(c => !foldersToDel.includes(c));
@@ -216,59 +224,80 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
         
         if (nuovoPath === vecchioPath) return;
 
-        const prefixVecchia = vecchioPath + '/';
-        const prefixNuova = nuovoPath + '/';
+        await window.applicaRinominaCartella(vecchioPath, nuovoPath);
 
-        const settings = await window.apiSettings.get();
-        const username = settings.username || 'Anonimo';
-
-        // Aggiorna cartelle
-        if (!appData.deletedCartelle) appData.deletedCartelle = [];
-        appData.cartelle = appData.cartelle.map(c => {
-            let nuovoC = c;
-            if (c === vecchioPath) nuovoC = nuovoPath;
-            else if (c.startsWith(prefixVecchia)) nuovoC = c.replace(vecchioPath, nuovoPath);
-            
-            if (nuovoC !== c) {
-                if (!appData.deletedCartelle.includes(c)) appData.deletedCartelle.push(c);
-                appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== nuovoC);
-            }
-            return nuovoC;
-        });
-
-        // Aggiorna manoscritti
-        appData.manoscritti.forEach(m => {
-            if (m.cartella === vecchioPath) {
-                m.cartella = nuovoPath;
-                m.lastModified = Date.now();
-                m.modificatoDa = username;
-            } else if (m.cartella && m.cartella.startsWith(prefixVecchia)) {
-                m.cartella = m.cartella.replace(vecchioPath, nuovoPath);
-                m.lastModified = Date.now();
-                m.modificatoDa = username;
-            }
-        });
-
-        if (window.cartellaAttuale === vecchioPath) window.cartellaAttuale = nuovoPath;
-        else if (window.cartellaAttuale.startsWith(prefixVecchia)) {
-            window.cartellaAttuale = window.cartellaAttuale.replace(vecchioPath, nuovoPath);
+        // Fase 4.5 — una rinomina è la sua stessa inversa: annullarla è rinominare
+        // all'indietro. È il motivo per cui il corpo dell'operazione è stato estratto in
+        // `applicaRinominaCartella` invece di essere ricostruito a mano nell'undo — due
+        // copie della stessa aritmetica di percorsi divergerebbero al primo caso strano
+        // (i sotto-archivi, `cartellaAttuale`, i tombstone).
+        if (window.gestoreAnnullamento) {
+            window.gestoreAnnullamento.registraAzione(
+                window.t('undo_rename_folder', 'Rinomina di "{var0}"').replace('{var0}', String(nomeAttuale)),
+                () => window.applicaRinominaCartella(nuovoPath, vecchioPath),
+                () => window.applicaRinominaCartella(vecchioPath, nuovoPath)
+            );
         }
-        
-        // Aggiorna espansione
-        if (window.cartelleEspanse.has(vecchioPath)) {
-            window.cartelleEspanse.delete(vecchioPath);
-            window.cartelleEspanse.add(nuovoPath);
-        }
-
-        if (window.Store) await window.Store.commit();
-        else {
-            await salvaTutto();
-            renderSidebar();
-            renderMain();
-        }
-        aggiornaSelectCartelle();
         mostraMessaggio(window.t("msg_folder_renamed"), "success");
     });
 }
+
+/**
+ * Il corpo della rinomina: percorsi, record, tombstone, cartella corrente ed espansione.
+ * Separato dal modale perché è anche l'operazione inversa di se stesso (vedi sopra).
+ */
+window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
+    if (!vecchioPath || !nuovoPath || vecchioPath === nuovoPath) return;
+    const prefixVecchia = vecchioPath + '/';
+
+    const settings = window.apiSettings ? await window.apiSettings.get() : {};
+    const username = settings.username || 'Anonimo';
+
+    // Aggiorna cartelle
+    if (!appData.deletedCartelle) appData.deletedCartelle = [];
+    appData.cartelle = appData.cartelle.map(c => {
+        let nuovoC = c;
+        if (c === vecchioPath) nuovoC = nuovoPath;
+        else if (c.startsWith(prefixVecchia)) nuovoC = c.replace(vecchioPath, nuovoPath);
+        
+        if (nuovoC !== c) {
+            if (!appData.deletedCartelle.includes(c)) appData.deletedCartelle.push(c);
+            appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== nuovoC);
+        }
+        return nuovoC;
+    });
+
+    // Aggiorna manoscritti
+    appData.manoscritti.forEach(m => {
+        if (m.cartella === vecchioPath) {
+            m.cartella = nuovoPath;
+            m.lastModified = Date.now();
+            m.modificatoDa = username;
+        } else if (m.cartella && m.cartella.startsWith(prefixVecchia)) {
+            m.cartella = m.cartella.replace(vecchioPath, nuovoPath);
+            m.lastModified = Date.now();
+            m.modificatoDa = username;
+        }
+    });
+
+    if (window.cartellaAttuale === vecchioPath) window.cartellaAttuale = nuovoPath;
+    else if (window.cartellaAttuale.startsWith(prefixVecchia)) {
+        window.cartellaAttuale = window.cartellaAttuale.replace(vecchioPath, nuovoPath);
+    }
+    
+    // Aggiorna espansione
+    if (window.cartelleEspanse.has(vecchioPath)) {
+        window.cartelleEspanse.delete(vecchioPath);
+        window.cartelleEspanse.add(nuovoPath);
+    }
+
+    if (window.Store) await window.Store.commit();
+    else {
+        await salvaTutto();
+        renderSidebar();
+        renderMain();
+    }
+    aggiornaSelectCartelle();
+};
 
 

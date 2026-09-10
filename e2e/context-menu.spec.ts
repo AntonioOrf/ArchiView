@@ -43,7 +43,7 @@ test.describe('Menu contestuale e overflow', () => {
     await page.keyboard.press('ArrowUp');
     await expect(voci.first()).toBeFocused();
 
-    // La prima voce su selezione singola è "Rinomina / Modifica" → apre il form.
+    // La prima voce su selezione singola è "Modifica" (title: "Rinomina / Modifica") → form.
     await page.keyboard.press('Enter');
     await expect(page.locator('#custom-context-menu')).toBeHidden();
     await expect(page.locator('#manoscritto-form')).toBeVisible();
@@ -60,9 +60,13 @@ test.describe('Menu contestuale e overflow', () => {
     await overflow.click();
 
     const menu = page.locator('#custom-context-menu');
-    await expect(menu).toContainText('Rinomina cartella');
-    await expect(menu).toContainText('Esplora Risorse');
-    await expect(menu).toContainText('Crea nuova scheda');
+    // Etichette a una o due parole: il menu e' largo 280px e `truncate` taglia in silenzio.
+    // La dizione estesa resta nel `title`, che e' cio' che l'asserzione qui sotto verifica
+    // insieme all'etichetta breve.
+    await expect(menu).toContainText('Rinomina');
+    await expect(menu).toContainText('Esplora risorse');
+    await expect(menu).toContainText('Nuova scheda');
+    await expect(menu.locator('[title="Rinomina cartella"]')).toHaveCount(1);
   });
 
   test('le azioni multiple stanno nel tasto destro, non in una barra', async ({ page, userDataDir }) => {
@@ -87,7 +91,7 @@ test.describe('Menu contestuale e overflow', () => {
     await page.locator(`#card-${ids[0]}`).click({ button: 'right' });
     const menu = page.locator('#custom-context-menu');
     await expect(menu).toBeVisible();
-    for (const voce of ['Copia (2)', 'Taglia (2)', 'Esporta (2)', 'Elimina (2)']) {
+    for (const voce of ['Copia (2)', 'Taglia (2)', 'Esporta ZIP (2)', 'Elimina (2)']) {
       await expect(menu.locator('button', { hasText: voce })).toHaveCount(1);
     }
 

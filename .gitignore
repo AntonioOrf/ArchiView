@@ -73,8 +73,9 @@ start-two-instances.bat
 test-appdata/
 Gemini.md
 artifacts/
-REFACTOR_EXECCOMMAND_TODO.md
-PERF_LOWEND_TODO.md
+# Piani e documenti di lavoro locali (roadmap, TODO di fase): non fanno parte del
+# prodotto e cambiano a ogni sessione. CODEMAP.md e CLAUDE.md sono ignorati sopra.
+*_TODO.md
 ROADMAP.md
 
 # Test unit locali di sicurezza

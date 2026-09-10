@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { state } = require('../workspaceManager');
 const { extractZipStreaming } = require('./zipStreaming');
+const { generaCsv } = require('./csvExport');
+const { leggiDb, recordsRichiesti, nomeFileSicuro } = require('./recordSelection');
 
 function setupExportImportIpc() {
   ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
@@ -75,6 +77,83 @@ function setupExportImportIpc() {
         
         archive.finalize();
     });
+  });
+
+  // Fase 2.1 — Export CSV/TSV. Il main resta l'unico a toccare il disco; etichette e nomi
+  // dei tipi arrivano dal renderer perché la i18n vive solo lì.
+  ipcMain.handle('export-csv', async (event, ids, opzioni) => {
+    if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
+    const opt = opzioni || {};
+    const formato = opt.formato === 'tsv' ? 'tsv' : 'csv';
+
+    try {
+      const db = await leggiDb();
+      if (!db) return { success: false, error: 'Database non trovato' };
+      // L'ordine della selezione arriva dal renderer: preservarlo rende l'export
+      // riproducibile rispetto a quello che l'utente vede a schermo (`recordSelection`).
+      const toExport = recordsRichiesti(db, ids);
+      if (toExport.length === 0) return { success: false, error: "Nessun record trovato per l'esportazione" };
+
+      const contenuto = generaCsv(toExport, db.tipiDocumento || [], {
+        formato,
+        etichette: opt.etichette || {},
+        nomiTipi: opt.nomiTipi || {}
+      });
+
+      const safeBase = nomeFileSicuro(toExport.length === 1 ? toExport[0].segnatura : 'Schedatura', 'Schedatura');
+      const result = await dialog.showSaveDialog({
+        title: opt.titolo || 'Esporta in CSV',
+        defaultPath: `${safeBase}.${formato}`,
+        filters: formato === 'tsv'
+          ? [{ name: 'TSV (tab-separated)', extensions: ['tsv'] }]
+          : [{ name: 'CSV (Excel, R, Python)', extensions: ['csv'] }]
+      });
+      if (result.canceled || !result.filePath) return { success: false, canceled: true };
+
+      await fs.promises.writeFile(result.filePath, contenuto, 'utf8');
+      return { success: true, count: toExport.length, path: result.filePath };
+    } catch (e) {
+      return { success: false, error: e && e.message ? e.message : String(e) };
+    }
+  });
+
+  // Fase 2.4 — Import CSV. Il main fa SOLO ciò che il renderer non può fare: il dialogo e la
+  // lettura del file. L'analisi e la costruzione delle schede stanno in `shared/csvImport.ts`,
+  // che gira nel renderer, così il wizard ricalcola l'anteprima a ogni tendina cambiata senza
+  // un giro di IPC per volta — e soprattutto perché l'anteprima e l'import definitivo devono
+  // passare per lo STESSO codice, o il dry-run non prova nulla.
+  //
+  // ⚠️ Il file viene letto come UTF-8 con una riserva su Windows: i CSV salvati da Excel in
+  // "CSV (delimitato da separatore di elenco)" sono in ANSI/Windows-1252, e letti come UTF-8
+  // riempirebbero di caratteri di sostituzione proprio le diacritiche di un archivio italiano.
+  // Il riconoscimento è per presenza di U+FFFD, che in un UTF-8 valido non compare mai.
+  ipcMain.handle('import-csv-leggi', async (event, titolo) => {
+    if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
+    const result = await dialog.showOpenDialog({
+      title: titolo || 'Importa da CSV',
+      filters: [
+        { name: 'CSV / TSV', extensions: ['csv', 'tsv', 'txt'] },
+        { name: 'Tutti i file', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    });
+    if (result.canceled || result.filePaths.length === 0) return { success: false, canceled: true };
+
+    const percorso = result.filePaths[0];
+    try {
+      const buffer = await fs.promises.readFile(percorso);
+      // 40 MB: un CSV di schedatura sta in pochi MB, e oltre questa soglia il costo non è il
+      // file ma le decine di migliaia di righe da rendere nell'anteprima del wizard.
+      if (buffer.length > 40 * 1024 * 1024) return { success: false, error: 'File troppo grande (oltre 40 MB)' };
+
+      let testo = buffer.toString('utf8');
+      if (testo.indexOf('�') !== -1) {
+        testo = buffer.toString('latin1');
+      }
+      return { success: true, testo, path: percorso, nome: path.basename(percorso) };
+    } catch (e) {
+      return { success: false, error: e && e.message ? e.message : String(e) };
+    }
   });
 
   ipcMain.handle('import-zip', async () => {

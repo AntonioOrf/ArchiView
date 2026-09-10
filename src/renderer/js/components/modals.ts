@@ -185,23 +185,49 @@ window.chiudiModalDocumenti = function() {
     document.getElementById('docs-modal').classList.add('hidden-tab');
 }
 
+/**
+ * Fase 4.5 — le operazioni sugli allegati fatte dal modale "Documenti" scrivono DIRETTAMENTE
+ * sul record (a differenza di quelle nel form, che passano dal salvataggio e sono già coperte
+ * dall'annullamento della modifica): rinomina e riordino avevano quindi il difetto opposto a
+ * ogni altra azione dell'app, cioè nessuna via di ritorno. Qui si registra l'array di prima e
+ * quello di dopo, che è l'intero stato dell'operazione.
+ */
+function _mdRegistraUndoAllegati(id, descrizione, prima, dopo) {
+    if (!window.gestoreAnnullamento) return;
+    const applica = async (stato) => {
+        const m = appData.manoscritti.find(x => String(x.id) === String(id));
+        if (!m) return;
+        m.allegati = JSON.parse(JSON.stringify(stato));
+        m.lastModified = Date.now();
+        await salvaTutto();
+        if (typeof renderMain === 'function') renderMain();
+        const aperto = document.getElementById('docs-modal');
+        if (aperto && !aperto.classList.contains('hidden-tab')) window.apriModalDocumenti(id);
+    };
+    window.gestoreAnnullamento.registraAzione(descrizione,
+        () => applica(prima), () => applica(dopo));
+}
+
 window.rinominaAllegatoDaModal = function(id, index) {
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m) return;
     // Usa helper condiviso
     const allegatiRender = normalizzaAllegati(m);
     const nomeAttuale = allegatiRender[index].originalName || '';
+    const prima = JSON.parse(JSON.stringify(allegatiRender));
 
     window.apriRenameModal(nomeAttuale, async (nuovoNome) => {
         allegatiRender[index].originalName = nuovoNome;
         m.allegati = allegatiRender;
-        
+
         const settings = await window.apiSettings.get();
         const username = settings.username || 'Anonimo';
         m.lastModified = Date.now();
         m.modificatoDa = username;
 
         await salvaTutto();
+        _mdRegistraUndoAllegati(id, window.t('undo_rename_attachment', 'Rinomina di un allegato'),
+            prima, JSON.parse(JSON.stringify(m.allegati)));
         if (typeof renderMain === 'function') renderMain();
         window.apriModalDocumenti(id);
     });
@@ -213,6 +239,7 @@ window.spostaAllegatoDaModal = async function(id, index, direction) {
     if (!m || !Array.isArray(m.allegati)) return;
     const target = index + direction;
     if (target < 0 || target >= m.allegati.length) return;
+    const prima = JSON.parse(JSON.stringify(m.allegati));
     [m.allegati[index], m.allegati[target]] = [m.allegati[target], m.allegati[index]];
 
     const settings = await window.apiSettings.get();
@@ -221,6 +248,8 @@ window.spostaAllegatoDaModal = async function(id, index, direction) {
     m.modificatoDa = username;
 
     await salvaTutto();
+    _mdRegistraUndoAllegati(id, window.t('undo_reorder_attachments', 'Riordino degli allegati'),
+        prima, JSON.parse(JSON.stringify(m.allegati)));
     if (typeof renderMain === 'function') renderMain();
     await window.apriModalDocumenti(id);
 

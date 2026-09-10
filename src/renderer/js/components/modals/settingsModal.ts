@@ -116,6 +116,47 @@
                             </div>
                         </div>
 
+                        <!-- Fase 2.3 — le lingue dell'OCR stanno fra i dati e non fra le
+                             preferenze generali: sono file scaricati che occupano spazio su
+                             questo PC, esattamente come la cartella allegati qui sopra. -->
+                        <div class="border-t border-stone-200 pt-6">
+                            <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="languages" class="w-4 h-4 text-amber-700"></i> <span data-i18n="ocr_langs_title">Lingue del riconoscimento</span></h4>
+                            <p class="text-sm text-stone-600 mb-3" data-i18n="settings_ocr_desc">Il riconoscimento del testo (OCR) funziona senza connessione, ma ogni lingua va installata una volta. I dati restano su questo computer e non vengono sincronizzati.</p>
+                            <button onclick="apriGestioneLingueOcr()" id="btn-settings-ocr-langs" class="btn btn-secondary">
+                                <i data-lucide="download" class="w-4 h-4 text-stone-500"></i> <span data-i18n="ocr_manage_langs">Gestisci lingue…</span>
+                            </button>
+                        </div>
+
+                        <!-- Fase 4 — cestino e snapshot stanno fra i DATI e non fra le
+                             preferenze: sono file che occupano spazio su questo computer e
+                             non si sincronizzano, esattamente come la cartella allegati e le
+                             lingue dell'OCR qui sopra. -->
+                        <div class="border-t border-stone-200 pt-6">
+                            <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_safety_title">Cestino e snapshot</span></h4>
+                            <p class="text-sm text-stone-600 mb-3" data-i18n="settings_safety_desc">L'archivio viene fotografato periodicamente su questo computer, e le schede eliminate restano nel cestino prima di sparire. Nulla di tutto ciò viene sincronizzato.</p>
+                            <label class="flex items-center gap-2 text-sm mb-3">
+                                <input type="checkbox" id="settings-snapshot-auto" onchange="salvaImpostazioniSicurezza()">
+                                <span data-i18n="settings_snapshot_auto">Crea snapshot automatici mentre lavoro</span>
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="text-xs text-stone-600 flex flex-col gap-1">
+                                    <span data-i18n="settings_snapshot_recenti">Snapshot recenti</span>
+                                    <input type="number" min="0" max="100" id="settings-snapshot-recenti" class="form-input" onchange="salvaImpostazioniSicurezza()">
+                                </label>
+                                <label class="text-xs text-stone-600 flex flex-col gap-1">
+                                    <span data-i18n="settings_snapshot_giorni">Giorni di cronologia</span>
+                                    <input type="number" min="0" max="3650" id="settings-snapshot-giorni" class="form-input" onchange="salvaImpostazioniSicurezza()">
+                                </label>
+                                <label class="text-xs text-stone-600 flex flex-col gap-1">
+                                    <span data-i18n="settings_cestino_giorni">Giorni nel cestino</span>
+                                    <input type="number" min="0" max="3650" id="settings-cestino-giorni" class="form-input" onchange="salvaImpostazioniSicurezza()">
+                                </label>
+                            </div>
+                            <button onclick="chiudiImpostazioni(); if (window.apriCestino) apriCestino();" class="btn btn-secondary mt-3">
+                                <i data-lucide="trash-2" class="w-4 h-4 text-stone-500"></i> <span data-i18n="trash_title">Cestino</span>
+                            </button>
+                        </div>
+
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_backup">Backup Dati</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_backup_desc">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>

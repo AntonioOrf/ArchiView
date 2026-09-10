@@ -16,7 +16,22 @@ window.getRecordHash = function(record) {
     return JSON.stringify(sortedObj);
 };
 
-window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}) {
+/**
+ * Fase 4.4 — Conflitti CAMPO PER CAMPO.
+ *
+ * Prima il confronto era sull'impronta dell'intero record: due colleghi che toccavano campi
+ * diversi della stessa scheda si vedevano chiedere quale delle due versioni buttare via.
+ * Ora la domanda arriva solo per i campi che entrambi hanno cambiato in modo diverso, e la
+ * scheda già fusa viaggia nel conflitto (`fusa`) perché il modale parta da lì invece che
+ * dalla sola versione locale — altrimenti risolvere un campo cancellerebbe le modifiche
+ * altrui su tutti gli altri.
+ *
+ * @param baseObjects  gli oggetti di base (`.archiview-base.json`). Servono per attribuire
+ *                     una differenza a chi l'ha introdotta: `baseHashes` dice SE un lato ha
+ *                     cambiato qualcosa, non COSA. Senza, si ricade sull'euristica dei
+ *                     timestamp qui sotto, che è quella di prima.
+ */
+window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, baseObjects = {}) {
     const localMap = new Map((locali || []).map(m => [m.id, m]));
     const externalMap = new Map((esterni || []).map(m => [m.id, m]));
     
@@ -34,7 +49,24 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}) {
             
             // Se sono identici (i contenuti, scartando i timestamp), non c'è conflitto
             if (localHash === externalHash) continue;
-            
+
+            // Fase 4.4 — strada principale: fusione campo per campo sulla base comune.
+            const base = baseObjects && baseObjects[id];
+            if (base && window.Model && typeof window.Model.fondiRecord === 'function') {
+                const esito = window.Model.fondiRecord(base, local, external);
+                if (esito.conflitti.length > 0) {
+                    conflitti.push({
+                        id: id,
+                        segnatura: local.segnatura || 'Senza Segnatura',
+                        localCard: local,
+                        externalCard: external,
+                        campiConflitto: esito.conflitti,
+                        fusa: esito.fuso
+                    });
+                }
+                continue;
+            }
+
             // Se non c'è baseHash (documento precedente alla migrazione hash), fallback timestamp
             if (!baseHash) {
                 

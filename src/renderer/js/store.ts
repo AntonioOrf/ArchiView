@@ -24,10 +24,25 @@ window.Store = {
         await this.commit();
     },
 
+    /**
+     * ⚠️ `undefined` in `updates` significa **togli la chiave**, non "lasciala com'era".
+     *
+     * L'aggiornamento è un merge, e un merge non sa esprimere una cancellazione: la chiave
+     * semplicemente assente dal patch resta quella vecchia. Sui campi normali va bene — un
+     * campo svuotato diventa `''`, che è un valore — ma le chiavi che esistono solo quando
+     * hanno contenuto non hanno un "valore vuoto" da scrivere: `relazioni` (3.5) si cancella
+     * proprio togliendo la chiave, per non cambiare l'impronta di ogni scheda mai collegata.
+     * Senza questa regola, togliere l'ULTIMO collegamento di una scheda non aveva effetto e
+     * il rimando ricompariva al primo ridisegno.
+     */
     async updateManoscritto(id, updates) {
         const index = appData.manoscritti.findIndex(x => String(x.id) === String(id));
         if (index !== -1) {
-            appData.manoscritti[index] = { ...appData.manoscritti[index], ...updates };
+            const fuso = { ...appData.manoscritti[index], ...updates };
+            for (const chiave of Object.keys(updates || {})) {
+                if (updates[chiave] === undefined) delete fuso[chiave];
+            }
+            appData.manoscritti[index] = fuso;
             await this.commit();
         }
     },
@@ -38,6 +53,19 @@ window.Store = {
             appData.manoscritti.splice(index, 1);
             if (!appData.deletedIds) appData.deletedIds = [];
             if (!appData.deletedIds.includes(String(id))) appData.deletedIds.push(String(id));
+            // Fase 3.5 — i rimandi VERSO la scheda eliminata si tolgono dalle altre.
+            // ⚠️ Non contraddice la regola "un id sconosciuto non si ripulisce": quella vale
+            // per un id che NON si sa che fine abbia fatto (su un archivio condiviso la
+            // scheda può esistere sulla copia di un collega). Qui invece l'eliminazione è
+            // esplicita e produce un tombstone in `deletedIds`: la scheda è morta per tutti,
+            // e lasciare i rimandi vorrebbe dire un elenco di collegamenti che non portano
+            // da nessuna parte, con lo stesso aspetto di quelli buoni.
+            if (window.Model) {
+                for (const m of appData.manoscritti) {
+                    const restanti = window.Model.relazioni(m).filter(r => r.id !== String(id));
+                    if (window.Model.scriviRelazioni(m, restanti)) m.lastModified = Date.now();
+                }
+            }
             await this.commit();
         }
     },

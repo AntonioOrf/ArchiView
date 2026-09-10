@@ -1,13 +1,94 @@
 // @ts-nocheck
+
+// --- Trascrizione per allegato (Fase 2.3-bis) --------------------------------
+//
+// L'editor di sinistra è agganciato all'allegato mostrato a destra, non più alla scheda:
+// cambiando carta il testo segue. Lo stato di aggancio vive qui, in due variabili sole.
+//
+// ⚠️ Il record va memorizzato INSIEME all'indice. Con il solo indice, aprire la scheda B
+// dopo aver lasciato la scheda A sull'allegato 2 scriverebbe il testo di A dentro
+// l'allegato 2 di B: `window.currentAllegatoIndex` sopravvive al cambio di scheda.
+// Il prefisso `_ta` è obbligatorio come altrove: il bundle di produzione concatena tutti
+// gli script del renderer in un unico scope.
+let _taRecordCorrente = null;
+let _taIndiceCorrente = 0;
+
+/**
+ * Travasa ciò che è nell'editor nell'allegato a cui è agganciato. Va chiamata PRIMA di
+ * ogni cambio di carta e prima del salvataggio: senza, passare da una carta all'altra
+ * butterebbe via quanto appena battuto, che è il modo più rapido di rendere inutilizzabile
+ * una funzione pensata per lavorare su più carte.
+ */
+function _taSalvaEditorInMemoria() {
+    if (_taRecordCorrente === null) return;
+    const editor = document.getElementById('trascrizione-editor');
+    if (!editor) return;
+    const m = appData.manoscritti.find(x => String(x.id) === String(_taRecordCorrente));
+    if (!m) return;
+    window.scriviTrascrizioneAllegato(m, _taIndiceCorrente, editor.innerHTML);
+}
+
+/**
+ * Carica nell'editor il testo della carta `indice`. NON tocca `trascrizioneNonSalvata`:
+ * le modifiche pendenti su un'altra carta restano pendenti, e il flag deve continuare a
+ * dire la verità finché non si salva davvero.
+ */
+function _taCaricaEditor(m, indice) {
+    const editor = document.getElementById('trascrizione-editor');
+    if (!editor || !m) return;
+    const testo = window.leggiTrascrizioneAllegato(m, indice);
+    editor.innerHTML = window.sanitizeHTML(testo || '<p><br></p>');
+    _taRecordCorrente = m.id;
+    _taIndiceCorrente = indice;
+    _taAggiornaEtichetta(m, indice);
+}
+
+/** Dice QUALE carta si sta trascrivendo: senza, con più allegati non si sa dove si scrive. */
+function _taAggiornaEtichetta(m, indice) {
+    const barra = document.getElementById('trascrizione-carta');
+    if (!barra) return;
+    const allegati = (m && Array.isArray(m.allegati)) ? m.allegati : [];
+    if (allegati.length < 2) {
+        barra.classList.add('hidden-tab');
+        return;
+    }
+    const a = allegati[indice];
+    const nome = (a && (a.originalName || a.nome)) || String(indice + 1);
+    barra.textContent = window.t('trasc_current_sheet', 'Carta {var0} di {var1} — {var2}')
+        .replace('{var0}', String(indice + 1))
+        .replace('{var1}', String(allegati.length))
+        .replace('{var2}', nome);
+    barra.classList.remove('hidden-tab');
+}
+
+/** Riaggancio dall'esterno (l'OCR scrive sul record e vuole vedere l'editor aggiornato). */
+window.ricaricaEditorTrascrizione = function(m, indice) {
+    if (!m || String(_taRecordCorrente) !== String(m.id)) return false;
+    _taCaricaEditor(m, typeof indice === 'number' ? indice : _taIndiceCorrente);
+    return true;
+};
+
+window.indiceCartaCorrente = function() { return _taIndiceCorrente; };
+
 async function apriTrascrizione(id) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m) return;
     
     document.getElementById('trascrizione-id').value = m.id;
     document.getElementById('trascrizione-subtitle').textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
-    
-    // Carica il testo precedente (se esiste, altrimenti inizializza con un paragrafo vuoto cliccabile)
-    document.getElementById('trascrizione-editor').innerHTML = window.sanitizeHTML(m.trascrizione || '<p><br></p>');
+
+    // Migrazione in memoria della vecchia trascrizione unica sulla prima carta. Si fa qui e
+    // non al salvataggio perché l'editor deve mostrare subito il testo giusto; è idempotente,
+    // e finisce su disco al primo salvataggio della scheda — non prima, così aprire una
+    // scheda per leggerla non la marca come modificata e non innesca una sincronizzazione.
+    window.migraTrascrizioneSuAllegati(m);
+
+    // L'aggancio parte SEMPRE dalla prima carta: `cambiaAllegatoTrascrizione` più sotto
+    // conferma o cambia l'indice, e senza questa riga il primo travaso finirebbe
+    // sull'indice lasciato dalla scheda precedente.
+    _taRecordCorrente = m.id;
+    _taIndiceCorrente = 0;
+    _taCaricaEditor(m, 0);
     window.trascrizioneNonSalvata = false;
     
     const panelAllegato = document.getElementById('trascrizione-allegato-panel');
@@ -15,6 +96,9 @@ async function apriTrascrizione(id) {
     const editorPanel = document.getElementById('trascrizione-editor-panel');
     const btnCarica = document.getElementById('btn-carica-allegato-trasc');
     const btnCollapse = document.getElementById('btn-collapse-editor');
+    // Fase 2.3: senza allegati non c'è nulla da riconoscere, e un pulsante che apre solo
+    // un avviso è peggio di un pulsante assente.
+    const btnOcr = document.getElementById('btn-ocr-trasc');
     
     const imgPreview = document.getElementById('trasc-img-preview');
     const pdfPreview = document.getElementById('trasc-pdf-preview');
@@ -40,6 +124,7 @@ async function apriTrascrizione(id) {
             editorPanel.style.width = appData.trascrizioneEditorWidth || '50%';
         }
         btnCarica.classList.add('hidden');
+        if (btnOcr) btnOcr.classList.remove('hidden-tab');
         if (btnCollapse) {
             btnCollapse.classList.remove('hidden');
             btnCollapse.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
@@ -58,8 +143,11 @@ async function apriTrascrizione(id) {
             editorPanel.style.width = '100%';
             editorPanel.classList.remove('hidden');
         }
-        btnCarica.classList.remove('hidden'); 
-        btnCarica.style.display = 'flex'; 
+        btnCarica.classList.remove('hidden');
+        btnCarica.style.display = 'flex';
+        // `hidden-tab` e non `hidden`: `.btn` imposta display:inline-flex e batte l'utility
+        // Tailwind a parità di specificità (lezione della 1.1, style.css:257).
+        if (btnOcr) btnOcr.classList.add('hidden-tab');
         if (btnCollapse) btnCollapse.classList.add('hidden');
     }
     
@@ -137,13 +225,27 @@ window.renderThumbnailsTrascrizione = function(id) {
                 wrapper.style.transform = '';
                 const dragIndex = window._draggedTrascThumbIndex;
                 if (dragIndex !== null && dragIndex !== i) {
+                    // Fase 2.3-bis: il testo viaggia con l'oggetto allegato, quindi il
+                    // riordino non lo perde. L'INDICE però sì: dopo lo spostamento
+                    // `_taIndiceCorrente` punterebbe a un'altra carta e il primo travaso
+                    // successivo ci scriverebbe sopra. Si travasa prima e si ritrova la
+                    // carta per identità dopo.
+                    _taSalvaEditorInMemoria();
+                    const cartaAperta = m.allegati[window.indiceCartaCorrente()];
+
                     const item = m.allegati.splice(dragIndex, 1)[0];
                     let targetIndex = i;
                     const rect = wrapper.getBoundingClientRect();
                     const mid = rect.left + rect.width / 2;
                     if (e.clientX > mid) targetIndex++;
-                    if (dragIndex < targetIndex) targetIndex--; 
+                    if (dragIndex < targetIndex) targetIndex--;
                     m.allegati.splice(targetIndex, 0, item);
+
+                    const nuovoIndice = m.allegati.indexOf(cartaAperta);
+                    if (nuovoIndice !== -1) {
+                        window.currentAllegatoIndex = nuovoIndice;
+                        window.ricaricaEditorTrascrizione(m, nuovoIndice);
+                    }
                     await salvaTutto();
                     if(typeof renderMain === 'function') renderMain();
                     window.renderThumbnailsTrascrizione(id);
@@ -162,10 +264,17 @@ window.renderThumbnailsTrascrizione = function(id) {
 };
 
 window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
+    // Fase 2.3-bis: il travaso deve precedere `_taCaricaEditor`, che è ciò che sposta
+    // `_taIndiceCorrente` sulla carta nuova. Senza questa riga, quanto battuto sulla carta
+    // che si sta lasciando non verrebbe mai messo al sicuro e sparirebbe al primo cambio:
+    // togliendola, due E2E di `trascrizione.spec.ts` diventano rossi.
+    _taSalvaEditorInMemoria();
+
     window.currentAllegatoIndex = index;
     const id = document.getElementById('trascrizione-id').value;
     const m = appData.manoscritti.find(x => x.id === id);
     if (m) {
+        _taCaricaEditor(m, index);
         let allegatiRender = m.allegati || [];
         const btnPrev = document.getElementById('btn-prev-allegato');
         const btnNext = document.getElementById('btn-next-allegato');
@@ -402,14 +511,19 @@ function chiudiTrascrizione() {
 async function salvaTrascrizione() {
     const id = document.getElementById('trascrizione-id').value;
     const editor = document.getElementById('trascrizione-editor');
-    const testo = editor.innerHTML;
-    
+
     const settings = await window.apiSettings.get();
     const username = settings.username || 'Anonimo';
-    
+
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (m) {
-        m.trascrizione = testo;
+        // Il testo a schermo appartiene alla carta corrente; le altre carte possono avere
+        // modifiche pendenti in memoria, ed è per questo che si salva l'intero record e non
+        // solo ciò che si vede.
+        _taSalvaEditorInMemoria();
+        // `m.trascrizione` resta la forma derivata: la ricalcolano solo i salvataggi, mai
+        // i cambi di carta (vedi il commento in utils.ts).
+        m.trascrizione = window.componiTrascrizioneRecord(m);
         m.lastModified = Date.now();
         m.modificatoDa = username;
         await salvaTutto();
@@ -426,7 +540,12 @@ async function caricaAllegatoTrascrizione(e) {
     const id = document.getElementById('trascrizione-id').value;
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m) return;
-    
+
+    // Quello che è nell'editor va messo al sicuro PRIMA di aggiungere l'allegato: la scheda
+    // passa da "senza allegati" (testo su `m.trascrizione`) a "con allegati" (testo sulla
+    // prima carta), e `apriTrascrizione` più sotto ricarica tutto da capo.
+    _taSalvaEditorInMemoria();
+
     try {
         const settings = await window.apiSettings.get();
         const username = settings.username || 'Anonimo';

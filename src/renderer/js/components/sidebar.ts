@@ -1,14 +1,31 @@
 // @ts-nocheck
 // --- SIDEBAR ---
 
+/** Il nome dell'archivio (vault) aperto: la cartella su disco, o il nome scelto su Hub. */
+function nomeArchivioCorrente() {
+    if (window.hubConfig && window.hubConfig.name) return String(window.hubConfig.name);
+    const percorso = window.percorsoWorkspace || '';
+    const base = percorso.split(/[\\/]/).filter(Boolean).pop();
+    return base || '';
+}
+window.nomeArchivioCorrente = nomeArchivioCorrente;
+
 /**
- * Etichetta della radice virtuale (percorso ''). Deliberatamente NON il nome del vault:
- * quello è già nel selettore archivio in fondo alla sidebar, e ripeterlo qui — e di nuovo
- * come titolo della vista — direbbe tre volte la stessa cosa. Qui serve dire *dove sei*
- * nell'albero, non *in quale archivio*.
+ * Etichetta della radice del percorso '' — e cioè **il nome dell'archivio**.
+ *
+ * Nel dato la radice virtuale resta: un record senza cartella ha `cartella: ''`, e ce ne
+ * saranno sempre (li producono l'import ZIP, l'import CSV e i merge da versioni precedenti).
+ * Ciò che sparisce è la parola "Radice" nell'interfaccia, che non diceva nulla a nessuno e
+ * lasciava l'albero vuoto — cioè senza un posto dove vedere le schede non archiviate.
+ *
+ * ⚠️ Questo ribalta due decisioni precedenti, e vale la pena sapere quali: la 2.4.1 tolse la
+ * riga radice dall'albero, e un commento qui sopra escludeva di usare il nome del vault
+ * perché "è già nel selettore in fondo alla sidebar". Entrambe reggevano finché la riga si
+ * chiamava "Radice": ripetere il nome dell'archivio è meno peggio di un albero che non
+ * mostra dove stanno venticinque schede appena importate.
  */
 function etichettaRadice() {
-    return window.t('folder_root_label', 'Radice');
+    return nomeArchivioCorrente() || window.t('folder_root_label', 'Radice');
 }
 window.etichettaRadice = etichettaRadice;
 
@@ -31,6 +48,8 @@ window.invalidaCacheSidebar = function() {
 function calcolaFirmaSidebar() {
     const parti = [
         window.linguaAttuale || '',
+        // Il nome dell'archivio E' la riga in testa all'albero: se cambia, l'albero cambia.
+        nomeArchivioCorrente(),
         window.cartellaAttuale || '',
         (appData.cartelle || []).join('|'),
         Array.from(window.cartelleEspanse || []).join('|'),
@@ -153,6 +172,11 @@ function renderSidebar() {
     // Funzione ricorsiva per renderizzare
     function renderNode(nodeName, nodeObj, parentEl, profondita) {
         const fullPath = nodeObj.path;
+        // La radice ('') è un nodo come gli altri, con due sole differenze: non si trascina
+        // (non è una cartella, non si può spostare dentro nulla) e ha l'icona dell'archivio.
+        // Tutto il resto — click, espansione, drop, menu — è identico, ed è esattamente il
+        // motivo per cui passa di qui invece di avere una funzione sua da tenere allineata.
+        const isRadice = fullPath === '';
         const filesInFolder = fileOrdinati(fullPath);
         const hasChildren = Object.keys(nodeObj.children).length > 0 || filesInFolder.length > 0;
         const isAttuale = fullPath === window.cartellaAttuale;
@@ -174,7 +198,7 @@ function renderSidebar() {
         };
 
         // Drag and Drop Logic
-        riga.draggable = true;
+        riga.draggable = !isRadice;
         riga.ondragstart = (e) => {
             e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'folder', path: fullPath }));
             e.dataTransfer.effectAllowed = 'move';
@@ -221,8 +245,8 @@ function renderSidebar() {
             };
         }
 
-        // Icona Cartella
-        const icona = isAttuale ? 'folder-open' : 'folder';
+        // Icona: l'archivio ha la sua, la stessa del selettore in fondo alla sidebar.
+        const icona = isRadice ? 'library' : (isAttuale ? 'folder-open' : 'folder');
         const testo = document.createElement('span');
         testo.className = "truncate flex items-center gap-1.5 flex-1 select-none";
         testo.innerHTML = window.sanitizeHTML(`<i data-lucide="${icona}" class="w-4 h-4 shrink-0 sidebar-icon"></i> ${escapeHTML(nodeName)}`);
@@ -280,17 +304,19 @@ function renderSidebar() {
         parentEl.appendChild(div);
     }
 
-    // L'albero mostra SOLO cartelle: la radice ('') non ha una riga propria. Senza
-    // cartelle il pannello resta vuoto, e le schede non archiviate si vedono comunque
-    // nella griglia. Per tornare alla radice basta cliccare l'area vuota; per creare
-    // la prima cartella, il tasto destro lì dentro.
+    // L'albero mostra SOLO cartelle: la radice ('') non ha una riga propria (scelta della
+    // 2.4.1). Per tornare alla radice basta cliccare l'area vuota; per creare la prima
+    // cartella, il tasto destro lì dentro.
     const fragment = document.createDocumentFragment();
 
-    Object.keys(root)
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
-        .forEach(k => renderNode(k, root[k], fragment, 0));
+    // La radice è la RIGA IN TESTA, col nome dell'archivio, e le cartelle sono i suoi figli.
+    // Prima l'albero mostrava solo cartelle: senza cartelle restava vuoto, e le schede non
+    // archiviate non avevano un posto in cui vederle — chi ne importava venticinque nella
+    // radice vedeva l'elenco pieno e la Struttura bianca.
+    renderNode(etichettaRadice(), { path: '', children: root }, fragment, 0);
 
     container.appendChild(fragment);
+    if (window.lucide) lucide.createIcons({ nodes: [container] });
 
     // Imposta l'intera zona del container come drop per il root
     container.ondragover = (e) => { e.preventDefault(); container.classList.add('bg-stone-100'); };
@@ -646,21 +672,14 @@ window.renderSourceControl = function() {
 function renderTagList() {
     const container = document.getElementById('tag-list');
     container.innerHTML = window.sanitizeHTML('');
-    const tagCount = {};
 
-    // Calcola le occorrenze dei tag
-    appData.manoscritti.forEach(m => {
-        if (m.tags) {
-            m.tags.split(',').forEach(tag => {
-                const t = tag.trim().toLowerCase();
-                if (t) tagCount[t] = (tagCount[t] || 0) + 1;
-            });
-        }
-    });
+    // Fase 3.4 — il conteggio lo fa il modello, che raggruppa per CHIAVE normalizzata e
+    // restituisce la grafia dell'anagrafica. Prima si contava per `toLowerCase()`, quindi
+    // i nomi propri perdevano le maiuscole in elenco ("Notai di Perugia" → "notai di
+    // perugia") e accenti diversi producevano due voci per lo stesso tag.
+    const voci = window.Model.conteggiTag(appData.manoscritti, appData);
 
-    const allTags = Object.keys(tagCount).sort();
-
-    if (allTags.length === 0) {
+    if (voci.length === 0) {
         container.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`);
         return;
     }
@@ -670,36 +689,41 @@ function renderTagList() {
     document.getElementById('btn-clear-tag').classList.toggle('hidden', window.activeTags.size === 0);
 
     // Filtro live: mostra solo i tag che contengono il testo digitato (l'input non è più readonly)
-    const filtro = (document.getElementById('global-tag-search')?.value || '').trim().toLowerCase();
-    const sortedTags = filtro ? allTags.filter(t => t.includes(filtro)) : allTags;
+    const filtro = window.Model.chiaveTag(document.getElementById('global-tag-search')?.value || '');
+    const visibili = filtro ? voci.filter(v => v.chiave.includes(filtro)) : voci;
 
-    if (sortedTags.length === 0) {
+    if (visibili.length === 0) {
         container.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t('no_tags_found')}</div>`);
         return;
     }
 
     const fragment = document.createDocumentFragment();
-    sortedTags.forEach(tag => {
+    // `activeTags` contiene le grafie mostrate, non le chiavi: il confronto per attivo
+    // deve quindi passare dalla chiave, o un tag rinominato resterebbe "attivo" invisibile.
+    const attive = new Set(Array.from(window.activeTags).map(t => window.Model.chiaveTag(t)));
+    visibili.forEach(voce => {
         const btn = document.createElement('button');
-        const isActive = window.activeTags.has(tag);
-        btn.className = `w-full text-left px-3 py-2 rounded-sm text-sm font-medium transition-colors flex justify-between items-center ${isActive ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-stone-50 text-stone-700 hover:bg-stone-200 border border-transparent'}`;
+        const isActive = attive.has(voce.chiave);
+        const colore = window.Model.coloreTag(appData, voce.nome);
+        btn.className = `tag-filtro w-full text-left px-3 py-2 rounded-sm text-sm font-medium transition-colors flex justify-between items-center ${isActive ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-stone-50 text-stone-700 hover:bg-stone-200 border border-transparent'}`;
+        if (colore) btn.classList.add('tag-bordo-' + colore);
         btn.onclick = () => {
-            if (isActive) {
-                window.activeTags.delete(tag);
-            } else {
-                window.activeTags.add(tag);
+            // Si toglie per CHIAVE e si aggiunge la grafia canonica: cliccare due volte
+            // deve spegnere il filtro anche se il tag è stato nel frattempo rinominato.
+            for (const t of Array.from(window.activeTags)) {
+                if (window.Model.chiaveTag(t) === voce.chiave) window.activeTags.delete(t);
             }
+            if (!isActive) window.activeTags.add(voce.nome);
             renderMain();
             renderTagList();
         };
         // Il conteggio era già calcolato ma mai reso: senza, non si distingue un tag
         // usato una volta per errore da uno che descrive mezzo archivio.
-        const conteggio = tagCount[tag] || 0;
         btn.innerHTML = window.sanitizeHTML(
-            `<span class="truncate">#${escapeHTML(tag)}</span>` +
-            `<span class="shrink-0 ml-2 text-xs tabular-nums ${isActive ? 'text-amber-700' : 'text-stone-400'}">${conteggio}</span>`
+            `<span class="truncate">#${escapeHTML(voce.nome)}</span>` +
+            `<span class="shrink-0 ml-2 text-xs tabular-nums ${isActive ? 'text-amber-700' : 'text-stone-400'}">${voce.conteggio}</span>`
         );
-        btn.setAttribute('aria-label', `#${tag} (${conteggio})`);
+        btn.setAttribute('aria-label', `#${voce.nome} (${voce.conteggio})`);
         fragment.appendChild(btn);
     });
     container.appendChild(fragment);

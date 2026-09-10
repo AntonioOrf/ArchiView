@@ -92,10 +92,24 @@ function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurre
 
 // ─── Rendering lista revisioni ───────────────────────────────────────────────
 
+/**
+ * Fase 4.2 — Il pannello mostra DUE cronologie, sempre entrambe: quella del cloud (Hub o
+ * Drive, o l'invito a collegarsi se non c'è) e quella locale degli snapshot.
+ *
+ * Non sono in alternativa perché non rispondono alla stessa domanda: il cloud sa cosa hanno
+ * fatto i colleghi, gli snapshot sanno cos'è successo su QUESTO computer — comprese le
+ * modifiche mai inviate, che nel cloud non compaiono per definizione. Mostrare i soli
+ * snapshot a chi lavora offline e le sole versioni cloud a tutti gli altri avrebbe lasciato
+ * senza rete proprio il caso più frequente: l'errore fatto e salvato prima di sincronizzare.
+ */
 window.renderHistoryList = async function() {
     const list = document.getElementById('history-list');
     if (!list) return;
+    await renderCronologiaCloud(list);
+    await window.renderSnapshotLocali(list);
+};
 
+async function renderCronologiaCloud(list) {
     // Vault Hub: cronologia GitHub-style (versioni append-only, autore+data, diff on-click).
     // Percorso Drive legacy sotto invariato per i vault non ancora migrati.
     if (window.hubConfig) return renderHubHistoryList(list);
@@ -180,7 +194,7 @@ window.renderHistoryList = async function() {
                 Errore: ${escapeHTML(err.message)}
             </li>`;
     }
-};
+}
 
 // ─── Confronta una revisione con lo stato attuale ───────────────────────────
 
@@ -623,3 +637,391 @@ async function apriDiffVersioneHub(oldVersion, newVersionOrNull, label) {
 async function ripristinaVersioneHubConConferma(version, label) {
     apriConfermaRipristino(label, () => window.ripristinaVersioneHub(version));
 }
+
+// ─── Snapshot locali (Fase 4.2) ──────────────────────────────────────────────
+//
+// Il pannello riusa ciò che c'era già: `calcolaDiffsManoscritti` per il confronto,
+// `apriDiffRevisioneModal` per mostrarlo, `apriConfermaRipristino` per la conferma. La
+// differenza rispetto al cloud è solo la provenienza dei dati — un file gzip in
+// `.archiview/snapshots/` invece di una revisione remota — e questo è esattamente il motivo
+// per cui la 4.2 costa poco: la parte difficile (diff e ripristino) esisteva dal principio.
+
+function _snEtichettaMotivo(motivo) {
+    switch (motivo) {
+        case 'manuale': return window.t('snap_reason_manual', 'creato a mano');
+        case 'prima-ripristino': return window.t('snap_reason_restore', 'prima di un ripristino');
+        case 'prima-import': return window.t('snap_reason_import', 'prima di un import');
+        default: return window.t('snap_reason_auto', 'automatico');
+    }
+}
+
+function _snKb(bytes) {
+    return bytes ? Math.max(1, Math.round(bytes / 1024)) : 0;
+}
+
+window.renderSnapshotLocali = async function(list) {
+    if (!list || !window.apiSicurezza) return;
+
+    const intestazione = document.createElement('li');
+    intestazione.className = 'px-3 py-2 flex items-center justify-between gap-2 bg-stone-50 dark:bg-stone-800/30 border-y border-stone-100 dark:border-stone-800/50 sticky top-0';
+    const titolo = document.createElement('span');
+    titolo.className = 'text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400';
+    titolo.textContent = window.t('snap_section_title', 'Snapshot locali');
+    intestazione.appendChild(titolo);
+    const crea = document.createElement('button');
+    crea.type = 'button';
+    crea.id = 'btn-snapshot-now';
+    crea.className = 'text-[10px] font-semibold text-amber-600 hover:text-amber-800 transition-colors';
+    crea.textContent = window.t('snap_create_now', 'Crea adesso');
+    crea.title = window.t('snap_create_now_hint', 'Fotografa subito lo stato dell\'archivio');
+    crea.onclick = () => window.creaSnapshotOra();
+    intestazione.appendChild(crea);
+    list.appendChild(intestazione);
+
+    let voci = [];
+    try {
+        const res = await window.apiSicurezza.snapshotElenca();
+        if (!res || res.success === false) throw new Error((res && res.error) || 'Elenco non disponibile');
+        voci = res.voci || [];
+    } catch (err) {
+        console.error('Errore elenco snapshot:', err);
+        const errore = document.createElement('li');
+        errore.className = 'p-3 text-xs text-red-500 italic text-center';
+        errore.textContent = 'Errore: ' + (err.message || err);
+        list.appendChild(errore);
+        return;
+    }
+
+    if (voci.length === 0) {
+        const vuoto = document.createElement('li');
+        vuoto.className = 'p-3 text-[11px] text-stone-400 italic text-center';
+        vuoto.textContent = window.t('snap_empty', 'Nessuno snapshot: il primo viene creato da solo mentre lavori.');
+        list.appendChild(vuoto);
+        return;
+    }
+
+    const frammento = document.createDocumentFragment();
+    for (const v of voci) {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 hover:bg-stone-50 dark:hover:bg-stone-800/30 cursor-context-menu select-none transition-colors';
+        li.dataset.snapshot = v.nome;
+        li.title = window.t('tooltip_click_for_actions', 'Clicca per le azioni disponibili');
+
+        const icona = document.createElement('i');
+        icona.dataset.lucide = 'hard-drive';
+        icona.className = 'w-3.5 h-3.5 shrink-0 text-stone-400';
+        li.appendChild(icona);
+
+        const col = document.createElement('div');
+        col.className = 'flex flex-col min-w-0 flex-1';
+        const r1 = document.createElement('span');
+        r1.className = 'text-xs font-semibold text-stone-700 dark:text-stone-300 truncate';
+        r1.textContent = formatRelativeDate(v.creatoIl);
+        const r2 = document.createElement('span');
+        r2.className = 'text-[10px] text-stone-400 truncate';
+        r2.textContent = _snEtichettaMotivo(v.motivo) + ' · ' + _snKb(v.sizeBytes) + ' KB';
+        col.appendChild(r1);
+        col.appendChild(r2);
+        li.appendChild(col);
+
+        const menu = (e) => _snApriMenu(e, v);
+        li.addEventListener('click', menu);
+        li.addEventListener('contextmenu', menu);
+        frammento.appendChild(li);
+    }
+    list.appendChild(frammento);
+    if (window.lucide) lucide.createIcons({ nodes: [list] });
+};
+
+function _snApriMenu(e, voce) {
+    chiudiHistoryContextMenu();
+    e.preventDefault();
+    e.stopPropagation();
+
+    const data = new Date(voce.creatoIl);
+    const dataStr = data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const oraStr = data.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const label = `${dataStr} ${oraStr} – ${_snEtichettaMotivo(voce.motivo)}`;
+
+    // Il menu contestuale unificato (`apriMenuContestuale`) invece di quello disegnato a mano
+    // qui sopra per il cloud: quello è codice del 2.x che nessuno ha ancora convertito, non
+    // un modello da imitare. Le voci nuove nascono già sul componente comune, che ha la
+    // navigazione da tastiera e la chiusura con Esc.
+    window.apriMenuContestuale(e, [
+        { heading: true, label },
+        {
+            label: window.t('history_compare_now', 'Confronta con l\'attuale'),
+            icon: 'git-compare',
+            onSelect: () => window.confrontaSnapshot(voce.nome, label)
+        },
+        { separator: true },
+        {
+            label: window.t('history_restore_version', 'Ripristina questa versione'),
+            icon: 'rotate-ccw',
+            onSelect: () => window.ripristinaSnapshot(voce.nome, label)
+        },
+        {
+            label: window.t('snap_delete', 'Elimina lo snapshot'),
+            icon: 'trash-2',
+            danger: true,
+            onSelect: () => window.eliminaSnapshot(voce.nome)
+        }
+    ]);
+}
+
+async function _snCarica(nome) {
+    const res = await window.apiSicurezza.snapshotCarica(nome);
+    if (!res || res.success === false) throw new Error((res && res.error) || 'Snapshot illeggibile');
+    return res.database;
+}
+
+window.confrontaSnapshot = async function(nome, label) {
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_caricamento_revisione', 'Caricamento revisione...'), 'info');
+    try {
+        const db = await _snCarica(nome);
+        const diffs = calcolaDiffsManoscritti(db.manoscritti || [], appData.manoscritti || []);
+        if (diffs.length === 0) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_nessuna_differenza_rispet', 'Nessuna differenza rispetto alla versione attuale.'), 'success');
+            return;
+        }
+        apriDiffRevisioneModal(diffs, label, window.t('snap_side_label', 'NELLO SNAPSHOT'), window.t('diff_current_version', 'CURRENT VERSION'));
+    } catch (err) {
+        console.error('Errore confronto snapshot:', err);
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_errore_nel_caricamento_de', 'Errore nel caricamento della revisione: ') + (err.message || err), 'error');
+    }
+};
+
+window.ripristinaSnapshot = function(nome, label) {
+    apriConfermaRipristino(label, async () => {
+        // La rete PRIMA della rete: si fotografa lo stato corrente prima di sostituirlo, o
+        // un ripristino sbagliato — quello che riporta indietro di tre settimane invece che
+        // di tre ore — sarebbe irreversibile quanto l'errore che voleva rimediare.
+        try {
+            await window.apiSicurezza.snapshotCrea('prima-ripristino');
+        } catch (err) {
+            console.error('Snapshot di sicurezza non creato:', err);
+        }
+        const db = await _snCarica(nome);
+        const esito = await window.ripristinaDatabase(db);
+        if (typeof mostraMessaggio === 'function') {
+            mostraMessaggio(window.t('snap_restored', 'Archivio riportato allo snapshot: {var0} schede.').replace('{var0}', String(esito.schede)), 'success');
+        }
+        // `false`: il messaggio di esito l'abbiamo già dato noi, con il conteggio.
+        return false;
+    });
+};
+
+window.creaSnapshotOra = async function() {
+    try {
+        // Il differito potrebbe non essere ancora sul disco, e lo snapshot fotografa il
+        // FILE: senza questo si fotograferebbe lo stato di qualche secondo fa.
+        if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
+        const res = await window.apiSicurezza.snapshotCrea('manuale');
+        if (!res || res.success === false) throw new Error((res && res.error) || 'Creazione non riuscita');
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('snap_created', 'Snapshot creato.'), 'success');
+    } catch (err) {
+        console.error('Errore creazione snapshot:', err);
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('snap_create_failed', 'Snapshot non creato: ') + (err.message || err), 'error');
+    }
+    if (typeof window.renderHistoryList === 'function') window.renderHistoryList();
+};
+
+window.eliminaSnapshot = function(nome) {
+    const procedi = async () => {
+        try {
+            const res = await window.apiSicurezza.snapshotElimina(nome);
+            if (!res || res.success === false) throw new Error((res && res.error) || 'Eliminazione non riuscita');
+        } catch (err) {
+            console.error('Errore eliminazione snapshot:', err);
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('snap_delete_failed', 'Snapshot non eliminato: ') + (err.message || err), 'error');
+        }
+        if (typeof window.renderHistoryList === 'function') window.renderHistoryList();
+    };
+    const msg = window.t('snap_confirm_delete', 'Eliminare questo snapshot? La cronologia locale di quel momento andrà persa.');
+    if (typeof window.mostraBottomConfirm === 'function') window.mostraBottomConfirm(msg, procedi);
+    else procedi();
+};
+
+// ─── Cronologia di UNA scheda (Fase 4.3) ─────────────────────────────────────
+//
+// La cronologia esisteva solo a livello di intero database: per sapere com'era una scheda la
+// settimana scorsa bisognava confrontare due archivi interi e cercare la riga giusta fra le
+// altre. Qui il punto d'ingresso è la scheda, e le tappe arrivano già filtrate dal main
+// (`snapshots.storiaRecord`), che scarta i momenti in cui quella scheda non è cambiata.
+//
+// ⚠️ Il ripristino agisce SOLO su questa scheda. È la differenza che giustifica l'esistenza
+// della voce: riportare indietro una scheda senza toccare le altre trecento è esattamente
+// ciò che il ripristino dell'intero snapshot non sa fare.
+
+window.apriStoriaRecord = async function(id) {
+    if (!window.apiSicurezza) return;
+    const record = appData.manoscritti.find(x => String(x.id) === String(id));
+    const etichetta = record ? (record.segnatura || record.titolo || window.t('record_untitled', 'scheda senza titolo')) : String(id);
+
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('rec_history_loading', 'Ricostruzione della cronologia…'), 'info');
+    let tappe = [];
+    try {
+        const res = await window.apiSicurezza.storiaRecord(String(id));
+        if (!res || res.success === false) throw new Error((res && res.error) || 'Cronologia non disponibile');
+        tappe = res.tappe || [];
+    } catch (err) {
+        console.error('Errore cronologia scheda:', err);
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('rec_history_failed', 'Cronologia non disponibile: ') + (err.message || err), 'error');
+        return;
+    }
+
+    if (tappe.length === 0) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('rec_history_empty', 'Nessuno snapshot contiene questa scheda: la cronologia comincia dal primo snapshot.'), 'info');
+        return;
+    }
+    _srApriModal(id, etichetta, tappe, record || {});
+};
+
+function _srApriModal(id, etichetta, tappe, corrente) {
+    const esistente = document.getElementById('record-history-modal');
+    if (esistente) esistente.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'record-history-modal';
+    overlay.className = 'modal-overlay';
+
+    const finestra = document.createElement('div');
+    finestra.className = 'modal-window max-w-lg';
+    overlay.appendChild(finestra);
+
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    const h3 = document.createElement('h3');
+    h3.className = 'modal-title';
+    h3.innerHTML = '<i data-lucide="history" class="w-5 h-5 text-amber-700"></i>';
+    const span = document.createElement('span');
+    span.textContent = window.t('rec_history_title', 'Cronologia della scheda') + ': ' + etichetta;
+    h3.appendChild(span);
+    header.appendChild(h3);
+    finestra.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    finestra.appendChild(body);
+
+    const lista = document.createElement('div');
+    lista.className = 'tag-manager-list';
+    body.appendChild(lista);
+
+    for (let i = 0; i < tappe.length; i++) {
+        const t = tappe[i];
+        const riga = document.createElement('div');
+        riga.className = 'tag-manager-row';
+
+        const col = document.createElement('span');
+        col.className = 'tag-manager-name truncate';
+        const quando = document.createElement('span');
+        quando.textContent = formatRelativeDate(t.creatoIl);
+        const stato = document.createElement('span');
+        stato.className = 'text-xs text-stone-500 dark:text-stone-400';
+        // Una tappa senza record è il momento in cui la scheda ANCORA non esisteva (o non
+        // esisteva più): è un'informazione, non un buco da nascondere.
+        stato.textContent = '  ·  ' + (t.record
+            ? _snEtichettaMotivo(t.motivo)
+            : window.t('rec_history_absent', 'scheda non presente'));
+        col.appendChild(quando);
+        col.appendChild(stato);
+        riga.appendChild(col);
+
+        if (t.record) {
+            const confronta = document.createElement('button');
+            confronta.type = 'button';
+            confronta.className = 'btn btn-ghost btn-icon shrink-0';
+            confronta.title = window.t('history_compare_now', 'Confronta con l\'attuale');
+            confronta.setAttribute('aria-label', confronta.title);
+            confronta.innerHTML = '<i data-lucide="git-compare" class="w-4 h-4"></i>';
+            confronta.onclick = () => {
+                const diffs = calcolaDiffsManoscritti([t.record], [corrente]);
+                if (diffs.length === 0) {
+                    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_nessuna_differenza_rispet', 'Nessuna differenza rispetto alla versione attuale.'), 'success');
+                    return;
+                }
+                apriDiffRevisioneModal(diffs, formatRelativeDate(t.creatoIl),
+                    window.t('snap_side_label', 'NELLO SNAPSHOT'), window.t('diff_current_version', 'CURRENT VERSION'));
+            };
+            riga.appendChild(confronta);
+
+            const ripristina = document.createElement('button');
+            ripristina.type = 'button';
+            ripristina.className = 'btn btn-ghost btn-icon shrink-0';
+            ripristina.title = window.t('rec_history_restore', 'Riporta la scheda a questa versione');
+            ripristina.setAttribute('aria-label', ripristina.title);
+            ripristina.innerHTML = '<i data-lucide="rotate-ccw" class="w-4 h-4"></i>';
+            ripristina.onclick = () => window.ripristinaVersioneRecord(id, t.record, formatRelativeDate(t.creatoIl));
+            riga.appendChild(ripristina);
+        }
+
+        lista.appendChild(riga);
+    }
+
+    const nota = document.createElement('p');
+    nota.className = 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3';
+    nota.textContent = window.t('rec_history_hint', 'Le tappe sono ricavate dagli snapshot locali: compaiono solo i momenti in cui questa scheda è cambiata.');
+    body.appendChild(nota);
+
+    const footer = document.createElement('div');
+    footer.className = 'modal-footer';
+    const chiudi = document.createElement('button');
+    chiudi.type = 'button';
+    chiudi.className = 'btn btn-ghost';
+    chiudi.setAttribute('data-modal-cancel', '');
+    chiudi.textContent = window.t('btn_close', 'Chiudi');
+    chiudi.onclick = () => overlay.remove();
+    footer.appendChild(chiudi);
+    body.appendChild(footer);
+
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    if (window.lucide) lucide.createIcons({ nodes: [overlay] });
+}
+
+/**
+ * Riporta UNA scheda a una versione passata. Passa dal gestore di annullamento come
+ * qualsiasi altra modifica: un ripristino è una modifica, e deve poter essere annullato
+ * esattamente come quello che ha rimediato.
+ */
+window.ripristinaVersioneRecord = async function(id, versione, quando) {
+    const indice = appData.manoscritti.findIndex(x => String(x.id) === String(id));
+    if (indice === -1) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('rec_history_gone', 'La scheda non è più in archivio: ripristinala dal cestino.'), 'warning');
+        return;
+    }
+
+    const prima = JSON.parse(JSON.stringify(appData.manoscritti[indice]));
+    const settings = window.apiSettings ? await window.apiSettings.get() : {};
+    const username = settings.username || 'Anonimo';
+
+    const applica = async (stato, rifirma) => {
+        const i = appData.manoscritti.findIndex(x => String(x.id) === String(id));
+        if (i === -1) return;
+        const nuovo = JSON.parse(JSON.stringify(stato));
+        if (rifirma) {
+            // Il record torna indietro nel CONTENUTO, non nel tempo: con il `lastModified`
+            // d'allora il primo sync lo rimetterebbe com'era (vedi ripristinaDatabase).
+            nuovo.lastModified = Date.now();
+            nuovo.modificatoDa = username;
+        }
+        appData.manoscritti[i] = nuovo;
+        if (window.Store) await window.Store.commit();
+    };
+
+    await applica(versione, true);
+    if (window.gestoreAnnullamento) {
+        window.gestoreAnnullamento.registraAzione(
+            window.t('undo_restore_record', 'Ripristino della scheda al {var0}').replace('{var0}', String(quando)),
+            () => applica(prima, false),
+            () => applica(versione, true)
+        );
+    }
+    const modal = document.getElementById('record-history-modal');
+    if (modal) modal.remove();
+    if (typeof mostraMessaggio === 'function') {
+        mostraMessaggio(window.t('rec_history_restored', 'Scheda riportata alla versione del {var0}.').replace('{var0}', String(quando)), 'success',
+            () => window.gestoreAnnullamento && window.gestoreAnnullamento.annullaUltimaAzione());
+    }
+};

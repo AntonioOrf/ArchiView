@@ -15,8 +15,14 @@ window.filtriAvanzati = window.filtriAvanzati || {
     sottocartelle: false,
     daData: '',
     aData: '',
+    // Fase 3.2 — periodo STORICO del documento (anni), da non confondere con daData/aData,
+    // che sono la data di ultima modifica della scheda.
+    daAnno: '',
+    aAnno: '',
     allegati: '',       // '' | 'si' | 'no'
-    trascrizione: ''    // '' | 'si' | 'no'
+    trascrizione: '',   // '' | 'si' | 'no'
+    ocr: '',            // '' | 'si' | 'no' — Fase 2.3
+    collegamenti: ''    // '' | 'si' | 'no' — Fase 3.5
 };
 
 window.ricercheSalvate = window.ricercheSalvate || [];
@@ -82,7 +88,7 @@ window.applicaFiltriAvanzati = function(patch) {
 };
 
 window.azzeraFiltriAvanzati = function(ridisegna = true) {
-    window.filtriAvanzati = { tipo: '', sottocartelle: false, daData: '', aData: '', allegati: '', trascrizione: '' };
+    window.filtriAvanzati = { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '' };
     if (ridisegna) {
         if (typeof renderMain === 'function') renderMain();
         if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
@@ -137,7 +143,7 @@ window.applicaRicercaSalvata = function(id) {
     if (input) input.value = voce.ricerca || '';
     window.activeTags = new Set(Array.isArray(voce.tag) ? voce.tag : []);
     window.filtriAvanzati = Object.assign(
-        { tipo: '', sottocartelle: false, daData: '', aData: '', allegati: '', trascrizione: '' },
+        { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '' },
         voce.filtri || {}
     );
 
@@ -227,6 +233,49 @@ function _riempiPannello() {
     corpo.appendChild(_riga(T('filter_from', 'Dal'), mkData('filtro-da-data', f.daData, 'daData')));
     corpo.appendChild(_riga(T('filter_to', 'Al'), mkData('filtro-a-data', f.aData, 'aData')));
 
+    // --- Fase 3.2: periodo storico del DOCUMENTO -----------------------------------------
+    // Sta sotto l'intervallo di modifica e con un'intestazione propria, perché sono due date
+    // diverse che l'interfaccia ha sempre avuto il dovere di non confondere: una è quando la
+    // scheda è stata toccata, l'altra è quando il documento è stato scritto.
+    const titoloPeriodo = document.createElement('div');
+    titoloPeriodo.className = 'form-label mt-2 pt-2 border-t';
+    titoloPeriodo.style.borderColor = 'var(--color-border-light)';
+    titoloPeriodo.textContent = T('filter_period', 'Periodo del documento');
+    corpo.appendChild(titoloPeriodo);
+
+    const mkAnno = (id, valore, chiave, segnaposto) => {
+        const el = document.createElement('input');
+        // `number` e non `date`: una datazione storica non ha giorno e mese, e un selettore
+        // di calendario per il Trecento è un controllo che chiede più di quanto si sappia.
+        el.type = 'number';
+        el.id = id;
+        el.className = 'form-input py-1 text-sm';
+        el.placeholder = segnaposto;
+        el.value = valore === 0 || valore ? String(valore) : '';
+        el.min = String(window.DataStorica ? window.DataStorica.ANNO_MIN : 500);
+        el.max = String(window.DataStorica ? window.DataStorica.ANNO_MAX : 2200);
+        el.onchange = () => window.applicaFiltriAvanzati({ [chiave]: el.value });
+        return el;
+    };
+    corpo.appendChild(_riga(T('filter_year_from', 'Dall\'anno'), mkAnno('filtro-da-anno', f.daAnno, 'daAnno', '1300')));
+    corpo.appendChild(_riga(T('filter_year_to', 'All\'anno'), mkAnno('filtro-a-anno', f.aAnno, 'aAnno', '1400')));
+
+    // Scorciatoia per secolo: "sec. XIV" è il modo in cui la domanda viene posta davvero,
+    // e comporre 1301/1400 a mano ogni volta è il genere di attrito che fa smettere di
+    // usare un filtro.
+    const secoli = [{ value: '', label: T('filter_any_century', 'Qualsiasi secolo') }];
+    for (let n = 11; n <= 20; n++) {
+        const romani = ['XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX'][n - 11];
+        secoli.push({ value: String(n), label: 'sec. ' + romani + ' (' + ((n - 1) * 100 + 1) + '-' + (n * 100) + ')' });
+    }
+    const selSecolo = _select('', secoli, (v) => {
+        if (!v) { window.applicaFiltriAvanzati({ daAnno: '', aAnno: '' }); return; }
+        const n = Number(v);
+        window.applicaFiltriAvanzati({ daAnno: String((n - 1) * 100 + 1), aAnno: String(n * 100) });
+    });
+    selSecolo.id = 'filtro-secolo';
+    corpo.appendChild(_riga(T('filter_century', 'Secolo'), selSecolo));
+
     const treStati = [
         { value: '', label: T('filter_any', 'Qualsiasi') },
         { value: 'si', label: T('filter_yes', 'Sì') },
@@ -239,6 +288,17 @@ function _riempiPannello() {
     const selTrasc = _select(f.trascrizione, treStati, v => window.applicaFiltriAvanzati({ trascrizione: v }));
     selTrasc.id = 'filtro-trascrizione';
     corpo.appendChild(_riga(T('filter_transcription', 'Trascrizione'), selTrasc));
+
+    // Fase 2.3: "senza OCR" è la lista di lavoro di chi sta riconoscendo un fondo intero.
+    const selOcr = _select(f.ocr, treStati, v => window.applicaFiltriAvanzati({ ocr: v }));
+    selOcr.id = 'filtro-ocr';
+    corpo.appendChild(_riga(T('filter_ocr', 'Testo OCR'), selOcr));
+
+    // Fase 3.5: "senza collegamenti" è la domanda di chi sta tessendo i rimandi di un fondo
+    // e vuole sapere che cosa gli resta da collegare.
+    const selColl = _select(f.collegamenti, treStati, v => window.applicaFiltriAvanzati({ collegamenti: v }));
+    selColl.id = 'filtro-collegamenti';
+    corpo.appendChild(_riga(T('filter_links', 'Collegamenti'), selColl));
 
     // Promemoria della sintassi campo:valore, che nessuno indovinerebbe da solo.
     const hint = document.createElement('p');
