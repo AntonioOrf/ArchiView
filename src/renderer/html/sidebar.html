@@ -26,7 +26,11 @@
             <div id="sidebar-tags" role="tabpanel" aria-labelledby="btn-tab-tags" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span></h2>
+                        <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span>
+                        <button type="button" onclick="apriGestioneTag()" id="btn-tag-manager" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="tag_manager_title" data-i18n-aria-label="tag_manager_title" title="Gestione tag" aria-label="Gestione tag">
+                            <i data-lucide="settings-2" class="w-4 h-4"></i>
+                        </button>
+                    </h2>
                     <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
                         <i data-lucide="bookmark" class="w-4 h-4 text-stone-400 shrink-0"></i>
                         <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">

@@ -1,32 +1,41 @@
 // @ts-nocheck
-let appData = {
-    // Nessuna cartella predefinita: '' è la radice virtuale del vault (vedi renderSidebar)
-    cartelle: [],
-    manoscritti: [],
-    tipiDocumento: [
-        { id: 'imbreviature', nome: 'Imbreviature Notarili', campi: ['Marginalia', 'Notaio', 'dataCronica', 'dataTopica', 'attori_dinamici', 'tipo_di_atto', 'oggetto', 'elementi_economici'] },
-        { id: 'atti', nome: 'Atti Giudiziari', campi: ['dataCronica', 'magistratura', 'attori_dinamici', 'tipo_di_atto_giur', 'motivazione_processo', 'condanne', 'note'] },
-        { id: 'fiscali', nome: 'Documenti Fiscali', campi: ['dichiarante', 'beni_dinamici', 'debiti_dinamici', 'crediti_dinamici', 'famiglia_dinamici', 'note'] }
-    ],
-    trascrizioneEditorWidth: '50%'
-};
+// La forma del database vuoto la decide `shared/model.ts`, non questo file. Era un letterale
+// qui, e un archivio NUOVO non passa dalle migrazioni: tutto ciò che una migrazione installa
+// — i vocabolari controllati della v4, per dirne una — su un archivio nuovo non esisteva mai,
+// e il bug si vedeva solo alla prima apertura di un vault appena creato (Fase 3.3).
+let appData = window.Model ? window.Model.databaseVuoto()
+    : { cartelle: [], manoscritti: [], tipiDocumento: [], trascrizioneEditorWidth: '50%', schemaVersion: 1 };
 window.cartellaAttuale = '';
 
 async function initData() {
     if (window.apiBrowser) {
         const datiSalvati = await window.apiBrowser.leggiDati();
-        if (datiSalvati) {
-            // Migrazione: Se il file vecchio era solo un array (lista piatta), lo converte nel nuovo formato
-            if (Array.isArray(datiSalvati)) {
-                appData.manoscritti = datiSalvati.map(m => ({...m, cartella: '', tipoDocumento: 'manoscritto'}));
-                await window.apiBrowser.salvaDati(appData); // Salva subito il nuovo formato
-            } else {
-                // Formato già corretto
-                appData = datiSalvati; 
-            }
-        }
         const datiBaseSalvati = await window.apiBrowser.leggiDatiBase();
-        if (datiBaseSalvati) {
+        if (datiSalvati) {
+            // Fase 3.0 — la catena di migrazioni ha preso il posto delle due migrazioni
+            // implicite che stavano qui (lista piatta e tipo `manoscritto`). Lo snapshot di
+            // base entra PRIMA di migrare: va migrato insieme ai record, o il merge a tre vie
+            // confronterebbe una scheda migrata con la sua base non migrata e dichiarerebbe
+            // modificato un archivio che nessuno ha toccato.
+            if (datiBaseSalvati && !Array.isArray(datiSalvati) && typeof datiSalvati === 'object') {
+                datiSalvati.baseObjects = datiBaseSalvati;
+            }
+            const esito = window.Model.migraDatabase(datiSalvati);
+            appData = esito.db;
+            if (esito.futuro) {
+                // File scritto da una versione più recente: si apre com'è. Migrarlo
+                // all'indietro distruggerebbe dati che questa versione non sa di avere.
+                console.warn('[Schema] Il database dichiara la versione', appData.schemaVersion,
+                    '> di quella supportata (' + window.Model.SCHEMA_VERSION + '): aperto senza migrazioni.');
+                window.schemaDalFuturo = true;
+            } else if (esito.applicate.length) {
+                console.info('[Schema] Migrazioni applicate:', esito.applicate.join(' | '));
+                // Si scrive subito: una migrazione che resta in memoria verrebbe rifatta a
+                // ogni apertura, e nel frattempo il file su disco resterebbe nel formato
+                // vecchio per chiunque altro lo legga (export, stampa, sync).
+                await window.apiBrowser.salvaDati(JSON.stringify(appData));
+            }
+        } else if (datiBaseSalvati) {
             appData.baseObjects = datiBaseSalvati;
         }
     }
@@ -43,31 +52,15 @@ async function initData() {
         appData.manoscritti = [];
     }
     
-    // Rimuovi 'manoscritto' e assicurati che i modelli base siano presenti
-    appData.tipiDocumento = appData.tipiDocumento.filter(t => t.id !== 'manoscritto');
-    
-    const predefiniti = [
-        { id: 'imbreviature', nome: 'Imbreviature Notarili', campi: ['Marginalia', 'Notaio', 'dataCronica', 'dataTopica', 'attori_dinamici', 'tipo_di_atto', 'oggetto', 'elementi_economici'] },
-        { id: 'atti', nome: 'Atti Giudiziari', campi: ['dataCronica', 'magistratura', 'attori_dinamici', 'tipo_di_atto_giur', 'motivazione_processo', 'condanne', 'note'] },
-        { id: 'fiscali', nome: 'Documenti Fiscali', campi: ['dichiarante', 'beni_dinamici', 'debiti_dinamici', 'crediti_dinamici', 'famiglia_dinamici', 'note'] }
-    ];
-    
-    predefiniti.forEach(pref => {
-        const index = appData.tipiDocumento.findIndex(t => t.id === pref.id);
-        if (index === -1) {
-            appData.tipiDocumento.unshift(pref); // Aggiunge all'inizio se mancante
-        } else {
-            // Forza l'aggiornamento dei campi per i modelli predefiniti (che non sono modificabili dall'utente)
-            appData.tipiDocumento[index].campi = pref.campi;
-        }
-    });
+    // Fase 3.1 — modelli predefiniti: presenza, ordine e campi li impone `shared/model.ts`.
+    // I campi dei predefiniti NON sono modificabili dall'utente (il modale li marca "non
+    // modificabile"), quindi una differenza è sempre un archivio scritto da una versione
+    // precedente, mai una scelta da rispettare. Il `nome`, invece, non si sovrascrive: è
+    // l'unica cosa di quei tipi che si vede tradotta.
+    // ⚠️ Non su un database dal futuro: là i modelli potrebbero avere campi che questa
+    // versione non conosce, e imporre i nostri li cancellerebbe (stessa regola della 3.0).
+    if (!window.schemaDalFuturo) window.Model.applicaModelliPredefiniti(appData);
 
-    appData.manoscritti.forEach(m => {
-        // Se un record vecchio usava 'manoscritto', lo passiamo a un modello compatibile o al primo
-        if (!m.tipoDocumento || m.tipoDocumento === 'manoscritto') m.tipoDocumento = 'imbreviature';
-        if (!m.cartella) m.cartella = '';
-    });
-    
     if (!appData.trascrizioneEditorWidth) appData.trascrizioneEditorWidth = '50%';
     
     if (window.apiSettings) {
@@ -101,34 +94,93 @@ window.impostaModifichePendenti = function(stato) {
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 };
 
-// Gestore Annullamento (Undo)
+// Gestore Annullamento (Undo) e Ripetizione (Redo) — Fase 4.5
+//
+// Prima della 4.5 questo stack era registrato su QUATTRO eliminazioni e nient'altro: una
+// modifica sbagliata a una scheda, uno spostamento nell'archivio sbagliato o una rinomina
+// non erano annullabili in alcun modo, e il redo non esisteva affatto.
+//
+// ⚠️ TRE REGOLE
+//
+// 1. **`rifaiFn` è facoltativa.** Un'azione che non sa rifarsi si annulla e basta; ciò che
+//    NON può fare è restare in una catena di ripetizioni insieme ad azioni che invece la
+//    sanno fare, perché rifare la terza saltando la seconda produrrebbe uno stato che non è
+//    mai esistito. Annullare un'azione non ripetibile azzera quindi lo stack di redo.
+// 2. **Una nuova azione azzera il redo.** È la regola universale degli editor: la storia si
+//    biforca, e il ramo abbandonato non è più raggiungibile.
+// 3. **Le funzioni catturano COPIE, non riferimenti.** `ripristinaFn` che tiene il record
+//    vivo invece di un clone rimetterebbe in archivio l'oggetto già modificato da un'altra
+//    azione — cioè annullerebbe verso uno stato che nessuno ha mai visto. Vale per chi
+//    registra, non per questo file, ma è qui che il contratto va letto.
 window.gestoreAnnullamento = {
     stack: [],
-    
-    registraAzione(descrizione, ripristinaFn) {
-        this.stack.push({
-            descrizione,
-            ripristinaFn
-        });
+    stackRipetizione: [],
+
+    /**
+     * @param descrizione  testo mostrato nel toast ("Eliminazione di 3 record")
+     * @param ripristinaFn riporta allo stato PRECEDENTE l'azione
+     * @param rifaiFn      (facoltativa) riapplica l'azione. Senza, l'azione non è ripetibile.
+     */
+    registraAzione(descrizione, ripristinaFn, rifaiFn) {
+        this.stack.push({ descrizione, ripristinaFn, rifaiFn });
         // Limitiamo la cronologia a 50 azioni per non consumare troppa memoria
         if (this.stack.length > 50) {
             this.stack.shift();
         }
+        this.stackRipetizione = [];
     },
-    
+
+    puoAnnullare() { return this.stack.length > 0; },
+    puoRipetere() { return this.stackRipetizione.length > 0; },
+
     async annullaUltimaAzione() {
         if (this.stack.length === 0) {
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_nessuna_azione_da_annulla", "Nessuna azione da annullare."), "info");
             return;
         }
-        
+
         const azione = this.stack.pop();
         try {
             await azione.ripristinaFn();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_annullato_var", "Annullato: {var0}").replace("{var0}", String(azione.descrizione)), "success");
+            if (azione.rifaiFn) {
+                this.stackRipetizione.push(azione);
+                if (this.stackRipetizione.length > 50) this.stackRipetizione.shift();
+            } else {
+                // Regola 1: una catena di ripetizioni con un buco in mezzo ricostruirebbe
+                // uno stato mai esistito.
+                this.stackRipetizione = [];
+            }
+            if (typeof mostraMessaggio === 'function') {
+                const testo = window.t("msg_annullato_var", "Annullato: {var0}").replace("{var0}", String(azione.descrizione));
+                if (azione.rifaiFn) mostraMessaggio(testo, "success", null, { label: window.t('btn_redo', 'Ripeti'), onClick: () => window.gestoreAnnullamento.ripetiUltimaAzione() });
+                else mostraMessaggio(testo, "success");
+            }
         } catch (err) {
             console.error("Errore durante l'annullamento:", err);
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_l_annullam", "Errore durante l'annullamento dell'azione."), "error");
+        }
+    },
+
+    async ripetiUltimaAzione() {
+        if (this.stackRipetizione.length === 0) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_nothing_to_redo", "Nessuna azione da ripetere."), "info");
+            return;
+        }
+
+        const azione = this.stackRipetizione.pop();
+        try {
+            await azione.rifaiFn();
+            // Torna sullo stack dell'undo SENZA passare da `registraAzione`, che azzererebbe
+            // la coda delle ripetizioni ancora da fare.
+            this.stack.push(azione);
+            if (this.stack.length > 50) this.stack.shift();
+            if (typeof mostraMessaggio === 'function') {
+                mostraMessaggio(window.t("msg_ripetuto_var", "Ripetuto: {var0}").replace("{var0}", String(azione.descrizione)), "success",
+                    () => window.gestoreAnnullamento.annullaUltimaAzione());
+            }
+        } catch (err) {
+            console.error("Errore durante la ripetizione:", err);
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_ripetizione", "Errore durante la ripetizione dell'azione."), "error");
         }
     }
 };
@@ -150,9 +202,10 @@ async function eseguiSalvataggio() {
     if (!window.apiBrowser) return;
 
     // Validazione lato renderer: il main riceve la stringa già serializzata e non la ri-parsa.
-    if (!appData || !Array.isArray(appData.manoscritti) || !Array.isArray(appData.cartelle)) {
-        throw new Error("Stato in memoria non valido: salvataggio annullato.");
-    }
+    // Il criterio è quello condiviso di `shared/model.ts` (Fase 3.0): due validazioni diverse
+    // per lo stesso file darebbero due diagnosi diverse sullo stesso guasto.
+    const motivo = window.Model.motivoNonValido(appData);
+    if (motivo) throw new Error("Stato in memoria non valido: " + motivo + ". Salvataggio annullato.");
 
     // Serializzazione unica: evita structured-clone dell'intero DB via IPC + stringify nel main.
     const payload = JSON.stringify(appData);
@@ -197,14 +250,85 @@ window.flushSalvataggio = function() {
     if (saveTimer || saveDirty) return salvaTutto();
     return saveChain;
 };
+/**
+ * Fase 4.2 — Riporta l'archivio allo stato di uno snapshot locale.
+ *
+ * ⚠️ NON è "sovrascrivi il file e ricarica". Un ripristino è una MODIFICA dell'utente, e
+ * come tale deve poter viaggiare:
+ *
+ * 1. **Le schede che tornano indietro vengono rifirmate.** Con il loro `lastModified`
+ *    d'origine — più vecchio di quello che i colleghi hanno già ricevuto — il primo sync
+ *    rimetterebbe le cose com'erano, e il ripristino durerebbe fino al pull successivo.
+ * 2. **Le schede create DOPO lo snapshot vengono eliminate con il loro tombstone.** Senza,
+ *    tornerebbero dal cloud a ogni sync: sul server esistono ancora.
+ * 3. **`baseObjects` e `baseHashes` NON si ripristinano.** Descrivono ciò che il cloud ha
+ *    visto, non ciò che c'è in locale: sostituirli con quelli dello snapshot farebbe
+ *    credere al merge a tre vie che il cloud sia tornato indietro anche lui, e ogni scheda
+ *    modificata nel frattempo da un collega risulterebbe un conflitto.
+ */
+window.ripristinaDatabase = async function(dbSnapshot) {
+    if (!dbSnapshot || typeof dbSnapshot !== 'object') throw new Error('Snapshot non valido');
+    const esito = window.Model.migraDatabase(dbSnapshot);
+    const nuovo = esito.db;
+    if (!window.Model.databaseValido(nuovo)) throw new Error(window.Model.motivoNonValido(nuovo));
+
+    const settings = window.apiSettings ? await window.apiSettings.get() : {};
+    const username = settings.username || 'Anonimo';
+    const adesso = Date.now();
+
+    const attualiPerId = new Map((appData.manoscritti || []).map(m => [String(m.id), m]));
+    const ripristinatiPerId = new Map((nuovo.manoscritti || []).map(m => [String(m.id), m]));
+
+    for (const m of nuovo.manoscritti) {
+        const attuale = attualiPerId.get(String(m.id));
+        const cambiato = !attuale || (typeof window.getRecordHash === 'function'
+            ? window.getRecordHash(attuale) !== window.getRecordHash(m)
+            : JSON.stringify(attuale) !== JSON.stringify(m));
+        if (cambiato) {
+            m.lastModified = adesso;
+            m.modificatoDa = username;
+        }
+    }
+
+    // Punto 2: ciò che c'era e nello snapshot non c'è più è, a tutti gli effetti, eliminato.
+    const tombstone = new Set((appData.deletedIds || []).map(String));
+    for (const id of attualiPerId.keys()) if (!ripristinatiPerId.has(id)) tombstone.add(id);
+    // …e ciò che torna in vita non è più eliminato.
+    for (const id of ripristinatiPerId.keys()) tombstone.delete(id);
+
+    // Punto 3: la memoria del sync resta quella corrente.
+    const baseObjects = appData.baseObjects;
+    const baseHashes = appData.baseHashes;
+
+    appData = nuovo;
+    appData.deletedIds = Array.from(tombstone);
+    appData.baseObjects = baseObjects;
+    appData.baseHashes = baseHashes;
+
+    if (typeof window.normalizzaCartelle === 'function') window.normalizzaCartelle();
+    await salvaTutto();
+    if (typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
+    if (typeof renderSidebar === 'function') renderSidebar();
+    if (typeof renderMain === 'function') renderMain();
+    return { schede: appData.manoscritti.length, eliminate: tombstone.size };
+};
+
 window.sincronizzaEUnisciDati = async function(nuovoDati) {
     if (!nuovoDati) return;
-    
+
+    // Fase 3.0 — il database che arriva dal cloud può essere stato scritto da una versione
+    // più vecchia dell'app (un collega che non ha aggiornato): va migrato PRIMA del merge,
+    // o le sue schede entrerebbero nell'archivio locale nella forma vecchia e la migrazione
+    // non le rivedrebbe più. Un file dal futuro resta invece intatto: si fondono i record,
+    // non lo schema.
+    if (window.Model) nuovoDati = window.Model.migraDatabase(nuovoDati).db;
+
     return new Promise((resolve) => {
         const loadedAt = window.ultimoCaricamento || 0;
         let conflitti = [];
         if (typeof window.rilevaConflitti === 'function') {
-            conflitti = window.rilevaConflitti(appData.manoscritti, nuovoDati.manoscritti, loadedAt, appData.baseHashes || {});
+            conflitti = window.rilevaConflitti(appData.manoscritti, nuovoDati.manoscritti, loadedAt,
+                appData.baseHashes || {}, appData.baseObjects || {});
         }
         
         const eseguiMergeFinale = async (resolvedCards = []) => {
@@ -218,6 +342,23 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
             appData.cartelle = Array.from(cartelleSet).sort();
             appData.deletedCartelle = Array.from(mergedDeletedCartelle);
             
+            // 1-bis. Fondi l'anagrafica dei tag (Fase 3.4). Non è un campo del record,
+            // quindi non passa da `rilevaConflitti`: unione per chiave, e sul colore
+            // vince chi l'ha cambiato per ultimo.
+            const anagraficaFusa = window.Model.unisciAnagraficheTag(
+                appData.tagsAnagrafica, nuovoDati.tagsAnagrafica
+            );
+            if (Object.keys(anagraficaFusa).length) appData.tagsAnagrafica = anagraficaFusa;
+
+            // 1-ter. Vocabolari controllati (3.3) e anagrafica di persone e luoghi (3.5).
+            // ⚠️ I vocabolari NON si fondono come i tag: l'unione è sui VALORI, non
+            // last-write-wins sull'intero vocabolario — due colleghi che ne aggiungono uno
+            // ciascuno nella stessa sessione perderebbero quello scritto per primo.
+            const vocFusi = window.Model.unisciVocabolari(appData.vocabolari, nuovoDati.vocabolari);
+            if (Object.keys(vocFusi).length) appData.vocabolari = vocFusi;
+            const authFusa = window.Model.unisciAuthority(appData.authority, nuovoDati.authority);
+            if (Object.keys(authFusa).length) appData.authority = authFusa;
+
             // 2. Fondi i tipiDocumento
             const tipiMap = new Map();
             (nuovoDati.tipiDocumento || []).forEach(t => tipiMap.set(t.id, t));
@@ -248,7 +389,20 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 if (local && external) {
                     const baseHashes = appData.baseHashes || {};
                     const baseHash = baseHashes[id];
-                    
+                    const baseObj = (appData.baseObjects || {})[id];
+
+                    // Fase 4.4 — quando c'è l'oggetto di base, la fusione è per CAMPO: due
+                    // colleghi che modificano campi diversi della stessa scheda non
+                    // producono più un conflitto, e nemmeno una versione che ne cancella
+                    // l'altra. I conflitti veri sono già passati dal modale e stanno in
+                    // `resolvedMap`, quindi qui `esito.conflitti` è vuoto salvo che
+                    // l'utente abbia annullato: in quel caso vince il locale, che è ciò
+                    // che `fondiRecord` lascia nei campi contesi.
+                    if (baseObj && window.Model && typeof window.Model.fondiRecord === 'function') {
+                        mergedManoscritti.push(window.Model.fondiRecord(baseObj, local, external).fuso);
+                        continue;
+                    }
+
                     if (!baseHash || typeof window.getRecordHash !== 'function') {
                         // Fallback timestamp: nessun baseHash (documento precedente alla migrazione hash)
                         const tLocal = local.lastModified || 0;

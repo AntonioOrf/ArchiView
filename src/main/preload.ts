@@ -43,7 +43,19 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     cloneWorkspaceHub: (basePath, folderName, hubConfig, database) => ipcRenderer.invoke('clone-workspace-hub', basePath, folderName, hubConfig, database),
     exportWorkspaceZip: (title) => ipcRenderer.invoke('export-workspace-zip', title),
     exportZip: (ids, title) => ipcRenderer.invoke('export-zip', ids, title),
+    exportCsv: (ids, opzioni) => ipcRenderer.invoke('export-csv', ids, opzioni),
     importZip: (title) => ipcRenderer.invoke('import-zip', title),
+    // Fase 2.4 — il main apre il dialogo e legge il file; l'analisi e la costruzione delle
+    // schede stanno in shared/csvImport.ts, che gira nel renderer (vedi exportImportIpc.ts).
+    importCsvLeggi: (titolo) => ipcRenderer.invoke('import-csv-leggi', titolo),
+    // Stampa e PDF (Fase 2.2): il renderer manda ids + opzioni e riceve un esito. Template,
+    // finestra di rendering e stampante restano nel main.
+    printPdf: (ids, opzioni) => ipcRenderer.invoke('print-pdf', ids, opzioni),
+    printDirect: (ids, opzioni) => ipcRenderer.invoke('print-direct', ids, opzioni),
+    // Export testuali (Fasi 2.5 e 2.6): il renderer manda ids + opzioni, il main scrive il
+    // file. HTML/Markdown/RTF per la trascrizione, BibTeX/RIS per la citazione.
+    exportTranscript: (ids, opzioni) => ipcRenderer.invoke('export-transcript', ids, opzioni),
+    exportCitations: (ids, opzioni) => ipcRenderer.invoke('export-citations', ids, opzioni),
     duplicateRecords: (ids, targetFolder) => ipcRenderer.invoke('duplicate-records', ids, targetFolder),
     deleteVaultLocal: (path) => ipcRenderer.invoke('delete-vault-local', path),
     
@@ -59,6 +71,34 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (event, progressObj) => callback(progressObj)),
     onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', () => callback()),
     onUpdateError: (callback) => ipcRenderer.on('update-error', (event, payload) => callback(payload))
+});
+
+// OCR degli allegati (Fase 2.3). Il renderer non vede mai né tesseract né pdf.js: chiede
+// un riconoscimento e riceve testo. Motore, pagine e dati di lingua restano nel main.
+contextBridge.exposeInMainWorld('apiOcr', {
+    lingue: () => ipcRenderer.invoke('ocr-lingue'),
+    installaLingua: (codice) => ipcRenderer.invoke('ocr-installa-lingua', codice),
+    rimuoviLingua: (codice) => ipcRenderer.invoke('ocr-rimuovi-lingua', codice),
+    esegui: (opzioni) => ipcRenderer.invoke('ocr-esegui', opzioni),
+    annulla: () => ipcRenderer.invoke('ocr-annulla'),
+    stato: () => ipcRenderer.invoke('ocr-stato'),
+    onProgress: (callback) => ipcRenderer.on('ocr-progress', (event, dati) => callback(dati))
+});
+
+// Fase 4 — sicurezza del dato. Il renderer non vede mai un percorso: chiede per nome di
+// snapshot o per id di scheda. Cestino e snapshot vivono in <workspace>/.archiview/ e non
+// entrano nel database, quindi non si sincronizzano (vedi main/trash.ts).
+contextBridge.exposeInMainWorld('apiSicurezza', {
+    cestinoElenca: () => ipcRenderer.invoke('cestino-elenca'),
+    cestinoAggiungi: (records, da) => ipcRenderer.invoke('cestino-aggiungi', records, da),
+    cestinoPrendi: (ids) => ipcRenderer.invoke('cestino-prendi', ids),
+    cestinoElimina: (ids) => ipcRenderer.invoke('cestino-elimina', ids),
+    cestinoSvuota: () => ipcRenderer.invoke('cestino-svuota'),
+    snapshotElenca: () => ipcRenderer.invoke('snapshot-elenca'),
+    snapshotCrea: (motivo) => ipcRenderer.invoke('snapshot-crea', motivo),
+    snapshotCarica: (nome) => ipcRenderer.invoke('snapshot-carica', nome),
+    snapshotElimina: (nome) => ipcRenderer.invoke('snapshot-elimina', nome),
+    storiaRecord: (id) => ipcRenderer.invoke('snapshot-storia-record', id)
 });
 
 contextBridge.exposeInMainWorld('apiSettings', {

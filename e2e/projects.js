@@ -12,8 +12,8 @@
 // (agganciata a `npm run test:unit`) esiste per intercettare esattamente questo.
 const PROJECTS = {
   smoke: ['app', 'workspace', 'security'],
-  ui: ['ui', 'list-view', 'sidebar-panels', 'context-menu', 'modals-misc', 'flow-responsive', 'form', 'sort-table', 'image-viewer', 'filters', 'command-palette', 'tutorial'],
-  data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict'],
+  ui: ['ui', 'list-view', 'sidebar-panels', 'context-menu', 'modals-misc', 'flow-responsive', 'form', 'sort-table', 'image-viewer', 'filters', 'command-palette', 'tutorial', 'bulk-actions'],
+  data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict', 'csv-export', 'csv-import', 'ocr', 'print', 'text-export', 'schema-migration', 'typed-fields', 'campi-propri', 'data-storica', 'tags-entity', 'fase3', 'fase4'],
   cloud: ['cloud-status', 'cloud-offline'],
   a11y: ['a11y', 'a11y-global']
 };

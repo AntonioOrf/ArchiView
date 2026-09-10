@@ -42,6 +42,18 @@
          Le due vanno insieme e in quest'ordine: i modali chiamano applicaTraduzioniHtml()
          gia' in fase di init, e quella usa sia window.t (i18n) sia window.sanitizeHTML
          (utils). Spostare solo i18n rompe i modali invece di sistemarli. -->
+    <!-- Fase 3.0 — Schema, versione e migrazioni del dato. PRIMO fra gli script dell'app:
+         `state.js` migra il database appena letto e `itemsLogic.js` crea le schede da qui,
+         quindi `window.Model` deve esistere prima di tutti. Il file è copiato da
+         out/shared/ da scripts/copy-shared.js. -->
+    <script defer src="js/shared/model.js"></script>
+    <!-- Fase 3.2 — parser della data storica. Dopo il modello (ne condivide le convenzioni)
+         e prima di utils/mainView, che lo usano per ordinare e filtrare. -->
+    <script defer src="js/shared/dataStorica.js"></script>
+    <!-- Fase 2.4 — analisi del CSV e costruzione delle schede da importare. Usa il modello
+         (tipi dei campi, `creaScheda`) e lo cerca al momento della chiamata, non al
+         caricamento: l'ordine con model.js conta comunque, ed è questo. -->
+    <script defer src="js/shared/csvImport.js"></script>
     <script defer src="js/logic/i18n.js"></script>
     <script defer src="js/logic/utils.js"></script>
 
@@ -51,6 +63,7 @@
     <script defer src="js/components/modals/folderModal.js"></script>
     <script defer src="js/components/modals/newTypeModal.js"></script>
     <script defer src="js/components/modals/manageTypesModal.js"></script>
+    <script defer src="js/components/modals/campoProprioModal.js"></script>
     <script defer src="js/components/modals/deleteModal.js"></script>
     <script defer src="js/components/modals/unsavedModal.js"></script>
     <script defer src="js/components/modals/renameModal.js"></script>
@@ -84,11 +97,26 @@
     <script defer src="js/logic/itemsLogic.js"></script>
     <script defer src="js/logic/attachmentsLogic.js"></script>
     <script defer src="js/logic/typesLogic.js"></script>
+    <script defer src="js/logic/campiPropriLogic.js"></script>
+    <script defer src="js/logic/riordinoCampiLogic.js"></script>
     <script defer src="js/logic/settingsLogic.js"></script>
     <script defer src="js/logic/diffMergeLogic.js"></script>
     <script defer src="js/logic/hubLogic.js"></script>
     <script defer src="js/logic/driveLogic.js"></script>
     <script defer src="js/logic/realtimeLogic.js"></script>
+    <!-- Tag come entità (Fase 3.4): operazioni d'archivio su rinomina, fusione, colore.
+         Dopo store.js, di cui usa `commit()`, e prima di sidebar/mainView, che ne usano
+         `classeColoreTag` per disegnare i chip. -->
+    <script defer src="js/logic/tagsLogic.js"></script>
+    <!-- Vocabolari controllati (3.3), relazioni e anagrafica (3.5), duplicati (3.6).
+         Dopo store.js, di cui usa `commit()`, e prima dei pannelli che ne chiamano le
+         operazioni. -->
+    <script defer src="js/logic/vocabolariLogic.js"></script>
+
+    <!-- Cestino (Fase 4.1): le mutazioni. Dopo store.js, di cui usa `commit()`. Chi
+         elimina (itemsLogic, foldersLogic, app) chiama `cestinaRecord` solo in risposta a
+         un click, quindi l'ordine con quei file non conta. -->
+    <script defer src="js/logic/cestinoLogic.js"></script>
 
     <script defer src="js/components/contextMenu.js"></script>
     <!-- Filtri avanzati e ricerche salvate (Fase 1.3): i predicati stanno in
@@ -98,12 +126,42 @@
          filtersPanel, di cui riusa i comandi, e prima di mainView/app, che non la
          invocano al caricamento ma solo in risposta a un tasto. -->
     <script defer src="js/components/commandPalette.js"></script>
+    <!-- Azioni in massa (Fase 1.5): dopo la palette, che ne elenca i comandi, e prima di
+         app.js, che aggancia le scorciatoie e le voci di menu. -->
+    <script defer src="js/components/bulkActions.js"></script>
+    <!-- Pannello "Gestione tag" (Fase 3.4): dopo logic/tagsLogic.js, che contiene le
+         mutazioni, e prima di app.js per la voce di menu e la chiusura con Esc. -->
+    <script defer src="js/components/tagManager.js"></script>
+    <!-- Pannelli "Vocabolari"/"Segnature ripetute" (3.3/3.6) e "Persone e luoghi" (3.5):
+         dopo logic/vocabolariLogic.js, che contiene le mutazioni, e prima di app.js per le
+         voci di menu e la chiusura con Esc. -->
+    <script defer src="js/components/vocabolariPanel.js"></script>
+    <script defer src="js/components/authorityPanel.js"></script>
+    <!-- Vista a grafo dei collegamenti (3.5): usa `relazioniRisolte` di vocabolariLogic e
+         `grafoRelazioni` del modello, entrambi solo al click. -->
+    <script defer src="js/components/grafoPanel.js"></script>
+    <!-- OCR degli allegati (Fase 2.3). Prima di mainView.js, che ne usa `testoOcrRecord`
+         per indicizzare il testo riconosciuto, e prima di app.js per le voci di menu. -->
+    <script defer src="js/components/ocrPanel.js"></script>
+    <!-- Stampa e PDF (Fase 2.2): usa `colonneTabellaCorrenti` e `getManoscrittiFiltrati`
+         di mainView solo al click, mai al caricamento, quindi l'ordine con quello non
+         conta; conta invece stare prima di app.js, che aggancia Ctrl+P e le voci di menu. -->
+    <script defer src="js/components/printPanel.js"></script>
+    <!-- Export testuali (Fasi 2.5 e 2.6): DOPO printPanel, da cui prende `ambitiSelezione`
+         e le intestazioni (fondo, autore, data), e prima di app.js per le voci di menu. -->
+    <script defer src="js/components/exportPanel.js"></script>
     <script defer src="js/components/cloudStatus.js"></script>
     <script defer src="js/components/toasts.js"></script>
     <script defer src="js/components/modals.js"></script>
     <script defer src="js/components/form.js"></script>
     <script defer src="js/components/mainView.js"></script>
     <script defer src="js/components/sidebar.js"></script>
+    <!-- Wizard di import CSV (Fase 2.4): l'analisi sta in js/shared/csvImport.js, qui c'è
+         solo il modale. Prima di app.js per la voce di menu e la chiusura con Esc. -->
+    <script defer src="js/components/importPanel.js"></script>
+    <!-- Pannello "Cestino" (Fase 4.1): dopo logic/cestinoLogic.js, che contiene le
+         mutazioni, e prima di app.js per la voce di menu e la chiusura con Esc. -->
+    <script defer src="js/components/cestinoPanel.js"></script>
     <script defer src="js/components/history.js"></script>
     <script defer src="js/components/issueModal.js"></script>
     <script defer src="js/logic/a11yModal.js"></script>

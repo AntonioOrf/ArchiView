@@ -29,13 +29,32 @@ window.SCORCIATOIE = [
         { tasti: ['Ctrl', 'F'], chiave: 'shortcut_search', testo: 'Vai alla ricerca' },
         { tasti: ['Ctrl', 'N'], chiave: 'shortcut_new', testo: 'Nuova scheda' },
         { tasti: ['Ctrl', 'S'], chiave: 'shortcut_save', testo: 'Salva la scheda o la trascrizione aperta' },
+        { tasti: ['Ctrl', 'P'], chiave: 'shortcut_print', testo: 'Stampa o salva in PDF' },
         { tasti: ['Ctrl', 'Z'], chiave: 'shortcut_undo', testo: 'Annulla l\u2019ultima azione' },
-        { tasti: ['Esc'], chiave: 'shortcut_esc', testo: 'Chiudi la finestra in primo piano, o svuota la ricerca' }
+        { tasti: ['Ctrl', 'Y'], chiave: 'shortcut_redo', testo: 'Ripeti l\u2019azione annullata (anche Ctrl+Maiusc+Z)' },
+        { tasti: ['Esc'], chiave: 'shortcut_esc', testo: 'Chiudi la finestra in primo piano, svuota la ricerca o azzera la selezione' }
     ]},
     { gruppo: 'shortcut_group_selection', etichetta: 'Selezione', voci: [
         { tasti: ['Ctrl', 'clic'], chiave: 'shortcut_multi', testo: 'Aggiungi o togli una scheda dalla selezione' },
         { tasti: ['Maiusc', 'clic'], chiave: 'shortcut_range', testo: 'Seleziona l\u2019intervallo fino alla scheda cliccata' },
+        { tasti: ['Ctrl', 'A'], chiave: 'shortcut_select_all', testo: 'Seleziona tutti i risultati, anche nelle pagine successive' },
+        { tasti: ['Ctrl', 'D'], chiave: 'shortcut_deselect', testo: 'Azzera la selezione' },
         { tasti: ['clic destro'], chiave: 'shortcut_menu', testo: 'Menu delle azioni sulla scheda o sulla cartella' }
+    ]},
+    // Fase 1.5. Tutte inerti dentro un campo di testo e sopra un modale aperto: vedi
+    // `scorciatoiaSuSchede` in app.ts, che è dove sono implementate.
+    { gruppo: 'shortcut_group_bulk', etichetta: 'Schede selezionate', voci: [
+        { tasti: ['F2'], chiave: 'shortcut_edit', testo: 'Modifica la scheda selezionata' },
+        { tasti: ['Ctrl', 'C'], chiave: 'shortcut_copy', testo: 'Copia le schede selezionate' },
+        { tasti: ['Ctrl', 'X'], chiave: 'shortcut_cut', testo: 'Taglia le schede selezionate' },
+        { tasti: ['Ctrl', 'V'], chiave: 'shortcut_paste', testo: 'Incolla nell’archivio corrente' },
+        { tasti: ['Ctrl', 'E'], chiave: 'shortcut_export_sel', testo: 'Esporta la selezione in ZIP' },
+        { tasti: ['Ctrl', 'Maiusc', 'E'], chiave: 'shortcut_export_sel_csv', testo: 'Esporta la selezione in CSV' },
+        { tasti: ['Canc'], chiave: 'shortcut_delete_sel', testo: 'Elimina le schede selezionate' },
+        { tasti: ['Ctrl', 'Maiusc', 'M'], chiave: 'shortcut_bulk_move', testo: 'Sposta la selezione in un archivio' },
+        { tasti: ['Ctrl', 'Maiusc', 'T'], chiave: 'shortcut_bulk_type', testo: 'Cambia il tipo di documento della selezione' },
+        { tasti: ['Ctrl', 'Maiusc', 'L'], chiave: 'shortcut_bulk_tag', testo: 'Aggiungi o rimuovi tag sulla selezione' },
+        { tasti: ['Ctrl', 'H'], chiave: 'shortcut_bulk_replace', testo: 'Trova e sostituisci in un campo della selezione' }
     ]},
     { gruppo: 'shortcut_group_transcription', etichetta: 'Trascrizione', voci: [
         { tasti: ['Alt', '\u2190'], chiave: 'shortcut_prev_att', testo: 'Allegato precedente' },
@@ -156,6 +175,14 @@ function comandiAzione() {
         chiavi: ['reset', 'pulisci'],
         esegui: () => { window.azzeraFiltriRicerca(); if (_disponibile('renderMain')) renderMain(); }
     });
+    // Fase 2.3 — la gestione delle lingue è l'unico comando OCR che ha senso senza contesto:
+    // il riconoscimento vero ha bisogno di una scheda, e vive nel menu della scheda.
+    agg(_disponibile('apriGestioneLingueOcr'), {
+        id: 'ocr-lingue', icon: 'languages',
+        label: _T('ocr_langs_title', 'Lingue del riconoscimento'),
+        chiavi: ['ocr', 'lingua', 'tesseract', 'riconoscimento'],
+        esegui: () => window.apriGestioneLingueOcr()
+    });
     agg(_disponibile('apriNewTypeModal'), {
         id: 'nuovo-modello', icon: 'file-plus-2',
         label: _T('btn_new_model', 'Nuovo modello'),
@@ -180,11 +207,65 @@ function comandiAzione() {
         chiavi: ['zip'],
         esegui: () => importaManoscritto()
     });
+    agg(_disponibile('apriImportCsv'), {
+        id: 'importa-csv', icon: 'file-input',
+        label: _T('imp_title', 'Importa da CSV'),
+        chiavi: ['csv', 'excel', 'foglio', 'tabella', 'importa', 'tsv'],
+        esegui: () => window.apriImportCsv()
+    });
     agg(_disponibile('esportaCartellaAttuale'), {
         id: 'esporta', icon: 'upload',
         label: _T('btn_export_folder', 'Esporta Cartella'),
         chiavi: ['zip', 'backup', 'copia'],
         esegui: () => esportaCartellaAttuale()
+    });
+    agg(_disponibile('esportaCartellaCsv'), {
+        id: 'esporta-csv', icon: 'table',
+        label: _T('btn_export_csv', 'Esporta Cartella in CSV'),
+        chiavi: ['csv', 'excel', 'tabella', 'foglio'],
+        esegui: () => window.esportaCartellaCsv('csv')
+    });
+    agg(_disponibile('esportaCartellaCsv'), {
+        id: 'esporta-tsv', icon: 'table',
+        label: _T('btn_export_tsv', 'Esporta Cartella in TSV'),
+        chiavi: ['tsv', 'tab', 'tabella'],
+        esegui: () => window.esportaCartellaCsv('tsv')
+    });
+    // Fase 2.2 — stampa. Tre voci e non una: il layout è la scelta che conta, e passare
+    // dal modale ogni volta per selezionarlo sarebbe due clic in più su un'operazione che
+    // in un ciclo di schedatura si ripete decine di volte.
+    agg(_disponibile('apriStampa'), {
+        id: 'stampa', icon: 'printer', scorciatoia: 'Ctrl+P',
+        label: _T('print_title', 'Stampa e PDF'),
+        chiavi: ['stampa', 'pdf', 'print', 'carta'],
+        esegui: () => window.apriStampa()
+    });
+    agg(_disponibile('apriStampa'), {
+        id: 'stampa-regesto', icon: 'list',
+        label: _T('print_cmd_regest', 'Stampa il regesto della cartella'),
+        chiavi: ['regesto', 'inventario', 'elenco', 'stampa'],
+        esegui: () => { window.impostazioniStampa.layout = 'regesto'; window.apriStampa('cartella'); }
+    });
+    // Fasi 2.5/2.6 — export testuali. Tre voci per lo stesso modale: chi cerca "bibtex" o
+    // "word" non sa che quella funzione si chiama "esporta testo", e una palette che
+    // risponde solo al nome esatto del comando è un elenco, non una ricerca.
+    agg(_disponibile('apriEsportaTesto'), {
+        id: 'esporta-trascrizione', icon: 'file-output',
+        label: _T('tx_cmd_transcription', 'Esporta la trascrizione (HTML, Markdown, RTF)'),
+        chiavi: ['trascrizione', 'testo', 'html', 'markdown', 'rtf', 'word', 'esporta'],
+        esegui: () => window.apriEsportaTesto(null, 'html')
+    });
+    agg(_disponibile('apriEsportaTesto'), {
+        id: 'esporta-citazione', icon: 'quote',
+        label: _T('tx_cmd_citation', 'Esporta la citazione (BibTeX, RIS)'),
+        chiavi: ['citazione', 'bibtex', 'ris', 'zotero', 'bibliografia', 'endnote'],
+        esegui: () => window.apriEsportaTesto(null, 'bibtex')
+    });
+    agg(_disponibile('stampaVistaCorrente'), {
+        id: 'stampa-vista', icon: 'printer',
+        label: _T('print_current_view', 'Stampa la vista'),
+        chiavi: ['stampa', 'vista', 'schermo'],
+        esegui: () => window.stampaVistaCorrente()
     });
     agg(_disponibile('apriImpostazioni'), {
         id: 'impostazioni', icon: 'settings',
@@ -282,8 +363,159 @@ function comandiScheda(query) {
     return voci;
 }
 
+/**
+ * Comandi che agiscono sulla SELEZIONE. Sono elencati solo quando una selezione esiste
+ * davvero (a parte "seleziona tutti"): la palette non deve offrire un'azione in massa
+ * senza massa su cui agire — si aprirebbe un modale capace solo di rispondere
+ * "seleziona almeno una scheda", cioè un comando che non fa nulla. È lo stesso
+ * criterio con cui la 1.4 elenca un solo comando di cambio vista.
+ */
+function comandiSelezione() {
+    const voci = [];
+    const G = _T('cp_group_selection', 'Selezione');
+    const n = (window.selectedRecords && window.selectedRecords.length) || 0;
+
+    if (_disponibile('selezionaTuttiIRisultati')) {
+        voci.push({
+            id: 'seleziona-tutti', gruppo: G, icon: 'check-square', scorciatoia: 'Ctrl+A',
+            label: _T('menu_select_all', 'Seleziona tutti i risultati'),
+            chiavi: ['selezione', 'tutto'],
+            esegui: () => window.selezionaTuttiIRisultati()
+        });
+    }
+    if (n === 0) return voci;
+
+    const suffisso = ' (' + n + ')';
+    const agg = (cond, v) => { if (cond) voci.push(Object.assign({ gruppo: G }, v)); };
+
+    agg(_disponibile('azzeraSelezione'), {
+        id: 'deseleziona', icon: 'x', scorciatoia: 'Ctrl+D',
+        label: _T('btn_clear_selection', 'Deseleziona') + suffisso,
+        esegui: () => window.azzeraSelezione()
+    });
+    agg(_disponibile('apriAzioneMassa'), {
+        id: 'massa-cartella', icon: 'folder-input', scorciatoia: 'Ctrl+Maiusc+M',
+        label: _T('bulk_move_title', 'Sposta in un archivio') + suffisso,
+        chiavi: ['sposta', 'cartella'],
+        esegui: () => window.apriAzioneMassa('cartella')
+    });
+    agg(_disponibile('apriAzioneMassa'), {
+        id: 'massa-tipo', icon: 'shapes', scorciatoia: 'Ctrl+Maiusc+T',
+        label: _T('bulk_type_title', 'Cambia tipo di documento') + suffisso,
+        chiavi: ['modello', 'tipo'],
+        esegui: () => window.apriAzioneMassa('tipo')
+    });
+    agg(_disponibile('apriAzioneMassa'), {
+        id: 'massa-tag', icon: 'tags', scorciatoia: 'Ctrl+Maiusc+L',
+        label: _T('bulk_tag_title', 'Aggiungi o rimuovi tag') + suffisso,
+        chiavi: ['etichette', 'tag'],
+        esegui: () => window.apriAzioneMassa('tag')
+    });
+    agg(_disponibile('apriGestioneTag'), {
+        id: 'gestione-tag', icon: 'tags',
+        label: _T('tag_manager_title', 'Gestione tag'),
+        chiavi: ['etichette', 'tag', 'rinomina', 'fondi', 'colore'],
+        esegui: () => window.apriGestioneTag()
+    });
+    agg(_disponibile('apriVocabolari'), {
+        id: 'vocabolari', icon: 'list-tree',
+        label: _T('vocab_title', 'Vocabolari controllati'),
+        chiavi: ['vocabolario', 'valori', 'elenco', 'supporto', 'lingua'],
+        esegui: () => window.apriVocabolari()
+    });
+    agg(_disponibile('apriAnagrafica'), {
+        id: 'anagrafica', icon: 'users',
+        label: _T('auth_title', 'Persone e luoghi'),
+        chiavi: ['persone', 'luoghi', 'authority', 'attori'],
+        esegui: () => window.apriAnagrafica()
+    });
+    agg(_disponibile('apriGrafo'), {
+        id: 'grafo', icon: 'git-fork',
+        label: _T('graph_title', 'Grafo dei collegamenti'),
+        chiavi: ['grafo', 'rete', 'collegamenti', 'mappa'],
+        esegui: () => window.apriGrafo()
+    });
+    // Fase 4 — sicurezza del dato. Il cestino e gli snapshot sono comandi che si cercano
+    // quando è già successo qualcosa: la palette è il posto in cui si cerca per NOME
+    // ("cestino", "recupera") senza sapere in quale menu qualcuno li abbia messi.
+    agg(_disponibile('apriCestino'), {
+        id: 'cestino', icon: 'trash-2',
+        label: _T('trash_title', 'Cestino'),
+        chiavi: ['cestino', 'eliminate', 'recupera', 'ripristina', 'cancellate'],
+        esegui: () => window.apriCestino()
+    });
+    agg(_disponibile('creaSnapshotOra'), {
+        id: 'snapshot-crea', icon: 'hard-drive',
+        label: _T('snap_create_cmd', 'Crea uno snapshot dell\'archivio'),
+        chiavi: ['snapshot', 'backup', 'copia', 'sicurezza', 'cronologia'],
+        esegui: () => window.creaSnapshotOra()
+    });
+    agg(_disponibile('apriStoriaRecord') && window.selectedRecords && window.selectedRecords.length === 1, {
+        id: 'storia-record', icon: 'history',
+        label: _T('rec_history_title', 'Cronologia della scheda'),
+        chiavi: ['cronologia', 'versioni', 'storia', 'scheda'],
+        esegui: () => window.apriStoriaRecord(window.selectedRecords[0])
+    });
+    agg(_disponibile('apriDuplicati'), {
+        id: 'duplicati', icon: 'copy',
+        label: _T('dup_title', 'Segnature ripetute'),
+        chiavi: ['duplicati', 'segnatura', 'ripetute'],
+        esegui: () => window.apriDuplicati()
+    });
+    agg(_disponibile('apriAzioneMassa'), {
+        id: 'massa-sostituisci', icon: 'replace', scorciatoia: 'Ctrl+H',
+        label: _T('bulk_replace_title', 'Trova e sostituisci') + suffisso,
+        chiavi: ['sostituzione', 'replace'],
+        esegui: () => window.apriAzioneMassa('sostituisci')
+    });
+    agg(_disponibile('ocrSelezionati'), {
+        id: 'massa-ocr', icon: 'scan-text',
+        label: _T('ocr_bulk_title', 'OCR delle schede selezionate') + suffisso,
+        chiavi: ['ocr', 'riconosci', 'testo', 'scansione'],
+        esegui: () => window.ocrSelezionati()
+    });
+    agg(_disponibile('esportaSelezionati'), {
+        id: 'massa-esporta', icon: 'upload', scorciatoia: 'Ctrl+E',
+        label: _T('tooltip_export', 'Esporta') + suffisso,
+        chiavi: ['zip'],
+        esegui: () => window.esportaSelezionati()
+    });
+    agg(_disponibile('esportaSelezionatiCsv'), {
+        id: 'massa-esporta-csv', icon: 'table', scorciatoia: 'Ctrl+Maiusc+E',
+        label: _T('bulk_export_csv', 'Esporta selezione in CSV') + suffisso,
+        chiavi: ['csv', 'excel', 'tabella'],
+        esegui: () => window.esportaSelezionatiCsv('csv')
+    });
+    agg(_disponibile('esportaSelezionatiCsv'), {
+        id: 'massa-esporta-tsv', icon: 'table',
+        label: _T('bulk_export_tsv', 'Esporta selezione in TSV') + suffisso,
+        chiavi: ['tsv', 'tab', 'tabella'],
+        esegui: () => window.esportaSelezionatiCsv('tsv')
+    });
+    agg(_disponibile('apriStampa'), {
+        id: 'massa-stampa', icon: 'printer',
+        label: _T('print_cmd_selection', 'Stampa la selezione') + suffisso,
+        chiavi: ['stampa', 'pdf', 'print'],
+        esegui: () => window.apriStampa('selezione')
+    });
+    agg(_disponibile('apriEsportaTesto'), {
+        id: 'massa-esporta-testo', icon: 'file-output',
+        label: _T('tx_cmd_selection', 'Esporta la trascrizione o la citazione') + suffisso,
+        chiavi: ['trascrizione', 'citazione', 'bibtex', 'rtf', 'markdown', 'zotero'],
+        esegui: () => window.apriEsportaTesto('selezione')
+    });
+    agg(_disponibile('eliminaSelezionati'), {
+        id: 'massa-elimina', icon: 'trash-2', scorciatoia: 'Canc',
+        label: _T('tooltip_delete', 'Elimina') + suffisso,
+        chiavi: ['cancella'],
+        esegui: () => window.eliminaSelezionati()
+    });
+    return voci;
+}
+
 window.costruisciComandi = function(query) {
     return comandiAzione()
+        .concat(comandiSelezione())
         .concat(comandiScheda(query))
         .concat(comandiCartella())
         .concat(comandiNuovaScheda());

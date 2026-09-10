@@ -84,15 +84,52 @@ test.describe('Cartelle', () => {
     expect(appData.cartelle).not.toContain('ConSchedeDaEliminare');
   });
 
-  // Radice virtuale: nessuna cartella viene creata automaticamente all'apertura di un
-  // vault nuovo. L'albero mostra solo cartelle, quindi resta proprio vuoto.
-  test('vault nuovo: nessuna cartella auto-creata, albero vuoto', async ({ page, userDataDir }) => {
+  // Nessuna cartella viene creata automaticamente all'apertura di un vault nuovo: l'albero
+  // ha la SOLA riga dell'archivio, che è la radice ('') col nome del vault. La 2.4.1 aveva
+  // tolto quella riga e l'albero restava proprio vuoto — senza un posto in cui vedere le
+  // schede non archiviate, che è dove finiscono gli import.
+  test("vault nuovo: nessuna cartella auto-creata, in albero solo la riga dell archivio", async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
 
     const appData = await getAppData(page);
     expect(appData.cartelle).toEqual([]);
-    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(0);
+    const righe = page.locator('#folder-list .sidebar-row');
+    await expect(righe).toHaveCount(1);
+    // La riga porta il nome dell'ARCHIVIO, non la parola "Radice".
+    await expect(righe.first()).toContainText('Radice');   // qui il vault si chiama così
     expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
+  });
+
+  test("la riga dell archivio prende il nome del vault e mostra le schede non archiviate", async ({ page, userDataDir }) => {
+    // Il vault si chiama "Fiesole": l'esca è proprio questa, perché con l'etichetta fissa
+    // "Radice" il test passerebbe comunque.
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fiesole');
+    await createItemViaForm(page, 'MS-RADICE-001');
+
+    const riga = page.locator('#folder-list .sidebar-row').first();
+    await expect(riga).toContainText('Fiesole');
+    // La scheda senza cartella si vede DENTRO l'archivio, nell'albero: prima non compariva
+    // da nessuna parte nella Struttura.
+    await expect(page.locator('#folder-list')).toContainText('MS-RADICE-001');
+
+    // Cliccare la riga riporta alla radice, come una cartella qualsiasi.
+    await page.evaluate(() => { (window as any).cartellaAttuale = 'Altrove'; });
+    await riga.click();
+    expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
+  });
+
+  test("l archivio non si rinomina ne si elimina dal menu della sua riga", async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Radice');
+
+    // Il menu della radice offre solo di creare: rinomina, esporta ed elimina agirebbero su
+    // una cartella che non esiste.
+    await page.evaluate(() => (window as any).apriMenuContestuale(
+      new MouseEvent('contextmenu', { clientX: 40, clientY: 100 }), (window as any).vociMenuCartella('')));
+    const menu = page.locator('#custom-context-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.locator('button', { hasText: /Rinomina|Rename/ })).toHaveCount(0);
+    await expect(menu.locator('button', { hasText: /Elimina|Delete/ })).toHaveCount(0);
+    await expect(menu.locator('button', { hasText: /Nuova cartella|New folder/ })).toHaveCount(1);
   });
 
   test('il tasto destro nell\'area vuota crea la prima cartella', async ({ page, userDataDir }) => {
@@ -100,7 +137,7 @@ test.describe('Cartelle', () => {
 
     await page.evaluate(() => (window as any).showSidebarFolderContextMenu(
       new MouseEvent('contextmenu', { clientX: 40, clientY: 200 }), 'ROOT'));
-    await page.locator('#custom-context-menu [role="menuitem"]', { hasText: /Crea nuova cartella|New folder/i }).click();
+    await page.locator('#custom-context-menu [role="menuitem"]', { hasText: /Nuova cartella|New folder/i }).click();
 
     await expect(page.locator('#folder-modal')).toBeVisible();
     await page.locator('#folder-name-input').fill('Prima');
@@ -142,7 +179,8 @@ test.describe('Cartelle', () => {
     const appData = await getAppData(page);
     expect(appData.cartelle).toEqual([]);
     expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
-    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(0);
+    // Resta la sola riga dell'archivio: la cartella eliminata sparisce, la radice no.
+    await expect(page.locator('#folder-list .sidebar-row')).toHaveCount(1);
   });
 
   test('validazione: nome cartella vuoto mostra errore e non chiude il modal', async ({ page, userDataDir }) => {

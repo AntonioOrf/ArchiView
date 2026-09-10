@@ -19,9 +19,18 @@
                 </div>
             </div>
             
-            <button onmousedown="event.preventDefault()" onclick="salvaTrascrizione()" data-i18n-title="btn_save" class="btn btn-primary px-6 py-2 shadow-md text-lg">
-                <span data-i18n="btn_save_transcription">Salva Trascrizione</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <!-- Fase 2.5 — l'export del testo sta QUI, accanto al salvataggio: e' la
+                     vista in cui la trascrizione esiste, ed e' finendo di trascrivere che
+                     si vuole portarla in Word o in un articolo. Ambito "corrente": la
+                     scheda aperta, non la selezione della lista dietro al modale. -->
+                <button onmousedown="event.preventDefault()" onclick="apriEsportaTesto('corrente')" id="btn-export-trasc" class="btn btn-secondary border border-amber-300/50" data-i18n-title="tx_title" data-i18n-aria-label="tx_title">
+                    <i data-lucide="file-output" class="w-4 h-4"></i> <span data-i18n="tx_export">Esporta</span>
+                </button>
+                <button onmousedown="event.preventDefault()" onclick="salvaTrascrizione()" data-i18n-title="btn_save" class="btn btn-primary px-6 py-2 shadow-md text-lg">
+                    <span data-i18n="btn_save_transcription">Salva Trascrizione</span>
+                </button>
+            </div>
         </header>
 
         <div id="trascrizione-container" class="flex-1 flex flex-col lg:flex-row gap-2 overflow-hidden relative">
@@ -36,11 +45,21 @@
                     <button onmousedown="event.preventDefault()" data-cmd="insertOrderedList" aria-pressed="false" onclick="document.execCommand('insertOrderedList', false, null);window.updateToolbarState&&window.updateToolbarState()" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ol" data-i18n-aria-label="tooltip_ol"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
                     
                     <div class="flex-1"></div>
-                    
+
+                    <!-- Fase 2.3 — l'OCR sta nella barra dell'editor e non in quella
+                         dell'allegato: il suo risultato finisce QUI dentro, ed è accanto al
+                         testo che l'utente lo cerca. Resta un pulsante secondario, perché la
+                         bozza generata non è la trascrizione. -->
+                    <button id="btn-ocr-trasc" onclick="apriOcrModal()" class="btn btn-secondary border border-amber-300/50" data-i18n-title="ocr_title" data-i18n-aria-label="ocr_title">
+                        <i data-lucide="scan-text" class="w-4 h-4"></i> <span data-i18n="ocr_button">Riconosci testo</span></button>
+
                     <button id="btn-carica-allegato-trasc" onclick="document.getElementById('trasc-file-input').click()" class="btn hidden btn-secondary border border-amber-300/50">
                         <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" onchange="caricaAllegatoTrascrizione(event)">
                 </div>
+                <!-- Fase 2.3-bis — quale carta si sta trascrivendo. Compare solo con più di
+                     un allegato: con uno solo sarebbe una riga che ripete l'ovvio. -->
+                <div id="trascrizione-carta" class="hidden-tab shrink-0 px-3 py-1.5 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-900 truncate"></div>
                 <div class="flex-1 overflow-y-auto cursor-text p-6 bg-white" onclick="if(event.target === this) document.getElementById('trascrizione-editor').focus()">
                     <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none text-lg leading-relaxed text-stone-800 select-text" style="font-family: 'Georgia', serif; outline: none;"></div>
                 </div>

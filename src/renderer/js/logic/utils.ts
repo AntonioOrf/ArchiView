@@ -147,6 +147,17 @@ window.recordPassaCampi = function(m, campi) {
     if (!campi || campi.length === 0) return true;
     for (const f of campi) {
         const cercato = ALIAS_CAMPI_QUERY[f.campo] || f.campo;
+
+        // `ocr:` non è una chiave del record: il testo riconosciuto vive dentro
+        // `m.allegati[].ocr.testo` (Fase 2.3). Senza questo caso il ciclo sulle chiavi non
+        // lo troverebbe mai e `ocr:notaio` escluderebbe ogni scheda — il modo peggiore di
+        // fallire, perché sembra "nessun risultato" e non "campo inesistente".
+        if (cercato === 'ocr') {
+            const testo = window.testoOcrRecord ? window.testoOcrRecord(m) : '';
+            if (!testo || !window.normalizzaTesto(testo).includes(f.valore)) return false;
+            continue;
+        }
+
         let trovato = false;
         let corrisponde = false;
         for (const chiave of Object.keys(m)) {
@@ -190,6 +201,26 @@ window.recordPassaFiltri = function(m, filtri) {
         if (filtri.trascrizione === 'no' && testo) return false;
     }
 
+    if (filtri.collegamenti === 'si' || filtri.collegamenti === 'no') {
+        // Fase 3.5. Conta ENTRAMBI i versi, e il verso entrante non è scritto nel record:
+        // `__idsCollegati` è l'indice costruito una volta per render da
+        // `getManoscrittiFiltrati`, perché ricavarlo qui vorrebbe dire scorrere l'intero
+        // archivio per ogni scheda — N² su un vault grande, proprio dove pesa.
+        const indice = window.__idsCollegati;
+        const collegata = indice ? indice.has(String(m.id)) : window.Model.relazioni(m).length > 0;
+        if (filtri.collegamenti === 'si' && !collegata) return false;
+        if (filtri.collegamenti === 'no' && collegata) return false;
+    }
+
+    if (filtri.ocr === 'si' || filtri.ocr === 'no') {
+        // Fase 2.3. Serve a due domande opposte e ugualmente frequenti: "quali carte ho già
+        // fatto riconoscere" e — più utile — "quali mi restano", che è la lista di lavoro
+        // prima di lanciare un OCR in massa.
+        const n = window.testoOcrRecord ? window.testoOcrRecord(m).trim() : '';
+        if (filtri.ocr === 'si' && !n) return false;
+        if (filtri.ocr === 'no' && n) return false;
+    }
+
     if (filtri.daData || filtri.aData) {
         // Un record senza `lastModified` non ha una data da confrontare: chiedere un
         // intervallo e vederselo comparire dentro sarebbe peggio che non vederlo.
@@ -205,6 +236,27 @@ window.recordPassaFiltri = function(m, filtri) {
             const d = Date.parse(filtri.aData + 'T23:59:59.999');
             if (!isNaN(d) && ts > d) return false;
         }
+    }
+
+    if (filtri.daAnno || filtri.aAnno) {
+        // Fase 3.2 — il periodo STORICO, non la data di modifica. Si guardano tutti i campi
+        // che il tipo dichiara `date` (`dataCronica` e qualunque campo tipizzato così
+        // dall'utente): basta che UNO cada nel periodo, perché una scheda con due datazioni
+        // — quella dell'atto e quella della copia — appartiene a entrambi i periodi.
+        if (!window.DataStorica || !window.Model) return false;
+        const tipo = (typeof appData !== 'undefined' && appData.tipiDocumento)
+            ? appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'))
+            : null;
+        // Fase 3.7 — dalla SCHEDA: una datazione scritta in un campo proprio `date` è una
+        // datazione come le altre, e ignorarla escluderebbe la scheda dal suo stesso secolo.
+        const campiData = window.Model.campiDellaScheda(m, tipo, window.CONFIG_CAMPI, appData)
+            .filter(d => d.tipo === 'date')
+            .map(d => d.id);
+        // Nessun campo data nel tipo: la scheda non può soddisfare un filtro di periodo, e
+        // mostrarla comunque significherebbe dire che è del Trecento senza saperlo.
+        if (!campiData.length) return false;
+        const dentro = campiData.some(c => window.DataStorica.nelPeriodo(m[c], filtri.daAnno, filtri.aAnno));
+        if (!dentro) return false;
     }
 
     return true;
@@ -226,8 +278,12 @@ window.contaFiltriAvanzati = function(filtri) {
     if (filtri.sottocartelle) n++;
     if (filtri.daData) n++;
     if (filtri.aData) n++;
+    if (filtri.daAnno) n++;
+    if (filtri.aAnno) n++;
     if (filtri.allegati) n++;
     if (filtri.trascrizione) n++;
+    if (filtri.ocr) n++;
+    if (filtri.collegamenti) n++;
     return n;
 };
 
@@ -279,7 +335,14 @@ window.salvaStatoPosizione = async function() {
         // appState perché sono per workspace e NON vanno sincronizzate: una ricerca
         // salvata cita cartelle e tipi che sull'altro PC possono non esistere.
         filtriAvanzati: window.filtriAvanzati || null,
-        ricercheSalvate: Array.isArray(window.ricercheSalvate) ? window.ricercheSalvate : []
+        ricercheSalvate: Array.isArray(window.ricercheSalvate) ? window.ricercheSalvate : [],
+        // Fase 2.2. Nome del fondo, autore della schedatura e opzioni di stampa: stanno qui
+        // e non in `appData` perché non vanno sincronizzate — la firma di chi ha schedato è
+        // di chi ha schedato, e propagarla firmerebbe col suo nome le stampe dei colleghi.
+        stampa: window.impostazioniStampa || null,
+        // Fasi 2.5/2.6: formato preferito degli export testuali. Fondo e autore NON
+        // si ripetono qui, sono quelli di `stampa` (una sola intestazione).
+        esportaTesto: window.impostazioniExportTesto || null
     };
     
     if (window.apiSettings) {
@@ -290,8 +353,12 @@ window.salvaStatoPosizione = async function() {
 };
 
 const CONFIG_CAMPI = {
-    dataCronica: { label: 'Data Cronica', placeholder: 'Es. 12 Maggio 1340', type: 'text' },
-    dataTopica: { label: 'Data Topica', placeholder: 'Es. Firenze', type: 'text' },
+    // `date` e non `text` (Fase 3.1): oggi si comporta ancora come una stringa libera — il
+    // parser della data storica fuzzy è la 3.2 — ma dichiararlo ora è ciò che permetterà a
+    // quella fase di trovare i campi da convertire senza chiedere all'utente di
+    // ridichiararli uno per uno. ⚠️ `dataTopica` resta testo: è un LUOGO, non una data.
+    dataCronica: { label: 'Data Cronica', placeholder: 'Es. 12 Maggio 1340', type: 'date' },
+    dataTopica: { label: 'Data Topica', placeholder: 'Es. Firenze', type: 'text', authority: 'luogo' },
     autore: { label: 'Autore/i', placeholder: 'Es. Anonimo / Notaio', type: 'text' },
     titolo: { label: 'Titolo / Contenuto', placeholder: 'Titolo o descrizione sintetica', type: 'text' },
     note: { label: 'Note', placeholder: 'Note testuali o codicologiche', type: 'textarea' },
@@ -305,16 +372,34 @@ const CONFIG_CAMPI = {
     tipo_di_atto_giur: { label: 'Tipo di Atto', placeholder: 'Es. accusa, inquisitione, testimoni, altro', type: 'text' },
     motivazione_processo: { label: 'Motivazione del Processo', placeholder: 'Causa e ragioni del processo...', type: 'textarea' },
     condanne: { label: 'Condanne', placeholder: 'Eventuali condanne, assoluzioni o pene...', type: 'textarea' },
-    attori_dinamici: { label: 'Persone / Attori', type: 'dynamic_list', keyPlaceholder: 'Ruolo (es. Venditore)', valPlaceholder: 'Nome della persona' },
+    // Fase 3.5 — `authority` dice che il campo alimenta l'anagrafica: su una dynamic_list
+    // il nome è il VALORE della coppia (la chiave è il ruolo). La semantica sta qui, nel
+    // catalogo dei campi base, per la stessa ragione del `type`: il modello condiviso non
+    // conosce i campi base, e ripeterla lì sarebbero due elenchi da tenere allineati.
+    attori_dinamici: { label: 'Persone / Attori', type: 'dynamic_list', authority: 'persona', keyPlaceholder: 'Ruolo (es. Venditore)', valPlaceholder: 'Nome della persona' },
     dichiarante: { label: 'Dichiarante', placeholder: 'Es. famiglia, istituzione...', type: 'text' },
     beni_dinamici: { label: 'Beni (Proprietà)', type: 'dynamic_list', keyPlaceholder: 'Bene (es. Casa, Terreno)', valPlaceholder: 'Valore (es. 10 fiorini)' },
     debiti_dinamici: { label: 'Debiti', type: 'dynamic_list', keyPlaceholder: 'Creditore / Motivo', valPlaceholder: 'Ammontare' },
     crediti_dinamici: { label: 'Crediti', type: 'dynamic_list', keyPlaceholder: 'Debitore / Motivo', valPlaceholder: 'Ammontare' },
-    famiglia_dinamici: { label: 'Familiari', type: 'dynamic_list', keyPlaceholder: 'Parentela (es. Figlio, Moglie)', valPlaceholder: 'Nome' },
+    famiglia_dinamici: { label: 'Familiari', type: 'dynamic_list', authority: 'persona', keyPlaceholder: 'Parentela (es. Figlio, Moglie)', valPlaceholder: 'Nome' },
     allegati: { label: 'Allegati', type: 'attachments' }
 };
 
 window.CONFIG_CAMPI = CONFIG_CAMPI;
+
+/**
+ * Apre un indirizzo di un campo `url` (Fase 3.1) nel browser di sistema.
+ * Solo http/https/mailto: `javascript:` e `file:` in un campo compilato da un collega e
+ * arrivato via sincronizzazione sarebbero esecuzione, non un collegamento.
+ */
+window.apriLinkEsternoSicuro = function(url) {
+    const u = String(url || '').trim();
+    if (!/^(https?:\/\/|mailto:)/i.test(u)) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_link_non_valido', 'Indirizzo non valido.'), 'warning');
+        return;
+    }
+    if (window.apiBrowser && window.apiBrowser.apriLinkEsterno) window.apiBrowser.apriLinkEsterno(u);
+};
 
 // --- UTILITY CONDIVISE ---
 
@@ -329,6 +414,91 @@ function normalizzaAllegati(m) {
     }
     return m.allegati;
 }
+
+// --- Trascrizione per allegato (Fase 2.3-bis) --------------------------------
+//
+// Una scheda con più carte aveva UNA sola trascrizione: cambiando allegato il pannello di
+// sinistra restava fermo sul testo precedente, e chi schedava un fascicolo doveva tenere
+// tutte le carte in un unico blocco. Il testo vive ora in `m.allegati[i].trascrizione`.
+//
+// ⚠️ `m.trascrizione` NON è stata eliminata: resta, ricalcolata a ogni salvataggio come
+// concatenazione delle carte (`componiTrascrizioneRecord`). Costa una copia del testo nel
+// database, e la si paga per due ragioni concrete:
+//  1. i consumatori in sola lettura — indice di ricerca (`SEARCH_FIELDS_BASE`), filtro
+//     "ha trascrizione", diff del merge — continuano a funzionare **senza una riga di
+//     modifica**, quindi senza il rischio di dimenticarne uno;
+//  2. un collega con una versione precedente dell'app, che riceve il record dalla
+//     sincronizzazione, continua a vedere il testo. Con la sola forma nuova vedrebbe una
+//     scheda vuota, cioè un lavoro apparentemente perduto.
+
+/** Un contenteditable svuotato lascia `<p><br></p>`: "ha testo" non può essere `!== ''`. */
+window.trascrizioneHaTesto = function(html) {
+    return String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
+};
+
+/** Testo dell'allegato `i`. Senza allegati la trascrizione resta quella della scheda. */
+window.leggiTrascrizioneAllegato = function(m, i) {
+    if (!m) return '';
+    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+    if (allegati.length === 0) return m.trascrizione || '';
+    const a = allegati[i];
+    return (a && typeof a.trascrizione === 'string') ? a.trascrizione : '';
+};
+
+window.scriviTrascrizioneAllegato = function(m, i, html) {
+    if (!m) return;
+    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+    if (allegati.length === 0) { m.trascrizione = html; return; }
+    if (!allegati[i]) return;
+    allegati[i].trascrizione = html;
+};
+
+/**
+ * Migrazione idempotente, in memoria: la vecchia trascrizione unica diventa quella della
+ * PRIMA carta. Non si tenta di spezzarla — non c'è modo di sapere dove finisce una carta e
+ * comincia l'altra, e un taglio inventato sarebbe peggio di un blocco unico da smistare a
+ * mano. Gira all'apertura della vista e si limita a leggere se è già stata fatta.
+ *
+ * @returns true se ha spostato qualcosa (serve ai test e al log, non al chiamante).
+ */
+window.migraTrascrizioneSuAllegati = function(m) {
+    if (!m) return false;
+    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+    if (allegati.length === 0) return false;
+    // Se anche una sola carta ha già il campo, la migrazione è avvenuta: rifarla
+    // sovrascriverebbe il lavoro fatto dopo.
+    if (allegati.some(a => a && typeof a.trascrizione === 'string')) return false;
+    if (!window.trascrizioneHaTesto(m.trascrizione)) return false;
+    allegati[0].trascrizione = m.trascrizione;
+    return true;
+};
+
+/**
+ * Forma derivata per `m.trascrizione`: le carte in ordine, ciascuna preceduta dal nome
+ * dell'allegato quando ce n'è più di una. L'intestazione non è decorazione — è ciò che
+ * rende leggibile il testo a chi lo riceve da una versione vecchia dell'app o lo esporta.
+ */
+window.componiTrascrizioneRecord = function(m) {
+    if (!m) return '';
+    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+    if (allegati.length === 0) return m.trascrizione || '';
+
+    const pezzi = [];
+    let conTesto = 0;
+    for (const a of allegati) {
+        if (a && window.trascrizioneHaTesto(a.trascrizione)) conTesto++;
+    }
+    for (let i = 0; i < allegati.length; i++) {
+        const a = allegati[i];
+        if (!a || !window.trascrizioneHaTesto(a.trascrizione)) continue;
+        if (conTesto > 1) {
+            const nome = a.originalName || a.nome || String(i + 1);
+            pezzi.push('<p class="trasc-carta"><strong>' + window.escapeHTML(nome) + '</strong></p>');
+        }
+        pezzi.push(a.trascrizione);
+    }
+    return pezzi.join('\n');
+};
 
 /**
  * Debounce: esegue fn solo dopo `wait` ms dall'ultimo invocazione.

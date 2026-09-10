@@ -55,9 +55,13 @@
         resolvedFields = {};
         onResolvedCallback = onResolved;
 
-        // Inizializza gli oggetti risoluzione partendo dalla versione locale
+        // Fase 4.4 — si parte dalla scheda GIÀ FUSA campo per campo, non dalla sola versione
+        // locale: i campi che ha toccato solo il collega sono già dentro, e la scelta
+        // dell'utente riguarda unicamente i campi in `campiConflitto`. Partendo dal locale,
+        // risolvere un campo butterebbe via tutto il resto del lavoro altrui.
+        // `fusa` manca solo sul percorso di riserva a timestamp (nessun oggetto di base).
         conflitti.forEach(c => {
-            resolutions[c.id] = { ...c.localCard };
+            resolutions[c.id] = { ...(c.fusa || c.localCard) };
             resolvedFields[c.id] = new Set();
         });
 
@@ -124,7 +128,11 @@
         container.appendChild(headerDiv);
 
         c.campiConflitto.forEach(campo => {
-            const conf = CONFIG_CAMPI[campo] || { label: campo };
+            // Fase 3.7 — `campiPropri` non è un campo del modello e in CONFIG_CAMPI non c'è:
+            // senza un nome leggibile il conflitto si presenterebbe come "campiPropri", che
+            // non dice niente a chi deve scegliere.
+            const conf = CONFIG_CAMPI[campo] ||
+                { label: campo === 'campiPropri' ? window.t('own_field_conflict', 'Campi propri della scheda') : campo };
             const localVal = local[campo];
             const externalVal = external[campo];
 
@@ -190,6 +198,12 @@
         }
 
         if (Array.isArray(valore)) {
+            // Fase 3.7 — le definizioni dei campi propri: si mostra il NOME del campo e il
+            // suo tipo, che è l'unica cosa su cui i due lati possono essere in disaccordo.
+            if (campo === 'campiPropri') {
+                return valore.map(d => `• ${escapeHTML(String((d && (d.label || d.id)) || ''))}` +
+                    ` <span class="text-stone-400">(${escapeHTML(window.t('field_type_' + (d && d.tipo), (d && d.tipo) || 'text'))})</span>`).join('<br>');
+            }
             if (campo === 'allegati') {
                 return valore.map(item => {
                     const raw = item.nome || item.v || item.k || String(item);

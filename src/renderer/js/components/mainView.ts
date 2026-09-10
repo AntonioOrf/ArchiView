@@ -35,6 +35,12 @@ function getSearchFields() {
             if (id) set.add(id);
         }
     }
+    // Fase 3.7 — anche i campi propri delle schede: un campo che si compila ma non si cerca
+    // non è archiviato, è annotato. La cache si invalida con `searchCacheGen`, che cambia a
+    // ogni scrittura sull'archivio, quindi un campo aggiunto ora è cercabile subito.
+    for (const m of (typeof appData !== 'undefined' && appData.manoscritti) || []) {
+        for (const d of window.Model.campiPropri(m)) set.add(d.id);
+    }
     searchFieldsCache = Array.from(set);
     searchFieldsGen = searchCacheGen;
     return searchFieldsCache;
@@ -74,6 +80,14 @@ function getSearchIndex(m) {
         const t = testoIndicizzabile(m[k]);
         if (t) hay += t + '\n';
     }
+    // Testo OCR degli allegati (Fase 2.3). Va aggiunto esplicitamente e non basta metterlo
+    // fra i SEARCH_FIELDS: vive dentro `m.allegati[].ocr.testo`, cioè in un array di oggetti
+    // che `testoIndicizzabile` non sa attraversare. È il passaggio che rende trovabile una
+    // parola scritta dentro una scansione — cioè tutto il punto del riconoscimento.
+    if (window.testoOcrRecord) {
+        const ocr = window.testoOcrRecord(m);
+        if (ocr) hay += ocr + '\n';
+    }
     hay = window.normalizzaTesto(hay);
 
     const entry = { gen: searchCacheGen, fields, hay };
@@ -108,16 +122,58 @@ window.sortState = window.sortState || { campo: 'segnatura', dir: 'asc' };
 // criteri inesistenti fra i record mostrati (es. "Autore" fra le schede fiscali).
 // `createdAt` non esiste nel modello: c'è solo lastModified.
 
+/** La definizione del campo secondo il TIPO di questo record (Fase 3.1). */
+function defCampoDi(m, campo) {
+    if (!window.Model) return { id: campo, tipo: 'text' };
+    const tipo = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
+    return window.Model.definizioneCampo(tipo, campo, CONFIG_CAMPI, appData);
+}
+
 /** Un valore "vuoto" (mancante o solo spazi) tiene il record in coda, in ogni direzione. */
 function valoreMancante(m, campo) {
     if (campo === 'lastModified' || campo === 'allegati') return false;
     const v = m[campo];
-    return v === null || v === undefined || String(v).trim() === '';
+    if (v === null || v === undefined || String(v).trim() === '') return true;
+    // Fase 3.2 — una datazione che il parser non riconosce non ha un posto nel tempo, quindi
+    // per un ordinamento cronologico è "vuota" e sta in coda.
+    // ⚠️ Va deciso QUI e non in `confrontaCampo`: il confronto viene moltiplicato per la
+    // direzione, quindi un "resta in fondo" espresso come `return 1` diventa "va in testa"
+    // appena si inverte l'ordine — che è il modo in cui il difetto si è presentato.
+    if (window.DataStorica && defCampoDi(m, campo).tipo === 'date') {
+        return window.DataStorica.chiaveOrdinamento(v) === null;
+    }
+    return false;
+}
+
+/**
+ * Fase 3.2 — il campo è una data storica per almeno uno dei due record?
+ *
+ * Si guardano i tipi di ENTRAMBI: in una cartella mista lo stesso nome di campo può essere
+ * `date` in un tipo e testo in un altro, e in quel caso l'ordinamento cronologico è quello
+ * che l'utente si aspetta — l'alternativa sarebbe ordinare metà elenco per data e metà per
+ * alfabeto, che è il peggiore dei due mondi.
+ */
+function campoEDataStorica(a, b, campo) {
+    if (!window.Model || !window.DataStorica) return false;
+    return defCampoDi(a, campo).tipo === 'date' || defCampoDi(b, campo).tipo === 'date';
 }
 
 function confrontaCampo(a, b, campo) {
     if (campo === 'lastModified') return (a.lastModified || 0) - (b.lastModified || 0);
     if (campo === 'allegati') return normalizzaAllegati(a).length - normalizzaAllegati(b).length;
+    if (campoEDataStorica(a, b, campo)) {
+        // Fase 3.2 — "12 maggio 1340" e "3 aprile 1290" in ordine alfabetico finiscono al
+        // contrario: 1 prima di 3. Qui si confrontano gli intervalli interpretati.
+        const ka = window.DataStorica.chiaveOrdinamento(a[campo]);
+        const kb = window.DataStorica.chiaveOrdinamento(b[campo]);
+        // Le datazioni non riconosciute sono già state spinte in coda da `valoreMancante`,
+        // che agisce prima del segno della direzione: qui restano solo come rete di
+        // sicurezza, e fra due incomprese si torna al confronto naturale, che è stabile.
+        if (ka === null && kb === null) return window.confrontaNaturale(a[campo], b[campo]);
+        if (ka === null) return 1;
+        if (kb === null) return -1;
+        return ka - kb;
+    }
     return window.confrontaNaturale(a[campo], b[campo]);
 }
 
@@ -187,8 +243,25 @@ window.getManoscrittiFiltrati = function() {
     // I tag attivi si normalizzano una volta sola, non per ogni record: dentro il filtro
     // sarebbero N×T normalizzazioni per render, proprio sui vault grandi dove pesa di più.
     const tagsNorm = window.activeTags.size > 0
-        ? Array.from(window.activeTags).map(t => window.normalizzaTesto(t))
+        ? Array.from(window.activeTags).map(t => window.Model.chiaveTag(t)).filter(Boolean)
         : null;
+
+    // Fase 3.5 — l'indice delle schede collegate nei DUE versi, costruito UNA volta e solo
+    // se il filtro è attivo: il verso entrante non sta nel record, quindi calcolarlo dentro
+    // il predicato vorrebbe dire scorrere l'archivio per ogni scheda — N² sui vault grandi,
+    // proprio dove pesa.
+    if (filtri.collegamenti === 'si' || filtri.collegamenti === 'no') {
+        const collegati = new Set();
+        for (const m of appData.manoscritti) {
+            const uscenti = window.Model.relazioni(m);
+            if (uscenti.length === 0) continue;
+            collegati.add(String(m.id));
+            for (const r of uscenti) collegati.add(r.id);
+        }
+        window.__idsCollegati = collegati;
+    } else {
+        window.__idsCollegati = null;
+    }
 
     const filtrati = appData.manoscritti.filter(m => {
         let matchCartella;
@@ -200,9 +273,13 @@ window.getManoscrittiFiltrati = function() {
 
         let matchTag = true;
         if (tagsNorm) {
-            const mTags = window.normalizzaTesto(m.tags || '');
+            // Fase 3.4 — confronto per CHIAVE, tag per tag. Prima era `includes()` sulla
+            // stringa CSV intera: il tag `not` selezionava anche le schede con `notaio`,
+            // e `sec. XIV` trovava `sec. XIV in.` — cioè il filtro mentiva proprio sui
+            // vocabolari gerarchici, dove i tag condividono per forza il prefisso.
+            const chiavi = window.Model.tags(m).map(t => window.Model.chiaveTag(t));
             for (const tag of tagsNorm) {
-                if (!mTags.includes(tag)) {
+                if (chiavi.indexOf(tag) === -1) {
                     matchTag = false;
                     break;
                 }
@@ -232,8 +309,8 @@ function statoEliminaCartella() {
 
     let motivo;
     if (isRadice) motivo = window.t('tooltip_delete_folder_root', "La radice dell'archivio non può essere eliminata");
-    else if (!vuota) motivo = window.t('tooltip_delete_folder_not_empty', 'Puoi eliminare solo un archivio vuoto');
-    else motivo = window.t('tooltip_delete_folder', 'Elimina questo archivio');
+    else if (!vuota) motivo = window.t('tooltip_delete_folder_not_empty', 'Puoi eliminare solo una cartella vuota');
+    else motivo = window.t('tooltip_delete_folder', 'Elimina questa cartella');
 
     return { abilitato: vuota && !isRadice, motivo };
 }
@@ -258,7 +335,7 @@ function renderIntestazioneVista(isGlobalSearch, search) {
         // Radice virtuale: nessun breadcrumb da mostrare (non ha antenati)
         titolo.textContent = typeof window.etichettaRadice === 'function'
             ? window.etichettaRadice()
-            : window.t('folder_root_label', 'Archivio');
+            : window.t('folder_root_label', 'Radice');
         if (icona) icona.setAttribute('data-lucide', 'library');
     } else {
         const parti = window.cartellaAttuale.split('/');
@@ -313,6 +390,15 @@ function descriviFiltriAvanzati(filtri) {
     if (filtri.aData) {
         out.push({ chiave: 'aData', icona: 'calendar', testo: T('filter_to', 'Al') + ' ' + filtri.aData });
     }
+    // Fase 3.2 — i due chip del periodo storico portano l'icona della clessidra, diversa dal
+    // calendario della data di modifica: sono due domande diverse e vanno distinguibili a
+    // colpo d'occhio anche quando sono attive insieme.
+    if (filtri.daAnno) {
+        out.push({ chiave: 'daAnno', icona: 'hourglass', testo: T('filter_year_from', "Dall'anno") + ' ' + filtri.daAnno });
+    }
+    if (filtri.aAnno) {
+        out.push({ chiave: 'aAnno', icona: 'hourglass', testo: T('filter_year_to', "All'anno") + ' ' + filtri.aAnno });
+    }
     if (filtri.allegati) {
         out.push({
             chiave: 'allegati',
@@ -325,6 +411,20 @@ function descriviFiltriAvanzati(filtri) {
             chiave: 'trascrizione',
             icona: 'pen-line',
             testo: filtri.trascrizione === 'si' ? T('filter_has_transcription', 'Con trascrizione') : T('filter_no_transcription', 'Senza trascrizione')
+        });
+    }
+    if (filtri.ocr) {
+        out.push({
+            chiave: 'ocr',
+            icona: 'scan-text',
+            testo: filtri.ocr === 'si' ? T('filter_has_ocr', 'Con testo OCR') : T('filter_no_ocr', 'Senza testo OCR')
+        });
+    }
+    if (filtri.collegamenti) {
+        out.push({
+            chiave: 'collegamenti',
+            icona: 'link',
+            testo: filtri.collegamenti === 'si' ? T('filter_has_links', 'Con collegamenti') : T('filter_no_links', 'Senza collegamenti')
         });
     }
     return out;
@@ -432,15 +532,37 @@ function mostraContenitoreLista(quale) {
  * venti colonne vuote quando si sta guardando una cartella di un tipo solo.
  * dynamic_list e attachments restano fuori: non stanno in una cella.
  */
+/**
+ * Il tipo di una scheda, o il ripiego storico per le schede il cui tipo non esiste (più):
+ * senza, quelle schede non avrebbero NESSUNA colonna e la tabella mostrerebbe solo i campi
+ * di servizio — è il caso di un archivio importato o di un modello eliminato.
+ */
+function tipoDiScheda(m) {
+    return appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'))
+        || { campi: ['titolo', 'autore', 'note'] };
+}
+
 function campiTabellaDisponibili(records) {
-    const tipi = new Set(records.map(m => m.tipoDocumento || 'manoscritto'));
     const campi = [];
-    for (const tid of tipi) {
-        const tipo = appData.tipiDocumento.find(t => t.id === tid);
-        for (const c of (tipo ? tipo.campi : ['titolo', 'autore', 'note'])) {
-            const conf = CONFIG_CAMPI[c] || { type: 'text' };
-            if (conf.type === 'dynamic_list' || conf.type === 'attachments') continue;
-            if (!campi.includes(c)) campi.push(c);
+    const visti = new Set();
+    // Fase 3.7 — l'unione si fa sui RECORD e non sui tipi: un campo proprio esiste su una
+    // scheda sola e non comparirebbe mai partendo dai modelli. I tipi si visitano comunque
+    // una volta sola, perché `campiDellaScheda` parte da lì.
+    const tipiVisti = new Set();
+    for (const m of records) {
+        const tid = m.tipoDocumento || 'manoscritto';
+        const propri = window.Model.campiPropri(m);
+        if (tipiVisti.has(tid) && !propri.length) continue;
+        tipiVisti.add(tid);
+        const tipo = tipoDiScheda(m);
+        // Fase 3.1: il tipo del campo può venire da `campiDef` e non solo da CONFIG_CAMPI,
+        // quindi lo chiede il modello. Con la vecchia lettura un campo dichiarato
+        // `dynamic_list` dall'utente sarebbe finito in una cella.
+        for (const def of window.Model.campiDellaScheda(m, tipo, CONFIG_CAMPI, appData)) {
+            if (def.tipo === 'dynamic_list' || def.tipo === 'attachments') continue;
+            if (visti.has(def.id)) continue;
+            visti.add(def.id);
+            campi.push(def.id);
         }
     }
     return campi;
@@ -463,6 +585,20 @@ function colonneVisibili(chiave, disponibili) {
     // Default: le prime tre, abbastanza per riconoscere una scheda senza sfondare in larghezza.
     return disponibili.slice(0, 3);
 }
+
+/**
+ * Colonne visibili dell'elenco corrente. Esposta per la stampa tabellare (Fase 2.2): ciò
+ * che finisce sulla carta sono le colonne che si vedono a schermo, non una seconda
+ * configurazione da tenere allineata alla prima.
+ * ⚠️ Legge `__ultimiPaginati`, cioè la PAGINA corrente: le colonne dipendono dai tipi
+ * presenti, e su un elenco misto la pagina è il campione che l'utente ha davanti.
+ */
+window.colonneTabellaCorrenti = function() {
+    const paginati = window.__ultimiPaginati || [];
+    const disponibili = campiTabellaDisponibili(paginati);
+    if (disponibili.length === 0) return [];
+    return colonneVisibili(chiaveColonne(paginati), disponibili);
+};
 
 window.toggleColonnaTabella = function(campo) {
     const paginati = window.__ultimiPaginati || [];
@@ -510,6 +646,9 @@ function etichettaCampo(campo) {
     const tradotta = window.t('field_' + campo);
     return tradotta !== 'field_' + campo ? tradotta : (conf.label || campo);
 }
+// Riusata dall'export CSV (Fase 2.1): le intestazioni delle colonne sono le stesse
+// etichette della vista tabella.
+window.etichettaCampo = etichettaCampo;
 
 /** Freccia sull'header della colonna che governa l'ordinamento corrente. */
 function indicatoreOrdinamento(campo) {
@@ -517,10 +656,17 @@ function indicatoreOrdinamento(campo) {
     return window.sortState.dir === 'asc' ? ' ▲' : ' ▼';
 }
 
+/** Sì/No leggibili: `true`/`false` in una cella sono gergo, non un dato consultabile. */
+window.testoBooleano = function(v) {
+    return v ? window.t('value_yes', 'Sì') : window.t('value_no', 'No');
+};
+
 function cellaTestuale(m, campo) {
     const v = m[campo];
     if (v === null || v === undefined) return '';
     if (Array.isArray(v)) return '';
+    // Fase 3.1 — i valori tipizzati arrivano fin qui come booleani e numeri veri.
+    if (typeof v === 'boolean') return window.testoBooleano(v);
     return String(v).replace(/<[^>]*>/g, '');
 }
 
@@ -588,7 +734,7 @@ function renderTabellaSchede(paginated) {
         };
 
         const allegati = normalizzaAllegati(m);
-        const tags = (m.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+        const tags = window.Model.tags(m);
         const data = m.lastModified
             ? new Date(m.lastModified).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : '';
@@ -601,7 +747,7 @@ function renderTabellaSchede(paginated) {
         tr.innerHTML = `
             <td class="cella-segnatura">${hasSelection ? (isSelected ? '● ' : '○ ') : ''}${escapeHTML(m.segnatura || '')}</td>
             ${celleCampi}
-            <td>${tags.map(t => `<span class="card-tag">${escapeHTML(t)}</span>`).join(' ')}</td>
+            <td>${tags.map(t => window.chipTagHTML(t)).join(' ')}</td>
             <td>${allegati.length || ''}</td>
             <td class="cella-data">${escapeHTML(data)}</td>
         `;
@@ -655,14 +801,37 @@ window.apriMenuNuovaScheda = function(ancora) {
 function vociMenuContesto() {
     const elimina = statoEliminaCartella();
     const voci = [
-        { label: window.t('btn_new_folder', 'Nuovo archivio'), icon: 'folder-plus', onSelect: () => aggiungiCartella() },
-        { label: window.t('btn_import', 'Importa'), icon: 'download', onSelect: () => importaManoscritto() },
-        { label: window.t('btn_export_folder', 'Esporta Cartella'), icon: 'upload', onSelect: () => esportaCartellaAttuale() },
+        { label: window.t('btn_new_folder', 'Nuova cartella'), icon: 'folder-plus', onSelect: () => aggiungiCartella() },
+        { label: window.t('btn_import', 'Importa'), title: window.t('btn_import_zip_full', 'Importa un backup ZIP di ArchiView'), icon: 'download', onSelect: () => importaManoscritto() },
+        // Fase 2.4: accanto all'import ZIP e non fra gli export, perché è la stessa domanda —
+        // far entrare dati — con una provenienza diversa: il foglio di calcolo di chi ha già
+        // anni di schedatura invece di un backup dell'app.
+        { label: window.t('imp_menu', 'Importa CSV'), title: window.t('imp_title', 'Importa da CSV'), icon: 'file-input', onSelect: () => window.apriImportCsv() },
+        { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('btn_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => esportaCartellaAttuale() },
+        // Fase 2.1: CSV/TSV accanto allo ZIP. Lo ZIP e' il backup (riapribile in ArchiView),
+        // il CSV e' il dato portabile verso Excel/R/Python: due scopi diversi, due voci.
+        { label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('btn_export_csv', 'Esporta Cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsv('csv') },
+        { label: window.t('menu_export_tsv', 'Esporta TSV'), title: window.t('btn_export_tsv', 'Esporta Cartella in TSV'), icon: 'table', onSelect: () => window.esportaCartellaCsv('tsv') },
+        // Fase 2.2. La stampa sta accanto agli export perché è la stessa domanda — portare
+        // fuori il lavoro — con una destinazione diversa: la carta e l'appendice di un
+        // articolo invece del foglio di calcolo.
+        { label: window.t('menu_print_short', 'Stampa'), title: window.t('print_title', 'Stampa e PDF'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa() },
+        // Fasi 2.5/2.6: la stessa domanda degli export qui sopra — portare fuori il lavoro —
+        // con destinazione l'editor di testo o Zotero invece del foglio di calcolo.
+        { label: window.t('menu_export_text', 'Esporta testo'), title: window.t('tx_title', 'Esporta testo e citazioni'), icon: 'file-output', onSelect: () => window.apriEsportaTesto() },
         { separator: true },
+        // Fase 4.1 — il cestino sta ACCANTO all'eliminazione dell'archivio, non fra gli
+        // export: è la contropartita del gesto distruttivo che lo segue, e trovarlo lì è
+        // ciò che rende quel gesto meno definitivo di quanto sembri.
+        {
+            label: window.t('trash_title', 'Cestino'),
+            icon: 'trash-2',
+            onSelect: () => window.apriCestino()
+        },
         // Azione distruttiva, quindi in fondo e staccata: nel menu non c'è la distanza
         // fisica che la separava dagli altri pulsanti nella barra.
         {
-            label: window.t('btn_delete_folder', 'Elimina questo archivio'),
+            label: window.t('btn_delete_folder', 'Elimina questa cartella'),
             icon: 'trash',
             danger: true,
             disabled: !elimina.abilitato,
@@ -958,23 +1127,40 @@ function renderMain(resetPage = true) {
                 allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
             }
 
-            let tagsHTML = '';
-            if (m.tags) {
-                const tagsList = m.tags.split(',').map(t => t.trim()).filter(t => t);
-                if (tagsList.length > 0) {
-                    tagsHTML = '<div class="flex flex-wrap gap-1 mt-2">' + tagsList.map(t => `<span class="card-tag">${escapeHTML(t)}</span>`).join('') + '</div>';
+            // Fase 3.5 — il numero dei collegamenti, nei DUE versi. Senza, per sapere se una
+            // scheda è collegata bisognerebbe aprirla, e i rimandi in entrata non si
+            // vedrebbero da nessuna parte: il verso entrante non è scritto nel record.
+            let collegamentiHTML = '';
+            if (typeof window.relazioniRisolte === 'function') {
+                const r = window.relazioniRisolte(m.id);
+                const n = r.uscenti.length + r.entranti.length;
+                if (n > 0) {
+                    const titolo = window.t('link_panel_title', 'Schede collegate') + ' (' + n + ')';
+                    collegamentiHTML = `<button type="button" class="card-badge card-badge-link shrink-0" title="${escapeHTML(titolo)}" aria-label="${escapeHTML(titolo)}" onclick="event.stopPropagation(); window.apriCollegamenti('${escapeHTML(String(m.id))}')"><i data-lucide="link" class="w-3 h-3"></i>${n}</button>`;
                 }
+            }
+
+            let tagsHTML = '';
+            const tagsList = window.Model.tags(m);
+            if (tagsList.length > 0) {
+                tagsHTML = '<div class="flex flex-wrap gap-1 mt-2">' + tagsList.map(t => window.chipTagHTML(t)).join('') + '</div>';
             }
 
             let infoHTML = '';
             const tipoDoc = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
-            const campiPossibili = tipoDoc ? tipoDoc.campi : ['titolo', 'autore', 'note'];
-            campiPossibili.forEach(campo => {
-                if (m[campo]) {
+            // Fase 3.7 — dalla SCHEDA, non dal tipo: un campo proprio valorizzato che non
+            // comparisse qui sarebbe un dato scritto e mai più riletto.
+            const definizioniScheda = window.Model.campiDellaScheda(m, tipoDiScheda(m), CONFIG_CAMPI, appData);
+            definizioniScheda.forEach(defCampo => {
+                const campo = defCampo.id;
+                // Un `sì/no` valorizzato `no` è un dato, non un campo vuoto: senza questa
+                // riga la scheda direbbe "no" solo tacendo, cioè non lo direbbe affatto.
+                const valorizzato = defCampo.tipo === 'boolean' ? typeof m[campo] === 'boolean' : !!m[campo];
+                if (valorizzato) {
                     let conf = CONFIG_CAMPI[campo] || { type: 'text' };
-                    if (conf.type === 'dynamic_list' && Array.isArray(m[campo])) {
+                    if (defCampo.tipo === 'dynamic_list' && Array.isArray(m[campo])) {
                         if (m[campo].length > 0) {
-                            const labelStr = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || campo);
+                            const labelStr = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
                             infoHTML += `<div class="mt-3 mb-1"><span class="font-bold text-xs uppercase tracking-wider opacity-70 border-b border-stone-200/50 pb-1">${labelStr}</span></div>`;
                             m[campo].forEach(item => {
                                 const k = item.k || item.ruolo || '';
@@ -985,9 +1171,14 @@ function renderMain(resetPage = true) {
                             });
                         }
                     } else {
-                        const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || campo);
+                        const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
                         if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
                         else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <i>${escapeHTML(m.titolo)}</i></p>`;
+                        else if (defCampo.tipo === 'boolean') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(window.testoBooleano(m[campo]))}</p>`;
+                        // Un indirizzo web si apre nel browser di sistema, mai dentro
+                        // l'applicazione: una pagina remota dentro la finestra dell'app
+                        // sarebbe codice di terzi nello stesso processo delle schede.
+                        else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" onclick="event.stopPropagation();window.apriLinkEsternoSicuro('${escapeHTML(String(m[campo])).replace(/'/g, "&#39;")}');return false;" class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
                         else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
                     }
                 }
@@ -1030,6 +1221,7 @@ function renderMain(resetPage = true) {
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <h3 class="card-title mb-0" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
                         <div class="flex items-center gap-1.5 shrink-0 mt-0">
+                            ${collegamentiHTML}
                             ${authorBadgeHTML}
                             <span class="card-badge shrink-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
                         </div>
@@ -1104,6 +1296,9 @@ function switchTab(tab) {
         vAdd.classList.remove('hidden-tab');
         aggiornaSelectCartelle();
         aggiornaSelectTipiDocumento();
+        // Fase 3.5: la tendina dei collegamenti si ricostruisce all'apertura, non all'avvio,
+        // o offrirebbe le schede esistenti quando l'app è partita.
+        if (typeof window.aggiornaSelettoriRelazione === 'function') window.aggiornaSelettoriRelazione();
     } else if (tab === 'trascrizione') {
         if (vTrascrizione) vTrascrizione.classList.remove('hidden-tab');
     }

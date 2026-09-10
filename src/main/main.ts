@@ -29,10 +29,26 @@ const { setupHubIpc } = require('./ipc/hubIpc');
 const { setupDriveIpc } = require('./ipc/drive');
 const { setupMsIpc } = require('./ipc/msSync');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
+const { setupOcrIpc } = require('./ipc/ocrIpc');
+const { setupPrintIpc } = require('./ipc/printIpc');
+const { setupTextExportIpc } = require('./ipc/textExportIpc');
+// Fase 4 — cestino, snapshot locali e cronologia per scheda.
+const { setupSafetyIpc } = require('./ipc/safetyIpc');
+const pdfHost = require('./ocr/pdfHost');
+const printHost = require('./print/printHost');
 
 // Protocollo custom per servire allegati
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true } }
+  { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true } },
+  // Host PDF dell'OCR (Fase 2.3). Serve `standard: true` — e non solo `secure` come per
+  // local-asset — perché la pagina host carica pdf.js come modulo ES e ne avvia il worker:
+  // entrambi vogliono un'origine vera, che uno schema non standard non ha.
+  { scheme: pdfHost.SCHEMA, privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  // Host di stampa (Fase 2.2). Stesse privilegiature: il documento e le miniature degli
+  // allegati devono stare nella STESSA origine, o la CSP della pagina generata blocca le
+  // immagini. Schema distinto da quello dell'OCR perché i due sottosistemi sono
+  // indipendenti: un errore nel servire una stampa non deve toccare il riconoscimento.
+  { scheme: printHost.SCHEMA, privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ]);
 
 function createWindow() {
@@ -128,6 +144,8 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     setupAttachmentsProtocol();
+    pdfHost.registraProtocollo();
+    printHost.registraProtocollo();
 
     const savedWorkspace = loadWorkspace();
     if (savedWorkspace) {
@@ -144,6 +162,10 @@ if (!gotTheLock) {
   setupDriveIpc();
   setupMsIpc();
   setupExportImportIpc();
+  setupOcrIpc();
+  setupPrintIpc();
+  setupTextExportIpc();
+  setupSafetyIpc();
 
   ipcMain.handle('apri-link-esterno', async (event, url) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -205,6 +227,11 @@ if (!gotTheLock) {
     forceClose = true;
     if (state.mainWindow) state.mainWindow.close();
   });
+
+  // L'host PDF dell'OCR è una BrowserWindow offscreen, quindi conta come finestra aperta:
+  // lasciarla viva impedirebbe a `window-all-closed` di scattare e l'applicazione chiusa
+  // resterebbe in memoria. Va abbattuta insieme alla finestra principale, non dopo.
+  state.mainWindow.on('closed', () => { pdfHost.distruggi(); printHost.distruggi(); });
   
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

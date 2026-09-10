@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>ArchiView — host PDF per OCR</title>
+</head>
+<body>
+<!--
+  Pagina di servizio, mai visibile all'utente: vive in una BrowserWindow offscreen creata da
+  src/main/ocr/pdfHost.ts. Esiste per una sola ragione: pdf.js sa estrarre il livello testo
+  ovunque, ma per rasterizzare una pagina serve un canvas, cioè un contesto Chromium. Farlo
+  qui, in un processo separato, tiene fuori dall'event loop del main un lavoro che su una
+  carta a 300 dpi dura secondi.
+
+  È servita dallo schema privilegiato `ocr-host://`, non da file://, perché un modulo ES
+  caricato da file:// è bloccato dalle regole di origine e il worker di pdf.js deve stare
+  nella stessa origine della pagina.
+-->
+<script type="module">
+import * as pdfjs from './pdf.min.mjs';
+
+pdfjs.GlobalWorkerOptions.workerSrc = 'ocr-host://app/file/pdf.worker.min.mjs';
+
+let documento = null;
+
+// I metodi sono appesi a `window` di proposito: dentro un modulo ES le dichiarazioni sono
+// locali, e `webContents.executeJavaScript` valuta nel mondo principale — senza questa riga
+// il main chiamerebbe funzioni che per lui non esistono.
+window.__pdfApri = async function (nomeFile) {
+  try {
+    if (documento) { try { await documento.destroy(); } catch { /* noop */ } documento = null; }
+    const compito = pdfjs.getDocument({
+      url: 'ocr-host://app/allegato/' + encodeURIComponent(nomeFile),
+      // Il PDF è un file locale dell'utente, ma resta un formato ostile: niente script,
+      // niente font di sistema arbitrari, niente XFA.
+      isEvalSupported: false,
+      enableXfa: false
+    });
+    documento = await compito.promise;
+    return { ok: true, pagine: documento.numPages };
+  } catch (errore) {
+    return { ok: false, errore: String(errore && errore.message ? errore.message : errore) };
+  }
+};
+
+/** Livello testo già presente nel PDF. Su un PDF digitale è perfetto e costa quasi nulla. */
+window.__pdfTesto = async function (numero) {
+  try {
+    if (!documento) return { ok: false, errore: 'nessun documento' };
+    const pagina = await documento.getPage(numero);
+    const contenuto = await pagina.getTextContent();
+    // Gli `items` non hanno a capo: si ricostruiscono dalle coordinate, altrimenti l'intera
+    // pagina arriva come una riga sola e il post-processing non può fare paragrafi.
+    const righe = [];
+    let yCorrente = null;
+    let corrente = [];
+    for (const it of contenuto.items) {
+      if (typeof it.str !== 'string') continue;
+      const y = it.transform ? Math.round(it.transform[5]) : 0;
+      if (yCorrente === null || Math.abs(y - yCorrente) <= 2) {
+        corrente.push(it.str);
+      } else {
+        righe.push(corrente.join(''));
+        corrente = [it.str];
+      }
+      yCorrente = y;
+    }
+    if (corrente.length) righe.push(corrente.join(''));
+    pagina.cleanup();
+    return { ok: true, righe: righe.map(r => r.trim()) };
+  } catch (errore) {
+    return { ok: false, errore: String(errore && errore.message ? errore.message : errore) };
+  }
+};
+
+/** Rasterizza una pagina in PNG. `dpi` decide la resa dell'OCR: sotto i 200 il testo si sfalda. */
+window.__pdfImmagine = async function (numero, dpi) {
+  try {
+    if (!documento) return { ok: false, errore: 'nessun documento' };
+    const pagina = await documento.getPage(numero);
+    const scala = (dpi || 300) / 72;
+    const viewport = pagina.getViewport({ scale: scala });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    const ctx = canvas.getContext('2d', { willReadFrequently: false });
+    // Fondo bianco esplicito: un PDF con pagina trasparente diventerebbe nero su nero una
+    // volta appiattito in PNG, e Tesseract non leggerebbe nulla senza dire perché.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await pagina.render({ canvasContext: ctx, viewport, background: '#ffffff' }).promise;
+    const dataUrl = canvas.toDataURL('image/png');
+    pagina.cleanup();
+    canvas.width = 0;
+    canvas.height = 0;
+    return { ok: true, png: dataUrl.slice(dataUrl.indexOf(',') + 1), larghezza: viewport.width, altezza: viewport.height };
+  } catch (errore) {
+    return { ok: false, errore: String(errore && errore.message ? errore.message : errore) };
+  }
+};
+
+window.__pdfChiudi = async function () {
+  if (documento) { try { await documento.destroy(); } catch { /* noop */ } documento = null; }
+  return { ok: true };
+};
+
+window.__pdfPronto = true;
+</script>
+</body>
+</html>

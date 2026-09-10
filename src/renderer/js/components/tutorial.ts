@@ -449,6 +449,20 @@ window.avviaTutorial = async function () {
         }
     });
 
+    // Fase 1.5. Il bersaglio è la prima card e non `#selection-indicator`, che senza una
+    // selezione è nascosto: driver.js illuminerebbe un elemento a dimensione zero (la
+    // lezione del pannello allegati nella 1.4). Senza schede il selettore non corrisponde e
+    // il popover ripiega al centro, restando leggibile.
+    steps.push({
+        element: '.card-scheda',
+        popover: {
+            title: window.t('tut_bulk_title', 'Azioni su più schede'),
+            description: window.t('tut_bulk_desc', 'Con Ctrl+clic e Maiusc+clic si selezionano più schede, e Ctrl+A prende tutti i risultati del filtro corrente, comprese le pagine successive. Il menu del tasto destro applica allora l’azione all’intera selezione: spostamento in un archivio, cambio di tipo di documento, aggiunta o rimozione di tag e sostituzione di testo in un campo, con anteprima del numero di schede interessate e possibilità di annullare.'),
+            side: 'bottom',
+            align: 'start'
+        }
+    });
+
     steps.push({
         element: '.tutorial-modifica-btn',
         popover: {

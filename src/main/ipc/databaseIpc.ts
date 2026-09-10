@@ -2,6 +2,8 @@ const { ipcMain } = require('electron');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
+const Model = require('../../shared/model');
+const { forseCreaSnapshotAutomatico } = require('../snapshots');
 
 let watcher = null;
 let isSavingSelf = false;
@@ -43,12 +45,11 @@ function isValidSerializedDatabase(json) {
   return /"manoscritti"\s*:\s*\[/.test(json) && /"cartelle"\s*:\s*\[/.test(json);
 }
 
+// Fase 3.0: il criterio di validita' e' quello condiviso (`src/shared/model.ts`). Prima
+// erano due elenchi di controlli — uno qui, uno in `eseguiSalvataggio` nel renderer — che
+// dovevano restare d'accordo senza che nulla lo garantisse.
 function isValidDatabase(dati) {
-  if (!dati || typeof dati !== 'object') return false;
-  if (!Array.isArray(dati.manoscritti)) return false;
-  if (!Array.isArray(dati.cartelle)) return false;
-  if (dati.strutturaCampi && !Array.isArray(dati.strutturaCampi)) return false;
-  return true;
+  return Model.databaseValido(dati);
 }
 
 function setupDatabaseIpc() {
@@ -101,6 +102,12 @@ function setupDatabaseIpc() {
 
       // Il rename sostituisce l'inode: il watcher va riagganciato al nuovo file.
       startWatcher();
+
+      // Fase 4.2 — la fotografia dell'archivio si prende DOPO il rename, sul payload appena
+      // scritto, e senza attenderla: uno snapshot non deve stare fra il salvataggio e il
+      // ritorno del controllo all'utente, e un suo fallimento non deve far fallire il
+      // salvataggio (vedi la decisione 3 in testa a snapshots.ts).
+      void forseCreaSnapshotAutomatico(payload);
 
       // Restituisce il controllo dopo un piccolo delay per far passare l'evento di scrittura del filesystem
       setTimeout(() => {

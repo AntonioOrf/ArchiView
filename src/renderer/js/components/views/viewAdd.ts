@@ -49,6 +49,36 @@
                     <div id="form-dynamic-fields" class="space-y-5">
                     </div>
 
+                    <!-- Fase 3.7 — il modello e' una BASE: qui si aggiunge un campo che vive
+                         su QUESTA scheda sola. Il campo nascosto porta le definizioni finche'
+                         non si salva, come gli allegati e i collegamenti: una scheda nuova non
+                         ha ancora un id su cui scriverle. -->
+                    <input type="hidden" id="form-campi-propri" value="[]">
+
+                    <!-- Fase 3.8 — l'ordine dei campi di QUESTA scheda. Si trascina un elenco
+                         di nomi e non i campi veri: trascinare un input combatte con la
+                         selezione del testo. I campi restano nel DOM, solo nascosti, cosi' un
+                         salvataggio fatto a elenco aperto scrive comunque i valori compilati. -->
+                    <input type="hidden" id="form-ordine-campi" value="[]">
+                    <div id="form-riordino" class="hidden-tab panel-solid p-3">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <p class="text-xs text-stone-500" data-i18n="reorder_hint">Trascina per cambiare l'ordine dei campi. Vale solo per questa scheda.</p>
+                            <button type="button" onclick="azzeraRiordinoCampi()" class="btn btn-ghost text-xs" data-i18n="reorder_reset">Ordine del modello</button>
+                        </div>
+                        <ul id="form-riordino-lista" class="space-y-1"></ul>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="btn-campo-proprio" onclick="apriCampoProprioModal()" class="btn btn-ghost text-sm">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span data-i18n="own_field_add">Aggiungi un campo a questa scheda</span>
+                        </button>
+                        <button type="button" id="btn-riordina-campi" onclick="alternaRiordinoCampi()" aria-pressed="false" class="btn btn-ghost text-sm">
+                            <i data-lucide="arrow-up-down" class="w-4 h-4"></i>
+                            <span data-i18n="reorder_fields">Riordina i campi</span>
+                        </button>
+                    </div>
+
                     <div class="space-y-1 border-t border-b border-stone-200 py-4 my-2 bg-stone-100/50 px-3 rounded-sm">
                         <label class="form-label" data-i18n="label_attachments">Allega Documenti (Foto o PDF)</label>
                         <input type="file" id="form-allegato" accept="image/*,.pdf" multiple class="form-input file:mr-4 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 cursor-pointer p-1">
@@ -61,6 +91,27 @@
                     <div class="form-group">
                         <label class="form-label" data-i18n="label_tags">Tags (separati da virgola)</label>
                         <input id="form-tags" data-i18n-placeholder="placeholder_tags_input" class="form-input">
+                    </div>
+
+                    <!-- Fase 3.5 — I rimandi si scrivono su UNA scheda sola: il verso opposto
+                         viene calcolato, non salvato (vedi shared/model.ts). Il campo nascosto
+                         serve perché una scheda nuova non ha ancora un id quando l'utente
+                         aggiunge il primo collegamento. -->
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="label_links">Collegamenti ad altre schede</label>
+                        <input type="hidden" id="form-relazioni" value="[]">
+                        <div id="form-relazioni-list" class="space-y-1 mb-2"></div>
+                        <div id="form-backlink" class="hidden mb-2">
+                            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1" data-i18n="link_incoming">È richiamata da</p>
+                            <div id="form-backlink-list" class="space-y-1"></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="form-relazione-tipo" class="form-input shrink-0" style="max-width: 12rem;"></select>
+                            <select id="form-relazione-target" class="form-input"></select>
+                            <button type="button" onclick="aggiungiRelazioneForm()" class="btn btn-secondary shrink-0" data-i18n-title="link_add" data-i18n-aria-label="link_add" title="Aggiungi il collegamento" aria-label="Aggiungi il collegamento">
+                                <i data-lucide="link" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
 
                 </form>

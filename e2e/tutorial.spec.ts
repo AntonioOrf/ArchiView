@@ -85,6 +85,9 @@ test.describe('Tutorial guidato', () => {
     expect(selettori).toContain('#btn-filtri');
     expect(selettori).toContain('#context-overflow-slot button');
     expect(selettori).toContain('#trascrizione-allegato-panel:not(.hidden-tab)');
+    // Azioni in massa (1.5): ancorate alla prima card, non all'indicatore di selezione,
+    // che senza una selezione e' nascosto.
+    expect(selettori).toContain('.card-scheda');
 
     // I tre della vista elenco devono essere davvero a schermo quando il tour ci arriva:
     // è il passo dopo "Ritorno alla Navigazione", cioè con la lista aperta.
@@ -106,6 +109,7 @@ test.describe('Tutorial guidato', () => {
           'tut_filters_title', 'tut_filters_desc',
           'tut_palette_title', 'tut_palette_desc',
           'tut_viewer_title', 'tut_viewer_desc',
+          'tut_bulk_title', 'tut_bulk_desc',
         ];
         return chiavi.map((k) => [k, (window as any).t(k)]);
       }, lang);

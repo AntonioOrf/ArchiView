@@ -29,6 +29,20 @@ window.apriImpostazioni = async function() {
         const perfToggle = document.getElementById('settings-low-perf');
         if (perfToggle) perfToggle.checked = !!window.modalitaPrestazioniRidotte;
 
+        // Fase 4 — conservazione di snapshot e cestino. I valori predefiniti vengono dal
+        // modello condiviso e non da letterali qui: il main applica quelli stessi quando la
+        // chiave manca, e due elenchi di predefiniti darebbero all'utente un numero diverso
+        // da quello che l'app usa davvero.
+        const M = window.Model || {};
+        const auto = document.getElementById('settings-snapshot-auto');
+        if (auto) auto.checked = settings.snapshotAutomatici !== false;
+        const recenti = document.getElementById('settings-snapshot-recenti');
+        if (recenti) recenti.value = String(settings.snapshotRecenti ?? M.SNAPSHOT_RECENTI ?? 10);
+        const giorni = document.getElementById('settings-snapshot-giorni');
+        if (giorni) giorni.value = String(settings.snapshotGiorni ?? M.SNAPSHOT_GIORNI ?? 30);
+        const cestino = document.getElementById('settings-cestino-giorni');
+        if (cestino) cestino.value = String(settings.cestinoGiorni ?? M.CESTINO_GIORNI ?? 30);
+
         // Aggiorna percorso allegati
         const attachmentsPathDiv = document.getElementById('settings-attachments-path');
         const btnRestore = document.getElementById('btn-restore-attachments');
@@ -110,6 +124,38 @@ window.apriImpostazioni = async function() {
         }
     }
 }
+
+/**
+ * Fase 4 — conservazione di snapshot e cestino.
+ *
+ * Un numero non valido (vuoto, negativo, testo) NON viene salvato: la chiave resta assente e
+ * il main applica il predefinito del modello. Salvare `NaN` significherebbe un cestino che
+ * non conserva nulla e una rotazione che cancella tutto, cioè disattivare le due reti di
+ * sicurezza per un carattere digitato male.
+ */
+window.salvaImpostazioniSicurezza = async function() {
+    if (!window.apiSettings) return;
+    const settings = await window.apiSettings.get();
+
+    const auto = document.getElementById('settings-snapshot-auto');
+    if (auto) settings.snapshotAutomatici = !!auto.checked;
+
+    const leggi = (id, chiave, massimo) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const n = parseInt(el.value, 10);
+        if (!isFinite(n) || n < 0 || n > massimo) {
+            delete settings[chiave];
+            return;
+        }
+        settings[chiave] = n;
+    };
+    leggi('settings-snapshot-recenti', 'snapshotRecenti', 100);
+    leggi('settings-snapshot-giorni', 'snapshotGiorni', 3650);
+    leggi('settings-cestino-giorni', 'cestinoGiorni', 3650);
+
+    await window.apiSettings.save(settings);
+};
 
 window.salvaImpostazioniHub = async function() {
     if (window.apiSettings) {

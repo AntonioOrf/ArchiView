@@ -1,3 +1,75 @@
+## ArchiView 3.0.0 — L'archivio ha una forma, e il lavoro non si perde
+
+È il rilascio più grande dalla nascita dell'applicazione, e cambia il modo in cui ArchiView
+tratta i dati. Fino alla 2.4 la scheda era un foglio di testo: ogni campo una stringa, nessun
+controllo, nessuna storia, e l'unico modo di portare fuori il lavoro era l'archivio compresso
+dell'applicazione stessa. Da qui in avanti il dato ha un tipo, una versione e una rete di
+sicurezza, e può uscire in CSV, in PDF, in Word e come citazione bibliografica.
+
+### ⚠️ Prima di aggiornare, se lavori in archivio condiviso
+
+Questa versione cambia il formato dell'archivio, che viene aggiornato automaticamente e senza
+perdita di dati alla prima apertura. **Le versioni 2.4.x non sanno leggere il formato nuovo**:
+se condividi un archivio con altri, aggiornate tutti prima di riprendere a lavorarci insieme.
+È la ragione per cui questa è una 3.0 e non una 2.5.
+Un archivio locale non richiede nessuna attenzione: si apre, si aggiorna, si continua.
+
+### Il dato ha un tipo
+
+- **I campi non sono più tutti testo.** Un modello può dichiarare numeri, sì/no, date, elenchi a
+  scelta, collegamenti e liste: il modulo si adatta, e chi scheda non può più scrivere una parola
+  dove serve un anno.
+- **Date storiche come si scrivono davvero.** "1340 ca.", "sec. XIV", "ante 1350", "1340-1345":
+  l'applicazione le capisce, le ordina e le usa nei filtri, senza costringere a inventare una
+  data precisa che il documento non dà.
+- **Tag, vocabolari e anagrafica sono entità d'archivio**, non più parole sparse: si rinominano
+  una volta sola e la modifica arriva su tutte le schede che li usano. Persone e luoghi hanno
+  una loro scheda d'autorità.
+- **Le schede si collegano fra loro.** Un atto può rimandare al suo originale, a una copia, a un
+  documento citato; la vista a grafo mostra la rete che ne esce.
+- **Campi propri della singola scheda.** Il modello è una base, non una gabbia: se una carta ha
+  qualcosa che le altre non hanno, il campo si aggiunge solo lì. E l'ordine dei campi si cambia
+  scheda per scheda.
+
+### Niente si perde
+
+- **Cestino.** Le schede eliminate non spariscono: restano recuperabili.
+- **Copie di sicurezza automatiche.** L'applicazione conserva istantanee a rotazione
+  dell'archivio, da cui tornare indietro se qualcosa va storto.
+- **Cronologia della singola scheda.** Si vede che cosa è cambiato, quando e per mano di chi.
+- **Annulla e ripristina** ora coprono anche modifiche e rinomine, non più solo le eliminazioni.
+- **Conflitti risolti campo per campo.** Se due persone toccano la stessa scheda ma campi
+  diversi, non c'è più nulla da scegliere: si fondono. Il conflitto vero resta, ma è sul singolo
+  campo, e nessuno perde ciò che ha scritto.
+
+### Il lavoro esce dall'applicazione
+
+- **Esportazione CSV** dell'archivio o della selezione, apribile in Excel e in LibreOffice.
+- **Importazione CSV** con mappatura delle colonne e prova a vuoto: si vede che cosa entrerà
+  prima che entri.
+- **Stampa e PDF** in tre formati: scheda per pagina, regesto d'inventario, elenco.
+- **Esportazione della trascrizione** in HTML, Markdown e RTF — quest'ultimo si apre in Word.
+- **Citazioni bibliografiche** pronte da incollare in un articolo.
+
+### Il testo delle carte
+
+- **Riconoscimento del testo (OCR)** su immagini e PDF, con le lingue scaricabili su richiesta.
+  Il testo riconosciuto diventa cercabile e produce una bozza di trascrizione in cui i tratti
+  incerti sono segnalati — e resta chiaro che è una bozza, non una lettura.
+- **Una trascrizione per ogni carta.** L'editor segue la carta mostrata a destra: prima la
+  scheda aveva un testo solo, e cambiando allegato il pannello restava indietro.
+
+### Lavorare più in fretta
+
+- **Visualizzatore delle immagini** con zoom, spostamento, rotazione e regolazione di luminosità
+  e contrasto: una carta scura si legge senza uscire dall'applicazione.
+- **Barra dei comandi** (`Ctrl+K`): si raggiunge qualunque azione scrivendone il nome.
+- **Filtri avanzati e ricerche salvate**: la ricerca costruita una volta si richiama.
+- **Azioni in massa** sulla selezione, con scorciatoie da tastiera.
+- **Tour guidato** rivisto per le funzioni nuove.
+
+---
+
 ## ArchiView 2.4.6 — Ordina, cerca e vedi l'archivio come vuoi
 
 Aggiornamento dedicato al lavoro quotidiano su archivi grandi: la lista ora si ordina, si può

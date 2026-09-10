@@ -126,7 +126,8 @@ window.riceviModificheHub = async function(isSilent = false) {
         }
 
         // RILEVAMENTO CONFLITTI E CANCELLAZIONI
-        const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, lastLoadedAt, appData.baseHashes || {});
+        const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, lastLoadedAt,
+            appData.baseHashes || {}, appData.baseObjects || {});
         const { mergedManoscritti, deletions } = rilevaCancellazioniEMergeParziale(esterniDati, lastLoadedAt);
 
         const applyMergeAndSave = async (finalCards) => {
@@ -297,10 +298,19 @@ function rilevaCancellazioniEMergeParziale(esterniDati, lastLoadedAt) {
         const external = externalMap.get(id);
 
         if (local && external) {
-            const tLocal = local.lastModified || 0;
-            const tExternal = external.lastModified || 0;
-            if (tLocal >= tExternal) mergedManoscritti.push(local);
-            else mergedManoscritti.push(external);
+            // Fase 4.4 — con l'oggetto di base la fusione è per campo; il confronto a
+            // timestamp resta solo per le schede che una base non ce l'hanno (mai
+            // sincronizzate da questa installazione), dove non c'è modo di sapere chi ha
+            // cambiato cosa e l'unico criterio disponibile è "l'ultima scrittura vince".
+            const baseObj = (appData.baseObjects || {})[id];
+            if (baseObj && window.Model && typeof window.Model.fondiRecord === 'function') {
+                mergedManoscritti.push(window.Model.fondiRecord(baseObj, local, external).fuso);
+            } else {
+                const tLocal = local.lastModified || 0;
+                const tExternal = external.lastModified || 0;
+                if (tLocal >= tExternal) mergedManoscritti.push(local);
+                else mergedManoscritti.push(external);
+            }
         } else if (local) {
             const tLocal = local.lastModified || 0;
             if (tLocal > lastLoadedAt) {

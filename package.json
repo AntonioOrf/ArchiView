@@ -1,6 +1,6 @@
 {
   "name": "archiview",
-  "version": "2.4.6",
+  "version": "3.0.0",
   "description": "Gestionale per manoscritti medievali",
   "author": "Antonio Orf",
   "repository": {
@@ -10,14 +10,14 @@
   "main": "out/main/main.js",
   "scripts": {
     "build-css": "npx @tailwindcss/cli -i ./src/renderer/css/input.css -o ./src/renderer/css/tailwind.css --minify",
-    "copy-assets": "shx mkdir -p out/renderer && node scripts/build-html.js && shx cp -r src/renderer/css src/renderer/vendor out/renderer/",
+    "copy-assets": "shx mkdir -p out/renderer && node scripts/build-html.js && shx cp -r src/renderer/css src/renderer/vendor out/renderer/ && node scripts/copy-ocr-host.js && node scripts/copy-shared.js",
     "extract": "lingui extract",
     "compile": "lingui compile",
     "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets && node scripts/build-changelog.js && node scripts/build-renderer-bundle.js",
     "generate-icon": "node scripts/generate-icon.js",
     "start": "npm run build-css && npm run build-ts && electron .",
     "pretest:unit": "tsc",
-    "test:unit": "node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js && node test/zipStreaming.test.js && node test/searchNormalize.test.js && node test/naturalSort.test.js && node test/queryFilters.test.js && node test/imageViewerFit.test.js && node test/commandPalette.test.js && node test/hubAttachmentsSerial.test.js && node test/buildChangelog.test.js && node test/e2eProjects.test.js",
+    "test:unit": "node test/model.test.js && node test/dataStorica.test.js && node test/tags.test.js && node test/fase3.test.js && node test/campiPropri.test.js && node test/fase4.test.js && node test/pathSafety.test.js && node test/pickerSecurity.test.js && node test/driveSync.test.js && node test/updateErrorClassifier.test.js && node test/zipStreaming.test.js && node test/searchNormalize.test.js && node test/naturalSort.test.js && node test/queryFilters.test.js && node test/imageViewerFit.test.js && node test/commandPalette.test.js && node test/bulkActions.test.js && node test/csvExport.test.js && node test/csvImport.test.js && node test/printTemplate.test.js && node test/transcriptExport.test.js && node test/citations.test.js && node test/ocrText.test.js && node test/trascrizioneAllegati.test.js && node test/hubAttachmentsSerial.test.js && node test/buildChangelog.test.js && node test/e2eProjects.test.js",
     "test:e2e": "playwright test",
     "pretest:e2e": "npm run build-css && npm run build-ts",
     "test:e2e:smoke": "playwright test --project=smoke",
@@ -41,6 +41,10 @@
       "out/**/*",
       "assets/**/*",
       "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/tesseract.js/**",
+      "**/node_modules/tesseract.js-core/**"
     ],
     "extraResources": [
       {
@@ -103,6 +107,8 @@
     "dompurify": "^3.4.12",
     "electron-updater": "^6.8.3",
     "googleapis": "^173.0.0",
+    "pdfjs-dist": "^6.3.289",
+    "tesseract.js": "^7.0.0",
     "yauzl": "^2.10.0"
   },
   "overrides": {
