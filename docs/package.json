@@ -1,0 +1,11 @@
+{
+  "name": "archiview-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sito statico ArchiView + wiki utente (VitePress)",
+  "scripts": {
+    "wiki:dev": "npm --prefix wiki run dev",
+    "wiki:build": "npm --prefix wiki ci --no-audit --no-fund && npm --prefix wiki run build",
+    "deploy": "npm run wiki:build && firebase deploy --only hosting"
+  }
+}

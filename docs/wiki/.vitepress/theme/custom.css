@@ -1,0 +1,74 @@
+/* Palette del sito ArchiView (stone/amber di Tailwind) applicata al tema VitePress.
+   Solo variabili: nessuna regola strutturale, così gli aggiornamenti del tema non si rompono. */
+
+:root {
+  --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --vp-c-brand-1: #b45309; /* amber-700 */
+  --vp-c-brand-2: #92400e; /* amber-800 */
+  --vp-c-brand-3: #b45309;
+  --vp-c-brand-soft: rgba(180, 83, 9, 0.14);
+
+  --vp-c-bg: #fafaf9;      /* stone-50 */
+  --vp-c-bg-alt: #ffffff;
+  --vp-c-bg-soft: #f5f5f4; /* stone-100 */
+
+  --vp-c-text-1: #1c1917;  /* stone-900 */
+  --vp-c-text-2: #57534e;  /* stone-600 */
+  --vp-c-text-3: #a8a29e;  /* stone-400 */
+
+  --vp-c-divider: #e7e5e4; /* stone-200 */
+  --vp-c-border: #e7e5e4;
+  --vp-c-gutter: #e7e5e4;
+
+  --vp-custom-block-tip-border: #fde68a;
+  --vp-custom-block-tip-bg: #fffbeb;
+  --vp-custom-block-tip-text: #78350f;
+
+  --vp-home-hero-name-color: #1c1917;
+  --vp-button-brand-bg: #b45309;
+  --vp-button-brand-hover-bg: #92400e;
+  --vp-button-brand-active-bg: #92400e;
+  --vp-button-brand-border: transparent;
+}
+
+/* Il tema scuro tiene la stessa famiglia calda invece dei blu di default. */
+.dark {
+  --vp-c-brand-1: #fbbf24; /* amber-400: contrasto sufficiente su fondo scuro */
+  --vp-c-brand-2: #f59e0b;
+  --vp-c-brand-3: #fbbf24;
+  --vp-c-brand-soft: rgba(251, 191, 36, 0.16);
+
+  --vp-c-bg: #1c1917;
+  --vp-c-bg-alt: #171412;
+  --vp-c-bg-soft: #292524;
+
+  --vp-c-text-1: #f5f5f4;
+  --vp-c-text-2: #d6d3d1;
+  --vp-c-text-3: #a8a29e;
+
+  --vp-c-divider: #44403c;
+  --vp-c-border: #44403c;
+  --vp-c-gutter: #292524;
+
+  --vp-custom-block-tip-border: #78350f;
+  --vp-custom-block-tip-bg: #2a1f12;
+  --vp-custom-block-tip-text: #fde68a;
+
+  --vp-home-hero-name-color: #fafaf9;
+  --vp-button-brand-bg: #b45309;
+  --vp-button-brand-hover-bg: #92400e;
+}
+
+/* Il quadrato "A" della navbar del sito, riprodotto come marchio della wiki. */
+.VPNavBarTitle .title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Le tabelle della guida sono spesso larghe: scorrono nel proprio contenitore
+   invece di far scorrere la pagina. */
+.vp-doc div[class*='language-'],
+.vp-doc table {
+  overflow-x: auto;
+}

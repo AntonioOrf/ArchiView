@@ -1,0 +1,14 @@
+{
+  "name": "archiview-wiki",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Wiki utente di ArchiView (VitePress)",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

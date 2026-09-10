@@ -117,3 +117,10 @@ test-appdata/
 start.bat
 start-local.bat
 start-two-instances.bat
+
+# Wiki (VitePress)
+docs/wiki/node_modules/
+docs/wiki/.vitepress/cache/
+docs/wiki/.vitepress/dist/
+# output della build: rigenerato da "npm run wiki:build" prima del deploy
+docs/public/wiki/
