@@ -1,57 +1,100 @@
-# Ricerca, tag e filtri
+# Ricerca e filtri
 
-Tre strumenti diversi che si sommano: la ricerca a testo libero, i tag e i filtri.
+Tre strumenti che si sommano: la ricerca a testo libero, i [tag](/guida/tag) e i filtri avanzati.
 
 ## Ricerca globale
 
-Pannello a sinistra, icona della lente. Cerca in tempo reale dentro **metadati, titoli e corpo
-delle trascrizioni**.
+Pannello a sinistra, icona della lente (`Ctrl+F`). Cerca in tempo reale dentro **metadati,
+titoli, corpo delle trascrizioni** e testo riconosciuto dall'[OCR](/guida/ocr).
 
-## Tag
+Accenti e maiuscole non contano: `citta` trova «città». Scrivendo più parole, la ricerca cerca
+le schede che le contengono **tutte**, non una qualsiasi.
 
-Pannello a sinistra, icona a segnalibro. Mostra tutte le etichette usate nell'archivio; un clic
-su un tag filtra immediatamente tutte le schede.
+Per cercare un'espressione esatta, usa le virgolette:
 
-I tag funzionano bene quando rispondono a domande di lavoro: stato di avanzamento, tipologia
-trasversale, appartenenza a una ricerca. Funzionano male quando duplicano un campo già presente
-nel modello.
+```
+"ad instantiam"
+```
+
+## Cercare dentro un campo preciso
+
+Scrivi il nome del campo seguito dai due punti:
+
+```
+notaio:rossi
+```
+
+Restituisce solo le schede in cui il campo *notaio* contiene «rossi» — non quelle che nominano
+Rossi in una nota, e nemmeno quelle che quel campo non ce l'hanno proprio.
+
+Se il valore contiene spazi, virgolette:
+
+```
+notaio:"de rubeis"
+```
+
+Le abbreviazioni riconosciute, che nessuno digiterebbe per esteso:
+
+| Scrivi | Cerca in |
+| --- | --- |
+| `tag:` | I tag della scheda |
+| `tipo:` | Il tipo di documento |
+| `archivio:` | La cartella |
+| `modificato:` | La data di modifica |
+| `ocr:` | Il testo riconosciuto automaticamente negli allegati |
+
+I vincoli si combinano, e si combinano con il testo libero:
+
+```
+tipo:imbreviature notaio:rossi dote
+```
 
 ## Filtri avanzati
 
 Il pulsante dei filtri sopra l'elenco restringe le schede per:
 
 - **tipo di documento**;
-- **sottoarchivi** (cartelle);
+- **sottocartelle** (estende la ricerca al ramo, non solo alla cartella aperta);
+- **periodo del documento** — un intervallo di anni o un secolo, vedi
+  [Datazioni storiche](/guida/date-storiche);
 - **intervallo di data di modifica**;
 - **presenza di allegati**;
-- **presenza di trascrizione**.
+- **presenza di trascrizione**;
+- **presenza di OCR**;
+- **presenza di collegamenti** ad altre schede.
 
-### La sintassi campo:valore
+![Il pannello dei filtri avanzati aperto, con tipo, periodo del documento, secolo, allegati, trascrizione, OCR e collegamenti](/img/filtri.png)
 
-Nel campo di ricerca puoi scrivere direttamente il nome di un campo seguito dai due punti:
+I filtri attivi restano visibili sopra l'elenco come etichette rimovibili, e il pulsante porta un
+contatore: non ti capiterà di credere che l'archivio sia vuoto quando è solo filtrato.
 
-```
-notaio:rossi
-```
-
-restituisce solo le schede in cui il campo *notaio* contiene «rossi». È il modo più rapido per
-una ricerca mirata quando sai già dove guardare.
+::: tip Periodo del documento ≠ data di modifica
+Il primo è quando il documento è stato scritto, il secondo quando tu hai toccato la scheda.
+Sono due filtri distinti.
+:::
 
 ## Ricerche salvate
 
-Una combinazione di filtri che ti serve spesso può essere **salvata con un nome** e richiamata in
-seguito con un clic: «da trascrivere 1432», «carte senza allegato», «atti giudiziari dell'anno in
-corso».
+Una combinazione di filtri che usi spesso può essere **salvata con un nome** e richiamata con un
+clic: «da trascrivere 1432», «carte senza allegato», «atti giudiziari dell'anno in corso».
 
-È la funzione che più fa risparmiare tempo su un archivio grande: vale la pena impostare due o tre
-ricerche salvate appena l'archivio supera il centinaio di schede.
+È la funzione che più fa risparmiare tempo su un archivio grande: vale la pena impostarne due o
+tre appena si supera il centinaio di schede.
+
+Le ricerche salvate sono **tue e di questo computer**: non vengono sincronizzate, perché citano
+cartelle e tipi che sull'altro computer potrebbero non esistere.
 
 ## Ordinamento e vista tabellare
 
 L'elenco si ordina per segnatura, per un campo del tipo di documento, per data di modifica o per
-numero di allegati.
+numero di allegati. L'ordinamento delle segnature è **naturale**: `MS 2` viene prima di `MS 10`,
+non dopo.
 
-Il comando apposito alterna la **griglia di schede** alla **vista tabellare**: lì ogni intestazione
-di colonna è a sua volta un comando di ordinamento, e le colonne visibili sono configurabili per
-ciascun tipo di documento. Per il controllo di un fondo intero la tabella è molto più leggibile
-della griglia.
+Il comando apposito alterna la **griglia di schede** alla **vista tabellare**. In tabella ogni
+intestazione di colonna ordina (un secondo clic inverte) e le colonne visibili si scelgono dal
+menu «⋯» → «Colonne visibili», separatamente per ciascun tipo di documento.
+
+![La vista tabellare con le colonne segnatura, marginalia, notaio, data cronica, tag, allegati e data di modifica](/img/vista-tabella.png)
+
+Per il controllo di un fondo intero la tabella è molto più leggibile della griglia — ed è anche
+quella che finisce nella [stampa in formato tabella](/esporta/stampa).

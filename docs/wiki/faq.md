@@ -14,11 +14,6 @@ Internet serve solo se attivi la sincronizzazione o scarichi un aggiornamento.
 
 No. È l'avviso che Windows mostra a tutti i programmi non firmati con un certificato commerciale.
 Vedi [Installazione](/primi-passi/installazione#windows-ha-protetto-il-pc).
-
-## Funziona su Mac e Linux?
-
-Sì. Nella pagina delle release trovi il file `.dmg` per macOS e `.AppImage` per Linux.
-
 ## I miei documenti finiscono su un server?
 
 Solo se sei tu ad attivare la sincronizzazione. In modalità locale — quella predefinita — i dati
@@ -37,9 +32,10 @@ mai contemporaneamente.
 
 ## Ho cancellato una scheda per sbaglio.
 
-Se l'archivio è collegato a un remoto, guarda nello [Storico](/cloud/versioni): puoi aprire una
-versione precedente e ripristinarla. Se è un archivio solo locale, l'unica strada è il backup
-della cartella di lavoro — motivo per cui vale la pena farne uno regolarmente.
+`Ctrl+Z` subito dopo la annulla. Più tardi, la trovi nel **cestino**, dove le schede eliminate
+restano 30 giorni: vedi [Cestino, snapshot e cronologia](/dati/cestino-snapshot). Se il cestino è
+già stato svuotato restano gli snapshot locali e, per gli archivi sincronizzati, lo
+[Storico](/cloud/versioni).
 
 ## Posso cambiare i campi di un modello dopo aver schedato centinaia di documenti?
 
@@ -59,6 +55,49 @@ comandi sopra l'elenco. Vedi [Backup, export e trasferimento](/dati/backup-expor
 ## Come si cambia lingua?
 
 Dalle impostazioni. L'interfaccia è tradotta in italiano e in inglese.
+
+## Posso aggiungere un campo solo a una scheda?
+
+Sì: sono i [campi propri](/guida/campi-propri). Il modello resta pulito e la scheda porta il suo
+caso eccezionale. Se poi scopri che ti serve sempre, lo promuovi al modello.
+
+## L'app riconosce il testo delle scansioni?
+
+Sì, con l'[OCR](/guida/ocr), che gira sul tuo computer. Funziona bene sulla stampa e sulle
+scritture tarde e regolari; su una minuscola notarile trecentesca no. Serve soprattutto a
+**trovare** la carta giusta, non a sostituire la trascrizione.
+
+## Come faccio a mettere in ordine cronologico le schede?
+
+Basta scrivere le date come le scriveresti in un regesto (`c. 1340`, `ante 1350`, `sec. XIV
+in.`): ArchiView le interpreta e le ordina cronologicamente. Vedi
+[Datazioni storiche](/guida/date-storiche).
+
+## Ho scritto lo stesso nome in tre modi diversi. Devo correggere scheda per scheda?
+
+No. L'[anagrafica di persone e luoghi](/guida/collegamenti) unifica le grafie in un'operazione
+sola. Per i tag c'è la gestione tag, con rinomina e fusione.
+
+## Posso importare il mio elenco da Excel?
+
+Sì, e con un'anteprima che dice riga per riga che cosa entrerà. Vedi
+[Importare da CSV](/esporta/importa-csv). L'import è annullabile con `Ctrl+Z`.
+
+## Posso citare le schede in Zotero o in LaTeX?
+
+Sì: l'esportazione produce anche BibTeX e RIS. Vedi
+[Trascrizioni e citazioni](/esporta/testo-citazioni).
+
+## Chi può vedere il mio archivio condiviso?
+
+Solo chi ha ricevuto un invito da te, e puoi revocarlo a ciascuno singolarmente. Gli allegati
+viaggiano cifrati. Vedi [Condividere con altri](/cloud/condivisione).
+
+## Che differenza c'è fra «archivio» e «cartella»?
+
+L'**archivio** è il contenitore completo che scegli dal selettore in basso a sinistra; le
+**cartelle** sono le suddivisioni interne di un archivio. Vedi
+[Cartelle e archivi](/guida/cartelle-archivi).
 
 ## Ho trovato un problema, o vorrei una funzione che non c'è.
 

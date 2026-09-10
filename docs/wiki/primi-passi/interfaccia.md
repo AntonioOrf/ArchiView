@@ -2,39 +2,57 @@
 
 Lo schermo di ArchiView è diviso in tre zone che restano sempre al loro posto.
 
+![La finestra principale di ArchiView: barra dei pannelli e albero delle cartelle a sinistra, elenco delle schede al centro](/img/vista-griglia.png)
+
+*Le tre zone: pannelli e cartelle a sinistra, comandi in alto, schede al centro.*
+
 ## A sinistra: la barra dei pannelli
 
 Una colonna di icone che cambia il contenuto del pannello laterale:
 
 | Icona | Pannello | A cosa serve |
 | --- | --- | --- |
-| Cartella | **Cartelle** | Sfogliare l'archivio e le sue sottocartelle. È la vista normale. |
-| Lente | **Ricerca** | Cercare parole nei metadati, nei titoli e dentro le trascrizioni. |
-| Segnalibro | **Tag** | Vedere tutte le etichette usate e filtrare l'archivio con un clic. |
-| Modifiche | **Controllo modifiche** | Elenco di ciò che hai cambiato e non è ancora stato inviato all'archivio remoto. |
-| Orologio | **Storico** | Le versioni precedenti dell'archivio salvate sul cloud. |
+| Cartella | **Cartelle** | Sfogliare l'archivio e le sue sottocartelle. È la vista normale |
+| Lente | **Ricerca** | Cercare nei metadati, nei titoli, nelle trascrizioni e nell'OCR |
+| Segnalibro | **Tag** | Tutte le etichette usate; un clic filtra. Da qui si apre la gestione tag |
+| Modifiche | **Controllo modifiche** | Che cosa hai cambiato e non hai ancora inviato all'archivio remoto |
+| Orologio | **Cronologia** | Snapshot locali e versioni precedenti salvate sul cloud |
 
-In basso a sinistra si trovano il pulsante di **condivisione/cloud** e le impostazioni.
+In cima all'albero delle cartelle c'è una riga che porta il **nome dell'archivio**: è la radice,
+e raccoglie le schede non ancora messe in una cartella.
 
-## In alto: la barra degli strumenti
+In basso a sinistra: il **selettore degli archivi** (per passare da un archivio all'altro,
+crearne, collegarne) e il pulsante di **condivisione**.
 
-Contiene lo **stato della sincronizzazione** (a destra) e il selettore dell'archivio corrente.
-Un clic sullo stato apre i comandi per scaricare o inviare le modifiche.
+## In alto: lo stato della sincronizzazione
+
+Se l'archivio è collegato a un remoto, una riga riassume la situazione e apre i comandi di
+scarico e invio. Su un archivio locale non c'è nulla da guardare.
 
 ## Al centro: l'elenco delle schede
 
-È il cuore del lavoro. Sopra l'elenco trovi i comandi che agiscono sui documenti:
+È il cuore del lavoro. Sopra l'elenco, da sinistra a destra:
 
-- il pulsante per creare una nuova scheda;
-- **ordinamento** e passaggio tra griglia di schede e **vista tabellare**;
-- **filtri avanzati** e ricerche salvate.
+- **Nuova scheda** (il chevron preseleziona il tipo) e **Nuovo modello**;
+- **Filtri** (con il contatore dei filtri attivi), **ordinamento**, e il selettore
+  **griglia / tabella**;
+- il menu **«⋯»**, che raccoglie il resto: nuovo archivio, importa ed esporta, colonne visibili
+  in tabella, cestino, elimina archivio.
 
-Ogni scheda ha due pulsanti diretti: **Modifica** (i metadati) e **Trascrivi** (il testo).
+Ogni scheda ha due pulsanti diretti — **Modifica** e **Trascrivi** — e un «⋯» che è lo stesso
+menu del tasto destro.
 
-## Due cose che fanno risparmiare tempo
+Sotto l'elenco, il **contatore dei risultati**: quando una selezione è attiva, lì compare quante
+schede hai selezionato.
 
-- **Ctrl+K** apre l'elenco dei comandi: da un unico campo raggiungi una scheda, un archivio o
-  qualsiasi funzione del programma.
-- **?** mostra l'elenco completo delle scorciatoie.
-- Il **tasto destro** su una scheda, una cartella o un archivio apre un menu contestuale con le
-  azioni rapide (esportare, duplicare, eliminare).
+## Tre cose che fanno risparmiare tempo
+
+- `Ctrl+K` apre l'elenco dei comandi: qualunque funzione, senza cercarla nei menu.
+- `?` mostra tutte le scorciatoie.
+- Il **tasto destro** funziona ovunque: su una scheda, su una cartella, su un archivio.
+
+Vedi [Comandi rapidi e scorciatoie](/guida/scorciatoie).
+
+## Il tutorial interno
+
+L'icona **?** riavvia in qualsiasi momento la visita guidata che parte al primo avvio.

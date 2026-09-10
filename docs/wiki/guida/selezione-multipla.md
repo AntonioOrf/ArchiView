@@ -19,13 +19,25 @@ successive**, non solo quelle visibili a schermo.
 
 Con la selezione attiva, il menu del tasto destro applica l'azione a tutte le schede scelte:
 
-- **spostare** in un altro archivio;
-- **cambiare il tipo di documento**;
-- **aggiungere o rimuovere tag**;
-- **sostituire un testo** dentro un campo.
+| Azione | Scorciatoia |
+| --- | --- |
+| Spostare in un altro archivio | `Ctrl+Maiusc+M` |
+| Cambiare il tipo di documento | `Ctrl+Maiusc+T` |
+| Aggiungere o rimuovere tag | `Ctrl+Maiusc+L` |
+| Trova e sostituisci in un campo | `Ctrl+H` |
+| Esportare (ZIP / CSV) | `Ctrl+E` / `Ctrl+Maiusc+E` |
+| Copiare, tagliare, incollare | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` |
+| Eliminare | `Canc` |
 
-Prima di confermare vedi **quante schede** verranno modificate, e dopo l'operazione puoi
-**annullarla**.
+La trascrizione non è fra i campi sostituibili: è testo formattato, e una sostituzione cieca lo
+rovinerebbe.
+
+Prima di confermare vedi **quante schede** verranno modificate — e nel trova&sostituisci
+un'anteprima del risultato. Dopo l'operazione, `Ctrl+Z` la annulla per intero: è una sola azione,
+non trecento.
+
+Una scheda che non corrisponde non viene toccata affatto: non risulterà «modificata» ai colleghi
+al prossimo scambio.
 
 ## Il modo prudente di usarle
 

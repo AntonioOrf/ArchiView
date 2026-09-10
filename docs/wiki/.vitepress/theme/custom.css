@@ -72,3 +72,21 @@
 .vp-doc table {
   overflow-x: auto;
 }
+
+/* Screenshot: cornice leggera, così l'immagine non si confonde con la pagina
+   (la finestra dell'app ha il fondo chiaro come la wiki). */
+.vp-doc img {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  display: block;
+  margin: 8px 0;
+}
+
+/* La riga in corsivo subito sotto un'immagine fa da didascalia. */
+.vp-doc img + em,
+.vp-doc p > img + br + em {
+  display: block;
+  margin-top: -2px;
+  font-size: 0.875rem;
+  color: var(--vp-c-text-3);
+}

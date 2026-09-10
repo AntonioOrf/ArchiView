@@ -29,5 +29,6 @@ versione in sola lettura e verifica che sia davvero quella giusta.
 ## Nota
 
 Controllo modifiche e Storico esistono perché l'archivio è collegato a un remoto. Su un archivio
-solo locale la tua rete di sicurezza è il backup manuale della cartella di lavoro, descritto in
-[Backup, export e trasferimento](/dati/backup-export).
+solo locale le reti di sicurezza sono altre, e ci sono comunque: annulla/ripeti, cestino,
+snapshot automatici e cronologia della scheda, descritti in
+[Cestino, snapshot e cronologia](/dati/cestino-snapshot).

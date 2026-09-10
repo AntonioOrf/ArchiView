@@ -38,6 +38,7 @@ export default defineConfig({
     nav: [
       { text: 'Primi passi', link: '/primi-passi/installazione' },
       { text: 'Guida', link: '/guida/schede' },
+      { text: 'Esportare', link: '/esporta/stampa' },
       { text: 'FAQ', link: '/faq' },
       { text: 'Sito', link: 'https://archiview.web.app/' },
       { text: 'Scarica', link: 'https://github.com/AntonioOrf/ArchiView/releases' }
@@ -59,18 +60,34 @@ export default defineConfig({
         items: [
           { text: 'Creare e compilare una scheda', link: '/guida/schede' },
           { text: 'Modelli di documento', link: '/guida/modelli' },
+          { text: 'Campi propri di una scheda', link: '/guida/campi-propri' },
+          { text: 'Datazioni storiche', link: '/guida/date-storiche' },
           { text: 'Cartelle e archivi', link: '/guida/cartelle-archivi' },
           { text: 'Allegati', link: '/guida/allegati' },
-          { text: 'Trascrizione', link: '/guida/trascrizione' }
+          { text: 'Trascrizione', link: '/guida/trascrizione' },
+          { text: 'OCR degli allegati', link: '/guida/ocr' }
         ]
       },
       {
         text: 'Trovare e organizzare',
         collapsed: false,
         items: [
-          { text: 'Ricerca, tag e filtri', link: '/guida/ricerca-filtri' },
+          { text: 'Ricerca e filtri', link: '/guida/ricerca-filtri' },
+          { text: 'Tag', link: '/guida/tag' },
+          { text: 'Vocabolari controllati', link: '/guida/vocabolari' },
+          { text: 'Collegamenti, persone e luoghi', link: '/guida/collegamenti' },
           { text: 'Lavorare su più schede', link: '/guida/selezione-multipla' },
-          { text: 'Scorciatoie da tastiera', link: '/guida/scorciatoie' }
+          { text: 'Comandi rapidi e scorciatoie', link: '/guida/scorciatoie' }
+        ]
+      },
+      {
+        text: 'Stampare ed esportare',
+        collapsed: false,
+        items: [
+          { text: 'Stampare e salvare in PDF', link: '/esporta/stampa' },
+          { text: 'Esportare in CSV o Excel', link: '/esporta/csv' },
+          { text: 'Importare da CSV o Excel', link: '/esporta/importa-csv' },
+          { text: 'Trascrizioni e citazioni', link: '/esporta/testo-citazioni' }
         ]
       },
       {
@@ -78,13 +95,16 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Come funziona', link: '/cloud/sincronizzazione' },
-          { text: 'Controllo modifiche e storico', link: '/cloud/versioni' }
+          { text: 'Condividere con altri', link: '/cloud/condivisione' },
+          { text: 'Controllo modifiche e storico', link: '/cloud/versioni' },
+          { text: 'Quando due modifiche si scontrano', link: '/cloud/conflitti' }
         ]
       },
       {
         text: 'I tuoi dati',
         collapsed: false,
         items: [
+          { text: 'Cestino, snapshot e cronologia', link: '/dati/cestino-snapshot' },
           { text: 'Backup, export e trasferimento', link: '/dati/backup-export' },
           { text: 'Dove sono salvati i dati', link: '/dati/formato' }
         ]

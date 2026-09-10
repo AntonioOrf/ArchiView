@@ -3,26 +3,50 @@
 Il pulsante **Trascrivi** su una scheda apre l'ambiente dedicato: l'immagine (o il PDF) del
 documento su un lato, l'editor di testo sull'altro.
 
-## Come si lavora
+## Una trascrizione per carta
 
-- Il visore ha tutti i comandi descritti in [Allegati](/guida/allegati): ingrandimento,
-  rotazione, contrasto, negativo, scorrimento tra le carte.
-- L'editor è a tutti gli effetti un editor di testo: puoi strutturare la trascrizione con la
-  formattazione disponibile nella barra.
-- **Salva spesso con <kbd>Ctrl</kbd>+<kbd>S</kbd>.** È la scorciatoia più utile del programma.
-- La freccia in alto a sinistra riporta all'archivio.
+Il testo appartiene alla **carta** che stai guardando, non alla scheda intera: cambiando
+allegato, l'editor segue. In alto compare l'indicazione «Carta 2 di 3», con il nome del file.
+
+Con `Alt+←` e `Alt+→` si passa da una carta all'altra, e il testo di ciascuna resta al suo posto.
+Quello che hai appena battuto viene messo al sicuro prima di ogni cambio di carta: non si perde
+nulla passando avanti e indietro.
+
+Se la scheda non ha allegati, si scrive su un'unica trascrizione, come da sempre.
+
+## Il visore
+
+Ha tutti i comandi descritti in [Allegati](/guida/allegati): ingrandimento, spostamento,
+rotazione, adattamento alla pagina, e soprattutto **luminosità, contrasto e negativo** per le
+scritture difficili. `Alt+F` porta l'allegato a schermo intero.
+
+## L'editor
+
+È un editor di testo: la formattazione disponibile nella barra serve a marcare quello che serve
+marcare. **Salva spesso con `Ctrl+S`** — è la scorciatoia più utile del programma.
+
+Il pulsante di esportazione porta il testo fuori dall'app in cinque formati: vedi
+[Esportare trascrizioni e citazioni](/esporta/testo-citazioni).
 
 ## Il testo trascritto è ricercabile
 
-Tutto ciò che scrivi qui entra nella ricerca globale: cercare una formula o un nome dentro le
-trascrizioni funziona esattamente come cercarlo nei metadati. È la ragione per cui vale la pena
-trascrivere anche solo parzialmente.
+Tutto ciò che scrivi entra nella ricerca globale: cercare una formula o un nome dentro le
+trascrizioni funziona come cercarlo nei metadati. È la ragione per cui vale la pena trascrivere
+anche solo parzialmente.
+
+Il filtro «ha trascrizione» separa in un clic il fatto dal da farsi.
+
+## Partire da una bozza automatica
+
+Su scritture tarde o a stampa, l'[OCR](/guida/ocr) può produrre una prima bozza da correggere,
+con le parole incerte già segnalate. Su una minuscola notarile trecentesca, no: valuta con tre o
+quattro carte di prova.
 
 ## Metodo di lavoro consigliato
 
-1. **Prima le schede, poi le trascrizioni.** Schedare in blocco un fondo (segnature, date, regesti
-   brevi) dà subito un archivio consultabile; le trascrizioni si aggiungono nel tempo.
-2. **Usa un tag per lo stato**: `da trascrivere`, `trascrizione parziale`, `da collazionare`. Poi
-   filtra per tag e sai sempre cosa manca.
-3. **Segnala i dubbi nel testo** con una convenzione tua e costante (per esempio `[?]`):
-   potrai ritrovarli tutti con la ricerca.
+1. **Prima le schede, poi le trascrizioni.** Schedare in blocco un fondo (segnature, date,
+   regesti brevi) dà subito un archivio consultabile; le trascrizioni si aggiungono nel tempo.
+2. **Usa un tag per lo stato**: `da trascrivere`, `trascrizione parziale`, `da collazionare`.
+   Filtrando per tag sai sempre che cosa manca.
+3. **Segnala i dubbi con una convenzione costante** (per esempio `[?]`): potrai ritrovarli tutti
+   con la ricerca.

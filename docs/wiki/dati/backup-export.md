@@ -3,6 +3,10 @@
 I tuoi dati sono file sul tuo disco: questo li rende semplici da salvare e da spostare, ma
 significa anche che il backup è una tua responsabilità.
 
+Dentro l'app ci sono già [cestino, snapshot e cronologia](/dati/cestino-snapshot), che coprono
+gli errori di lavorazione. Questa pagina riguarda l'altro rischio: il disco che si rompe e la
+cartella cancellata.
+
 ## Il backup più semplice: copiare la cartella
 
 Copia la **cartella di lavoro** (quella scelta al primo avvio) su una chiavetta o su un disco
@@ -26,9 +30,12 @@ La funzione di importazione ricarica un archivio ZIP prodotto in questo modo.
 
 ## Esportare per usare i dati altrove
 
-Oltre al backup, puoi estrarre i dati per lavorarci con altri strumenti — un foglio di calcolo,
-un word processor, un gestore bibliografico. Le voci di esportazione si trovano nel menu del
-tasto destro sugli elementi dell'archivio e nei comandi sopra l'elenco.
+Oltre al backup, puoi estrarre i dati per lavorarci con altri strumenti:
+
+- un foglio di calcolo → [CSV o Excel](/esporta/csv);
+- un articolo o una tesi → [trascrizioni in HTML, Markdown, RTF](/esporta/testo-citazioni);
+- un gestore bibliografico → [BibTeX o RIS](/esporta/testo-citazioni);
+- la carta o un PDF → [stampa](/esporta/stampa).
 
 ## Ogni quanto?
 

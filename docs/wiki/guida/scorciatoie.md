@@ -1,30 +1,80 @@
-# Scorciatoie da tastiera
+# Comandi rapidi e scorciatoie
 
 ## La scorciatoia da imparare per prima
 
-<kbd>Ctrl</kbd>+<kbd>K</kbd> apre l'**elenco dei comandi**: da un unico campo di testo raggiungi
-una scheda, un archivio, una nuova scheda di un tipo specifico o qualunque altra azione del
-programma. Se ricordi solo questa, ricordi tutto il resto.
+`Ctrl+K` apre l'**elenco dei comandi**: da un unico campo di testo raggiungi una scheda, un
+archivio, una nuova scheda di un tipo specifico o qualunque altra azione del programma.
 
-Il tasto <kbd>?</kbd> mostra l'**elenco completo e aggiornato** delle scorciatoie disponibili nella
-tua versione. Entrambi i comandi sono richiamabili anche dal menu sopra l'elenco.
+Non devi ricordare dove sta una funzione: scrivi quello che vuoi fare. Funziona anche per
+sinonimi — «backup» trova l'esportazione, «excel» trova l'import CSV.
 
-## Le più usate
+![La palette dei comandi aperta con la parola «esporta» digitata e i comandi corrispondenti](/img/comandi.png)
+
+Il tasto `?` mostra l'**elenco completo e aggiornato** delle scorciatoie della tua versione.
+Entrambi sono raggiungibili anche dal menu «⋯» sopra l'elenco.
+
+![Il pannello delle scorciatoie da tastiera](/img/scorciatoie.png)
+
+::: tip
+Quando usi un comando dal menu del tasto destro, la sua scorciatoia è scritta accanto alla voce.
+È il modo più indolore per impararle: una alla volta, mentre lavori.
+:::
+
+## Generali
 
 | Scorciatoia | Effetto |
 | --- | --- |
-| <kbd>Ctrl</kbd>+<kbd>K</kbd> | Elenco dei comandi |
-| <kbd>?</kbd> | Elenco delle scorciatoie |
-| <kbd>Ctrl</kbd>+<kbd>S</kbd> | Salva la scheda o la trascrizione |
-| <kbd>Ctrl</kbd>+<kbd>A</kbd> | Seleziona tutti i risultati del filtro corrente |
-| <kbd>Ctrl</kbd> o <kbd>Maiusc</kbd> + clic | Selezione multipla nell'elenco |
+| `Ctrl+K` | Apri i comandi |
+| `?` | Mostra l'elenco delle scorciatoie |
+| `Ctrl+F` | Vai alla ricerca |
+| `Ctrl+N` | Nuova scheda |
+| `Ctrl+S` | Salva la scheda o la trascrizione aperta |
+| `Ctrl+P` | Stampa o salva in PDF |
+| `Ctrl+Z` | Annulla l'ultima azione |
+| `Ctrl+Y` | Ripeti l'azione annullata (anche `Ctrl+Maiusc+Z`) |
+| `Esc` | Chiudi la finestra in primo piano, svuota la ricerca o azzera la selezione |
 
-## Nel visore degli allegati
+## Selezione
 
 | Scorciatoia | Effetto |
 | --- | --- |
-| <kbd>+</kbd> / <kbd>-</kbd> | Ingrandisci / riduci |
-| <kbd>R</kbd> | Ruota di 90 gradi |
-| <kbd>Alt</kbd> + frecce sinistra/destra | Allegato precedente / successivo |
+| `Ctrl`+clic | Aggiungi o togli una scheda dalla selezione |
+| `Maiusc`+clic | Seleziona l'intervallo fino alla scheda cliccata |
+| `Ctrl+A` | Seleziona tutti i risultati, anche nelle pagine successive |
+| `Ctrl+D` | Azzera la selezione |
+| clic destro | Menu delle azioni sulla scheda o sulla cartella |
 
-Su macOS, dove qui è scritto <kbd>Ctrl</kbd> si usa <kbd>Cmd</kbd>.
+## Sulle schede selezionate
+
+| Scorciatoia | Effetto |
+| --- | --- |
+| `F2` | Modifica la scheda selezionata |
+| `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Copia / taglia / incolla nell'archivio corrente |
+| `Ctrl+E` | Esporta la selezione in ZIP |
+| `Ctrl+Maiusc+E` | Esporta la selezione in CSV |
+| `Canc` | Elimina le schede selezionate |
+| `Ctrl+Maiusc+M` | Sposta la selezione in un archivio |
+| `Ctrl+Maiusc+T` | Cambia il tipo di documento della selezione |
+| `Ctrl+Maiusc+L` | Aggiungi o rimuovi tag sulla selezione |
+| `Ctrl+H` | Trova e sostituisci in un campo della selezione |
+
+Queste sono inattive mentre scrivi in un campo di testo e mentre è aperta una finestra.
+
+## Trascrizione
+
+| Scorciatoia | Effetto |
+| --- | --- |
+| `Alt+←` / `Alt+→` | Allegato precedente / successivo |
+| `Alt+F` | Allegato a schermo intero |
+
+## Visualizzatore immagini
+
+| Scorciatoia | Effetto |
+| --- | --- |
+| `+` / `−` | Ingrandisci o riduci |
+| `0` | Adatta alla pagina |
+| `1` | Dimensione reale (1:1) |
+| `R` | Ruota di 90° (con `Maiusc`: in senso opposto) |
+| `←` `→` `↑` `↓` | Sposta l'immagine |
+
+Su macOS, dove qui è scritto `Ctrl` si usa `Cmd`.
