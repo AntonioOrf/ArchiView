@@ -1,7 +1,6 @@
 # Trash, snapshots and history
 
-Four overlapping safety nets, from the most immediate to the deepest. They are worth knowing
-**before** you need them.
+Four overlapping safety nets, from the most immediate to the deepest.
 
 ## 1. Undo and redo
 

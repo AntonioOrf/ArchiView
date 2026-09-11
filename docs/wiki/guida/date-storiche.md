@@ -33,7 +33,7 @@ Non viene indovinato. Una datazione che l'app non capisce resta un testo qualsia
 negli ordinamenti cronologici (finisce **in coda**, in entrambe le direzioni) e non risponde ai
 filtri per periodo.
 
-Meglio così: un intervallo inventato entrerebbe negli ordinamenti come se fosse un dato certo.
+Il motivo: un intervallo inventato entrerebbe negli ordinamenti come se fosse un dato certo.
 Se una datazione ti serve ordinabile e l'app non la riconosce, riformulala in una delle forme
 qui sopra.
 
@@ -60,7 +60,7 @@ quelli che di solito si stanno cercando.
 Sono due filtri distinti, con icone e intestazioni diverse.
 :::
 
-## Dettagli che vale la pena sapere
+## Dettagli
 
 - `circa` **non allarga** l'intervallo di cinque anni: è un'incertezza dichiarata, non una
   quantità che nessuno ha scritto.

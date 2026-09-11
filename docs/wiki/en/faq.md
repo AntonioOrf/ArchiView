@@ -45,8 +45,7 @@ Yes, models can be changed at any time. Make a backup first, though: see
 
 ## How many records can an archive hold?
 
-There is no fixed limit. On very large archives it is better to use filters and saved searches
-instead of scrolling the list, and table view instead of the grid.
+There is no fixed limit.
 
 ## Can I print or export a record?
 

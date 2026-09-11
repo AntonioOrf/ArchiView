@@ -77,8 +77,7 @@ A combination of filters stored under a name and recalled with one click.
 An archive connected to a remote server on which several people work together.
 
 **Shelfmark**  
-The archival identifier of the document. It is the field on which it pays to be most rigorous: it
-drives sorting and retrieval.
+The archival identifier of the document. It is the field that drives sorting and retrieval.
 
 **Snapshot**  
 A picture of the whole archive, taken automatically and stored on your disk.

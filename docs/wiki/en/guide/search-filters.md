@@ -79,9 +79,6 @@ distinct filters.
 A combination of filters you use often can be **saved under a name** and recalled with one click:
 "to transcribe 1432", "folios without attachment", "judicial acts of this year".
 
-It is the feature that saves the most time on a large archive: it is worth setting up two or three
-as soon as you pass a hundred records.
-
 Saved searches are **yours and tied to this computer**: they are not synchronised, because they
 refer to folders and types that might not exist on the other computer.
 

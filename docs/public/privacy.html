@@ -27,6 +27,19 @@
                     <a href="terms.html" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">Termini di Servizio</a>
                     <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">GitHub</a>
                 </div>
+                <!-- Menu per il telefono: sotto i 640px i link qui sopra sono nascosti -->
+                <details class="sm:hidden relative">
+                    <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer p-2 -mr-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100" aria-label="Menu">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                    </summary>
+                    <div class="absolute right-0 mt-2 w-60 bg-white border border-stone-200 rounded-lg shadow-lg py-2 z-50">
+                        <a href="index.html" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">Home</a>
+                        <a href="/wiki/" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">Wiki</a>
+                        <a href="privacy.html" aria-current="page" class="block px-4 py-3 text-base font-medium text-amber-700 bg-amber-50">Privacy Policy</a>
+                        <a href="terms.html" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">Termini di Servizio</a>
+                        <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" rel="noopener" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">GitHub</a>
+                    </div>
+                </details>
             </div>
         </div>
     </nav>

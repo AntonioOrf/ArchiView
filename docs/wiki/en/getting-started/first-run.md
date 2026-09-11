@@ -25,8 +25,7 @@ You can change the working folder at any time from **Settings**.
 
 ## The built-in tutorial
 
-The first time you open the program a guided tour highlights the main commands one at a time. It
-is worth following: it takes a few minutes.
+The first time you open the program a guided tour highlights the main commands one at a time.
 
 You can run it again whenever you like from the **?** icon.
 

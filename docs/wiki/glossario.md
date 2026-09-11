@@ -78,8 +78,7 @@ Una combinazione di filtri conservata con un nome e richiamabile con un clic.
 La descrizione di un singolo documento: metadati, allegati e trascrizione.
 
 **Segnatura**  
-L'identificativo archivistico del documento. È il campo su cui conviene essere più rigorosi:
-regge l'ordinamento e il ritrovamento.
+L'identificativo archivistico del documento. È il campo su cui si basano l'ordinamento e il ritrovamento.
 
 **Sincronizzazione**  
 L'allineamento fra l'archivio sul tuo computer e la sua copia remota. Facoltativa. Vedi

@@ -79,9 +79,6 @@ Sono due filtri distinti.
 Una combinazione di filtri che usi spesso può essere **salvata con un nome** e richiamata con un
 clic: «da trascrivere 1432», «carte senza allegato», «atti giudiziari dell'anno in corso».
 
-È la funzione che più fa risparmiare tempo su un archivio grande: vale la pena impostarne due o
-tre appena si supera il centinaio di schede.
-
 Le ricerche salvate sono **tue e di questo computer**: non vengono sincronizzate, perché citano
 cartelle e tipi che sull'altro computer potrebbero non esistere.
 

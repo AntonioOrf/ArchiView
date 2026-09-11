@@ -61,7 +61,7 @@ the boundary, which are usually the ones you are looking for.
 They are two distinct filters, with different icons and headings.
 :::
 
-## Details worth knowing
+## Details
 
 - `circa` **does not widen** the range by five years: it is a declared uncertainty, not a quantity
   nobody wrote.

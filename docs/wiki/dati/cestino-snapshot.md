@@ -1,7 +1,6 @@
 # Cestino, snapshot e cronologia
 
-Quattro reti di sicurezza sovrapposte, dalla più immediata alla più profonda. Vale la pena
-conoscerle **prima** di averne bisogno.
+Quattro reti di sicurezza sovrapposte, dalla più immediata alla più profonda.
 
 ## 1. Annulla e ripeti
 

@@ -6,8 +6,6 @@ document on one side, the text editor on the other.
 ![The transcription environment: editor on the left, document folio on the right](/img/en/trascrizione.png){.light-only}
 ![The transcription environment: editor on the left, document folio on the right](/img/en/trascrizione-scuro.png){.dark-only}
 
-*The dark theme is often more restful for long transcription sessions.*
-
 ## One transcription per folio
 
 The text belongs to the **folio** you are looking at, not to the whole record: when you change
@@ -36,8 +34,7 @@ The export button takes the text out of the program in five formats: see
 ## Transcribed text is searchable
 
 Everything you write goes into the global search: looking for a formula or a name inside
-transcriptions works just like looking for it in the metadata. That is why it is worth
-transcribing even partially.
+transcriptions works just like looking for it in the metadata.
 
 The "has transcription" filter separates what is done from what is still to do in a single click.
 

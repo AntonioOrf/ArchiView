@@ -79,8 +79,8 @@ Recognition can be started on a selection of records. In that case:
 - the question about existing transcriptions is asked **only once**, not for every folio;
 - cancelling halfway keeps everything already recognised.
 
-On a fonds of a few hundred scans it is best started and left to run while you do something else:
-the program stays usable, but it will be the heaviest operation running on the computer.
+While recognition runs the program stays usable, but it is the heaviest operation running on the
+computer.
 
 ## Recommended method
 

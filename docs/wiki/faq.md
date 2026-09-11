@@ -46,8 +46,7 @@ Sì, i modelli si modificano in qualsiasi momento. Fai però un backup prima: ve
 
 ## Quante schede può contenere un archivio?
 
-Non c'è un limite fissato. Su archivi molto grandi conviene usare i filtri e le ricerche salvate
-invece di scorrere l'elenco, e la vista tabellare invece della griglia.
+Non c'è un limite fissato.
 
 ## Posso stampare o esportare una scheda?
 

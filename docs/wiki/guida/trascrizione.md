@@ -6,8 +6,6 @@ documento su un lato, l'editor di testo sull'altro.
 ![L'ambiente di trascrizione: editor a sinistra, carta del documento a destra](/img/trascrizione.png){.light-only}
 ![L'ambiente di trascrizione: editor a sinistra, carta del documento a destra](/img/trascrizione-scuro.png){.dark-only}
 
-*Il tema scuro è spesso più riposante per le sessioni lunghe di trascrizione.*
-
 ## Una trascrizione per carta
 
 Il testo appartiene alla **carta** che stai guardando, non alla scheda intera: cambiando
@@ -36,8 +34,7 @@ Il pulsante di esportazione porta il testo fuori dall'app in cinque formati: ved
 ## Il testo trascritto è ricercabile
 
 Tutto ciò che scrivi entra nella ricerca globale: cercare una formula o un nome dentro le
-trascrizioni funziona come cercarlo nei metadati. È la ragione per cui vale la pena trascrivere
-anche solo parzialmente.
+trascrizioni funziona come cercarlo nei metadati.
 
 Il filtro «ha trascrizione» separa in un clic il fatto dal da farsi.
 

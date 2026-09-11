@@ -83,8 +83,8 @@ Si può lanciare il riconoscimento su una selezione di schede. In quel caso:
   ogni carta;
 - l'annullamento a metà conserva tutto ciò che è già stato riconosciuto.
 
-Su un fondo di qualche centinaio di scansioni conviene avviarlo e lasciarlo procedere mentre si
-fa altro: l'app resta utilizzabile, ma sarà l'operazione più pesante in esecuzione sul computer.
+Durante il riconoscimento l'app resta utilizzabile, ma è l'operazione più pesante in esecuzione
+sul computer.
 
 ## Metodo consigliato
 

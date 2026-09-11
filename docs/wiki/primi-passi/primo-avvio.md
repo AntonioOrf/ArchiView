@@ -26,7 +26,6 @@ Puoi cambiare cartella di lavoro in qualsiasi momento dalle **Impostazioni**.
 ## Il tutorial dentro il programma
 
 Alla prima apertura parte una visita guidata che evidenzia i comandi principali uno alla volta.
-Vale la pena farla: dura pochi minuti.
 
 Puoi rivederla quando vuoi dall'icona **?**.
 
