@@ -36,5 +36,5 @@ sparire il tuo lavoro senza avviso.
 ## Se hai scelto la versione sbagliata
 
 `Ctrl+Z` subito dopo. Se te ne accorgi più tardi, la scheda ha una
-[cronologia](/dati/cestino-snapshot#4-cronologia-di-una-scheda) da cui recuperare la versione
+[cronologia](/dati/cestino-snapshot#_4-cronologia-di-una-scheda) da cui recuperare la versione
 precedente, e l'archivio ha gli [snapshot locali](/dati/cestino-snapshot).

@@ -39,7 +39,7 @@ features:
 
 ## Cos'è ArchiView
 
-ArchiView è un programma da installare sul proprio computer (Windows, macOS, Linux) pensato per
+ArchiView è un programma per Windows, da installare sul proprio computer, pensato per
 chi lavora con manoscritti e documenti d'archivio: imbreviature notarili, atti giudiziari,
 registri fiscali, carte private.
 

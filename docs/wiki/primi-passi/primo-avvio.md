@@ -14,7 +14,7 @@ Dentro, il programma crea da solo:
 - `allegati_manoscritti`: la cartella con le immagini e i PDF che allegherai.
 
 ::: tip
-Se usi già un servizio di backup automatico (Time Machine, cronologia file di Windows, un disco
+Se usi già un servizio di backup automatico (cronologia file di Windows, un disco
 esterno), fai in modo che copi anche questa cartella. È l'unica cosa da salvare.
 :::
 

@@ -1,15 +1,13 @@
 # Installazione
 
-ArchiView non si usa dal browser: è un programma che si installa sul computer.
+ArchiView non si usa dal browser: è un programma che si installa sul computer. Per ora è
+disponibile solo per **Windows**.
 
 ## Scaricare il programma
 
 1. Apri la pagina delle [versioni pubblicate](https://github.com/AntonioOrf/ArchiView/releases).
 2. Scegli la versione più recente in cima all'elenco.
-3. Nella sezione **Assets** scarica il file adatto al tuo sistema:
-   - Windows: il file `.exe`;
-   - macOS: il file `.dmg`;
-   - Linux: il file `.AppImage`.
+3. Nella sezione **Assets** scarica il file `.exe`.
 4. Avvia il file scaricato.
 
 ## "Windows ha protetto il PC"
@@ -20,8 +18,6 @@ diverse centinaia di euro l'anno e per un progetto gratuito non è sostenibile).
 
 Se hai scaricato il file dalla pagina ufficiale delle release, clicca su **Ulteriori
 informazioni** e poi su **Esegui comunque**.
-
-Su macOS l'equivalente è: clic destro sull'icona → **Apri** → **Apri** nella finestra di conferma.
 
 ## Aggiornamenti
 

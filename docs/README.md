@@ -14,6 +14,16 @@ docs/
     └── index.md  faq.md  glossario.md
 ```
 
+## Due lingue
+
+L'italiano è la radice (`wiki/`, servito su `/wiki/`); l'inglese sta in `wiki/en/` (servito su
+`/wiki/en/`) con percorsi inglesi: `getting-started/`, `guide/`, `export/`, `sync/`, `data/`.
+Le due alberature hanno le stesse 31 pagine e vanno aggiornate insieme: una pagina modificata in una
+lingua sola lascia l'altra a descrivere un comportamento diverso.
+
+Menu e barra laterale di ciascuna lingua stanno in `locales` dentro `wiki/.vitepress/config.mts`.
+Gli screenshot inglesi stanno in `wiki/public/img/en/` e si rigenerano con lo stesso script.
+
 ## Modificare la wiki
 
 Le pagine sono normali file Markdown: si modificano direttamente, senza toccare nulla di

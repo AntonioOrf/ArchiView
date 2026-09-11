@@ -78,5 +78,3 @@ Queste sono inattive mentre scrivi in un campo di testo e mentre è aperta una f
 | `1` | Dimensione reale (1:1) |
 | `R` | Ruota di 90° (con `Maiusc`: in senso opposto) |
 | `←` `→` `↑` `↓` | Sposta l'immagine |
-
-Su macOS, dove qui è scritto `Ctrl` si usa `Cmd`.
