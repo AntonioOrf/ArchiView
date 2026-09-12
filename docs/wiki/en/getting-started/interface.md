@@ -22,6 +22,11 @@ A column of icons that changes the content of the side panel:
 At the top of the folder tree a row carries the **name of the archive**: it is the root, and it
 holds the records that are not yet filed in a folder.
 
+In the tree every record carries its shelfmark; the button at the top right of the **Folders**
+panel adds a field of your choice underneath — the declarant, the notary, the author — and lets
+you sort the tree by that field. See
+[What a record shows in the tree](/en/guide/folders-archives#what-a-record-shows-in-the-tree).
+
 At the bottom left: the **archive switcher** (to move between archives, create or connect them)
 and the **sharing** button.
 
