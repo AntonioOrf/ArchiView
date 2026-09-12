@@ -330,6 +330,9 @@ window.salvaStatoPosizione = async function() {
         sort: window.sortState ? { campo: window.sortState.campo, dir: window.sortState.dir } : null,
         vista: window.vistaLista || 'griglia',
         colonneTabella: window.colonneTabella || {},
+        // Etichetta secondaria dell'albero: preferenza locale come le colonne. In `appData`
+        // citerebbe campi di tipi che sul PC del collega possono non esistere.
+        alberoSecondario: window.alberoSecondario || null,
         // Fase 1.3. I filtri avanzati sono contesto di lavoro come la ricerca; le
         // ricerche salvate sono invece una preferenza duratura, ma vivono nello stesso
         // appState perché sono per workspace e NON vanno sincronizzate: una ricerca

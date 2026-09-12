@@ -183,6 +183,17 @@ function comandiAzione() {
         chiavi: ['ocr', 'lingua', 'tesseract', 'riconoscimento'],
         esegui: () => window.apriGestioneLingueOcr()
     });
+    agg(_disponibile('apriMenuEtichettaAlbero'), {
+        id: 'albero-etichetta', icon: 'text-cursor-input',
+        label: _T('tree_label_title', 'Etichetta secondaria delle schede'),
+        chiavi: ['albero', 'sidebar', 'dichiarante', 'struttura', 'notaio'],
+        // Il menu si ancora al pulsante dell'header: va aperto col pannello Struttura a
+        // vista, altrimenti si ancorerebbe a un bottone nascosto.
+        esegui: () => {
+            if (_disponibile('apriSidebarTab')) window.apriSidebarTab('folders');
+            window.apriMenuEtichettaAlbero(document.getElementById('btn-albero-secondario'));
+        }
+    });
     agg(_disponibile('apriNewTypeModal'), {
         id: 'nuovo-modello', icon: 'file-plus-2',
         label: _T('btn_new_model', 'Nuovo modello'),

@@ -1081,10 +1081,24 @@ function _linguiExtraction() {
     i18n._({ id: "reorder_reset", message: "Ordine del modello" });
     i18n._({ id: "reorder_up", message: "Sposta su" });
     i18n._({ id: "reorder_down", message: "Sposta giù" });
+    // Etichetta secondaria delle schede nell'albero
+    i18n._({ id: "tree_label_title", message: "Etichetta secondaria delle schede" });
+    i18n._({ id: "tree_label_heading", message: "Mostra sotto la segnatura" });
+    i18n._({ id: "tree_label_none", message: "Nessuna" });
+    i18n._({ id: "tree_label_auto", message: "Automatica (nome principale)" });
+    i18n._({ id: "tree_sort_heading", message: "Ordina l’albero per" });
+    i18n._({ id: "tree_sort_secondary", message: "Etichetta secondaria" });
 }
 
 // Wrapper per compatibilità con il codice esistente
 const customEn = {
+    // --- Etichetta secondaria delle schede nell'albero ---
+    "tree_label_title": "Secondary label on records",
+    "tree_label_heading": "Show under the shelfmark",
+    "tree_label_none": "None",
+    "tree_label_auto": "Automatic (main name)",
+    "tree_sort_heading": "Sort the tree by",
+    "tree_sort_secondary": "Secondary label",
     // Vedi la nota sul lessico in customIt: "archive" = vault, "folder" = albero interno.
     "msg_l_archivio_copiato_vuoto": "The copied folder is empty.",
     "th_folder": "Folder",
@@ -2183,6 +2197,13 @@ const customEn = {
 };
 
 const customIt = {
+    // --- Etichetta secondaria delle schede nell'albero ---
+    "tree_label_title": "Etichetta secondaria delle schede",
+    "tree_label_heading": "Mostra sotto la segnatura",
+    "tree_label_none": "Nessuna",
+    "tree_label_auto": "Automatica (nome principale)",
+    "tree_sort_heading": "Ordina l’albero per",
+    "tree_sort_secondary": "Etichetta secondaria",
     // ⚠️ LESSICO: "archivio" è il VAULT — quelli che si creano e si scelgono dal selettore
     // in fondo alla sidebar. L'albero interno (appData.cartelle) si chiama "cartella".
     // Le due cose erano entrambe "archivio" e l'ambiguità arrivava fino alle conferme di
