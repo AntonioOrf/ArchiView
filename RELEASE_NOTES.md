@@ -1,3 +1,26 @@
+## ArchiView 3.1.0 — L'albero dice chi, non solo dove
+
+Nell'albero a sinistra una scheda si riconosceva solo dalla segnatura: "165, 579" dice dov'è
+il documento, non di chi parla. Da questa versione ogni scheda può portare sotto la segnatura
+il valore di un campo a scelta — il dichiarante, il notaio, l'autore — così si trova la carta
+giusta guardando l'albero, senza aprirla.
+
+### Nell'albero
+
+- **Etichetta secondaria sotto la segnatura.** Nel pannello Struttura, il pulsante in alto a
+  destra apre l'elenco dei campi dell'archivio: scelto il campo, ogni scheda mostra il suo
+  valore su una seconda riga.
+- **Automatica**, se non si vuole scegliere: l'applicazione usa il primo nome disponibile fra
+  dichiarante, notaio, autore e persone coinvolte, quindi funziona anche con modelli diversi
+  mescolati nello stesso archivio.
+- **Ordinamento per etichetta.** Le schede dell'albero si possono ordinare per il campo
+  mostrato invece che per segnatura: tutte quelle dello stesso dichiarante finiscono vicine.
+- La scelta si ricorda per ogni archivio e resta locale a questo computer: non viene
+  sincronizzata e non cambia nulla ai collaboratori.
+- Raggiungibile anche da `Ctrl+K` → "etichetta".
+
+---
+
 ## ArchiView 3.0.0 — L'archivio ha una forma, e il lavoro non si perde
 
 È il rilascio più grande dalla nascita dell'applicazione, e cambia il modo in cui ArchiView
