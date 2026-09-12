@@ -541,6 +541,9 @@ function tipoDiScheda(m) {
     return appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'))
         || { campi: ['titolo', 'autore', 'note'] };
 }
+// Esposta per la sidebar (etichetta secondaria dell'albero): il ripiego per le schede
+// senza tipo deve essere UNO, o le due viste mostrerebbero campi diversi della stessa scheda.
+window.tipoDiScheda = tipoDiScheda;
 
 function campiTabellaDisponibili(records) {
     const campi = [];

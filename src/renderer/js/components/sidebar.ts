@@ -45,6 +45,99 @@ window.invalidaCacheSidebar = function() {
     _sidebarSignature = null;
 };
 
+// --- Etichetta secondaria delle schede nell'albero ---------------------------
+//
+// La riga di una scheda mostrava solo `segnatura || titolo`: in un catasto è "165, 579",
+// cioè un numero che non dice chi ha dichiarato. Qui si aggiunge un secondo rigo con il
+// valore di UN campo, scelto dall'utente.
+//
+// ⚠️ Preferenza LOCALE (appState per workspace, come colonne/ordinamento/vista), non
+// `appData`: sincronizzarla citerebbe campi di tipi che sull'altro PC possono non esistere
+// e produrrebbe diff inutili fra collaboratori.
+//
+// Un solo campo e non una mappa tipo→campo: l'archivio mescola modelli (fiscali →
+// dichiarante, imbreviature → Notaio) e `auto` copre il caso misto senza raddoppiare la UI.
+window.alberoSecondario = window.alberoSecondario || { modo: 'nessuno', campo: '', ordina: 'segnatura' };
+
+// Ordine di ricerca di `auto`: i campi che in un archivio notarile/fiscale portano il nome
+// della persona. `titolo` chiude la lista perché è l'ultimo ripiego leggibile.
+const AV_AUTO_SECONDARIO = ['dichiarante', 'Notaio', 'autore', 'attori_dinamici', 'titolo'];
+
+// Memo: `campiDellaScheda` non è gratis e l'etichetta serve a OGNI record a ogni firma
+// (cioè a ogni commit dello Store, anche quando il render viene saltato). La chiave
+// include `lastModified`, quindi una scheda modificata si ricalcola da sola.
+let _cacheSecondario = new Map();
+
+function _tipoDiSchedaSidebar(m) {
+    if (typeof window.tipoDiScheda === 'function') return window.tipoDiScheda(m);
+    return (appData.tipiDocumento || []).find(t => t.id === (m.tipoDocumento || 'manoscritto'))
+        || { campi: ['titolo', 'autore', 'note'] };
+}
+
+/** Definizioni dei campi di una scheda (tipo + campi propri della 3.7). */
+function _definizioniScheda(m) {
+    return window.Model.campiDellaScheda(m, _tipoDiSchedaSidebar(m), window.CONFIG_CAMPI, appData);
+}
+
+/**
+ * Riduce a UNA riga il valore di un campo. Delle `dynamic_list` prende il primo valore non
+ * vuoto e non l'elenco intero: cinque beni sotto una segnatura sono rumore, non contesto.
+ */
+function _testoSecondario(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return window.testoBooleano(v);
+    if (Array.isArray(v)) {
+        for (const el of v) {
+            if (!el) continue;
+            if (typeof el === 'string' || typeof el === 'number') {
+                const s = String(el).trim();
+                if (s) return s;
+                continue;
+            }
+            if (typeof el === 'object') {
+                const s = String(el.v || el.nome || el.k || el.ruolo || '').trim();
+                if (s) return s;
+            }
+        }
+        return '';
+    }
+    return String(v).replace(/<[^>]*>/g, '').trim();
+}
+
+function _calcolaSecondario(m, pref) {
+    if (pref.modo === 'campo') return pref.campo ? _testoSecondario(m[pref.campo]) : '';
+    // `auto`: prima la lista di priorità, che costa una lettura di proprietà per campo.
+    for (const campo of AV_AUTO_SECONDARIO) {
+        const t = _testoSecondario(m[campo]);
+        if (t) return t;
+    }
+    // Solo se nessuno dei noti è valorizzato si paga la risoluzione delle definizioni:
+    // serve a un archivio con campi propri o rinominati, che altrimenti resterebbe muto.
+    try {
+        for (const def of _definizioniScheda(m)) {
+            if (def.authority !== 'persona') continue;
+            const t = _testoSecondario(m[def.id]);
+            if (t) return t;
+        }
+    } catch (e) { /* definizioni non risolvibili: l'etichetta è un di più, non un blocco */ }
+    return '';
+}
+
+/** L'etichetta secondaria di una scheda, '' se disattivata o se il campo è vuoto. */
+function etichettaSecondaria(m) {
+    const pref = window.alberoSecondario || {};
+    if (pref.modo !== 'auto' && pref.modo !== 'campo') return '';
+    const chiave = m.id + SEP_CAMPO + (m.lastModified || 0) + SEP_CAMPO + pref.modo + SEP_CAMPO + (pref.campo || '');
+    const memo = _cacheSecondario.get(chiave);
+    if (memo !== undefined) return memo;
+    // Cambio di preferenza o archivio grande: la mappa non deve crescere senza fine.
+    if (_cacheSecondario.size > 4000) _cacheSecondario.clear();
+    const val = _calcolaSecondario(m, pref) || '';
+    _cacheSecondario.set(chiave, val);
+    return val;
+}
+window.etichettaSecondariaAlbero = etichettaSecondaria;
+
 function calcolaFirmaSidebar() {
     const parti = [
         window.linguaAttuale || '',
@@ -53,12 +146,18 @@ function calcolaFirmaSidebar() {
         window.cartellaAttuale || '',
         (appData.cartelle || []).join('|'),
         Array.from(window.cartelleEspanse || []).join('|'),
-        (window.selectedRecords || []).join('|')
+        (window.selectedRecords || []).join('|'),
+        // L'etichetta secondaria cambia sia le righe sia il loro ordine: senza queste due
+        // chiavi, cambiarla lascerebbe l'albero identico fino al prossimo commit.
+        (window.alberoSecondario && window.alberoSecondario.modo) || 'nessuno',
+        (window.alberoSecondario && window.alberoSecondario.campo) || '',
+        (window.alberoSecondario && window.alberoSecondario.ordina) || 'segnatura'
     ];
-    // Dei record contano solo id, cartella ed etichetta mostrata nell'albero.
+    // Dei record contano solo id, cartella ed etichette mostrate nell'albero.
     let righe = '';
     for (const m of (appData.manoscritti || [])) {
-        righe += m.id + SEP_CAMPO + (m.cartella || '') + SEP_CAMPO + (m.segnatura || m.titolo || '') + SEP_RIGA;
+        righe += m.id + SEP_CAMPO + (m.cartella || '') + SEP_CAMPO + (m.segnatura || m.titolo || '')
+            + SEP_CAMPO + etichettaSecondaria(m) + SEP_RIGA;
     }
     parti.push(righe);
     return parti.join(SEP_BLOCCO);
@@ -100,12 +199,19 @@ function renderSidebar() {
         folderIndex.get(key)!.push(m);
     }
 
+    // Ordinare per etichetta secondaria è l'altra metà del "trovare prima": vedere il
+    // dichiarante non basta se le schede dello stesso dichiarante restano sparse.
+    // A parità (o con etichetta vuota) si ricade sulla segnatura, che è sempre presente.
+    const perSecondario = (window.alberoSecondario || {}).ordina === 'secondario';
     const fileOrdinati = (path) => {
         const files = (folderIndex.get(path) || []).slice();
+        const chiave = (m) => m.segnatura || m.titolo || '';
         files.sort((a, b) => {
-            const valA = a.segnatura || a.titolo || '';
-            const valB = b.segnatura || b.titolo || '';
-            return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+            if (perSecondario) {
+                const d = window.confrontaNaturale(etichettaSecondaria(a), etichettaSecondaria(b));
+                if (d !== 0) return d;
+            }
+            return window.confrontaNaturale(chiave(a), chiave(b));
         });
         return files;
     };
@@ -165,7 +271,21 @@ function renderSidebar() {
         };
         fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
 
-        fileRow.innerHTML = window.sanitizeHTML(`<i data-lucide="file-text" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i><span class="truncate">${titoloFile}</span>`);
+        // Etichetta secondaria: secondo rigo, mai al posto della segnatura. Il `title`
+        // serve perché a 288px di sidebar entrambe le righe vengono tagliate.
+        const secondaria = etichettaSecondaria(m);
+        const icona = `<i data-lucide="file-text" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i>`;
+        if (secondaria) {
+            fileRow.title = (m.segnatura || m.titolo || '') + ' — ' + secondaria;
+            fileRow.innerHTML = window.sanitizeHTML(
+                `${icona}<span class="flex flex-col min-w-0 flex-1 leading-tight">` +
+                `<span class="truncate">${titoloFile}</span>` +
+                `<span class="truncate text-[10px] opacity-70 sidebar-file-sub">${escapeHTML(secondaria)}</span>` +
+                `</span>`
+            );
+        } else {
+            fileRow.innerHTML = window.sanitizeHTML(`${icona}<span class="truncate">${titoloFile}</span>`);
+        }
         return fileRow;
     }
 
@@ -363,6 +483,104 @@ function renderSidebar() {
     if (window.lucide) lucide.createIcons({ nodes: [container] });
     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
 }
+
+/**
+ * Campi offerti dal menu: l'unione dei campi di TUTTE le schede dell'archivio, non della
+ * pagina corrente come in tabella — la preferenza vale per l'albero intero, che mostra
+ * anche cartelle che non si stanno guardando. `dynamic_list` resta inclusa (al contrario
+ * della tabella): "Persone / Attori" è proprio uno dei campi che si vogliono vedere qui.
+ */
+function campiSecondariDisponibili() {
+    const campi = [];
+    const visti = new Set();
+    const tipiVisti = new Set();
+    for (const m of (appData.manoscritti || [])) {
+        const tid = m.tipoDocumento || 'manoscritto';
+        const propri = window.Model.campiPropri(m);
+        if (tipiVisti.has(tid) && !propri.length) continue;
+        tipiVisti.add(tid);
+        for (const def of _definizioniScheda(m)) {
+            if (def.tipo === 'attachments' || visti.has(def.id)) continue;
+            visti.add(def.id);
+            campi.push(def.id);
+        }
+    }
+    return campi;
+}
+
+function _etichettaCampoAlbero(campo) {
+    if (typeof window.etichettaCampo === 'function') return window.etichettaCampo(campo);
+    const conf = (window.CONFIG_CAMPI || {})[campo] || {};
+    return conf.label || campo;
+}
+
+function _applicaPreferenzaAlbero(patch) {
+    const pref = window.alberoSecondario || {};
+    window.alberoSecondario = Object.assign({ modo: 'nessuno', campo: '', ordina: 'segnatura' }, pref, patch);
+    window.invalidaCacheSidebar();
+    renderSidebar();
+    if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
+}
+
+window.impostaAlberoSecondario = function(modo, campo) {
+    const patch = { modo: modo, campo: modo === 'campo' ? String(campo || '') : '' };
+    // Spegnendo l'etichetta l'ordinamento per etichetta non avrebbe più un criterio:
+    // tornerebbe a ordinare per stringa vuota, cioè a un ordine apparentemente casuale.
+    if (modo === 'nessuno') patch.ordina = 'segnatura';
+    _applicaPreferenzaAlbero(patch);
+};
+
+window.impostaOrdineAlbero = function(ordina) {
+    _applicaPreferenzaAlbero({ ordina: ordina === 'secondario' ? 'secondario' : 'segnatura' });
+};
+
+/**
+ * Menu della preferenza. Riusa `apriMenuContestuale` (frecce, Esc, click fuori, ancoraggio)
+ * come il selettore delle colonne: un secondo tipo di popover qui non aggiungerebbe nulla.
+ */
+window.apriMenuEtichettaAlbero = function(ancora) {
+    const pref = window.alberoSecondario || {};
+    const spunta = (attiva) => attiva ? 'check' : 'minus';
+    const voci = [
+        { heading: true, label: window.t('tree_label_heading', 'Mostra sotto la segnatura') },
+        {
+            label: window.t('tree_label_none', 'Nessuna'),
+            icon: spunta(pref.modo !== 'auto' && pref.modo !== 'campo'),
+            onSelect: () => window.impostaAlberoSecondario('nessuno')
+        },
+        {
+            label: window.t('tree_label_auto', 'Automatica (nome principale)'),
+            icon: spunta(pref.modo === 'auto'),
+            onSelect: () => window.impostaAlberoSecondario('auto')
+        }
+    ];
+
+    const campi = campiSecondariDisponibili();
+    if (campi.length) voci.push({ separator: true });
+    for (const campo of campi) {
+        voci.push({
+            label: _etichettaCampoAlbero(campo),
+            icon: spunta(pref.modo === 'campo' && pref.campo === campo),
+            onSelect: () => window.impostaAlberoSecondario('campo', campo)
+        });
+    }
+
+    voci.push({ separator: true });
+    voci.push({ heading: true, label: window.t('tree_sort_heading', 'Ordina l\u2019albero per') });
+    voci.push({
+        label: window.t('field_segnatura', 'Segnatura'),
+        icon: spunta(pref.ordina !== 'secondario'),
+        onSelect: () => window.impostaOrdineAlbero('segnatura')
+    });
+    voci.push({
+        label: window.t('tree_sort_secondary', 'Etichetta secondaria'),
+        icon: spunta(pref.ordina === 'secondario'),
+        disabled: pref.modo !== 'auto' && pref.modo !== 'campo',
+        onSelect: () => window.impostaOrdineAlbero('secondario')
+    });
+
+    window.apriMenuContestuale(ancora || document.getElementById('btn-albero-secondario'), voci);
+};
 
 function aggiornaSelectCartelle() {
     const select = document.getElementById('form-cartella');

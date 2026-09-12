@@ -135,4 +135,102 @@ test.describe('Pannelli sidebar', () => {
     await expect(page.locator('#vault-delete-modal')).toBeHidden();
     await expect(page.locator('#vault-switcher-list')).not.toContainText('ArchivioDaCancellare');
   });
+
+  // --- Etichetta secondaria delle schede nell'albero -------------------------
+  //
+  // Seminare via `appData` + `Store.commit()` è il pattern di sort-table.spec: il campo
+  // `dichiarante` appartiene a un tipo documento, e crearlo dal form costerebbe tre volte
+  // i passaggi senza coprire nulla di più.
+  async function seminaFiscali(page: any) {
+    await page.evaluate(async () => {
+      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      const data = appData;
+      data.tipiDocumento.push({ id: 'fiscali-test', nome: 'Fiscali test', campi: ['dichiarante'] });
+      for (const [seg, dich] of [['165, 579', 'Antonio di Salvestro'], ['165, 623', 'Biagio Cecco']]) {
+        data.manoscritti.push({
+          id: 'rec-' + seg.replace(/\D/g, ''), cartella: '', tipoDocumento: 'fiscali-test',
+          segnatura: seg, dichiarante: dich, tags: '', allegati: [],
+          lastModified: Date.now(), creatoDa: 'Anonimo', modificatoDa: 'Anonimo',
+        });
+      }
+      await (window as any).Store.commit();
+      // La radice è un nodo collassabile come gli altri: senza espanderla le schede
+      // non archiviate non hanno una riga nell'albero.
+      (window as any).cartelleEspanse.add('');
+      (window as any).renderSidebar();
+    });
+  }
+
+  test('albero: di default mostra solo la segnatura', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Albero');
+    await seminaFiscali(page);
+
+    await expect(page.locator('#folder-list')).toContainText('165, 579');
+    await expect(page.locator('#folder-list .sidebar-file-sub')).toHaveCount(0);
+  });
+
+  test('albero: scelto il campo, la riga mostra il dichiarante', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Albero');
+    await seminaFiscali(page);
+
+    await page.locator('#btn-albero-secondario').click();
+    await page.locator('#custom-context-menu button', { hasText: /^Dichiarante$/ }).click();
+
+    await expect(page.locator('#folder-list .sidebar-file-sub').first()).toHaveText('Antonio di Salvestro');
+    await expect(page.locator('#folder-list')).toContainText('Biagio Cecco');
+  });
+
+  test('albero: cambiare il dichiarante aggiorna la riga (firma della cache)', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Albero');
+    await seminaFiscali(page);
+    await page.evaluate(() => (window as any).impostaAlberoSecondario('campo', 'dichiarante'));
+    await expect(page.locator('#folder-list')).toContainText('Antonio di Salvestro');
+
+    // Senza l'etichetta nella firma della sidebar il render verrebbe SALTATO e l'albero
+    // resterebbe sul valore vecchio: è l'unico modo di accorgersene.
+    await page.evaluate(async () => {
+      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      const m = appData.manoscritti.find((r: any) => r.segnatura === '165, 579');
+      m.dichiarante = 'Giovanni Rinieri';
+      m.lastModified = Date.now() + 1;
+      await (window as any).Store.commit();
+    });
+
+    await expect(page.locator('#folder-list')).toContainText('Giovanni Rinieri');
+    await expect(page.locator('#folder-list')).not.toContainText('Antonio di Salvestro');
+  });
+
+  test('albero: si ordina per etichetta secondaria e la preferenza finisce in appState', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Albero');
+    await seminaFiscali(page);
+
+    // Terza scheda: segnatura ULTIMA, dichiarante PRIMO. Senza, l'ordine per dichiarante
+    // coinciderebbe con quello per segnatura e il test non proverebbe nulla.
+    await page.evaluate(async () => {
+      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      appData.manoscritti.push({
+        id: 'rec-700', cartella: '', tipoDocumento: 'fiscali-test',
+        segnatura: '165, 700', dichiarante: 'Alberto Neri', tags: '', allegati: [],
+        lastModified: Date.now(), creatoDa: 'Anonimo', modificatoDa: 'Anonimo',
+      });
+      await (window as any).Store.commit();
+    });
+
+    await page.evaluate(async () => {
+      (window as any).impostaAlberoSecondario('campo', 'dichiarante');
+      (window as any).impostaOrdineAlbero('secondario');
+      await (window as any).salvaStatoPosizione();
+    });
+
+    const sub = page.locator('#folder-list .sidebar-file-sub');
+    await expect(sub.first()).toHaveText('Alberto Neri');
+    await expect(sub.nth(1)).toHaveText('Antonio di Salvestro');
+    await expect(sub.nth(2)).toHaveText('Biagio Cecco');
+
+    const salvata = await page.evaluate(async () => {
+      const s = await (window as any).apiSettings.get();
+      return s.appState && s.appState.alberoSecondario;
+    });
+    expect(salvata).toMatchObject({ modo: 'campo', campo: 'dichiarante', ordina: 'secondario' });
+  });
 });

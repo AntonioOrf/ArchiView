@@ -2,8 +2,11 @@
             
             <div id="sidebar-folders" role="tabpanel" aria-labelledby="btn-tab-folders" class="flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 flex justify-between items-center shrink-0">
-                    <h2 class="font-bold flex items-center gap-2">
-                        <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span></h2>
+                    <h2 class="font-bold flex items-center gap-2 w-full">
+                        <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span>
+                        <button type="button" onclick="apriMenuEtichettaAlbero(this)" id="btn-albero-secondario" class="btn btn-ghost btn-icon ml-auto" aria-haspopup="menu" aria-expanded="false" data-i18n-title="tree_label_title" data-i18n-aria-label="tree_label_title" title="Etichetta secondaria delle schede" aria-label="Etichetta secondaria delle schede">
+                            <i data-lucide="text-cursor-input" class="w-4 h-4"></i>
+                        </button></h2>
                 </div>
                 <div id="folder-list" class="flex-1 p-3 overflow-y-auto custom-scroll space-y-1">
                 </div>

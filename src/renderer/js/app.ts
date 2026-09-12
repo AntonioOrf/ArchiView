@@ -272,6 +272,18 @@ async function avviaApp() {
         if (window.statoIniziale.colonneTabella && typeof window.statoIniziale.colonneTabella === 'object') {
             window.colonneTabella = window.statoIniziale.colonneTabella;
         }
+        // Etichetta secondaria dell'albero. Chiavi lette una per una e validate: un
+        // appState scritto da una versione precedente non deve introdurre modi ignoti,
+        // che renderSidebar tratterebbe come "attiva" mostrando righe vuote.
+        const albSalvato = window.statoIniziale.alberoSecondario;
+        if (albSalvato && typeof albSalvato === 'object') {
+            const modo = albSalvato.modo === 'auto' || albSalvato.modo === 'campo' ? albSalvato.modo : 'nessuno';
+            window.alberoSecondario = {
+                modo: modo,
+                campo: modo === 'campo' && typeof albSalvato.campo === 'string' ? albSalvato.campo : '',
+                ordina: albSalvato.ordina === 'secondario' && modo !== 'nessuno' ? 'secondario' : 'segnatura'
+            };
+        }
         // Fase 1.3. I filtri avanzati vanno ripristinati insieme a ricerca e tag: sono
         // parte dello stesso contesto, e ritrovarne solo metà è peggio che non
         // ritrovarne nessuno. Le chiavi si prendono una per una dallo stato salvato,
