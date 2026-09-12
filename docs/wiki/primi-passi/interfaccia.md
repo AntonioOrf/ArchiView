@@ -22,6 +22,11 @@ Una colonna di icone che cambia il contenuto del pannello laterale:
 In cima all'albero delle cartelle c'è una riga che porta il **nome dell'archivio**: è la radice,
 e raccoglie le schede non ancora messe in una cartella.
 
+Nell'albero ogni scheda porta la sua segnatura; il pulsante in alto a destra del pannello
+**Cartelle** vi aggiunge sotto un campo a scelta — il dichiarante, il notaio, l'autore — e
+permette di ordinare l'albero per quel campo. Vedi
+[Che cosa mostra una scheda nell'albero](/guida/cartelle-archivi#che-cosa-mostra-una-scheda-nell-albero).
+
 In basso a sinistra: il **selettore degli archivi** (per passare da un archivio all'altro,
 crearne, collegarne) e il pulsante di **condivisione**.
 
