@@ -1,3 +1,26 @@
+## ArchiView 3.1.1 — Menu più corti
+
+Il menu del tasto destro su una scheda era arrivato a ventidue voci: su una finestra bassa
+diventava scorrevole, e per accorciare le etichette si era finito a scriverle in una o due
+parole. Da questa versione le voci che rispondono alla stessa domanda stanno in un
+sottomenu, e nessun menu supera le undici righe.
+
+- **Scheda**: le tre viste secondarie stanno in **Vedi** (Collegate, Grafo, Cronologia); i
+  quattro modi di portare fuori il lavoro in **Esporta** (ZIP, CSV, testo, Stampa); le
+  azioni in massa in **Su N schede**, che nell'etichetta dice quante schede si stanno per
+  cambiare. Modifica, Trascrivi, Copia, Taglia ed Elimina restano dove erano.
+- **Barra "⋯"**: i due import in **Importa**, i cinque export in **Esporta**, e
+  "Colonne visibili" è finalmente un sottomenu invece di un secondo menu che si riapriva
+  da solo.
+- **Cartella**: ZIP, CSV, testo e stampa in **Esporta**.
+- I sottomenu si aprono col mouse o con la freccia destra, si chiudono con la sinistra o
+  con Esc, un livello per volta. Le scorciatoie da tastiera restano scritte accanto al
+  comando, dentro il sottomenu.
+
+Nessuna funzione è stata rimossa: tutti i comandi di prima sono ancora tutti raggiungibili.
+
+---
+
 ## ArchiView 3.1.0 — L'albero dice chi, non solo dove
 
 Nell'albero a sinistra una scheda si riconosceva solo dalla segnatura: "165, 579" dice dov'è
