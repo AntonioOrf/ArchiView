@@ -91,12 +91,84 @@ test.describe('Menu contestuale e overflow', () => {
     await page.locator(`#card-${ids[0]}`).click({ button: 'right' });
     const menu = page.locator('#custom-context-menu');
     await expect(menu).toBeVisible();
-    for (const voce of ['Copia (2)', 'Taglia (2)', 'Esporta ZIP (2)', 'Elimina (2)']) {
+    for (const voce of ['Copia (2)', 'Taglia (2)', 'Esporta (2)', 'Elimina (2)']) {
       await expect(menu.locator('button', { hasText: voce })).toHaveCount(1);
     }
+    // Il conteggio è sull'etichetta del gruppo E su quelle dentro: è lì che si decide.
+    await menu.locator('button', { hasText: 'Esporta (2)' }).click();
+    await expect(page.locator('#custom-context-menu-1')).toContainText('Esporta ZIP (2)');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#custom-context-menu-1')).toHaveCount(0);
+    await expect(menu).toBeVisible();
 
     await menu.locator('button', { hasText: /Deseleziona/ }).click();
     await expect(indicatore).toBeHidden();
     expect(await page.evaluate(() => (window as any).selectedRecords.length)).toBe(0);
+  });
+
+  // --- Sottomenu (MENU_GROUPING_TODO) ---
+
+  test('il sottomenu si apre e si chiude da tastiera senza portarsi via il padre', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Menu');
+    await seedItems(page, 1);
+
+    await page.locator('.card-scheda .card-overflow-btn').first().click();
+    const menu = page.locator('#custom-context-menu');
+    const gruppo = menu.locator('button', { hasText: /^Esporta$/ });
+    await gruppo.focus();
+    await page.keyboard.press('ArrowRight');
+
+    const sub = page.locator('#custom-context-menu-1');
+    await expect(sub).toBeVisible();
+    await expect(sub.locator('[role="menuitem"]').first()).toBeFocused();
+    await expect(gruppo).toHaveAttribute('aria-expanded', 'true');
+
+    // Freccia sinistra: esce di UN livello e rimette il fuoco sulla voce che l'ha aperto.
+    await page.keyboard.press('ArrowLeft');
+    await expect(sub).toHaveCount(0);
+    await expect(menu).toBeVisible();
+    await expect(gruppo).toBeFocused();
+    await expect(gruppo).toHaveAttribute('aria-expanded', 'false');
+
+    // Esc al primo livello chiude tutto.
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+  });
+
+  test('il click su una voce del sottomenu esegue il comando', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Menu');
+    await seedItems(page, 1);
+
+    await page.locator('.card-scheda .card-overflow-btn').first().click();
+    // Il mousedown dentro il SOTTOMENU non deve chiudere lo stack prima del click.
+    await page.locator('#custom-context-menu button', { hasText: /^Vedi$/ }).click();
+    await page.locator('#custom-context-menu-1 button', { hasText: /Cronologia/ }).click();
+    await expect(page.locator('#custom-context-menu')).toBeHidden();
+    await expect(page.locator('#custom-context-menu-1')).toHaveCount(0);
+    await expect(page.locator('#record-history-modal')).toBeVisible();
+  });
+
+  test('nessun menu supera 11 voci al primo livello', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Menu');
+    await createFolder(page, 'Notarile');
+    const ids = await seedItems(page, 1);
+
+    // Il vincolo è sulla CRESCITA: sotto le ~12 voci il menu sta in una finestra bassa
+    // senza diventare scorrevole, che è il motivo per cui i gruppi esistono.
+    const conteggi = await page.evaluate((recId) => {
+      const w = window as any;
+      w.selectedRecords = [recId];
+      const primoLivello = (voci: any[]) => voci.filter(v => v && !v.separator && !v.heading).length;
+      return {
+        record: primoLivello(w.vociMenuRecord(recId)),
+        cartella: primoLivello(w.vociMenuCartella('Notarile'))
+      };
+    }, ids[0]);
+
+    expect(conteggi.record).toBeLessThanOrEqual(11);
+    expect(conteggi.cartella).toBeLessThanOrEqual(11);
+
+    await page.locator('#context-overflow-slot button').click();
+    expect(await page.locator('#custom-context-menu [role="menuitem"]').count()).toBeLessThanOrEqual(11);
   });
 });

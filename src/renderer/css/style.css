@@ -1753,7 +1753,7 @@ summary:focus:not(:focus-visible) { outline: none; }
     /* Interfaccia: fuori. `#context-actions` include "Nuova scheda" e i controlli
        di vista; i modali e i menu non devono poter finire sulla carta nemmeno se
        aperti nell'istante in cui parte la stampa. */
-    header, .sidebar, #sidebar, #context-actions, #custom-context-menu,
+    header, .sidebar, #sidebar, #context-actions, .ctx-menu,
     .modal-overlay, #toast-container, #sync-progress-container, .btn, .no-print,
     #update-banner, #tutorial-banner, #pagination-controls, #selection-indicator,
     .driver-popover {

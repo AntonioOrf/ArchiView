@@ -705,6 +705,16 @@ function _linguiExtraction() {
     i18n._({ id: "menu_export_csv", message: "Esporta CSV" });
     i18n._({ id: "menu_export_tsv", message: "Esporta TSV" });
     i18n._({ id: "menu_print_short", message: "Stampa" });
+    // --- Voci-gruppo dei sottomenu (MENU_GROUPING_TODO) ---
+    i18n._({ id: "menu_view_group", message: "Vedi" });
+    i18n._({ id: "menu_view_group_title", message: "Collegamenti, grafo, cronologia" });
+    i18n._({ id: "menu_export_group", message: "Esporta" });
+    i18n._({ id: "menu_export_group_title", message: "ZIP, CSV, testo, stampa" });
+    i18n._({ id: "menu_export_group_title_folder", message: "ZIP, CSV, TSV, testo, stampa" });
+    i18n._({ id: "menu_import_group", message: "Importa" });
+    i18n._({ id: "menu_import_group_title", message: "Backup ZIP o foglio di calcolo" });
+    i18n._({ id: "menu_import_zip", message: "Backup ZIP" });
+    i18n._({ id: "menu_bulk_group_title", message: "Modifica in massa" });
     i18n._({ id: "menu_bulk_move", message: "Sposta" });
     i18n._({ id: "menu_bulk_type", message: "Cambia tipo" });
     i18n._({ id: "menu_bulk_tag", message: "Modifica tag" });
@@ -1753,6 +1763,15 @@ const customEn = {
     "menu_export_csv": "Export CSV",
     "menu_export_tsv": "Export TSV",
     "menu_print_short": "Print",
+    "menu_view_group": "View",
+    "menu_view_group_title": "Links, graph, history",
+    "menu_export_group": "Export",
+    "menu_export_group_title": "ZIP, CSV, text, print",
+    "menu_export_group_title_folder": "ZIP, CSV, TSV, text, print",
+    "menu_import_group": "Import",
+    "menu_import_group_title": "ZIP backup or spreadsheet",
+    "menu_import_zip": "ZIP backup",
+    "menu_bulk_group_title": "Bulk edit",
     "menu_bulk_move": "Move",
     "menu_bulk_type": "Change type",
     "menu_bulk_tag": "Edit tags",
@@ -2756,6 +2775,15 @@ const customIt = {
     "menu_export_csv": "Esporta CSV",
     "menu_export_tsv": "Esporta TSV",
     "menu_print_short": "Stampa",
+    "menu_view_group": "Vedi",
+    "menu_view_group_title": "Collegamenti, grafo, cronologia",
+    "menu_export_group": "Esporta",
+    "menu_export_group_title": "ZIP, CSV, testo, stampa",
+    "menu_export_group_title_folder": "ZIP, CSV, TSV, testo, stampa",
+    "menu_import_group": "Importa",
+    "menu_import_group_title": "Backup ZIP o foglio di calcolo",
+    "menu_import_zip": "Backup ZIP",
+    "menu_bulk_group_title": "Modifica in massa",
     "menu_bulk_move": "Sposta",
     "menu_bulk_type": "Cambia tipo",
     "menu_bulk_tag": "Modifica tag",

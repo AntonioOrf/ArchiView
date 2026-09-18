@@ -239,7 +239,9 @@ test.describe('Export della trascrizione e citazioni', () => {
     await seed(page, [{ segnatura: 'MENU-TX' }]);
 
     await page.locator('#context-overflow-slot button').click();
-    await expect(page.locator('#custom-context-menu')).toContainText('Esporta testo');
+    await page.locator('#custom-context-menu button', { hasText: /^Esporta$/ }).click();
+    await expect(page.locator('#custom-context-menu-1')).toContainText('Esporta testo');
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
 
     await page.keyboard.press('Control+K');

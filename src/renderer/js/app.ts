@@ -1281,21 +1281,6 @@ window.vociMenuRecord = function(id) {
     if (selCount === 1) {
         voci.push({ label: window.t('menu_edit_short', 'Modifica'), title: window.t('menu_edit_record', 'Rinomina / Modifica'), icon: 'edit-3', shortcut: 'F2', onSelect: () => window.editItem(id) });
         voci.push({ label: window.t('btn_transcribe', 'Trascrivi'), icon: 'pen-line', onSelect: () => window.apriTrascrizione(id) });
-        // Fase 3.5 — la voce c'è sempre, anche senza collegamenti: è anche il modo di
-        // scoprire che non ce ne sono, che con un badge condizionale non si distingue da
-        // "non ho guardato".
-        if (typeof window.apriCollegamenti === 'function') {
-            voci.push({ label: window.t('menu_links', 'Collegate'), title: window.t('link_panel_title', 'Schede collegate'), icon: 'link', onSelect: () => window.apriCollegamenti(id) });
-        }
-        if (typeof window.apriGrafo === 'function') {
-            voci.push({ label: window.t('menu_graph', 'Grafo'), title: window.t('graph_title', 'Grafo dei collegamenti'), icon: 'git-fork', onSelect: () => window.apriGrafo() });
-        }
-        // Fase 4.3 — la voce c'è sempre, come "Collegate": è anche il modo di scoprire che
-        // di questa scheda non esiste ancora cronologia, cosa che una voce condizionale
-        // non distinguerebbe da "non ho guardato". Il modale lo dice a parole.
-        if (typeof window.apriStoriaRecord === 'function') {
-            voci.push({ label: window.t('menu_record_history', 'Cronologia'), title: window.t('rec_history_title', 'Cronologia della scheda'), icon: 'history', onSelect: () => window.apriStoriaRecord(id) });
-        }
         // Fase 2.3 — solo se la scheda ha allegati: offrire l'OCR su una scheda senza
         // immagini aprirebbe un modale capace solo di dire "non c'è niente da riconoscere",
         // cioè un comando che non fa nulla. Stesso criterio della palette nella 1.4.
@@ -1309,40 +1294,75 @@ window.vociMenuRecord = function(id) {
                 voci.push({ label: window.t('menu_ocr_short', 'Riconosci testo'), title: window.t('ocr_menu_entry', 'Riconosci testo (OCR)…'), icon: 'scan-text', onSelect: () => window.apriOcrModal(id, 0) });
             }
         }
+
+        // Le tre viste secondarie della scheda in un sottomenu: sono la stessa domanda —
+        // "guarda questa scheda da un'altra angolazione" — e nessuna è un'azione che
+        // modifica qualcosa, quindi nessuna merita una riga del primo livello.
+        // Fase 3.5 / 4.3 — le voci ci sono SEMPRE, anche senza collegamenti o cronologia:
+        // sono anche il modo di scoprire che non ce n'è, cosa che una voce condizionale
+        // non distinguerebbe da "non ho guardato". Il modale lo dice a parole.
+        const vociVedi = [];
+        if (typeof window.apriCollegamenti === 'function') {
+            vociVedi.push({ label: window.t('menu_links', 'Collegate'), title: window.t('link_panel_title', 'Schede collegate'), icon: 'link', onSelect: () => window.apriCollegamenti(id) });
+        }
+        if (typeof window.apriGrafo === 'function') {
+            vociVedi.push({ label: window.t('menu_graph', 'Grafo'), title: window.t('graph_title', 'Grafo dei collegamenti'), icon: 'git-fork', onSelect: () => window.apriGrafo() });
+        }
+        if (typeof window.apriStoriaRecord === 'function') {
+            vociVedi.push({ label: window.t('menu_record_history', 'Cronologia'), title: window.t('rec_history_title', 'Cronologia della scheda'), icon: 'history', onSelect: () => window.apriStoriaRecord(id) });
+        }
+        if (vociVedi.length > 0) {
+            voci.push({ separator: true });
+            voci.push({ label: window.t('menu_view_group', 'Vedi'), title: window.t('menu_view_group_title', 'Collegamenti, grafo, cronologia'), icon: 'eye', submenu: vociVedi });
+        }
         voci.push({ separator: true });
     }
     voci.push({ label: window.t('menu_copy', 'Copia') + suffisso, icon: 'copy', shortcut: 'Ctrl+C', onSelect: () => window.copiaSelezionati() });
     voci.push({ label: window.t('menu_cut', 'Taglia') + suffisso, icon: 'scissors', shortcut: 'Ctrl+X', onSelect: () => window.tagliaSelezionati() });
-    voci.push({ label: window.t('menu_export_zip', 'Esporta ZIP') + suffisso, title: window.t('bulk_export_zip_full', 'Esporta la selezione in ZIP'), icon: 'upload', shortcut: 'Ctrl+E', onSelect: () => window.esportaSelezionati() });
-    voci.push({ label: window.t('menu_export_csv', 'Esporta CSV') + suffisso, title: window.t('bulk_export_csv', 'Esporta selezione in CSV'), icon: 'table', shortcut: 'Ctrl+Maiusc+E', onSelect: () => window.esportaSelezionatiCsv('csv') });
-    // Fase 2.2. `apriStampa('selezione')` e non la stampa immediata: il layout è una
-    // scelta, e stampare venti schede nel formato sbagliato costa carta vera.
-    if (typeof window.apriStampa === 'function') {
-        voci.push({ label: window.t('menu_print_short', 'Stampa') + suffisso, title: window.t('print_cmd_selection', 'Stampa la selezione'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa('selezione') });
-    }
+    // Quattro modi di portare fuori le stesse schede: una famiglia sola, una riga sola.
+    // Le scorciatoie restano visibili dentro il sottomenu, accanto al comando che eseguono.
+    const vociEsporta = [
+        { label: window.t('menu_export_zip', 'Esporta ZIP') + suffisso, title: window.t('bulk_export_zip_full', 'Esporta la selezione in ZIP'), icon: 'upload', shortcut: 'Ctrl+E', onSelect: () => window.esportaSelezionati() },
+        { label: window.t('menu_export_csv', 'Esporta CSV') + suffisso, title: window.t('bulk_export_csv', 'Esporta selezione in CSV'), icon: 'table', shortcut: 'Ctrl+Maiusc+E', onSelect: () => window.esportaSelezionatiCsv('csv') }
+    ];
     // Fasi 2.5/2.6. Un'unica voce per cinque formati: la scelta fra RTF e BibTeX è una
     // domanda del modale, non del menu — cinque voci qui renderebbero il menu illeggibile.
     if (typeof window.apriEsportaTesto === 'function') {
-        voci.push({ label: window.t('menu_export_text', 'Esporta testo') + suffisso, title: window.t('tx_cmd_selection', 'Esporta la trascrizione o la citazione'), icon: 'file-output', onSelect: () => window.apriEsportaTesto('selezione') });
+        vociEsporta.push({ label: window.t('menu_export_text', 'Esporta testo') + suffisso, title: window.t('tx_cmd_selection', 'Esporta la trascrizione o la citazione'), icon: 'file-output', onSelect: () => window.apriEsportaTesto('selezione') });
     }
+    // Fase 2.2. `apriStampa('selezione')` e non la stampa immediata: il layout è una
+    // scelta, e stampare venti schede nel formato sbagliato costa carta vera.
+    if (typeof window.apriStampa === 'function') {
+        vociEsporta.push({ label: window.t('menu_print_short', 'Stampa') + suffisso, title: window.t('print_cmd_selection', 'Stampa la selezione'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa('selezione') });
+    }
+    voci.push({ label: window.t('menu_export_group', 'Esporta') + suffisso, title: window.t('menu_export_group_title', 'ZIP, CSV, testo, stampa'), icon: 'share', submenu: vociEsporta });
 
     // Fase 1.5 — le azioni in massa vivono QUI e non in una barra: la barra della
     // selezione era stata rimossa nella 1.1 perché spingeva in basso le schede a ogni
-    // click. Sotto un'intestazione, perché agiscono su TUTTA la selezione mentre le voci
-    // sopra ne agiscono anche su una sola: l'intestazione dice quante schede si stanno
-    // per cambiare, che è l'informazione che manca proprio nel momento del rischio.
+    // click. In un gruppo a sé, perché agiscono su TUTTA la selezione mentre le voci
+    // sopra ne agiscono anche su una sola.
     if (typeof window.apriAzioneMassa === 'function') {
-        voci.push({ separator: true });
-        voci.push({ heading: true, label: selCount > 1
-            ? window.t('menu_bulk_on', 'Su {var0} schede').replace('{var0}', String(selCount))
-            : window.t('menu_bulk_on_one', 'Su questa scheda') });
-        voci.push({ label: window.t('menu_bulk_move', 'Sposta'), title: window.t('bulk_move_title', 'Sposta in una cartella'), icon: 'folder-input', shortcut: 'Ctrl+Maiusc+M', onSelect: () => window.apriAzioneMassa('cartella') });
-        voci.push({ label: window.t('menu_bulk_type', 'Cambia tipo'), title: window.t('bulk_type_title', 'Cambia tipo di documento'), icon: 'shapes', shortcut: 'Ctrl+Maiusc+T', onSelect: () => window.apriAzioneMassa('tipo') });
-        voci.push({ label: window.t('menu_bulk_tag', 'Modifica tag'), title: window.t('bulk_tag_title', 'Aggiungi o rimuovi tag'), icon: 'tags', shortcut: 'Ctrl+Maiusc+L', onSelect: () => window.apriAzioneMassa('tag') });
-        voci.push({ label: window.t('menu_bulk_replace', 'Sostituisci'), title: window.t('bulk_replace_title', 'Trova e sostituisci'), icon: 'replace', shortcut: 'Ctrl+H', onSelect: () => window.apriAzioneMassa('sostituisci') });
+        const vociMassa = [
+            { label: window.t('menu_bulk_move', 'Sposta'), title: window.t('bulk_move_title', 'Sposta in una cartella'), icon: 'folder-input', shortcut: 'Ctrl+Maiusc+M', onSelect: () => window.apriAzioneMassa('cartella') },
+            { label: window.t('menu_bulk_type', 'Cambia tipo'), title: window.t('bulk_type_title', 'Cambia tipo di documento'), icon: 'shapes', shortcut: 'Ctrl+Maiusc+T', onSelect: () => window.apriAzioneMassa('tipo') },
+            { label: window.t('menu_bulk_tag', 'Modifica tag'), title: window.t('bulk_tag_title', 'Aggiungi o rimuovi tag'), icon: 'tags', shortcut: 'Ctrl+Maiusc+L', onSelect: () => window.apriAzioneMassa('tag') },
+            { label: window.t('menu_bulk_replace', 'Sostituisci'), title: window.t('bulk_replace_title', 'Trova e sostituisci'), icon: 'replace', shortcut: 'Ctrl+H', onSelect: () => window.apriAzioneMassa('sostituisci') }
+        ];
         if (typeof window.ocrSelezionati === 'function') {
-            voci.push({ label: window.t('menu_bulk_ocr', 'OCR'), title: window.t('ocr_bulk_title', 'OCR delle schede selezionate'), icon: 'scan-text', onSelect: () => window.ocrSelezionati() });
+            vociMassa.push({ label: window.t('menu_bulk_ocr', 'OCR'), title: window.t('ocr_bulk_title', 'OCR delle schede selezionate'), icon: 'scan-text', onSelect: () => window.ocrSelezionati() });
         }
+        // Il conteggio passa dall'intestazione all'etichetta del GENITORE: è lì che si
+        // decide se aprire il gruppo, ed è lì che deve stare il numero di schede che si
+        // stanno per cambiare — l'informazione che manca proprio nel momento del rischio.
+        voci.push({ separator: true });
+        voci.push({
+            label: selCount > 1
+                ? window.t('menu_bulk_on', 'Su {var0} schede').replace('{var0}', String(selCount))
+                : window.t('menu_bulk_on_one', 'Su questa scheda'),
+            title: window.t('menu_bulk_group_title', 'Modifica in massa'),
+            icon: 'list-checks',
+            submenu: vociMassa
+        });
     }
 
     voci.push({ separator: true });
@@ -1438,26 +1458,31 @@ window.vociMenuCartella = function(folderPath) {
     if (!isRadice) {
         voci.push({ separator: true });
         voci.push({ label: window.t('menu_rename_short', 'Rinomina'), title: window.t('menu_rename_folder', 'Rinomina cartella'), icon: 'edit-2', onSelect: () => window.rinominaCartellaDaSidebar(folderPath) });
-        voci.push({ label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) });
-        voci.push({ label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('menu_export_folder_csv', 'Esporta cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsvSpecifica(folderPath, 'csv') });
-        // Fase 2.2 — la stampa di una cartella parte SEMPRE navigandoci dentro: gli ambiti
-        // del modale si calcolano sulla cartella corrente, e una stampa che dice "Archivio
-        // corrente" mentre ne stampa un altro sarebbe una trappola silenziosa.
-        if (typeof window.apriStampa === 'function') {
-            voci.push({ label: window.t('menu_print_short', 'Stampa'), title: window.t('menu_print_folder', 'Stampa cartella'), icon: 'printer', onSelect: () => {
-                window.vaiACartella(folderPath);
-                window.apriStampa('cartella');
-            } });
-        }
-        // Come la stampa: si NAVIGA prima nella cartella, perché l'ambito del modale si
-        // calcola sulla cartella corrente e un export che dice "Archivio corrente" mentre
-        // ne esporta un altro sarebbe una trappola silenziosa (lezione della 2.2).
+
+        const vociEsporta = [
+            { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) },
+            { label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('menu_export_folder_csv', 'Esporta cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsvSpecifica(folderPath, 'csv') }
+        ];
+        // Come la stampa qui sotto: si NAVIGA prima nella cartella, perché l'ambito del
+        // modale si calcola sulla cartella corrente e un export che dice "Archivio
+        // corrente" mentre ne esporta un altro sarebbe una trappola silenziosa (2.2).
         if (typeof window.apriEsportaTesto === 'function') {
-            voci.push({ label: window.t('menu_export_text', 'Esporta testo'), title: window.t('menu_export_text_folder', 'Esporta il testo della cartella'), icon: 'file-output', onSelect: () => {
+            vociEsporta.push({ label: window.t('menu_export_text', 'Esporta testo'), title: window.t('menu_export_text_folder', 'Esporta il testo della cartella'), icon: 'file-output', onSelect: () => {
                 window.vaiACartella(folderPath);
                 window.apriEsportaTesto('cartella');
             } });
         }
+        // Fase 2.2 — la stampa di una cartella parte SEMPRE navigandoci dentro: gli ambiti
+        // del modale si calcolano sulla cartella corrente, e una stampa che dice "Archivio
+        // corrente" mentre ne stampa un altro sarebbe una trappola silenziosa.
+        if (typeof window.apriStampa === 'function') {
+            vociEsporta.push({ label: window.t('menu_print_short', 'Stampa'), title: window.t('menu_print_folder', 'Stampa cartella'), icon: 'printer', onSelect: () => {
+                window.vaiACartella(folderPath);
+                window.apriStampa('cartella');
+            } });
+        }
+        voci.push({ label: window.t('menu_export_group', 'Esporta'), title: window.t('menu_export_group_title', 'ZIP, CSV, testo, stampa'), icon: 'share', submenu: vociEsporta });
+
         voci.push({ label: window.t('menu_explorer_short', 'Esplora risorse'), title: window.t('menu_open_in_explorer', 'Apri in Esplora Risorse'), icon: 'folder-open', onSelect: () => window.apriCartellaInEsploraRisorse(folderPath) });
         voci.push({ separator: true });
         voci.push({ label: window.t('menu_copy', 'Copia'), title: window.t('menu_copy_folder', 'Copia cartella'), icon: 'copy', onSelect: () => window.copiaCartella(folderPath) });

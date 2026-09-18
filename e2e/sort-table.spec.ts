@@ -171,23 +171,30 @@ test.describe('Ordinamento e vista tabella', () => {
     for (const voce of [/Nuova cartella/, /Elimina quest/]) {
       await expect(menu.locator('button', { hasText: voce })).toHaveCount(1);
     }
-    // Fase 2.4: gli import sono due (ZIP di ArchiView e CSV), e come per gli export si
-    // distinguono dal `title`, non dall'etichetta — che il menu tronca a 280px.
-    await expect(menu.locator('button', { hasText: /Importa/ })).toHaveCount(2);
-    await expect(menu.locator('button[title="Importa un backup ZIP di ArchiView"]')).toHaveCount(1);
-    await expect(menu.locator('button[title="Importa da CSV"]')).toHaveCount(1);
     // Fase 4.1: il cestino sta accanto all'eliminazione dell'archivio, non fra gli export.
     await expect(menu.locator('button', { hasText: /^Cestino$/ })).toHaveCount(1);
-    // Fasi 2.1 e 2.5/2.6: gli export sono quattro (ZIP, CSV, TSV, testo) e devono esserci
-    // tutti. Le etichette sono corte perche' il menu tronca a 280px; la dizione estesa sta
-    // nel `title`, ed e' quella che l'asserzione controlla, cosi' il test non passerebbe
-    // con quattro voci "Esporta" indistinguibili.
-    await expect(menu.locator('button', { hasText: /Esporta/ })).toHaveCount(4);
-    await expect(menu.locator('button[title="Esporta Cartella in CSV"]')).toHaveCount(1);
-    await expect(menu.locator('button[title="Esporta Cartella in TSV"]')).toHaveCount(1);
-    await expect(menu.locator('button[title="Esporta testo e citazioni"]')).toHaveCount(1);
     // "Colonne visibili" compare solo dove esistono colonne: qui siamo a schede.
     await expect(menu.locator('button', { hasText: /Colonne/ })).toHaveCount(0);
+
+    // MENU_GROUPING_TODO: import ed export sono due gruppi, non sette voci di primo livello.
+    // Fase 2.4: gli import sono due (ZIP di ArchiView e CSV), e come per gli export si
+    // distinguono dal `title`, non dall'etichetta — che il menu tronca a 280px.
+    await menu.locator('button', { hasText: /^Importa$/ }).click();
+    const subImport = page.locator('#custom-context-menu-1');
+    await expect(subImport.locator('button[title="Importa un backup ZIP di ArchiView"]')).toHaveCount(1);
+    await expect(subImport.locator('button[title="Importa da CSV"]')).toHaveCount(1);
+
+    // Fasi 2.1 e 2.5/2.6: gli export sono quattro (ZIP, CSV, TSV, testo) più la stampa, e
+    // devono esserci tutti. Le etichette sono corte perche' il menu tronca a 280px; la
+    // dizione estesa sta nel `title`, ed e' quella che l'asserzione controlla, cosi' il
+    // test non passerebbe con quattro voci "Esporta" indistinguibili.
+    await menu.locator('button', { hasText: /^Esporta$/ }).click();
+    const subExport = page.locator('#custom-context-menu-1');
+    await expect(subExport.locator('button', { hasText: /Esporta/ })).toHaveCount(4);
+    await expect(subExport.locator('button[title="Esporta Cartella in CSV"]')).toHaveCount(1);
+    await expect(subExport.locator('button[title="Esporta Cartella in TSV"]')).toHaveCount(1);
+    await expect(subExport.locator('button[title="Esporta testo e citazioni"]')).toHaveCount(1);
+    await expect(subExport.locator('button[title="Stampa e PDF"]')).toHaveCount(1);
   });
 
   test('il segmento vista dichiara quale vista è attiva', async ({ page, userDataDir }) => {
@@ -307,7 +314,8 @@ test.describe('Ordinamento e vista tabella', () => {
     // In tabella il "⋯" guadagna la voce Colonne, che a schede non c'è.
     await page.locator('#context-overflow-slot button').click();
     await page.locator('#custom-context-menu button', { hasText: /Colonne/ }).click();
-    await page.locator('#custom-context-menu button', { hasText: 'Titolo / Cont.' }).click();
+    // Sottomenu (non più un secondo menu riancorato a mano al pulsante "⋯").
+    await page.locator('#custom-context-menu-1 button', { hasText: 'Titolo / Cont.' }).click();
 
     // La colonna sparisce: l'asserzione è sull'intestazione, non sul conteggio delle righe,
     // che resterebbe identico anche con il toggle inerte.

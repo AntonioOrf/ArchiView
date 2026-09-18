@@ -184,9 +184,14 @@ test.describe('Stampa e PDF', () => {
     await seed(page, [{ segnatura: 'MENU-P' }]);
 
     await page.locator('#context-overflow-slot button').click();
+    // La stampa sta nel gruppo "Esporta": è la stessa domanda degli altri export (portare
+    // fuori il lavoro) con destinazione la carta.
+    await page.locator('#custom-context-menu button', { hasText: /^Esporta$/ }).click();
+    const sub = page.locator('#custom-context-menu-1');
     // Etichetta breve nel menu, dizione estesa nel `title`.
-    await expect(page.locator('#custom-context-menu')).toContainText('Stampa');
-    await expect(page.locator('#custom-context-menu button[title="Stampa e PDF"]')).toHaveCount(1);
+    await expect(sub).toContainText('Stampa');
+    await expect(sub.locator('button[title="Stampa e PDF"]')).toHaveCount(1);
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
 
     await page.keyboard.press('Control+K');

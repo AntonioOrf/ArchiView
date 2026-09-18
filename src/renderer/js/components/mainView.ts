@@ -618,30 +618,38 @@ window.toggleColonnaTabella = function(campo) {
 };
 
 /**
- * Selettore delle colonne visibili. Riusa il menu contestuale esistente
- * (`apriMenuContestuale`, che sa già ancorarsi a un elemento, gestire frecce/Esc e
- * chiudersi al click fuori) invece di introdurre un secondo tipo di popover.
+ * Voci del selettore colonne. Sono un sottomenu del "⋯" (Fase 2 di MENU_GROUPING_TODO):
+ * prima erano un secondo menu che il primo doveva riaprire riancorandosi a mano al
+ * pulsante, perché il menu si chiude prima di eseguire l'azione della voce.
  */
-window.apriSelettoreColonne = function(ancora) {
+window.vociColonneTabella = function() {
     const paginati = window.__ultimiPaginati || [];
     const disponibili = campiTabellaDisponibili(paginati);
-    if (disponibili.length === 0) return;
+    if (disponibili.length === 0) return [];
     const chiave = chiaveColonne(paginati);
     const visibili = colonneVisibili(chiave, disponibili);
 
-    const voci = [{ heading: true, label: window.t('menu_columns', 'Colonne visibili') }];
-    for (const campo of disponibili) {
+    return disponibili.map(campo => {
         const attiva = visibili.includes(campo);
-        voci.push({
+        return {
             label: etichettaCampo(campo),
             icon: attiva ? 'check' : 'minus',
             // Restare con una sola colonna è legittimo; a zero la tabella perderebbe senso,
             // quindi l'ultima attiva non è disattivabile.
             disabled: attiva && visibili.length === 1,
             onSelect: () => window.toggleColonnaTabella(campo)
-        });
-    }
-    window.apriMenuContestuale(ancora || document.querySelector('#context-overflow-slot button'), voci);
+        };
+    });
+};
+
+/** Apertura autonoma (palette, scorciatoie): stesso elenco, menu di primo livello. */
+window.apriSelettoreColonne = function(ancora) {
+    const colonne = window.vociColonneTabella();
+    if (colonne.length === 0) return;
+    window.apriMenuContestuale(
+        ancora || document.querySelector('#context-overflow-slot button'),
+        [{ heading: true, label: window.t('menu_columns', 'Colonne visibili') }, ...colonne]
+    );
 };
 
 function etichettaCampo(campo) {
@@ -805,23 +813,51 @@ function vociMenuContesto() {
     const elimina = statoEliminaCartella();
     const voci = [
         { label: window.t('btn_new_folder', 'Nuova cartella'), icon: 'folder-plus', onSelect: () => aggiungiCartella() },
-        { label: window.t('btn_import', 'Importa'), title: window.t('btn_import_zip_full', 'Importa un backup ZIP di ArchiView'), icon: 'download', onSelect: () => importaManoscritto() },
-        // Fase 2.4: accanto all'import ZIP e non fra gli export, perché è la stessa domanda —
-        // far entrare dati — con una provenienza diversa: il foglio di calcolo di chi ha già
-        // anni di schedatura invece di un backup dell'app.
-        { label: window.t('imp_menu', 'Importa CSV'), title: window.t('imp_title', 'Importa da CSV'), icon: 'file-input', onSelect: () => window.apriImportCsv() },
-        { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('btn_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => esportaCartellaAttuale() },
-        // Fase 2.1: CSV/TSV accanto allo ZIP. Lo ZIP e' il backup (riapribile in ArchiView),
-        // il CSV e' il dato portabile verso Excel/R/Python: due scopi diversi, due voci.
-        { label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('btn_export_csv', 'Esporta Cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsv('csv') },
-        { label: window.t('menu_export_tsv', 'Esporta TSV'), title: window.t('btn_export_tsv', 'Esporta Cartella in TSV'), icon: 'table', onSelect: () => window.esportaCartellaCsv('tsv') },
-        // Fase 2.2. La stampa sta accanto agli export perché è la stessa domanda — portare
-        // fuori il lavoro — con una destinazione diversa: la carta e l'appendice di un
-        // articolo invece del foglio di calcolo.
-        { label: window.t('menu_print_short', 'Stampa'), title: window.t('print_title', 'Stampa e PDF'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa() },
-        // Fasi 2.5/2.6: la stessa domanda degli export qui sopra — portare fuori il lavoro —
-        // con destinazione l'editor di testo o Zotero invece del foglio di calcolo.
-        { label: window.t('menu_export_text', 'Esporta testo'), title: window.t('tx_title', 'Esporta testo e citazioni'), icon: 'file-output', onSelect: () => window.apriEsportaTesto() },
+        // Fase 2.4: l'import CSV sta con l'import ZIP e non fra gli export, perché è la
+        // stessa domanda — far entrare dati — con una provenienza diversa: il foglio di
+        // calcolo di chi ha già anni di schedatura invece di un backup dell'app.
+        {
+            label: window.t('menu_import_group', 'Importa'),
+            title: window.t('menu_import_group_title', 'Backup ZIP o foglio di calcolo'),
+            icon: 'download',
+            submenu: [
+                { label: window.t('menu_import_zip', 'Backup ZIP'), title: window.t('btn_import_zip_full', 'Importa un backup ZIP di ArchiView'), icon: 'download', onSelect: () => importaManoscritto() },
+                { label: window.t('imp_menu', 'Importa CSV'), title: window.t('imp_title', 'Importa da CSV'), icon: 'file-input', onSelect: () => window.apriImportCsv() }
+            ]
+        },
+        // Fasi 2.1/2.2/2.5/2.6 — ZIP, CSV, TSV, testo e stampa rispondono tutti alla stessa
+        // domanda (portare fuori il lavoro) cambiando solo destinazione: backup riapribile
+        // in ArchiView, foglio di calcolo, editor di testo o Zotero, carta. Cinque voci di
+        // primo livello per una domanda sola erano metà del menu.
+        {
+            label: window.t('menu_export_group', 'Esporta'),
+            title: window.t('menu_export_group_title_folder', 'ZIP, CSV, TSV, testo, stampa'),
+            icon: 'share',
+            submenu: [
+                { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('btn_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => esportaCartellaAttuale() },
+                { label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('btn_export_csv', 'Esporta Cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsv('csv') },
+                { label: window.t('menu_export_tsv', 'Esporta TSV'), title: window.t('btn_export_tsv', 'Esporta Cartella in TSV'), icon: 'table', onSelect: () => window.esportaCartellaCsv('tsv') },
+                { label: window.t('menu_export_text', 'Esporta testo'), title: window.t('tx_title', 'Esporta testo e citazioni'), icon: 'file-output', onSelect: () => window.apriEsportaTesto() },
+                { label: window.t('menu_print_short', 'Stampa'), title: window.t('print_title', 'Stampa e PDF'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa() }
+            ]
+        },
+        { separator: true },
+        // Fase 1.4: la palette e l'elenco dei tasti non si scoprirebbero altrimenti — una
+        // scorciatoia non documentata è una scorciatoia che non esiste. Restano al primo
+        // livello: sono il rimedio a un menu che non si trova, e seppellirle in un gruppo
+        // le renderebbe introvabili esattamente quanto ciò che servono a rimediare.
+        {
+            label: window.t('cp_title', 'Comandi'),
+            icon: 'terminal',
+            shortcut: 'Ctrl+K',
+            onSelect: () => window.apriCommandPalette()
+        },
+        {
+            label: window.t('cp_shortcuts', 'Scorciatoie da tastiera'),
+            icon: 'keyboard',
+            shortcut: '?',
+            onSelect: () => window.apriScorciatoie()
+        },
         { separator: true },
         // Fase 4.1 — il cestino sta ACCANTO all'eliminazione dell'archivio, non fra gli
         // export: è la contropartita del gesto distruttivo che lo segue, e trovarlo lì è
@@ -842,31 +878,14 @@ function vociMenuContesto() {
             onSelect: () => eliminaCartellaAttuale()
         }
     ];
-    // Fase 1.4: la palette e l'elenco dei tasti non si scoprirebbero altrimenti — una
-    // scorciatoia non documentata è una scorciatoia che non esiste.
-    voci.splice(3, 0,
-        { separator: true },
-        {
-            label: window.t('cp_title', 'Comandi'),
-            icon: 'terminal',
-            shortcut: 'Ctrl+K',
-            onSelect: () => window.apriCommandPalette()
-        },
-        {
-            label: window.t('cp_shortcuts', 'Scorciatoie da tastiera'),
-            icon: 'keyboard',
-            shortcut: '?',
-            onSelect: () => window.apriScorciatoie()
-        }
-    );
     if (window.vistaLista === 'tabella') {
-        voci.push({ separator: true });
-        voci.push({
+        // Sottomenu vero: niente più riaggancio manuale del secondo menu al pulsante "⋯".
+        // Prima del separatore finale, cioè sopra cestino ed eliminazione: è una
+        // preferenza di vista, non va mescolata alle azioni distruttive in fondo.
+        voci.splice(voci.length - 3, 0, {
             label: window.t('menu_columns', 'Colonne visibili'),
             icon: 'columns-3',
-            // Il menu si chiude prima di eseguire l'azione: riancorare il secondo menu al
-            // pulsante "⋯", non alla voce, che a quel punto non è più nel DOM.
-            onSelect: () => window.apriSelettoreColonne(document.querySelector('#context-overflow-slot button'))
+            submenu: window.vociColonneTabella()
         });
     }
     return voci;

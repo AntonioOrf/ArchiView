@@ -1,22 +1,38 @@
 // @ts-nocheck
-// --- MENU CONTESTUALE UNIFICATO (Fase 4.3) ---
+// --- MENU CONTESTUALE UNIFICATO (Fase 4.3, submenu dalla Fase 0 di MENU_GROUPING_TODO) ---
 // Unica implementazione per: menu record, menu cartella sidebar, menu sfondo lista,
 // pulsanti overflow "⋯". Sostituisce l'HTML generato a mano in 3 punti di app.ts.
 //
 // Voci: { label, icon?, onSelect, danger?, disabled?, title?, shortcut? } oppure
-// { separator: true }.
+// { separator: true } / { heading: true } / { label, icon?, submenu: [...voci] }.
 // Origine: MouseEvent (coordinate del puntatore) oppure HTMLElement (ancoraggio sotto).
 //
 // Tastiera: frecce su/giù (saltano le voci disabilitate), Home/End, Invio/Spazio,
-// Esc e Tab chiudono e restituiscono il fuoco all'elemento di partenza.
+// destra/sinistra per entrare e uscire da un sottomenu, Esc chiude un livello alla volta,
+// Tab chiude tutto e restituisce il fuoco all'elemento di partenza.
+//
+// I livelli vivono in uno stack: ogni chiusura è "da questo livello in giù", perché
+// uscire da un sottomenu non deve far sparire il menu che lo ha aperto.
 
-let _menuEl = null;
+let _menuStack = [];          // [{ el, voceGenitore }] — indice 0 = menu principale
 let _menuOrigineFocus = null;
 let _menuAncora = null;
+let _menuTimerHover = null;
 
-function _menuVociAttive() {
-    if (!_menuEl) return [];
-    return Array.from(_menuEl.querySelectorAll('[role="menuitem"]:not([disabled])'));
+const RITARDO_HOVER = 120;    // ms: sotto questa soglia il menu si aprirebbe attraversandolo
+
+function _menuTop() {
+    return _menuStack.length ? _menuStack[_menuStack.length - 1].el : null;
+}
+
+function _menuContiene(target) {
+    return _menuStack.some(l => l.el.contains(target));
+}
+
+function _menuVociAttive(el) {
+    const menu = el || _menuTop();
+    if (!menu) return [];
+    return Array.from(menu.querySelectorAll('[role="menuitem"]:not([disabled])'));
 }
 
 function _menuSpostaFuoco(delta) {
@@ -28,19 +44,40 @@ function _menuSpostaFuoco(delta) {
     voci[prossimo].focus();
 }
 
+function _annullaHover() {
+    if (_menuTimerHover) { clearTimeout(_menuTimerHover); _menuTimerHover = null; }
+}
+
 function _menuOnKeyDown(e) {
+    const livelloTop = _menuStack.length - 1;
     switch (e.key) {
         case 'ArrowDown': e.preventDefault(); _menuSpostaFuoco(1); break;
         case 'ArrowUp': e.preventDefault(); _menuSpostaFuoco(-1); break;
         case 'Home': { e.preventDefault(); const v = _menuVociAttive(); if (v.length) v[0].focus(); break; }
         case 'End': { e.preventDefault(); const v = _menuVociAttive(); if (v.length) v[v.length - 1].focus(); break; }
-        case 'Escape': e.preventDefault(); e.stopPropagation(); window.chiudiMenuContestuale(true); break;
-        case 'Tab': window.chiudiMenuContestuale(true); break;
+        case 'ArrowRight': {
+            const btn = document.activeElement;
+            if (btn && btn.__submenu) { e.preventDefault(); _apriSottomenu(btn, true); }
+            break;
+        }
+        case 'ArrowLeft': {
+            // Esce di un livello soltanto, e il fuoco torna sulla voce che ha aperto il
+            // sottomenu: non sulla prima voce del menu padre.
+            if (livelloTop > 0) { e.preventDefault(); window.chiudiMenuContestuale(true, livelloTop); }
+            break;
+        }
+        case 'Escape':
+            e.preventDefault(); e.stopPropagation();
+            window.chiudiMenuContestuale(true, Math.max(0, livelloTop));
+            break;
+        case 'Tab': window.chiudiMenuContestuale(true, 0); break;
     }
 }
 
 function _menuOnPointerDown(e) {
-    if (_menuEl && !_menuEl.contains(e.target)) window.chiudiMenuContestuale(false);
+    // "Dentro il menu" = dentro QUALUNQUE livello: altrimenti il click su una voce di un
+    // sottomenu chiuderebbe lo stack prima che il suo onclick venga eseguito.
+    if (_menuStack.length && !_menuContiene(e.target)) window.chiudiMenuContestuale(false, 0);
 }
 
 function _menuOnScroll(e) {
@@ -48,18 +85,36 @@ function _menuOnScroll(e) {
     // hanno allungato il menu del record, su finestre basse il menu scorre, e con
     // l'handler in capture ogni rotellina lo faceva sparire sotto il puntatore. Stessa
     // lezione del pannello filtri (Fase 1.3).
-    if (_menuEl && e && e.target && e.target.nodeType === 1 && _menuEl.contains(e.target)) return;
-    window.chiudiMenuContestuale(false);
+    if (_menuStack.length && e && e.target && e.target.nodeType === 1 && _menuContiene(e.target)) return;
+    window.chiudiMenuContestuale(false, 0);
 }
 
-window.chiudiMenuContestuale = function(ripristinaFuoco = false) {
-    if (!_menuEl) return;
+/**
+ * @param ripristinaFuoco rimette il fuoco sulla sorgente (solo Esc/Tab/freccia sinistra).
+ * @param finoALivello    chiude i livelli con indice >= questo. 0 (default) = tutto.
+ */
+window.chiudiMenuContestuale = function(ripristinaFuoco = false, finoALivello = 0) {
+    if (_menuStack.length === 0) return;
+    _annullaHover();
+
+    while (_menuStack.length > finoALivello) {
+        const livello = _menuStack.pop();
+        livello.el.remove();
+        if (livello.voceGenitore) {
+            livello.voceGenitore.setAttribute('aria-expanded', 'false');
+            livello.voceGenitore.__submenuAperto = false;
+            // Chiusura del solo sottomenu: il fuoco torna sulla voce che l'aveva aperto.
+            if (ripristinaFuoco && _menuStack.length > 0 && document.contains(livello.voceGenitore)) {
+                livello.voceGenitore.focus();
+            }
+        }
+    }
+    if (_menuStack.length > 0) return;
+
     document.removeEventListener('mousedown', _menuOnPointerDown, true);
     document.removeEventListener('contextmenu', _menuOnPointerDown, true);
     window.removeEventListener('scroll', _menuOnScroll, true);
     window.removeEventListener('resize', _menuOnScroll);
-    _menuEl.remove();
-    _menuEl = null;
     if (_menuAncora) {
         _menuAncora.setAttribute('aria-expanded', 'false');
         _menuAncora = null;
@@ -73,26 +128,14 @@ window.chiudiMenuContestuale = function(ripristinaFuoco = false) {
     }
 };
 
-/**
- * @param origine MouseEvent (menu al puntatore) oppure HTMLElement (menu ancorato sotto).
- * @param voci    array di voci; le label sono inserite come testo, mai come HTML.
- */
-window.apriMenuContestuale = function(origine, voci) {
-    window.chiudiMenuContestuale(false);
-    const elenco = (voci || []).filter(Boolean);
-    if (elenco.length === 0) return;
-
-    const daPuntatore = origine && typeof origine.clientX === 'number';
-    if (daPuntatore) origine.preventDefault();
-
-    _menuOrigineFocus = daPuntatore ? document.activeElement : origine;
-    _menuAncora = daPuntatore ? null : origine;
-    if (_menuAncora) _menuAncora.setAttribute('aria-expanded', 'true');
-
+/** Costruisce l'elemento di un livello. Non lo posiziona e non lo mette nello stack. */
+function _costruisciMenu(elenco, livello) {
     const menu = document.createElement('div');
-    menu.id = 'custom-context-menu';
+    // L'id del primo livello resta quello storico: ci si appoggiano CSS e test E2E.
+    menu.id = livello === 0 ? 'custom-context-menu' : 'custom-context-menu-' + livello;
+    menu.className = 'ctx-menu fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-menu min-w-[190px] max-w-[280px] max-h-[85vh] overflow-y-auto custom-scroll text-sm text-stone-800 dark:text-stone-100';
     menu.setAttribute('role', 'menu');
-    menu.className = 'fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-menu min-w-[190px] max-w-[280px] max-h-[85vh] overflow-y-auto custom-scroll text-sm text-stone-800 dark:text-stone-100';
+    menu.dataset.livello = String(livello);
     // Fuori schermo finché non è misurato: evita il salto visibile del riposizionamento.
     menu.style.left = '-9999px';
     menu.style.top = '0px';
@@ -116,6 +159,7 @@ window.apriMenuContestuale = function(origine, voci) {
             menu.appendChild(hr);
             continue;
         }
+        const sottovoci = Array.isArray(voce.submenu) ? voce.submenu.filter(Boolean) : null;
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('role', 'menuitem');
@@ -128,7 +172,9 @@ window.apriMenuContestuale = function(origine, voci) {
             // amber-600 su fondo bianco sta a 3.4:1, sotto il minimo 4.5:1 per il testo:
             // amber-700 lo porta a 5.1:1 senza cambiare la semantica del colore (5.5).
             + (voce.accentWarn ? ' font-medium text-amber-700 dark:text-amber-400' : '');
-        btn.disabled = !!voce.disabled;
+        // Un sottomenu senza voci è un comando che non fa nulla: disabilitato, non nascosto,
+        // così l'assenza si vede invece di far sparire una riga da sotto il puntatore.
+        btn.disabled = !!voce.disabled || (sottovoci !== null && sottovoci.length === 0);
         if (voce.title) btn.title = voce.title;
 
         if (voce.icon) {
@@ -142,29 +188,114 @@ window.apriMenuContestuale = function(origine, voci) {
         span.textContent = voce.label;   // textContent: nessuna interpolazione di HTML
         btn.appendChild(span);
 
-        // `shortcut` (Fase 1.4): la combinazione accanto alla voce è il solo posto in cui
-        // un utente scopre una scorciatoia mentre sta già usando il comando col mouse.
-        if (voce.shortcut) {
+        if (sottovoci) {
+            // Una voce padre non porta scorciatoia: le combinazioni restano visibili DENTRO
+            // il sottomenu, accanto al comando che eseguono (Fase 1.4).
+            btn.__submenu = sottovoci;
+            btn.__livello = livello;
+            btn.setAttribute('aria-haspopup', 'menu');
+            btn.setAttribute('aria-expanded', 'false');
+            const chev = document.createElement('i');
+            chev.setAttribute('data-lucide', 'chevron-right');
+            chev.className = 'w-4 h-4 shrink-0 ml-auto opacity-60';
+            btn.appendChild(chev);
+        } else if (voce.shortcut) {
+            // `shortcut` (Fase 1.4): la combinazione accanto alla voce è il solo posto in cui
+            // un utente scopre una scorciatoia mentre sta già usando il comando col mouse.
             const kbd = document.createElement('kbd');
             kbd.className = 'cp-kbd ml-auto';
             kbd.textContent = voce.shortcut;
             btn.appendChild(kbd);
         }
 
+        // Attraversare una voce qualunque chiude i livelli più profondi; entrare in una voce
+        // padre apre il suo. Stesso ritardo per i due casi, così un movimento diagonale verso
+        // il sottomenu già aperto non lo fa sparire a metà strada.
+        btn.onmouseenter = () => {
+            _annullaHover();
+            if (btn.disabled) return;
+            _menuTimerHover = setTimeout(() => {
+                _menuTimerHover = null;
+                if (sottovoci) _apriSottomenu(btn, false);
+                else if (_menuStack.length > livello + 1) window.chiudiMenuContestuale(false, livello + 1);
+            }, RITARDO_HOVER);
+        };
+        btn.onmouseleave = _annullaHover;
+
         btn.onclick = (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
+            if (sottovoci) { _annullaHover(); _apriSottomenu(btn, true); return; }
             const azione = voce.onSelect;
-            window.chiudiMenuContestuale(false);
+            window.chiudiMenuContestuale(false, 0);
             if (typeof azione === 'function') azione();
         };
         menu.appendChild(btn);
     }
 
     menu.addEventListener('keydown', _menuOnKeyDown);
+    return menu;
+}
+
+/** Apre (o riporta a fuoco) il sottomenu della voce `btn`, ancorandolo al suo fianco. */
+function _apriSottomenu(btn, dallaTastiera) {
+    const livelloFiglio = btn.__livello + 1;
+    if (btn.__submenuAperto && _menuStack.length > livelloFiglio) {
+        if (dallaTastiera) {
+            const prima = _menuVociAttive(_menuStack[livelloFiglio].el)[0];
+            if (prima) prima.focus();
+        }
+        return;
+    }
+    // Chiude l'eventuale sottomenu fratello già aperto allo stesso livello.
+    window.chiudiMenuContestuale(false, livelloFiglio);
+
+    const menu = _costruisciMenu(btn.__submenu, livelloFiglio);
     document.body.appendChild(menu);
     if (window.lucide) lucide.createIcons({ nodes: [menu] });
-    _menuEl = menu;
+    _menuStack.push({ el: menu, voceGenitore: btn });
+    btn.setAttribute('aria-expanded', 'true');
+    btn.__submenuAperto = true;
+
+    const margine = 8;
+    const r = btn.getBoundingClientRect();
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
+    // A destra della voce, sovrapponendo di 2px il bordo del padre così il puntatore non
+    // attraversa un varco scoperto; ribaltato a sinistra del menu padre se non ci sta.
+    let x = r.right - 2;
+    if (x + w > window.innerWidth - margine) x = r.left - w + 2;
+    let y = r.top - 4;
+    if (y + h > window.innerHeight - margine) y = window.innerHeight - h - margine;
+    menu.style.left = Math.max(margine, Math.min(x, window.innerWidth - w - margine)) + 'px';
+    menu.style.top = Math.max(margine, y) + 'px';
+
+    if (dallaTastiera) {
+        const prima = _menuVociAttive(menu)[0];
+        if (prima) prima.focus();
+    }
+}
+
+/**
+ * @param origine MouseEvent (menu al puntatore) oppure HTMLElement (menu ancorato sotto).
+ * @param voci    array di voci; le label sono inserite come testo, mai come HTML.
+ */
+window.apriMenuContestuale = function(origine, voci) {
+    window.chiudiMenuContestuale(false, 0);
+    const elenco = (voci || []).filter(Boolean);
+    if (elenco.length === 0) return;
+
+    const daPuntatore = origine && typeof origine.clientX === 'number';
+    if (daPuntatore) origine.preventDefault();
+
+    _menuOrigineFocus = daPuntatore ? document.activeElement : origine;
+    _menuAncora = daPuntatore ? null : origine;
+    if (_menuAncora) _menuAncora.setAttribute('aria-expanded', 'true');
+
+    const menu = _costruisciMenu(elenco, 0);
+    document.body.appendChild(menu);
+    if (window.lucide) lucide.createIcons({ nodes: [menu] });
+    _menuStack.push({ el: menu, voceGenitore: null });
 
     // Posizionamento con dimensioni reali (non più le costanti 180/200 stimate a mano)
     const larghezza = menu.offsetWidth;
@@ -185,7 +316,7 @@ window.apriMenuContestuale = function(origine, voci) {
     menu.style.left = Math.max(margine, Math.min(x, window.innerWidth - larghezza - margine)) + 'px';
     menu.style.top = Math.max(margine, Math.min(y, window.innerHeight - altezza - margine)) + 'px';
 
-    const prima = _menuVociAttive()[0];
+    const prima = _menuVociAttive(menu)[0];
     if (prima) prima.focus();
 
     // capture: chiude anche se un handler intermedio ferma la propagazione
@@ -210,7 +341,7 @@ window.creaBottoneOverflow = function(costruisciVoci, opzioni = {}) {
         e.preventDefault();
         e.stopPropagation();
         // Toggle: un secondo click sullo stesso pulsante chiude il menu.
-        if (_menuAncora === btn) { window.chiudiMenuContestuale(true); return; }
+        if (_menuAncora === btn) { window.chiudiMenuContestuale(true, 0); return; }
         // preparaApertura può ri-renderizzare il contenitore (es. selezionare la scheda):
         // in quel caso restituisce il pulsante nuovo, altrimenti ancoreremmo il menu a un
         // nodo staccato dal DOM, il cui getBoundingClientRect è tutto zeri.

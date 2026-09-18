@@ -138,11 +138,13 @@ test.describe('Esportazione CSV/TSV', () => {
 
     // "⋯" della barra: export CSV e TSV della cartella.
     await page.locator('#context-overflow-slot button').click();
-    const menu = page.locator('#custom-context-menu');
+    await page.locator('#custom-context-menu button', { hasText: /^Esporta$/ }).click();
+    const menu = page.locator('#custom-context-menu-1');
     // Etichetta breve a schermo, dizione estesa nel `title` (il menu tronca a 280px).
     await expect(menu).toContainText('Esporta CSV');
     await expect(menu).toContainText('Esporta TSV');
     await expect(menu.locator('button[title="Esporta Cartella in CSV"]')).toHaveCount(1);
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
 
     // Palette: il comando esiste ed è filtrabile per "csv".
