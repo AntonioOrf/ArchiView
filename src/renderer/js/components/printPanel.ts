@@ -69,7 +69,7 @@ function _sRecordCorrente() {
         if (id && id.value) return id.value;
     }
     if (vAdd && !vAdd.classList.contains('hidden-tab')) {
-        const id = document.getElementById('manoscritto-id');
+        const id = document.getElementById('form-id') || document.getElementById('manoscritto-id');
         if (id && id.value) return id.value;
     }
     return null;

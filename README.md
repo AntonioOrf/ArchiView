@@ -20,6 +20,8 @@ The core of the application relies on a fully dynamic document template system. 
 
 ## Additional Features
 
+- **IIIF Manifest Import**: Directly import digitized manuscripts from BnF/Gallica, e-codices, Vatican Library, British Library, Bodleian, and any library supporting the IIIF Presentation standard (v2 and v3). Browse folios immediately with remote streaming, offline LRU caching, and on-demand local downloading for OCR and offline use.
+- **Flexible Export & Print**: Export records to Markdown (including all dynamic fields, custom fields, and attachment lists), CSV, or standalone backup ZIP archives. Print comprehensive record sheets and transcriptions with thumbnail support for local and IIIF remote folios.
 - **Hub Server Synchronization (New Architecture)**: Synchronize and collaborate in real-time with other users via the new Hub Server architecture, which replaces the legacy Google Drive model for "Shared Vaults". You can manage multiple independent Archives (Multi-Vault) with instant conflict resolution and native security.
 - **Interactive Tutorial & Multi-language**: Learn how to use ArchiView with a built-in interactive guide. The application is fully translated in English and Italian.
 - **Folder Organization**: Manage your archives in a hierarchical structure of folders and subfolders for perfect organization.

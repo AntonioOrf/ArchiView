@@ -30,12 +30,15 @@ const { setupDriveIpc } = require('./ipc/drive');
 const { setupMsIpc } = require('./ipc/msSync');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
 const { setupOcrIpc } = require('./ipc/ocrIpc');
+const { setupIiifIpc } = require('./ipc/iiifIpc');
 const { setupPrintIpc } = require('./ipc/printIpc');
 const { setupTextExportIpc } = require('./ipc/textExportIpc');
 // Fase 4 — cestino, snapshot locali e cronologia per scheda.
 const { setupSafetyIpc } = require('./ipc/safetyIpc');
 const pdfHost = require('./ocr/pdfHost');
 const printHost = require('./print/printHost');
+const iiifImageHost = require('./iiif/imageHost');
+const iiifCache = require('./iiif/imageCache');
 
 // Protocollo custom per servire allegati
 protocol.registerSchemesAsPrivileged([
@@ -48,7 +51,11 @@ protocol.registerSchemesAsPrivileged([
   // allegati devono stare nella STESSA origine, o la CSP della pagina generata blocca le
   // immagini. Schema distinto da quello dell'OCR perché i due sottosistemi sono
   // indipendenti: un errore nel servire una stampa non deve toccare il riconoscimento.
-  { scheme: printHost.SCHEMA, privileges: { standard: true, secure: true, supportFetchAPI: true } }
+  { scheme: printHost.SCHEMA, privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  // Carte IIIF remote. Stessi privilegi di local-asset e non di piu': le immagini sono
+  // caricate con un <img> dentro la pagina principale, non da una pagina a se stante, quindi
+  // non serve `standard: true` — che significherebbe dare a questo schema un'origine vera.
+  { scheme: iiifImageHost.SCHEMA, privileges: { secure: true, supportFetchAPI: true } }
 ]);
 
 function createWindow() {
@@ -146,6 +153,11 @@ if (!gotTheLock) {
     setupAttachmentsProtocol();
     pdfHost.registraProtocollo();
     printHost.registraProtocollo();
+    iiifImageHost.registraProtocollo();
+    // Lo sfoltimento della cache IIIF gira una volta all'avvio e senza attesa: e' una
+    // pulizia, non un prerequisito, e contare una cartella da qualche migliaio di file non
+    // deve ritardare la comparsa della finestra.
+    iiifCache.sfoltisci().catch(() => {});
 
     const savedWorkspace = loadWorkspace();
     if (savedWorkspace) {
@@ -163,6 +175,7 @@ if (!gotTheLock) {
   setupMsIpc();
   setupExportImportIpc();
   setupOcrIpc();
+  setupIiifIpc();
   setupPrintIpc();
   setupTextExportIpc();
   setupSafetyIpc();

@@ -10,6 +10,7 @@ const { state } = require('../workspaceManager');
 const { leggiDb, recordsRichiesti, nomeFileSicuro } = require('./recordSelection');
 const { generaHtmlStampa } = require('../print/printTemplate');
 const printHost = require('../print/printHost');
+const Model = require('../../shared/model');
 
 /** Documento pronto per la finestra: template puro + miniature lette da disco. */
 async function componiDocumento(ids, opzioni) {
@@ -24,7 +25,11 @@ async function componiDocumento(ids, opzioni) {
     ? await printHost.preparaMiniature(records, { pdf: opzioni.miniaturePdf !== false })
     : {};
 
-  const html = generaHtmlStampa(records, db.tipiDocumento || [], {
+  const tipiDoc = (Array.isArray(db.tipiDocumento) && db.tipiDocumento.length > 0)
+    ? db.tipiDocumento
+    : Model.MODELLI_PREDEFINITI.map((m: any) => ({ id: m.id, nome: m.nome, campi: m.campi.slice() }));
+
+  const html = generaHtmlStampa(records, tipiDoc, {
     layout: opzioni.layout,
     etichette: opzioni.etichette || {},
     nomiTipi: opzioni.nomiTipi || {},

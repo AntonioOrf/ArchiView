@@ -30,6 +30,28 @@ type AVAllegato = {
   hash?: string;
   /** Trascrizione della singola carta (Fase 2.3-bis). */
   trascrizione?: string;
+  /**
+   * Import IIIF: la carta è un RIFERIMENTO, il file in `allegati_manoscritti/` non esiste
+   * ancora. `nome` è comunque già deciso e riservato, così materializzare la carta fa
+   * comparire il file al posto giusto senza toccare il record.
+   *
+   * Chi legge un allegato deve sapere che con `remoto` non c'è né file né `hash`:
+   * l'immagine si chiede a `iiif-img:` invece che a `local-asset:` (`avSrcAllegato` in
+   * `renderer/js/logic/utils.ts`) e la verifica dell'integrità non ha nulla da verificare.
+   * La sincronizzazione non ne risente: carica l'intersezione fra i file presenti su disco
+   * e gli allegati citati dal database, e una carta remota sul disco non c'è.
+   */
+  remoto?: true;
+  iiif?: {
+    canvasId: string;
+    /** Base della Image API; assente quando il manifest offre solo un'immagine statica. */
+    serviceId: string | null;
+    /** Versione della Image API del servizio (2 o 3), 0 se non c'è: cambia la size "tutto". */
+    apiVersione?: number;
+    urlStatico: string | null;
+    larghezza: number;
+    altezza: number;
+  };
 };
 
 type AVScheda = {

@@ -1,0 +1,84 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://gallica.bnf.fr/iiif/ark:/12148/btv1b84259980/manifest.json",
+  "@type": "sc:Manifest",
+  "label": "Paris, BnF, Latin 1234",
+  "attribution": "<span>Biblioth&egrave;que nationale de France</span>",
+  "license": "https://gallica.bnf.fr/html/und/conditions-dutilisation-des-contenus-de-gallica",
+  "metadata": [
+    { "label": "Datation", "value": "XIIIe siècle" }
+  ],
+  "sequences": [
+    {
+      "@id": "https://example.org/sequence/normal",
+      "@type": "sc:Sequence",
+      "canvases": [
+        {
+          "@id": "https://example.org/canvas/f1",
+          "@type": "sc:Canvas",
+          "label": "1r",
+          "width": 2000,
+          "height": 3000,
+          "images": [
+            {
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "resource": {
+                "@id": "https://example.org/iiif/ark:12148:f1/full/full/0/native.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "width": 2000,
+                "height": 3000,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://example.org/iiif/ark:12148:f1",
+                  "profile": "http://iiif.io/api/image/2/level2.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://example.org/canvas/f2",
+          "@type": "sc:Canvas",
+          "label": [
+            { "@value": "1v", "@language": "it" },
+            { "@value": "folio 1 verso", "@language": "en" }
+          ],
+          "width": 2000,
+          "height": 3000,
+          "images": [
+            {
+              "resource": {
+                "@id": "https://example.org/iiif/ark:12148:f2/full/full/0/native.jpg",
+                "format": "image/jpeg",
+                "service": [
+                  {
+                    "@id": "https://example.org/iiif/ark:12148:f2/",
+                    "profile": "http://iiif.io/api/image/2/level2.json"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://example.org/canvas/f3",
+          "@type": "sc:Canvas",
+          "width": 1000,
+          "height": 1400,
+          "images": [
+            {
+              "resource": {
+                "@id": "https://example.org/statica/f3.jpg",
+                "format": "image/jpeg",
+                "width": 1000,
+                "height": 1400
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

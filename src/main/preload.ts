@@ -101,6 +101,17 @@ contextBridge.exposeInMainWorld('apiSicurezza', {
     storiaRecord: (id) => ipcRenderer.invoke('snapshot-storia-record', id)
 });
 
+// Import IIIF. Il renderer non parla mai con il server della biblioteca: passa un URL e
+// riceve il JSON, oppure chiede di scaricare delle carte. Le immagini che vede arrivano dal
+// protocollo `iiif-img:` (main/iiif/imageHost.ts), non da una fetch del renderer.
+contextBridge.exposeInMainWorld('apiIiif', {
+    leggiManifest: (url) => ipcRenderer.invoke('iiif-leggi-manifest', url),
+    materializza: (richieste) => ipcRenderer.invoke('iiif-materializza', richieste),
+    annulla: () => ipcRenderer.invoke('iiif-annulla'),
+    stato: () => ipcRenderer.invoke('iiif-stato'),
+    onProgress: (callback) => ipcRenderer.on('iiif-progress', (event, dati) => callback(dati))
+});
+
 contextBridge.exposeInMainWorld('apiSettings', {
     get: () => ipcRenderer.invoke('get-settings'),
     save: (settings) => ipcRenderer.invoke('save-settings', settings)

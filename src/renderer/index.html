@@ -13,7 +13,7 @@
             } catch (e) {}
         })();
     </script>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.pusher.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset: https://*.googleusercontent.com https://*.ggpht.com; frame-src 'self' local-asset: https://docs.google.com https://apis.google.com; connect-src 'self' https://api.github.com http: https: ws: wss:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.pusher.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset: iiif-img: https://*.googleusercontent.com https://*.ggpht.com; frame-src 'self' local-asset: https://docs.google.com https://apis.google.com; connect-src 'self' https://api.github.com http: https: ws: wss:;">
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="vendor/lucide.min.js"></script>
     <script src="vendor/purify.min.js"></script>
@@ -54,6 +54,7 @@
          (tipi dei campi, `creaScheda`) e lo cerca al momento della chiamata, non al
          caricamento: l'ordine con model.js conta comunque, ed è questo. -->
     <script defer src="js/shared/csvImport.js"></script>
+    <script defer src="js/shared/iiifManifest.js"></script>
     <script defer src="js/logic/i18n.js"></script>
     <script defer src="js/logic/utils.js"></script>
 
@@ -71,6 +72,7 @@
     <script defer src="js/components/modals/settingsModal.js"></script>
     <script defer src="js/components/modals/mergeConflictModal.js"></script>
     <script defer src="js/components/modals/deletionConflictModal.js"></script>
+    <script defer src="js/components/modals/iiifModal.js"></script>
     <script defer src="js/components/modals/cloudModal.js"></script>
     <script defer src="js/components/modals/shareModal.js"></script>
     <!-- Generato in build da RELEASE_NOTES.md (scripts/build-changelog.js): deve precedere

@@ -274,6 +274,18 @@ function miniatureDi(m: Record_, opzioni: Opzioni): string {
   return `<div class="blocco"><h3 class="blocco-titolo">${escapeHtml(testo(opzioni, 'print_section_attachments'))}</h3><div class="miniature">${celle}</div></div>`;
 }
 
+function trascrizioneDiRecord(m: Record_): string {
+  if (haTesto(m.trascrizione)) return String(m.trascrizione);
+  const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+  const conTesto = allegati.filter((a: any) => a && haTesto(a.trascrizione));
+  if (conTesto.length === 0) return '';
+  return conTesto.map((a: any, i: number) => {
+    const nome = String(a.originalName || a.nome || a.name || (i + 1));
+    const header = conTesto.length > 1 ? `<p class="trasc-carta"><strong>${escapeHtml(nome)}</strong></p>` : '';
+    return `${header}<div>${sanificaHtml(a.trascrizione)}</div>`;
+  }).join('\n');
+}
+
 function schedaSingola(m: Record_, tipiDocumento: Tipo[], opzioni: Opzioni): string {
   const campi = campiDaStampare(m, tipiDocumento, opzioni.includiVuoti);
   const righe = campi.map(c => `
@@ -292,8 +304,9 @@ function schedaSingola(m: Record_, tipiDocumento: Tipo[], opzioni: Opzioni): str
     </header>`;
 
   let trascrizione = '';
-  if (opzioni.includiTrascrizione && haTesto(m.trascrizione)) {
-    trascrizione = `<div class="blocco"><h3 class="blocco-titolo">${escapeHtml(testo(opzioni, 'print_section_transcription'))}</h3><div class="trascrizione">${sanificaHtml(m.trascrizione)}</div></div>`;
+  const htmlTrasc = trascrizioneDiRecord(m);
+  if (opzioni.includiTrascrizione && haTesto(htmlTrasc)) {
+    trascrizione = `<div class="blocco"><h3 class="blocco-titolo">${escapeHtml(testo(opzioni, 'print_section_transcription'))}</h3><div class="trascrizione">${sanificaHtml(htmlTrasc)}</div></div>`;
   }
 
   // `scheda` e' l'unita' di paginazione: una scheda per pagina e' il formato cartaceo di
@@ -457,7 +470,7 @@ function generaHtmlStampa(records: Record_[], tipiDocumento: Tipo[], opzioni: Op
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src print-host: data:; style-src 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src print-host: data: iiif-img: https:; style-src 'unsafe-inline'">
 <title>${escapeHtml(titoloDocumento)}</title>
 <style>${foglioDiStile(opzioni)}</style>
 </head>

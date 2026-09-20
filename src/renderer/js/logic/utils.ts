@@ -15,7 +15,7 @@ window.escapeHTML = function(str) {
 
 window.sanitizeHTML = function(html) {
     if (typeof DOMPurify !== 'undefined') {
-        return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|file|archiview|local-asset):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });
+        return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|file|archiview|local-asset|iiif-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });
     }
     return window.escapeHTML(html); // Fallback to escape if DOMPurify is not loaded
 };
@@ -417,6 +417,46 @@ function normalizzaAllegati(m) {
     }
     return m.allegati;
 }
+
+/**
+ * L'URL da cui prendere un allegato. UNICO punto che decide fra i due protocolli:
+ * `local-asset:` per i file nella cartella allegati, `iiif-img:` per le carte importate da
+ * un manifest e non ancora scaricate (`remoto: true`).
+ *
+ * Esiste perché la stessa riga era ripetuta in cinque punti (form, modali, pannello della
+ * trascrizione): con l'import IIIF uno solo di essi dimenticato mostrerebbe un'immagine
+ * mancante invece della carta, e il difetto salterebbe fuori in un punto a caso dell'interfaccia.
+ *
+ * `cacheBuster` serve dove l'immagine può cambiare sotto lo stesso nome — la
+ * materializzazione di una carta remota è esattamente questo caso. Non si aggiunge a
+ * `iiif-img:`, dove il nome è già l'hash dell'URL remoto e la cache è voluta.
+ */
+window.srcAllegato = function(allegato, opzioni) {
+    if (!allegato) return '';
+    const opt = opzioni || {};
+
+    if (allegato.remoto && allegato.iiif && window.IiifManifest) {
+        const iiif = allegato.iiif;
+        if (!iiif.serviceId && !iiif.urlStatico) return '';
+        // Si passa la CARTA, non un URL già pronto: se il server non sa servire la misura
+        // chiesta serve sapere come ripiegare, e quella conoscenza sta in iiifManifest.ts,
+        // che il main usa identica. Chiavi corte perché finiscono in un URL.
+        const carta = { s: iiif.serviceId || null, v: iiif.apiVersione || 0, u: iiif.urlStatico || null, l: opt.lato || 0 };
+        // base64url: il riferimento passa dentro UN segmento di path, senza che i suoi `/`,
+        // `?` e `&` diventino struttura dell'URL. `btoa` lavora su byte e non su caratteri:
+        // un URL con una lettera accentata lo farebbe altrimenti sollevare.
+        let byte = '';
+        for (const b of new TextEncoder().encode(JSON.stringify(carta))) byte += String.fromCharCode(b);
+        return 'iiif-img://img/' + btoa(byte).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    const nome = typeof allegato === 'string' ? allegato : allegato.nome;
+    if (!nome) return '';
+    let src = 'local-asset://' + encodeURIComponent(nome);
+    if (opt.cacheBuster) src += '?t=' + Date.now();
+    if (opt.frammento) src += opt.frammento;
+    return src;
+};
 
 // --- Trascrizione per allegato (Fase 2.3-bis) --------------------------------
 //

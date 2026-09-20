@@ -390,16 +390,158 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
         }
     }
 
+    const allegato = (m && m.allegati && m.allegati[index]) || { nome, tipo };
+
     if (tipo === 'pdf') {
-        pdfPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now() + '#pagemode=none';
+        pdfPreview.src = window.srcAllegato(allegato, { cacheBuster: true, frammento: '#pagemode=none' });
         pdfPreview.classList.remove('hidden');
     } else {
-        const altName = (m && m.allegati && m.allegati[index] && m.allegati[index].originalName) || window.t('attachment_image', 'Immagine');
+        const altName = allegato.originalName || window.t('attachment_image', 'Immagine');
         imgPreview.alt = altName;
         window.mostraAnteprimaImmagine();
+
+        // Una carta remota puo' non arrivare: server lento, rete assente, misura che
+        // quell'implementazione non sa calcolare. Senza questo, il viewport resta
+        // semplicemente vuoto e non si capisce se sia un difetto dell'app o della rete.
+        imgPreview.onerror = () => {
+            imgPreview.onerror = null;
+            if (!allegato.remoto) return;
+            window.nascondiAnteprimaImmagine();
+            noAllegato.innerHTML = window.sanitizeHTML(
+                '<div class="text-stone-400 mb-2"><i data-lucide="cloud-off" class="w-12 h-12 mx-auto text-amber-500"></i></div>' +
+                `<h3 class="text-lg font-medium text-stone-300">${escapeHTML(window.t('iiif_img_failed_title', 'Carta non raggiungibile'))}</h3>` +
+                `<p class="text-sm text-stone-500 mt-1 max-w-md mx-auto">${escapeHTML(window.t('iiif_img_failed_desc', 'Il server della biblioteca non ha restituito questa carta. Riprova, oppure scaricala nell\'archivio per averla anche senza rete.'))}</p>`
+            );
+            noAllegato.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons({ nodes: [noAllegato] });
+        };
+
         // Sorgente DOPO aver reso visibile il viewport: l'adattamento si calcola sul `load`
         // e a pannello nascosto le dimensioni di layout sono zero.
-        imgPreview.src = 'local-asset://' + encodeURIComponent(nome) + '?t=' + Date.now();
+        // 2000 px di larghezza per una carta IIIF: regge lo zoom del visualizzatore senza
+        // chiedere al server il facsimile intero a ogni cambio carta.
+        imgPreview.src = window.srcAllegato(allegato, { cacheBuster: true, lato: 2000 });
+    }
+
+    window.aggiornaBarraIiif(m, index);
+};
+
+// --- Import IIIF: carte remote ------------------------------------------------
+
+/**
+ * La barra della carta remota. Sta sopra l'immagine e non nel pannello "allegato mancante"
+ * perché la carta remota NON è un allegato mancante: si vede benissimo, semplicemente non è
+ * su questo disco. Il pannello di errore direbbe il contrario di quel che succede.
+ */
+window.aggiornaBarraIiif = function(m, index) {
+    const barra = document.getElementById('trasc-iiif-bar');
+    if (!barra) return;
+
+    const al = (m && m.allegati && m.allegati[index]) || null;
+    if (!al || !al.remoto) { barra.classList.add('hidden-tab'); return; }
+
+    const attribuzione = (m && m.iiifAttribuzione) || '';
+    document.getElementById('trasc-iiif-attribuzione').textContent =
+        attribuzione || window.t('iiif_remote_page', 'Carta remota (IIIF)');
+    barra.classList.remove('hidden-tab');
+
+    const restanti = (m.allegati || []).filter(a => a && a.remoto).length;
+    const btnTutte = document.getElementById('btn-iiif-scarica-tutte');
+    btnTutte.classList.toggle('hidden', restanti < 2);
+    document.getElementById('btn-iiif-scarica-carta').onclick = () => window.materializzaCarteIiif(m.id, [index]);
+    btnTutte.onclick = () => window.materializzaCarteIiif(m.id, null);
+
+    if (window.lucide) lucide.createIcons({ nodes: [barra] });
+};
+
+/**
+ * L'avanzamento arriva dal main sulla barra di sincronizzazione, che e' gia' la barra di
+ * tutte le operazioni lunghe. Registrato una volta sola: `onProgress` aggiunge un listener a
+ * ogni chiamata, e dopo dieci download la stessa percentuale verrebbe scritta dieci volte.
+ */
+let _taProgressoIiifAgganciato = false;
+function _taAscoltaProgressoIiif() {
+    if (_taProgressoIiifAgganciato || !window.apiIiif || !window.apiIiif.onProgress) return;
+    _taProgressoIiifAgganciato = true;
+    window.apiIiif.onProgress((d) => {
+        if (!d) return;
+        window.updateSyncProgress(d.percent || 0, d.message || '');
+    });
+}
+
+/**
+ * Scarica le carte indicate (o tutte le remote) e le trasforma in allegati veri.
+ *
+ * ⚠️ Il record si aggiorna PER IDENTITÀ dell'allegato, non per indice: fra la richiesta e la
+ * risposta l'utente può riordinare le carte dalla striscia (che è drag&drop), e scrivere
+ * l'hash sull'indice vecchio lo attribuirebbe alla carta sbagliata — cioè a un file che non
+ * corrisponde, che è esattamente ciò che la verifica dell'hash esiste per impedire.
+ */
+window.materializzaCarteIiif = async function(idScheda, indici) {
+    const m = appData.manoscritti.find(x => x.id === idScheda);
+    if (!m || !window.apiIiif) return;
+
+    const allegati = m.allegati || [];
+    const daScaricare = (indici === null || indici === undefined)
+        ? allegati.filter(a => a && a.remoto)
+        : indici.map(i => allegati[i]).filter(a => a && a.remoto);
+    if (!daScaricare.length) return;
+
+    // Il lato scelto all'import viaggia con la scheda: scaricare la carta 200 a una misura
+    // diversa dalla 1 darebbe un facsimile disomogeneo, e nessuno se ne accorgerebbe finche'
+    // non le mette una accanto all'altra.
+    // `0` e' una scelta ("massima disponibile"), non un valore mancante: un `|| 2000`
+    // scaricherebbe carte piu' piccole di quelle chieste all'import, senza dirlo.
+    const lato = Number.isFinite(Number(m.iiifLato)) ? Number(m.iiifLato) : 2000;
+    // La catena di ripieghi, non un URL solo: se il server non sa servire la misura chiesta
+    // la carta si scarica alla massima disponibile invece di non scaricarsi.
+    const richieste = daScaricare.map(a => ({
+        nome: a.nome,
+        urls: window.IiifManifest.candidatiAllegato(a, { lato })
+    }));
+
+    _taAscoltaProgressoIiif();
+    window.toggleSyncProgress(true, 'iiif_downloading');
+    try {
+        const esito = await window.apiIiif.materializza(richieste);
+        if (!esito || !esito.ok) {
+            mostraMessaggio(window.t('iiif_err_download', 'Scaricamento delle carte non riuscito.'), 'error');
+            return;
+        }
+
+        let fatte = 0;
+        for (const r of esito.risultati || []) {
+            if (!r.ok) continue;
+            const al = allegati.find(a => a && a.nome === r.nome);
+            if (!al) continue;
+            al.hash = r.hash;
+            delete al.remoto;
+            delete al.iiif;
+            fatte++;
+        }
+
+        if (fatte) {
+            // La scheda e' cambiata davvero: gli hash delle carte materializzate devono
+            // arrivare ai collaboratori, e senza `lastModified` il merge non se ne accorge.
+            m.lastModified = Date.now();
+            await salvaTutto();
+            if (typeof renderMain === 'function') renderMain();
+            window.renderThumbnailsTrascrizione(m.id);
+            const i = window.currentAllegatoIndex || 0;
+            if (allegati[i]) window.cambiaAllegatoTrascrizione(allegati[i].nome, allegati[i].tipo, i);
+        }
+
+        const falliti = (esito.risultati || []).filter(r => !r.ok).length;
+        if (falliti) {
+            mostraMessaggio(window.t('iiif_msg_partial', 'Alcune carte non sono state scaricate.') + ` (${falliti})`, 'error');
+        } else {
+            mostraMessaggio(window.t('iiif_msg_downloaded', 'Carte scaricate nell\'archivio.') + ` (${fatte})`, 'success');
+        }
+    } catch (e) {
+        console.error('[IIIF] Materializzazione fallita:', e);
+        mostraMessaggio(e.message || window.t('iiif_err_download', 'Scaricamento delle carte non riuscito.'), 'error');
+    } finally {
+        window.toggleSyncProgress(false);
     }
 };
 

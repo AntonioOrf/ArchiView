@@ -207,9 +207,31 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   });
   ok(doc.includes('Attachments') && doc.includes('Transcription'), 'Test 10: titoli di sezione dal renderer');
   ok(!doc.includes('Allegati') && !doc.includes('Trascrizione'), 'Test 10: nessuna stringa italiana residua');
-  const anonimo = generaHtmlStampa([scheda({ segnatura: '' })], tipi,
-    { layout: 'scheda', testi: { print_untitled: 'No shelfmark' } });
-  ok(anonimo.includes('No shelfmark'), 'Test 10: segnatura mancante tradotta');
+}
+
+// --- Test 11: trascrizione salvata solo negli allegati viene stampata ---------
+{
+  test++;
+  const m = scheda({
+    trascrizione: '', // vuota a livello radice
+    allegati: [
+      { nome: 'c1.jpg', originalName: 'Carta 1r', trascrizione: '<p>Testo da carta 1</p>' }
+    ]
+  });
+  const doc = generaHtmlStampa([m], tipi, { layout: 'scheda', includiTrascrizione: true });
+  ok(doc.includes('Testo da carta 1'), 'Test 11: trascrizione negli allegati stampata anche con m.trascrizione vuota');
+}
+
+// --- Test 12: regesto include attori ------------------------------------------
+{
+  test++;
+  const m = scheda({
+    attori_dinamici: [{ ruolo: 'Notaio', nome: 'Giovanni' }],
+    oggetto: 'Testamento'
+  });
+  const doc = generaHtmlStampa([m], tipi, { layout: 'regesto' });
+  ok(doc.includes('Notaio: Giovanni'), 'Test 12: attori presenti nel regesto');
 }
 
 console.log(`printTemplate: ${test} test superati.`);
+

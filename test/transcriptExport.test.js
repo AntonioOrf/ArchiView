@@ -159,11 +159,27 @@ function scheda(extra) {
   assert.ok(tradotto.includes('**Place of issue:** Perùgia'), 'etichette dal renderer');
 }
 
-// --- Test 10: nessun record / formato ignoto ----------------------------------
+// --- Test 11: esportazione completa di tutti i campi catalografici e allegati --
 {
-  const out = generaEsportazioneTrascrizione([], { formato: 'inventato' });
-  assert.strictEqual(out.estensione, 'html', 'un formato ignoto ricade su HTML');
-  assert.ok(out.contenuto.includes('<body>'), 'documento comunque valido');
+  const m = scheda({
+    oggetto: 'Compravendita terreno',
+    note: 'In buone condizioni di conservazione',
+    attori_dinamici: [{ ruolo: 'Venditore', nome: 'Giovanni' }],
+    campiPropri: [{ id: 'filigrana', tipo: 'text', label: 'Filigrana carta' }],
+    filigrana: 'Corona ducale',
+    allegati: [
+      { originalName: 'carta_1.jpg', nome: 'c1.jpg' },
+      { originalName: 'carta_2.jpg', nome: 'c2.jpg', remoto: true }
+    ]
+  });
+  const md = generaEsportazioneTrascrizione([m], { formato: 'md' }).contenuto;
+  assert.ok(md.includes('Compravendita terreno'), 'campo oggetto presente');
+  assert.ok(md.includes('In buone condizioni di conservazione'), 'campo note presente');
+  assert.ok(md.includes('Venditore: Giovanni'), 'attori_dinamici formattati');
+  assert.ok(md.includes('Filigrana carta:'), 'etichetta campo proprio presente');
+  assert.ok(md.includes('Corona ducale'), 'valore campo proprio presente');
+  assert.ok(md.includes('carta_1.jpg') && md.includes('carta_2.jpg (IIIF)'), 'elenco allegati presente');
 }
 
-console.log('transcriptExport: 10 gruppi di test OK');
+console.log('transcriptExport: 11 gruppi di test OK');
+

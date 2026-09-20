@@ -822,7 +822,10 @@ function vociMenuContesto() {
             icon: 'download',
             submenu: [
                 { label: window.t('menu_import_zip', 'Backup ZIP'), title: window.t('btn_import_zip_full', 'Importa un backup ZIP di ArchiView'), icon: 'download', onSelect: () => importaManoscritto() },
-                { label: window.t('imp_menu', 'Importa CSV'), title: window.t('imp_title', 'Importa da CSV'), icon: 'file-input', onSelect: () => window.apriImportCsv() }
+                { label: window.t('imp_menu', 'Importa CSV'), title: window.t('imp_title', 'Importa da CSV'), icon: 'file-input', onSelect: () => window.apriImportCsv() },
+                // Terza provenienza, stessa domanda: il manoscritto e' gia' digitalizzato
+                // dalla biblioteca e pubblicato come manifest IIIF.
+                { label: window.t('iiif_menu', 'Importa da IIIF'), title: window.t('iiif_title', 'Importa un manoscritto da un manifest IIIF'), icon: 'library', onSelect: () => window.apriImportIiif() }
             ]
         },
         // Fasi 2.1/2.2/2.5/2.6 — ZIP, CSV, TSV, testo e stampa rispondono tutti alla stessa

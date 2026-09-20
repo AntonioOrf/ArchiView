@@ -22,6 +22,8 @@ Il cuore dell'applicazione si basa su un sistema di modelli di documento complet
 
 ## Ulteriori Caratteristiche
 
+- **Importazione Manifest IIIF**: Importa digitalizzazioni direttamente da biblioteche digitali come BnF/Gallica, e-codices, Biblioteca Apostolica Vaticana, British Library, Bodleian e da qualsiasi repository compatibile con lo standard IIIF Presentation (v2 e v3). Tutte le carte compaiono ordinate nel visualizzatore in streaming remoto, con cache offline LRU e possibilità di scaricarle in locale all'occorrenza per OCR e lavoro non in linea.
+- **Esportazione e Stampa Complete**: Esporta le tue schede in Markdown (inclusi tutti i campi dinamici, campi personalizzati ed elenchi allegati), CSV o archivi ZIP completi di backup. Stampa le schede e le trascrizioni con anteprime e miniature anche per le carte IIIF.
 - **Sincronizzazione tramite Server Hub (Nuova Architettura)**: Sincronizza e collabora in tempo reale con altri utenti tramite la nuova architettura basata interamente su un Server Hub ad alte prestazioni, che sostituisce il precedente modello Google Drive per i "Vault Condivisi". Puoi gestire archivi multipli e indipendenti (Multi-Vault) con risoluzione istantanea dei conflitti e sicurezza avanzata.
 - **Tutorial Interattivo e Multilingua**: Impara ad utilizzare ArchiView grazie ad una guida interattiva integrata. L'applicazione è inoltre completamente tradotta in Italiano e in Inglese.
 - **Organizzazione a Cartelle**: Gestisci i tuoi archivi in una struttura gerarchica di cartelle e sottocartelle per un ordine perfetto.
@@ -67,7 +69,7 @@ Questo comando, grazie a `electron-builder`, creerà un pacchetto portable nella
 
 ## Primo Avvio
 
-Al primo avvio, Schedatore ti chiederà di selezionare una **Cartella di Lavoro** (Workspace).
+Al primo avvio, ArchiView ti chiederà di selezionare una **Cartella di Lavoro** (Workspace).
 Scegli una directory vuota e sicura sul tuo disco fisso: al suo interno l'app creerà automaticamente:
 
 - Il file `database_manoscritti.json` (dove verranno salvati tutti i testi e i metadati).

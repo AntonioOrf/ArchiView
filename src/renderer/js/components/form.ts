@@ -673,10 +673,17 @@ window.renderAllegatiForm = async function(allegatiList) {
                 </div>
             `;
         } else {
-            let src = '';
-            if (window.apiBrowser) src = 'local-asset://' + encodeURIComponent(al.nome);
+            // Due sorgenti: per una carta IIIF la miniatura si chiede al server gia' piccola
+            // (160 px invece di un facsimile da 30 MB ridotto dal browser), mentre il click
+            // apre il visualizzatore, che vuole l'immagine grande. Per un file locale le due
+            // sorgenti coincidono.
+            let src = '', srcPieno = '';
+            if (window.apiBrowser) {
+                src = window.srcAllegato(al, { lato: 160 });
+                srcPieno = window.srcAllegato(al, { lato: 2000 });
+            }
             content = `
-                <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" onclick="apriModal('${escapeHTML(src)}', 'img')">
+                <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" onclick="apriModal('${escapeHTML(srcPieno)}', 'img')">
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
                     <img src="${escapeHTML(src)}" alt="${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}" class="w-8 h-8 object-cover rounded-sm border border-stone-200 shrink-0">
                     <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}</span>

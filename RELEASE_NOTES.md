@@ -1,3 +1,30 @@
+## ArchiView 3.1.2 — Import IIIF
+
+Praticamente tutte le biblioteche che digitalizzano codici medievali — BnF/Gallica,
+e-codices, Vaticana, British Library, Bodleian — pubblicano un **manifest IIIF**: un JSON
+con la sequenza ordinata delle carte e un server che le serve a qualsiasi risoluzione.
+Da questa versione basta incollare quell'indirizzo in **Importa → Manifest IIIF** per
+ottenere una scheda con tutte le carte già in sequenza, già etichettate, e visibili nel
+visualizzatore senza scaricare nulla.
+
+- **Modello ibrido**: le carte restano sul server della biblioteca e non occupano spazio
+  nell'archivio né nella sincronizzazione. Si scaricano una per una, o tutte insieme,
+  quando servono per l'OCR, la stampa o l'uso offline.
+- **IIIF v2 e v3**: il normalizzatore gestisce entrambe le versioni della specifica
+  Presentation, la Image API 2 e 3, le etichette multilingua, le `Choice` (carte a luce
+  visibile e ultravioletto) e i manifest senza servizio (immagini statiche).
+- **Cache offline**: le carte già visualizzate restano disponibili senza rete, in una
+  cache fuori dal workspace (non si sincronizza), con sfoltimento LRU e tetto di 2 GB.
+- **Protocollo `iiif-img:`**: le immagini remote passano da uno schema custom come
+  `local-asset:`, senza allargare la CSP a `https:`.
+- **Attribuzione e licenza**: vengono conservate e mostrate, come richiesto dalla licenza
+  IIIF.
+- **Esportazione e stampa complete**: l'esportazione Markdown include ora tutti i metadati
+  della scheda, i campi personalizzati e l'elenco degli allegati. La stampa include le
+  trascrizioni per-carta degli allegati e supporta le miniature delle carte remote IIIF.
+
+---
+
 ## ArchiView 3.1.1 — Menu più corti
 
 Il menu del tasto destro su una scheda era arrivato a ventidue voci: su una finestra bassa

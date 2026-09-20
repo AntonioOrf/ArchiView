@@ -42,7 +42,8 @@ const TESTI_DEFAULT: { [k: string]: string } = {
 // archivista li legge. Non è l'elenco completo della scheda: quello è la stampa (2.2) o il
 // CSV (2.1). Qui l'oggetto è il TESTO, e l'intestazione serve solo a dire di che carta si
 // tratta — un export che ripete tutti i campi seppellisce la trascrizione.
-const CAMPI_INTESTAZIONE = ['dataCronica', 'dataTopica', 'autore', 'Notaio', 'titolo'];
+const Model = require('../../shared/model');
+const META = new Set(Model.CHIAVI_SERVIZIO);
 
 function haTesto(html: any): boolean {
   return String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
@@ -76,6 +77,15 @@ function etichetta(chiave: string, opzioni: Opzioni, fallback: string): string {
   return e[chiave] || fallback;
 }
 
+function etichettaCampo(chiave: string, opzioni: Opzioni, m?: Record_, fallback?: string): string {
+  const e = opzioni.etichette || {};
+  if (e[chiave]) return e[chiave];
+  if (m) {
+    for (const d of Model.campiPropri(m)) if (d.id === chiave && d.label) return d.label;
+  }
+  return fallback || chiave;
+}
+
 function valoreSemplice(v: any): string {
   if (v === null || v === undefined) return '';
   if (Array.isArray(v)) {
@@ -90,7 +100,7 @@ function valoreSemplice(v: any): string {
   return String(v);
 }
 
-/** Le righe dell'intestazione: solo quelle valorizzate — un campo vuoto è rumore. */
+/** Le righe dell'intestazione: tutti i campi valorizzati della scheda e gli allegati. */
 function metadati(m: Record_, opzioni: Opzioni, testi: { [k: string]: string }) {
   const righe: { etichetta: string; valore: string }[] = [];
   const nomiTipi = opzioni.nomiTipi || {};
@@ -98,11 +108,48 @@ function metadati(m: Record_, opzioni: Opzioni, testi: { [k: string]: string }) 
     const v = valoreSemplice(val).trim();
     if (v) righe.push({ etichetta: et, valore: v });
   };
-  push(etichetta('cartella', opzioni, testi.tx_field_folder), m.cartella);
-  push(etichetta('tipoDocumento', opzioni, testi.tx_field_type), nomiTipi[m.tipoDocumento] || m.tipoDocumento);
-  for (const c of CAMPI_INTESTAZIONE) push(etichetta(c, opzioni, c), m[c]);
-  // Fase 3.4: la stringa CSV non si stampa grezza — spazi doppi e voci vuote comprese.
-  push(etichetta('tags', opzioni, testi.tx_field_tags), require('../../shared/model').tags(m).join(', '));
+  push(etichetta('cartella', opzioni, testi.tx_field_folder || 'Archivio'), m.cartella);
+  push(etichetta('tipoDocumento', opzioni, testi.tx_field_type || 'Tipo documento'), nomiTipi[m.tipoDocumento] || m.tipoDocumento);
+  push(etichetta('tags', opzioni, testi.tx_field_tags || 'Tag'), Model.tags(m).join(', '));
+
+  // Tutti i campi valorizzati della scheda (campi del modello, campi propri, campi extra)
+  const visti = new Set<string>();
+  const campi: string[] = [];
+
+  // Campi propri (3.7)
+  for (const d of Model.campiPropri(m)) {
+    if (META.has(d.id) || visti.has(d.id)) continue;
+    visti.add(d.id); campi.push(d.id);
+  }
+
+  // Altri campi presenti nell'oggetto
+  for (const k of Object.keys(m)) {
+    if (META.has(k) || visti.has(k)) continue;
+    if (m[k] === '' || m[k] === null || m[k] === undefined) continue;
+    if (Array.isArray(m[k]) && m[k].length === 0) continue;
+    visti.add(k); campi.push(k);
+  }
+
+  // Ordine definito sulla scheda se presente (3.8)
+  const ordinati = Model.ordinaDefinizioni(campi.map((id: string) => ({ id })), m.ordineCampi)
+    .map((d: any) => d.id);
+
+  for (const c of ordinati) {
+    push(etichettaCampo(c, opzioni, m, c), m[c]);
+  }
+
+  // Elenco allegati
+  if (Array.isArray(m.allegati) && m.allegati.length > 0) {
+    const lista = m.allegati.map((a: any, i: number) => {
+      if (typeof a === 'string') return a;
+      const n = (a && (a.originalName || a.nome || a.name)) || String(i + 1);
+      return (a && a.remoto) ? `${n} (IIIF)` : n;
+    }).filter(Boolean).join('; ');
+    if (lista) {
+      push(etichetta('allegati', opzioni, testi.tx_field_attachments || 'Allegati'), lista);
+    }
+  }
+
   return righe;
 }
 

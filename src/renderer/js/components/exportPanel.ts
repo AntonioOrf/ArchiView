@@ -256,6 +256,7 @@ function _xOpzioniIpc() {
             tx_field_folder: _xT('th_folder', 'Archivio'),
             tx_field_type: _xT('th_type', 'Tipo documento'),
             tx_field_tags: _xT('th_tags', 'Tag'),
+            tx_field_attachments: _xT('th_attachments', 'Allegati'),
             tx_untitled: _xT('print_untitled', 'Senza segnatura'),
             tx_empty: _xT('tx_empty', 'Nessuna trascrizione.'),
             tx_ocr_notice: _xT('tx_ocr_notice', 'Bozza generata da OCR: testo non riletto, i tratti incerti sono segnalati.'),

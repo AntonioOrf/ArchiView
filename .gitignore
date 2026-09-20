@@ -81,3 +81,6 @@ ROADMAP.md
 # Test unit locali di sicurezza
 test/pathSafety.test.js
 test/pickerSecurity.test.js
+
+# Analisi e output grafi
+graphify-out/

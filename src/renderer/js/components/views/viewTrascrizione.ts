@@ -55,6 +55,14 @@
 
                     <button id="btn-carica-allegato-trasc" onclick="document.getElementById('trasc-file-input').click()" class="btn hidden btn-secondary border border-amber-300/50">
                         <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
+
+                    <!-- Import IIIF dalla trascrizione: e' qui che ci si accorge che manca
+                         un fascicolo, e senza questo pulsante l'unico modo di procurarselo
+                         sarebbe creare una seconda scheda dello stesso codice. Sempre
+                         visibile, a differenza di "Aggiungi Immagine/PDF": aggiungere carte
+                         ha senso tanto su una scheda vuota quanto su una gia' popolata. -->
+                    <button id="btn-iiif-trasc" onclick="aggiungiCarteIiifATrascrizione()" class="btn btn-secondary border border-amber-300/50" data-i18n-title="iiif_title_add" data-i18n-aria-label="iiif_title_add">
+                        <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="iiif_add_button">Aggiungi da IIIF</span></button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" onchange="caricaAllegatoTrascrizione(event)">
                 </div>
                 <!-- Fase 2.3-bis — quale carta si sta trascrivendo. Compare solo con più di
@@ -80,6 +88,20 @@
                         <img id="trasc-img-preview" alt="" class="max-w-full max-h-full object-contain" />
                     </div>
                     <iframe id="trasc-pdf-preview" class="w-full h-full bg-white hidden" src=""></iframe>
+                    <!-- Import IIIF — barra della carta remota. Compare solo quando la carta
+                         in mostra arriva da un manifest e non è ancora stata scaricata:
+                         porta l'attribuzione, che è un obbligo della licenza e non un
+                         ornamento, e i due modi di materializzare (questa carta / tutte). -->
+                    <div id="trasc-iiif-bar" class="hidden-tab absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 max-w-[90%] px-3 py-1.5 rounded-sm text-xs text-white shadow-lg" style="background-color: rgba(41, 37, 36, 0.82);">
+                        <i data-lucide="cloud" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span id="trasc-iiif-attribuzione" class="truncate"></span>
+                        <button id="btn-iiif-scarica-carta" class="btn btn-icon shrink-0 rounded-sm px-2 py-1 text-white hover:bg-white/20" data-i18n-title="iiif_download_page" data-i18n-aria-label="iiif_download_page">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button id="btn-iiif-scarica-tutte" class="btn btn-icon shrink-0 rounded-sm px-2 py-1 text-white hover:bg-white/20" data-i18n-title="iiif_download_all" data-i18n-aria-label="iiif_download_all">
+                            <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
                     <button id="btn-next-allegato" onclick="cambiaAllegatoRelativo(1)" data-i18n-title="tooltip_next" data-i18n-aria-label="tooltip_next" class="btn btn-icon absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
                     <div id="trasc-no-allegato" class="text-center p-8 hidden">
                         <i data-lucide="image-off" class="w-16 h-16 mx-auto text-stone-400 mb-4"></i>

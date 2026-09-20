@@ -108,6 +108,32 @@ async function preparaMiniature(records, { pdf = true } = {}) {
       const file = typeof a === 'string' ? a : (a && (a.nome || a.name)) || '';
       if (!file) continue;
       if (mappa[file]) { fatte++; continue; }   // stesso file su piu' schede: una sola volta
+
+      // Carte IIIF remote: scarica o leggi dalla cache locale e includi come data URI
+      if (typeof a === 'object' && a.remoto && a.iiif) {
+        try {
+          const { candidatiDa } = require('../iiif/imageHost');
+          const cache = require('../iiif/imageCache');
+          const candidati = candidatiDa({
+            s: a.iiif.serviceId || null,
+            v: a.iiif.apiVersione || 0,
+            u: a.iiif.urlStatico || null,
+            l: 300
+          }).filter(cache.urlAmmesso);
+          if (candidati.length) {
+            const img = await cache.immagine(candidati);
+            if (img && img.dati) {
+              mappa[file] = `data:${img.mime || 'image/jpeg'};base64,${img.dati.toString('base64')}`;
+              fatte++;
+              continue;
+            }
+          }
+        } catch (errore) {
+          console.error('[Stampa] Miniatura IIIF non caricata per', file, errore);
+        }
+      }
+
+      if (!state.attachmentsDirPath) continue;
       const ext = path.extname(file).toLowerCase();
       const percorso = path.join(state.attachmentsDirPath, path.basename(file));
       if (!fs.existsSync(percorso)) continue;

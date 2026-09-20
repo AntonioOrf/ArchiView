@@ -885,6 +885,51 @@ function _linguiExtraction() {
     i18n._({ id: "imp_and_more", message: "…e altre {var0} righe." });
     i18n._({ id: "imp_menu", message: "Importa CSV" });
     i18n._({ id: "dialog_import_csv", message: "Importa da CSV" });
+    // Import IIIF
+    i18n._({ id: "iiif_menu", message: "Importa da IIIF" });
+    i18n._({ id: "iiif_title", message: "Importa un manoscritto da un manifest IIIF" });
+    i18n._({ id: "iiif_title_add", message: "Aggiungi carte da un manifest IIIF" });
+    i18n._({ id: "iiif_add_button", message: "Aggiungi da IIIF" });
+    i18n._({ id: "iiif_range", message: "Carte da importare" });
+    i18n._({ id: "iiif_range_placeholder", message: "tutte — oppure 1-10, 25, 40-60" });
+    i18n._({ id: "iiif_select_all", message: "Tutte" });
+    i18n._({ id: "iiif_select_none", message: "Nessuna" });
+    i18n._({ id: "iiif_selected_count", message: "{var0} di {var1} carte selezionate" });
+    i18n._({ id: "iiif_added", message: "Aggiunte {var0} carte alla scheda." });
+    i18n._({ id: "undo_add_iiif", message: "Aggiunta di {var0} carte IIIF" });
+    i18n._({ id: "iiif_img_failed_title", message: "Carta non raggiungibile" });
+    i18n._({ id: "iiif_img_failed_desc", message: "Il server della biblioteca non ha restituito questa carta. Riprova, oppure scaricala nell'archivio per averla anche senza rete." });
+    i18n._({ id: "iiif_hint", message: "Incolla l'indirizzo del manifest pubblicato dalla biblioteca. Le carte restano sul server e non occupano spazio: si scaricano una per una, o tutte insieme, quando servono." });
+    i18n._({ id: "iiif_url_placeholder", message: "https://.../manifest.json" });
+    i18n._({ id: "iiif_read", message: "Leggi" });
+    i18n._({ id: "iiif_import", message: "Importa" });
+    i18n._({ id: "iiif_resolution", message: "Risoluzione dei download" });
+    i18n._({ id: "iiif_res_max", message: "Massima disponibile" });
+    i18n._({ id: "iiif_untitled", message: "Manoscritto senza titolo" });
+    i18n._({ id: "iiif_pages_count", message: "{var0} carte" });
+    i18n._({ id: "iiif_page_n", message: "Carta {var0}" });
+    i18n._({ id: "iiif_collection_count", message: "Manoscritti contenuti: {var0}." });
+    i18n._({ id: "iiif_done", message: "Manoscritto importato: {var0} carte." });
+    i18n._({ id: "undo_import_iiif", message: "Import IIIF di {var0} carte" });
+    i18n._({ id: "iiif_remote_page", message: "Carta remota (IIIF)" });
+    i18n._({ id: "iiif_download_page", message: "Scarica questa carta nell'archivio" });
+    i18n._({ id: "iiif_download_all", message: "Scarica tutte le carte nell'archivio" });
+    i18n._({ id: "iiif_downloading", message: "Scaricamento delle carte" });
+    i18n._({ id: "iiif_msg_downloaded", message: "Carte scaricate nell'archivio." });
+    i18n._({ id: "iiif_msg_partial", message: "Alcune carte non sono state scaricate." });
+    i18n._({ id: "iiif_err_url", message: "L'indirizzo non è valido: serve un URL http o https." });
+    i18n._({ id: "iiif_err_timeout", message: "Il server della biblioteca non ha risposto in tempo." });
+    i18n._({ id: "iiif_err_net", message: "Impossibile raggiungere il server della biblioteca." });
+    i18n._({ id: "iiif_err_http", message: "Il server ha risposto con un errore." });
+    i18n._({ id: "iiif_err_big", message: "Il file è troppo grande per essere un manifest." });
+    i18n._({ id: "iiif_err_json", message: "L'indirizzo non restituisce un manifest: forse è la pagina del manoscritto e non il suo manifest IIIF." });
+    i18n._({ id: "iiif_err_shape", message: "Il file scaricato non è un manifest IIIF." });
+    i18n._({ id: "iiif_err_collection", message: "Questo indirizzo è una collezione di manoscritti, non un manoscritto: aprila nel sito della biblioteca e copia il manifest di un singolo manoscritto." });
+    i18n._({ id: "iiif_err_empty", message: "Il manifest non contiene nessuna carta." });
+    i18n._({ id: "iiif_err_download", message: "Scaricamento delle carte non riuscito." });
+    i18n._({ id: "iiif_err_import", message: "Import non riuscito." });
+    i18n._({ id: "iiif_warn_static", message: "Questo manifest pubblica immagini a misura fissa: la risoluzione scelta verrà ignorata." });
+    i18n._({ id: "iiif_warn_version", message: "Il manifest non dichiara la sua versione: è stata dedotta dalla struttura." });
     i18n._({ id: "btn_import_zip_full", message: "Importa un backup ZIP di ArchiView" });
     i18n._({ id: "th_transcription", message: "Trascrizione" });
     i18n._({ id: "imp_read_error", message: "File non leggibile: " });
@@ -1967,6 +2012,49 @@ const customEn = {
     "btn_create": "Create",
     "imp_menu": "Import CSV",
     "dialog_import_csv": "Import from CSV",
+    "iiif_menu": "Import from IIIF",
+    "iiif_title": "Import a manuscript from a IIIF manifest",
+    "iiif_title_add": "Add pages from a IIIF manifest",
+    "iiif_add_button": "Add from IIIF",
+    "iiif_range": "Pages to import",
+    "iiif_range_placeholder": "all — or 1-10, 25, 40-60",
+    "iiif_select_all": "All",
+    "iiif_select_none": "None",
+    "iiif_selected_count": "{var0} of {var1} pages selected",
+    "iiif_added": "{var0} pages added to the record.",
+    "undo_add_iiif": "Addition of {var0} IIIF pages",
+    "iiif_img_failed_title": "Page unavailable",
+    "iiif_img_failed_desc": "The library server did not return this page. Try again, or download it into the archive to have it without a connection.",
+    "iiif_hint": "Paste the address of the manifest published by the library. The pages stay on the server and take up no space: download them one by one, or all at once, when you need them.",
+    "iiif_read": "Read",
+    "iiif_import": "Import",
+    "iiif_resolution": "Download resolution",
+    "iiif_res_max": "Largest available",
+    "iiif_untitled": "Untitled manuscript",
+    "iiif_pages_count": "{var0} pages",
+    "iiif_page_n": "Page {var0}",
+    "iiif_collection_count": "Manuscripts it contains: {var0}.",
+    "iiif_done": "Manuscript imported: {var0} pages.",
+    "undo_import_iiif": "IIIF import of {var0} pages",
+    "iiif_remote_page": "Remote page (IIIF)",
+    "iiif_download_page": "Download this page into the archive",
+    "iiif_download_all": "Download every page into the archive",
+    "iiif_downloading": "Downloading pages",
+    "iiif_msg_downloaded": "Pages downloaded into the archive.",
+    "iiif_msg_partial": "Some pages could not be downloaded.",
+    "iiif_err_url": "That address is not valid: it must be an http or https URL.",
+    "iiif_err_timeout": "The library server did not answer in time.",
+    "iiif_err_net": "The library server cannot be reached.",
+    "iiif_err_http": "The server answered with an error.",
+    "iiif_err_big": "The file is too large to be a manifest.",
+    "iiif_err_json": "That address does not return a manifest: it may be the manuscript's web page rather than its IIIF manifest.",
+    "iiif_err_shape": "The downloaded file is not a IIIF manifest.",
+    "iiif_err_collection": "This address is a collection of manuscripts, not a manuscript: open it on the library website and copy the manifest of a single manuscript.",
+    "iiif_err_empty": "The manifest contains no pages.",
+    "iiif_err_download": "The pages could not be downloaded.",
+    "iiif_err_import": "Import failed.",
+    "iiif_warn_static": "This manifest publishes fixed-size images: the chosen resolution will be ignored.",
+    "iiif_warn_version": "The manifest does not declare its version: it was inferred from the structure.",
     "btn_import_zip_full": "Import an ArchiView ZIP backup",
     "th_transcription": "Transcription",
     "imp_read_error": "The file cannot be read: ",
@@ -2959,6 +3047,49 @@ const customIt = {
     "imp_and_more": "…e altre {var0} righe.",
     "imp_menu": "Importa CSV",
     "dialog_import_csv": "Importa da CSV",
+    "iiif_menu": "Importa da IIIF",
+    "iiif_title": "Importa un manoscritto da un manifest IIIF",
+    "iiif_title_add": "Aggiungi carte da un manifest IIIF",
+    "iiif_add_button": "Aggiungi da IIIF",
+    "iiif_range": "Carte da importare",
+    "iiif_range_placeholder": "tutte — oppure 1-10, 25, 40-60",
+    "iiif_select_all": "Tutte",
+    "iiif_select_none": "Nessuna",
+    "iiif_selected_count": "{var0} di {var1} carte selezionate",
+    "iiif_added": "Aggiunte {var0} carte alla scheda.",
+    "undo_add_iiif": "Aggiunta di {var0} carte IIIF",
+    "iiif_img_failed_title": "Carta non raggiungibile",
+    "iiif_img_failed_desc": "Il server della biblioteca non ha restituito questa carta. Riprova, oppure scaricala nell'archivio per averla anche senza rete.",
+    "iiif_hint": "Incolla l'indirizzo del manifest pubblicato dalla biblioteca. Le carte restano sul server e non occupano spazio: si scaricano una per una, o tutte insieme, quando servono.",
+    "iiif_read": "Leggi",
+    "iiif_import": "Importa",
+    "iiif_resolution": "Risoluzione dei download",
+    "iiif_res_max": "Massima disponibile",
+    "iiif_untitled": "Manoscritto senza titolo",
+    "iiif_pages_count": "{var0} carte",
+    "iiif_page_n": "Carta {var0}",
+    "iiif_collection_count": "Manoscritti contenuti: {var0}.",
+    "iiif_done": "Manoscritto importato: {var0} carte.",
+    "undo_import_iiif": "Import IIIF di {var0} carte",
+    "iiif_remote_page": "Carta remota (IIIF)",
+    "iiif_download_page": "Scarica questa carta nell'archivio",
+    "iiif_download_all": "Scarica tutte le carte nell'archivio",
+    "iiif_downloading": "Scaricamento delle carte",
+    "iiif_msg_downloaded": "Carte scaricate nell'archivio.",
+    "iiif_msg_partial": "Alcune carte non sono state scaricate.",
+    "iiif_err_url": "L'indirizzo non è valido: serve un URL http o https.",
+    "iiif_err_timeout": "Il server della biblioteca non ha risposto in tempo.",
+    "iiif_err_net": "Impossibile raggiungere il server della biblioteca.",
+    "iiif_err_http": "Il server ha risposto con un errore.",
+    "iiif_err_big": "Il file è troppo grande per essere un manifest.",
+    "iiif_err_json": "L'indirizzo non restituisce un manifest: forse è la pagina del manoscritto e non il suo manifest IIIF.",
+    "iiif_err_shape": "Il file scaricato non è un manifest IIIF.",
+    "iiif_err_collection": "Questo indirizzo è una collezione di manoscritti, non un manoscritto: aprila nel sito della biblioteca e copia il manifest di un singolo manoscritto.",
+    "iiif_err_empty": "Il manifest non contiene nessuna carta.",
+    "iiif_err_download": "Scaricamento delle carte non riuscito.",
+    "iiif_err_import": "Import non riuscito.",
+    "iiif_warn_static": "Questo manifest pubblica immagini a misura fissa: la risoluzione scelta verrà ignorata.",
+    "iiif_warn_version": "Il manifest non dichiara la sua versione: è stata dedotta dalla struttura.",
     "btn_import_zip_full": "Importa un backup ZIP di ArchiView",
     "th_transcription": "Trascrizione",
     "imp_read_error": "File non leggibile: ",

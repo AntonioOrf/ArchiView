@@ -1,7 +1,7 @@
 // @ts-nocheck
 window.apriPdfInterno = async function(fileName) {
     if (window.apiBrowser) {
-        apriModal('local-asset://' + encodeURIComponent(fileName) + '#pagemode=none', 'pdf');
+        apriModal(window.srcAllegato(fileName, { frammento: '#pagemode=none' }), 'pdf');
     }
 }
 
@@ -147,10 +147,14 @@ window.apriModalDocumenti = async function(id) {
                 </div>
             `;
         } else {
-            let src = '';
-            if (window.apiBrowser) src = 'local-asset://' + encodeURIComponent(al.nome);
+            // Come in form.ts: miniatura piccola dal server IIIF, immagine grande al click.
+            let src = '', srcPieno = '';
+            if (window.apiBrowser) {
+                src = window.srcAllegato(al, { lato: 320 });
+                srcPieno = window.srcAllegato(al, { lato: 2000 });
+            }
             previewHtml = `
-                <div onclick="apriModal('${src}', 'img')" class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:opacity-80 transition-opacity mb-3 border border-stone-200 overflow-hidden relative">
+                <div onclick="apriModal('${srcPieno}', 'img')" class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:opacity-80 transition-opacity mb-3 border border-stone-200 overflow-hidden relative">
                      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex justify-center items-center text-white transition-opacity"><i data-lucide="zoom-in"></i></div>
                      <img src="${src}" alt="${escapeHTML(al.originalName || `${window.t('attachment_image', 'Immagine')} ${i+1}`)}" class="w-full h-full object-cover">
                 </div>
