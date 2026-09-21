@@ -1,0 +1,10 @@
+# Fine riga uniformi: LF nel repository e nel working tree, su ogni piattaforma.
+* text=auto eol=lf
+
+# Binari espliciti (text=auto li riconosce, ma meglio non dipendere dall'euristica)
+*.png binary
+*.ico binary
+*.pdf binary
+
+# CSS generato da Tailwind: niente diff testuali
+src/renderer/css/tailwind.css -diff

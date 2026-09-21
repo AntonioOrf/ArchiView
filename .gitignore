@@ -78,9 +78,9 @@ artifacts/
 *_TODO.md
 ROADMAP.md
 
-# Test unit locali di sicurezza
-test/pathSafety.test.js
-test/pickerSecurity.test.js
-
 # Analisi e output grafi
-graphify-out/
+graphify-out/
+
+# Configurazione locale di Claude Code e skill installate
+.claude/
+skills-lock.json
