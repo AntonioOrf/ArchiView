@@ -84,11 +84,21 @@
                 <div class="flex items-center gap-4 shrink-0">
                     <div class="w-28 text-right">${badgeHtml}</div>
                     <div class="flex gap-2">
-                        <button onclick="window.risolviDeletion('${card.id}', 'keep')" class="btn btn-secondary py-1 px-3 text-xs ${chosenAction === 'keep' ? 'bg-amber-500 text-white border-transparent hover:bg-amber-600' : 'bg-white'}">Mantieni</button>
-                        <button onclick="window.risolviDeletion('${card.id}', 'delete')" class="btn btn-secondary py-1 px-3 text-xs ${chosenAction === 'delete' ? 'bg-red-600 text-white border-transparent hover:bg-red-700' : 'bg-white'}">Elimina</button>
+                        <button type="button" data-deletion-id="${escapeHTML(card.id)}" data-deletion-action="keep" class="btn btn-secondary py-1 px-3 text-xs ${chosenAction === 'keep' ? 'bg-amber-500 text-white border-transparent hover:bg-amber-600' : 'bg-white'}">Mantieni</button>
+                        <button type="button" data-deletion-id="${escapeHTML(card.id)}" data-deletion-action="delete" class="btn btn-secondary py-1 px-3 text-xs ${chosenAction === 'delete' ? 'bg-red-600 text-white border-transparent hover:bg-red-700' : 'bg-white'}">Elimina</button>
                     </div>
                 </div>
             `);
+
+            // I listener vengono aggiunti via addEventListener dopo sanitizeHTML per evitare la rimozione da parte di DOMPurify
+            div.querySelectorAll('button[data-deletion-id]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-deletion-id');
+                    const action = btn.getAttribute('data-deletion-action');
+                    window.risolviDeletion(id, action);
+                });
+            });
+
             container.appendChild(div);
         });
 

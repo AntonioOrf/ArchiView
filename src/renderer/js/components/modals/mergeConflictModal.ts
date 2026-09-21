@@ -86,6 +86,8 @@
             const isResolved = resolvedFields[c.id].size === c.campiConflitto.length;
 
             const div = document.createElement('div');
+            div.setAttribute('role', 'button');
+            div.setAttribute('tabindex', '0');
             div.className = `p-3 rounded border cursor-pointer transition-all flex flex-col gap-1 ${
                 isSelected 
                     ? 'bg-amber-50 border-amber-500 shadow-sm' 
@@ -95,6 +97,12 @@
                 currentConflictIndex = index;
                 renderConflictList();
                 renderConflictDetail();
+            };
+            div.onkeydown = (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    div.click();
+                }
             };
 
             let badgeHtml = isResolved
@@ -145,15 +153,16 @@
             const fieldDiv = document.createElement('div');
             fieldDiv.className = `p-4 rounded border mb-4 ${isResolved ? 'border-green-200 bg-green-50/20' : 'border-stone-200 bg-stone-50/40'}`;
 
-            // DOMPurify rimuove onclick inline: i bottoni usano data-* e ricevono
-            // i listener via addEventListener dopo l'inserimento nel DOM.
+            // L'intera scheda (card) e' cliccabile per la selezione, non solo il bottone
             fieldDiv.innerHTML = window.sanitizeHTML(`
                 <div class="font-bold text-xs uppercase tracking-wider text-amber-700 mb-3 flex items-center justify-between">
                     <span>${escapeHTML(conf.label || campo)}</span>
                     ${isResolved ? `<span class="text-green-700 text-[10px] flex items-center gap-0.5"><i data-lucide="check-circle" class="w-3 h-3"></i> ${window.t("merge_choice_registered", "Choice registered")}</span>` : ''}
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-all ${localChosen ? 'border-amber-500 ring-2 ring-amber-500/10' : 'border-stone-200'}">
+                    <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
+                        role="button" tabindex="0" aria-label="${escapeHTML(window.t("merge_local_label", "Your Change (Local)"))}"
+                        class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-all cursor-pointer hover:border-amber-400 hover:shadow-md ${localChosen ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/10' : 'border-stone-200'}">
                         <span class="text-[9px] uppercase font-bold text-amber-700 absolute -top-2 left-2 bg-amber-50 px-1 border border-amber-200 rounded">${window.t("merge_local_label", "Your Change (Local)")}</span>
                         <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(localVal, campo)}</div>
                         <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
@@ -161,7 +170,9 @@
                             ${window.t("btn_keep_mine", "Keep mine")}
                         </button>
                     </div>
-                    <div class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-all ${externalChosen ? 'border-amber-500 ring-2 ring-amber-500/10' : 'border-stone-200'}">
+                    <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
+                        role="button" tabindex="0" aria-label="${escapeHTML(window.t("merge_cloud_label", "Cloud Change (Server)"))}"
+                        class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-all cursor-pointer hover:border-amber-400 hover:shadow-md ${externalChosen ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/10' : 'border-stone-200'}">
                         <span class="text-[9px] uppercase font-bold text-stone-500 absolute -top-2 left-2 bg-stone-50 px-1 border border-stone-200 rounded">${window.t("merge_cloud_label", "Cloud Change (Server)")}</span>
                         <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(externalVal, campo)}</div>
                         <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
@@ -172,9 +183,27 @@
                 </div>
             `);
 
-            // Listener aggiunti dopo sanitizeHTML: DOMPurify non può rimuoverli
+            // Listener aggiunti dopo sanitizeHTML su tutta la card
+            fieldDiv.querySelectorAll('[data-resolve-card]').forEach((cardEl: Element) => {
+                const id = cardEl.getAttribute('data-resolve-id');
+                const campo = cardEl.getAttribute('data-resolve-campo');
+                const scelta = cardEl.getAttribute('data-resolve-scelta');
+                
+                cardEl.addEventListener('click', () => {
+                    window.risolviCampoConflitto(id, campo, scelta);
+                });
+                cardEl.addEventListener('keydown', (e: any) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        window.risolviCampoConflitto(id, campo, scelta);
+                    }
+                });
+            });
+
+            // Listener anche sui bottoni interni
             fieldDiv.querySelectorAll('button[data-resolve-id]').forEach((btn: Element) => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     window.risolviCampoConflitto(
                         btn.getAttribute('data-resolve-id'),
                         btn.getAttribute('data-resolve-campo'),
