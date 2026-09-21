@@ -8,7 +8,7 @@
 // Restituisce CODICI di errore, non frasi: l'italiano lo aggiunge il renderer, che sa in che
 // lingua sta parlando (lezione della 2.1).
 
-const { net } = require('electron');
+const { hostPrivato, leggiCorpoLimitato, autorizzaOrigine, fetchGuardata } = require('./reteSicura');
 
 const TIMEOUT_MS = 20000;
 
@@ -39,7 +39,11 @@ async function leggiManifest(url: string): Promise<any> {
   if (!urlAmmesso(indirizzo)) return { ok: false, codice: 'url_non_valido' };
 
   try {
-    const risposta = await net.fetch(indirizzo, {
+    // L'URL l'ha incollato l'utente: se punta alla rete locale (un server IIIF di
+    // laboratorio) è una scelta sua, e la sua origine diventa fidata per le immagini.
+    // Per il resto vale la sessione guardata: un redirect non porta dentro la LAN.
+    if (await hostPrivato(new URL(indirizzo).hostname)) autorizzaOrigine(indirizzo);
+    const risposta = await fetchGuardata(indirizzo, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: { 'Accept': ACCEPT }
     });
@@ -51,8 +55,9 @@ async function leggiManifest(url: string): Promise<any> {
     const dichiarata = Number(risposta.headers.get('content-length') || 0);
     if (dichiarata && dichiarata > MAX_BYTE) return { ok: false, codice: 'troppo_grande' };
 
-    const testo = await risposta.text();
-    if (testo.length > MAX_BYTE) return { ok: false, codice: 'troppo_grande' };
+    const corpo = await leggiCorpoLimitato(risposta, MAX_BYTE);
+    if (!corpo) return { ok: false, codice: 'troppo_grande' };
+    const testo = corpo.toString('utf8');
 
     let json;
     try {

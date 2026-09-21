@@ -13,7 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const crypto = require('crypto');
-const { net } = require('electron');
+const { leggiCorpoLimitato, fetchGuardata } = require('./reteSicura');
 const { state } = require('../workspaceManager');
 const { safeAttachmentPathOrNull } = require('../ipc/pathSafety');
 const cache = require('./imageCache');
@@ -62,12 +62,16 @@ async function scaricaUna(richiesta: any, dir: string): Promise<any> {
       let ultimoStato = 0;
       for (const url of candidati) {
         try {
-          const risposta = await net.fetch(url, {
+          const risposta = await fetchGuardata(url, {
             signal: AbortSignal.timeout(TIMEOUT_MS),
             headers: { 'Accept': 'image/jpeg,image/png,image/*;q=0.8' }
           });
           if (!risposta.ok) { ultimoStato = risposta.status; continue; }
-          const corpo = Buffer.from(await risposta.arrayBuffer());
+          const corpo = await leggiCorpoLimitato(risposta, cache.MAX_IMMAGINE);
+          if (!corpo) {
+            console.warn(`[IIIF] Carta oltre ${cache.MAX_IMMAGINE} byte, interrotta: ${url}`);
+            continue;
+          }
           if (!corpo.length) continue;
           dati = corpo;
           mime = (risposta.headers.get('content-type') || '').split(';')[0].trim();

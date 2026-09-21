@@ -9,11 +9,12 @@
 // la stessa a 2000 px sono due voci distinte, e chiedere la miniatura non può far sparire
 // dalla cache il facsimile grande già scaricato.
 
-const { app, net } = require('electron');
+const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const crypto = require('crypto');
+const { leggiCorpoLimitato, fetchGuardata } = require('./reteSicura');
 
 /** Oltre questa soglia si sfoltisce, dal file usato meno di recente. */
 const TETTO_BYTE = 2 * 1024 * 1024 * 1024;
@@ -122,7 +123,8 @@ async function scriviInCache(url: string, dati: Buffer, mime: string) {
 /** Un solo tentativo, senza cache. Ritorna `null` con una riga di log su qualunque intoppo. */
 async function scarica(url: string): Promise<{ dati: Buffer; mime: string } | null> {
   try {
-    const risposta = await net.fetch(url, {
+    // Sessione guardata: l'URL viene dal manifest, un dato di terzi (vedi `reteSicura`).
+    const risposta = await fetchGuardata(url, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: { 'Accept': 'image/jpeg,image/png,image/*;q=0.8' }
     });
@@ -137,8 +139,12 @@ async function scarica(url: string): Promise<{ dati: Buffer; mime: string } | nu
       return null;
     }
 
-    const dati = Buffer.from(await risposta.arrayBuffer());
-    if (!dati.length || dati.length > MAX_IMMAGINE) return null;
+    const dati = await leggiCorpoLimitato(risposta, MAX_IMMAGINE);
+    if (!dati) {
+      console.warn(`[IIIF] Immagine oltre ${MAX_IMMAGINE} byte, interrotta: ${url}`);
+      return null;
+    }
+    if (!dati.length) return null;
 
     const mime = (risposta.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
     // Un server che risponde 200 con una pagina di errore HTML non deve finire in cache
