@@ -5,6 +5,13 @@
 // e il bug si vedeva solo alla prima apertura di un vault appena creato (Fase 3.3).
 let appData = window.Model ? window.Model.databaseVuoto()
     : { cartelle: [], manoscritti: [], tipiDocumento: [], trascrizioneEditorWidth: '50%', schemaVersion: 1 };
+// Esposto su `window` per gli e2e (Playwright legge/imposta lo stato da `page.evaluate`):
+// `appData` viene riassegnato (ripristino, migrazioni), quindi serve un getter, non una copia.
+Object.defineProperty(window, 'appData', {
+    get: () => appData,
+    set: (v) => { appData = v; },
+    configurable: true
+});
 window.cartellaAttuale = '';
 
 async function initData() {
@@ -17,10 +24,18 @@ async function initData() {
             // base entra PRIMA di migrare: va migrato insieme ai record, o il merge a tre vie
             // confronterebbe una scheda migrata con la sua base non migrata e dichiarerebbe
             // modificato un archivio che nessuno ha toccato.
-            if (datiBaseSalvati && !Array.isArray(datiSalvati) && typeof datiSalvati === 'object') {
-                datiSalvati.baseObjects = datiBaseSalvati;
+            // La "lista piatta" delle primissime versioni si avvolge qui nella forma a oggetto
+            // (la stessa che produrrebbe `migraDatabase`) solo per potervi agganciare la base:
+            // su un array nudo andrebbe persa, e senza base ogni scheda diversa dal cloud
+            // diventerebbe un conflitto.
+            let grezzo = datiSalvati;
+            if (datiBaseSalvati && Array.isArray(grezzo)) {
+                grezzo = { cartelle: [], manoscritti: grezzo, tipiDocumento: [] };
             }
-            const esito = window.Model.migraDatabase(datiSalvati);
+            if (datiBaseSalvati && grezzo && typeof grezzo === 'object' && !Array.isArray(grezzo)) {
+                grezzo.baseObjects = datiBaseSalvati;
+            }
+            const esito = window.Model.migraDatabase(grezzo);
             appData = esito.db;
             if (esito.futuro) {
                 // File scritto da una versione più recente: si apre com'è. Migrarlo
@@ -70,15 +85,10 @@ async function initData() {
         window.ultimoCaricamento = 0;
     }
 
-    if (!appData.baseObjects) {
-        appData.baseObjects = {};
-        appData.manoscritti.forEach(m => {
-            appData.baseObjects[m.id] = m;
-        });
-        if (window.apiBrowser) {
-            await window.apiBrowser.salvaDatiBase(appData.baseObjects);
-        }
-    }
+    // ⚠️ Nessuna base creata dai dati locali: le modifiche non ancora sincronizzate diventerebbero
+    // "antenato comune" e il merge a tre vie le scarterebbe a favore del remoto. Senza base la
+    // prima sync passa dal modale dei conflitti (`rilevaConflitti`, ramo senza `baseHash`).
+    if (!appData.baseObjects) appData.baseObjects = {};
     
     appData.baseHashes = {};
     if (appData.baseObjects && typeof window.getRecordHash === 'function') {
@@ -404,10 +414,12 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     }
 
                     if (!baseHash || typeof window.getRecordHash !== 'function') {
-                        // Fallback timestamp: nessun baseHash (documento precedente alla migrazione hash)
+                        // Fallback: nessuna base per questa scheda. Ogni differenza è già passata
+                        // dal modale dei conflitti (`rilevaConflitti` senza base apre un conflitto
+                        // su qualsiasi campo diverso), quindi qui si arriva solo con schede identiche
+                        // o con un modale annullato: timestamp.
                         const tLocal = local.lastModified || 0;
                         const tExternal = external.lastModified || 0;
-                        
                         if (tLocal >= tExternal) {
                             mergedManoscritti.push(local);
                         } else {
@@ -450,7 +462,12 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 
                 appData.manoscritti = manoscrittiFinali;
                 
-                // Aggiorna gli hash di base per i futuri 3-way merge
+                // Aggiorna gli hash di base per i futuri 3-way merge.
+                // ⚠️ La base è la versione REMOTA appena scaricata, non lo stato fuso: è l'unico
+                // antenato comune certo. La base si salva qui, il caricamento avviene dopo; se il
+                // caricamento fallisce (offline, errore di rete) con base = fuso alla sync successiva
+                // risulterebbe locale == base e remoto ≠ base, e `fondiRecord` darebbe ragione al
+                // remoto cancellando in silenzio le modifiche locali.
                 appData.baseHashes = {};
                 appData.baseObjects = {};
                 if (typeof window.getRecordHash === 'function') {

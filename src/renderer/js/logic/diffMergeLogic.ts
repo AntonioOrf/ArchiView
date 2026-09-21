@@ -67,31 +67,24 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
                 continue;
             }
 
-            // Se non c'è baseHash (documento precedente alla migrazione hash), fallback timestamp
+            // Se non c'è baseHash (documento precedente alla migrazione hash o base assente), fallback di sicurezza
             if (!baseHash) {
-                
-                const tLocal = local.lastModified || 0;
-                const tExternal = external.lastModified || 0;
-                if (tLocal > loadedAt && tExternal > loadedAt) {
-                    let differenzeTrovate = false;
-                    const campiConflitto = [];
-                    const allKeys = new Set([...Object.keys(local), ...Object.keys(external)]);
-                    for (const key of allKeys) {
-                        if (chiaviIgnorate.includes(key)) continue;
-                        if (JSON.stringify(local[key]) !== JSON.stringify(external[key])) {
-                            differenzeTrovate = true;
-                            campiConflitto.push(key);
-                        }
+                const campiConflitto = [];
+                const allKeys = new Set([...Object.keys(local), ...Object.keys(external)]);
+                for (const key of allKeys) {
+                    if (chiaviIgnorate.includes(key)) continue;
+                    if (JSON.stringify(local[key]) !== JSON.stringify(external[key])) {
+                        campiConflitto.push(key);
                     }
-                    if (differenzeTrovate) {
-                        conflitti.push({
-                            id: id,
-                            segnatura: local.segnatura || 'Senza Segnatura',
-                            localCard: local,
-                            externalCard: external,
-                            campiConflitto: campiConflitto
-                        });
-                    }
+                }
+                if (campiConflitto.length > 0) {
+                    conflitti.push({
+                        id: id,
+                        segnatura: local.segnatura || 'Senza Segnatura',
+                        localCard: local,
+                        externalCard: external,
+                        campiConflitto: campiConflitto
+                    });
                 }
                 continue;
             }
