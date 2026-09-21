@@ -1,3 +1,17 @@
+## ArchiView 3.1.3 — Risoluzione Conflitti e Salvaguardia Sincronizzazione
+
+Il modale di risoluzione dei conflitti e il motore di sincronizzazione con Google Drive e OneDrive
+sono stati perfezionati per offrire un'interazione intuitiva ed evitare qualsiasi rischio di perdita dati.
+
+### Novità
+
+- **Schede di merge interattive**: l'intera superficie della scheda di confronto (Locale e Cloud) è ora cliccabile con feedback visivo immediato e supporto completo alla navigazione da tastiera (Enter e Spazio).
+- **Risoluzione cancellazioni reattiva**: ripristinata la piena funzionalità dei pulsanti "Mantieni" ed "Elimina" nel modale dei file rimossi dal server.
+- **Nessuna modifica locale persa se il caricamento fallisce**: la base del merge a tre vie resta la versione scaricata dal server, così una sincronizzazione il cui caricamento non va a buon fine (offline, errore di rete) non fa scartare le modifiche locali alla sincronizzazione successiva.
+- **Conflitti sempre mostrati senza una base**: la base non viene più creata dai dati locali. Quando manca (primo avvio, archivio precedente alla migrazione), ogni differenza tra la scheda locale e quella del server apre il modale dei conflitti invece di essere decisa in automatico.
+
+---
+
 ## ArchiView 3.1.2 — Import IIIF
 
 Praticamente tutte le biblioteche che digitalizzano codici medievali — BnF/Gallica,
@@ -6,6 +20,8 @@ con la sequenza ordinata delle carte e un server che le serve a qualsiasi risolu
 Da questa versione basta incollare quell'indirizzo in **Importa → Manifest IIIF** per
 ottenere una scheda con tutte le carte già in sequenza, già etichettate, e visibili nel
 visualizzatore senza scaricare nulla.
+
+### Novità
 
 - **Modello ibrido**: le carte restano sul server della biblioteca e non occupano spazio
   nell'archivio né nella sincronizzazione. Si scaricano una per una, o tutte insieme,
