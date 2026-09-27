@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fase 1.5 — Azioni in massa e selezione dell'intero risultato.
 //
 // La barra di selezione offriva esporta/copia/taglia/elimina: tutto ciò che riguarda
@@ -385,7 +384,7 @@ window.apriAzioneMassa = function(azione) {
     // precedente — e da qui in poi si usa solo il nodo nuovo: l'anteprima del
     // trova&sostituisci lo abilita e disabilita, e agire sul nodo staccato non si vedrebbe.
     const vecchioConferma = modal.querySelector('#bulk-confirm');
-    const conferma = vecchioConferma.cloneNode(true);
+    const conferma = vecchioConferma.cloneNode(true) as HTMLButtonElement;
     vecchioConferma.parentNode.replaceChild(conferma, vecchioConferma);
     conferma.disabled = false;
 
@@ -530,16 +529,16 @@ window.apriAzioneMassa = function(azione) {
         window.chiudiAzioniMassa();
     };
 
-    corpo.addEventListener('keydown', (e) => {
+    corpo.addEventListener('keydown', (e: KeyboardEvent) => {
         // Invio conferma, ma non da un select: lì Invio è il modo di chiudere la tendina.
-        if (e.key === 'Enter' && (e.target.tagName || '').toLowerCase() === 'input') {
+        if (e.key === 'Enter' && ((e.target as HTMLElement).tagName || '').toLowerCase() === 'input') {
             e.preventDefault();
             if (!conferma.disabled) conferma.click();
         }
     });
 
     modal.classList.remove('hidden-tab');
-    const primo = corpo.querySelector('input, select');
+    const primo = corpo.querySelector<HTMLElement>('input, select');
     if (primo) primo.focus();
 };
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 window.avviaTutorial = async function () {
     // Distruggi istanza precedente prima di crearne una nuova
     if (window.dInstance) {
@@ -125,7 +124,7 @@ window.avviaTutorial = async function () {
         });
     }
 
-    const steps = [
+    const steps: any[] = [
         {
             element: 'body',
             popover: {
@@ -298,7 +297,7 @@ window.avviaTutorial = async function () {
                     }
                     const authObs = new MutationObserver((mutations) => {
                         for (const m of mutations) {
-                            for (const node of m.addedNodes) {
+                            for (const node of Array.from(m.addedNodes) as HTMLElement[]) {
                                 if (node.id === 'cloud-auth-modal') {
                                     const cancelBtn = node.querySelector('#btn-cloud-auth-no');
                                     if (cancelBtn) cancelBtn.addEventListener('click', () => setTimeout(() => { if (window.chiudiCloudModal) window.chiudiCloudModal(); }, 350), { once: true });
@@ -578,7 +577,7 @@ window.avviaTutorial = async function () {
             align: 'start'
         },
         onHighlightStarted: () => {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 if (window.switchTab) {
                     window.switchTab('list');
                     setTimeout(resolve, 100);

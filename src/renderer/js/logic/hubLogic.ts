@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 window.hubConfig = null;
 window.hubAutofetchTimer = null;
 
@@ -286,8 +284,8 @@ window.controllaModificheHub = async function(manual = false) {
 };
 
 function rilevaCancellazioniEMergeParziale(esterniDati, lastLoadedAt) {
-    const localMap = new Map((appData.manoscritti || []).map(m => [m.id, m]));
-    const externalMap = new Map((esterniDati.manoscritti || []).map(m => [m.id, m]));
+    const localMap = new Map<string, any>((appData.manoscritti || []).map(m => [m.id, m]));
+    const externalMap = new Map<string, any>((esterniDati.manoscritti || []).map(m => [m.id, m]));
     
     const mergedManoscritti = [];
     const deletions = [];
@@ -412,7 +410,7 @@ window.elencaVersioniHub = async function() {
     });
     if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        const e = new Error(body.error || "Impossibile recuperare la cronologia dal server.");
+        const e: Error & { status?: number } = new Error(body.error || "Impossibile recuperare la cronologia dal server.");
         e.status = res.status;
         throw e;
     }
@@ -428,7 +426,7 @@ window.caricaVersioneHub = async function(versionNumber) {
     });
     if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        const e = new Error(body.error || "Impossibile recuperare questa versione dal server.");
+        const e: Error & { status?: number } = new Error(body.error || "Impossibile recuperare questa versione dal server.");
         e.status = res.status;
         throw e;
     }
@@ -784,7 +782,7 @@ window.eseguiJoinHub = async function(invite, basePath) {
         if (!res.ok) throw new Error("Impossibile connettersi al repository remoto.");
         const data = await res.json();
 
-        const hubConfigObj = {
+        const hubConfigObj: Record<string, any> = {
             hubUrl: invite.hubUrl, repoId: invite.repoId, repoKey: invite.memberKey,
             encKey: invite.encKey || null, version: data.version, lastLoadedAt: Date.now(),
             attachmentsMode: 'drive-links', role: 'member',
@@ -823,7 +821,7 @@ window.clonaRepositoryHub = async function(url, repoId, key, encKey, pusher) {
             mostraMessaggio(window.t("msg_seleziona_il_percorso_in_", "Seleziona il percorso in cui scaricare l'archivio."), "info");
             const basePath = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
             if (basePath) {
-                const hubConfigObj = {
+                const hubConfigObj: Record<string, any> = {
                     hubUrl: url,
                     repoId: repoId,
                     repoKey: key,

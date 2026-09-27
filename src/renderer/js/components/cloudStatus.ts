@@ -1,4 +1,3 @@
-// @ts-nocheck
 // --- CONTROLLO CLOUD UNICO (Fase 3) ---
 // Prima lo stato cloud era spalmato su 6 superfici: due indicatori nell'header
 // (#incoming-updates-indicator, #pending-changes-indicator), il gruppo Fetch/Scarica/Carica
@@ -182,7 +181,7 @@ window.azzeraErroreCloud = function() {
 window.apriPopoverCloud = function(btn) {
     const s = window.statoCloud;
     const stato = window.calcolaStatoCloud();
-    const voci = [{ heading: true, label: stato.label }];
+    const voci: any[] = [{ heading: true, label: stato.label }];
 
     if (!s.vaultCloud) {
         // 3.5 — su vault locale il controllo non sparisce: offre come attivarlo.

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fase 1.4 — Command palette (Ctrl+K) ed elenco delle scorciatoie.
 //
 // Due lacune distinte, risolte insieme perché condividono la stessa fonte di verità:
@@ -151,7 +150,7 @@ function comandiAzione() {
         esegui: () => {
             if (_disponibile('switchTab')) switchTab('list');
             window.apriSidebarTab('search');
-            const input = document.getElementById('search-input');
+            const input = document.getElementById('search-input') as HTMLInputElement;
             if (input) { input.focus(); input.select(); }
         }
     });
@@ -216,7 +215,7 @@ function comandiAzione() {
         id: 'importa', icon: 'download',
         label: _T('btn_import', 'Importa'),
         chiavi: ['zip'],
-        esegui: () => importaManoscritto()
+        esegui: () => window.importaManoscritto()
     });
     agg(_disponibile('apriImportCsv'), {
         id: 'importa-csv', icon: 'file-input',
@@ -228,7 +227,7 @@ function comandiAzione() {
         id: 'esporta', icon: 'upload',
         label: _T('btn_export_folder', 'Esporta Cartella'),
         chiavi: ['zip', 'backup', 'copia'],
-        esegui: () => esportaCartellaAttuale()
+        esegui: () => window.esportaCartellaAttuale()
     });
     agg(_disponibile('esportaCartellaCsv'), {
         id: 'esporta-csv', icon: 'table',
@@ -564,7 +563,7 @@ function _paletteSposta(delta) {
 function _paletteEvidenzia() {
     const lista = _palette && _palette.querySelector('#cp-lista');
     if (!lista) return;
-    const righe = Array.from(lista.querySelectorAll('.cp-voce'));
+    const righe = Array.from(lista.querySelectorAll('.cp-voce')) as HTMLElement[];
     const input = _palette.querySelector('#cp-input');
     righe.forEach((el, i) => {
         const attiva = i === _paletteIndice;
@@ -712,7 +711,7 @@ window.apriCommandPalette = function() {
 
     overlay.addEventListener('mousedown', _paletteOnPointerDown);
 
-    const input = overlay.querySelector('#cp-input');
+    const input = overlay.querySelector<HTMLInputElement>('#cp-input');
     // Il filtro è sincrono e senza debounce: costa quanto una scansione dell'indice già
     // in cache, e un ritardo su una palette si legge come interfaccia rotta. È il taglio
     // a 20 schede a tenere il costo costante sugli archivi grandi.
@@ -774,7 +773,7 @@ window.apriScorciatoie = function() {
     }
 
     modal.classList.remove('hidden-tab');
-    const chiudi = modal.querySelector('[data-modal-cancel]');
+    const chiudi = modal.querySelector<HTMLElement>('[data-modal-cancel]');
     if (chiudi) chiudi.focus();
 };
 

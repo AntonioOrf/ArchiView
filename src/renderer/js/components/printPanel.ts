@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fase 2.2 — Stampa e PDF: superficie utente.
 //
 // Qui non si genera nulla: il documento nasce in `src/main/print/printTemplate.ts` (modulo
@@ -213,8 +212,9 @@ function _sRiempi() {
     // vedrebbe sparire alla prima lettera se il campo fosse fra i controlli ricostruiti.
     // Da qui il ripristino per id in coda, come nel pannello filtri della 1.3.
     const attivo = document.activeElement && document.activeElement.id;
-    const selezione = document.activeElement && typeof document.activeElement.selectionStart === 'number'
-        ? document.activeElement.selectionStart : null;
+    const inFuoco = document.activeElement as HTMLInputElement | null;
+    const selezione = inFuoco && typeof inFuoco.selectionStart === 'number'
+        ? inFuoco.selectionStart : null;
     corpo.innerHTML = '';
 
     // Ambito
@@ -253,7 +253,7 @@ function _sRiempi() {
     opzioni.className = 'flex flex-col gap-2 pt-1';
     const aggiungi = (id, etichetta, chiave) => {
         const c = _sCheckbox(id, etichetta, o[chiave]);
-        c.querySelector('input').addEventListener('change', (e) => { o[chiave] = e.target.checked; });
+        c.querySelector('input').addEventListener('change', (e) => { o[chiave] = (e.target as HTMLInputElement).checked; });
         opzioni.appendChild(c);
     };
     aggiungi('print-opt-cover', _sT('print_opt_cover', 'Frontespizio'), 'frontespizio');
@@ -278,7 +278,7 @@ function _sRiempi() {
     _sAggiornaConteggio();
 
     if (attivo) {
-        const el = document.getElementById(attivo);
+        const el = document.getElementById(attivo) as HTMLInputElement;
         if (el) {
             el.focus();
             if (selezione !== null && typeof el.setSelectionRange === 'function') {
@@ -294,7 +294,7 @@ function _sAggiornaConteggio() {
     const n = _sIdsAmbito(window.__printAmbito).length;
     nota.textContent = _sT('print_count', '{var0} schede da stampare.').replace('{var0}', String(n));
     for (const id of ['print-pdf', 'print-now']) {
-        const b = document.getElementById(id);
+        const b = document.getElementById(id) as HTMLButtonElement;
         if (b) b.disabled = n === 0;
     }
 }
@@ -369,7 +369,7 @@ async function _sEsegui(modo) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(_sT('print_empty', 'Non c\'è nessuna scheda da stampare.'), 'warning');
         return;
     }
-    const bottoni = ['print-pdf', 'print-now'].map(id => document.getElementById(id)).filter(Boolean);
+    const bottoni = ['print-pdf', 'print-now'].map(id => document.getElementById(id) as HTMLButtonElement).filter(Boolean);
     bottoni.forEach(b => { b.disabled = true; });
     if (typeof mostraMessaggio === 'function') mostraMessaggio(_sT('print_working', 'Preparazione del documento…'), 'info');
     try {

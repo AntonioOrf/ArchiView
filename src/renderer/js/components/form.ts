@@ -1,4 +1,3 @@
-// @ts-nocheck
 // --- Memoria dell'ultimo modello usato ---------------------------------------
 // Preferenza puramente locale (per-macchina, per-workspace): NON entra in appData,
 // altrimenti finirebbe nel file sincronizzato generando diff inutili fra collaboratori.
@@ -459,7 +458,7 @@ function renderDynamicFields() {
 
         } else {
             div.appendChild(label);
-            const el = document.createElement(def.tipo === 'textarea' ? 'textarea' : 'input');
+            const el = document.createElement(def.tipo === 'textarea' ? 'textarea' : 'input') as HTMLInputElement & HTMLTextAreaElement;
             el.id = idControlloCampo(campoId);
             if (def.tipo === 'textarea') el.rows = 3;
             else if (def.tipo === 'number') {
@@ -533,7 +532,7 @@ window.aggiornaRiscontroData = function(idControllo) {
  * perdere di vista la scheda che si sta compilando.
  */
 window.aggiungiValoreAlVolo = function(vocabolarioId, idControllo) {
-    const sel = document.getElementById(idControllo);
+    const sel = document.getElementById(idControllo) as HTMLSelectElement;
     if (!sel || sel.parentElement.querySelector('input[type="text"]')) return;
 
     const input = document.createElement('input');
@@ -648,7 +647,7 @@ function resetForm() {
         // Fase 3.1: azzerare `.value` su una casella di spunta non la deseleziona e su una
         // tendina la lascia sull'ultima scelta — la scheda nuova nascerebbe con i valori
         // di quella appena salvata.
-        dynContainer.querySelectorAll('input, textarea, select').forEach(el => {
+        dynContainer.querySelectorAll<HTMLInputElement>('input, textarea, select').forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
             else el.value = '';
         });

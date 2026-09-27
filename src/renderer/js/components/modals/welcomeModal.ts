@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('welcome-modal')) {
@@ -243,7 +241,7 @@
                         </div>
                         <i data-lucide="chevron-right" class="w-4 h-4 text-stone-400"></i>
                     `);
-                    div.onclick = () => eseguiRipristinoCloud(v.id, v.name);
+                    div.onclick = () => window.eseguiRipristinoCloud(v.id, v.name);
                     listContainer.appendChild(div);
                 });
                 if (window.lucide) lucide.createIcons({ nodes: [listContainer] });
@@ -536,7 +534,7 @@
 
 
     window.eseguiRipristinoCloudGlobale = async function() {
-        await eseguiRipristinoCloud(null, 'Vault_Recuperato');
+        await window.eseguiRipristinoCloud(null, 'Vault_Recuperato');
     };
 
     window.eseguiRipristinoCloud = async function(vaultId, defaultName) {
@@ -592,7 +590,7 @@
     };
 
     window.creaCartellaIniziale = async function() {
-        const btn = event?.target && event.target.tagName === 'BUTTON' ? event.target : document.querySelector('#welcome-create-form .btn-primary');
+        const btn = (event?.target && (event.target as HTMLElement).tagName === 'BUTTON' ? event.target : document.querySelector('#welcome-create-form .btn-primary')) as HTMLButtonElement | null;
         const name = document.getElementById('welcome-new-folder-name').value.trim();
         const basePath = document.getElementById('welcome-new-folder-path').value.trim();
         if (!name || !basePath) return;
