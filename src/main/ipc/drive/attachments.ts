@@ -1,10 +1,16 @@
 const path = require('path');
 const fs = require('fs');
 const { state, getAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
-const { splitFileIntoChunks, assembleFileFromChunks } = require('../../chunkingLogic');
+const { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChunkPath, hashFile } = require('../../chunkingLogic');
 const { driveState, loadSavedTokens } = require('./auth');
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
 const { safeAttachmentPath, safeAttachmentPathOrNull } = require('../pathSafety');
+
+function indiceSicuro(grezzo: unknown): Record<string, string[]> {
+  const { indice, scartate } = filtraIndiceChunk(grezzo);
+  if (scartate.length) console.warn(`[drive-att] index.json: ${scartate.length} voci con hash non validi ignorate`);
+  return indice;
+}
 
 async function syncAttachmentsBidirectional(): Promise<void> {
   if (!state.workspacePath) throw new Error("Nessun workspace aperto");
@@ -56,6 +62,8 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     const indexContent = await driveState.drive.files.get({ fileId: indexFileId, alt: 'media' });
     remoteIndex = typeof indexContent.data === 'string' ? JSON.parse(indexContent.data) : indexContent.data;
   }
+  // index.json è scrivibile da ogni collaboratore: i suoi hash diventano nomi di file in cache.
+  remoteIndex = indiceSicuro(remoteIndex);
 
   const filesToUpload = fs.readdirSync(allegatiLocalDir).filter((f: string) => usedAttachments.has(f));
   const allRequiredHashes = new Set<string>();
@@ -119,12 +127,25 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     if (win && (iDown % 5 === 0 || iDown === totalDown)) {
       win.webContents.send('sync-progress', { percent: (iDown / totalDown) * 100, message: `Scaricamento blocco allegati ${iDown} di ${totalDown}` });
     }
-    await downloadFile(f.id, path.join(cacheDir, f.name));
+    // f.name è già un hash valido (chunksToDownload viene dall'indice filtrato), ma il percorso
+    // passa comunque da safeChunkPath: la destinazione non deve dipendere da un nome remoto.
+    const dest = safeChunkPath(cacheDir, f.name);
+    await downloadFile(f.id, dest);
+    // Il nome È l'hash del contenuto: un chunk che non corrisponde è corrotto o sostituito.
+    if (await hashFile(dest) !== f.name) {
+      console.warn(`[drive-att] chunk ${f.name.slice(0, 8)} scartato: contenuto non corrispondente all'hash`);
+      await fs.promises.unlink(dest).catch(() => {});
+    }
   });
 
   for (const item of filesToReassemble) {
-    await assembleFileFromChunks(item.hashes, cacheDir, safeAttachmentPath(allegatiLocalDir, item.fileName));
-    if (win) win.webContents.send('allegato-scaricato', item.fileName);
+    try {
+      await assembleFileFromChunks(item.hashes, cacheDir, safeAttachmentPath(allegatiLocalDir, item.fileName));
+      if (win) win.webContents.send('allegato-scaricato', item.fileName);
+    } catch (e: any) {
+      // Un allegato non ricomponibile (chunk mancante o scartato) non deve fermare gli altri.
+      console.warn(`[drive-att] ricomposizione saltata per ${item.fileName}: ${e.message}`);
+    }
   }
 
   const chunksToUpload = Array.from(allRequiredHashes).filter((h: string) => !existingDriveChunks.has(h));
@@ -145,7 +166,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     if (indexFileId) {
       try {
         const latestContent = await driveState.drive.files.get({ fileId: indexFileId, alt: 'media' });
-        const latestRemoteIndex = typeof latestContent.data === 'string' ? JSON.parse(latestContent.data) : latestContent.data;
+        const latestRemoteIndex = indiceSicuro(typeof latestContent.data === 'string' ? JSON.parse(latestContent.data) : latestContent.data);
         remoteIndex = { ...latestRemoteIndex, ...remoteIndex };
       } catch (e) { console.warn("Errore durante il refetch di index.json:", e); }
     }

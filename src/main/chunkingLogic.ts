@@ -63,7 +63,35 @@ const SHA256_HEX_RE = /^[a-f0-9]{64}$/;
 const CACHE_DIR_MAX = 50;
 const resolvedCacheDirCache = new Map<string, string>();
 
-function safeChunkPath(cacheDir: string, hash: string): string {
+export function isChunkHash(hash: unknown): hash is string {
+    return typeof hash === 'string' && SHA256_HEX_RE.test(hash);
+}
+
+/**
+ * Tiene di un indice remoto (`index.json` su Drive, scrivibile da ogni collaboratore) solo le
+ * voci con una lista di hash ben formati. Gli hash diventano nomi di file nella cache: una voce
+ * con un "hash" come `../../x.bat` farebbe scaricare un file fuori dalla cache, quindi la voce
+ * intera viene scartata, non ripulita (un file ricomposto senza un chunk sarebbe corrotto).
+ */
+export function filtraIndiceChunk(indice: unknown): { indice: Record<string, string[]>; scartate: string[] } {
+    const pulito: Record<string, string[]> = {};
+    const scartate: string[] = [];
+    if (!indice || typeof indice !== 'object' || Array.isArray(indice)) return { indice: pulito, scartate };
+    for (const [nome, hashes] of Object.entries(indice as Record<string, unknown>)) {
+        if (Array.isArray(hashes) && hashes.every(isChunkHash)) pulito[nome] = hashes as string[];
+        else scartate.push(nome);
+    }
+    return { indice: pulito, scartate };
+}
+
+/** SHA-256 di un file letto in streaming (i chunk arrivano a 5 MB: niente buffer interi). */
+export async function hashFile(filePath: string): Promise<string> {
+    const hash = crypto.createHash('sha256');
+    for await (const blocco of fs.createReadStream(filePath)) hash.update(blocco as Buffer);
+    return hash.digest('hex');
+}
+
+export function safeChunkPath(cacheDir: string, hash: string): string {
     if (!SHA256_HEX_RE.test(hash)) {
         throw new Error(`Hash chunk non valido (formato inatteso): ${hash}`);
     }
@@ -87,14 +115,18 @@ export async function assembleFileFromChunks(chunkHashes: string[], cacheDir: st
         fs.mkdirSync(destDir, { recursive: true });
     }
 
+    // Validazione PRIMA di aprire la destinazione: un file creato e lasciato vuoto da un chunk
+    // mancante risulterebbe "già presente" alla sync successiva e non verrebbe più riscaricato.
+    const chunkPaths = chunkHashes.map((hash) => {
+        const chunkPath = safeChunkPath(cacheDir, hash);
+        if (!fs.existsSync(chunkPath)) throw new Error(`Chunk mancante nella cache locale: ${hash}`);
+        return chunkPath;
+    });
+
     const fileHandle = await fs.promises.open(destinationFilePath, 'w');
 
     try {
-        for (const hash of chunkHashes) {
-            const chunkPath = safeChunkPath(cacheDir, hash);
-            if (!fs.existsSync(chunkPath)) {
-                throw new Error(`Chunk mancante nella cache locale: ${hash}`);
-            }
+        for (const chunkPath of chunkPaths) {
             const chunkData = await fs.promises.readFile(chunkPath);
             await fileHandle.write(chunkData);
         }
