@@ -5,13 +5,6 @@ window.hubAutofetchTimer = null;
 // toast "Ci sono aggiornamenti" a ogni tick finché l'utente non riceve o cambia versione.
 let _ultimaVersioneAutofetchNotificata = null;
 
-// Nome cartella workspace sicuro per il filesystem a partire dal nome vault condiviso.
-function sanitizeVaultFolderName(name) {
-    let sanitized = (name || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim().slice(0, 80);
-    if (/^\.+$/.test(sanitized)) return '';
-    return sanitized;
-}
-
 // Nome di default per un vault = basename della cartella workspace (ciò che l'utente ha scelto
 // creandola), non il fantasma appData.nomeArchivio che ripiega sempre su "ArchiView".
 window.nomeVaultDefault = async function() {
@@ -79,17 +72,11 @@ window.riceviModificheHub = async function(isSilent = false) {
     // if (!isSilent) mostraMessaggio(window.t("msg_ricezione_modifiche_dall_", "Ricezione modifiche dall'Hub in corso…"), "info");
     
     try {
-        const repoId = window.hubConfig.repoId;
-        const key = window.hubConfig.repoKey;
-        const url = window.hubConfig.hubUrl;
         const lastLoadedAt = window.hubConfig.lastLoadedAt || 0;
         const localVersion = window.hubConfig.version;
 
-        // Fast-path autofetch: `?ifVersionNot=N` costa 1 sola lettura D1 se nulla è cambiato.
-        const qs = (isSilent && typeof localVersion === 'number') ? `?ifVersionNot=${localVersion}` : '';
-        const resPull = await fetch(`${url}/api/repos/${repoId}/pull${qs}`, {
-            headers: { 'Authorization': `Bearer ${key}` }
-        });
+        // Fast-path autofetch: `ifVersionNot` costa 1 sola lettura D1 se nulla è cambiato.
+        const resPull = await window.apiBrowser.hubPull(isSilent && typeof localVersion === 'number' ? localVersion : undefined);
 
         if (!resPull.ok) {
             if (resPull.status === 401 || resPull.status === 403) {
@@ -104,7 +91,7 @@ window.riceviModificheHub = async function(isSilent = false) {
             throw new Error("Impossibile scaricare i dati dal server.");
         }
 
-        const dataPull = await resPull.json();
+        const dataPull = resPull.data;
         if (dataPull.unchanged === true) {
             window.pulisciModificheInEntrataHub();
             // DB invariato ma gli allegati possono essere ancora arretrati (join, race con l'upload
@@ -219,15 +206,11 @@ window.riceviModificheHub = async function(isSilent = false) {
 window.controllaModificheHub = async function(manual = false) {
     if (!window.hubConfig) return;
     try {
-        const { repoId, repoKey: key, hubUrl: url } = window.hubConfig;
         const localVersion = window.hubConfig.version;
         const loadedAt = window.hubConfig.lastLoadedAt || 0;
 
         // Fast-path: se nulla è cambiato costa 1 sola lettura D1.
-        const qs = (typeof localVersion === 'number') ? `?ifVersionNot=${localVersion}` : '';
-        const res = await fetch(`${url}/api/repos/${repoId}/pull${qs}`, {
-            headers: { 'Authorization': `Bearer ${key}` }
-        });
+        const res = await window.apiBrowser.hubPull(typeof localVersion === 'number' ? localVersion : undefined);
 
         if (!res.ok) {
             if (manual) mostraMessaggio(res.status === 403
@@ -237,7 +220,7 @@ window.controllaModificheHub = async function(manual = false) {
             return;
         }
 
-        const data = await res.json();
+        const data = res.data || {};
         const noChanges = data.unchanged === true || data.version === localVersion;
 
         if (noChanges) {
@@ -352,22 +335,7 @@ window.inviaModificheHub = async function() {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
 
     try {
-        const repoId = window.hubConfig.repoId;
-        const key = window.hubConfig.repoKey;
-        const url = window.hubConfig.hubUrl;
-        const serverVersion = window.hubConfig.version;
-
-        const resPush = await fetch(`${url}/api/repos/${repoId}/push`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`
-            },
-            body: JSON.stringify({
-                parentVersion: serverVersion,
-                database: appData
-            })
-        });
+        const resPush = await window.apiBrowser.hubPush(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
             if (resPush.status === 409) {
@@ -381,9 +349,7 @@ window.inviaModificheHub = async function() {
             throw new Error("Errore durante l'invio delle modifiche al server.");
         }
 
-        const dataPush = await resPush.json();
-        
-        window.hubConfig.version = dataPush.version;
+        window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
 
@@ -404,33 +370,25 @@ window.inviaModificheHub = async function() {
 // Elenco versioni conservate sul server (metadata-only: autore, data, dimensione).
 window.elencaVersioniHub = async function() {
     if (!window.hubConfig) throw new Error(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."));
-    const { repoId, repoKey: key, hubUrl: url } = window.hubConfig;
-    const res = await fetch(`${url}/api/repos/${repoId}/versions`, {
-        headers: { 'Authorization': `Bearer ${key}` }
-    });
+    const res = await window.apiBrowser.hubVersions();
     if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const e: Error & { status?: number } = new Error(body.error || "Impossibile recuperare la cronologia dal server.");
+        const e: Error & { status?: number } = new Error(res.error || "Impossibile recuperare la cronologia dal server.");
         e.status = res.status;
         throw e;
     }
-    return await res.json(); // { currentVersion, versions }
+    return res.data; // { currentVersion, versions }
 };
 
 // Snapshot completo di una versione specifica (per diff o ripristino).
 window.caricaVersioneHub = async function(versionNumber) {
     if (!window.hubConfig) throw new Error(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."));
-    const { repoId, repoKey: key, hubUrl: url } = window.hubConfig;
-    const res = await fetch(`${url}/api/repos/${repoId}/versions/${versionNumber}`, {
-        headers: { 'Authorization': `Bearer ${key}` }
-    });
+    const res = await window.apiBrowser.hubVersion(versionNumber);
     if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const e: Error & { status?: number } = new Error(body.error || "Impossibile recuperare questa versione dal server.");
+        const e: Error & { status?: number } = new Error(res.error || "Impossibile recuperare questa versione dal server.");
         e.status = res.status;
         throw e;
     }
-    return await res.json(); // { version, database }
+    return res.data; // { version, database }
 };
 
 // Ripristino "git-revert": carica lo snapshot scelto, lo sostituisce in locale, poi lo invia
@@ -441,16 +399,11 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         return false;
     }
     try {
-        const { repoId, repoKey: key, hubUrl: url } = window.hubConfig;
-
         // Pre-check: se il server è avanzato rispetto a quanto abbiamo in locale, non tocchiamo
         // nulla e chiediamo di ricevere prima (evita di ripristinare "alla cieca" su dati stantii).
-        const resCheck = await fetch(`${url}/api/repos/${repoId}/pull?ifVersionNot=${window.hubConfig.version}`, {
-            headers: { 'Authorization': `Bearer ${key}` }
-        });
+        const resCheck = await window.apiBrowser.hubPull(window.hubConfig.version);
         if (!resCheck.ok) throw new Error("Impossibile contattare il server per il ripristino.");
-        const dataCheck = await resCheck.json();
-        if (dataCheck.unchanged !== true) {
+        if (!resCheck.data || resCheck.data.unchanged !== true) {
             mostraMessaggio(window.t("msg_hub_restore_pull_first", "Il server contiene modifiche più recenti. Usa 'Ricevi' prima di ripristinare."), "warning");
             return false;
         }
@@ -461,11 +414,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         appData.tipiDocumento = snap.database.tipiDocumento || [];
         await salvaTutto();
 
-        const resPush = await fetch(`${url}/api/repos/${repoId}/push`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-            body: JSON.stringify({ parentVersion: window.hubConfig.version, database: appData })
-        });
+        const resPush = await window.apiBrowser.hubPush(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
             if (resPush.status === 409) {
@@ -475,8 +424,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
             throw new Error("Errore durante l'invio del ripristino al server.");
         }
 
-        const dataPush = await resPush.json();
-        window.hubConfig.version = dataPush.version;
+        window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
 
@@ -566,38 +514,26 @@ window.sincronizzaAllegatiHub = async function(isSilent = true) {
     }
 };
 
-// --- Helper chiavi/invito ---
+// --- Invito ---
 
-function randomKeyB64url() {
-    const b = new Uint8Array(32);
-    crypto.getRandomValues(b);
-    return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function b64urlEncode(str) {
-    return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function b64urlDecode(str) {
-    let s = str.replace(/-/g, '+').replace(/_/g, '/');
-    while (s.length % 4 !== 0) s += '=';
-    return decodeURIComponent(escape(atob(s)));
-}
-
-// Convenzione pipe (come sharing.ts): HUB1|hubUrl|repoId|memberKey|encKey|pusherKey|pusherCluster|name(URI-encoded)
+// Anteprima di un invito incollato dall'utente: solo il nome, per l'interfaccia. Le chiavi
+// dentro il codice le legge il main al momento del join (hubJoin).
+// Convenzione pipe: HUB1|hubUrl|repoId|memberKey|encKey|pusherKey|pusherCluster|name(URI-encoded)
 window.decodeHubInvite = function(rawCode) {
     let code = (rawCode || '').trim();
     if (code.startsWith('archiview://join/')) code = code.slice('archiview://join/'.length);
     let decoded;
-    try { decoded = b64urlDecode(code); } catch { return null; }
+    try {
+        let s = code.replace(/-/g, '+').replace(/_/g, '/');
+        while (s.length % 4 !== 0) s += '=';
+        decoded = decodeURIComponent(escape(atob(s)));
+    } catch { return null; }
     if (!decoded.startsWith('HUB1|')) return null;
     const parts = decoded.split('|');
-    if (parts.length < 4) return null;
-    const [, hubUrl, repoId, memberKey, encKey, pusherKey, pusherCluster, nameEnc] = parts;
-    if (!hubUrl || !repoId || !memberKey) return null;
+    if (parts.length < 4 || !parts[1] || !parts[2] || !parts[3]) return null;
     let name = '';
-    try { name = nameEnc ? decodeURIComponent(nameEnc) : ''; } catch { name = ''; }
-    return { hubUrl, repoId, memberKey, encKey: encKey || null, pusherKey: pusherKey || '', pusherCluster: pusherCluster || '', name };
+    try { name = parts[7] ? decodeURIComponent(parts[7]) : ''; } catch { name = ''; }
+    return { code: rawCode, name };
 };
 
 // Crea un nuovo repository Hub a partire dal workspace corrente (l'utente ne diventa owner).
@@ -609,13 +545,6 @@ window.creaRepositoryHub = async function(name) {
         window.mostraProgressoCloud(window.t("prog_hub_prepare_title", "Preparazione dell'archivio condiviso"), window.t("msg_creazione_repository", "Creazione del repository in corso…"));
     }
     try {
-        const r = await window.apiBrowser.hubCreateRepo(name || null);
-        if (!r || !r.ok) {
-            if (typeof window.nascondiProgressoCloud === 'function') window.nascondiProgressoCloud();
-            mostraMessaggio(r?.error || window.t("msg_errore_creazione_repo", "Errore creazione repository."), "error");
-            return false;
-        }
-
         // Il nome scelto è la fonte viva condivisa: va scritto in appData.nomeArchivio PRIMA del
         // push iniziale, così owner e futuri membri (join → data.database.nomeArchivio) leggono
         // lo stesso nome. Senza nome esplicito si usa il basename della cartella (il nome che
@@ -626,29 +555,18 @@ window.creaRepositoryHub = async function(name) {
             await salvaTutto();
         }
 
-        const encKey = randomKeyB64url();
-        // Push iniziale del DB locale (v0 → v1)
-        const resPush = await fetch(`${r.hubUrl}/api/repos/${r.repoId}/push`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${r.ownerKey}` },
-            body: JSON.stringify({ parentVersion: 0, database: appData }),
-            signal: AbortSignal.timeout(20000)
-        });
-        if (!resPush.ok) throw new Error("Push iniziale fallito (HTTP " + resPush.status + ").");
-        const pushData = await resPush.json();
-
-        const hubConfig = {
-            hubUrl: r.hubUrl, repoId: r.repoId, repoKey: r.ownerKey, encKey,
-            version: pushData.version, lastLoadedAt: Date.now(), attachmentsMode: 'drive-links',
-            role: 'owner',
-            name: finalName,
-            pusherKey: r.pusherKey, pusherCluster: r.pusherCluster
-        };
-        await window.apiBrowser.saveHubConfig(hubConfig);
+        // Il main crea il repo, genera la encKey, fa il push iniziale (v0 → v1) e salva la config:
+        // qui torna solo la parte pubblica (S8 in REVIEW-SECURITY.md).
+        const r = await window.apiBrowser.hubCreateRepo(finalName, window.appData);
+        if (!r || !r.ok) {
+            if (typeof window.nascondiProgressoCloud === 'function') window.nascondiProgressoCloud();
+            mostraMessaggio(r?.error || window.t("msg_errore_creazione_repo", "Errore creazione repository."), "error");
+            return false;
+        }
         if (window.apiBrowser.setRealtimeConfig) {
             await window.apiBrowser.setRealtimeConfig({ pusherKey: r.pusherKey, pusherCluster: r.pusherCluster, pusherWebhook: r.pusherWebhook });
         }
-        window.hubConfig = hubConfig;
+        window.hubConfig = r.config;
         // Aggiorna subito header/widget: senza questo i controlli sync sparirebbero
         // fino al reload (~1.2s).
         if (window.aggiornaVisibilitaCloud) window.aggiornaVisibilitaCloud();
@@ -702,46 +620,28 @@ window.rinominaVaultHub = async function(newName) {
 };
 
 // Restituisce il ruolo dell'utente sul repository Hub: 'owner' | 'member' | 'unknown'.
-// Se il ruolo non è persistito (config legacy pre-redesign) esegue un probe: GET /members
-// è owner-only (403 per i membri) → 200='owner', 401/403='member'. L'esito certo viene
-// persistito su hubConfig per evitare richieste future.
+// Il main lo legge dalla config o lo ricava con un probe owner-only, e persiste l'esito certo.
 window.getHubRole = async function() {
     if (!window.hubConfig) return 'unknown';
     if (window.hubConfig.role === 'owner' || window.hubConfig.role === 'member') return window.hubConfig.role;
-    const { hubUrl, repoId, repoKey } = window.hubConfig;
     try {
-        const res = await fetch(`${hubUrl}/api/repos/${repoId}/members`, { headers: { 'Authorization': `Bearer ${repoKey}` } });
-        if (res.ok) {
-            window.hubConfig.role = 'owner';
-        } else if (res.status === 401 || res.status === 403) {
-            window.hubConfig.role = 'member';
-        } else {
-            return 'unknown'; // errore transitorio: non persistere, ritenta alla prossima apertura
-        }
-        if (window.apiBrowser?.saveHubConfig) await window.apiBrowser.saveHubConfig(window.hubConfig);
-        return window.hubConfig.role;
+        const role = await window.apiBrowser.hubRole();
+        if (role === 'owner' || role === 'member') window.hubConfig.role = role;
+        return role || 'unknown';
     } catch {
         return 'unknown'; // offline: UI degradata, nessun invito mostrato
     }
 };
 
-// Genera un invito HUB1 = crea un nuovo membro revocabile e ne incorpora la chiave fresca.
+// Genera un invito HUB1: il main crea un membro revocabile e compone il codice con le chiavi.
 window.generaInvitoHub = async function(label) {
     if (!window.hubConfig) { mostraMessaggio(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."), "error"); return null; }
-    const { hubUrl, repoId, repoKey, encKey, pusherKey, pusherCluster } = window.hubConfig;
     const memberLabel = (label && String(label).trim()) || `${window.t("hub_invite_default_label", "Invito")} ${new Date().toLocaleDateString()}`;
     try {
-        const res = await fetch(`${hubUrl}/api/repos/${repoId}/members`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${repoKey}` },
-            body: JSON.stringify({ label: memberLabel })
-        });
+        const res = await window.apiBrowser.hubInvite(memberLabel, (window.appData && window.appData.nomeArchivio) || '');
         if (res.status === 403) throw new Error("Solo il proprietario può generare inviti.");
-        if (!res.ok) throw new Error("Errore generazione invito (HTTP " + res.status + ").");
-        const { memberKey } = await res.json();
-        const hubName = window.hubConfig.name || (window.appData && window.appData.nomeArchivio) || '';
-        const raw = ['HUB1', hubUrl, repoId, memberKey, encKey || '', pusherKey || '', pusherCluster || '', encodeURIComponent(hubName)].join('|');
-        return b64urlEncode(raw);
+        if (!res.ok) throw new Error(res.error || "Errore generazione invito (HTTP " + res.status + ").");
+        return res.data.code;
     } catch (e) {
         mostraMessaggio(e.message || "Errore generazione invito.", "error");
         return null;
@@ -750,104 +650,31 @@ window.generaInvitoHub = async function(label) {
 
 window.listaMembriHub = async function() {
     if (!window.hubConfig) return [];
-    const { hubUrl, repoId, repoKey } = window.hubConfig;
     try {
-        const res = await fetch(`${hubUrl}/api/repos/${repoId}/members`, { headers: { 'Authorization': `Bearer ${repoKey}` } });
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data.members || [];
+        const res = await window.apiBrowser.hubMembers();
+        return (res.ok && res.data && res.data.members) || [];
     } catch { return []; }
 };
 
 window.revocaMembroHub = async function(memberId) {
     if (!window.hubConfig || !memberId) return false;
-    const { hubUrl, repoId, repoKey } = window.hubConfig;
     try {
-        const res = await fetch(`${hubUrl}/api/repos/${repoId}/members/${memberId}`, {
-            method: 'DELETE', headers: { 'Authorization': `Bearer ${repoKey}` }
-        });
-        return res.ok;
+        const res = await window.apiBrowser.hubRevokeMember(memberId);
+        return !!res.ok;
     } catch { return false; }
 };
 
 // Join di un repository Hub da invito, con basePath già scelto (usato dal welcomeModal,
-// che ha il proprio input percorso). Nessun accesso Google richiesto.
+// che ha il proprio input percorso). Nessun accesso Google richiesto. Download del DB,
+// creazione del workspace e salvataggio delle chiavi avvengono nel main.
 window.eseguiJoinHub = async function(invite, basePath) {
-    if (!invite || !basePath) return false;
+    if (!invite || !invite.code || !basePath) return false;
     try {
-        const res = await fetch(`${invite.hubUrl}/api/repos/${invite.repoId}/pull`, {
-            headers: { 'Authorization': `Bearer ${invite.memberKey}` }
-        });
-        if (res.status === 401 || res.status === 403) throw new Error("Invito non valido o accesso revocato.");
-        if (!res.ok) throw new Error("Impossibile connettersi al repository remoto.");
-        const data = await res.json();
-
-        const hubConfigObj: Record<string, any> = {
-            hubUrl: invite.hubUrl, repoId: invite.repoId, repoKey: invite.memberKey,
-            encKey: invite.encKey || null, version: data.version, lastLoadedAt: Date.now(),
-            attachmentsMode: 'drive-links', role: 'member',
-            name: invite.name || '',
-            pusherKey: invite.pusherKey || '', pusherCluster: invite.pusherCluster || '',
-            pusherWebhook: `${invite.hubUrl}/api/ping`
-        };
-        // Nome vault condiviso = nomeArchivio del DB scaricato (fonte viva, uguale per tutti);
-        // fallback a invite.name, poi all'id opaco. Sanitizzato per il filesystem.
-        const sharedName = (data.database && data.database.nomeArchivio) || invite.name || '';
-        hubConfigObj.name = sharedName;
-        const folderName = sanitizeVaultFolderName(sharedName) || `Vault_${invite.repoId}`;
-        return await window.apiBrowser.cloneWorkspaceHub(basePath, folderName, hubConfigObj, data.database);
+        const res = await window.apiBrowser.hubJoin(invite.code, basePath);
+        if (!res.ok) throw new Error(res.error || "Impossibile connettersi al repository remoto.");
+        return true;
     } catch (e) {
         mostraMessaggio(e.message || "Errore durante il join del repository Hub.", "error");
-        return false;
-    }
-};
-
-window.clonaRepositoryHub = async function(url, repoId, key, encKey, pusher) {
-    mostraMessaggio(window.t("msg_connessione_al_repository", "Connessione al repository…"), "info");
-    
-    try {
-        const res = await fetch(`${url}/api/repos/${repoId}/pull`, {
-            headers: { 'Authorization': `Bearer ${key}` }
-        });
-
-        if (!res.ok) {
-            if (res.status === 401) throw new Error("Chiave di accesso errata.");
-            throw new Error("Impossibile connettersi al repository remoto.");
-        }
-
-        const data = await res.json();
-        
-        if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiBrowser.cloneWorkspaceHub) {
-            mostraMessaggio(window.t("msg_seleziona_il_percorso_in_", "Seleziona il percorso in cui scaricare l'archivio."), "info");
-            const basePath = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
-            if (basePath) {
-                const hubConfigObj: Record<string, any> = {
-                    hubUrl: url,
-                    repoId: repoId,
-                    repoKey: key,
-                    encKey: encKey || null,
-                    version: data.version,
-                    lastLoadedAt: Date.now(),
-                    attachmentsMode: 'drive-links',
-                    role: 'member',
-                    pusherKey: pusher?.pusherKey || '',
-                    pusherCluster: pusher?.pusherCluster || '',
-                    pusherWebhook: pusher?.pusherWebhook || (url ? `${url}/api/ping` : '')
-                };
-                
-                const sharedName = (data.database && data.database.nomeArchivio) || '';
-                hubConfigObj.name = sharedName;
-                const folderName = sanitizeVaultFolderName(sharedName) || `Vault_${repoId}`;
-                const success = await window.apiBrowser.cloneWorkspaceHub(basePath, folderName, hubConfigObj, data.database);
-                if (success) {
-                    mostraMessaggio(window.t("msg_archivio_clonato_con_succ", "Archivio clonato con successo! Riavvio in corso…"), "success");
-                } else {
-                    throw new Error("Errore durante la creazione dei file locali.");
-                }
-            }
-        }
-    } catch (e) {
-        mostraMessaggio(e.message, "error");
         return false;
     }
 };

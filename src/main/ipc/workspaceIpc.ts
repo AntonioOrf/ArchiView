@@ -1,17 +1,90 @@
 const { ipcMain, dialog, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { state, initWorkspace, getAllSettings, saveHubConfig, loadHubConfig, disconnectHub } = require('../workspaceManager');
+const { state, initWorkspace, getAllSettings, aggiornaHubConfigDalRenderer, loadHubConfigPubblica, disconnectHub } = require('../workspaceManager');
 const { readVaultConfig, syncUnifiedFromLegacy } = require('../vaultConfig');
 const { safeChildDir } = require('./pathSafety');
 
+/**
+ * Crea un nuovo workspace in basePath/folderName con il database dato e lo apre.
+ * `hubConfig` completo di segreti arriva solo dal main (join Hub in hubIpc); dal renderer passa
+ * solo la variante Drive ({ isSharedVault, sharedVaultId }).
+ */
+function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, database: any): boolean {
+  try {
+    let newPath: string;
+    try {
+      // folderName è digitato o viene dall'invito: un nome con separatori è rifiutato, non riscritto.
+      newPath = safeChildDir(basePath, folderName);
+    } catch (e: any) {
+      console.error("[SECURITY] clone workspace bloccato:", e.message);
+      return false;
+    }
+    if (!fs.existsSync(newPath)) {
+      fs.mkdirSync(newPath, { recursive: true });
+    }
+    
+    // Scrivi config dell'Hub (se presente e valido). I segreti (repoKey/encKey) vanno
+    // in cloudTokenStore (DPAPI), MAI in chiaro nel file di vault potenzialmente sincronizzato.
+    if (hubConfig && hubConfig.hubUrl) {
+        const { saveHubSecrets } = require('../cloudTokenStore');
+        const { repoKey, encKey, ...publicCfg } = hubConfig;
+        // Salva i segreti sotto lo scope del NUOVO workspace (state.workspacePath punta ancora
+        // a quello corrente: senza override finirebbero nello slot sbagliato e il clone
+        // non li ritroverebbe al riavvio).
+        if (publicCfg.repoId && (repoKey || encKey)) saveHubSecrets(publicCfg.repoId, { repoKey, encKey }, newPath);
+        const configPath = path.join(newPath, '.archiview-hub.json');
+        fs.writeFileSync(configPath, JSON.stringify(publicCfg, null, 2), 'utf8');
+        // Realtime: deriveFromLegacy legge i campi Pusher da .archiview-drive.json.
+        if (publicCfg.pusherKey) {
+          fs.writeFileSync(path.join(newPath, '.archiview-drive.json'), JSON.stringify({
+            pusherKey: publicCfg.pusherKey,
+            pusherCluster: publicCfg.pusherCluster || '',
+            pusherWebhook: publicCfg.pusherWebhook || (publicCfg.hubUrl ? `${publicCfg.hubUrl}/api/ping` : '')
+          }, null, 2), 'utf8');
+        }
+    }
+
+    // Se hubConfig contiene dati Drive (è stato "abusato" per passare impostazioni Drive)
+    if (hubConfig && hubConfig.isSharedVault) {
+        const settingsPath = path.join(newPath, 'settings.json');
+        fs.writeFileSync(settingsPath, JSON.stringify({
+            isSharedVault: hubConfig.isSharedVault,
+            sharedVaultId: hubConfig.sharedVaultId
+        }, null, 2), 'utf8');
+    }
+
+    // Scrivi database JSON
+    const dbPath = path.join(newPath, 'database_manoscritti.json');
+    fs.writeFileSync(dbPath, JSON.stringify(database, null, 2), 'utf8');
+
+    // Crea cartella allegati vuota
+    const attPath = path.join(newPath, 'allegati_manoscritti');
+    if (!fs.existsSync(attPath)) {
+      fs.mkdirSync(attPath, { recursive: true });
+    }
+
+    // Genera subito il modello unificato dai legacy appena scritti
+    syncUnifiedFromLegacy(newPath, getAllSettings());
+
+    initWorkspace(newPath);
+    if (state.mainWindow) {
+        state.mainWindow.reload();
+    }
+    return true;
+  } catch (e) {
+    console.error("Errore clonazione workspace Hub:", e);
+    return false;
+  }
+}
+
 function setupWorkspaceIpc() {
   ipcMain.handle('save-hub-config', (event, config) => {
-    return saveHubConfig(config);
+    return aggiornaHubConfigDalRenderer(config);
   });
 
   ipcMain.handle('load-hub-config', () => {
-    return loadHubConfig();
+    return loadHubConfigPubblica();
   });
 
   ipcMain.handle('disconnect-hub', () => {
@@ -149,72 +222,17 @@ function setupWorkspaceIpc() {
     }
   });
 
-  ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, hubConfig, database) => {
-    try {
-      let newPath: string;
-      try {
-        // folderName è digitato o viene dall'invito: un nome con separatori è rifiutato, non riscritto.
-        newPath = safeChildDir(basePath, folderName);
-      } catch (e: any) {
-        console.error("[SECURITY] clone-workspace-hub bloccato:", e.message);
-        return false;
-      }
-      if (!fs.existsSync(newPath)) {
-        fs.mkdirSync(newPath, { recursive: true });
-      }
-      
-      // Scrivi config dell'Hub (se presente e valido). I segreti (repoKey/encKey) vanno
-      // in cloudTokenStore (DPAPI), MAI in chiaro nel file di vault potenzialmente sincronizzato.
-      if (hubConfig && hubConfig.hubUrl) {
-          const { saveHubSecrets } = require('../cloudTokenStore');
-          const { repoKey, encKey, ...publicCfg } = hubConfig;
-          // Salva i segreti sotto lo scope del NUOVO workspace (state.workspacePath punta ancora
-          // a quello corrente: senza override finirebbero nello slot sbagliato e il clone
-          // non li ritroverebbe al riavvio).
-          if (publicCfg.repoId && (repoKey || encKey)) saveHubSecrets(publicCfg.repoId, { repoKey, encKey }, newPath);
-          const configPath = path.join(newPath, '.archiview-hub.json');
-          fs.writeFileSync(configPath, JSON.stringify(publicCfg, null, 2), 'utf8');
-          // Realtime: deriveFromLegacy legge i campi Pusher da .archiview-drive.json.
-          if (publicCfg.pusherKey) {
-            fs.writeFileSync(path.join(newPath, '.archiview-drive.json'), JSON.stringify({
-              pusherKey: publicCfg.pusherKey,
-              pusherCluster: publicCfg.pusherCluster || '',
-              pusherWebhook: publicCfg.pusherWebhook || (publicCfg.hubUrl ? `${publicCfg.hubUrl}/api/ping` : '')
-            }, null, 2), 'utf8');
-          }
-      }
-
-      // Se hubConfig contiene dati Drive (è stato "abusato" per passare impostazioni Drive)
-      if (hubConfig && hubConfig.isSharedVault) {
-          const settingsPath = path.join(newPath, 'settings.json');
-          fs.writeFileSync(settingsPath, JSON.stringify({
-              isSharedVault: hubConfig.isSharedVault,
-              sharedVaultId: hubConfig.sharedVaultId
-          }, null, 2), 'utf8');
-      }
-
-      // Scrivi database JSON
-      const dbPath = path.join(newPath, 'database_manoscritti.json');
-      fs.writeFileSync(dbPath, JSON.stringify(database, null, 2), 'utf8');
-
-      // Crea cartella allegati vuota
-      const attPath = path.join(newPath, 'allegati_manoscritti');
-      if (!fs.existsSync(attPath)) {
-        fs.mkdirSync(attPath, { recursive: true });
-      }
-
-      // Genera subito il modello unificato dai legacy appena scritti
-      syncUnifiedFromLegacy(newPath, getAllSettings());
-
-      initWorkspace(newPath);
-      if (state.mainWindow) {
-          state.mainWindow.reload();
-      }
-      return true;
-    } catch (e) {
-      console.error("Errore clonazione workspace Hub:", e);
+  // Dal renderer solo il ripristino Drive: la config Hub con i segreti la scrive hub-join nel main
+  // (S8 in REVIEW-SECURITY.md), altrimenti il renderer potrebbe legare un vault a un Hub arbitrario.
+  ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, driveConfig, database) => {
+    if (driveConfig && (driveConfig.hubUrl || driveConfig.repoKey || driveConfig.encKey)) {
+      console.error("[SECURITY] clone-workspace-hub: config Hub dal renderer rifiutata.");
       return false;
     }
+    const cfg = driveConfig && driveConfig.isSharedVault
+      ? { isSharedVault: true, sharedVaultId: String(driveConfig.sharedVaultId || '') }
+      : null;
+    return clonaWorkspace(basePath, folderName, cfg, database);
   });
 
   ipcMain.handle('export-workspace-zip', async (event, titleDialog) => {
@@ -302,5 +320,5 @@ function setupWorkspaceIpc() {
   });
 }
 
-module.exports = { setupWorkspaceIpc };
+module.exports = { setupWorkspaceIpc, clonaWorkspace };
 export {};

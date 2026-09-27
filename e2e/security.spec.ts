@@ -115,6 +115,36 @@ test.describe('Security Regression Tests', () => {
     expect(xssFired).toBe(false);
   });
 
+  // S8 (REVIEW-SECURITY.md): le chiavi dell'Hub restano nel main.
+  test('config Hub: nessuna chiave nel renderer, hubUrl e segreti non riscrivibili da lì', async ({ page, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const path = await import('path');
+    const fs = await import('fs');
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'HubChiavi');
+    const wsPath = typeof ws === 'string' && fs.existsSync(ws) ? ws : await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath());
+    const cfgFile = path.join(wsPath, '.archiview-hub.json');
+    // Config legacy con i segreti in chiaro: la prima lettura li sposta nel token store.
+    fs.writeFileSync(cfgFile, JSON.stringify({ hubUrl: 'https://hub.example', repoId: 'r1', repoKey: 'CHIAVE-SEGRETA', encKey: 'ENC-SEGRETA', version: 2 }));
+
+    const api = (fn: string, ...args: any[]) => page.evaluate(([f, a]) => (window as any).apiBrowser[f as string](...(a as any[])), [fn, args] as const);
+    const letta = await api('loadHubConfig');
+    expect(JSON.stringify(letta)).not.toMatch(/SEGRETA/);
+    expect(letta).toMatchObject({ hubUrl: 'https://hub.example', repoId: 'r1', hasRepoKey: true, hasEncKey: true, version: 2 });
+    expect(fs.readFileSync(cfgFile, 'utf8')).not.toMatch(/SEGRETA/);
+
+    // Il renderer aggiorna lo stato della sync, non la destinazione né le chiavi.
+    expect(await api('saveHubConfig', { hubUrl: 'https://evil.example', repoId: 'altro', repoKey: 'X', encKey: 'Y', version: 5, attachmentsMode: 'off' })).toBe(true);
+    expect(await api('loadHubConfig')).toMatchObject({ hubUrl: 'https://hub.example', repoId: 'r1', version: 5, attachmentsMode: 'off', hasRepoKey: true });
+
+    // Il clone dal renderer non accetta più una config Hub (il join passa da hub-join nel main).
+    expect(await api('cloneWorkspaceHub', userDataDir, 'Clone', { hubUrl: 'https://evil.example', repoId: 'r', repoKey: 'k' }, {})).toBe(false);
+    expect(fs.existsSync(path.join(userDataDir, 'Clone'))).toBe(false);
+
+    // Invito con Hub in chiaro verso un host remoto: rifiutato prima di qualsiasi richiesta.
+    const invito = Buffer.from('HUB1|http://evil.example|r1|k|e|||x').toString('base64url');
+    expect(await api('hubJoin', invito, userDataDir)).toMatchObject({ ok: false, status: 0 });
+  });
+
   // S4 (REVIEW-SECURITY.md): l'id della scheda arriva dal vault e finiva nel percorso di copia.
   test('salva-allegato: id ostile resta nella cartella allegati, file interni non allegabili', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');

@@ -244,7 +244,8 @@ function loadHubConfig() {
       try { fs.writeFileSync(p, JSON.stringify(publicCfg, null, 2), 'utf8'); } catch (e) { /* best-effort */ }
     }
 
-    // Ri-merge dei segreti dal token store: il renderer riceve l'oggetto completo (contratto invariato).
+    // Ri-merge dei segreti dal token store: SOLO per il main (hubIpc, hubAttachments).
+    // Il renderer riceve loadHubConfigPubblica().
     const secrets = loadHubSecrets(cfg.repoId) || {};
     const { repoKey: _rk, encKey: _ek, ...publicCfg } = cfg;
     return { ...publicCfg, repoKey: secrets.repoKey || null, encKey: secrets.encKey || null };
@@ -252,6 +253,30 @@ function loadHubConfig() {
     console.error("Errore lettura config Hub:", e);
   }
   return null;
+}
+
+// Vista per il renderer (S8 in REVIEW-SECURITY.md): senza repoKey/encKey, con un flag che dice
+// se il vault può ancora parlare con l'Hub (segreti presenti nel token store).
+function loadHubConfigPubblica() {
+  const cfg = loadHubConfig();
+  if (!cfg) return null;
+  const { repoKey, encKey, ...publicCfg } = cfg;
+  return { ...publicCfg, hasRepoKey: !!repoKey, hasEncKey: !!encKey };
+}
+
+// Il renderer aggiorna solo stato della sync e preferenze (version, lastLoadedAt, attachmentsMode,
+// name). hubUrl/repoId no: un renderer compromesso punterebbe l'Hub a un server suo e il main gli
+// invierebbe la repoKey. Né i segreti: li scrivono solo creazione e join, nel main.
+
+function aggiornaHubConfigDalRenderer(parziale: any): boolean {
+  const attuale = loadHubConfig();
+  if (!attuale || !attuale.repoId || !parziale || typeof parziale !== 'object') return false;
+  const next = { ...attuale };
+  if (Number.isInteger(parziale.version) && parziale.version >= 0) next.version = parziale.version;
+  if (Number.isFinite(parziale.lastLoadedAt) && parziale.lastLoadedAt >= 0) next.lastLoadedAt = parziale.lastLoadedAt;
+  if (parziale.attachmentsMode === 'off' || parziale.attachmentsMode === 'drive-links') next.attachmentsMode = parziale.attachmentsMode;
+  if (typeof parziale.name === 'string') next.name = parziale.name.slice(0, 200);
+  return saveHubConfig(next);
 }
 
 module.exports = {
@@ -263,6 +288,8 @@ module.exports = {
   getActiveVaultFlags,
   saveHubConfig,
   loadHubConfig,
+  loadHubConfigPubblica,
+  aggiornaHubConfigDalRenderer,
   disconnectHub
 };
 export {};
