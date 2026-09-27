@@ -517,6 +517,7 @@ function _ipDisegnaAnteprima(contenitore) {
         const testa = document.createElement('div');
         const segn = document.createElement('strong');
         segn.textContent = e.segnatura || _ipT('record_untitled', 'scheda senza titolo');
+        segn.translate = false;
         const numero = document.createElement('span');
         numero.className = 'import-preview-row-n';
         // +2: la riga 1 del file è l'intestazione, e l'utente conta come conta Excel.

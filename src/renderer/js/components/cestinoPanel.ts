@@ -60,6 +60,7 @@ function _cpRiga(voce) {
     const titolo = document.createElement('span');
     // textContent: è dato utente, e la segnatura di un manoscritto contiene di tutto.
     titolo.textContent = rec.segnatura || rec.titolo || _cpT('record_untitled', 'scheda senza titolo');
+    titolo.translate = false;
     const dove = document.createElement('span');
     dove.className = 'text-xs text-stone-500 dark:text-stone-400';
     const cartella = voce.cartella || rec.cartella || '';

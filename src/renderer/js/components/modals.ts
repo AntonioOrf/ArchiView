@@ -68,6 +68,7 @@ window.apriModalDocumenti = async function(id) {
     if (!m) return;
 
     document.getElementById('docs-modal-title').textContent = m.segnatura;
+    document.getElementById('docs-modal-title').translate = false;
     const container = document.getElementById('docs-modal-content');
     container.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">${escapeHTML(window.t('label_loading', 'Caricamento...'))}</div>`;
     document.getElementById('docs-modal').classList.remove('hidden-tab');

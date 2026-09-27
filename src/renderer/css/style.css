@@ -1800,6 +1800,18 @@ label:has(> input[type="radio"]) {
     padding: 0 0.375rem;
 }
 
+/* Titolo della vista: un nome di cartella lungo e senza spazi non deve allargare <main>.
+   Lo <span> è figlio di un <h1> flex, e senza min-width:0 non si restringe mai sotto la
+   lunghezza della parola più lunga: tutta la vista scorreva in orizzontale. Va a capo invece
+   di troncare, così il nome resta leggibile per intero. */
+#titolo-cartella-attuale {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+#icona-vista-corrente {
+    flex-shrink: 0;
+}
+
 /* Pannello filtri: è `fixed` e cresce con le ricerche salvate. Senza un tetto la parte
    bassa (nome e "Salva") finiva sotto il bordo della finestra, irraggiungibile anche da
    tastiera. Lo scroll interno non lo chiude: _chiudiSuScroll ignora i target interni. */

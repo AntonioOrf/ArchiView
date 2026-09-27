@@ -108,7 +108,7 @@
                 : `<span class="text-[9px] uppercase tracking-wider font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full self-start">${c.campiConflitto.length - resolvedFields[c.id].size} ${window.t("merge_badge_pending", "pending")}</span>`;
 
             div.innerHTML = window.sanitizeHTML(`
-                <div class="font-semibold text-sm text-stone-800 truncate" title="${escapeHTML(c.segnatura)}">${escapeHTML(c.segnatura)}</div>
+                <div class="font-semibold text-sm text-stone-800 truncate" translate="no" title="${escapeHTML(c.segnatura)}">${escapeHTML(c.segnatura)}</div>
                 ${badgeHtml}
             `);
             container.appendChild(div);
@@ -128,7 +128,7 @@
         const headerDiv = document.createElement('div');
         headerDiv.className = 'mb-4 pb-2 border-b border-stone-200';
         headerDiv.innerHTML = window.sanitizeHTML(`
-            <h4 class="text-lg font-serif text-stone-800 mb-1">${escapeHTML(c.segnatura)}</h4>
+            <h4 class="text-lg font-serif text-stone-800 mb-1" translate="no">${escapeHTML(c.segnatura)}</h4>
             <p class="text-xs text-stone-500">${window.t("merge_select_version_desc", "Select the correct version for each field modified by both users.")}</p>
         `);
         container.appendChild(headerDiv);

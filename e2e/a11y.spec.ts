@@ -305,6 +305,52 @@ test.describe('Accessibilità e scala z-index', () => {
     }
   });
 
+  test('5.11 — le segnature sono escluse dalla traduzione automatica (translate="no")', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    await seedItems(page, 3);
+    await page.evaluate(() => (window as any).renderMain());
+
+    // Un traduttore del browser riscriverebbe "Seed-001" o "Reg. 12 c. 4v" come testo
+    // qualunque. Ogni nodo di testo che È una segnatura deve stare sotto un translate="no";
+    // si misura sul DOM reale perché la sidebar passa da DOMPurify, che potrebbe toglierlo.
+    const scoperte = () => page.evaluate(() => {
+      const out: string[] = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) {
+        const n = w.currentNode;
+        const el = n.parentElement!;
+        if (!/Seed-\d{3}/.test(n.textContent || '') || !el.getClientRects().length) continue;
+        if (!el.closest('[translate="no"]')) out.push(el.tagName.toLowerCase() + '.' + Array.from(el.classList).slice(0, 3).join('.') + ' «' + n.textContent!.trim().slice(0, 30) + '»');
+      }
+      return out;
+    });
+
+    await expect(page.locator('.card-title', { hasText: 'Seed-000' })).toBeVisible();
+    const problemi = (await scoperte()).map(p => 'griglia · ' + p);
+    await page.evaluate(() => (window as any).cambiaVistaLista('tabella'));
+    await expect(page.locator('td.cella-segnatura', { hasText: 'Seed-000' })).toBeVisible();
+    problemi.push(...(await scoperte()).map(p => 'tabella · ' + p));
+    expect(problemi).toEqual([]);
+  });
+
+  test('5.12 — WCAG 1.4.10: un nome di cartella lungo non fa scorrere la vista in orizzontale', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    // Senza spazi: è il caso in cui un figlio flex senza min-width:0 non si restringe più.
+    const cartella = 'Fondo' + '_Notarile_Antecosimiano'.repeat(4);
+    await createFolder(page, cartella);
+    await seedItems(page, 2, { cartella });
+    await page.evaluate((c) => { (window as any).cartellaAttuale = c; (window as any).renderMain(); }, cartella);
+    await expect(page.locator('#titolo-cartella-attuale')).toContainText('Antecosimiano');
+
+    const scorre = () => page.evaluate(() => {
+      const m = document.querySelector('main')!;
+      return m.scrollWidth - m.clientWidth;
+    });
+    expect(await scorre(), 'griglia: <main> più largo del suo spazio').toBeLessThanOrEqual(1);
+    await page.evaluate(() => (window as any).cambiaVistaLista('tabella'));
+    expect(await scorre(), 'tabella: <main> più largo del suo spazio').toBeLessThanOrEqual(1);
+  });
+
   test('5.3 — il focus entra nel modale e torna al trigger alla chiusura', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
 

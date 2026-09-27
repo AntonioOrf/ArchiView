@@ -190,6 +190,7 @@ function _apRigaCollegamento(voce) {
     const seg = document.createElement('span');
     seg.className = 'truncate';
     seg.textContent = voce.scheda.segnatura || _apT('no_signature', 'Senza segnatura');
+    seg.translate = false;
     btn.appendChild(seg);
 
     // Cartella e tipo: due schede collegate hanno spesso segnature vicine, e senza il
@@ -209,6 +210,7 @@ window.disegnaCollegamenti = function() {
 
     const m = (appData.manoscritti || []).find(x => String(x.id) === _apSchedaCollegamenti);
     if (titolo) titolo.textContent = m ? (m.segnatura || _apT('no_signature', 'Senza segnatura')) : '';
+    if (titolo) titolo.translate = false;
 
     const risolte = window.relazioniRisolte(_apSchedaCollegamenti);
     box.innerHTML = '';
@@ -279,6 +281,7 @@ window.renderBacklinkForm = function() {
         const seg = document.createElement('span');
         seg.className = 'truncate';
         seg.textContent = voce.scheda.segnatura || _apT('no_signature', 'Senza segnatura');
+        seg.translate = false;
         btn.append(tipo, seg);
         box.appendChild(btn);
     }
@@ -314,6 +317,7 @@ window.renderRelazioniForm = function() {
         // Una scheda che non c'è NON si cancella dal dato: su un archivio condiviso può
         // esistere sulla copia di un collega e non ancora sulla nostra.
         seg.textContent = altra ? (altra.segnatura || _apT('no_signature', 'Senza segnatura')) : _apT('link_missing', 'scheda non presente in questa copia');
+        seg.translate = false;
         if (!altra) seg.classList.add('italic', 'text-stone-400');
         riga.appendChild(seg);
 

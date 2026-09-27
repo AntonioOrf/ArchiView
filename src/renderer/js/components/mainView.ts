@@ -755,7 +755,7 @@ function renderTabellaSchede(paginated) {
         }).join('');
 
         tr.innerHTML = `
-            <td class="cella-segnatura">${hasSelection ? (isSelected ? '● ' : '○ ') : ''}${escapeHTML(m.segnatura || '')}</td>
+            <td class="cella-segnatura" translate="no">${hasSelection ? (isSelected ? '● ' : '○ ') : ''}${escapeHTML(m.segnatura || '')}</td>
             ${celleCampi}
             <td>${tags.map(t => window.chipTagHTML(t)).join(' ')}</td>
             <td>${allegati.length || ''}</td>
@@ -1243,7 +1243,7 @@ function renderMain(resetPage = true) {
                 ${checkboxHTML}
                 <div class="px-1 ${hasSelection ? 'pl-7' : ''}">
                     <div class="flex justify-between items-start gap-2 mb-2">
-                        <h3 class="card-title mb-0" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
+                        <h3 class="card-title mb-0" translate="no" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
                         <div class="flex items-center gap-1.5 shrink-0 mt-0">
                             ${collegamentiHTML}
                             ${authorBadgeHTML}
@@ -1422,7 +1422,7 @@ function renderSearchSuggestions() {
         div.className = "p-2 border-b border-stone-200 hover:bg-amber-50 cursor-pointer transition-colors";
         div.onclick = () => window.rivelaRecordNellaGriglia(match.item.id);
         div.innerHTML = `
-            <div class="text-xs font-bold text-stone-800 truncate mb-1">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
+            <div class="text-xs font-bold text-stone-800 truncate mb-1" translate="no">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
             <div class="text-[10px] text-stone-600 leading-tight">
                 <span class="font-semibold text-amber-700 capitalize">${escapeHTML(match.key)}:</span> ${match.snippet}
             </div>

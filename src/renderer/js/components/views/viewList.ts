@@ -10,7 +10,7 @@
                         <nav id="breadcrumb-cartella" class="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 flex-wrap mb-1 empty:hidden" aria-label="Percorso cartella"></nav>
                         <h1 class="text-2xl font-bold text-amber-800 flex items-center gap-2">
                             <i id="icona-vista-corrente" data-lucide="folder-open" class="w-6 h-6"></i>
-                            <span id="titolo-cartella-attuale"></span>
+                            <span id="titolo-cartella-attuale" translate="no"></span>
                         </h1>
                         <div class="flex items-center gap-3 mt-1">
                             <span id="counter-results" class="text-sm text-stone-500 font-medium">Caricamento…</span>

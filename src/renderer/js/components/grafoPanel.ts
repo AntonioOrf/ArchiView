@@ -466,6 +466,7 @@ function _grAggiornaDettaglio() {
     const titolo = document.createElement('strong');
     titolo.className = 'block truncate';
     titolo.textContent = m.segnatura || _grT('no_signature', 'Senza segnatura');
+    titolo.translate = false;
     box.appendChild(titolo);
 
     const risolte = window.relazioniRisolte(id);
@@ -491,6 +492,7 @@ function _grAggiornaDettaglio() {
             const s = document.createElement('span');
             s.className = 'truncate';
             s.textContent = v.scheda.segnatura || _grT('no_signature', 'Senza segnatura');
+            s.translate = false;
             btn.append(t, s);
             box.appendChild(btn);
         }

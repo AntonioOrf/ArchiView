@@ -76,7 +76,7 @@
 
             div.innerHTML = window.sanitizeHTML(`
                 <div class="flex-1">
-                    <div class="font-bold text-stone-800 text-sm truncate" title="${escapeHTML(card.segnatura)}">${escapeHTML(card.segnatura)}</div>
+                    <div class="font-bold text-stone-800 text-sm truncate" translate="no" title="${escapeHTML(card.segnatura)}">${escapeHTML(card.segnatura)}</div>
                     <div class="text-xs text-stone-500 mt-0.5">ID: ${card.id.substring(0, 8)}...</div>
                 </div>
                 <div class="flex items-center gap-4 shrink-0">

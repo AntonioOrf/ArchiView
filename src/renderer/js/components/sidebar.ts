@@ -278,12 +278,12 @@ function renderSidebar() {
             fileRow.title = (m.segnatura || m.titolo || '') + ' — ' + secondaria;
             fileRow.innerHTML = window.sanitizeHTML(
                 `${icona}<span class="flex flex-col min-w-0 flex-1 leading-tight">` +
-                `<span class="truncate">${titoloFile}</span>` +
+                `<span class="truncate" translate="no">${titoloFile}</span>` +
                 `<span class="truncate text-[10px] opacity-70 sidebar-file-sub">${escapeHTML(secondaria)}</span>` +
                 `</span>`
             );
         } else {
-            fileRow.innerHTML = window.sanitizeHTML(`${icona}<span class="truncate">${titoloFile}</span>`);
+            fileRow.innerHTML = window.sanitizeHTML(`${icona}<span class="truncate" translate="no">${titoloFile}</span>`);
         }
         return fileRow;
     }
@@ -826,6 +826,7 @@ window.renderSourceControl = function() {
         const titleSpan = document.createElement('span');
         titleSpan.className = "truncate text-stone-700 dark:text-stone-300 group-hover:text-amber-700 transition-colors";
         titleSpan.textContent = m.titolo || m.segnatura || 'Senza Titolo';
+        titleSpan.translate = false;
         
         const titleRowContainer = document.createElement('div');
         titleRowContainer.className = "flex flex-col";
