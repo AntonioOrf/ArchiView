@@ -94,6 +94,36 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     expect(dopo).toBe(valori.length);
   });
 
+  test('3.3 — eliminare un vocabolario o un suo valore si annulla dal messaggio', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
+    await legaCampo(page, 'supporto', 'supporto');
+    const stato = () => page.evaluate(() => {
+      const tipo = appData.tipiDocumento.find((t: any) => t.id === 'imbreviature');
+      return {
+        valori: (window as any).Model.valoriVocabolario(appData, 'supporto'),
+        legame: tipo.campiDef.supporto.vocabolario || null,
+        opzioni: tipo.campiDef.supporto.opzioni || null,
+      };
+    });
+    const prima = await stato();
+    expect(prima.legame).toBe('supporto');
+    const annulla = page.locator('#toast-container button', { hasText: /annulla/i }).last();
+
+    // Un valore: tolto dall'elenco, poi rimesso.
+    await page.evaluate(() => (window as any).eliminaValoreVocabolario('supporto', 'pergamena'));
+    expect((await stato()).valori).not.toContain('pergamena');
+    await annulla.click();
+    await expect.poll(async () => (await stato()).valori).toEqual(prima.valori);
+
+    // L'intero vocabolario: il campo diventa un elenco proprio; annullando torna legato.
+    await page.evaluate(() => (window as any).eliminaVocabolarioArchivio('supporto'));
+    const dopo = await stato();
+    expect(dopo.legame).toBeNull();
+    expect(dopo.opzioni).toEqual(prima.valori);
+    await annulla.click();
+    await expect.poll(stato).toEqual(prima);
+  });
+
   test('3.3 — rinominare un valore lo aggiorna in tutte le schede legate', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     await legaCampo(page, 'supporto', 'supporto');

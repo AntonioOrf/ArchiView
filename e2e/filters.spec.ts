@@ -141,6 +141,25 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await expect.poll(() => segnature(page)).toEqual(['SENZA']);
   });
 
+  test('filtri che escludono tutto: lo stato vuoto non dice "cartella vuota"', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
+    await seed(page, [{ segnatura: 'SENZA-1' }, { segnatura: 'SENZA-2' }]);
+    await expect.poll(() => segnature(page)).toEqual(['SENZA-1', 'SENZA-2']);
+
+    // Nessuna scheda ha allegati: il filtro le esclude tutte, ma la cartella è piena.
+    await page.locator('#btn-filtri').click();
+    await page.locator('#filtro-allegati').selectOption('si');
+    const testo = page.locator('#empty-state-text');
+    await expect(testo).toBeVisible();
+    await expect(testo).toHaveAttribute('data-i18n', 'no_filter_match');
+    await expect(testo).not.toContainText('vuota');
+
+    // Tolto il filtro, le schede tornano e lo stato vuoto sparisce.
+    await page.locator('#filtro-allegati').selectOption('');
+    await expect.poll(() => segnature(page)).toEqual(['SENZA-1', 'SENZA-2']);
+    await expect(testo).toBeHidden();
+  });
+
   test('filtro "con trascrizione": il markup vuoto non conta come trascritto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
     await seed(page, [
@@ -328,6 +347,27 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
 
     await expect.poll(() => segnature(page)).toEqual(['BERSAGLIO']);
     expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('Notarile');
+  });
+
+  test('eliminare una ricerca salvata si annulla dal messaggio', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
+    await seed(page, [{ segnatura: 'CON', allegati: [{ nome: 'a.jpg', tipo: 'image/jpeg' }] }]);
+    await page.locator('#btn-filtri').click();
+    for (const nome of ['Prima', 'Seconda']) {
+      await page.locator('#filtro-allegati').selectOption('si');
+      await page.locator('#input-nome-ricerca').fill(nome);
+      await page.locator('#btn-salva-ricerca').click();
+    }
+    const nomi = () => page.evaluate(() => ((window as any).ricercheSalvate || []).map((r: any) => r.nome));
+    await expect.poll(async () => (await nomi()).length).toBe(2);
+    const ordine = await nomi();
+
+    // Si elimina la PRIMA dell'elenco: l'annullo deve rimetterla lì, non in coda.
+    const id = await page.evaluate(() => (window as any).ricercheSalvate[0].id);
+    await page.evaluate((id) => (window as any).eliminaRicercaSalvata(id), id);
+    await expect.poll(nomi).toEqual([ordine[1]]);
+    await page.locator('#toast-container button', { hasText: /annulla/i }).last().click();
+    await expect.poll(nomi).toEqual(ordine);
   });
 
   test('le ricerche salvate e i filtri sopravvivono al riavvio', async ({ page, electronApp, userDataDir }) => {

@@ -167,9 +167,24 @@ window.applicaRicercaSalvata = function(id) {
 };
 
 window.eliminaRicercaSalvata = function(id) {
-    window.ricercheSalvate = (window.ricercheSalvate || []).filter(r => r.id !== id);
+    const elenco = window.ricercheSalvate || [];
+    const posizione = elenco.findIndex(r => r.id === id);
+    if (posizione < 0) return;
+    const tolta = elenco[posizione];
+    window.ricercheSalvate = elenco.filter(r => r.id !== id);
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
     if (_pannello) _riempiPannello();
+    // Un clic e la ricerca (nome + filtri composti a mano) spariva senza ritorno.
+    if (typeof mostraMessaggio === 'function') {
+        mostraMessaggio(window.t('msg_saved_search_deleted', 'Ricerca salvata eliminata.'), 'info', () => {
+            const ora = window.ricercheSalvate || [];
+            if (ora.some(r => r.id === tolta.id)) return;
+            ora.splice(Math.min(posizione, ora.length), 0, tolta);
+            window.ricercheSalvate = ora;
+            if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
+            if (_pannello) _riempiPannello();
+        });
+    }
 };
 
 // --- Pannello ----------------------------------------------------------------

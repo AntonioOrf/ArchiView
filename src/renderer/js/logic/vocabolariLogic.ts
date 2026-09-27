@@ -51,7 +51,14 @@ async function _vcApplica(descrizione, messaggio, schedeToccate, foto) {
         }
         appData.vocabolari = JSON.parse(JSON.stringify(foto.vocabolari));
         appData.authority = JSON.parse(JSON.stringify(foto.authority));
+        // Solo i campi fotografati, non tutto tipiDocumento: un modello modificato nel
+        // frattempo per altre ragioni non torna indietro.
+        for (const c of foto.campi || []) {
+            const tipo = (appData.tipiDocumento || []).find(x => x && String(x.id) === c.tipo);
+            if (tipo && tipo.campiDef && tipo.campiDef[c.campo]) tipo.campiDef[c.campo] = JSON.parse(JSON.stringify(c.def));
+        }
         await window.Store.commit();
+        if (typeof window.disegnaVocabolari === 'function') window.disegnaVocabolari();
     };
 
     const testo = String(messaggio).replace('{var0}', String(schedeToccate));
@@ -114,21 +121,36 @@ window.rinominaValoreVocabolario = async function(id, da, a) {
 };
 
 window.eliminaValoreVocabolario = async function(id, valore) {
+    // Nessuna scheda cambia: si fotografa solo l'elenco, per l'annullo.
+    const foto = _vcFotografia([]);
     if (!window.Model.eliminaValoreVocabolario(appData, id, valore)) return false;
-    await window.Store.commit();
     // Le schede che portavano quel valore lo conservano: dirlo evita la domanda "l'ho perso?".
-    if (typeof mostraMessaggio === 'function') {
-        mostraMessaggio(_vcT('msg_vocab_value_removed', 'Valore tolto dall\'elenco. Le schede che lo contengono lo conservano.'), 'info');
-    }
+    await _vcApplica(
+        _vcT('undo_vocab_value_delete', 'Eliminazione di un valore'),
+        _vcT('msg_vocab_value_removed', 'Valore tolto dall\'elenco. Le schede che lo contengono lo conservano.'),
+        0,
+        foto
+    );
     return true;
 };
 
 window.eliminaVocabolarioArchivio = async function(id) {
+    // Un clic cancellava un elenco curato, magari di centinaia di voci, senza conferma né
+    // annullo. L'eliminazione converte anche i campi che lo usavano in elenchi propri:
+    // vanno fotografati PRIMA, per riagganciarli al vocabolario se si annulla.
+    const foto: any = _vcFotografia([]);
+    foto.campi = window.Model.campiDelVocabolario(appData, id).map(b => {
+        const tipo = (appData.tipiDocumento || []).find(x => x && String(x.id) === b.tipo);
+        const def = tipo && tipo.campiDef && tipo.campiDef[b.campo];
+        return def ? { tipo: b.tipo, campo: b.campo, def: JSON.parse(JSON.stringify(def)) } : null;
+    }).filter(Boolean);
     if (!window.Model.eliminaVocabolario(appData, id)) return false;
-    await window.Store.commit();
-    if (typeof mostraMessaggio === 'function') {
-        mostraMessaggio(_vcT('msg_vocab_deleted', 'Vocabolario eliminato. I campi che lo usavano conservano i valori come elenco proprio.'), 'info');
-    }
+    await _vcApplica(
+        _vcT('undo_vocab_delete', 'Eliminazione di un vocabolario'),
+        _vcT('msg_vocab_deleted', 'Vocabolario eliminato. I campi che lo usavano conservano i valori come elenco proprio.'),
+        0,
+        foto
+    );
     return true;
 };
 

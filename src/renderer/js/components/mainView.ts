@@ -1047,15 +1047,21 @@ function renderMain(resetPage = true) {
         }
         document.getElementById('empty-state').classList.remove('hidden');
 
-        // Messaggio coerente con il motivo reale dello zero risultati: con ricerca o tag
-        // attivi la cartella può essere piena, e "La cartella è vuota" è fuorviante.
+        // Messaggio coerente con il motivo reale dello zero risultati: con ricerca, tag o
+        // filtri avanzati attivi la cartella può essere piena, e "La cartella è vuota" è
+        // fuorviante. I filtri avanzati non rendono la ricerca globale (restringono la
+        // cartella corrente), quindi vanno contati a parte.
         const emptyText = document.getElementById('empty-state-text');
         if (emptyText) {
-            const key = isGlobalSearch ? 'no_search_match' : 'folder_empty';
+            const filtriAttivi = window.contaFiltriAvanzati(window.filtriAvanzati || {}) > 0;
+            const key = isGlobalSearch ? 'no_search_match' : filtriAttivi ? 'no_filter_match' : 'folder_empty';
+            const predefinito = {
+                no_search_match: 'Nessun documento corrisponde ai filtri attivi.',
+                no_filter_match: 'Nessuna scheda di questa cartella corrisponde ai filtri attivi.',
+                folder_empty: 'La cartella è vuota.',
+            }[key];
             emptyText.setAttribute('data-i18n', key);
-            emptyText.textContent = isGlobalSearch
-                ? window.t('no_search_match', 'Nessun documento corrisponde ai filtri attivi.')
-                : window.t('folder_empty', 'La cartella è vuota.');
+            emptyText.textContent = window.t(key, predefinito);
         }
 
     } else {
@@ -1384,7 +1390,7 @@ function renderSearchSuggestions() {
     container.innerHTML = '';
 
     if (tokens.length === 0) {
-        container.innerHTML = '<div class="p-4 text-xs text-stone-400 italic text-center">Digita per vedere i risultati...</div>';
+        container.innerHTML = '<div class="p-4 text-xs text-stone-400 italic text-center">' + escapeHTML(window.t('search_type_to_see', 'Digita per vedere i risultati…')) + '</div>';
         return;
     }
 
