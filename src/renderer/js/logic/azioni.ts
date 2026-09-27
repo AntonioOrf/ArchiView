@@ -4,8 +4,15 @@
 //     data-on-click="fn" data-args-click="[&quot;a&quot;,1]"
 // e nei template la stessa cosa si scrive ${window.azione('click', 'fn', a, 1)}.
 // Il nome si cerca prima fra le AZIONI qui sotto (la logica che prima stava scritta
-// nell'attributo), poi su window. Gli argomenti sono JSON: un valore arrivato da un vault
-// condiviso resta un dato e non può diventare codice (era il rischio che jsArg tamponava).
+// nell'attributo), poi su window, ma solo se compare in AZIONI_CONSENTITE
+// (logic/azioniConsentite.ts, generato dai template). Gli argomenti sono JSON: un valore
+// arrivato da un vault condiviso resta un dato e non può diventare codice.
+//
+// ⚠️ Un attributo data-on-* può arrivare nel DOM anche da un DATO: HTML di una trascrizione
+// condivisa, che DOMPurify di suo lascerebbe passare (data-* è ammesso). Tre difese, perché
+// ognuna da sola ha un buco: sanitizeHTML toglie data-on-*/data-args-* (utils.ts); qui un nome
+// fuori registro non si esegue; e un elemento dentro un contenitore di contenuto utente
+// (contenteditable, [data-contenuto-utente]) non aggancia azioni.
 // Segnaposto negli argomenti: ARG.elemento (this), ARG.evento (event), ARG.valore
 // (this.value), ARG.spunta (this.checked).
 //
@@ -26,11 +33,25 @@ window.ARG = Object.freeze({
     spunta: { $: 'checked' },
 });
 
+/** Chiamata interna, con un nome scritto qui nel codice: non passa dal registro. */
 const _chiama = (nome: string, ...args: any[]) => {
     const fn = (window as any)[nome];
     if (typeof fn === 'function') return fn(...args);
     console.error(`Azione "${nome}": la funzione non esiste.`);
 };
+
+/** Chiamata con un nome letto da un attributo: solo funzioni del registro. */
+const _consentita = (nome: unknown): nome is string => {
+    if (typeof nome === 'string' && AZIONI_CONSENTITE.has(nome)) return true;
+    console.error(`Azione "${String(nome)}" non consentita: non compare in azioniConsentite.ts.`);
+    return false;
+};
+const _chiamaConsentita = (nome: unknown, ...args: any[]) => {
+    if (_consentita(nome)) return _chiama(nome, ...args);
+};
+
+/** Unici id che cliccaElemento può attivare: un click "per id" scavalcherebbe il registro. */
+const ELEMENTI_CLICCABILI: ReadonlySet<string> = new Set(['trasc-file-input']);
 
 /** Azioni con logica propria: ricevono (elemento, evento, ...argomenti). */
 const AZIONI: Record<string, (el: HTMLElement, e: Event, ...args: any[]) => any> = {
@@ -38,20 +59,22 @@ const AZIONI: Record<string, (el: HTMLElement, e: Event, ...args: any[]) => any>
     suInvio(_el, e, nome, previeni) {
         if ((e as KeyboardEvent).key !== 'Enter') return;
         if (previeni) e.preventDefault();
-        _chiama(nome);
+        _chiamaConsentita(nome);
     },
     // Più passi in fila (chiudi un modale, apri l'altro); un passo assente si salta.
     inSequenza(_el, _e, ...nomi) {
-        for (const nome of nomi) if (typeof (window as any)[nome] === 'function') (window as any)[nome]();
+        for (const nome of nomi) {
+            if (_consentita(nome) && typeof (window as any)[nome] === 'function') (window as any)[nome]();
+        }
     },
     // Chiamata facoltativa: la funzione può non essere ancora caricata.
     seEsiste(_el, _e, nome, ...args) {
-        if (typeof (window as any)[nome] === 'function') return (window as any)[nome](...args);
+        if (_consentita(nome) && typeof (window as any)[nome] === 'function') return (window as any)[nome](...args);
     },
     // Pulsante dentro una scheda cliccabile: agisce senza aprire la scheda.
     fermaEChiama(_el, e, nome, ...args) {
         e.stopPropagation();
-        return _chiama(nome, ...args);
+        return _chiamaConsentita(nome, ...args);
     },
     linkEsterno(_el, e, url) {
         e.stopPropagation();
@@ -67,6 +90,10 @@ const AZIONI: Record<string, (el: HTMLElement, e: Event, ...args: any[]) => any>
         if (typeof window.updateToolbarState === 'function') window.updateToolbarState();
     },
     cliccaElemento(_el, _e, id) {
+        if (!ELEMENTI_CLICCABILI.has(id)) {
+            console.error(`cliccaElemento: id "${String(id)}" non ammesso.`);
+            return;
+        }
         const el = document.getElementById(id);
         if (el) el.click();
     },
@@ -115,7 +142,7 @@ function _eseguiAzione(el: HTMLElement, tipo: string, e: Event) {
     const valori = (Array.isArray(args) ? args : [args]).map(a => _valoreArg(a, el, e));
     try {
         if (Object.prototype.hasOwnProperty.call(AZIONI, nome)) return AZIONI[nome](el, e, ...valori);
-        return _chiama(nome, ...valori);
+        return _chiamaConsentita(nome, ...valori);
     } catch (err) {
         console.error(`Azione "${nome}" (${tipo}) fallita:`, err);
     }
@@ -125,6 +152,9 @@ for (const tipo of EVENTI_AZIONE) {
     document.addEventListener(tipo, (e) => {
         for (const nodo of e.composedPath()) {
             if (!(nodo instanceof HTMLElement) || !nodo.hasAttribute('data-on-' + tipo)) continue;
+            // Dentro l'editor della trascrizione (o un altro contenitore di contenuto utente)
+            // un data-on-* è un dato, non un comando dell'interfaccia.
+            if (nodo.isContentEditable || nodo.closest('[data-contenuto-utente]')) continue;
             let tipi = _azioniAgganciate.get(nodo);
             if (!tipi) { tipi = new Set(); _azioniAgganciate.set(nodo, tipi); }
             if (tipi.has(tipo)) continue;

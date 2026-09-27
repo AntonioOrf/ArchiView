@@ -22,8 +22,21 @@ window.localeAttuale = function() {
     return window.linguaAttuale === 'en' ? 'en-US' : 'it-IT';
 };
 
+// DOMPurify ammette gli attributi data-*, e fra questi ci sono i data-on-*/data-args-* che
+// logic/azioni.ts trasforma in chiamate: da un HTML condiviso (una trascrizione) diventerebbero
+// comandi. Vanno tolti come prima si toglievano gli onclick, che DOMPurify scarta da sé: nessun
+// template con azioni passa da sanitizeHTML, quindi nessun pulsante dell'interfaccia ne perde.
+const ATTR_AZIONE = /^data-(on|args)-/i;
+let _hookAzioniRegistrato = false;
+
 window.sanitizeHTML = function(html) {
     if (typeof DOMPurify !== 'undefined') {
+        if (!_hookAzioniRegistrato) {
+            DOMPurify.addHook('uponSanitizeAttribute', (_nodo, dati) => {
+                if (ATTR_AZIONE.test(dati.attrName)) dati.keepAttr = false;
+            });
+            _hookAzioniRegistrato = true;
+        }
         return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|file|archiview|local-asset|iiif-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });
     }
     return window.escapeHTML(html); // Fallback to escape if DOMPurify is not loaded

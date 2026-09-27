@@ -115,4 +115,75 @@ test.describe('Security Regression Tests', () => {
     expect(xssFired).toBe(false);
   });
 
+  // S2 (REVIEW-SECURITY.md): un data-on-* in un HTML condiviso non deve diventare un comando.
+  test('una trascrizione con data-on-* non chiama funzioni (sanitize, registro, editor)', async ({ page, userDataDir }) => {
+    const { createLocalWorkspace, seedItems } = await import('./helpers');
+    const path = await import('path');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Azioni');
+    const [id] = await seedItems(page, 1);
+
+    // Spie al posto di una funzione distruttiva (fuori registro) e di una del registro.
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__chiamate = [];
+      w.svuotaCestino = () => w.__chiamate.push('svuotaCestino');
+      w.apriCestino = () => w.__chiamate.push('apriCestino');
+    });
+
+    // 1. Sanitize: il payload salvato nella scheda arriva nell'editor senza attributi d'azione.
+    await page.evaluate(async (recId) => {
+      // @ts-ignore -- `appData` è una `let` globale (script classico)
+      const m = appData.manoscritti.find((x: any) => x.id === recId);
+      m.trascrizione = '<p id="ostile" data-on-mousedown="svuotaCestino" data-on-click="apriCestino" data-args-click="[1]" '
+        + 'style="position:fixed;inset:0;z-index:99999;opacity:0">x</p><p>Incipit</p>';
+      await (window as any).Store.commit();
+      (window as any).apriTrascrizione(recId);
+    }, id);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    await expect(page.locator('#trascrizione-editor')).toContainText('Incipit');
+    const residui = await page.locator('#trascrizione-editor [data-on-mousedown], #trascrizione-editor [data-on-click], #trascrizione-editor [data-args-click]').count();
+    expect(residui).toBe(0);
+    await page.mouse.click(300, 300);
+
+    // 2. Editor: anche se un attributo arrivasse nel contenuto per un'altra strada, dentro un
+    //    contenteditable non è un comando, nemmeno con un nome del registro.
+    await page.evaluate(() => {
+      const p = document.createElement('p');
+      p.id = 'iniettato-editor';
+      p.textContent = 'y';
+      p.setAttribute('data-on-click', 'apriCestino');
+      document.getElementById('trascrizione-editor')!.appendChild(p);
+    });
+    await page.locator('#iniettato-editor').dispatchEvent('click');
+
+    // 3. Registro: fuori dall'editor un nome non registrato non si esegue, né diretto né
+    //    passando da seEsiste / inSequenza / cliccaElemento.
+    await page.evaluate(() => {
+      const box = document.createElement('div');
+      box.id = 'iniettato-fuori';
+      box.innerHTML = [
+        '<button id="b1" data-on-click="svuotaCestino">1</button>',
+        '<button id="b2" data-on-click="seEsiste" data-args-click="[&quot;svuotaCestino&quot;]">2</button>',
+        '<button id="b3" data-on-click="inSequenza" data-args-click="[&quot;svuotaCestino&quot;]">3</button>',
+        '<button id="b4" data-on-click="fermaEChiama" data-args-click="[&quot;fetch&quot;,&quot;https://example.invalid&quot;]">4</button>',
+        '<button id="b5" data-on-click="cliccaElemento" data-args-click="[&quot;b1&quot;]">5</button>',
+      ].join('');
+      document.body.appendChild(box);
+    });
+    for (const b of ['b1', 'b2', 'b3', 'b4', 'b5']) await page.locator('#' + b).dispatchEvent('click');
+
+    expect(await page.evaluate(() => (window as any).__chiamate)).toEqual([]);
+
+    // Controprova: il registro non ha spento le azioni legittime.
+    await page.evaluate(() => {
+      const b = document.createElement('button');
+      b.id = 'legittimo';
+      b.textContent = 'ok';
+      b.setAttribute('data-on-click', 'apriCestino');
+      document.getElementById('iniettato-fuori')!.appendChild(b);
+    });
+    await page.locator('#legittimo').dispatchEvent('click');
+    expect(await page.evaluate(() => (window as any).__chiamate)).toEqual(['apriCestino']);
+  });
+
 });
