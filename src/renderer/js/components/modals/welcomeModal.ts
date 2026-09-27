@@ -37,7 +37,7 @@
                     <i data-lucide="server" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_hub_shared">Crea un Hub Condiviso</span>
                 </button>
-                <button onclick="mostraJoinForm()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 border border-amber-300 hover:bg-amber-50" style="background-color: #fffbeb;">
+                <button onclick="mostraJoinForm()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 bg-amber-50 border border-amber-300 hover:bg-amber-100">
                     <i data-lucide="users" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                 </button>

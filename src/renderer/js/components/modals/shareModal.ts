@@ -35,7 +35,7 @@
                             <label for="share-hub-name" class="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1"><span data-i18n="share_local_name_label">Nome dell'archivio (lo vedranno tutti i collaboratori)</span></label>
                             <input type="text" id="share-hub-name" class="form-input w-full text-sm" data-i18n-placeholder="share_local_name_ph" placeholder="Es. Manoscritti Datini">
                         </div>
-                        <button onclick="creaHubDaShareModal()" class="btn btn-block justify-center py-3 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700">
+                        <button onclick="creaHubDaShareModal()" class="btn btn-block justify-center py-3 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800">
                             <i data-lucide="server" class="w-4 h-4 mr-2"></i> <span data-i18n="share_local_share_online">Condividi online</span>
                         </button>
                         <button onclick="uniscitiDaShareModal()" class="btn btn-secondary btn-block justify-center py-3 text-sm border-stone-300 dark:border-stone-600">
@@ -64,7 +64,7 @@
                     </ul>
                     <div class="flex gap-2.5 justify-center max-w-xs mx-auto w-full pt-2">
                         <button onclick="chiudiShareModal(); if(window.apriCloudModal) apriCloudModal();" class="btn btn-secondary flex-1 justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span data-i18n="btn_cancel">Annulla</span></button>
-                        <button onclick="confermaMigrazioneShare()" class="btn flex-1 justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span data-i18n="btn_continue">Continua</span></button>
+                        <button onclick="confermaMigrazioneShare()" class="btn flex-1 justify-center py-2.5 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800"><span data-i18n="btn_continue">Continua</span></button>
                     </div>
                 </div>
 
@@ -89,7 +89,7 @@
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_sync_desc">Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.</span></p>
                         <div class="flex gap-2.5">
                             <button onclick="riceviModificheHub()" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
-                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
+                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
                         </div>
                     </div>
                     <div id="share-member-attachments-box"></div>
@@ -132,7 +132,7 @@
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_sync_desc">Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.</span></p>
                         <div class="flex gap-2.5">
                             <button onclick="riceviModificheHub()" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
-                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
+                            <button onclick="inviaModificheHub()" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
                         </div>
                     </div>
 
@@ -142,11 +142,11 @@
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_invite_desc">Crea un link d'invito personale. Ogni link crea un collaboratore che puoi revocare in qualsiasi momento.</span></p>
                         <div class="flex gap-2">
                             <input type="text" id="share-invite-label" class="form-input flex-1 text-sm" data-i18n-placeholder="share_invite_label_ph" placeholder="Nome del collaboratore (es. Maria)" onkeydown="if(event.key==='Enter') generaInvitoShare()">
-                            <button onclick="generaInvitoShare()" class="btn justify-center px-4 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 shrink-0"><span data-i18n="share_invite_generate">Crea link di invito</span></button>
+                            <button onclick="generaInvitoShare()" class="btn justify-center px-4 py-2 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800 shrink-0"><span data-i18n="share_invite_generate">Crea link di invito</span></button>
                         </div>
                         <div id="share-invite-linkrow" class="hidden-tab mt-2.5 flex gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50">
                             <input type="text" id="share-invite-link" readonly class="flex-1 bg-transparent text-xs font-mono text-emerald-700 dark:text-emerald-300 px-1.5 outline-none">
-                            <button onclick="copiaInvitoShare()" class="btn justify-center px-3 py-1.5 text-xs text-white bg-emerald-600 hover:bg-emerald-700 border-none shrink-0"><i data-lucide="copy" class="w-3.5 h-3.5 mr-1"></i> <span data-i18n="btn_copy">Copia</span></button>
+                            <button onclick="copiaInvitoShare()" class="btn justify-center px-3 py-1.5 text-xs text-white bg-emerald-700 hover:bg-emerald-800 border-none shrink-0"><i data-lucide="copy" class="w-3.5 h-3.5 mr-1"></i> <span data-i18n="btn_copy">Copia</span></button>
                         </div>
                         <p class="text-[11px] text-stone-400 dark:text-stone-500 mt-1.5"><span data-i18n="share_invite_hint">Chi riceve il link deve avere ArchiView installato: gli basterà cliccarlo.</span></p>
                     </div>
