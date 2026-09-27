@@ -90,6 +90,28 @@ test.describe('Import CSV (2.4)', () => {
     expect(importata.cartella).toBe('Notarile');
   });
 
+  test('il ridisegno del wizard non toglie il fuoco a chi usa la tastiera', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Imp');
+    await preparaCsv(electronApp, userDataDir, 'schede.csv',
+      'Segnatura,Archivio,Tag,Notaio\r\nASP 100,Notarile,pergamena,Rossi\r\n');
+    await page.evaluate(() => (window as any).apriImportCsv());
+
+    // Passo 1: Invio su una scelta di modello ridisegna il passo.
+    const scelta = page.locator('.import-scelta[data-valore="__nuovo__"]');
+    await scelta.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.import-scelta[data-valore="__nuovo__"]')).toBeFocused();
+
+    // Passo 2: su Windows una freccia su una tendina chiusa emette `change`, che ridisegna
+    // la mappatura; il fuoco deve restare sulla stessa colonna, non tornare al <body>.
+    await page.locator('#import-csv-continua').click();
+    await expect(page.locator('#import-csv-step-mappatura')).toBeVisible();
+    const terza = page.locator('#import-csv-map select').nth(2);
+    await terza.focus();
+    await terza.selectOption({ index: 1 });
+    await expect(page.locator('#import-csv-map select').nth(2)).toBeFocused();
+  });
+
   test('il primo passo chiede il modello e ne sa creare uno nuovo', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Imp');
     await preparaCsv(electronApp, userDataDir, 'catasto.csv', 'Segnatura,Uso\r\nASP 1,abitazione\r\n');

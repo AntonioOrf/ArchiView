@@ -559,7 +559,38 @@ function _ipNormalizzaCartella() {
     if (s.cartella && !(appData.cartelle || []).includes(s.cartella)) s.cartella = '';
 }
 
+/**
+ * Il ridisegno ricostruisce i controlli del passo: una freccia su una tendina (che su
+ * Windows emette `change` anche a tendina chiusa) o Invio su una scelta di modello
+ * riportavano il fuoco al <body>, e chi usa la tastiera ripartiva dall'inizio del modale.
+ * La chiave è il contenitore con id più vicino più la posizione fra i controlli dello
+ * stesso tipo: stabile, perché le righe della mappatura mantengono l'ordine.
+ */
+function _ipChiaveFuoco() {
+    const a = document.activeElement as HTMLElement | null;
+    const modal = document.getElementById('import-csv-modal');
+    if (!a || !modal || !modal.contains(a)) return null;
+    if (a.id) return { id: a.id };
+    const cont = a.parentElement && a.parentElement.closest('[id]');
+    if (!cont) return null;
+    return { cont: cont.id, tag: a.tagName, indice: Array.from(cont.querySelectorAll(a.tagName)).indexOf(a) };
+}
+
+function _ipRipristinaFuoco(k) {
+    // Solo se il fuoco si è davvero perso: un controllo sopravvissuto al ridisegno lo tiene.
+    if (!k || (document.activeElement && document.activeElement !== document.body)) return;
+    const cont = k.cont ? document.getElementById(k.cont) : null;
+    const el = (k.id ? document.getElementById(k.id) : cont && cont.querySelectorAll(k.tag)[k.indice]) as HTMLElement | null;
+    if (el && el.getClientRects().length) el.focus();
+}
+
 function _ipDisegna() {
+    const fuoco = _ipChiaveFuoco();
+    _ipDisegnaPasso();
+    _ipRipristinaFuoco(fuoco);
+}
+
+function _ipDisegnaPasso() {
     const s = _ipStato;
     if (!s) return;
     _ipNormalizzaCartella();
