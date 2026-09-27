@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Campi base su cui viene eseguita la ricerca testuale.
 // Non è più la whitelist completa: getSearchFields() vi somma a runtime i campi dei tipi
 // definiti dall'utente, che altrimenti non sarebbero cercabili nella griglia pur comparendo
@@ -606,7 +605,7 @@ window.colonneTabellaCorrenti = function() {
 window.toggleColonnaTabella = function(campo) {
     const paginati = window.__ultimiPaginati || [];
     const disponibili = campiTabellaDisponibili(paginati);
-    const chiave = chiaveColonne(paginati);
+    const chiave = chiaveColonne(paginati) as string;
     const attuali = colonneVisibili(chiave, disponibili);
     // Le colonne restano nell'ordine di `disponibili`: attivarne una non la manda in fondo.
     const nuove = attuali.includes(campo)
@@ -626,7 +625,7 @@ window.vociColonneTabella = function() {
     const paginati = window.__ultimiPaginati || [];
     const disponibili = campiTabellaDisponibili(paginati);
     if (disponibili.length === 0) return [];
-    const chiave = chiaveColonne(paginati);
+    const chiave = chiaveColonne(paginati) as string;
     const visibili = colonneVisibili(chiave, disponibili);
 
     return disponibili.map(campo => {
@@ -727,7 +726,7 @@ function renderTabellaSchede(paginated) {
         tr.id = 'card-' + m.id;
 
         tr.onclick = (e) => {
-            if (e.target.closest('button') || e.target.closest('a') || e.target.tagName.toLowerCase() === 'input') return;
+            if ((e.target as Element).closest('button') || (e.target as Element).closest('a') || (e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
             if (typeof window.selectItem === 'function') window.selectItem(m.id, e);
         };
         tr.ondblclick = () => { if (typeof editItem === 'function') editItem(m.id); };
@@ -797,7 +796,7 @@ window.nuovaSchedaDelTipo = function(tipoId) {
 
 window.apriMenuNuovaScheda = function(ancora) {
     const tipi = (typeof appData !== 'undefined' && appData.tipiDocumento) || [];
-    const voci = [{ heading: true, label: window.t('menu_new_record_type', 'Nuova scheda di tipo') }];
+    const voci: any[] = [{ heading: true, label: window.t('menu_new_record_type', 'Nuova scheda di tipo') }];
     for (const t of tipi) {
         const nome = window.t('model_' + t.id) !== 'model_' + t.id ? window.t('model_' + t.id) : t.nome;
         voci.push({ label: nome, icon: 'file-text', onSelect: () => window.nuovaSchedaDelTipo(t.id) });
@@ -811,7 +810,7 @@ window.apriMenuNuovaScheda = function(ancora) {
  */
 function vociMenuContesto() {
     const elimina = statoEliminaCartella();
-    const voci = [
+    const voci: any[] = [
         { label: window.t('btn_new_folder', 'Nuova cartella'), icon: 'folder-plus', onSelect: () => aggiungiCartella() },
         // Fase 2.4: l'import CSV sta con l'import ZIP e non fra gli export, perché è la
         // stessa domanda — far entrare dati — con una provenienza diversa: il foglio di
@@ -1074,8 +1073,8 @@ function renderMain(resetPage = true) {
                 paginationControls.classList.remove('hidden');
                 paginationControls.classList.add('flex');
                 document.getElementById('page-indicator').textContent = `Pagina ${window.currentPage + 1} di ${totalPages}`;
-                const btnPrev = document.getElementById('btn-prev-page');
-                const btnNext = document.getElementById('btn-next-page');
+                const btnPrev = document.getElementById('btn-prev-page') as HTMLButtonElement;
+                const btnNext = document.getElementById('btn-next-page') as HTMLButtonElement;
                 if (btnPrev) btnPrev.disabled = window.currentPage === 0;
                 if (btnNext) btnNext.disabled = window.currentPage === totalPages - 1;
             } else {
@@ -1102,7 +1101,7 @@ function renderMain(resetPage = true) {
             div.id = 'card-' + m.id;
             
             div.onclick = (e) => {
-                if (e.target.closest('button') || e.target.closest('a') || e.target.tagName.toLowerCase() === 'input') return;
+                if ((e.target as Element).closest('button') || (e.target as Element).closest('a') || (e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
                 if (typeof window.selectItem === 'function') {
                     window.selectItem(m.id, e);
                 }

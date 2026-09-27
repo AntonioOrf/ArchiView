@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 let editingTypeId = null;
 
 /**
@@ -9,9 +7,9 @@ let editingTypeId = null;
  * aprendolo per creare un modello nuovo — un blocco senza più un motivo visibile.
  */
 function sbloccaFormTipo() {
-    const inputNome = document.getElementById('custom-type-name');
+    const inputNome = document.getElementById('custom-type-name') as HTMLInputElement;
     if (inputNome) { inputNome.disabled = false; inputNome.title = ''; }
-    document.querySelectorAll('.custom-type-field').forEach(cb => { cb.disabled = false; });
+    document.querySelectorAll<HTMLInputElement>('.custom-type-field').forEach(cb => { cb.disabled = false; });
     const nota = document.getElementById('type-locked-note');
     if (nota) nota.classList.add('hidden');
 }
@@ -22,7 +20,7 @@ function apriNewTypeModal() {
     _modelloPrecedente = null;
     sbloccaFormTipo();
     document.getElementById('new-type-select').value = 'custom';
-    document.getElementById('new-type-select').disabled = false;
+    (document.getElementById('new-type-select') as HTMLSelectElement).disabled = false;
     document.getElementById('btn-salva-tipo').textContent = window.t("btn_create", "Create");
     document.querySelector('#new-type-modal .modal-title').textContent = window.t("modal_create_type", "Create Document Type");
     applicaModello();
@@ -135,7 +133,7 @@ const SIGLE_TIPO = {
 };
 
 function definizioneDaPillola(pill) {
-    const def = { id: pill.dataset.val, tipo: pill.dataset.tipo || 'text' };
+    const def: Record<string, any> = { id: pill.dataset.val, tipo: pill.dataset.tipo || 'text' };
     if (pill.dataset.obbligatorio === '1') def.obbligatorio = true;
     if (pill.dataset.unico === '1') def.unico = true;
     if (pill.dataset.opzioni) {
@@ -171,7 +169,7 @@ function scriviDefinizioneSuPillola(pill, def) {
  *                 ogni avvio, quindi togliere o riordinare una di queste pillole sarebbe una
  *                 modifica che si disfa da sola, cioè un comando che mente.
  */
-function aggiungiPill(val, label, isBase, bloccato) {
+function aggiungiPill(val, label, isBase, bloccato?) {
     const existing = Array.from(document.querySelectorAll('.custom-field-item')).map(el => el.dataset.val.toLowerCase());
     if (existing.includes(val.toLowerCase())) return;
     
@@ -260,9 +258,9 @@ function aggiungiPill(val, label, isBase, bloccato) {
         ${btnConfig}
         ${btnRimuoviHtml}
     `);
-    const btnRimuovi = pill.querySelector('.pill-rimuovi');
+    const btnRimuovi = pill.querySelector<HTMLElement>('.pill-rimuovi');
     if (btnRimuovi) btnRimuovi.onclick = () => rimuoviPillDalPulsante(btnRimuovi, val);
-    const btnCfg = pill.querySelector('.pill-config');
+    const btnCfg = pill.querySelector<HTMLElement>('.pill-config');
     if (btnCfg) btnCfg.onclick = () => window.apriEditorCampo(btnCfg);
     // WCAG 2.5.7: il trascinamento non può essere l'unico modo di ordinare i campi del
     // modello. Due pulsanti (non tasti rapidi soltanto: il criterio chiede un puntatore
@@ -298,7 +296,7 @@ function aggiungiPill(val, label, isBase, bloccato) {
 function spostaPill(pill, delta, pulsante, etichetta) {
     const list = pill.parentElement;
     if (!list) return;
-    const pills = Array.from(list.querySelectorAll('.custom-field-item'));
+    const pills = Array.from(list.querySelectorAll('.custom-field-item')) as HTMLElement[];
     const j = pills.indexOf(pill) + delta;
     if (j < 0 || j >= pills.length) return;
     list.insertBefore(pill, delta < 0 ? pills[j] : pills[j].nextSibling);
@@ -575,7 +573,7 @@ window.modificaTipoDocumento = function(id) {
     // Configura UI per modifica
     editingTypeId = id;
     document.getElementById('new-type-select').value = 'custom';
-    document.getElementById('new-type-select').disabled = true; // Impedisce di cambiare base durante modifica
+    (document.getElementById('new-type-select') as HTMLSelectElement).disabled = true; // Impedisce di cambiare base durante modifica
     document.getElementById('btn-salva-tipo').textContent = window.t("btn_save_changes", "Save Changes");
     document.querySelector('#new-type-modal .modal-title').textContent = window.t("type_modal_edit_title", "Edit Document Type");
 
@@ -587,7 +585,7 @@ window.modificaTipoDocumento = function(id) {
     sbloccaFormTipo();
     const predefinito = window.Model.modelloPredefinito(id);
     const campiBloccati = new Set(predefinito ? predefinito.campi : []);
-    const inputNome = document.getElementById('custom-type-name');
+    const inputNome = document.getElementById('custom-type-name') as HTMLInputElement;
     inputNome.disabled = !!predefinito;
     inputNome.title = predefinito ? window.t('type_name_locked', 'Il nome di un modello predefinito non si cambia: è tradotto insieme all\'applicazione.') : '';
     const nota = document.getElementById('type-locked-note');
@@ -604,7 +602,7 @@ window.modificaTipoDocumento = function(id) {
     window.Model.campiDelTipo(tipo, CONFIG_CAMPI, appData).forEach(def => {
         const campoId = def.id;
         const bloccato = campiBloccati.has(campoId);
-        const checkbox = document.querySelector(`.custom-type-field[value="${campoId}"]`);
+        const checkbox = document.querySelector<HTMLInputElement>(`.custom-type-field[value="${campoId}"]`);
         if (checkbox) {
             checkbox.checked = true;
             // La casella va disabilitata insieme alla pillola: togliendo la spunta si

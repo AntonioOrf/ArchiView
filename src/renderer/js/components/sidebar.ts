@@ -1,4 +1,3 @@
-// @ts-nocheck
 // --- SIDEBAR ---
 
 /** Il nome dell'archivio (vault) aperto: la cartella su disco, o il nome scelto su Hub. */
@@ -458,7 +457,7 @@ function renderSidebar() {
         // Click nel vuoto = esci da ogni cartella. Senza una riga radice sarebbe
         // altrimenti impossibile tornare a vedere le schede non archiviate.
         sidebarFoldersContainer.onclick = (e) => {
-            if (e.target.closest('.sidebar-row') || e.target.closest('button')) return;
+            if ((e.target as Element).closest('.sidebar-row') || (e.target as Element).closest('button')) return;
             if (window.cartellaAttuale === '') return;
             window.cartellaAttuale = '';
             window.azzeraFiltriRicerca();
@@ -469,7 +468,7 @@ function renderSidebar() {
         };
         sidebarFoldersContainer.oncontextmenu = (e) => {
             // Seleziona il click solo se non è all'interno di una sidebar-row
-            const closestRow = e.target.closest('.sidebar-row');
+            const closestRow = (e.target as Element).closest('.sidebar-row');
             if (!closestRow) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -523,7 +522,7 @@ function _applicaPreferenzaAlbero(patch) {
 }
 
 window.impostaAlberoSecondario = function(modo, campo) {
-    const patch = { modo: modo, campo: modo === 'campo' ? String(campo || '') : '' };
+    const patch: Record<string, string> = { modo: modo, campo: modo === 'campo' ? String(campo || '') : '' };
     // Spegnendo l'etichetta l'ordinamento per etichetta non avrebbe più un criterio:
     // tornerebbe a ordinare per stringa vuota, cioè a un ordine apparentemente casuale.
     if (modo === 'nessuno') patch.ordina = 'segnatura';
@@ -541,7 +540,7 @@ window.impostaOrdineAlbero = function(ordina) {
 window.apriMenuEtichettaAlbero = function(ancora) {
     const pref = window.alberoSecondario || {};
     const spunta = (attiva) => attiva ? 'check' : 'minus';
-    const voci = [
+    const voci: any[] = [
         { heading: true, label: window.t('tree_label_heading', 'Mostra sotto la segnatura') },
         {
             label: window.t('tree_label_none', 'Nessuna'),
@@ -615,12 +614,12 @@ function toggleSidebar() {
 // `tabName === null` = sidebar chiusa: nessun tab selezionato, ma il gruppo resta
 // raggiungibile con Tab perché il primo pulsante conserva tabindex 0 (roving tabindex).
 function tabSidebar() {
-    return Array.from(document.querySelectorAll('#sidebar-tablist [role="tab"]'))
+    return Array.from(document.querySelectorAll<HTMLElement>('#sidebar-tablist [role="tab"]'))
         .filter(b => b.offsetParent !== null);   // i tab cloud sono nascosti su vault locale
 }
 
 function aggiornaStatoTab(tabName) {
-    const tutti = Array.from(document.querySelectorAll('#sidebar-tablist [role="tab"]'));
+    const tutti = Array.from(document.querySelectorAll<HTMLElement>('#sidebar-tablist [role="tab"]'));
     tutti.forEach(btn => {
         const attivo = btn.dataset.tab === tabName;
         btn.classList.toggle('tab-active', attivo);
@@ -643,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tablist.addEventListener('keydown', (e) => {
         const visibili = tabSidebar();
         if (!visibili.length) return;
-        const i = visibili.indexOf(document.activeElement);
+        const i = visibili.indexOf(document.activeElement as HTMLElement);
         let prossimo = -1;
         if (e.key === 'ArrowRight') prossimo = (i + 1 + visibili.length) % visibili.length;
         else if (e.key === 'ArrowLeft') prossimo = (i - 1 + visibili.length) % visibili.length;
@@ -992,7 +991,7 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     
     const modal = document.getElementById('vault-delete-modal');
     
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
         const finishRemoval = async () => {
             const settings = await window.apiSettings.get();
             if (settings.recentWorkspaces) {
@@ -1118,7 +1117,7 @@ document.addEventListener('click', function(e) {
     const popover = document.getElementById('vault-switcher-popover');
     if (popover && !popover.classList.contains('hidden-tab')) {
         // Chiudi se clicchi fuori
-        if (!e.target.closest('#vault-switcher-popover') && !e.target.closest('.btn-ghost.w-full.justify-between')) {
+        if (!(e.target as Element).closest('#vault-switcher-popover') && !(e.target as Element).closest('.btn-ghost.w-full.justify-between')) {
             popover.classList.add('hidden-tab');
         }
     }

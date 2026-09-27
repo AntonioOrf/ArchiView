@@ -1,4 +1,3 @@
-// @ts-nocheck
 window.driveStatus = { isAuthenticated: false, user: null };
 window.autofetchIntervalId = null;
 
@@ -458,7 +457,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
     }
     const apiCloud = await window.getApiCloud();
     if (apiCloud) {
-        const btn = document.getElementById('btn-drive-sync');
+        const btn = document.getElementById('btn-drive-sync') as HTMLButtonElement;
         if (btn) btn.disabled = true;
         // Anche il gemello nel modal Cloud: senza stato di attesa lì il click sembra non fare nulla
         // e nulla impedisce di lanciare due sync sovrapposte.
@@ -772,7 +771,9 @@ window.sincronizzaGoogleDriveBackground = async function() {
     console.log("Sincronizzazione in background avviata da Pusher…");
     await window.sincronizzaGoogleDrive(true);
     // Dopo aver sincronizzato (scaricato le modifiche), forza il ricaricamento dell'interfaccia
-    if (typeof apriDatabase === 'function') {
+    // NB: window.apriDatabase non è definita da nessuna parte, quindi questo ricaricamento
+    // non avviene mai (lo era già prima; segnalato nella review del 27/09/2026).
+    if (typeof window.apriDatabase === 'function') {
         const workspacePath = await window.apiBrowser.getWorkspacePath();
         if (workspacePath) {
             window.apriDatabase(workspacePath, true);
@@ -804,7 +805,7 @@ async function inviaPingPusher() {
 }
 
 window.trasformaInCondiviso = async function() {
-    const btn = document.getElementById('btn-trasforma-condiviso');
+    const btn = document.getElementById('btn-trasforma-condiviso') as HTMLButtonElement;
     if(btn) btn.disabled = true;
     
     if (typeof mostraProgressoCloud === 'function') {
@@ -847,7 +848,7 @@ window.trasformaInCondiviso = async function() {
     }
 }
 window.trasformaInPersonale = async function() {
-    const btn = document.getElementById('btn-trasforma-personale');
+    const btn = document.getElementById('btn-trasforma-personale') as HTMLButtonElement;
     if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, true, window.t('btn_activating', 'Attivazione in corso...'));
     else if (btn) btn.disabled = true;
 

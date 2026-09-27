@@ -1,4 +1,3 @@
-// @ts-nocheck
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Prima di qualunque render: decide se animazioni e pagine lunghe sono ammesse.
@@ -441,7 +440,7 @@ async function avviaApp() {
                 window.pendingFilesToUpload.push(fileList[i]);
             }
         }
-        e.target.value = ''; // Reset per poter selezionare di nuovo
+        (e.target as HTMLInputElement).value = ''; // Reset per poter selezionare di nuovo
         window.renderPendingFiles();
     });
 
@@ -513,7 +512,7 @@ async function avviaApp() {
             // I modali costruiti al volo (es. vault-delete-modal) espongono il proprio
             // annulla con data-modal-cancel: cliccarlo esegue anche il resolve della promise.
             const btnAnnulla = top.querySelector('[data-modal-cancel]');
-            if (fnName && typeof window[fnName] === 'function') window[fnName]();
+            if (fnName && typeof (window as any)[fnName] === 'function') (window as any)[fnName]();
             else if (btnAnnulla) btnAnnulla.click();
             else top.classList.add('hidden-tab'); // fallback per modali senza handler dedicato
         }
@@ -570,7 +569,7 @@ async function avviaApp() {
         // Ctrl+F -> Cerca
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
             e.preventDefault();
-            const searchInput = document.getElementById('search-input');
+            const searchInput = document.getElementById('search-input') as HTMLInputElement;
             if (searchInput) {
                 if (typeof switchTab === 'function') switchTab('list');
                 // Il campo vive nel pannello 'search' della sidebar: se e' chiuso o
@@ -682,7 +681,7 @@ async function avviaApp() {
                 return;
             }
 
-            const searchInput = document.getElementById('search-input');
+            const searchInput = document.getElementById('search-input') as HTMLInputElement;
             if (searchInput && document.activeElement === searchInput) {
                 searchInput.value = '';
                 searchInput.blur();
@@ -1323,7 +1322,7 @@ window.vociMenuRecord = function(id) {
     voci.push({ label: window.t('menu_cut', 'Taglia') + suffisso, icon: 'scissors', shortcut: 'Ctrl+X', onSelect: () => window.tagliaSelezionati() });
     // Quattro modi di portare fuori le stesse schede: una famiglia sola, una riga sola.
     // Le scorciatoie restano visibili dentro il sottomenu, accanto al comando che eseguono.
-    const vociEsporta = [
+    const vociEsporta: any[] = [
         { label: window.t('menu_export_zip', 'Esporta ZIP') + suffisso, title: window.t('bulk_export_zip_full', 'Esporta la selezione in ZIP'), icon: 'upload', shortcut: 'Ctrl+E', onSelect: () => window.esportaSelezionati() },
         { label: window.t('menu_export_csv', 'Esporta CSV') + suffisso, title: window.t('bulk_export_csv', 'Esporta selezione in CSV'), icon: 'table', shortcut: 'Ctrl+Maiusc+E', onSelect: () => window.esportaSelezionatiCsv('csv') }
     ];
@@ -1344,7 +1343,7 @@ window.vociMenuRecord = function(id) {
     // click. In un gruppo a sé, perché agiscono su TUTTA la selezione mentre le voci
     // sopra ne agiscono anche su una sola.
     if (typeof window.apriAzioneMassa === 'function') {
-        const vociMassa = [
+        const vociMassa: any[] = [
             { label: window.t('menu_bulk_move', 'Sposta'), title: window.t('bulk_move_title', 'Sposta in una cartella'), icon: 'folder-input', shortcut: 'Ctrl+Maiusc+M', onSelect: () => window.apriAzioneMassa('cartella') },
             { label: window.t('menu_bulk_type', 'Cambia tipo'), title: window.t('bulk_type_title', 'Cambia tipo di documento'), icon: 'shapes', shortcut: 'Ctrl+Maiusc+T', onSelect: () => window.apriAzioneMassa('tipo') },
             { label: window.t('menu_bulk_tag', 'Modifica tag'), title: window.t('bulk_tag_title', 'Aggiungi o rimuovi tag'), icon: 'tags', shortcut: 'Ctrl+Maiusc+L', onSelect: () => window.apriAzioneMassa('tag') },
@@ -1397,7 +1396,7 @@ window.showFolderContextMenu = function(e) {
     // Fase 1.5: "Seleziona tutti i risultati" ha bisogno di un punto di partenza che NON
     // sia una scheda — cliccare su una la seleziona da sola — e lo sfondo della lista è
     // l'unico posto in cui non c'è nulla di selezionato su cui il comando possa confondersi.
-    const voci = [window.voceSelezionaTutti()];
+    const voci: any[] = [window.voceSelezionaTutti()];
     const voceIncolla = window.voceMenuIncolla(null);
     if (voceIncolla) voci.push({ separator: true }, voceIncolla);
     window.apriMenuContestuale(e, voci);
@@ -1463,7 +1462,7 @@ window.vociMenuCartella = function(folderPath) {
         // Alternativa al drag nell'albero (WCAG 2.5.7): spostare una cartella non richiede trascinare.
         voci.push({ label: window.t('menu_move_short', 'Sposta in…'), title: window.t('menu_move_folder', "Sposta la cartella in un'altra"), icon: 'folder-input', onSelect: () => window.apriSpostaCartella(folderPath) });
 
-        const vociEsporta = [
+        const vociEsporta: any[] = [
             { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) },
             { label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('menu_export_folder_csv', 'Esporta cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsvSpecifica(folderPath, 'csv') }
         ];
@@ -1746,7 +1745,7 @@ document.addEventListener('keydown', (e) => {
     // e rubarglielo significherebbe annullare l'ultima azione sull'ARCHIVIO mentre l'utente
     // crede di annullare l'ultima parola che ha scritto.
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-    const isInput = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
+    const isInput = activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable;
     if (isInput) return;
     if (!window.gestoreAnnullamento) return;
 
