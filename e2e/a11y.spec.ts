@@ -83,6 +83,214 @@ test.describe('Accessibilità e scala z-index', () => {
     await expect(page.locator('#cloud-progress-overlay')).toBeVisible();
   });
 
+  test('5.3 — l overlay di accesso negato è un dialog bloccante con focus intrappolato', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+
+    await page.evaluate(() => (window as any).mostraErroreAccessoNegato('ospite@esempio.it'));
+    const overlay = page.locator('#accesso-negato-overlay');
+    const finestra = overlay.locator('.modal-window');
+    await expect(overlay).toBeVisible();
+
+    // Semantica applicata da a11yModal via MutationObserver: nessun codice dedicato.
+    await expect(finestra).toHaveAttribute('role', 'dialog');
+    await expect(finestra).toHaveAttribute('aria-modal', 'true');
+    const titolo = await finestra.evaluate((el) =>
+      document.getElementById(el.getAttribute('aria-labelledby') || '')?.textContent);
+    expect(titolo).toContain('Accesso Negato');
+    await expect.poll(() => page.evaluate(() =>
+      document.getElementById('accesso-negato-overlay')!.contains(document.activeElement))).toBe(true);
+
+    // Il Tab gira tra i due pulsanti e non raggiunge l'app sotto.
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('Tab');
+      const dentro = await page.evaluate(() =>
+        document.getElementById('accesso-negato-overlay')!.contains(document.activeElement));
+      expect(dentro, `Tab #${i + 1} è uscito dall'overlay`).toBe(true);
+    }
+
+    // Esc non deve lasciare l'utente davanti a un vault non autorizzato.
+    await page.keyboard.press('Escape');
+    await expect(overlay).toBeVisible();
+  });
+
+  test('5.6 — nessun controllo senza nome accessibile e nessuna icona letta dallo screen reader', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    await page.evaluate(() => (window as any).renderMain());
+
+    // Lucide mette aria-hidden sulle icone da sé (v1.x): il rischio vero è il bottone che
+    // contiene SOLO un'icona e nessun nome, annunciato come "pulsante" e basta (4.1.2).
+    const scansiona = () => page.evaluate(() => {
+      const problemi: string[] = [];
+      document.querySelectorAll('svg.lucide').forEach(s => {
+        if (s.getClientRects().length && s.getAttribute('aria-hidden') !== 'true' && !s.closest('[aria-hidden="true"]')
+            && !s.getAttribute('aria-label') && !s.closest('[role="img"]')) problemi.push('icona esposta: ' + s.outerHTML.slice(0, 80));
+      });
+      document.querySelectorAll('button, [role="button"], a[href]').forEach((b: any) => {
+        if (!b.getClientRects().length || b.closest('[aria-hidden="true"]')) return;
+        const nome = b.getAttribute('aria-label') || b.getAttribute('aria-labelledby') || b.getAttribute('title') || (b.innerText || '').trim();
+        if (!nome) problemi.push('senza nome: ' + b.outerHTML.slice(0, 120).replace(/\s+/g, ' '));
+      });
+      return problemi;
+    });
+
+    const problemi: string[] = [];
+    const raccogli = async (dove: string) => (await scansiona()).forEach(p => problemi.push(dove + ' · ' + p));
+    await raccogli('lista');
+    await page.evaluate(() => (window as any).cambiaVistaLista('tabella'));
+    await raccogli('tabella');
+    await page.evaluate(() => (window as any).switchTab('add'));
+    await raccogli('form');
+    for (const [dove, apri] of [
+      ['impostazioni', 'apriImpostazioni'], ['cloud', 'apriCloudModal'], ['tag', 'apriGestioneTag'],
+      ['nuovo-tipo', 'apriNewTypeModal'], ['cestino', 'apriCestino'],
+    ] as const) {
+      // Attese su condizioni e non a tempo: sotto il carico della suite completa il modale
+      // precedente poteva essere ancora aperto e la scansione ne vedeva due sovrapposti.
+      await page.evaluate((f) => (window as any)[f](), apri);
+      await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay')).filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(1);
+      await raccogli(dove);
+      await page.keyboard.press('Escape');
+      await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay')).filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(0);
+    }
+    expect(problemi).toEqual([]);
+  });
+
+  test('5.7 — WCAG 3.2.2: scorrere i tipi con le frecce non cancella ciò che si è scritto', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+
+    // Form della scheda: su Windows ogni freccia su una <select> chiusa emette `change`.
+    await page.evaluate(() => (window as any).switchTab('add'));
+    const tipo = page.locator('#form-tipo-documento');
+    const iniziale = await tipo.inputValue();
+    const campo = page.locator('[id^="dyn-"][type=text]').first();
+    const idCampo = (await campo.getAttribute('id'))!;
+    await campo.fill('Ser Piero di Antonio');
+    await tipo.focus();
+    await page.keyboard.press('ArrowDown');
+    expect(await tipo.inputValue()).not.toBe(iniziale);
+    await page.keyboard.press('ArrowUp');
+    expect(await tipo.inputValue()).toBe(iniziale);
+    await expect(page.locator('#' + idCampo)).toHaveValue('Ser Piero di Antonio');
+    await expect(tipo).toBeFocused();
+
+    // La memoria vale per UNA compilazione: una scheda nuova riparte vuota.
+    await page.evaluate(() => (window as any).resetForm?.());
+    await page.evaluate(() => (window as any).switchTab('add'));
+    if (await page.locator('#' + idCampo).count()) await expect(page.locator('#' + idCampo)).toHaveValue('');
+
+    // Nuovo tipo: passare su un modello predefinito e tornare a "personalizzato" ritrova
+    // nome e campi in costruzione.
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#custom-type-name').fill('Registro dei battesimi');
+    await page.locator('#custom-type-extra-input').fill('Padrino');
+    await page.locator('#custom-type-extra-input').press('Enter');
+    const modello = page.locator('#new-type-select');
+    await modello.focus();
+    await page.keyboard.press('ArrowDown');
+    expect(await modello.inputValue()).not.toBe('custom');
+    await modello.selectOption('custom');
+    await expect(page.locator('#custom-type-name')).toHaveValue('Registro dei battesimi');
+    await expect(page.locator('.custom-field-item[data-val="Padrino"]')).toHaveCount(1);
+  });
+
+  test('5.8 — WCAG 2.4.1: il primo Tab mostra lo skip link, Invio porta al contenuto', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    const link = page.locator('.skip-link');
+
+    // A riposo è fuori dallo schermo.
+    expect((await link.boundingBox())!.y).toBeLessThan(0);
+
+    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); window.focus(); });
+    await page.keyboard.press('Tab');
+    await expect(link).toBeFocused();
+    await expect(link).toBeInViewport();
+
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#contenuto-principale')).toBeFocused();
+    // Il Tab successivo prosegue DENTRO il contenuto, non torna all'intestazione.
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.getElementById('contenuto-principale')!.contains(document.activeElement))).toBe(true);
+  });
+
+  test('5.9 — WCAG 2.5.8: nessun bersaglio sotto 24px senza lo spazio che lo compensa', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    await seedItems(page, 3, { tagPrefix: 't' });
+    await page.evaluate(() => (window as any).renderMain());
+
+    // Regola del criterio: sotto 24×24 va bene solo se un cerchio da 24px centrato sul
+    // bersaglio non tocca altri bersagli. Esclusi i link dentro il testo e i controlli
+    // sr-only (il bersaglio vero è la loro etichetta visibile).
+    const scansiona = (dove: string) => page.evaluate((dove) => {
+      const sel = 'button, a[href], input:not([type=hidden]), select, textarea, [role=button], [role=tab], [role=menuitem], [tabindex]:not([tabindex="-1"])';
+      const tutti = Array.from(document.querySelectorAll(sel))
+        .filter((e: any) => e.getClientRects().length && !e.closest('[aria-hidden="true"], .hidden-tab, [inert]') && getComputedStyle(e).visibility !== 'hidden')
+        // Un controllo dentro un <label> si attiva anche cliccando l'etichetta: il bersaglio
+        // è l'etichetta intera (è anche la regola "label + controllo, un solo bersaglio").
+        .map((e: any) => ({ e, r: (e.closest('label') || e).getBoundingClientRect() as DOMRect }))
+        .filter(x => x.r.width > 1 && x.r.height > 1);
+      const out: string[] = [];
+      for (const t of tutti) {
+        if (t.r.width >= 23.5 && t.r.height >= 23.5) continue;
+        if (t.e.tagName === 'A' && getComputedStyle(t.e).display === 'inline') continue;
+        const cx = t.r.left + t.r.width / 2, cy = t.r.top + t.r.height / 2;
+        const tocca = tutti.some(o => {
+          if (o === t || o.e.contains(t.e) || t.e.contains(o.e)) return false;
+          if (o.r.width < 23.5 || o.r.height < 23.5) return Math.hypot(cx - (o.r.left + o.r.width / 2), cy - (o.r.top + o.r.height / 2)) < 24;
+          const dx = Math.max(o.r.left - cx, 0, cx - o.r.right), dy = Math.max(o.r.top - cy, 0, cy - o.r.bottom);
+          return Math.hypot(dx, dy) < 12;
+        });
+        if (tocca) out.push(dove + ' · ' + Math.round(t.r.width) + 'x' + Math.round(t.r.height) + ' ' + t.e.outerHTML.slice(0, 90).replace(/\s+/g, ' '));
+      }
+      return out;
+    }, dove);
+
+    const problemi: string[] = [];
+    problemi.push(...await scansiona('lista'));
+    await page.evaluate(() => (window as any).cambiaVistaLista('tabella'));
+    problemi.push(...await scansiona('tabella'));
+    await page.evaluate(() => (window as any).switchTab('add'));
+    problemi.push(...await scansiona('form'));
+    for (const [dove, apri] of [['impostazioni', 'apriImpostazioni'], ['tag', 'apriGestioneTag'], ['cloud', 'apriCloudModal']] as const) {
+      await page.evaluate((f) => (window as any)[f](), apri);
+      await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay')).filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(1);
+      problemi.push(...await scansiona(dove));
+      await page.keyboard.press('Escape');
+      await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay')).filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(0);
+    }
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#new-type-select').selectOption('custom');
+    await page.locator('#custom-type-extra-input').fill('Campo');
+    await page.locator('#custom-type-extra-input').press('Enter');
+    problemi.push(...await scansiona('nuovo-tipo'));
+    expect(problemi).toEqual([]);
+  });
+
+  test('5.10 — ogni vista ha un solo h1 e i titoli non saltano livelli', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    // La sidebar precede <main> nel DOM, quindi il primo titolo del documento è un h2: è
+    // una risalita di livello, permessa. Ciò che conta è un solo h1 visibile e nessun SALTO
+    // in discesa (h2 → h4) dentro una stessa regione.
+    const titoli = () => page.evaluate(() => {
+      const dentro = (h: Element) => (h.closest('main') && 'main') || (h.closest('aside') && 'aside') || (h.closest('header') && 'header') || 'altro';
+      return Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+        .filter(h => h.getClientRects().length && !h.closest('[aria-hidden="true"], .hidden-tab, [inert]'))
+        .map(h => ({ livello: Number(h.tagName[1]), regione: dentro(h), testo: (h.textContent || '').trim().slice(0, 30) }));
+    });
+
+    for (const vista of ['list', 'add'] as const) {
+      await page.evaluate((v) => (window as any).switchTab(v), vista);
+      const h = await titoli();
+      expect(h.filter(x => x.livello === 1), `h1 visibili nella vista ${vista}: ${JSON.stringify(h)}`).toHaveLength(1);
+      expect(h.find(x => x.regione === 'main')?.livello, `il primo titolo del contenuto in ${vista} non è l h1`).toBe(1);
+      for (const regione of ['main', 'aside', 'header']) {
+        const r = h.filter(x => x.regione === regione);
+        for (let i = 1; i < r.length; i++) {
+          expect(r[i].livello - r[i - 1].livello, `salto di livello prima di «${r[i].testo}» (${regione}, ${vista})`).toBeLessThanOrEqual(1);
+        }
+      }
+    }
+  });
+
   test('5.3 — il focus entra nel modale e torna al trigger alla chiusura', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
 

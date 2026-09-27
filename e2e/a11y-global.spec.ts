@@ -99,6 +99,54 @@ test.describe('Accessibilità: effetti globali', () => {
     }
   });
 
+  test('6.4b — focus:outline-none di Tailwind non toglie il focus ring ai controlli senza .btn', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
+
+    // Stesso markup dei bottoni-pill di typesLogic e degli input di shareModal: nessuna
+    // regola dedicata in style.css, solo utility che azzerano l'outline.
+    await page.evaluate(() => {
+      const box = document.createElement('div');
+      box.id = 'focus-probe';
+      box.innerHTML =
+        '<button type="button" id="probe-a">a</button>' +
+        '<button type="button" id="probe-btn" class="focus:outline-none p-1"><i></i></button>' +
+        '<input type="text" id="probe-input" class="outline-none bg-transparent">';
+      document.querySelector('main')!.prepend(box);
+      (document.getElementById('probe-a') as HTMLElement).focus();
+    });
+
+    for (const sel of ['#probe-btn', '#probe-input']) {
+      await page.keyboard.press('Tab');
+      const s = await page.locator(sel).evaluate((el: HTMLElement) => ({
+        attivo: el === document.activeElement,
+        stile: getComputedStyle(el).outlineStyle,
+        larghezza: parseFloat(getComputedStyle(el).outlineWidth) || 0,
+      }));
+      expect(s.attivo, `${sel} non ha ricevuto il fuoco`).toBe(true);
+      expect(s.stile, `outline-style di ${sel}`).not.toBe('none');
+      expect(s.larghezza, `outline-width di ${sel}`).toBeGreaterThanOrEqual(1.5);
+    }
+  });
+
+  test('6.4c — color-scheme e formato delle date seguono tema e lingua', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
+
+    for (const [tema, atteso] of [['light', 'light'], ['dark', 'dark'], ['blue-dark', 'dark'], ['amber-light', 'light']] as const) {
+      await page.evaluate((t) => (window as any).applicaTema(t), tema);
+      const schema = await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme);
+      expect(schema, `color-scheme del tema ${tema}`).toBe(atteso);
+    }
+
+    // Le date erano scritte con 'it-IT' fisso: in inglese restavano in formato italiano.
+    const data = Date.UTC(2026, 2, 5, 12, 0, 0); // 5 marzo 2026
+    const formato = (lingua: string) => page.evaluate((args) => {
+      (window as any).linguaAttuale = args.lingua;
+      return new Date(args.data).toLocaleDateString((window as any).localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }, { lingua, data });
+    expect(await formato('it')).toBe('05/03/2026');
+    expect(await formato('en')).toBe('03/05/2026');
+  });
+
   test('6.5 — con reduced-motion le animazioni si fermano e l app resta usabile', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -126,9 +174,16 @@ test.describe('Accessibilità: effetti globali', () => {
     // in anticipo su "text-*/", invalidando la dichiarazione successiva.
     const btn = page.locator('#cloud-status-btn');
     const sfondoBase = await btn.evaluate(el => getComputedStyle(el).backgroundColor);
-    await btn.hover();
-    const sfondoHover = await btn.evaluate(el => getComputedStyle(el).backgroundColor);
-    expect(sfondoHover).not.toBe(sfondoBase);
+    // Poll e non lettura secca, e hover RIPETUTO a ogni giro: (1) la regola globale
+    // `transition: background-color .25s` su button fa sì che subito dopo l'hover il colore
+    // sia ancora quello di partenza; (2) il bottone può essere ridisegnato dallo stato cloud
+    // appena dopo l'avvio, e il nodo nuovo non è in :hover finché il mouse non si muove.
+    await expect.poll(async () => {
+      await page.mouse.move(0, 0);
+      await btn.hover();
+      await page.waitForTimeout(300);
+      return btn.evaluate(el => getComputedStyle(el).backgroundColor);
+    }).not.toBe(sfondoBase);
 
     // Ogni stato deve avere un colore proprio, non ereditare quello del precedente.
     const colori: string[] = [];
