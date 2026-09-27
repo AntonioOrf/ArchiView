@@ -268,7 +268,7 @@ window.disegnaDuplicati = function() {
                         <div id="vocab-list" class="vocab-elenco"></div>
                         <div class="flex gap-2">
                             <input id="vocab-new-name" type="text" class="form-input" data-i18n-placeholder="vocab_new" placeholder="Nuovo vocabolario">
-                            <button type="button" onclick="creaVocabolarioDalPannello()" class="btn btn-secondary shrink-0" data-i18n-title="vocab_new" data-i18n-aria-label="vocab_new" title="Nuovo vocabolario" aria-label="Nuovo vocabolario">
+                            <button type="button" data-on-click="creaVocabolarioDalPannello" class="btn btn-secondary shrink-0" data-i18n-title="vocab_new" data-i18n-aria-label="vocab_new" title="Nuovo vocabolario" aria-label="Nuovo vocabolario">
                                 <i data-lucide="plus" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -277,7 +277,7 @@ window.disegnaDuplicati = function() {
                         <div class="flex items-center gap-2">
                             <strong id="vocab-current-name" class="truncate"></strong>
                             <div id="vocab-actions" class="ml-auto hidden">
-                                <button type="button" onclick="eliminaVocabolarioDalPannello()" class="btn btn-ghost btn-icon text-red-600" data-i18n-title="vocab_delete" title="Elimina il vocabolario">
+                                <button type="button" data-on-click="eliminaVocabolarioDalPannello" class="btn btn-ghost btn-icon text-red-600" data-i18n-title="vocab_delete" title="Elimina il vocabolario">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -285,7 +285,7 @@ window.disegnaDuplicati = function() {
                         <div id="vocab-values" class="tag-manager-list"></div>
                         <div class="flex gap-2">
                             <input id="vocab-new-value" type="text" class="form-input" data-i18n-placeholder="vocab_new_value" placeholder="Nuovo valore…">
-                            <button type="button" onclick="aggiungiValoreDalPannello()" class="btn btn-primary shrink-0">
+                            <button type="button" data-on-click="aggiungiValoreDalPannello" class="btn btn-primary shrink-0">
                                 <span data-i18n="btn_add">Aggiungi</span>
                             </button>
                         </div>
@@ -293,7 +293,7 @@ window.disegnaDuplicati = function() {
                 </div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="vocab_hint">Un vocabolario è condiviso da tutto l'archivio e viaggia con la sincronizzazione. Rinominare un valore lo aggiorna in tutte le schede; toglierlo dall'elenco non lo cancella dalle schede che lo contengono.</p>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiVocabolari()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiVocabolari" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>
@@ -314,7 +314,7 @@ window.disegnaDuplicati = function() {
                 <div id="duplicati-list" class="tag-manager-list"></div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="dup_hint">Una segnatura ripetuta non è per forza un errore: un fondo può contenerne per inventariazioni precedenti alla schedatura. L'elenco le segnala, la decisione resta a chi guarda.</p>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiDuplicati()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiDuplicati" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>

@@ -252,13 +252,13 @@ window.fondiTagSelezionati = async function() {
                 <div id="tag-merge-bar" class="tag-merge-bar hidden">
                     <label for="tag-merge-target" class="text-xs text-stone-500 dark:text-stone-400" data-i18n="tag_merge_into">Fondi i tag scelti in:</label>
                     <select id="tag-merge-target" class="form-input"></select>
-                    <button type="button" onclick="fondiTagSelezionati()" class="btn btn-primary shrink-0">
+                    <button type="button" data-on-click="fondiTagSelezionati" class="btn btn-primary shrink-0">
                         <span data-i18n="btn_tag_merge">Fondi</span>
                     </button>
                 </div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="tag_manager_hint">Rinomina, fusione ed eliminazione agiscono su tutte le schede dell'archivio, non solo su quelle selezionate. Ogni operazione è annullabile.</p>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiGestioneTag()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiGestioneTag" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>

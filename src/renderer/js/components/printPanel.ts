@@ -459,16 +459,16 @@ document.addEventListener('keydown', (e) => {
             <div class="modal-body">
                 <div id="print-body" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-1"></div>
                 <div class="modal-footer">
-                    <button type="button" onclick="stampaVistaCorrente()" class="btn btn-ghost mr-auto" title="Stampa la lista come la vedi">
+                    <button type="button" data-on-click="stampaVistaCorrente" class="btn btn-ghost mr-auto" title="Stampa la lista come la vedi">
                         <span data-i18n="print_current_view">Stampa la vista</span>
                     </button>
-                    <button type="button" onclick="chiudiStampa()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiStampa" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
-                    <button type="button" id="print-now" onclick="stampaOra()" class="btn btn-secondary">
+                    <button type="button" id="print-now" data-on-click="stampaOra" class="btn btn-secondary">
                         <span data-i18n="print_send">Stampa</span>
                     </button>
-                    <button type="button" id="print-pdf" onclick="salvaStampaPdf()" class="btn btn-primary">
+                    <button type="button" id="print-pdf" data-on-click="salvaStampaPdf" class="btn btn-primary">
                         <span data-i18n="print_save_pdf">Salva PDF</span>
                     </button>
                 </div>

@@ -830,7 +830,7 @@ document.addEventListener('keydown', (e) => {
                     <i data-lucide="keyboard" class="w-5 h-5 text-amber-700"></i>
                     <span data-i18n="cp_shortcuts">Scorciatoie da tastiera</span>
                 </h3>
-                <button type="button" onclick="chiudiScorciatoie()" data-modal-cancel
+                <button type="button" data-on-click="chiudiScorciatoie" data-modal-cancel
                         class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>

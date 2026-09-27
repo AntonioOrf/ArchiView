@@ -4,16 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ArchiView</title>
-    <script>
-        (function() {
-            try {
-                const savedTheme = localStorage.getItem('theme') || 'system';
-                const isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                if (isDark) document.documentElement.classList.add('dark-theme');
-            } catch (e) {}
-        })();
-    </script>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.pusher.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset: iiif-img: https://*.googleusercontent.com https://*.ggpht.com; frame-src 'self' local-asset: https://docs.google.com https://apis.google.com; connect-src 'self' https://api.github.com http: https: ws: wss:;">
+    <script src="js/temaIniziale.js"></script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://js.pusher.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: local-asset: iiif-img: https://*.googleusercontent.com https://*.ggpht.com; frame-src 'self' local-asset: https://docs.google.com https://apis.google.com; connect-src 'self' https://api.github.com http: https: ws: wss:;">
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="vendor/lucide.min.js"></script>
     <script src="vendor/purify.min.js"></script>
@@ -60,6 +52,7 @@
     <script defer src="js/shared/iiifManifest.js"></script>
     <script defer src="js/logic/i18n.js"></script>
     <script defer src="js/logic/utils.js"></script>
+    <script defer src="js/logic/azioni.js"></script>
 
     <!-- Nuovi componenti Modali -->
     <script defer src="js/components/modals/welcomeModal.js"></script>

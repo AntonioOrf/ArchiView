@@ -9,7 +9,7 @@
                     <i data-lucide="folder-plus" class="w-5 h-5 text-amber-700"></i>
                     <span data-i18n="modal_new_folder">Nuova Cartella</span>
                 </h3>
-                <button type="button" onclick="chiudiFolderModal()" class="btn btn-ghost btn-icon hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                <button type="button" data-on-click="chiudiFolderModal" class="btn btn-ghost btn-icon hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -20,8 +20,8 @@
                     <i data-lucide="info" class="w-3 h-3"></i> Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle.
                 </p>
                 <div class="modal-footer mt-6 pt-4 border-t border-stone-100 flex justify-end gap-2">
-                    <button onclick="chiudiFolderModal()" class="btn btn-ghost" data-i18n="btn_cancel"><span data-i18n="btn_cancel">Annulla</span></button>
-                    <button onclick="confermaAggiungiCartella()" class="btn btn-primary shadow-sm" data-i18n="btn_create_folder">Crea Cartella</button>
+                    <button data-on-click="chiudiFolderModal" class="btn btn-ghost" data-i18n="btn_cancel"><span data-i18n="btn_cancel">Annulla</span></button>
+                    <button data-on-click="confermaAggiungiCartella" class="btn btn-primary shadow-sm" data-i18n="btn_create_folder">Crea Cartella</button>
                 </div>
             </div>
         </div>

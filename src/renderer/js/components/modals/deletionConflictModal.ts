@@ -18,8 +18,8 @@
             <div class="modal-footer shrink-0 pt-3 border-t border-stone-200 flex justify-between items-center bg-stone-50">
                 <span class="text-sm font-medium text-stone-600" id="deletion-counter">File da verificare: 0</span>
                 <div class="flex gap-2">
-                    <button onclick="window.annullaSincronizzazioneDeletions()" class="btn btn-secondary bg-white text-stone-700 hover:bg-stone-100 border border-stone-300">Annulla Ricezione</button>
-                    <button id="btn-resolve-deletions" class="btn btn-primary bg-red-600 hover:bg-red-700 border-red-700" disabled onclick="window.concludiRisoluzioneDeletions()">Conferma Scelte</button>
+                    <button data-on-click="annullaSincronizzazioneDeletions" class="btn btn-secondary bg-white text-stone-700 hover:bg-stone-100 border border-stone-300">Annulla Ricezione</button>
+                    <button id="btn-resolve-deletions" class="btn btn-primary bg-red-600 hover:bg-red-700 border-red-700" disabled data-on-click="concludiRisoluzioneDeletions">Conferma Scelte</button>
                 </div>
             </div>
         </div>

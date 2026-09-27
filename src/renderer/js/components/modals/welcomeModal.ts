@@ -4,7 +4,7 @@
             const html = `
     <div id="welcome-modal" class="modal-overlay hidden-tab z-modal-nested bg-stone-900/80 backdrop-blur-sm">
         <div class="modal-window max-w-lg p-8 text-center shadow-2xl border-2 border-stone-200 relative">
-            <button id="welcome-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 hidden transition-colors" onclick="chiudiWelcomeModal()" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
+            <button id="welcome-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 hidden transition-colors" data-on-click="chiudiWelcomeModal" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <div class="flex justify-center mb-6">
@@ -18,28 +18,28 @@
             </p>
 
             <div class="flex flex-col gap-3" id="welcome-buttons">
-                <button onclick="selezionaCartellaIniziale()" class="btn btn-primary w-full justify-center py-3 text-lg font-medium shadow-md">
+                <button data-on-click="selezionaCartellaIniziale" class="btn btn-primary w-full justify-center py-3 text-lg font-medium shadow-md">
                     <i data-lucide="folder-open" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_open_local">Apri Archivio Locale</span>
                 </button>
-                <button onclick="mostraInputNuovaCartella('locale')" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;locale&quot;]" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
                     <i data-lucide="folder-plus" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_local">Crea Nuova Cartella Locale</span>
                 </button>
                 <div class="h-px bg-stone-200 my-1 w-full"></div>
-                <button onclick="mostraInputNuovaCartella('personale')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-sky-900 border border-sky-300 hover:bg-sky-50" style="background-color: #f0f9ff;">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;personale&quot;]" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-sky-900 border border-sky-300 hover:bg-sky-50" style="background-color: #f0f9ff;">
                     <i data-lucide="cloud" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_cloud_private">Crea un Backup Personale</span>
                 </button>
-                <button onclick="mostraInputNuovaCartella('hub')" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-emerald-900 border border-emerald-300 hover:bg-emerald-50" style="background-color: #ecfdf5;">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;hub&quot;]" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-emerald-900 border border-emerald-300 hover:bg-emerald-50" style="background-color: #ecfdf5;">
                     <i data-lucide="server" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_hub_shared">Crea un Hub Condiviso</span>
                 </button>
-                <button onclick="mostraJoinForm()" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 bg-amber-50 border border-amber-300 hover:bg-amber-100">
+                <button data-on-click="mostraJoinForm" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 bg-amber-50 border border-amber-300 hover:bg-amber-100">
                     <i data-lucide="users" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                 </button>
-                <button onclick="mostraCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 mt-1 hover:text-stone-700 w-full justify-center">
+                <button data-on-click="mostraCloudExplorer" class="btn btn-ghost text-sm text-stone-500 mt-1 hover:text-stone-700 w-full justify-center">
                     <span data-i18n="btn_restore_drive">Ripristina da Google Drive…</span>
                 </button>
             </div>
@@ -48,20 +48,20 @@
             <div id="welcome-create-form" class="hidden-tab mt-4 text-left border border-stone-200 p-4 rounded-md bg-stone-50">
                 <div class="mb-3">
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_archive_name">Nome dell\'archivio</label>
-                    <input type="text" id="welcome-new-folder-name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-colors text-sm" placeholder="Es. Archivio Manoscritti" data-i18n-placeholder="placeholder_archive_name" onkeydown="if(event.key === 'Enter') creaCartellaIniziale()">
+                    <input type="text" id="welcome-new-folder-name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-colors text-sm" placeholder="Es. Archivio Manoscritti" data-i18n-placeholder="placeholder_archive_name" data-on-keydown="suInvio" data-args-keydown="[&quot;creaCartellaIniziale&quot;,false]">
                 </div>
                 <div class="mb-3">
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_position">Posizione</label>
                     <div class="flex gap-2">
                         <input type="text" id="welcome-new-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                        <button onclick="selezionaPercorsoBase()" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300 hover:bg-stone-200" data-i18n="btn_browse">Sfoglia…</button>
+                        <button data-on-click="selezionaPercorsoBase" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300 hover:bg-stone-200" data-i18n="btn_browse">Sfoglia…</button>
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
-                    <button onclick="nascondiInputNuovaCartella()" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
+                    <button data-on-click="nascondiInputNuovaCartella" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
-                    <button onclick="creaCartellaIniziale()" class="btn btn-primary text-sm shadow-sm px-6"><span data-i18n="btn_create_and_start">Crea e Avvia</span></button>
+                    <button data-on-click="creaCartellaIniziale" class="btn btn-primary text-sm shadow-sm px-6"><span data-i18n="btn_create_and_start">Crea e Avvia</span></button>
                 </div>
             </div>
 
@@ -93,7 +93,7 @@
                             <input type="text" id="welcome-join-code"
                                 class="form-input w-full bg-white text-stone-600 text-sm border border-stone-300 font-mono"
                                 placeholder="archiview://join/..."
-                                oninput="if(window.handleJoinCodeInput) window.handleJoinCodeInput(this.value)">
+                                data-on-input="seEsiste" data-args-input="[&quot;handleJoinCodeInput&quot;,{&quot;$&quot;:&quot;value&quot;}]">
                             <div id="join-code-ok" class="hidden-tab mt-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5 flex items-center gap-1.5">
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0"></i>
                                 <span id="join-code-ok-text"></span>
@@ -111,7 +111,7 @@
                                 <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
                                 <span data-i18n="join_step2_hint">First <strong>accept the sharing email from Google Drive</strong>. The folder will appear in <em>"Shared with me"</em>.</span>
                             </div>
-                            <button type="button" onclick="apriGooglePicker()" id="btn-open-picker"
+                            <button type="button" data-on-click="apriGooglePicker" id="btn-open-picker"
                                 class="btn btn-secondary w-full justify-center py-3 text-sm font-medium shadow-sm bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 transition-colors">
                                 <i data-lucide="folder-search" class="w-5 h-5 mr-2 text-blue-600"></i>
                                 <span data-i18n="btn_browse_drive">Sfoglia Google Drive…</span>
@@ -138,16 +138,16 @@
                             <p class="text-[11px] text-stone-500 mb-2 ml-7 leading-snug"><span data-i18n="join_step3_hint">Choose where to save the local copy of the archive on your PC.</span></p>
                             <div class="flex gap-2">
                                 <input type="text" id="welcome-join-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                                <button onclick="selezionaPercorsoBaseJoin()" class="btn btn-secondary px-3 py-1 text-sm shrink-0" data-i18n="btn_browse">Sfoglia…</button>
+                                <button data-on-click="selezionaPercorsoBaseJoin" class="btn btn-secondary px-3 py-1 text-sm shrink-0" data-i18n="btn_browse">Sfoglia…</button>
                             </div>
                         </div>
 
                         <!-- AZIONI -->
                         <div class="mt-auto pt-4 border-t border-stone-200 flex justify-between items-center">
-                            <button onclick="nascondiJoinForm()" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
+                            <button data-on-click="nascondiJoinForm" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
                                 <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                             </button>
-                            <button onclick="eseguiJoinVault()" id="btn-join-connect" class="btn btn-primary text-sm shadow-sm px-6">
+                            <button data-on-click="eseguiJoinVault" id="btn-join-connect" class="btn btn-primary text-sm shadow-sm px-6">
                                 <span data-i18n="btn_connect">Connettiti</span>
                             </button>
                         </div>
@@ -164,10 +164,10 @@
                     <!-- Lista popolata via JS -->
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
-                    <button onclick="nascondiCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
+                    <button data-on-click="nascondiCloudExplorer" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
-                    <button onclick="eseguiRipristinoCloudGlobale()" class="btn btn-secondary text-sm shadow-sm" data-i18n-title="title_search_everywhere" title="Se non vedi il tuo archivio, cerca in tutto il Drive"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>
+                    <button data-on-click="eseguiRipristinoCloudGlobale" class="btn btn-secondary text-sm shadow-sm" data-i18n-title="title_search_everywhere" title="Se non vedi il tuo archivio, cerca in tutto il Drive"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>
                 </div>
             </div>
         </div>

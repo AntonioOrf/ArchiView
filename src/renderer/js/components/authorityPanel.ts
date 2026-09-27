@@ -426,10 +426,10 @@ window.caricaRelazioniForm = function(m) {
             <div class="modal-body">
                 <div id="relazioni-body" class="space-y-1"></div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiCollegamenti()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiCollegamenti" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
-                    <button type="button" onclick="chiudiCollegamenti(); apriGrafo();" class="btn btn-secondary">
+                    <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCollegamenti&quot;,&quot;apriGrafo&quot;]" class="btn btn-secondary">
                         <i data-lucide="git-fork" class="w-4 h-4"></i>
                         <span data-i18n="graph_title">Grafo dei collegamenti</span>
                     </button>
@@ -448,10 +448,10 @@ window.caricaRelazioniForm = function(m) {
             </div>
             <div class="modal-body">
                 <div class="auth-tabs" role="tablist">
-                    <button type="button" id="authority-tab-persona" role="tab" aria-selected="true" class="auth-tab attiva" onclick="cambiaTipoAnagrafica('persona')">
+                    <button type="button" id="authority-tab-persona" role="tab" aria-selected="true" class="auth-tab attiva" data-on-click="cambiaTipoAnagrafica" data-args-click="[&quot;persona&quot;]">
                         <span data-i18n="auth_people">Persone</span>
                     </button>
-                    <button type="button" id="authority-tab-luogo" role="tab" aria-selected="false" class="auth-tab" onclick="cambiaTipoAnagrafica('luogo')">
+                    <button type="button" id="authority-tab-luogo" role="tab" aria-selected="false" class="auth-tab" data-on-click="cambiaTipoAnagrafica" data-args-click="[&quot;luogo&quot;]">
                         <span data-i18n="auth_places">Luoghi</span>
                     </button>
                 </div>
@@ -459,7 +459,7 @@ window.caricaRelazioniForm = function(m) {
                 <div id="authority-list" class="tag-manager-list"></div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="auth_hint">L'elenco si ricava dalle schede: non è un archivio parallelo. Rinominare una voce riscrive il nome in tutte le schede che lo citano, ed è il modo di unificare due grafie della stessa persona.</p>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiAnagrafica()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiAnagrafica" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>

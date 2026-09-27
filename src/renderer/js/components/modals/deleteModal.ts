@@ -13,8 +13,8 @@
                 <p class="text-sm text-stone-500 mb-4" data-i18n="delete_item_hint">L'eventuale allegato (immagine o PDF) non verrà rimosso dall'archivio.</p>
                 <input type="hidden" id="delete-item-id">
                 <div class="modal-footer">
-                    <button onclick="chiudiDeleteModal()" class="btn btn-ghost"><span data-i18n="btn_cancel">Annulla</span></button>
-                    <button onclick="confermaEliminazione()" class="btn btn-danger"><i data-lucide="trash-2" class="w-4 h-4"></i> <span data-i18n="btn_delete"><span data-i18n="btn_delete">Elimina</span></span></button>
+                    <button data-on-click="chiudiDeleteModal" class="btn btn-ghost"><span data-i18n="btn_cancel">Annulla</span></button>
+                    <button data-on-click="confermaEliminazione" class="btn btn-danger"><i data-lucide="trash-2" class="w-4 h-4"></i> <span data-i18n="btn_delete"><span data-i18n="btn_delete">Elimina</span></span></button>
                 </div>
             </div>
         </div>

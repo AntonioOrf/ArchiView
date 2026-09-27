@@ -22,8 +22,8 @@
             <div class="modal-footer shrink-0 pt-3 border-t border-stone-200 flex justify-between items-center bg-stone-50">
                 <span class="text-sm font-medium text-stone-600" id="conflict-counter"></span>
                 <div class="flex gap-2">
-                    <button onclick="window.annullaSincronizzazioneConflitto()" class="btn btn-secondary bg-white text-stone-700 hover:bg-stone-100 border border-stone-300"><span data-i18n="btn_cancel_sync">Cancel Synchronization</span></button>
-                    <button id="btn-resolve-all" class="btn btn-primary" disabled onclick="window.concludiRisoluzioneConflitti()"><span data-i18n="btn_apply_resolution">Apply Resolution</span></button>
+                    <button data-on-click="annullaSincronizzazioneConflitto" class="btn btn-secondary bg-white text-stone-700 hover:bg-stone-100 border border-stone-300"><span data-i18n="btn_cancel_sync">Cancel Synchronization</span></button>
+                    <button id="btn-resolve-all" class="btn btn-primary" disabled data-on-click="concludiRisoluzioneConflitti"><span data-i18n="btn_apply_resolution">Apply Resolution</span></button>
                 </div>
             </div>
         </div>

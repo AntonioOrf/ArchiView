@@ -845,7 +845,7 @@ async function _oRenderLingue() {
                 <p id="ocr-subtitle" class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3"></p>
                 <div id="ocr-body" class="flex flex-col gap-3"></div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiOcrModal()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiOcrModal" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                     <button type="button" id="ocr-confirm" class="btn btn-primary">
@@ -867,7 +867,7 @@ async function _oRenderLingue() {
             <div class="modal-body">
                 <div id="ocr-langs-list" class="flex flex-col max-h-80 overflow-y-auto"></div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiGestioneLingueOcr()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiGestioneLingueOcr" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>
@@ -914,7 +914,7 @@ async function _oRenderLingue() {
                 </div>
                 <p id="ocr-bulk-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
                 <div class="modal-footer">
-                    <button type="button" id="ocr-bulk-cancel" onclick="annullaOcrMassa()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" id="ocr-bulk-cancel" data-on-click="annullaOcrMassa" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_cancel">Annulla</span>
                     </button>
                 </div>

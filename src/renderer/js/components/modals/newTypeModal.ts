@@ -6,11 +6,11 @@
         <div class="modal-window max-w-lg">
             <div class="modal-header">
                 <h3 class="modal-title" data-i18n="modal_create_type">Crea Tipo Documento</h3>
-                <button type="button" onclick="chiudiNewTypeModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" data-on-click="chiudiNewTypeModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="modal-body">
                 <label class="form-label" data-i18n="label_select_model">Seleziona modello o creane uno nuovo</label>
-                <select id="new-type-select" onchange="applicaModello()" class="form-input mb-4">
+                <select id="new-type-select" data-on-change="applicaModello" class="form-input mb-4">
                     <option value="custom" data-i18n="model_custom">Nuovo documento vuoto</option>
                     <option value="imbreviature" data-i18n="model_imbreviature">Modello: Imbreviature notarili</option>
                     <option value="atti" data-i18n="model_atti">Modello: Atti giudiziari</option>
@@ -29,27 +29,27 @@
                         <label class="form-label" data-i18n="label_base_fields">Campi di base</label>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                             <label class="cursor-pointer">
-                                <input type="checkbox" value="dataCronica" data-label="Data cronica" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
+                                <input type="checkbox" value="dataCronica" data-label="Data cronica" data-on-change="toggleCampoBase" data-args-change="[{&quot;$&quot;:&quot;this&quot;}]" class="custom-type-field peer sr-only">
                                 <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_data_cronica">Data cronica</div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="checkbox" value="dataTopica" data-label="Data topica" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
+                                <input type="checkbox" value="dataTopica" data-label="Data topica" data-on-change="toggleCampoBase" data-args-change="[{&quot;$&quot;:&quot;this&quot;}]" class="custom-type-field peer sr-only">
                                 <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_data_topica">Data topica</div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="checkbox" value="autore" data-label="Autore/i" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
+                                <input type="checkbox" value="autore" data-label="Autore/i" data-on-change="toggleCampoBase" data-args-change="[{&quot;$&quot;:&quot;this&quot;}]" class="custom-type-field peer sr-only">
                                 <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_autore">Autore/i</div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="checkbox" value="titolo" data-label="Titolo / Cont." onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
+                                <input type="checkbox" value="titolo" data-label="Titolo / Cont." data-on-change="toggleCampoBase" data-args-change="[{&quot;$&quot;:&quot;this&quot;}]" class="custom-type-field peer sr-only">
                                 <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_titolo">Titolo / Cont.</div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="checkbox" value="note" data-label="Note" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
+                                <input type="checkbox" value="note" data-label="Note" data-on-change="toggleCampoBase" data-args-change="[{&quot;$&quot;:&quot;this&quot;}]" class="custom-type-field peer sr-only">
                                 <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_note">Note</div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="checkbox" value="prezzo" data-label="Prezzo" onchange="toggleCampoBase(this)" class="custom-type-field peer sr-only">
+                                <input type="checkbox" value="prezzo" data-label="Prezzo" data-on-change="toggleCampoBase" data-args-change="[{&quot;$&quot;:&quot;this&quot;}]" class="custom-type-field peer sr-only">
                                 <div class="px-3 py-2 border border-stone-300 rounded-sm text-center transition-colors peer-checked:bg-amber-100 peer-checked:border-amber-400 peer-checked:text-amber-900 peer-checked:font-semibold text-stone-600 hover:bg-stone-100 select-none" data-i18n="field_prezzo">Prezzo</div>
                             </label>
                         </div>
@@ -57,8 +57,8 @@
                     <div>
                         <label class="form-label" data-i18n="label_custom_fields">Campi aggiuntivi personalizzati</label>
                         <div class="flex gap-2 mb-2">
-                            <input type="text" id="custom-type-extra-input" data-i18n-placeholder="placeholder_custom_field" class="form-input flex-1" onkeydown="if(event.key === 'Enter') { event.preventDefault(); aggiungiCampoCustom(); }">
-                            <button type="button" onclick="aggiungiCampoCustom()" class="btn btn-secondary btn-icon" data-i18n-aria-label="btn_add_custom_field" data-i18n-title="btn_add_custom_field" aria-label="Aggiungi campo" title="Aggiungi campo"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                            <input type="text" id="custom-type-extra-input" data-i18n-placeholder="placeholder_custom_field" class="form-input flex-1" data-on-keydown="suInvio" data-args-keydown="[&quot;aggiungiCampoCustom&quot;,true]">
+                            <button type="button" data-on-click="aggiungiCampoCustom" class="btn btn-secondary btn-icon" data-i18n-aria-label="btn_add_custom_field" data-i18n-title="btn_add_custom_field" aria-label="Aggiungi campo" title="Aggiungi campo"><i data-lucide="plus" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                     <div>
@@ -82,18 +82,18 @@
                                 <span data-i18n="field_configure">Configura il campo</span>:
                                 <code id="campo-editor-nome"></code>
                             </span>
-                            <button type="button" onclick="chiudiEditorCampo()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            <button type="button" data-on-click="chiudiEditorCampo" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
                         <div class="campo-editor-corpo">
                             <div>
                                 <label class="form-label" for="campo-editor-tipo" data-i18n="label_field_type">Tipo di dato</label>
-                                <select id="campo-editor-tipo" class="form-input" onchange="aggiornaEditorCampo()"></select>
+                                <select id="campo-editor-tipo" class="form-input" data-on-change="aggiornaEditorCampo"></select>
                             </div>
                             <div id="campo-editor-vocabolario-riga" class="hidden">
                                 <label class="form-label" for="campo-editor-vocabolario" data-i18n="label_field_vocab">Prendi i valori da un vocabolario d'archivio</label>
                                 <div class="flex gap-2">
-                                    <select id="campo-editor-vocabolario" class="form-input" onchange="aggiornaEditorCampo()"></select>
-                                    <button type="button" onclick="apriVocabolari()" class="btn btn-secondary shrink-0" data-i18n-title="vocab_title" data-i18n-aria-label="vocab_title" title="Vocabolari controllati" aria-label="Vocabolari controllati">
+                                    <select id="campo-editor-vocabolario" class="form-input" data-on-change="aggiornaEditorCampo"></select>
+                                    <button type="button" data-on-click="apriVocabolari" class="btn btn-secondary shrink-0" data-i18n-title="vocab_title" data-i18n-aria-label="vocab_title" title="Vocabolari controllati" aria-label="Vocabolari controllati">
                                         <i data-lucide="list-tree" class="w-4 h-4"></i>
                                     </button>
                                 </div>
@@ -116,17 +116,17 @@
                             </label>
                         </div>
                         <div class="campo-editor-azioni">
-                            <button type="button" onclick="chiudiEditorCampo()" class="btn btn-secondary text-sm" data-i18n="btn_cancel">Annulla</button>
-                            <button type="button" onclick="confermaEditorCampo()" class="btn btn-primary text-sm" id="btn-campo-editor-ok" data-i18n="btn_apply">Applica</button>
+                            <button type="button" data-on-click="chiudiEditorCampo" class="btn btn-secondary text-sm" data-i18n="btn_cancel">Annulla</button>
+                            <button type="button" data-on-click="confermaEditorCampo" class="btn btn-primary text-sm" id="btn-campo-editor-ok" data-i18n="btn_apply">Applica</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-footer flex justify-between">
-                    <button type="button" onclick="apriManageTypesModal()" class="btn btn-secondary text-sm" data-i18n="btn_manage_models">Gestisci Modelli</button>
+                    <button type="button" data-on-click="apriManageTypesModal" class="btn btn-secondary text-sm" data-i18n="btn_manage_models">Gestisci Modelli</button>
                     <div class="flex gap-2">
-                        <button type="button" onclick="chiudiNewTypeModal()" class="btn btn-ghost">Annulla</button>
-                        <button type="button" onclick="confermaCreaTipo()" class="btn btn-primary" id="btn-salva-tipo" data-i18n="btn_create">Crea</button>
+                        <button type="button" data-on-click="chiudiNewTypeModal" class="btn btn-ghost">Annulla</button>
+                        <button type="button" data-on-click="confermaCreaTipo" class="btn btn-primary" id="btn-salva-tipo" data-i18n="btn_create">Crea</button>
                     </div>
                 </div>
             </div>

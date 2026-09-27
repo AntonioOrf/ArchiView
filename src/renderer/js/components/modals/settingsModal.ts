@@ -25,17 +25,17 @@
         <div class="modal-window max-w-3xl h-[600px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <div class="modal-header shrink-0 p-4 px-6 border-b border-stone-200 flex justify-between items-center">
                 <h3 class="modal-title text-stone-800 m-0 flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5 text-stone-600"></i> <span data-i18n="modal_settings">Impostazioni</span></h3>
-                <button type="button" onclick="chiudiImpostazioni()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" data-on-click="chiudiImpostazioni" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
             <div class="flex-1 overflow-hidden flex flex-col md:flex-row bg-white">
                 <!-- Sidebar -->
                 <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 p-4 overflow-y-auto shrink-0">
                     <ul class="space-y-1">
-                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium bg-stone-200 text-stone-900 dark:bg-stone-700 dark:text-stone-100 transition-colors" data-target="tab-general" onclick="cambiaTabImpostazioni('tab-general')"><i data-lucide="sliders" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_general">Generali</span></button></li>
-                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" data-target="tab-data" onclick="cambiaTabImpostazioni('tab-data')"><i data-lucide="database" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_data">Archivio Dati</span></button></li>
-                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" data-target="tab-sync" onclick="cambiaTabImpostazioni('tab-sync')"><i data-lucide="cloud" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_sync">Sincronizzazione</span></button></li>
-                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" data-target="tab-system" onclick="cambiaTabImpostazioni('tab-system')"><i data-lucide="info" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_system">Sistema & Info</span></button></li>
+                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium bg-stone-200 text-stone-900 dark:bg-stone-700 dark:text-stone-100 transition-colors" data-target="tab-general" data-on-click="cambiaTabImpostazioni" data-args-click="[&quot;tab-general&quot;]"><i data-lucide="sliders" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_general">Generali</span></button></li>
+                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" data-target="tab-data" data-on-click="cambiaTabImpostazioni" data-args-click="[&quot;tab-data&quot;]"><i data-lucide="database" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_data">Archivio Dati</span></button></li>
+                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" data-target="tab-sync" data-on-click="cambiaTabImpostazioni" data-args-click="[&quot;tab-sync&quot;]"><i data-lucide="cloud" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_sync">Sincronizzazione</span></button></li>
+                        <li><button class="settings-tab-btn w-full text-left px-3 py-2 rounded-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" data-target="tab-system" data-on-click="cambiaTabImpostazioni" data-args-click="[&quot;tab-system&quot;]"><i data-lucide="info" class="w-4 h-4 inline-block mr-2 text-stone-500"></i> <span data-i18n="settings_tab_system">Sistema & Info</span></button></li>
                     </ul>
                 </div>
                 
@@ -53,7 +53,7 @@
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="moon" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_theme">Tema / Aspetto</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_theme_desc">Scegli il tema dell'applicazione.</p>
-                            <select id="settings-theme" onchange="cambiaTemaSelezionato(this.value)" class="form-input w-full p-2 bg-stone-50 border border-stone-200 rounded-sm text-stone-800">
+                            <select id="settings-theme" data-on-change="cambiaTemaSelezionato" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]" class="form-input w-full p-2 bg-stone-50 border border-stone-200 rounded-sm text-stone-800">
                                 <option value="system">Sistema (Predefinito)</option>
                                 <optgroup label="Temi Chiari">
                                     <option value="light">Clear Blue</option>
@@ -70,7 +70,7 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_perf_title">Prestazioni ridotte</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_perf_desc">Per computer poco potenti: disattiva animazioni e accelerazione hardware e mostra meno schede per pagina. L'accelerazione hardware cambia al riavvio.</p>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="settings-low-perf" onchange="cambiaModalitaPrestazioni(this.checked)" class="w-4 h-4 accent-amber-600">
+                                <input type="checkbox" id="settings-low-perf" data-on-change="cambiaModalitaPrestazioni" data-args-change="[{&quot;$&quot;:&quot;checked&quot;}]" class="w-4 h-4 accent-amber-600">
                                 <span class="text-sm text-stone-700" data-i18n="settings_perf_toggle">Attiva modalità prestazioni ridotte</span>
                             </label>
                         </div>
@@ -78,7 +78,7 @@
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_lang">Lingua / Language</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_lang_desc">Scegli la lingua dell'applicazione.</p>
-                            <select id="settings-language" onchange="cambiaLingua(this.value)" class="form-input w-full p-2 bg-stone-50 border border-stone-200 rounded-sm text-stone-800">
+                            <select id="settings-language" data-on-change="cambiaLingua" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]" class="form-input w-full p-2 bg-stone-50 border border-stone-200 rounded-sm text-stone-800">
                                 <option value="it">Italiano</option>
                                 <option value="en">English</option>
                             </select>
@@ -93,7 +93,7 @@
                             <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-workspace-path">
                                 <span data-i18n="label_loading">Loading…</span>
                             </div>
-                            <button onclick="cambiaCartellaLavoro()" class="btn btn-secondary mt-3">
+                            <button data-on-click="cambiaCartellaLavoro" class="btn btn-secondary mt-3">
                                 <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_change_folder">Cambia Cartella…</span></button>
                             <p class="text-xs text-amber-700 mt-2 font-medium flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> <span data-i18n="settings_workspace_restart">L'app verrà riavviata se cambi la cartella.</span></p>
                         </div>
@@ -105,10 +105,10 @@
                                 <span data-i18n="label_loading">Loading…</span>
                             </div>
                             <div class="flex gap-2 mt-3">
-                                <button onclick="cambiaCartellaAllegati()" class="btn btn-secondary">
+                                <button data-on-click="cambiaCartellaAllegati" class="btn btn-secondary">
                                     <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_select_folder">Seleziona Cartella…</span>
                                 </button>
-                                <button onclick="ripristinaCartellaAllegatiPredefinita()" id="btn-restore-attachments" class="btn btn-ghost text-red-500 hover:bg-red-50 hover:text-red-700 flex items-center gap-1 hidden-tab">
+                                <button data-on-click="ripristinaCartellaAllegatiPredefinita" id="btn-restore-attachments" class="btn btn-ghost text-red-500 hover:bg-red-50 hover:text-red-700 flex items-center gap-1 hidden-tab">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span data-i18n="btn_restore_default">Ripristina di default</span>
                                 </button>
                             </div>
@@ -120,7 +120,7 @@
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="languages" class="w-4 h-4 text-amber-700"></i> <span data-i18n="ocr_langs_title">Lingue del riconoscimento</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_ocr_desc">Il riconoscimento del testo (OCR) funziona senza connessione, ma ogni lingua va installata una volta. I dati restano su questo computer e non vengono sincronizzati.</p>
-                            <button onclick="apriGestioneLingueOcr()" id="btn-settings-ocr-langs" class="btn btn-secondary">
+                            <button data-on-click="apriGestioneLingueOcr" id="btn-settings-ocr-langs" class="btn btn-secondary">
                                 <i data-lucide="download" class="w-4 h-4 text-stone-500"></i> <span data-i18n="ocr_manage_langs">Gestisci lingue…</span>
                             </button>
                         </div>
@@ -133,24 +133,24 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_safety_title">Cestino e snapshot</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_safety_desc">L'archivio viene fotografato periodicamente su questo computer, e le schede eliminate restano nel cestino prima di sparire. Nulla di tutto ciò viene sincronizzato.</p>
                             <label class="flex items-center gap-2 text-sm mb-3">
-                                <input type="checkbox" id="settings-snapshot-auto" onchange="salvaImpostazioniSicurezza()">
+                                <input type="checkbox" id="settings-snapshot-auto" data-on-change="salvaImpostazioniSicurezza">
                                 <span data-i18n="settings_snapshot_auto">Crea snapshot automatici mentre lavoro</span>
                             </label>
                             <div class="grid grid-cols-3 gap-3">
                                 <label class="text-xs text-stone-600 flex flex-col gap-1">
                                     <span data-i18n="settings_snapshot_recenti">Snapshot recenti</span>
-                                    <input type="number" min="0" max="100" id="settings-snapshot-recenti" class="form-input" onchange="salvaImpostazioniSicurezza()">
+                                    <input type="number" min="0" max="100" id="settings-snapshot-recenti" class="form-input" data-on-change="salvaImpostazioniSicurezza">
                                 </label>
                                 <label class="text-xs text-stone-600 flex flex-col gap-1">
                                     <span data-i18n="settings_snapshot_giorni">Giorni di cronologia</span>
-                                    <input type="number" min="0" max="3650" id="settings-snapshot-giorni" class="form-input" onchange="salvaImpostazioniSicurezza()">
+                                    <input type="number" min="0" max="3650" id="settings-snapshot-giorni" class="form-input" data-on-change="salvaImpostazioniSicurezza">
                                 </label>
                                 <label class="text-xs text-stone-600 flex flex-col gap-1">
                                     <span data-i18n="settings_cestino_giorni">Giorni nel cestino</span>
-                                    <input type="number" min="0" max="3650" id="settings-cestino-giorni" class="form-input" onchange="salvaImpostazioniSicurezza()">
+                                    <input type="number" min="0" max="3650" id="settings-cestino-giorni" class="form-input" data-on-change="salvaImpostazioniSicurezza">
                                 </label>
                             </div>
-                            <button onclick="chiudiImpostazioni(); if (window.apriCestino) apriCestino();" class="btn btn-secondary mt-3">
+                            <button data-on-click="inSequenza" data-args-click="[&quot;chiudiImpostazioni&quot;,&quot;apriCestino&quot;]" class="btn btn-secondary mt-3">
                                 <i data-lucide="trash-2" class="w-4 h-4 text-stone-500"></i> <span data-i18n="trash_title">Cestino</span>
                             </button>
                         </div>
@@ -158,7 +158,7 @@
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_backup">Backup Dati</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_backup_desc">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>
-                            <button onclick="esportaBackupZip()" class="btn w-full justify-center shadow-sm" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
+                            <button data-on-click="esportaBackupZip" class="btn w-full justify-center shadow-sm" style="background-color: var(--color-text-main); color: var(--color-bg-base);">
                                 <i data-lucide="file-archive" class="w-4 h-4"></i> <span data-i18n="btn_export_zip">Esporta Backup in ZIP</span>
                             </button>
                         </div>
@@ -176,7 +176,7 @@
                             </div>
                             <p class="text-xs text-stone-500 mb-3" data-i18n="settings_hub_manage_hint">Inviti, collaboratori, allegati e sincronizzazione automatica si gestiscono dal pannello Condivisione.</p>
                             <div class="flex flex-wrap gap-2">
-                                <button onclick="chiudiImpostazioni(); if(window.apriShareModal) apriShareModal();" class="btn btn-primary text-sm"><i data-lucide="users-round" class="w-4 h-4 mr-1.5"></i> <span data-i18n="btn_open_share">Apri Condivisione</span></button>
+                                <button data-on-click="inSequenza" data-args-click="[&quot;chiudiImpostazioni&quot;,&quot;apriShareModal&quot;]" class="btn btn-primary text-sm"><i data-lucide="users-round" class="w-4 h-4 mr-1.5"></i> <span data-i18n="btn_open_share">Apri Condivisione</span></button>
                             </div>
 
                             <div class="border-t border-stone-200 mt-5 pt-5">
@@ -185,8 +185,8 @@
                                 <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm text-stone-700">
                                     <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-hub-drive-status">...</span></div>
                                     <div class="flex gap-2 mt-2">
-                                        <button id="btn-hub-drive-login" class="btn btn-primary" onclick="loginGoogleDrive()" data-i18n="btn_drive_login">Accedi a Drive</button>
-                                        <button id="btn-hub-drive-logout" class="btn btn-danger hidden" onclick="logoutGoogleDrive()" data-i18n="btn_drive_logout">Disconnetti</button>
+                                        <button id="btn-hub-drive-login" class="btn btn-primary" data-on-click="loginGoogleDrive" data-i18n="btn_drive_login">Accedi a Drive</button>
+                                        <button id="btn-hub-drive-logout" class="btn btn-danger hidden" data-on-click="logoutGoogleDrive" data-i18n="btn_drive_logout">Disconnetti</button>
                                     </div>
                                 </div>
                             </div>
@@ -199,9 +199,9 @@
                             <div class="space-y-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm text-stone-700">
                                 <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-drive-status">...</span></div>
                                 <div class="flex gap-2 mt-2">
-                                    <button id="btn-drive-login" class="btn btn-primary" onclick="loginGoogleDrive()" data-i18n="btn_drive_login">Accedi a Drive</button>
-                                    <button id="btn-drive-logout" class="btn btn-danger hidden" onclick="logoutGoogleDrive()" data-i18n="btn_drive_logout">Disconnetti</button>
-                                    <button id="btn-drive-sync" class="btn btn-secondary hidden" onclick="sincronizzaGoogleDrive()" data-i18n="btn_drive_sync">Sincronizza Ora</button>
+                                    <button id="btn-drive-login" class="btn btn-primary" data-on-click="loginGoogleDrive" data-i18n="btn_drive_login">Accedi a Drive</button>
+                                    <button id="btn-drive-logout" class="btn btn-danger hidden" data-on-click="logoutGoogleDrive" data-i18n="btn_drive_logout">Disconnetti</button>
+                                    <button id="btn-drive-sync" class="btn btn-secondary hidden" data-on-click="sincronizzaGoogleDrive" data-i18n="btn_drive_sync">Sincronizza Ora</button>
                                 </div>
                             </div>
 
@@ -221,10 +221,10 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_updates">Aggiornamenti</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_updates_desc">Controlla se è disponibile una nuova versione del programma su GitHub.</p>
                             <div class="flex gap-2">
-                                <button onclick="controllaAggiornamenti(true)" class="btn btn-secondary">
+                                <button data-on-click="controllaAggiornamenti" data-args-click="[true]" class="btn btn-secondary">
                                     <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_check_updates">Controlla Aggiornamenti</span>
                                 </button>
-                                <button onclick="chiudiImpostazioni(); apriChangelogModal();" class="btn btn-ghost">
+                                <button data-on-click="inSequenza" data-args-click="[&quot;chiudiImpostazioni&quot;,&quot;apriChangelogModal&quot;]" class="btn btn-ghost">
                                     <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Scopri novità
                                 </button>
                             </div>
@@ -233,7 +233,7 @@
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="help-circle" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_support">Supporto</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_support_desc">Hai riscontrato dei problemi o hai dei suggerimenti? Segnalalo su GitHub.</p>
-                            <button onclick="apriIssueModal(); chiudiImpostazioni();" class="btn btn-secondary">
+                            <button data-on-click="inSequenza" data-args-click="[&quot;apriIssueModal&quot;,&quot;chiudiImpostazioni&quot;]" class="btn btn-secondary">
                                 <i data-lucide="alert-circle" class="w-4 h-4"></i> <span data-i18n="btn_report_issue">Segnala problema</span></button>
                         </div>
                     </div>
@@ -242,7 +242,7 @@
             </div>
             
             <div class="modal-header shrink-0 p-4 px-6 justify-end border-t border-stone-200">
-                <button onclick="chiudiImpostazioni()" class="btn" style="background-color: var(--color-text-main); color: var(--color-bg-base);">Chiudi</button>
+                <button data-on-click="chiudiImpostazioni" class="btn" style="background-color: var(--color-text-main); color: var(--color-bg-base);">Chiudi</button>
             </div>
         </div>
     </div>

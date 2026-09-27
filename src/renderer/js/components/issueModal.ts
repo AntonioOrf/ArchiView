@@ -10,12 +10,12 @@
                                 <i data-lucide="alert-circle" class="w-5 h-5 text-amber-700"></i>
                                 <span data-i18n="modal_report_issue">Segnala un problema</span>
                             </h3>
-                            <button type="button" onclick="chiudiIssueModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                            <button type="button" data-on-click="chiudiIssueModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </div>
                         <div class="modal-body">
-                            <form id="issue-form" class="space-y-4" onsubmit="inviaIssueForm(event)">
+                            <form id="issue-form" class="space-y-4" data-on-submit="inviaIssueForm" data-args-submit="[{&quot;$&quot;:&quot;event&quot;}]">
                                 <div>
                                     <label class="form-label" data-i18n="issue_title">Titolo della segnalazione *</label>
                                     <input type="text" id="issue-title-input" required class="form-input" data-i18n-placeholder="placeholder_issue_title" placeholder="Es. Errore durante il salvataggio o caricamento file…">
@@ -33,7 +33,7 @@
                                     <textarea id="issue-desc-input" required class="form-input min-h-[120px] resize-y" data-i18n-placeholder="placeholder_issue_desc" placeholder="Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada…"></textarea>
                                 </div>
                                 <div class="modal-footer mt-4">
-                                    <button type="button" onclick="chiudiIssueModal()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
+                                    <button type="button" data-on-click="chiudiIssueModal" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
                                     <button type="submit" class="btn btn-primary">Invia via Email</button>
                                 </div>
                             </form>

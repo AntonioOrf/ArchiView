@@ -124,7 +124,7 @@
                 <h3 class="modal-title text-stone-800 dark:text-stone-100 flex items-center gap-2">
                     <i data-lucide="shield-check" class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" aria-hidden="true"></i> <span id="cloud-modal-title" data-i18n="modal_cloud_title">Backup su Google Drive</span>
                 </h3>
-                <button type="button" onclick="chiudiCloudModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i></button>
+                <button type="button" data-on-click="chiudiCloudModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body p-6 flex-1 overflow-y-auto custom-scroll min-h-0">
 
@@ -138,10 +138,10 @@
                         <span data-i18n="modal_cloud_activate_desc_short">Una copia privata dell'archivio sul tuo Google Drive, accessibile solo a te.</span>
                     </p>
                     <div class="flex flex-col gap-3 max-w-xs mx-auto">
-                        <button type="button" onclick="trasformaInPersonale()" id="btn-trasforma-personale" class="btn btn-block justify-center py-3 text-sm text-white bg-blue-600 hover:bg-blue-700 border border-blue-700">
+                        <button type="button" data-on-click="trasformaInPersonale" id="btn-trasforma-personale" class="btn btn-block justify-center py-3 text-sm text-white bg-blue-600 hover:bg-blue-700 border border-blue-700">
                             <i data-lucide="shield-check" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_backup_private">Backup Personale (Google Drive)</span>
                         </button>
-                        <button type="button" onclick="chiudiCloudModal(); if(window.apriShareModal) apriShareModal();" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 mt-1">
+                        <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCloudModal&quot;,&quot;apriShareModal&quot;]" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 mt-1">
                             <span data-i18n="cloud_local_share_link">Vuoi invece lavorarci insieme ai colleghi? Condividi l'archivio</span>
                         </button>
                     </div>
@@ -164,7 +164,7 @@
                             <p class="font-serif text-base font-semibold text-stone-800 dark:text-stone-100" id="cloud-active-title" data-i18n="modal_cloud_active_title">Cloud Attivo</p>
                             <p class="text-xs text-stone-500 dark:text-stone-400 truncate" id="cloud-active-account"></p>
                         </div>
-                        <button type="button" onclick="sincronizzaGoogleDrive()" id="btn-cloud-drive-sync" class="btn btn-primary px-4 py-2.5 font-medium shrink-0">
+                        <button type="button" data-on-click="sincronizzaGoogleDrive" id="btn-cloud-drive-sync" class="btn btn-primary px-4 py-2.5 font-medium shrink-0">
                             <i data-lucide="refresh-cw" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_sync_now">Sincronizza Ora</span>
                         </button>
                     </div>
@@ -177,7 +177,7 @@
                     </div>
 
                     <label for="cloud-sync-attachments" class="flex items-center gap-2.5 p-3 rounded-lg border border-stone-200 dark:border-stone-700 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/40">
-                        <input type="checkbox" id="cloud-sync-attachments" onchange="toggleSyncAttachments(this.checked)" class="w-4 h-4 text-blue-600 rounded border-stone-300 shrink-0">
+                        <input type="checkbox" id="cloud-sync-attachments" data-on-change="toggleSyncAttachments" data-args-change="[{&quot;$&quot;:&quot;checked&quot;}]" class="w-4 h-4 text-blue-600 rounded border-stone-300 shrink-0">
                         <span class="text-sm leading-snug text-stone-700 dark:text-stone-300" data-i18n="label_sync_attachments">Sincronizza allegati automaticamente (PDF/Immagini)</span>
                     </label>
 
@@ -186,25 +186,25 @@
                             <i data-lucide="chevron-right" class="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-90" aria-hidden="true"></i> <span data-i18n="label_advanced_options">Opzioni avanzate</span>
                         </summary>
                         <div class="flex flex-col gap-1.5 mt-1.5">
-                            <button type="button" onclick="collegaArchivioEsistenteDrive()" id="btn-cloud-relink" class="btn btn-ghost justify-start py-2 text-sm">
+                            <button type="button" data-on-click="collegaArchivioEsistenteDrive" id="btn-cloud-relink" class="btn btn-ghost justify-start py-2 text-sm">
                                 <i data-lucide="link" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_relink_drive_vault">Collega a un archivio esistente su Drive</span>
                             </button>
-                            <button type="button" onclick="cambiaAccountGoogleVault()" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm">
+                            <button type="button" data-on-click="cambiaAccountGoogleVault" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm">
                                 <i data-lucide="user-plus" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_use_another_account">Usa un altro account Google</span>
                             </button>
-                            <button type="button" onclick="apriMigrazioneDaCloudModal()" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                            <button type="button" data-on-click="apriMigrazioneDaCloudModal" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
                                 <i data-lucide="server" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_migrate_hub">Passa all'archivio condiviso</span>
                             </button>
-                            <button type="button" onclick="trasformaInPersonale()" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm">
+                            <button type="button" data-on-click="trasformaInPersonale" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm">
                                 <i data-lucide="shield" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_convert_backup_private">Converti in Backup Personale</span>
                             </button>
 
                             <!-- Azioni irreversibili: separate e già rosse a riposo, non solo in hover -->
                             <hr class="my-1 border-stone-200">
-                            <button type="button" onclick="pulisciAllegatiOrfani()" id="btn-cloud-clean-orphans" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
+                            <button type="button" data-on-click="pulisciAllegatiOrfani" id="btn-cloud-clean-orphans" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
                                 <i data-lucide="trash-2" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_clean_ghosts">Pulisci file inutilizzati</span>
                             </button>
-                            <button type="button" onclick="scollegaCloud()" id="btn-disconnect-cloud" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
+                            <button type="button" data-on-click="scollegaCloud" id="btn-disconnect-cloud" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
                                 <i data-lucide="unlink" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_disconnect_cloud">Scollega dal Cloud</span>
                             </button>
                         </div>
@@ -223,7 +223,7 @@
                     </div>
                     <div id="cloud-relink-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto custom-scroll"></div>
                     <div class="flex justify-end">
-                        <button type="button" onclick="chiudiCollegaArchivioDrive()" class="btn btn-ghost py-2 text-sm" data-i18n="btn_cancel">Annulla</button>
+                        <button type="button" data-on-click="chiudiCollegaArchivioDrive" class="btn btn-ghost py-2 text-sm" data-i18n="btn_cancel">Annulla</button>
                     </div>
                 </div>
 

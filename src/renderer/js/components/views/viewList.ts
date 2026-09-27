@@ -3,7 +3,7 @@
         const mainElement = document.querySelector('main');
         if (mainElement && !document.getElementById('view-list')) {
             const html = `
-            <div id="view-list" class="fade-in h-full flex flex-col" oncontextmenu="if(typeof showFolderContextMenu==='function') showFolderContextMenu(event)">
+            <div id="view-list" class="fade-in h-full flex flex-col" data-on-contextmenu="seEsiste" data-args-contextmenu="[&quot;showFolderContextMenu&quot;,{&quot;$&quot;:&quot;event&quot;}]">
 
                 <div class="border-b border-stone-200 pb-4 mb-4 shrink-0">
                     <div class="min-w-0">
@@ -32,10 +32,10 @@
                              il chevron sceglie subito il tipo di scheda. Prima il tipo si
                              poteva scegliere solo DENTRO il form, dopo averlo aperto. -->
                         <div class="flex items-stretch">
-                            <button id="btn-tab-add" onclick="switchTab('add')" class="btn btn-primary rounded-r-none" data-shortcut="Ctrl+N" data-i18n-title="tooltip_new_record" data-i18n-aria-label="tooltip_new_record">
+                            <button id="btn-tab-add" data-on-click="switchTab" data-args-click="[&quot;add&quot;]" class="btn btn-primary rounded-r-none" data-shortcut="Ctrl+N" data-i18n-title="tooltip_new_record" data-i18n-aria-label="tooltip_new_record">
                                 <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="btn_new_record">Nuova scheda</span>
                             </button>
-                            <button id="btn-nuova-scheda-tipo" onclick="window.apriMenuNuovaScheda(this)"
+                            <button id="btn-nuova-scheda-tipo" data-on-click="apriMenuNuovaScheda" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]"
                                     class="btn btn-primary rounded-l-none px-2 border-l border-white/25"
                                     aria-haspopup="menu" aria-expanded="false"
                                     data-i18n-title="tooltip_new_record_type" data-i18n-aria-label="tooltip_new_record_type">
@@ -45,7 +45,7 @@
                         <!-- L'etichetta cade sotto i 1280px: la barra deve stare su UNA riga,
                              e andare a capo costava piu' della parola. Il nome accessibile
                              resta (aria-label), quindi il pulsante non diventa muto. -->
-                        <button onclick="apriNewTypeModal()" class="btn btn-secondary shadow-sm"
+                        <button data-on-click="apriNewTypeModal" class="btn btn-secondary shadow-sm"
                                 data-i18n-title="tooltip_new_model" data-i18n-aria-label="btn_new_model">
                             <i data-lucide="file-plus-2" class="w-4 h-4"></i> <span class="hidden xl:inline" data-i18n="btn_new_model">Nuovo modello</span>
                         </button>
@@ -57,7 +57,7 @@
                                  controlli di vista, non con le azioni di creazione: non crea
                                  nulla, restringe ciò che si guarda. Il badge dice quanti
                                  filtri sono attivi anche a pannello chiuso. -->
-                            <button id="btn-filtri" onclick="window.apriPannelloFiltri(this)"
+                            <button id="btn-filtri" data-on-click="apriPannelloFiltri" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]"
                                     class="btn btn-ghost border border-stone-200 dark:border-stone-700 relative"
                                     aria-haspopup="dialog" aria-expanded="false"
                                     data-i18n-title="tooltip_filters" data-i18n-aria-label="tooltip_filters">
@@ -74,10 +74,10 @@
                                 <!-- Larghezza limitata: il select si dimensiona sull'opzione
                                      piu' lunga, e un campo custom dal nome chilometrico
                                      spingeva da solo la barra a capo. -->
-                                <select id="select-ordinamento" onchange="window.impostaOrdinamento(this.value)"
+                                <select id="select-ordinamento" data-on-change="impostaOrdinamento" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]"
                                         class="btn btn-ghost border border-stone-200 dark:border-stone-700 py-1 max-w-[8rem] truncate"
                                         data-i18n-title="tooltip_sort_by" data-i18n-aria-label="label_sort_by"></select>
-                                <button id="btn-ordinamento-dir" onclick="window.invertiDirezioneOrdinamento()"
+                                <button id="btn-ordinamento-dir" data-on-click="invertiDirezioneOrdinamento"
                                         class="btn btn-ghost border border-stone-200 dark:border-stone-700"
                                         data-i18n-title="tooltip_sort_dir">
                                     <i data-lucide="arrow-down-a-z" class="w-4 h-4"></i>
@@ -87,12 +87,12 @@
                             <!-- Segmento a due stati invece di un unico bottone: mostra QUALE
                                  vista e' attiva, invece di nasconderlo dietro un'icona sola. -->
                             <div class="flex items-stretch" role="group" data-i18n-aria-label="tooltip_toggle_view">
-                                <button id="btn-vista-tabella" onclick="window.cambiaVistaLista('tabella')"
+                                <button id="btn-vista-tabella" data-on-click="cambiaVistaLista" data-args-click="[&quot;tabella&quot;]"
                                         class="btn btn-ghost border border-stone-200 dark:border-stone-700 rounded-r-none"
                                         data-i18n-title="tooltip_view_table">
                                     <i data-lucide="rows-3" class="w-4 h-4"></i>
                                 </button>
-                                <button id="btn-vista-griglia" onclick="window.cambiaVistaLista('griglia')"
+                                <button id="btn-vista-griglia" data-on-click="cambiaVistaLista" data-args-click="[&quot;griglia&quot;]"
                                         class="btn btn-ghost border border-l-0 border-stone-200 dark:border-stone-700 rounded-l-none"
                                         data-i18n-title="tooltip_view_grid">
                                     <i data-lucide="layout-grid" class="w-4 h-4"></i>
@@ -133,9 +133,9 @@
                 </div>
 
                 <div id="pagination-controls" class="hidden justify-center items-center gap-4 mt-2 mb-10">
-                    <button onclick="cambiaPagina(-1)" class="btn btn-secondary" id="btn-prev-page"><i data-lucide="chevron-left" class="w-4 h-4"></i> <span data-i18n="btn_prev">Precedente</span></button>
+                    <button data-on-click="cambiaPagina" data-args-click="[-1]" class="btn btn-secondary" id="btn-prev-page"><i data-lucide="chevron-left" class="w-4 h-4"></i> <span data-i18n="btn_prev">Precedente</span></button>
                     <span id="page-indicator" class="text-stone-600 font-medium text-sm"></span>
-                    <button onclick="cambiaPagina(1)" class="btn btn-secondary" id="btn-next-page"><span data-i18n="btn_next">Successiva</span> <i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    <button data-on-click="cambiaPagina" data-args-click="[1]" class="btn btn-secondary" id="btn-next-page"><span data-i18n="btn_next">Successiva</span> <i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                 </div>
 
                 <div id="empty-state" class="hidden text-center py-16 mt-10 bg-stone-50 rounded-sm border border-dashed border-stone-300">

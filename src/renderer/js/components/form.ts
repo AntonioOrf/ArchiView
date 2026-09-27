@@ -781,7 +781,7 @@ window.renderAllegatiForm = async function(allegatiList) {
         let content = '';
         if (al.tipo === 'pdf') {
             content = `
-                <div class="flex items-center gap-2 truncate cursor-pointer hover:text-red-700 flex-1" onclick="apriPdfInterno(${jsArg(al.nome)})">
+                <div class="flex items-center gap-2 truncate cursor-pointer hover:text-red-700 flex-1" ${window.azione('click', 'apriPdfInterno', String((al.nome) ?? ''))}>
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
                     <i data-lucide="file-text" class="w-6 h-6 text-red-600 shrink-0"></i>
                     <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || 'PDF')}</span>
@@ -798,7 +798,7 @@ window.renderAllegatiForm = async function(allegatiList) {
                 srcPieno = window.srcAllegato(al, { lato: 2000 });
             }
             content = `
-                <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" onclick="apriModal(${jsArg(srcPieno)}, 'img')">
+                <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" ${window.azione('click', 'apriModal', String((srcPieno) ?? ''), "img")}>
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
                     <img src="${escapeHTML(src)}" alt="${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}" class="w-8 h-8 object-cover rounded-sm border border-stone-200 shrink-0">
                     <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}</span>
@@ -809,16 +809,16 @@ window.renderAllegatiForm = async function(allegatiList) {
         div.innerHTML = `
             ${content}
             <div class="flex items-center gap-1 shrink-0">
-                <button type="button" data-move="up" onclick="spostaAllegatoForm(this, -1)" ${i === 0 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}" title="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}">
+                <button type="button" data-move="up" data-on-click="spostaAllegatoForm" data-args-click="[{&quot;$&quot;:&quot;this&quot;},-1]" ${i === 0 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}" title="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}">
                     <i data-lucide="chevron-up" class="w-4 h-4"></i>
                 </button>
-                <button type="button" data-move="down" onclick="spostaAllegatoForm(this, 1)" ${i === allegatiList.length - 1 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}" title="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}">
+                <button type="button" data-move="down" data-on-click="spostaAllegatoForm" data-args-click="[{&quot;$&quot;:&quot;this&quot;},1]" ${i === allegatiList.length - 1 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}" title="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}">
                     <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="rinominaAllegatoForm(this)" class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" aria-label="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}" title="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}">
+                <button type="button" data-on-click="rinominaAllegatoForm" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" class="text-stone-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" aria-label="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}" title="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="rimuoviAllegatoForm(this)" class="text-stone-400 hover:text-red-600 p-1 rounded hover:bg-red-50" aria-label="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}" title="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}">
+                <button type="button" data-on-click="rimuoviAllegatoForm" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" class="text-stone-400 hover:text-red-600 p-1 rounded hover:bg-red-50" aria-label="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}" title="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>

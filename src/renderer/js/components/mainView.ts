@@ -695,11 +695,11 @@ function renderTabellaSchede(paginated) {
     const visibili = colonneVisibili(chiave, disponibili);
     const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
 
-    const thSegnatura = `<th class="ordinabile" onclick="window.impostaOrdinamento('segnatura')">${escapeHTML(window.t('field_segnatura', 'Segnatura'))}${indicatoreOrdinamento('segnatura')}</th>`;
+    const thSegnatura = `<th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;segnatura&quot;]">${escapeHTML(window.t('field_segnatura', 'Segnatura'))}${indicatoreOrdinamento('segnatura')}</th>`;
     // Ogni colonna è ordinabile: in tabella l'intestazione È il comando di ordinamento
     // (il menu a tendina resta solo nella vista a schede, dove non c'è nulla da cliccare).
     const thCampi = visibili.map(c =>
-        `<th class="ordinabile" onclick="window.impostaOrdinamento(${jsArg(c)})">${escapeHTML(etichettaCampo(c))}${indicatoreOrdinamento(c)}</th>`
+        `<th class="ordinabile" ${window.azione('click', 'impostaOrdinamento', String((c) ?? ''))}>${escapeHTML(etichettaCampo(c))}${indicatoreOrdinamento(c)}</th>`
     ).join('');
 
     table.innerHTML = `
@@ -707,9 +707,9 @@ function renderTabellaSchede(paginated) {
             <tr>
                 ${thSegnatura}
                 ${thCampi}
-                <th class="ordinabile" onclick="window.impostaOrdinamento('tags')">${escapeHTML(window.t('th_tags', 'Tag'))}${indicatoreOrdinamento('tags')}</th>
-                <th class="ordinabile" onclick="window.impostaOrdinamento('allegati')">${escapeHTML(window.t('th_attachments', 'Allegati'))}${indicatoreOrdinamento('allegati')}</th>
-                <th class="ordinabile" onclick="window.impostaOrdinamento('lastModified')">${escapeHTML(window.t('th_modified', 'Modificato'))}${indicatoreOrdinamento('lastModified')}</th>
+                <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;tags&quot;]">${escapeHTML(window.t('th_tags', 'Tag'))}${indicatoreOrdinamento('tags')}</th>
+                <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;allegati&quot;]">${escapeHTML(window.t('th_attachments', 'Allegati'))}${indicatoreOrdinamento('allegati')}</th>
+                <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;lastModified&quot;]">${escapeHTML(window.t('th_modified', 'Modificato'))}${indicatoreOrdinamento('lastModified')}</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -1137,10 +1137,10 @@ function renderMain(resetPage = true) {
 
             let allegatoHTML = '';
             const btnTrascriviModifica = `
-                <button onclick="editItem(${jsArg(m.id)})" class="btn btn-secondary flex-1 text-xs uppercase tracking-wider tutorial-modifica-btn">
+                <button ${window.azione('click', 'editItem', String((m.id) ?? ''))} class="btn btn-secondary flex-1 text-xs uppercase tracking-wider tutorial-modifica-btn">
                     <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_edit') || 'Modifica'}</span>
                 </button>
-                <button onclick="apriTrascrizione(${jsArg(m.id)})" class="btn flex-1 text-xs uppercase tracking-wider tutorial-trascrivi-btn" style="background-color: var(--color-primary-light); color: var(--color-primary-hover); border: 1px solid var(--color-primary-border);">
+                <button ${window.azione('click', 'apriTrascrizione', String((m.id) ?? ''))} class="btn flex-1 text-xs uppercase tracking-wider tutorial-trascrivi-btn" style="background-color: var(--color-primary-light); color: var(--color-primary-hover); border: 1px solid var(--color-primary-border);">
                     <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_transcribe') || 'Trascrivi'}</span>
                 </button>
             `;
@@ -1166,7 +1166,7 @@ function renderMain(resetPage = true) {
                 const n = r.uscenti.length + r.entranti.length;
                 if (n > 0) {
                     const titolo = window.t('link_panel_title', 'Schede collegate') + ' (' + n + ')';
-                    collegamentiHTML = `<button type="button" class="card-badge card-badge-link shrink-0" title="${escapeHTML(titolo)}" aria-label="${escapeHTML(titolo)}" onclick="event.stopPropagation(); window.apriCollegamenti(${jsArg(m.id)})"><i data-lucide="link" class="w-3 h-3"></i>${n}</button>`;
+                    collegamentiHTML = `<button type="button" class="card-badge card-badge-link shrink-0" title="${escapeHTML(titolo)}" aria-label="${escapeHTML(titolo)}" ${window.azione('click', 'fermaEChiama', "apriCollegamenti", String((m.id) ?? ''))}><i data-lucide="link" class="w-3 h-3"></i>${n}</button>`;
                 }
             }
 
@@ -1208,7 +1208,7 @@ function renderMain(resetPage = true) {
                         // Un indirizzo web si apre nel browser di sistema, mai dentro
                         // l'applicazione: una pagina remota dentro la finestra dell'app
                         // sarebbe codice di terzi nello stesso processo delle schede.
-                        else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" onclick="event.stopPropagation();window.apriLinkEsternoSicuro(${jsArg(m[campo])});return false;" class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
+                        else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" ${window.azione('click', 'linkEsterno', String((m[campo]) ?? ''))} class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
                         else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
                     }
                 }
@@ -1237,7 +1237,7 @@ function renderMain(resetPage = true) {
 
             // Checkbox di selezione (visibile quando c'è almeno un record selezionato)
             const checkboxHTML = hasSelection ? `
-                <div class="absolute top-2 left-2 z-10" onclick="event.stopPropagation(); window.selectItem(${jsArg(m.id)}, event)">
+                <div class="absolute top-2 left-2 z-10" ${window.azione('click', 'fermaEChiama', "selectItem", String((m.id) ?? ''), window.ARG.evento)}>
                     <div class="flex items-center justify-center w-5 h-5 rounded border-2 shadow-sm cursor-pointer transition-colors duration-150
                         ${isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white/90 border-stone-300 text-transparent hover:border-amber-400'}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>

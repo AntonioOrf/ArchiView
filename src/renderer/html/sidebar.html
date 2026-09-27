@@ -4,7 +4,7 @@
                 <div class="panel-header p-4 flex justify-between items-center shrink-0">
                     <h2 class="font-bold flex items-center gap-2 w-full">
                         <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span>
-                        <button type="button" onclick="apriMenuEtichettaAlbero(this)" id="btn-albero-secondario" class="btn btn-ghost btn-icon ml-auto" aria-haspopup="menu" aria-expanded="false" data-i18n-title="tree_label_title" data-i18n-aria-label="tree_label_title" title="Etichetta secondaria delle schede" aria-label="Etichetta secondaria delle schede">
+                        <button type="button" data-on-click="apriMenuEtichettaAlbero" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" id="btn-albero-secondario" class="btn btn-ghost btn-icon ml-auto" aria-haspopup="menu" aria-expanded="false" data-i18n-title="tree_label_title" data-i18n-aria-label="tree_label_title" title="Etichetta secondaria delle schede" aria-label="Etichetta secondaria delle schede">
                             <i data-lucide="text-cursor-input" class="w-4 h-4"></i>
                         </button></h2>
                 </div>
@@ -30,7 +30,7 @@
                 <div class="panel-header p-4 shrink-0">
                     <h2 class="font-bold flex items-center gap-2 mb-3">
                         <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span>
-                        <button type="button" onclick="apriGestioneTag()" id="btn-tag-manager" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="tag_manager_title" data-i18n-aria-label="tag_manager_title" title="Gestione tag" aria-label="Gestione tag">
+                        <button type="button" data-on-click="apriGestioneTag" id="btn-tag-manager" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="tag_manager_title" data-i18n-aria-label="tag_manager_title" title="Gestione tag" aria-label="Gestione tag">
                             <i data-lucide="settings-2" class="w-4 h-4"></i>
                         </button>
                     </h2>
@@ -38,7 +38,7 @@
                         <i data-lucide="bookmark" class="w-4 h-4 text-stone-400 shrink-0"></i>
                         <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
                     </div>
-                    <button onclick="if(window.activeTags) window.activeTags.clear(); renderMain(); renderTagList();" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
+                    <button data-on-click="azzeraTagAttivi" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
                 </div>
                 <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_available_tags">TAG DISPONIBILI</div>
                 <div id="tag-list" class="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
@@ -69,7 +69,7 @@
                 </div>
                 <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
                     <span><span data-i18n="sidebar_cloud_revisions">REVISIONI CLOUD</span></span>
-                    <button id="btn-history-refresh" onclick="if(typeof window.renderHistoryList==='function') window.renderHistoryList()" class="text-amber-600 hover:text-amber-800 transition-colors" data-i18n-title="tooltip_refresh_list" data-i18n-aria-label="tooltip_refresh_list" title="Aggiorna lista">
+                    <button id="btn-history-refresh" data-on-click="seEsiste" data-args-click="[&quot;renderHistoryList&quot;]" class="text-amber-600 hover:text-amber-800 transition-colors" data-i18n-title="tooltip_refresh_list" data-i18n-aria-label="tooltip_refresh_list" title="Aggiorna lista">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
@@ -80,7 +80,7 @@
 
             <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5 relative" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
                 
-                <button onclick="toggleVaultSwitcher(event)" class="btn btn-ghost w-full justify-between hover:bg-stone-200">
+                <button data-on-click="toggleVaultSwitcher" data-args-click="[{&quot;$&quot;:&quot;event&quot;}]" class="btn btn-ghost w-full justify-between hover:bg-stone-200">
                     <div class="flex items-center gap-2 truncate text-sm">
                         <i data-lucide="archive" class="w-4 h-4 text-amber-700 shrink-0"></i>
                         <span id="current-vault-name" class="font-bold truncate text-stone-800">...</span>
@@ -91,18 +91,18 @@
                 <div class="w-full h-px bg-stone-200 my-1"></div>
 
                 <div class="flex items-center justify-center gap-1 w-full">
-                    <button onclick="apriImpostazioni()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
+                    <button data-on-click="apriImpostazioni" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
                     <!-- Icona coerente con l'azione: apre la CONDIVISIONE, non la sincronizzazione
                          (la nuvola resta riservata al cloud, in Zona 2). -->
-                    <button id="sidebar-cloud-btn" onclick="if(window.apriShareModal) apriShareModal()" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
+                    <button id="sidebar-cloud-btn" data-on-click="seEsiste" data-args-click="[&quot;apriShareModal&quot;]" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
                         <i data-lucide="users" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
                     </button>
-                    <button onclick="if(window.avviaTutorial) window.avviaTutorial()" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial">
+                    <button data-on-click="seEsiste" data-args-click="[&quot;avviaTutorial&quot;]" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial">
                         <i data-lucide="help-circle" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="apriIssueModal()" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
+                    <button data-on-click="apriIssueModal" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
                         <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
                     </button>
                 </div>
@@ -111,7 +111,7 @@
                 <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white dark:bg-stone-800 rounded-md shadow-2xl border border-stone-200 dark:border-stone-700 p-1.5 z-dropdown flex flex-col max-h-64">
                     <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
                     <div class="w-full h-px bg-stone-200 my-1.5"></div>
-                    <button onclick="mostraWelcomeModal(); toggleVaultSwitcher(new Event('click'));" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
+                    <button data-on-click="gestisciArchivi" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
                         <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> <span data-i18n="sidebar_manage_archives">Gestisci archivi…</span>
                     </button>
                 </div>

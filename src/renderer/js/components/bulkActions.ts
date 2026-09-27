@@ -558,7 +558,7 @@ window.apriAzioneMassa = function(azione) {
                 <p id="bulk-count" class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3"></p>
                 <div id="bulk-body" class="flex flex-col gap-3"></div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiAzioniMassa()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiAzioniMassa" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_cancel">Annulla</span>
                     </button>
                     <button type="button" id="bulk-confirm" class="btn btn-primary">

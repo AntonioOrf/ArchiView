@@ -118,7 +118,7 @@ window.avviaTutorial = async function () {
         stepAC = new AbortController();
         const advance = () => setTimeout(() => window.dInstance?.moveNext(), delay);
         document.querySelectorAll(selector).forEach(btn => {
-            if (clickAttrs.includes(btn.getAttribute('onclick'))) {
+            if (clickAttrs.includes(btn.getAttribute('data-on-click'))) {
                 btn.addEventListener('click', advance, { once: true, signal: stepAC.signal });
             }
         });
@@ -144,7 +144,7 @@ window.avviaTutorial = async function () {
             }
         },
         {
-            element: 'button[onclick="apriNewTypeModal()"]',
+            element: 'button[data-on-click="apriNewTypeModal"]',
             popover: {
                 title: window.t('tut_models_title', 'Gestione Modelli'),
                 description: window.t('tut_models_desc', 'Clicca su questo pulsante per creare o personalizzare i modelli di documento. Un modello definisce quali campi (es. Data, Autore, Note) saranno disponibili per la compilazione della scheda.'),
@@ -163,7 +163,7 @@ window.avviaTutorial = async function () {
                 align: 'start',
                 showButtons: []
             },
-            onHighlighted: () => attachModalButtons('#new-type-modal button', ['chiudiNewTypeModal()', 'confermaCreaTipo()']),
+            onHighlighted: () => attachModalButtons('#new-type-modal button', ['chiudiNewTypeModal', 'confermaCreaTipo']),
             onPrevClick: () => {
                 if (window.chiudiNewTypeModal) window.chiudiNewTypeModal();
                 setTimeout(() => window.dInstance?.movePrevious(), 150);
@@ -378,7 +378,7 @@ window.avviaTutorial = async function () {
     }
 
     steps.push({
-        element: 'button[onclick="toggleVaultSwitcher(event)"]',
+        element: 'button[data-on-click="toggleVaultSwitcher"]',
         popover: {
             title: window.t('tut_vaults_title', 'Gestione Multi-Archivio'),
             description: window.t('tut_vaults_desc', 'ArchiView ti permette di creare e gestire un numero illimitato di archivi (vault) separati. Cliccando su questo pulsante potrai passare rapidamente da un archivio all\'altro, creare nuovi archivi locali, collegarne di Cloud o gestire Archivi Condivisi per collaborare col tuo team.'),

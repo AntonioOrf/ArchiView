@@ -233,19 +233,19 @@ window.eliminaSelezionateCestino = function() {
                 <div id="cestino-list" class="tag-manager-list"></div>
                 <div id="cestino-bulk-bar" class="tag-merge-bar hidden">
                     <span id="cestino-bulk-count" class="text-xs text-stone-500 dark:text-stone-400"></span>
-                    <button type="button" onclick="ripristinaSelezionateCestino()" class="btn btn-primary shrink-0">
+                    <button type="button" data-on-click="ripristinaSelezionateCestino" class="btn btn-primary shrink-0">
                         <span data-i18n="trash_restore">Ripristina</span>
                     </button>
-                    <button type="button" onclick="eliminaSelezionateCestino()" class="btn btn-ghost text-red-600 shrink-0">
+                    <button type="button" data-on-click="eliminaSelezionateCestino" class="btn btn-ghost text-red-600 shrink-0">
                         <span data-i18n="trash_delete_forever">Elimina definitivamente</span>
                     </button>
                 </div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="trash_hint">Le schede eliminate restano qui per 30 giorni e poi spariscono da sole. Il cestino è locale a questo computer: non viene sincronizzato e non occupa spazio nell'archivio condiviso.</p>
                 <div class="modal-footer">
-                    <button type="button" onclick="svuotaCestinoDaPannello()" class="btn btn-ghost text-red-600 mr-auto">
+                    <button type="button" data-on-click="svuotaCestinoDaPannello" class="btn btn-ghost text-red-600 mr-auto">
                         <span data-i18n="trash_empty_now">Svuota il cestino</span>
                     </button>
-                    <button type="button" onclick="chiudiCestino()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiCestino" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>

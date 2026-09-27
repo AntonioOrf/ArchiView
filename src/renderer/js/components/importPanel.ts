@@ -874,16 +874,16 @@ window.confermaImportCsv = async function() {
                  all'elenco costringe a scendere in fondo per fare la cosa per cui si è aperta
                  la finestra. Vedi .modal-footer-bar in style.css. -->
             <div class="modal-footer modal-footer-bar">
-                <button type="button" onclick="chiudiImportCsv()" data-modal-cancel class="btn btn-ghost">
+                <button type="button" data-on-click="chiudiImportCsv" data-modal-cancel class="btn btn-ghost">
                     <span data-i18n="btn_cancel">Annulla</span>
                 </button>
-                <button type="button" id="import-csv-back" onclick="importCsvIndietro()" class="btn btn-ghost hidden-tab">
+                <button type="button" id="import-csv-back" data-on-click="importCsvIndietro" class="btn btn-ghost hidden-tab">
                     <span data-i18n="btn_prev">Precedente</span>
                 </button>
-                <button type="button" id="import-csv-continua" onclick="importCsvContinua()" class="btn btn-primary">
+                <button type="button" id="import-csv-continua" data-on-click="importCsvContinua" class="btn btn-primary">
                     <span data-i18n="btn_next">Successiva</span>
                 </button>
-                <button type="button" id="import-csv-confirm" onclick="confermaImportCsv()" class="btn btn-primary hidden-tab"></button>
+                <button type="button" id="import-csv-confirm" data-on-click="confermaImportCsv" class="btn btn-primary hidden-tab"></button>
             </div>
         </div>
     </div>

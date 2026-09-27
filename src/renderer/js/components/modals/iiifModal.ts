@@ -420,7 +420,7 @@ window.confermaImportIiif = async function() {
                     <i data-lucide="library" class="w-5 h-5 text-amber-700"></i>
                     <span id="iiif-titolo-modale" data-i18n="iiif_title">Importa un manoscritto da un manifest IIIF</span>
                 </h3>
-                <button type="button" onclick="chiudiImportIiif()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                <button type="button" data-on-click="chiudiImportIiif" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -429,7 +429,7 @@ window.confermaImportIiif = async function() {
                     Incolla l'indirizzo del manifest pubblicato dalla biblioteca. Le carte restano sul server e non occupano spazio: si scaricano una per una, o tutte insieme, quando servono.
                 </p>
 
-                <form onsubmit="leggiManifestIiif(event)" class="flex gap-2">
+                <form data-on-submit="leggiManifestIiif" data-args-submit="[{&quot;$&quot;:&quot;event&quot;}]" class="flex gap-2">
                     <input type="url" id="iiif-url" required class="form-input flex-1"
                            data-i18n-placeholder="iiif_url_placeholder" placeholder="https://.../manifest.json">
                     <button type="submit" id="iiif-leggi" class="btn btn-secondary shrink-0" data-i18n="iiif_read">Leggi</button>
@@ -454,11 +454,11 @@ window.confermaImportIiif = async function() {
                     <div class="flex flex-wrap items-end gap-2">
                         <div class="flex-1 min-w-[200px]">
                             <label class="form-label" for="iiif-intervallo" data-i18n="iiif_range">Carte da importare</label>
-                            <input type="text" id="iiif-intervallo" class="form-input" oninput="applicaIntervalloIiif()"
+                            <input type="text" id="iiif-intervallo" class="form-input" data-on-input="applicaIntervalloIiif"
                                    data-i18n-placeholder="iiif_range_placeholder" placeholder="tutte — oppure 1-10, 25, 40-60">
                         </div>
-                        <button type="button" class="btn btn-ghost" onclick="selezionaTutteIiif(true)" data-i18n="iiif_select_all">Tutte</button>
-                        <button type="button" class="btn btn-ghost" onclick="selezionaTutteIiif(false)" data-i18n="iiif_select_none">Nessuna</button>
+                        <button type="button" class="btn btn-ghost" data-on-click="selezionaTutteIiif" data-args-click="[true]" data-i18n="iiif_select_all">Tutte</button>
+                        <button type="button" class="btn btn-ghost" data-on-click="selezionaTutteIiif" data-args-click="[false]" data-i18n="iiif_select_none">Nessuna</button>
                         <span id="iiif-selezionate" class="text-xs text-stone-500 ml-auto"></span>
                     </div>
 
@@ -491,8 +491,8 @@ window.confermaImportIiif = async function() {
                 </div>
 
                 <div class="modal-footer mt-4">
-                    <button type="button" onclick="chiudiImportIiif()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
-                    <button type="button" id="iiif-conferma" onclick="confermaImportIiif()" class="btn btn-primary" disabled data-i18n="iiif_import">Importa</button>
+                    <button type="button" data-on-click="chiudiImportIiif" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
+                    <button type="button" id="iiif-conferma" data-on-click="confermaImportIiif" class="btn btn-primary" disabled data-i18n="iiif_import">Importa</button>
                 </div>
             </div>
         </div>

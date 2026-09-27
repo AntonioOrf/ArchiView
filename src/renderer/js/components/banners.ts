@@ -8,9 +8,9 @@
             <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
         </div>
         <div class="flex gap-2 shrink-0 items-center">
-            <button id="btn-note-rilascio" onclick="mostraNoteRilascio()" class="hidden-tab text-sky-100 hover:text-white underline text-xs font-medium px-1" data-i18n="btn_release_notes">Novità di questa versione</button>
+            <button id="btn-note-rilascio" data-on-click="mostraNoteRilascio" class="hidden-tab text-sky-100 hover:text-white underline text-xs font-medium px-1" data-i18n="btn_release_notes">Novità di questa versione</button>
             <button id="btn-scarica-aggiornamento" class="bg-white text-sky-700 hover:bg-sky-50 px-3 py-1.5 rounded-sm text-xs font-bold transition-colors shadow-sm" data-i18n="btn_download_github">Scarica da GitHub</button>
-            <button onclick="nascondiBannerAggiornamento()" class="text-sky-100 hover:text-white px-2 py-1.5 transition-colors rounded-sm hover:bg-sky-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button data-on-click="nascondiBannerAggiornamento" class="text-sky-100 hover:text-white px-2 py-1.5 transition-colors rounded-sm hover:bg-sky-700"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
     </div>
 
@@ -22,8 +22,8 @@
             <span data-i18n="tutorial_invite_text">Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?</span>
         </div>
         <div class="flex gap-2 shrink-0 items-center">
-            <button onclick="avviaTutorialDaInvito()" class="btn btn-primary text-xs py-1.5 px-3" data-i18n="btn_tutorial_start">Sì, avvia</button>
-            <button onclick="rifiutaInvitoTutorial()" class="btn btn-ghost text-xs py-1.5 px-3" data-i18n="btn_tutorial_dismiss">No, grazie</button>
+            <button data-on-click="avviaTutorialDaInvito" class="btn btn-primary text-xs py-1.5 px-3" data-i18n="btn_tutorial_start">Sì, avvia</button>
+            <button data-on-click="rifiutaInvitoTutorial" class="btn btn-ghost text-xs py-1.5 px-3" data-i18n="btn_tutorial_dismiss">No, grazie</button>
         </div>
     </div>
 
@@ -35,7 +35,7 @@
                     <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
                     <span data-i18n="modal_release_notes_title">Note di rilascio</span>
                 </h3>
-                <button type="button" onclick="chiudiNoteRilascio()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                <button type="button" data-on-click="chiudiNoteRilascio" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -72,7 +72,7 @@
                     <label for="bottom-confirm-skip" class="text-sm text-stone-600 cursor-pointer select-none" data-i18n="dont_ask_again">Non chiederlo più</label>
                 </div>
                 <div class="modal-footer justify-center mt-2">
-                    <button onclick="window.chiudiBottomConfirm()" class="btn btn-ghost text-sm" data-i18n="btn_cancel">Annulla</button>
+                    <button data-on-click="chiudiBottomConfirm" class="btn btn-ghost text-sm" data-i18n="btn_cancel">Annulla</button>
                     <button id="btn-bottom-confirm-yes" class="btn btn-danger text-sm shadow-md" data-i18n="btn_yes_proceed">Sì, procedi</button>
                 </div>
             </div>

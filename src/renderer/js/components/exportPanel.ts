@@ -329,10 +329,10 @@ window.esportaTesto = async function() {
             <div class="modal-body">
                 <div id="tx-body" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-1"></div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiEsportaTesto()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiEsportaTesto" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
-                    <button type="button" id="tx-export" onclick="esportaTesto()" class="btn btn-primary">
+                    <button type="button" id="tx-export" data-on-click="esportaTesto" class="btn btn-primary">
                         <span data-i18n="tx_export">Esporta</span>
                     </button>
                 </div>

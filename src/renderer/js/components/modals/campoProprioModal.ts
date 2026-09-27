@@ -22,16 +22,16 @@
                 <p class="text-xs text-stone-500" data-i18n="own_field_hint">Il campo resta su questa scheda: il modello e le altre schede non cambiano.</p>
                 <div>
                     <label class="form-label" for="campo-proprio-nome" data-i18n="own_field_name">Nome del campo</label>
-                    <input type="text" id="campo-proprio-nome" class="form-input" list="campo-proprio-suggerimenti" data-i18n-placeholder="own_field_name_ph" placeholder="Filigrana" onkeydown="if(event.key === 'Enter') { event.preventDefault(); confermaCampoProprio(); }">
+                    <input type="text" id="campo-proprio-nome" class="form-input" list="campo-proprio-suggerimenti" data-i18n-placeholder="own_field_name_ph" placeholder="Filigrana" data-on-keydown="suInvio" data-args-keydown="[&quot;confermaCampoProprio&quot;,true]">
                     <datalist id="campo-proprio-suggerimenti"></datalist>
                 </div>
                 <div>
                     <label class="form-label" for="campo-proprio-tipo" data-i18n="label_field_type">Tipo di dato</label>
-                    <select id="campo-proprio-tipo" class="form-input" onchange="aggiornaCampoProprio()"></select>
+                    <select id="campo-proprio-tipo" class="form-input" data-on-change="aggiornaCampoProprio"></select>
                 </div>
                 <div id="campo-proprio-vocabolario-riga" class="hidden">
                     <label class="form-label" for="campo-proprio-vocabolario" data-i18n="label_field_vocab">Prendi i valori da un vocabolario d'archivio</label>
-                    <select id="campo-proprio-vocabolario" class="form-input" onchange="aggiornaCampoProprio()"></select>
+                    <select id="campo-proprio-vocabolario" class="form-input" data-on-change="aggiornaCampoProprio"></select>
                 </div>
                 <div id="campo-proprio-opzioni-riga" class="hidden">
                     <label class="form-label" for="campo-proprio-opzioni" data-i18n="label_field_options">Valori ammessi (uno per riga)</label>
@@ -42,8 +42,8 @@
                     <select id="campo-proprio-authority" class="form-input"></select>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiCampoProprioModal()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
-                    <button type="button" onclick="confermaCampoProprio()" class="btn btn-primary" data-i18n="btn_add">Aggiungi</button>
+                    <button type="button" data-on-click="chiudiCampoProprioModal" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
+                    <button type="button" data-on-click="confermaCampoProprio" class="btn btn-primary" data-i18n="btn_add">Aggiungi</button>
                 </div>
             </div>
         </div>

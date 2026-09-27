@@ -526,10 +526,10 @@ function _grAggiornaDettaglio() {
             <div class="modal-body grafo-corpo">
                 <div class="grafo-barra">
                     <label class="flex items-center gap-2 text-xs cursor-pointer">
-                        <input type="checkbox" id="grafo-isolate" onchange="costruisciGrafo()">
+                        <input type="checkbox" id="grafo-isolate" data-on-change="costruisciGrafo">
                         <span data-i18n="graph_show_isolated">Mostra anche le schede senza collegamenti</span>
                     </label>
-                    <button type="button" onclick="costruisciGrafo()" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="graph_relayout" data-i18n-aria-label="graph_relayout" title="Ricalcola la disposizione" aria-label="Ricalcola la disposizione">
+                    <button type="button" data-on-click="costruisciGrafo" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="graph_relayout" data-i18n-aria-label="graph_relayout" title="Ricalcola la disposizione" aria-label="Ricalcola la disposizione">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -539,7 +539,7 @@ function _grAggiornaDettaglio() {
                     <aside id="grafo-dettaglio" class="grafo-dettaglio"></aside>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" onclick="chiudiGrafo()" data-modal-cancel class="btn btn-ghost">
+                    <button type="button" data-on-click="chiudiGrafo" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
                     </button>
                 </div>

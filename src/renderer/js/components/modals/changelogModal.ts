@@ -17,7 +17,7 @@
                                 <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
                                 <span>${window.escapeHTML(titolo)}</span>
                             </h3>
-                            <button type="button" onclick="chiudiChangelogModal()" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                            <button type="button" data-on-click="chiudiChangelogModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -35,7 +35,7 @@
 
                         </div>
                         <div class="modal-footer border-t border-stone-200 dark:border-stone-800 p-4 flex justify-end shrink-0">
-                            <button type="button" onclick="chiudiChangelogModal()" class="btn btn-primary px-6">Continua</button>
+                            <button type="button" data-on-click="chiudiChangelogModal" class="btn btn-primary px-6">Continua</button>
                         </div>
                     </div>
                 </div>

@@ -142,7 +142,7 @@ window.apriModalDocumenti = async function(id) {
         let previewHtml = '';
         if (al.tipo === 'pdf') {
             previewHtml = `
-                <div onclick="apriPdfInterno(${jsArg(al.nome)})" class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:bg-stone-200 transition-colors mb-3 border border-stone-200">
+                <div ${window.azione('click', 'apriPdfInterno', String((al.nome) ?? ''))} class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:bg-stone-200 transition-colors mb-3 border border-stone-200">
                     <i data-lucide="file-text" class="w-12 h-12 text-red-500"></i>
                 </div>
             `;
@@ -154,7 +154,7 @@ window.apriModalDocumenti = async function(id) {
                 srcPieno = window.srcAllegato(al, { lato: 2000 });
             }
             previewHtml = `
-                <div onclick="apriModal(${jsArg(srcPieno)}, 'img')" class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:opacity-80 transition-opacity mb-3 border border-stone-200 overflow-hidden relative">
+                <div ${window.azione('click', 'apriModal', String((srcPieno) ?? ''), "img")} class="w-full h-32 bg-stone-100 flex justify-center items-center rounded-sm cursor-pointer hover:opacity-80 transition-opacity mb-3 border border-stone-200 overflow-hidden relative">
                      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex justify-center items-center text-white transition-opacity"><i data-lucide="zoom-in"></i></div>
                      <img src="${escapeHTML(src)}" alt="${escapeHTML(al.originalName || `${window.t('attachment_image', 'Immagine')} ${i+1}`)}" class="w-full h-full object-cover">
                 </div>
@@ -168,13 +168,13 @@ window.apriModalDocumenti = async function(id) {
             <div class="w-full flex items-center justify-between gap-1 mt-auto pt-2">
                 <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-300 shrink-0"></i>
                 <span class="text-sm font-semibold text-stone-700 truncate flex-1 text-left" title="${escapeHTML(defaultName)}">${escapeHTML(defaultName)}</span>
-                <button type="button" onclick="spostaAllegatoDaModal(${jsArg(id)}, ${i}, -1)" ${i === 0 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}" title="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}">
+                <button type="button" ${window.azione('click', 'spostaAllegatoDaModal', String((id) ?? ''), i, -1)} ${i === 0 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}" title="${escapeHTML(window.t('tooltip_move_up', 'Sposta su'))}">
                     <i data-lucide="chevron-up" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="spostaAllegatoDaModal(${jsArg(id)}, ${i}, 1)" ${i === allegatiRender.length - 1 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}" title="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}">
+                <button type="button" ${window.azione('click', 'spostaAllegatoDaModal', String((id) ?? ''), i, 1)} ${i === allegatiRender.length - 1 ? 'disabled' : ''} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed" aria-label="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}" title="${escapeHTML(window.t('tooltip_move_down', 'Sposta giù'))}">
                     <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="rinominaAllegatoDaModal(${jsArg(id)}, ${i})" class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0" aria-label="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}" title="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}">
+                <button type="button" ${window.azione('click', 'rinominaAllegatoDaModal', String((id) ?? ''), i)} class="text-stone-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 shrink-0" aria-label="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}" title="${escapeHTML(window.t('tooltip_rename', 'Rinomina'))}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -262,7 +262,8 @@ window.spostaAllegatoDaModal = async function(id, index, direction) {
     const rows = container ? container.querySelectorAll(':scope > div') : [];
     const moved = rows[target];
     if (moved) {
-        const btn = moved.querySelector(`button[onclick*="${direction > 0 ? ', 1)' : ', -1)'}"]`);
+        // L'ultimo argomento di spostaAllegatoDaModal è la direzione: [id, indice, ±1].
+        const btn = moved.querySelector(`button[data-on-click="spostaAllegatoDaModal"][data-args-click$="${direction > 0 ? ',1]' : ',-1]'}"]`);
         if (btn) btn.focus();
     }
 }
