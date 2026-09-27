@@ -60,7 +60,7 @@
                         <label class="form-label" data-i18n="label_custom_fields">Campi aggiuntivi personalizzati</label>
                         <div class="flex gap-2 mb-2">
                             <input type="text" id="custom-type-extra-input" data-i18n-placeholder="placeholder_custom_field" class="form-input flex-1" onkeydown="if(event.key === 'Enter') { event.preventDefault(); aggiungiCampoCustom(); }">
-                            <button type="button" onclick="aggiungiCampoCustom()" class="btn btn-secondary btn-icon"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                            <button type="button" onclick="aggiungiCampoCustom()" class="btn btn-secondary btn-icon" data-i18n-aria-label="btn_add_custom_field" data-i18n-title="btn_add_custom_field" aria-label="Aggiungi campo" title="Aggiungi campo"><i data-lucide="plus" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                     <div>

@@ -14,7 +14,7 @@
                     <i data-lucide="panel-left-close" class="w-5 h-5"></i>
                 </button>
                 <div>
-                    <h2 id="trascrizione-title" class="text-2xl font-bold flex items-center gap-2" style="color: var(--color-primary);"> <span data-i18n="title_transcription">Trascrizione</span></h2>
+                    <h1 id="trascrizione-title" class="text-2xl font-bold flex items-center gap-2" style="color: var(--color-primary);"> <span data-i18n="title_transcription">Trascrizione</span></h1>
                     <p id="trascrizione-subtitle" class="text-sm italic" style="color: var(--color-text-muted);"></p>
                 </div>
             </div>
@@ -68,7 +68,7 @@
                 <!-- Fase 2.3-bis — quale carta si sta trascrivendo. Compare solo con più di
                      un allegato: con uno solo sarebbe una riga che ripete l'ovvio. -->
                 <div id="trascrizione-carta" class="hidden-tab shrink-0 px-3 py-1.5 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-900 truncate"></div>
-                <div class="flex-1 overflow-y-auto cursor-text p-6 bg-white" onclick="if(event.target === this) document.getElementById('trascrizione-editor').focus()">
+                <div class="trasc-editor-area flex-1 overflow-y-auto cursor-text p-6 bg-white" onclick="if(event.target === this) document.getElementById('trascrizione-editor').focus()">
                     <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none text-lg leading-relaxed text-stone-800 select-text" style="font-family: 'Georgia', serif; outline: none;"></div>
                 </div>
             </div>

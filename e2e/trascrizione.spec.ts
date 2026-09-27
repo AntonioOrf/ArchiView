@@ -21,6 +21,34 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trascrizione-editor')).toContainText('Nota di trascrizione');
   });
 
+  test('O4 — aperta, la vista tiene il fuoco: l app coperta non si raggiunge col Tab', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trascrizione');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-FOCUS', FIXTURE_PNG);
+    await page.evaluate((i) => (window as any).apriTrascrizione(i), id);
+    const vista = page.locator('#view-trascrizione');
+    await expect(vista).toBeVisible();
+
+    const editor = page.locator('#trascrizione-editor');
+    await expect(editor).toBeFocused();
+    await expect(editor).toHaveAttribute('role', 'textbox');
+    await expect(editor).toHaveAccessibleName(/trascrizione|transcription/i);
+
+    // Prima 10 Tab su 40 finivano su intestazione e sidebar, coperte dalla vista.
+    for (let i = 0; i < 30; i++) {
+      await page.keyboard.press('Tab');
+      const fuori = await page.evaluate(() => {
+        const a = document.activeElement as HTMLElement;
+        return document.getElementById('view-trascrizione')!.contains(a) || a === document.body ? null : a.outerHTML.slice(0, 80);
+      });
+      expect(fuori, `Tab #${i + 1} è uscito dalla vista`).toBeNull();
+    }
+
+    await page.evaluate(() => (window as any).chiudiTrascrizione());
+    await expect(vista).toBeHidden();
+    expect(await page.evaluate(() => (document.querySelector('body > header') as any).inert)).toBe(false);
+    expect(await page.evaluate(() => (document.querySelector('main')!.parentElement as any).inert)).toBe(false);
+  });
+
   test('apertura con allegato PDF mostra la preview PDF', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-PDF', FIXTURE_PDF);

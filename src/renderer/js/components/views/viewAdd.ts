@@ -10,7 +10,7 @@
                     <button id="btn-back-to-list" onclick="if(typeof switchTab === 'function') switchTab('list');" class="text-stone-500 hover:text-amber-700 p-1.5 bg-stone-100 hover:bg-amber-100 rounded-sm transition-colors" data-i18n-title="tooltip_back_to_list" data-i18n-aria-label="tooltip_back_to_list" title="Torna alla lista" aria-label="Torna alla lista">
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </button>
-                    <h2 id="form-title" class="text-2xl font-semibold text-amber-800" data-i18n="title_new_record">Compila Nuova Scheda</h2>
+                    <h1 id="form-title" class="text-2xl font-semibold text-amber-800" data-i18n="title_new_record">Compila Nuova Scheda</h1>
                 </div>
                 
                 <div class="sticky top-2 z-sticky flex justify-end gap-3 mb-4 pointer-events-none" style="margin-left: -1rem; margin-right: -1rem; padding-right: 1rem;">

@@ -1319,6 +1319,30 @@ summary:focus-visible {
    della regola sopra e, venendo dopo, cancellava anche il nostro focus ring. */
 summary:focus:not(:focus-visible) { outline: none; }
 
+/* WCAG 1.4.3 vale anche per i placeholder. Fuori da @layer: batte le utility
+   placeholder-* di Tailwind. opacity:1 annulla l'attenuazione di default di alcuni motori. */
+::placeholder {
+    color: var(--color-text-placeholder);
+    opacity: 1;
+}
+
+/* Rete di sicurezza WCAG 2.4.7: qualunque controllo senza regola propria mostra il fuoco.
+   :where() = specificità zero, quindi ogni regola dedicata (.btn, .form-input, .iv-viewport…)
+   continua a vincere; ma questo foglio è fuori da @layer e batte comunque le utility
+   Tailwind v4 (layered), cioè i `focus:outline-none` sparsi nei template e i circa 150
+   bottoni-icona creati da JS senza .btn, che prima perdevano l'outline del browser. */
+:where(button, a[href], summary, select, textarea, input:not([type="hidden"]),
+       [role="button"], [role="tab"], [role="menuitem"], [role="option"],
+       [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+/* L'editor della trascrizione tiene outline:none (un rettangolo attorno a tutto il foglio
+   mentre si scrive) e il fuoco si vede sul riquadro che lo contiene. */
+.trasc-editor-area:focus-within {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
 /* prefers-reduced-motion: gli spinner e le transizioni di stato non devono girare
    per chi ha chiesto meno movimento a livello di sistema. */
 @media (prefers-reduced-motion: reduce) {

@@ -10,10 +10,10 @@
                 <div class="border-b border-stone-200 pb-4 mb-4 shrink-0">
                     <div class="min-w-0">
                         <nav id="breadcrumb-cartella" class="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 flex-wrap mb-1 empty:hidden" aria-label="Percorso cartella"></nav>
-                        <h2 class="text-2xl font-bold text-amber-800 flex items-center gap-2">
+                        <h1 class="text-2xl font-bold text-amber-800 flex items-center gap-2">
                             <i id="icona-vista-corrente" data-lucide="folder-open" class="w-6 h-6"></i>
                             <span id="titolo-cartella-attuale"></span>
-                        </h2>
+                        </h1>
                         <div class="flex items-center gap-3 mt-1">
                             <span id="counter-results" class="text-sm text-stone-500 font-medium">Caricamento...</span>
                             <!-- Unico segnale della selezione ora che la barra non c'è più:

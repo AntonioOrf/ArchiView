@@ -153,5 +153,51 @@
             }
         });
         bodyObserver.observe(document.body, { childList: true, subtree: true });
+        agganciaVistaTrascrizione();
     });
+
+    // O4 — la vista trascrizione è un overlay `fixed inset-0` figlio del body, non un
+    // .modal-overlay: aprendola il fuoco restava sul body e il Tab finiva, una volta su
+    // quattro, su bottoni di intestazione e sidebar COPERTI dalla vista (2.4.3, 2.4.11).
+    // Si rende inerte solo l'app sottostante — intestazione e layout — e non gli altri figli
+    // del body: modali, toast, menu e tutorial devono poter comparire SOPRA la trascrizione.
+    function agganciaVistaTrascrizione() {
+        const vista = document.getElementById('view-trascrizione');
+        if (!vista) return;
+        const editor = document.getElementById('trascrizione-editor');
+        if (editor) {
+            // Un div contenteditable senza ruolo né nome è annunciato come "modificabile" e basta.
+            editor.setAttribute('role', 'textbox');
+            editor.setAttribute('aria-multiline', 'true');
+            editor.setAttribute('aria-label', window.t ? window.t('transcription_editor_label', 'Testo della trascrizione') : 'Testo della trascrizione');
+        }
+        const sotto = () => {
+            const main = document.querySelector('body > div main');
+            // Anche lo skip link: porterebbe a un <main> coperto e inerte.
+            return [document.querySelector('body > .skip-link'), document.querySelector('body > header'), main && main.parentElement].filter(Boolean) as HTMLElement[];
+        };
+        let aperta = isVisible(vista);
+        let trigger = null;
+        const applica = (ora) => {
+            sotto().forEach(el => { (el as HTMLElement).inert = ora; });
+            if (ora) {
+                trigger = document.activeElement;
+                if (tutorialAttivo()) return; // durante il tour il fuoco lo gestisce driver.js
+                // Defer: la vista si popola subito dopo il cambio di classe.
+                setTimeout(() => {
+                    const dest = document.getElementById('trascrizione-editor') || vista.querySelector('button');
+                    if (dest && isVisible(vista) && !vista.contains(document.activeElement)) dest.focus({ preventScroll: true });
+                }, 0);
+            } else if (trigger && document.contains(trigger) && typeof trigger.focus === 'function' && !trigger.inert) {
+                const t = trigger;
+                trigger = null;
+                setTimeout(() => t.focus({ preventScroll: true }), 0);
+            }
+        };
+        if (aperta) applica(true);
+        new MutationObserver(() => {
+            const ora = isVisible(vista);
+            if (ora !== aperta) { aperta = ora; applica(ora); }
+        }).observe(vista, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
 })();

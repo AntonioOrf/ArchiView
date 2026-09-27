@@ -448,7 +448,9 @@ async function avviaApp() {
     // Mappa id-modale → funzione di chiusura dedicata (cleanup: reset iframe, callback, ecc.)
     // Overlay che NON vanno chiusi né con Esc né cliccando lo sfondo: sono in mezzo a
     // un'operazione (progresso di sync, finestra di autenticazione).
-    const modaliNonChiudibili = ['cloud-progress-overlay', 'cloud-auth-modal', 'email-prompt-modal'];
+    // accesso-negato-overlay: con Esc si resterebbe davanti a un vault non autorizzato;
+    // le uscite sono solo i due pulsanti (cambia account / altro archivio).
+    const modaliNonChiudibili = ['cloud-progress-overlay', 'cloud-auth-modal', 'email-prompt-modal', 'accesso-negato-overlay'];
 
     const modalClosers = {
         'image-modal': 'chiudiModal',
@@ -1695,14 +1697,17 @@ window.incollaRecord = async function(targetFolderOverride) {
 function mostraErroreAccessoNegato(account: string) {
     const overlay = document.createElement('div');
     overlay.id = 'accesso-negato-overlay';
+    // .modal-overlay/.modal-window: a11yModal lo aggancia dal MutationObserver sul body
+    // (ruolo dialog, focus iniziale, focus-trap). Senza, il Tab arrivava all'app sotto.
+    overlay.className = 'modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(12,10,9,0.6);backdrop-filter:blur(6px)';
     overlay.innerHTML = `
-        <div style="background:#fff;border-radius:16px;padding:44px 40px 36px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.25);border:1px solid #e7e5e4">
+        <div class="modal-window" aria-describedby="_an_desc" style="display:block;background:#fff;border-radius:16px;padding:44px 40px 36px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.25);border:1px solid #e7e5e4">
             <div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
                 <svg width="32" height="32" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
             </div>
             <h2 style="font-size:1.25rem;font-weight:700;color:#1c1917;margin:0 0 10px">Accesso Negato</h2>
-            <p style="color:#57534e;line-height:1.6;margin:0 0 6px">L'account <strong id="_an_account"></strong> non è autorizzato ad accedere a questo Archivio Condiviso.</p>
+            <p id="_an_desc" style="color:#57534e;line-height:1.6;margin:0 0 6px">L'account <strong id="_an_account"></strong> non è autorizzato ad accedere a questo Archivio Condiviso.</p>
             <p style="color:#78716c;font-size:0.875rem;margin:0 0 28px">Accedi con l'account Google invitato dal proprietario, oppure scegli un altro archivio.</p>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
                 <button id="_an_btn_login" style="background:#1c1917;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">Cambia Account Google</button>
