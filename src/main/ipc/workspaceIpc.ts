@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { state, initWorkspace, getAllSettings, saveHubConfig, loadHubConfig, disconnectHub } = require('../workspaceManager');
 const { readVaultConfig, syncUnifiedFromLegacy } = require('../vaultConfig');
+const { safeChildDir } = require('./pathSafety');
 
 function setupWorkspaceIpc() {
   ipcMain.handle('save-hub-config', (event, config) => {
@@ -102,10 +103,11 @@ function setupWorkspaceIpc() {
   });
 
   ipcMain.handle('create-workspace-in-path', async (event, basePath, folderName, config) => {
-    const resolvedBase = path.resolve(basePath);
-    const newPath = path.resolve(path.join(resolvedBase, folderName));
-    if (!newPath.startsWith(resolvedBase + path.sep)) {
-      console.error("[SECURITY] Path traversal attempt in create-workspace-in-path blocked.");
+    let newPath: string;
+    try {
+      newPath = safeChildDir(basePath, folderName);
+    } catch (e: any) {
+      console.error("[SECURITY] create-workspace-in-path bloccato:", e.message);
       return false;
     }
     if (!fs.existsSync(newPath)) {
@@ -149,11 +151,13 @@ function setupWorkspaceIpc() {
 
   ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, hubConfig, database) => {
     try {
-      const resolvedBase = path.resolve(basePath);
-      const newPath = path.resolve(path.join(resolvedBase, folderName));
-      if (!newPath.startsWith(resolvedBase + path.sep)) {
-          console.error("[SECURITY] Path traversal attempt in clone-workspace-hub blocked.");
-          return false;
+      let newPath: string;
+      try {
+        // folderName è digitato o viene dall'invito: un nome con separatori è rifiutato, non riscritto.
+        newPath = safeChildDir(basePath, folderName);
+      } catch (e: any) {
+        console.error("[SECURITY] clone-workspace-hub bloccato:", e.message);
+        return false;
       }
       if (!fs.existsSync(newPath)) {
         fs.mkdirSync(newPath, { recursive: true });

@@ -1,12 +1,16 @@
 const { ipcMain, app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const http = require('http');
 const { state, initWorkspace, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../workspaceManager');
 const tokenStore = require('../cloudTokenStore');
 const { safeAttachmentPathOrNull } = require('./pathSafety');
 
-const REDIRECT_URI = 'http://localhost:3457/redirect';
+const { avviaServerLoopback, leggiCallbackOAuth } = require('./loopbackServer');
+
+// Registrato nell'app Azure: porta e path non si cambiano senza aggiornare la registrazione.
+const REDIRECT_PORT = 3457;
+const REDIRECT_PATH = '/redirect';
+const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}${REDIRECT_PATH}`;
 const SCOPES = ['user.read', 'files.readwrite', 'offline_access'];
 
 function writeMsTokenFile(tokenPath: string, serializedCache: string): void {
@@ -147,29 +151,40 @@ async function authenticateDrive(forceLocal = false) {
     const cryptoProvider = new CryptoProvider();
     const { verifier, challenge } = await cryptoProvider.generatePkceCodes();
 
+    // `state` verificato qui: MSAL lo inoltra ma non lo controlla in acquireTokenByCode.
+    const statoLogin = cryptoProvider.createNewGuid();
     const authCodeUrlParameters = {
       scopes: SCOPES,
       redirectUri: REDIRECT_URI,
       codeChallenge: challenge,
-      codeChallengeMethod: "S256"
+      codeChallengeMethod: "S256",
+      state: statoLogin
     };
 
     const authUrl = await msalClient.getAuthCodeUrl(authCodeUrlParameters);
 
     if (localServer) localServer.close();
+    localServer = null;
 
-    localServer = http.createServer(async (req, res) => {
+    const gestore = async (req, res) => {
       try {
-        const urlObj = new URL(req.url, `http://localhost:3457`);
-        const code = urlObj.searchParams.get('code');
-        
-        if (code) {
+        const esito = leggiCallbackOAuth(req.url, { path: REDIRECT_PATH, stato: statoLogin });
+        if (esito.tipo === 'estranea') { res.writeHead(404); res.end(); return; }
+        if (esito.tipo === 'rifiutata') {
+          // Il login vero può ancora arrivare: niente chiusura, niente reject.
+          res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('Richiesta di autenticazione non valida.');
+          return;
+        }
+        if (localServer) { localServer.close(); localServer = null; }
+        if (esito.tipo === 'negato') throw new Error("Accesso a Microsoft negato: " + esito.errore);
+
+        {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
           res.end('<h1>Autenticazione Microsoft completata!</h1><p>Puoi chiudere questa scheda e tornare ad ArchiView.</p><script>window.close()</script>');
-          localServer.close();
-          localServer = null;
-          
+
           const tokenRequest = {
-            code: code,
+            code: esito.code,
             scopes: SCOPES,
             redirectUri: REDIRECT_URI,
             codeVerifier: verifier,
@@ -183,18 +198,19 @@ async function authenticateDrive(forceLocal = false) {
           lastTokenKey = tokenStore.activeVaultKey();
 
           resolve(true);
-        } else {
-          res.end('In attesa di autenticazione...');
         }
       } catch (e) {
-        res.end('Errore durante l\'autenticazione.');
+        if (!res.writableEnded) res.end('Errore durante l\'autenticazione.');
         reject(e);
       }
-    }).on('error', (err) => {
-      reject(new Error("Impossibile avviare il server locale."));
-    }).listen(3457, () => {
-      shell.openExternal(authUrl);
-    });
+    };
+
+    try {
+      localServer = await avviaServerLoopback(REDIRECT_PORT, gestore);
+    } catch (err) {
+      return reject(new Error("Impossibile avviare il server locale."));
+    }
+    shell.openExternal(authUrl);
     } catch (e) { reject(e); }
   });
 }
@@ -227,7 +243,9 @@ async function checkDriveStatus() {
 async function getOrCreateFolder(folderName, parentId = 'root') {
   const client = await getGraphClient();
   try {
-    const children = await client.api(`/me/drive/items/${parentId}/children`).filter(`name eq '${folderName}'`).get();
+    // OData: l'apice dentro un letterale si raddoppia, altrimenti chiude la stringa del filtro.
+    const nomeOData = String(folderName).replace(/'/g, "''");
+    const children = await client.api(`/me/drive/items/${encodeURIComponent(parentId)}/children`).filter(`name eq '${nomeOData}'`).get();
     if (children && children.value && children.value.length > 0) {
       return children.value[0].id;
     }

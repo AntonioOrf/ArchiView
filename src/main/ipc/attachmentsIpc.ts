@@ -1,24 +1,55 @@
-const { ipcMain, shell, protocol, net } = require('electron');
+const { ipcMain, shell, protocol, net, app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
 const crypto = require('crypto');
+const { safeAttachmentPath } = require('./pathSafety');
+
+/**
+ * Il percorso sorgente arriva dal renderer (file scelto o trascinato). Non si può legare a un
+ * dialogo del main, ma si escludono i casi che non sono "un file dell'utente da allegare":
+ * percorsi relativi, cartelle, e i dati dell'app (userData con i token cifrati, la cartella
+ * .archiview del workspace): copiati fra gli allegati finirebbero sincronizzati ai colleghi.
+ */
+async function verificaSorgenteAllegato(sourcePath: unknown): Promise<void> {
+  if (typeof sourcePath !== 'string' || !path.isAbsolute(sourcePath)) throw new Error('Percorso allegato non valido');
+  const reale = await fsp.realpath(sourcePath);
+  const st = await fsp.stat(reale);
+  if (!st.isFile()) throw new Error('L\'allegato non è un file');
+  const dentro = (dir: string) => {
+    const rel = path.relative(path.resolve(dir), reale);
+    return !rel.startsWith('..') && !path.isAbsolute(rel);
+  };
+  const ws = state.workspacePath;
+  // userData sì, ma non il workspace aperto quando sta lì (l'archivio del tutorial).
+  const inUserData = dentro(app.getPath('userData')) && !(ws && dentro(ws));
+  if (inUserData || (ws && dentro(path.join(ws, '.archiview')))) {
+    throw new Error('File interno dell\'applicazione: non allegabile');
+  }
+}
 
 function setupAttachmentsIpc() {
   ipcMain.handle('salva-allegato', async (event, sourcePath, documentoId) => {
     try {
       if (!state.attachmentsDirPath) throw new Error("Cartella allegati non definita");
-      const ext = path.extname(sourcePath).toLowerCase();
-      
-      const cleanOriginalName = path.basename(sourcePath, ext)
+      await verificaSorgenteAllegato(sourcePath);
+      // Solo lettere/cifre nell'estensione: è l'unica parte del nome che resta com'è.
+      const ext = path.extname(sourcePath).toLowerCase().replace(/[^a-z0-9.]/g, '').substring(0, 16);
+
+      const cleanOriginalName = path.basename(sourcePath, path.extname(sourcePath))
         .replace(/[^a-zA-Z0-9_-]/g, '_')
         .substring(0, 50);
-        
-      const prefix = documentoId ? `${documentoId}_` : `doc_${Date.now()}_`;
+
+      // L'id della scheda arriva dal vault (anche condiviso): con "..\\..\\x" il file allegato
+      // veniva copiato fuori dalla cartella allegati (S4 in REVIEW-SECURITY.md).
+      const idPulito = typeof documentoId === 'string' || typeof documentoId === 'number'
+        ? String(documentoId).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64)
+        : '';
+      const prefix = idPulito ? `${idPulito}_` : `doc_${Date.now()}_`;
       const fileName = `${prefix}${cleanOriginalName}${ext}`;
-      const destPath = path.join(state.attachmentsDirPath, fileName);
-      
+      const destPath = safeAttachmentPath(state.attachmentsDirPath, fileName);
+
       await fsp.copyFile(sourcePath, destPath);
       
       const fileBuffer = await fsp.readFile(destPath);
@@ -58,20 +89,8 @@ function setupAttachmentsIpc() {
     }
   });
 
-  ipcMain.handle('apri-pdf-esterno', async (event, fileName) => {
-    try {
-      if (!state.attachmentsDirPath) return false;
-      const safeFileName = path.basename(fileName);
-      const p = path.join(state.attachmentsDirPath, safeFileName);
-      if (fs.existsSync(p)) {
-        await shell.openPath(p); 
-        return true;
-      }
-    } catch (error) { 
-      console.error("Errore apertura PDF:", error); 
-    }
-    return false;
-  });
+  // `apri-pdf-esterno` rimosso (L4 in REVIEW-SECURITY.md): nessuno lo chiamava, e faceva
+  // shell.openPath su un nome arrivato dal vault, cioè eseguiva un .hta/.lnk condiviso.
 
   ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {
     try {

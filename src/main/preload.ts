@@ -12,7 +12,6 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     salvaAllegato: (filePath, documentoId) => ipcRenderer.invoke('salva-allegato', filePath, documentoId),
     onAllegatoScaricato: (callback) => ipcRenderer.on('allegato-scaricato', (event, fileName) => callback(fileName)),
     verificaHashAllegato: (fileName, expectedHash) => ipcRenderer.invoke('verifica-hash-allegato', fileName, expectedHash),
-    apriPdfEsterno: (fileName) => ipcRenderer.invoke('apri-pdf-esterno', fileName),
     mostraCartellaAllegato: (fileName) => ipcRenderer.invoke('mostra-cartella-allegato', fileName),
     getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
     getPathForFile: (file) => webUtils.getPathForFile(file),

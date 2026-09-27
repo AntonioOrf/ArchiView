@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const http = require('http');
+const { avviaServerLoopback } = require('../loopbackServer');
 const crypto = require('crypto');
 const { shell } = require('electron');
 const { state, initWorkspace, getActiveVaultFlags, saveAllSettings } = require('../../workspaceManager');
@@ -8,6 +8,7 @@ const { driveState, authenticateDrive } = require('./auth');
 const { getOrCreateFolder } = require('./fileOps');
 const { pullFromDrive } = require('./vaultOps');
 const { pickerGetSecretOk } = require('./pickerSecurity');
+const { safeChildDir, nomeCartellaSicuro } = require('../pathSafety');
 
 async function generateInviteCode(): Promise<string> {
   try {
@@ -60,7 +61,8 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   if (parts.length < 5) throw new Error("Codice incompleto");
   const [refreshToken, pKey, pCluster, pWebhook, pAuto, vaultId] = parts;
 
-  const newPath = path.join(basePath, name);
+  // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
+  const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
   if (fs.existsSync(newPath)) {
     throw new Error(`La cartella "${name}" esiste già nel percorso selezionato. Per favore rinominala, cancellala o scegli un'altra posizione.`);
   }
@@ -109,7 +111,8 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
 
 async function joinByFolderId(vaultId: string, vaultName: string, basePath: string, customPusher: any): Promise<boolean> {
   const name = vaultName || "Vault_Condiviso";
-  const newPath = path.join(basePath, name);
+  // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
+  const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
   if (fs.existsSync(newPath)) {
     throw new Error(`La cartella "${name}" esiste già. Rinominala o scegli un'altra posizione.`);
   }
@@ -350,7 +353,7 @@ async function openExternalPicker(): Promise<any> {
             setTimeout(() => window.close(), 2000);
           } catch(e) { alert('Errore: ' + e); }
         } else if (data.action === google.picker.Action.CANCEL) {
-          await fetch('/picker-cancel', { method: 'POST' });
+          await fetch('/picker-cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: sessionSecret }) });
           setState('cancel', 'Selezione annullata', 'Puoi chiudere questa finestra e riprovare da ArchiView.', '');
           setTimeout(() => window.close(), 1500);
         }
@@ -365,7 +368,31 @@ async function openExternalPicker(): Promise<any> {
 </script>
 </body></html>`;
 
-      let pickerServer: any = http.createServer((req: any, res: any) => {
+      let pickerServer: any = null;
+      const chiudiPicker = () => { if (pickerServer) { pickerServer.close(); pickerServer = null; } };
+
+      // POST dalla pagina del Picker: corpo JSON con il sessionSecret. Una richiesta senza il
+      // secret (un'altra pagina, un altro processo) riceve 403 e NON chiude né decide nulla.
+      const leggiCorpoConSecret = (req: any, res: any, suValido: (data: any) => void) => {
+        let body = '';
+        req.on('data', (chunk: any) => {
+          body += chunk.toString();
+          if (body.length > 64 * 1024) { res.writeHead(413); res.end(); req.destroy(); }
+        });
+        req.on('end', () => {
+          let data: any;
+          try { data = JSON.parse(body); } catch { res.writeHead(400); res.end('Bad Request'); return; }
+          if (!data || typeof data.secret !== 'string' || data.secret !== sessionSecret) {
+            res.writeHead(403); res.end('Forbidden');
+            return;
+          }
+          res.writeHead(200); res.end('OK');
+          suValido(data);
+          chiudiPicker();
+        });
+      };
+
+      const gestore = (req: any, res: any) => {
         const parsedUrl = new URL(req.url, 'http://127.0.0.1:3457');
         const pathname = parsedUrl.pathname;
         if ((pathname === '/' || pathname === '/picker') && req.method === 'GET') {
@@ -380,37 +407,24 @@ async function openExternalPicker(): Promise<any> {
           res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
           res.end(pickerHtml);
         } else if (pathname === '/picker-callback' && req.method === 'POST') {
-          let body = '';
-          req.on('data', (chunk: any) => { body += chunk.toString(); });
-          req.on('end', () => {
-            try {
-              const data = JSON.parse(body);
-              if (!data.secret || data.secret !== sessionSecret) {
-                res.writeHead(403); res.end('Forbidden');
-                return;
-              }
-              res.writeHead(200); res.end('OK');
-              resolve({ id: data.id, name: data.name });
-            } catch (e) {
-              res.writeHead(400); res.end('Bad Request');
-              reject(new Error("Dati picker non validi."));
-            }
-            if (pickerServer) { pickerServer.close(); pickerServer = null; }
+          leggiCorpoConSecret(req, res, (data) => {
+            if (typeof data.id !== 'string' || !data.id) return reject(new Error("Dati picker non validi."));
+            resolve({ id: data.id, name: typeof data.name === 'string' ? data.name : '' });
           });
         } else if (pathname === '/picker-cancel' && req.method === 'POST') {
-          res.writeHead(200); res.end('OK');
-          resolve(null);
-          if (pickerServer) { pickerServer.close(); pickerServer = null; }
+          leggiCorpoConSecret(req, res, () => resolve(null));
         } else {
           res.writeHead(404); res.end();
         }
-      });
+      };
 
-      pickerServer.on('error', (err: any) => {
+      try {
+        pickerServer = await avviaServerLoopback(3457, gestore);
+      } catch (err: any) {
         console.error("Errore server picker:", err);
-        reject(new Error("Porta 3457 già in uso o errore server."));
-      });
-      pickerServer.listen(3457, '127.0.0.1', () => { shell.openExternal('http://localhost:3457/picker?s=' + sessionSecret); });
+        return reject(new Error("Porta 3457 già in uso o errore server."));
+      }
+      shell.openExternal('http://localhost:3457/picker?s=' + sessionSecret);
     } catch (e) { reject(e); }
   });
 }

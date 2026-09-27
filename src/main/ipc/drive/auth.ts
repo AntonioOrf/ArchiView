@@ -1,11 +1,15 @@
 const { app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const http = require('http');
+const crypto = require('crypto');
 const { state, getActiveVaultFlags } = require('../../workspaceManager');
 const tokenStore = require('../../cloudTokenStore');
+const { avviaServerLoopback, leggiCallbackOAuth } = require('../loopbackServer');
 
-const REDIRECT_URI = 'http://localhost:3456/oauth2callback';
+// Registrato nella console Google: porta e path non si cambiano senza aggiornare il client.
+const REDIRECT_PORT = 3456;
+const REDIRECT_PATH = '/oauth2callback';
+const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}${REDIRECT_PATH}`;
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
 // Stato condiviso del client Drive — mutato da initGoogle(), letto dagli altri moduli
@@ -290,21 +294,39 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
       // login_hint salta il chooser puntando all'account già in uso (solo re-auth, non cambio account).
       if (!forceLocal && loginHint) authUrlParams.login_hint = loginHint;
 
+      // PKCE + state (S3 in REVIEW-SECURITY.md): senza, il primo `?code=` arrivato al server
+      // veniva scambiato, anche quello di un account altrui iniettato da un'altra pagina o
+      // dalla rete (login CSRF: la vittima sincronizzava il vault sul Drive dell'attaccante).
+      const { codeVerifier, codeChallenge } = await driveState.oauth2Client.generateCodeVerifierAsync();
+      const statoLogin = crypto.randomBytes(24).toString('hex');
+      authUrlParams.code_challenge = codeChallenge;
+      authUrlParams.code_challenge_method = 'S256';
+      authUrlParams.state = statoLogin;
+
       const authUrl = driveState.oauth2Client.generateAuthUrl(authUrlParams);
 
       if (driveState.localServer) driveState.localServer.close();
+      driveState.localServer = null;
 
-      driveState.localServer = http.createServer(async (req: any, res: any) => {
+      const gestore = async (req: any, res: any) => {
         let codeExtracted = false;
         try {
-          const urlObj = new URL(req.url, `http://localhost:3456`);
-          const code = urlObj.searchParams.get('code');
+          const esito = leggiCallbackOAuth(req.url, { path: REDIRECT_PATH, stato: statoLogin });
+          if (esito.tipo === 'estranea') { res.writeHead(404); res.end(); return; }
+          if (esito.tipo === 'rifiutata') {
+            // Non chiude il server e non fa fallire il login: quello vero può ancora arrivare.
+            logAuthEvent("OAUTH: callback scartato (state assente o diverso).");
+            res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('Richiesta di autenticazione non valida.');
+            return;
+          }
+          codeExtracted = true;
+          if (esito.tipo === 'negato') throw new Error("Accesso a Google Drive negato: " + esito.errore);
 
-          if (code) {
-            codeExtracted = true;
+          {
             let tokens: any;
             try {
-              const response = await driveState.oauth2Client.getToken(code);
+              const response = await driveState.oauth2Client.getToken({ code: esito.code, codeVerifier });
               tokens = response.tokens;
             } catch (tokenErr) {
               console.error("Errore token exchange OAuth:", tokenErr);
@@ -365,9 +387,6 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
 
             if (!res.headersSent) { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(successHtml); }
             resolve(true);
-          } else {
-            const waitHtml = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>In Attesa - ArchiView</title><style>body{margin:0;font-family:sans-serif;background:#fafaf9;display:flex;justify-content:center;align-items:center;min-height:100vh;color:#1c1917}.card{background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);text-align:center;border:1px solid #e7e5e4}</style></head><body><div class="card"><h2>In attesa di autenticazione...</h2><p>Completa il login su Google per continuare.</p></div></body></html>`;
-            if (!res.headersSent) { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(waitHtml); }
           }
         } catch (e) {
           console.error("Errore OAuth Server Locale:", e);
@@ -379,12 +398,15 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
             if (driveState.localServer) { driveState.localServer.close(); driveState.localServer = null; }
           }
         }
-      }).on('error', (err: any) => {
+      };
+
+      try {
+        driveState.localServer = await avviaServerLoopback(REDIRECT_PORT, gestore);
+      } catch (err: any) {
         console.error("Errore server locale:", err);
-        reject(new Error("Impossibile avviare il server locale per l'autenticazione. Riprova."));
-      }).listen(3456, () => {
-        shell.openExternal(authUrl);
-      });
+        return reject(new Error("Impossibile avviare il server locale per l'autenticazione. Riprova."));
+      }
+      shell.openExternal(authUrl);
     } catch (e) { reject(e); }
   });
 }

@@ -42,4 +42,40 @@ for (const nome of ['', '.', '..', '/', null, undefined, 42, {}]) {
   assert.strictEqual(safeAttachmentPathOrNull(dir, nome), null);
 }
 
+// --- Cartella di un nuovo workspace (S5): nome da Picker Drive, invito, repository Hub ---
+const { safeChildDir, nomeCartellaSicuro } = require('../out/main/ipc/pathSafety');
+const base = path.resolve('/utente/Documenti');
+const figliaDiretta = (p) => path.dirname(p) === base;
+
+// Tabella unica dei nomi ostili, valida per ogni funzione che costruisce percorsi da dati remoti.
+const NOMI_OSTILI = [
+  ...malevoli,
+  '..', '.', '...', ' ', '',
+  'a/../../fuori', 'a\\..\\..\\fuori',
+  'CON', 'con.txt', 'NUL', 'COM1', 'LPT9.log',
+  'dati:flusso', 'nome.', 'nome ',
+  'a\u0000b', 'tab\tin', 'x'.repeat(300),
+];
+
+// 5. safeChildDir: o rifiuta o restituisce una figlia diretta di base
+for (const nome of NOMI_OSTILI) {
+  let esito = null;
+  try { esito = safeChildDir(base, nome); } catch { /* rifiutato: va bene */ }
+  assert.ok(esito === null || figliaDiretta(esito), `safeChildDir("${nome}") esce da base: ${esito}`);
+}
+assert.strictEqual(safeChildDir(base, 'Archivio 2026'), path.join(base, 'Archivio 2026'));
+for (const nome of ['..', 'a/b', 'a\\b', 'CON', 'x:y', '']) assert.throws(() => safeChildDir(base, nome), `"${nome}" doveva essere rifiutato`);
+
+// 6. nomeCartellaSicuro: qualunque nome diventa un segmento accettato da safeChildDir
+for (const nome of [...NOMI_OSTILI, null, undefined, 42, {}]) {
+  const pulito = nomeCartellaSicuro(nome);
+  assert.ok(figliaDiretta(safeChildDir(base, pulito)), `nomeCartellaSicuro(${JSON.stringify(nome)}) → "${pulito}" non accettato`);
+}
+// Nomi Drive legittimi restano riconoscibili invece di essere rifiutati
+assert.strictEqual(nomeCartellaSicuro('Fondo: Carte / 1500'), 'Fondo_ Carte _ 1500');
+assert.strictEqual(nomeCartellaSicuro('Archivio Rossi'), 'Archivio Rossi');
+assert.strictEqual(nomeCartellaSicuro('../../Startup'), '.._.._Startup');
+assert.strictEqual(nomeCartellaSicuro('..'), 'Vault_Condiviso');
+assert.strictEqual(nomeCartellaSicuro('CON'), '_CON');
+
 console.log('pathSafety tests passed.');

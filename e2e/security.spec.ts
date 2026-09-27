@@ -115,6 +115,30 @@ test.describe('Security Regression Tests', () => {
     expect(xssFired).toBe(false);
   });
 
+  // S4 (REVIEW-SECURITY.md): l'id della scheda arriva dal vault e finiva nel percorso di copia.
+  test('salva-allegato: id ostile resta nella cartella allegati, file interni non allegabili', async ({ page, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const path = await import('path');
+    const fs = await import('fs');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Allegati');
+    const png = path.join(__dirname, 'fixtures', 'sample.png');
+
+    for (const id of ['..\\..\\..\\Desktop\\x', '../../fuori', 'C:\\Windows\\Temp\\x', 'a/b']) {
+      const r = await page.evaluate(([p, i]) => (window as any).apiBrowser.salvaAllegato(p, i), [png, id]);
+      expect(r, `id ${id}`).toBeTruthy();
+      expect(r.fileName).not.toMatch(/[\\/]|\.\./);
+      const dir = await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'));
+      expect(fs.existsSync(path.join(path.dirname(dir), r.fileName))).toBe(true);
+    }
+
+    // Un file dei dati dell'app (userData, fuori dal workspace aperto) non si copia fra gli allegati.
+    const interno = path.join(userDataDir, 'segreto-di-prova.json');
+    fs.writeFileSync(interno, '{"token":"x"}');
+    expect(await page.evaluate((p) => (window as any).apiBrowser.salvaAllegato(p, 'id1'), interno)).toBeNull();
+    // Percorso relativo: rifiutato
+    expect(await page.evaluate(() => (window as any).apiBrowser.salvaAllegato('sample.png', 'id1'))).toBeNull();
+  });
+
   // S2 (REVIEW-SECURITY.md): un data-on-* in un HTML condiviso non deve diventare un comando.
   test('una trascrizione con data-on-* non chiama funzioni (sanitize, registro, editor)', async ({ page, userDataDir }) => {
     const { createLocalWorkspace, seedItems } = await import('./helpers');
