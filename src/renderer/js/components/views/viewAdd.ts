@@ -29,7 +29,7 @@
                             <label class="form-label text-amber-900">
                                 <i data-lucide="folder" class="w-4 h-4"></i> <span data-i18n="label_folder">Cartella:</span>
                             </label>
-                            <select id="form-cartella" class="form-input" style="border-color: var(--color-primary-border);">
+                            <select id="form-cartella" class="form-input">
                             </select>
                         </div>
                         

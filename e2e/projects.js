@@ -15,7 +15,7 @@ const PROJECTS = {
   ui: ['ui', 'list-view', 'sidebar-panels', 'context-menu', 'modals-misc', 'flow-responsive', 'form', 'sort-table', 'image-viewer', 'filters', 'command-palette', 'tutorial', 'bulk-actions'],
   data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict', 'csv-export', 'csv-import', 'iiif-import', 'ocr', 'print', 'text-export', 'schema-migration', 'typed-fields', 'campi-propri', 'data-storica', 'tags-entity', 'fase3', 'fase4'],
   cloud: ['cloud-status', 'cloud-offline'],
-  a11y: ['a11y', 'a11y-global']
+  a11y: ['a11y', 'a11y-global', 'a11y-contrast']
 };
 
 // `a11y` è prefisso di `a11y-global`: i pattern devono ancorare il nome completo, altrimenti

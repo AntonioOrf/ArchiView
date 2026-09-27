@@ -671,7 +671,7 @@ window.renderSnapshotLocali = async function(list) {
     const crea = document.createElement('button');
     crea.type = 'button';
     crea.id = 'btn-snapshot-now';
-    crea.className = 'text-[10px] font-semibold text-amber-600 hover:text-amber-800 transition-colors';
+    crea.className = 'text-[10px] font-semibold text-amber-800 hover:underline transition-colors';
     crea.textContent = window.t('snap_create_now', 'Crea adesso');
     crea.title = window.t('snap_create_now_hint', 'Fotografa subito lo stato dell\'archivio');
     crea.onclick = () => window.creaSnapshotOra();

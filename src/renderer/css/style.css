@@ -23,6 +23,8 @@
     --color-primary-hover: #1e3a8a;
     --color-primary-light: #dbeafe;
     --color-primary-border: #93c5fd;
+    /* Testo SOPRA un fondo --color-primary (bottoni primari). */
+    --color-on-primary: #ffffff;
 
     /* Sfondi - contrasto netto tra base e pannelli */
     --color-bg-base: #f1f5f9;          /* slate-100 */
@@ -35,15 +37,21 @@
     --color-text-main: #020617;        /* quasi nero (slate-950) */
     --color-text-secondary: #1e293b;   /* slate-800 */
     --color-text-muted: #475569;       /* slate-600 */
+    /* Placeholder: più tenue del muted ma ≥4.5:1 anche su bg-base (#f1f5f9 → 5.37). */
+    --color-text-placeholder: #5b6576;
 
     /* Bordi */
     --color-border: #64748b;           /* slate-500 */
     --color-border-light: #94a3b8;     /* slate-400 */
+    /* Contorno dei CAMPI (1.4.11: ≥3:1 su ogni fondo del tema). Separato da --color-border,
+       che disegna anche divisori e pannelli decorativi: alzarlo appesantirebbe tutta l'app. */
+    --color-border-input: #64748b;
 
     /* Danger */
     --color-danger: #b91c1c;
     --color-danger-hover: #991b1b;
     --color-danger-light: #fee2e2;
+    --color-on-danger: #ffffff;        /* testo sopra --color-danger (.btn-danger) */
 
     /* Warning (vault condiviso legacy) */
     --color-warning: #b45309;
@@ -56,7 +64,11 @@
 :root.dark-theme {
     /* Accenti primari - Arancio rossi */
     --color-primary: #ea580c;
-    --color-primary-hover: #c2410c;
+    /* WCAG 1.4.3: primary-hover è anche il colore del testo d'accento (.text-amber-800/900,
+       badge, segmento attivo). #c2410c su fondo nero dava 3.3:1; sui temi scuri l'hover
+       SCHIARISCE, e #fb923c regge sia come testo (≥7.6:1) sia come fondo per --color-on-primary. */
+    --color-primary-hover: #fb923c;
+    --color-on-primary: #0a0a0a;       /* bianco su #ea580c: 3.56:1 → 5.56:1 */
     --color-primary-light: rgba(234, 88, 12, 0.15);
     --color-primary-border: rgba(234, 88, 12, 0.3);
 
@@ -71,15 +83,20 @@
     --color-text-main: #fafafa;
     --color-text-secondary: #d4d4d8;
     --color-text-muted: #a1a1aa;
+    --color-text-placeholder: var(--color-text-muted);
 
     /* Bordi */
     --color-border: #27272a;
     --color-border-light: #18181b;
+    --color-border-input: #71717a;     /* #27272a su nero: 1.3:1 → ≥3.7:1 */
 
     /* Danger */
     --color-danger: #ef4444;
-    --color-danger-hover: #dc2626;
+    /* Come primary-hover: sui temi scuri l'hover schiarisce, e danger-hover fa anche da
+       colore del testo d'allarme (#dc2626 sul fondo rosso scuro dei banner: 3.6:1). */
+    --color-danger-hover: #f87171;
     --color-danger-light: rgba(239, 68, 68, 0.15);
+    --color-on-danger: #0a0a0a;        /* bianco su #ef4444: 3.76:1 → 5.26:1 */
 
     --color-warning: #fbbf24;
     --color-warning-light: rgba(251, 191, 36, 0.15);
@@ -89,7 +106,8 @@
 :root.blue-dark-theme {
     /* Accenti primari - Blu chiaro su sfondo scuro */
     --color-primary: #60a5fa;
-    --color-primary-hover: #3b82f6;
+    --color-primary-hover: #93c5fd;    /* come dark-theme: #3b82f6 su slate-800 dava 2.8–4.0:1 */
+    --color-on-primary: #0f172a;       /* bianco su #60a5fa: 2.54:1 → 7.02:1 */
     --color-primary-light: rgba(59, 130, 246, 0.15);
     --color-primary-border: rgba(96, 165, 250, 0.3);
 
@@ -103,16 +121,19 @@
     /* Testi - alto contrasto */
     --color-text-main: #ffffff;        /* bianco puro */
     --color-text-secondary: #f1f5f9;   /* slate-100 */
-    --color-text-muted: #94a3b8;       /* slate-400 */
+    --color-text-muted: #aab6c8;       /* slate-400 (#94a3b8) su bg-hover dava 4.04:1; ora 5.05:1 */
+    --color-text-placeholder: var(--color-text-muted);
 
     /* Bordi */
     --color-border: #475569;           /* slate-600 */
     --color-border-light: #334155;     /* slate-700 */
+    --color-border-input: #8391a7;     /* #475569 su slate-800: 1.9:1 → ≥3.2:1 anche su bg-hover */
 
     /* Danger */
     --color-danger: #f87171;
-    --color-danger-hover: #ef4444;
+    --color-danger-hover: #fca5a5;     /* #ef4444 come testo: 3.14:1 */
     --color-danger-light: rgba(248, 113, 113, 0.15);
+    --color-on-danger: #0f172a;        /* bianco su #f87171: 2.77:1 → 6.45:1 */
 
     --color-warning: #fbbf24;
     --color-warning-light: rgba(251, 191, 36, 0.15);
@@ -125,6 +146,7 @@
     --color-primary-hover: #78350f;
     --color-primary-light: #fde68a;
     --color-primary-border: #f59e0b;
+    --color-on-primary: #ffffff;
 
     /* Sfondi - contrasto più netto tra pannelli */
     --color-bg-base: #e8e4df;
@@ -136,11 +158,13 @@
     /* Testi - più contrasto, gerarchia netta */
     --color-text-main: #1c1917;
     --color-text-secondary: #44403c;
-    --color-text-muted: #78716c;
+    --color-text-muted: #57534e;       /* #78716c su crema dava 3.8–4.1:1; ora ≥6:1 */
+    --color-text-placeholder: #6b645d;
 
     /* Bordi */
     --color-border: #a8a29e;
     --color-border-light: #c9c2ba;
+    --color-border-input: #78716c;     /* #a8a29e su crema: 2.0–2.4:1 → ≥3.8:1 */
 }
 
 
@@ -230,7 +254,7 @@ input[type="file"]::file-selector-button {
 }
 input[type="file"]::file-selector-button:hover {
     background-color: var(--color-primary) !important;
-    color: white !important;
+    color: var(--color-on-primary) !important;
 }
 
 body {
@@ -300,7 +324,7 @@ button, .btn {
 }
 .btn-primary {
     background-color: var(--color-primary);
-    color: white;
+    color: var(--color-on-primary);
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .btn-primary:hover {
@@ -316,7 +340,7 @@ button, .btn {
 }
 .btn-danger {
     background-color: var(--color-danger);
-    color: white;
+    color: var(--color-on-danger);
 }
 .btn-danger:hover {
     background-color: var(--color-danger-hover);
@@ -518,7 +542,8 @@ button, .btn {
     display: inline-block;
     padding: 0.125rem 0.5rem;
     background-color: var(--color-bg-hover);
-    color: var(--color-text-muted);
+    /* secondary e non muted: il tag è contenuto, e muted su bg-hover restava sotto 4.5:1 */
+    color: var(--color-text-secondary);
     font-size: 0.625rem;
     text-transform: uppercase;
     font-weight: bold;
@@ -606,6 +631,11 @@ button, .btn {
     width: 6.5rem;
     font-size: 0.75rem;
     padding: 0.125rem 0.25rem;
+    /* Il preflight di Tailwind azzera i bordi: senza questo la tendina aveva solo la banda
+       sinistra, e per un tag senza colore nessun contorno riconoscibile (1.4.11). */
+    border: 1px solid var(--color-border-input);
+    border-left-width: 4px;
+    min-height: 24px; /* 2.5.8: era alta 22px */
 }
 .tag-color-select.tag-col-ambra  { border-left: 4px solid var(--tag-ambra-bd); }
 .tag-color-select.tag-col-rosso  { border-left: 4px solid var(--tag-rosso-bd); }
@@ -613,7 +643,7 @@ button, .btn {
 .tag-color-select.tag-col-blu    { border-left: 4px solid var(--tag-blu-bd); }
 .tag-color-select.tag-col-viola  { border-left: 4px solid var(--tag-viola-bd); }
 .tag-color-select.tag-col-grigio { border-left: 4px solid var(--tag-grigio-bd); }
-.tag-color-select.tag-col-neutro { border-left: 4px solid var(--color-border-light); }
+.tag-color-select.tag-col-neutro { border-left: 4px solid var(--color-border-input); }
 
 .tag-merge-bar {
     display: flex;
@@ -1445,6 +1475,34 @@ summary:focus:not(:focus-visible) { outline: none; }
     color: var(--color-text-main);
 }
 
+/* Stessi stati hover FUORI dai modali (sidebar, liste, pannelli). Il remap sopra era
+   limitato a .modal-window: le righe dell'albero in sidebar (hover:bg-stone-100) in tema
+   scuro diventavano un fondo quasi bianco con testo #d4d4d8, circa 1.3:1. */
+:root.dark-theme .hover\:bg-white:hover,
+:root.blue-dark-theme .hover\:bg-white:hover,
+:root.dark-theme .hover\:bg-stone-50:hover,
+:root.blue-dark-theme .hover\:bg-stone-50:hover,
+:root.dark-theme .hover\:bg-stone-100:hover,
+:root.blue-dark-theme .hover\:bg-stone-100:hover,
+:root.dark-theme .hover\:bg-stone-200:hover,
+:root.blue-dark-theme .hover\:bg-stone-200:hover {
+    background-color: var(--color-bg-hover);
+}
+:root.dark-theme .hover\:bg-amber-50:hover,
+:root.blue-dark-theme .hover\:bg-amber-50:hover,
+:root.dark-theme .hover\:bg-amber-100:hover,
+:root.blue-dark-theme .hover\:bg-amber-100:hover {
+    background-color: var(--color-primary-light);
+}
+:root.dark-theme .hover\:text-stone-700:hover,
+:root.blue-dark-theme .hover\:text-stone-700:hover,
+:root.dark-theme .hover\:text-stone-800:hover,
+:root.blue-dark-theme .hover\:text-stone-800:hover,
+:root.dark-theme .hover\:text-stone-900:hover,
+:root.blue-dark-theme .hover\:text-stone-900:hover {
+    color: var(--color-text-main) !important;
+}
+
 /* Utility della scala z-index (Fase 5.1): in coda perche devono prevalere su
    .modal-overlay, che porta il livello base var(--z-modal). */
 .z-sticky { z-index: var(--z-sticky); }
@@ -1624,8 +1682,105 @@ summary:focus:not(:focus-visible) { outline: none; }
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border-light);
+    /* è il contorno del campo di ricerca della palette: token dei campi, non del divisore */
+    border-bottom: 1px solid var(--color-border-input);
     flex-shrink: 0;
+}
+/* .cp-input non ha outline: il fuoco si vede come bordo inferiore della riga. */
+/* WCAG 1.4.11 — il contorno è ciò che identifica un campo: --color-border-input (≥3:1).
+   !important perché il remap .border-stone-200/300 → --color-border è !important e molti
+   campi portano anche quelle classi; per lo stesso motivo il fuoco va riaffermato qui. */
+.form-input,
+select.btn {
+    border-color: var(--color-border-input) !important;
+}
+/* Il lato sinistro della tendina colore È il colore del tag (4px, .tag-col-*): non si tocca. */
+.tag-color-select {
+    border-top-color: var(--color-border-input) !important;
+    border-right-color: var(--color-border-input) !important;
+    border-bottom-color: var(--color-border-input) !important;
+}
+.form-input:focus,
+select.btn:focus {
+    border-color: var(--color-primary) !important;
+}
+
+/* Errore di un campo del form (segnalaErroreCampo): testo + icona sotto il controllo e
+   bordo persistente finché il valore non cambia. --color-danger regge 4.5:1 sul pannello
+   in tutti e quattro i temi. */
+.campo-errore {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--color-danger);
+}
+[aria-invalid="true"].form-input,
+[aria-invalid="true"] {
+    border-color: var(--color-danger) !important;
+}
+/* Larghezza animata: barre di avanzamento, pannelli ridimensionabili, sidebar. Sostituisce
+   `transition-all`, che animava anche proprietà di layout mai volute. */
+.transizione-larghezza {
+    transition: width 0.3s ease;
+}
+/* Skip link: fuori schermo finché non ha il fuoco, poi in alto a sinistra sopra tutto. */
+.skip-link {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: var(--z-menu);
+    padding: 0.5rem 1rem;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    transform: translateY(-200%);
+}
+.skip-link:focus {
+    transform: none;
+}
+#contenuto-principale:focus {
+    outline: none; /* destinazione del salto, non un controllo */
+}
+
+/* WCAG 2.5.8 — bersagli da almeno 24×24px. In style.css e non come utility Tailwind:
+   min-w-6/min-h-6 non esistono nel tailwind.css compilato finché non lo si rigenera, e i
+   pulsanti delle pillole restavano di 12px. Il margine negativo verticale tiene la pillola
+   della stessa altezza: il bersaglio cresce, il disegno no. */
+.custom-field-item .pill-sposta,
+.custom-field-item .pill-config,
+.custom-field-item .pill-rimuovi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+    margin-top: -6px;
+    margin-bottom: -6px;
+}
+/* Etichetta che contiene la sua casella: è lei il bersaglio (clic sul testo = clic sulla
+   casella), e con il testo a 14px restava alta 20px. */
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+    min-height: 24px;
+}
+#btn-snapshot-now {
+    min-height: 24px;
+    padding: 0 0.375rem;
+}
+
+/* Pannello filtri: è `fixed` e cresce con le ricerche salvate. Senza un tetto la parte
+   bassa (nome e "Salva") finiva sotto il bordo della finestra, irraggiungibile anche da
+   tastiera. Lo scroll interno non lo chiude: _chiudiSuScroll ignora i target interni. */
+#pannello-filtri {
+    max-height: calc(100vh - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.cp-riga-input:focus-within {
+    box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 .cp-input {
     flex: 1;
