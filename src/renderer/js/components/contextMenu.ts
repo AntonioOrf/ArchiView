@@ -18,6 +18,25 @@ let _menuStack = [];          // [{ el, voceGenitore }] — indice 0 = menu prin
 let _menuOrigineFocus = null;
 let _menuAncora = null;
 let _menuTimerHover = null;
+// Posizioni di scroll al momento dell'apertura, per i contenitori sopra l'origine del menu.
+let _menuScrollAllApertura = new Map();
+
+/**
+ * Fotografa lo scroll degli antenati dell'origine. Serve a _menuOnScroll per riconoscere un
+ * evento `scroll` ARRIVATO IN RITARDO: lo scroll avvenuto subito prima dell'apertura (portare
+ * in vista la scheda, un colpo di rotellina appena dato) viene notificato al frame successivo,
+ * cioè a menu già aperto, e lo chiudeva senza che nulla si fosse mosso dopo. Nei test E2E
+ * succedeva sempre (il click di Playwright scorre la scheda in vista), per l'utente a volte.
+ */
+function _fotografaScroll(origineEl) {
+    const mappa = new Map();
+    const registra = (el) => { if (el) mappa.set(el, [el.scrollTop, el.scrollLeft]); };
+    registra(document.scrollingElement);
+    for (let n = origineEl; n && n !== document.body; n = n.parentElement) {
+        if (n.scrollHeight > n.clientHeight || n.scrollWidth > n.clientWidth) registra(n);
+    }
+    return mappa;
+}
 
 const RITARDO_HOVER = 120;    // ms: sotto questa soglia il menu si aprirebbe attraversandolo
 
@@ -86,6 +105,11 @@ function _menuOnScroll(e) {
     // l'handler in capture ogni rotellina lo faceva sparire sotto il puntatore. Stessa
     // lezione del pannello filtri (Fase 1.3).
     if (_menuStack.length && e && e.target && e.target.nodeType === 1 && _menuContiene(e.target)) return;
+    // Evento in ritardo di uno scroll precedente all'apertura: la posizione è quella
+    // fotografata aprendo, quindi da allora non si è mosso nulla.
+    const bersaglio = e && e.target && e.target.nodeType === 9 ? document.scrollingElement : e && e.target;
+    const prima = bersaglio && _menuScrollAllApertura.get(bersaglio);
+    if (prima && prima[0] === bersaglio.scrollTop && prima[1] === bersaglio.scrollLeft) return;
     window.chiudiMenuContestuale(false, 0);
 }
 
@@ -289,6 +313,11 @@ window.apriMenuContestuale = function(origine, voci) {
     if (daPuntatore) origine.preventDefault();
 
     _menuOrigineFocus = daPuntatore ? document.activeElement : origine;
+    // Col menu al puntatore il target può essere già staccato: aprire seleziona la scheda,
+    // e renderMain ridisegna la griglia. Si riparte allora dall'elemento sotto il puntatore.
+    let origineEl = daPuntatore ? origine.target : origine;
+    if (daPuntatore && !(origineEl && origineEl.isConnected)) origineEl = document.elementFromPoint(origine.clientX, origine.clientY);
+    _menuScrollAllApertura = _fotografaScroll(origineEl);
     _menuAncora = daPuntatore ? null : origine;
     if (_menuAncora) _menuAncora.setAttribute('aria-expanded', 'true');
 

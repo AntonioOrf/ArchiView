@@ -38,7 +38,19 @@ function _chiudiSuPointerDown(e) {
 
 function _chiudiSuScroll(e) {
     // Lo scroll DENTRO il pannello (elenco di ricerche salvate lungo) non deve chiuderlo.
-    if (_pannello && e.target && e.target.nodeType === 1 && _pannello.contains(e.target)) return;
+    if (_pannello && e && e.target && e.target.nodeType === 1 && _pannello.contains(e.target)) return;
+    // Applicare un filtro accorcia la lista, e se era scorsa il browser riporta indietro lo
+    // scroll di <main>: quell'evento chiudeva il pannello a ogni scelta (e faceva fallire i
+    // test a caso). Finché l'ancora è a schermo il pannello la segue; si chiude solo se
+    // l'ancora esce dalla vista. renderMain può ridisegnarla: la si ritrova per id.
+    if (_ancoraFiltri && !_ancoraFiltri.isConnected && _ancoraFiltri.id) {
+        const nuova = document.getElementById(_ancoraFiltri.id);
+        if (nuova) { nuova.setAttribute('aria-expanded', 'true'); _ancoraFiltri = nuova; }
+    }
+    if (_ancoraFiltri && _ancoraFiltri.isConnected) {
+        const r = _ancoraFiltri.getBoundingClientRect();
+        if (r.width > 0 && r.bottom > 0 && r.top < window.innerHeight) { _posizionaPannello(); return; }
+    }
     window.chiudiPannelloFiltri(false);
 }
 
@@ -185,6 +197,30 @@ function _select(valore, opzioni, onChange) {
     sel.value = valore || '';
     sel.onchange = () => onChange(sel.value);
     return sel;
+}
+
+/**
+ * Posizionamento a dimensioni reali, come il menu contestuale: sotto l'ancora, allineato a
+ * destra, ribaltato sopra se non ci sta. L'altezza è già limitata da max-h in CSS, quindi
+ * il clamp finale basta a tenerlo tutto dentro la finestra.
+ */
+function _posizionaPannello() {
+    if (!_pannello) return;
+    const box = _pannello;
+    const btn = _ancoraFiltri;
+    const margine = 8;
+    const l = box.offsetWidth;
+    const h = box.offsetHeight;
+    let x = margine;
+    let y = margine;
+    if (btn && btn.isConnected) {
+        const r = btn.getBoundingClientRect();
+        x = r.right - l;
+        y = r.bottom + 4;
+        if (y + h > window.innerHeight - margine) y = Math.max(margine, r.top - h - 4);
+    }
+    box.style.left = Math.max(margine, Math.min(x, window.innerWidth - l - margine)) + 'px';
+    box.style.top = Math.max(margine, Math.min(y, window.innerHeight - h - margine)) + 'px';
 }
 
 function _riempiPannello() {
@@ -386,6 +422,9 @@ function _riempiPannello() {
     corpo.appendChild(sez);
 
     if (window.lucide) lucide.createIcons({ nodes: [corpo] });
+    // Ogni ricostruzione può cambiare l'altezza (compare "Azzera", cresce l'elenco delle
+    // ricerche): si riposiziona, o un pannello cresciuto sfora di nuovo dal fondo.
+    _posizionaPannello();
 
     if (idAttivo) {
         const tornato = corpo.querySelector('#' + CSS.escape(idAttivo));
@@ -409,29 +448,15 @@ window.apriPannelloFiltri = function(ancora) {
     box.id = 'pannello-filtri';
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', window.t('tooltip_filters', 'Filtri avanzati e ricerche salvate'));
+    // Tetto d'altezza e scroll interno: in style.css (#pannello-filtri), non come utility
+    // arbitraria, che esisterebbe solo dopo aver rigenerato tailwind.css.
     box.className = 'fixed z-menu w-[22rem] max-w-[calc(100vw-1rem)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md p-3 text-stone-800 dark:text-stone-100';
     box.style.left = '-9999px';
     box.style.top = '0px';
     box.innerHTML = '<div data-corpo class="flex flex-col gap-3"></div>';
     document.body.appendChild(box);
     _pannello = box;
-    _riempiPannello();
-
-    // Posizionamento a dimensioni reali, come il menu contestuale: sotto l'ancora,
-    // allineato a destra, ribaltato sopra se non ci sta.
-    const margine = 8;
-    const l = box.offsetWidth;
-    const h = box.offsetHeight;
-    let x = margine;
-    let y = margine;
-    if (btn) {
-        const r = btn.getBoundingClientRect();
-        x = r.right - l;
-        y = r.bottom + 4;
-        if (y + h > window.innerHeight - margine) y = Math.max(margine, r.top - h - 4);
-    }
-    box.style.left = Math.max(margine, Math.min(x, window.innerWidth - l - margine)) + 'px';
-    box.style.top = Math.max(margine, Math.min(y, window.innerHeight - h - margine)) + 'px';
+    _riempiPannello(); // posiziona anche (_posizionaPannello)
 
     const primo = box.querySelector('select, input, button');
     if (primo) primo.focus();

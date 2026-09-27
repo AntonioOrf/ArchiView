@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { createLocalWorkspace, dismissOverlays } from './helpers';
+import { seedItems, createLocalWorkspace, dismissOverlays } from './helpers';
 import * as path from 'path';
 
 /**
@@ -173,6 +173,32 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await page.locator('#filtro-tipo').selectOption(tipi[0]);
 
     await expect.poll(() => segnature(page)).toEqual(['PRIMO']);
+  });
+
+  test('filtrare con la lista già scorsa non chiude il pannello', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
+    await seedItems(page, 30);
+    await page.evaluate(() => (window as any).renderMain());
+    await page.evaluate(() => { document.querySelector('main')!.scrollTop = 100; });
+
+    await page.locator('#btn-filtri').click();
+    const pannello = page.locator('#pannello-filtri');
+    await expect(pannello).toBeVisible();
+    // Il filtro svuota la lista: <main> torna a scrollTop 0 e il browser emette `scroll`.
+    // Prima quell'evento chiudeva il pannello a ogni scelta.
+    await page.locator('#filtro-allegati').selectOption('si');
+    await expect.poll(() => page.evaluate(() => document.querySelector('main')!.scrollTop)).toBe(0);
+    await page.waitForTimeout(300);
+    await expect(pannello).toBeVisible();
+    // ...e resta attaccato al suo pulsante, che nel frattempo si è spostato: la posizione
+    // è quella che avrebbe riaprendolo da zero in questo stato (sotto, sopra o accostato).
+    const dopoFiltro = await pannello.boundingBox();
+    await page.keyboard.press('Escape');
+    await expect(pannello).toHaveCount(0);
+    await page.locator('#btn-filtri').click();
+    const riaperto = await pannello.boundingBox();
+    expect(Math.abs(dopoFiltro!.x - riaperto!.x)).toBeLessThan(2);
+    expect(Math.abs(dopoFiltro!.y - riaperto!.y)).toBeLessThan(2);
   });
 
   test('intervallo di data modifica, inclusivo sugli estremi', async ({ page, userDataDir }) => {

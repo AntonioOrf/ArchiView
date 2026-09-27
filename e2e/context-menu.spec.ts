@@ -135,9 +135,34 @@ test.describe('Menu contestuale e overflow', () => {
     await expect(menu).toBeHidden();
   });
 
+  test('uno scroll vero chiude il menu, un evento di scroll in ritardo no', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Menu');
+    const ids = await seedItems(page, 8);
+    const menu = page.locator('#custom-context-menu');
+
+    // Evento in ritardo: scroll ATTIVATO prima dell'apertura, notificato dopo. Il menu resta.
+    await page.evaluate((id) => {
+      const card = document.getElementById('card-' + id)!;
+      document.querySelector('main')!.scrollTop = 40;
+      const r = card.getBoundingClientRect();
+      card.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + 20, clientY: r.top + 20, button: 2 }));
+    }, ids[0]);
+    await page.waitForTimeout(300);
+    await expect(menu).toBeVisible();
+
+    // Scroll dopo l'apertura: il contenuto si è mosso sotto il menu, che si chiude.
+    await page.evaluate(() => { document.querySelector('main')!.scrollTop += 120; });
+    await expect(menu).toHaveCount(0);
+  });
+
   test('il click su una voce del sottomenu esegue il comando', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Menu');
-    await seedItems(page, 1);
+    const [id] = await seedItems(page, 1);
+    // Lo snapshot automatico si scrive in modo asincrono dopo il commit: prima che esista la
+    // cronologia è vuota e l'app mostra (correttamente) un avviso invece del modale. Senza
+    // questa attesa il test falliva 7 volte su 8 sulla 3.1.3, passando solo grazie ai retry.
+    await expect.poll(() => page.evaluate(async (rid) =>
+      ((await (window as any).apiSicurezza.storiaRecord(String(rid)))?.tappe || []).length, id)).toBeGreaterThan(0);
 
     await page.locator('.card-scheda .card-overflow-btn').first().click();
     // Il mousedown dentro il SOTTOMENU non deve chiudere lo stack prima del click.
