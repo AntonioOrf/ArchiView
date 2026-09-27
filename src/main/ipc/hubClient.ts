@@ -103,4 +103,77 @@ function decodificaInvito(raw: unknown): InvitoHub | null {
   return { hubUrl: url, repoId, memberKey, encKey: encKey || null, pusherKey: pusherKey || '', pusherCluster: pusherCluster || '', name };
 }
 
-module.exports = { chiamataHub, hubUrlValido, generaEncKey, codificaInvito, decodificaInvito, ID_HUB };
+// --- Cifratura del database (S7 in REVIEW-SECURITY.md) ---
+//
+// Il server conserva il database così come lo riceve: cifrato, chi legge D1 (o gestisce un Hub
+// self-hosted) non vede schede e trascrizioni. Busta:
+//   { archiviewCifrato: 1, iv, dati }   dati = AES-256-GCM(gzip(JSON)) || tag, base64
+// - gzip prima di cifrare: il server comprime, ma un testo cifrato non si comprime più;
+// - chiave derivata da encKey con HKDF: gli allegati usano encKey con nonce deterministici, il
+//   DB nonce casuali; chiavi separate evitano qualsiasi incrocio fra i due schemi;
+// - AAD = repoId + versione: il server non può spacciare una versione vecchia per la corrente,
+//   né la busta di un altro repo. La versione è nota prima del push (parentVersion + 1).
+// Le versioni in chiaro già presenti sul server restano leggibili (nessuna busta → passthrough).
+
+const zlib = require('zlib');
+const { promisify } = require('util');
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
+
+const FORMATO_CIFRATO = 1;
+// Tetto al JSON decompresso: una busta ostile non deve esaurire la memoria del main.
+const MAX_DB_DECOMPRESSO = 512 * 1024 * 1024;
+
+function chiaveDatabase(encKey: unknown): Buffer | null {
+  if (typeof encKey !== 'string' || !encKey) return null;
+  const k = Buffer.from(encKey, 'base64url');
+  if (k.length !== 32) return null;
+  return Buffer.from(crypto.hkdfSync('sha256', k, Buffer.alloc(0), 'archiview-hub-db-v1', 32));
+}
+
+const aadDatabase = (repoId: string, version: number) => Buffer.from(`archiview-hub-db|${repoId}|${version}`, 'utf8');
+
+function eDatabaseCifrato(db: any): boolean {
+  return !!db && typeof db === 'object' && db.archiviewCifrato !== undefined;
+}
+
+async function cifraDatabase(database: any, encKey: unknown, repoId: string, version: number): Promise<any> {
+  const key = chiaveDatabase(encKey);
+  if (!key) throw new Error('Chiave di cifratura dell\'archivio assente o non valida.');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(aadDatabase(repoId, version));
+  const compresso: Buffer = await gzip(Buffer.from(JSON.stringify(database), 'utf8'));
+  const dati = Buffer.concat([cipher.update(compresso), cipher.final(), cipher.getAuthTag()]);
+  return { archiviewCifrato: FORMATO_CIFRATO, iv: iv.toString('base64'), dati: dati.toString('base64') };
+}
+
+/** Busta → database. Un database in chiaro (versioni precedenti alla cifratura) passa com'è. */
+async function decifraDatabase(db: any, encKey: unknown, repoId: string, version: number): Promise<any> {
+  if (!eDatabaseCifrato(db)) return db;
+  if (db.archiviewCifrato !== FORMATO_CIFRATO) {
+    throw new Error('Archivio cifrato con un formato più recente: aggiorna ArchiView.');
+  }
+  const key = chiaveDatabase(encKey);
+  if (!key) throw new Error('Chiave di cifratura dell\'archivio assente: chiedi al proprietario un nuovo invito.');
+  if (typeof db.iv !== 'string' || typeof db.dati !== 'string') throw new Error('Archivio cifrato danneggiato.');
+  const iv = Buffer.from(db.iv, 'base64');
+  const dati = Buffer.from(db.dati, 'base64');
+  if (iv.length !== 12 || dati.length < 16) throw new Error('Archivio cifrato danneggiato.');
+  let compresso: Buffer;
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAAD(aadDatabase(repoId, version));
+    decipher.setAuthTag(dati.subarray(dati.length - 16));
+    compresso = Buffer.concat([decipher.update(dati.subarray(0, dati.length - 16)), decipher.final()]);
+  } catch {
+    throw new Error('Impossibile decifrare l\'archivio: la chiave non corrisponde o i dati sul server sono stati alterati.');
+  }
+  const json: Buffer = await gunzip(compresso, { maxOutputLength: MAX_DB_DECOMPRESSO });
+  return JSON.parse(json.toString('utf8'));
+}
+
+module.exports = {
+  chiamataHub, hubUrlValido, generaEncKey, codificaInvito, decodificaInvito, ID_HUB,
+  cifraDatabase, decifraDatabase, eDatabaseCifrato
+};

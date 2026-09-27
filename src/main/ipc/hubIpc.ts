@@ -2,7 +2,10 @@ const { ipcMain } = require('electron');
 const { syncHubAttachments } = require('./hubAttachments');
 const { HUB_URL, HUB_CREATE_SECRET, PUSHER_KEY, PUSHER_CLUSTER } = require('./cloudCredentials');
 const { loadHubConfig, loadHubConfigPubblica, saveHubConfig } = require('../workspaceManager');
-const { chiamataHub, generaEncKey, codificaInvito, decodificaInvito, ID_HUB } = require('./hubClient');
+const {
+  chiamataHub, generaEncKey, codificaInvito, decodificaInvito, ID_HUB,
+  cifraDatabase, decifraDatabase, eDatabaseCifrato
+} = require('./hubClient');
 const { clonaWorkspace } = require('./workspaceIpc');
 const { nomeCartellaSicuro } = require('./pathSafety');
 
@@ -20,6 +23,49 @@ function configAttiva() {
   return cfg && cfg.repoId && cfg.repoKey ? cfg : null;
 }
 
+// --- Cifratura del database (S7): il renderer vede sempre il DB in chiaro, il server mai ---
+
+// Corpo del push: DB cifrato per la versione che il server assegnerà (parentVersion + 1).
+// Senza encKey (vault legacy, invito senza chiave) non c'è una chiave condivisa: resta in chiaro.
+async function corpoPush(cfg: any, parentVersion: number, database: any) {
+  if (!cfg.encKey) {
+    console.warn(`[hub] repo ${cfg.repoId}: nessuna encKey, database inviato in chiaro.`);
+    return { parentVersion, database };
+  }
+  return { parentVersion, database: await cifraDatabase(database, cfg.encKey, cfg.repoId, parentVersion + 1) };
+}
+
+// Da quando il vault ha visto il DB cifrato, un DB corrente in chiaro è un downgrade (server
+// alterato o client vecchio che ha sovrascritto): rifiutato invece di essere fuso.
+function segnaDbCifrato() {
+  const cfg = loadHubConfig();
+  if (cfg && cfg.repoId && !cfg.dbCifrato) saveHubConfig({ ...cfg, dbCifrato: true });
+}
+
+/**
+ * Sostituisce data.database con il DB in chiaro. `corrente`: pull della versione attuale (vale
+ * la guardia anti-downgrade); false per gli snapshot della cronologia, che possono precedere
+ * l'attivazione della cifratura.
+ */
+async function conDatabaseInChiaro(r: any, cfg: any, corrente: boolean) {
+  if (!r.ok || !r.data || r.data.unchanged === true || r.data.database === undefined) return r;
+  const { version, database } = r.data;
+  try {
+    if (!eDatabaseCifrato(database)) {
+      if (corrente && cfg.dbCifrato && version > 0) {
+        return { ok: false, status: 0, error: "L'archivio sul server non è cifrato come atteso: dati rifiutati. Verifica che tutti i membri usino l'ultima versione di ArchiView." };
+      }
+      return r;
+    }
+    const inChiaro = await decifraDatabase(database, cfg.encKey, cfg.repoId, version);
+    if (corrente && !cfg.dbCifrato) segnaDbCifrato();
+    return { ...r, data: { ...r.data, database: inChiaro } };
+  } catch (e: any) {
+    console.error('[hub] decifratura database:', e.message);
+    return { ok: false, status: 0, error: e.message };
+  }
+}
+
 function setupHubIpc() {
   // Creazione repo: il CREATE_SECRET vive SOLO nel main. Crea il repo, genera la encKey,
   // fa il push iniziale e salva la config: al renderer torna la config senza segreti.
@@ -28,7 +74,8 @@ function setupHubIpc() {
       const res = await fetch(`${HUB_URL}/api/repos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Create-Secret': HUB_CREATE_SECRET },
-        body: JSON.stringify({ name: name || null }),
+        // Il nome non va al server (S7): lo conserverebbe in chiaro senza usarlo. Resta nel DB cifrato.
+        body: JSON.stringify({ name: null }),
         signal: AbortSignal.timeout(20000)
       });
       if (res.status === 403) return { ok: false, error: "Creazione repository non autorizzata (secret non valido)." };
@@ -38,13 +85,13 @@ function setupHubIpc() {
         return { ok: false, error: "Risposta dell'Hub non valida." };
       }
 
-      const cfg = { hubUrl: HUB_URL, repoId: data.repoId, repoKey: data.ownerKey };
-      const push = await chiamataHub(cfg, 'POST', '/push', { body: { parentVersion: 0, database }, timeoutMs: TIMEOUT_DB_MS });
+      const cfg = { hubUrl: HUB_URL, repoId: data.repoId, repoKey: data.ownerKey, encKey: generaEncKey() };
+      const push = await chiamataHub(cfg, 'POST', '/push', { body: await corpoPush(cfg, 0, database), timeoutMs: TIMEOUT_DB_MS });
       if (!push.ok) return { ok: false, error: push.error || `Push iniziale fallito (HTTP ${push.status}).` };
 
       const pusherWebhook = `${HUB_URL}/api/ping`;
       const salvato = saveHubConfig({
-        ...cfg, encKey: generaEncKey(),
+        ...cfg, dbCifrato: true,
         version: push.data.version, lastLoadedAt: Date.now(), attachmentsMode: 'drive-links',
         role: 'owner', name: typeof name === 'string' ? name : '',
         pusherKey: PUSHER_KEY, pusherCluster: PUSHER_CLUSTER
@@ -63,7 +110,7 @@ function setupHubIpc() {
     const cfg = configAttiva();
     if (!cfg) return NON_COLLEGATO;
     const qs = Number.isInteger(ifVersionNot) ? `?ifVersionNot=${ifVersionNot}` : '';
-    return chiamataHub(cfg, 'GET', `/pull${qs}`, { timeoutMs: TIMEOUT_DB_MS });
+    return conDatabaseInChiaro(await chiamataHub(cfg, 'GET', `/pull${qs}`, { timeoutMs: TIMEOUT_DB_MS }), cfg, true);
   });
 
   // 409 = il server è avanzato rispetto a parentVersion: il renderer chiede di ricevere prima.
@@ -73,7 +120,14 @@ function setupHubIpc() {
     if (!Number.isInteger(parentVersion) || !database || typeof database !== 'object') {
       return { ok: false, status: 0, error: 'Dati di invio non validi.' };
     }
-    return chiamataHub(cfg, 'POST', '/push', { body: { parentVersion, database }, timeoutMs: TIMEOUT_DB_MS });
+    try {
+      const r = await chiamataHub(cfg, 'POST', '/push', { body: await corpoPush(cfg, parentVersion, database), timeoutMs: TIMEOUT_DB_MS });
+      if (r.ok && cfg.encKey) segnaDbCifrato();
+      return r;
+    } catch (e: any) {
+      console.error('[hub] cifratura database:', e.message);
+      return { ok: false, status: 0, error: e.message };
+    }
   });
 
   ipcMain.handle('hub-versions', async () => {
@@ -85,7 +139,7 @@ function setupHubIpc() {
     const cfg = configAttiva();
     if (!cfg) return NON_COLLEGATO;
     if (!Number.isInteger(n) || n < 0) return { ok: false, status: 0, error: 'Versione non valida.' };
-    return chiamataHub(cfg, 'GET', `/versions/${n}`, { timeoutMs: TIMEOUT_DB_MS });
+    return conDatabaseInChiaro(await chiamataHub(cfg, 'GET', `/versions/${n}`, { timeoutMs: TIMEOUT_DB_MS }), cfg, false);
   });
 
   // Ruolo sul repo: GET /members è owner-only (200 = owner, 401/403 = member). L'esito certo si
@@ -134,17 +188,21 @@ function setupHubIpc() {
   ipcMain.handle('hub-join', async (event: any, code: string, basePath: string) => {
     const inv = decodificaInvito(code);
     if (!inv) return { ok: false, status: 0, error: 'Invito non valido.' };
-    const cfg = { hubUrl: inv.hubUrl, repoId: inv.repoId, repoKey: inv.memberKey };
-    const r = await chiamataHub(cfg, 'GET', '/pull', { timeoutMs: TIMEOUT_DB_MS });
-    if (!r.ok) {
-      return { ok: false, status: r.status, error: (r.status === 401 || r.status === 403)
+    const cfg = { hubUrl: inv.hubUrl, repoId: inv.repoId, repoKey: inv.memberKey, encKey: inv.encKey };
+    const grezzo = await chiamataHub(cfg, 'GET', '/pull', { timeoutMs: TIMEOUT_DB_MS });
+    if (!grezzo.ok) {
+      return { ok: false, status: grezzo.status, error: (grezzo.status === 401 || grezzo.status === 403)
         ? "Invito non valido o accesso revocato." : "Impossibile connettersi al repository remoto." };
     }
+    const dbCifrato = eDatabaseCifrato(grezzo.data && grezzo.data.database);
+    // Il workspace non è ancora aperto: niente segnaDbCifrato, il flag va nella config del clone.
+    const r = await conDatabaseInChiaro(grezzo, cfg, false);
+    if (!r.ok) return r;
     const database = (r.data && r.data.database) || {};
     const sharedName = (typeof database.nomeArchivio === 'string' && database.nomeArchivio) || inv.name || '';
     const nomeCartella = nomeCartellaSicuro(sharedName.slice(0, 80), `Vault_${inv.repoId}`);
     const ok = clonaWorkspace(basePath, nomeCartella, {
-      ...cfg, encKey: inv.encKey, version: r.data.version, lastLoadedAt: Date.now(),
+      ...cfg, dbCifrato, version: r.data.version, lastLoadedAt: Date.now(),
       attachmentsMode: 'drive-links', role: 'member', name: sharedName,
       pusherKey: inv.pusherKey, pusherCluster: inv.pusherCluster, pusherWebhook: `${inv.hubUrl}/api/ping`
     }, database);

@@ -145,6 +145,73 @@ test.describe('Security Regression Tests', () => {
     expect(await api('hubJoin', invito, userDataDir)).toMatchObject({ ok: false, status: 0 });
   });
 
+  // S7 (REVIEW-SECURITY.md): il database arriva all'Hub cifrato e torna in chiaro solo nel client.
+  test('Hub: database cifrato sul server, decifrato al pull, downgrade in chiaro rifiutato', async ({ page, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const path = await import('path');
+    const fs = await import('fs');
+    const http = await import('http');
+    const crypto = await import('crypto');
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'HubCifrato');
+    const wsPath = typeof ws === 'string' && fs.existsSync(ws) ? ws : await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath());
+
+    // Finto Hub: conserva ciò che riceve, come il Worker vero (versioni append-only).
+    const versioni: any[] = [{ manoscritti: [] }];
+    const server = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (c) => { body += c; });
+      req.on('end', () => {
+        const send = (code: number, obj: any) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+        if (req.headers.authorization !== 'Bearer CHIAVE-R1') return send(401, { error: 'no' });
+        const url = new URL(req.url!, 'http://x');
+        const cur = versioni.length - 1;
+        if (url.pathname === '/api/repos/r1/push' && req.method === 'POST') {
+          const b = JSON.parse(body);
+          if (b.parentVersion !== cur) return send(409, { error: 'conflitto' });
+          versioni.push(b.database);
+          return send(200, { version: cur + 1 });
+        }
+        if (url.pathname === '/api/repos/r1/pull') return send(200, { version: cur, database: versioni[cur] });
+        const m = /^\/api\/repos\/r1\/versions\/(\d+)$/.exec(url.pathname);
+        if (m) return send(200, { version: Number(m[1]), database: versioni[Number(m[1])] });
+        send(404, {});
+      });
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
+    try {
+      const hubUrl = `http://127.0.0.1:${(server.address() as any).port}`;
+      fs.writeFileSync(path.join(wsPath, '.archiview-hub.json'), JSON.stringify({
+        hubUrl, repoId: 'r1', repoKey: 'CHIAVE-R1', encKey: crypto.randomBytes(32).toString('base64url'), version: 0
+      }));
+      const api = (fn: string, ...args: any[]) => page.evaluate(([f, a]) => (window as any).apiBrowser[f as string](...(a as any[])), [fn, args] as const);
+
+      const db = { nomeArchivio: 'Fondo', manoscritti: [{ id: 'm1', trascrizione: 'testo-riservato-123' }] };
+      const push = await api('hubPush', 0, db);
+      expect(push).toMatchObject({ ok: true, data: { version: 1 } });
+      expect(JSON.stringify(versioni[1])).not.toContain('testo-riservato-123');
+      expect(versioni[1]).toHaveProperty('archiviewCifrato', 1);
+
+      const pull = await api('hubPull');
+      expect(pull.ok).toBe(true);
+      expect(pull.data).toMatchObject({ version: 1, database: db });
+
+      // Lo snapshot pre-cifratura (v0, in chiaro) resta consultabile nella cronologia.
+      expect(await api('hubVersion', 0)).toMatchObject({ ok: true, data: { database: { manoscritti: [] } } });
+
+      // Il server (o un client vecchio) rimette in chiaro la versione corrente: rifiutata.
+      versioni.push({ manoscritti: [{ id: 'm1', trascrizione: 'contenuto iniettato' }] });
+      const downgrade = await api('hubPull');
+      expect(downgrade.ok).toBe(false);
+      expect(JSON.stringify(downgrade)).not.toContain('iniettato');
+
+      // Rollback: il server ripresenta la busta della v1 come se fosse la v3. AAD diversa → rifiutata.
+      versioni.push(versioni[1]);
+      expect((await api('hubPull')).ok).toBe(false);
+    } finally {
+      server.close();
+    }
+  });
+
   // S4 (REVIEW-SECURITY.md): l'id della scheda arriva dal vault e finiva nel percorso di copia.
   test('salva-allegato: id ostile resta nella cartella allegati, file interni non allegabili', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');

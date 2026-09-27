@@ -88,7 +88,7 @@ window.riceviModificheHub = async function(isSilent = false) {
             }
             // If silent, just ignore network errors (might be offline)
             if (isSilent) return;
-            throw new Error("Impossibile scaricare i dati dal server.");
+            throw new Error(resPull.error || "Impossibile scaricare i dati dal server.");
         }
 
         const dataPull = resPull.data;
@@ -216,7 +216,7 @@ window.controllaModificheHub = async function(manual = false) {
             if (manual) mostraMessaggio(res.status === 403
                 ? "Il tuo accesso a questo repository è stato revocato dall'amministratore."
                 : (res.status === 401 ? "Chiave di accesso non valida per questo repository."
-                : "Impossibile contattare il server."), "error");
+                : (res.error || "Impossibile contattare il server.")), "error");
             return;
         }
 
@@ -346,7 +346,7 @@ window.inviaModificheHub = async function() {
                 );
                 return;
             }
-            throw new Error("Errore durante l'invio delle modifiche al server.");
+            throw new Error(resPush.error || "Errore durante l'invio delle modifiche al server.");
         }
 
         window.hubConfig.version = resPush.data.version;
@@ -402,7 +402,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         // Pre-check: se il server è avanzato rispetto a quanto abbiamo in locale, non tocchiamo
         // nulla e chiediamo di ricevere prima (evita di ripristinare "alla cieca" su dati stantii).
         const resCheck = await window.apiBrowser.hubPull(window.hubConfig.version);
-        if (!resCheck.ok) throw new Error("Impossibile contattare il server per il ripristino.");
+        if (!resCheck.ok) throw new Error(resCheck.error || "Impossibile contattare il server per il ripristino.");
         if (!resCheck.data || resCheck.data.unchanged !== true) {
             mostraMessaggio(window.t("msg_hub_restore_pull_first", "Il server contiene modifiche più recenti. Usa 'Ricevi' prima di ripristinare."), "warning");
             return false;
@@ -421,7 +421,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
                 mostraMessaggio(window.t("msg_hub_restore_conflict", "Ripristino applicato in locale ma non inviato: il server è avanzato nel frattempo. Usa 'Ricevi' per riallineare e poi 'Invia'."), "warning");
                 return false;
             }
-            throw new Error("Errore durante l'invio del ripristino al server.");
+            throw new Error(resPush.error || "Errore durante l'invio del ripristino al server.");
         }
 
         window.hubConfig.version = resPush.data.version;

@@ -72,5 +72,38 @@ for (const c of [
   const giu = await chiamataHub({ ...cfg, hubUrl: 'http://127.0.0.1:1' }, 'GET', '/pull', { timeoutMs: 2000 });
   assert.strictEqual(giu.ok, false); assert.strictEqual(giu.status, 0);
 
+  // 7. Cifratura del database (S7): il server vede solo la busta
+  const { cifraDatabase, decifraDatabase, eDatabaseCifrato } = require('../out/main/ipc/hubClient');
+  const k = generaEncKey();
+  const db = { nomeArchivio: 'Fondo Rossi', manoscritti: [{ id: 'a1', trascrizione: 'Incipit liber secretus' }] };
+  const busta = await cifraDatabase(db, k, 'r1', 7);
+  assert.ok(eDatabaseCifrato(busta));
+  assert.ok(!JSON.stringify(busta).includes('secretus') && !JSON.stringify(busta).includes('Rossi'), 'testo in chiaro nella busta');
+  assert.deepStrictEqual(await decifraDatabase(busta, k, 'r1', 7), db);
+  // Due cifrature dello stesso DB non coincidono (nonce casuale)
+  assert.notStrictEqual((await cifraDatabase(db, k, 'r1', 7)).dati, busta.dati);
+
+  // Chiave sbagliata, altra versione (rollback del server), altro repo, dati alterati: rifiutati
+  await assert.rejects(decifraDatabase(busta, generaEncKey(), 'r1', 7), /decifrare/);
+  await assert.rejects(decifraDatabase(busta, k, 'r1', 6), /decifrare/);
+  await assert.rejects(decifraDatabase(busta, k, 'r2', 7), /decifrare/);
+  const alterata = { ...busta, dati: Buffer.from(Buffer.from(busta.dati, 'base64').map((b, i) => i === 5 ? b ^ 1 : b)).toString('base64') };
+  await assert.rejects(decifraDatabase(alterata, k, 'r1', 7), /decifrare/);
+  await assert.rejects(decifraDatabase({ ...busta, iv: 'AAAA' }, k, 'r1', 7), /danneggiato/);
+  await assert.rejects(decifraDatabase(busta, null, 'r1', 7), /nuovo invito/);
+  await assert.rejects(decifraDatabase({ ...busta, archiviewCifrato: 2 }, k, 'r1', 7), /aggiorna/);
+  await assert.rejects(cifraDatabase(db, 'corta', 'r1', 1), /Chiave/);
+
+  // Versioni precedenti alla cifratura: passano come sono
+  assert.deepStrictEqual(await decifraDatabase(db, k, 'r1', 3), db);
+  assert.strictEqual(eDatabaseCifrato(db), false);
+
+  // La chiave del DB è derivata: con la encKey grezza (quella degli allegati) non si decifra
+  const crypto = require('crypto');
+  const iv = Buffer.from(busta.iv, 'base64'); const dati = Buffer.from(busta.dati, 'base64');
+  const d = crypto.createDecipheriv('aes-256-gcm', Buffer.from(k, 'base64url'), iv);
+  d.setAAD(Buffer.from('archiview-hub-db|r1|7')); d.setAuthTag(dati.subarray(dati.length - 16));
+  assert.throws(() => Buffer.concat([d.update(dati.subarray(0, dati.length - 16)), d.final()]));
+
   console.log('hubClient tests passed.');
 })().catch((e) => { console.error(e); process.exit(1); });
