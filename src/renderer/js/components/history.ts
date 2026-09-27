@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ─── STORICO VERSIONI CLOUD ─────────────────────────────────────────────────
 
 // Context menu personalizzato per lo storico
@@ -242,7 +241,7 @@ async function apriDiffRevisioneCloud(fileId, revisionId, label) {
     }
 }
 
-function apriDiffRevisioneModal(diffs, label, leftLabel, rightLabel) {
+function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
     const esistente = document.getElementById('history-diff-modal');
     if (esistente) esistente.remove();
 
@@ -292,7 +291,7 @@ function apriDiffRevisioneModal(diffs, label, leftLabel, rightLabel) {
 
         document.body.appendChild(overlay);
 
-        const body = overlay.querySelector('#hist-diff-body');
+        const body = overlay.querySelector<HTMLElement>('#hist-diff-body');
         const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'id', 'allegato', 'allegatoTipo'];
         const allKeys = new Set([...Object.keys(revM), ...Object.keys(curM)]);
         let htmlDiff = '';
@@ -329,10 +328,10 @@ function apriDiffRevisioneModal(diffs, label, leftLabel, rightLabel) {
 
         const close = () => overlay.remove();
         window.chiudiHistoryDiffModal = close;
-        overlay.querySelector('#hist-close-btn').onclick = close;
-        overlay.querySelector('#hist-close-btn2').onclick = close;
-        overlay.querySelector('#hist-prev-btn').onclick = () => { if (idx > 0) { idx--; renderModal(); } };
-        overlay.querySelector('#hist-next-btn').onclick = () => { if (idx < diffs.length - 1) { idx++; renderModal(); } };
+        overlay.querySelector<HTMLElement>('#hist-close-btn').onclick = close;
+        overlay.querySelector<HTMLElement>('#hist-close-btn2').onclick = close;
+        overlay.querySelector<HTMLElement>('#hist-prev-btn').onclick = () => { if (idx > 0) { idx--; renderModal(); } };
+        overlay.querySelector<HTMLElement>('#hist-next-btn').onclick = () => { if (idx < diffs.length - 1) { idx++; renderModal(); } };
         overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
     }
 
@@ -389,14 +388,14 @@ async function apriConfermaRipristino(label, onConfirm) {
     `;
     document.body.appendChild(overlay);
 
-    const cancelBtn = overlay.querySelector('#hist-cancel-restore');
+    const cancelBtn = overlay.querySelector<HTMLElement>('#hist-cancel-restore');
     cancelBtn.onmouseenter = () => { cancelBtn.style.background = isDark ? '#44403c' : '#e7e5e4'; };
     cancelBtn.onmouseleave = () => { cancelBtn.style.background = cancelBg; };
 
     cancelBtn.onclick = () => overlay.remove();
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
-    overlay.querySelector('#hist-confirm-restore').onclick = async () => {
+    overlay.querySelector<HTMLElement>('#hist-confirm-restore').onclick = async () => {
         overlay.remove();
         if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'download_in_progress');
         try {
@@ -427,7 +426,7 @@ function formatRelativeDate(ts) {
             ' ' + d.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
     }
     const rtf = new Intl.RelativeTimeFormat(window.localeAttuale(), { numeric: 'auto' });
-    const units = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
     for (const [unit, secs] of units) {
         if (abs >= secs) return rtf.format(Math.round(diffSec / secs), unit);
     }

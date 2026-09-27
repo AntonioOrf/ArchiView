@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fase 2.3 — OCR degli allegati: superficie utente.
 //
 // Qui non c'è nessun motore: tesseract e pdf.js vivono nel Main (`src/main/ocr/`) e questo
@@ -125,7 +124,7 @@ function _oRiga(etichetta, controllo) {
     return wrap;
 }
 
-function _oNota(testo, classe) {
+function _oNota(testo, classe?) {
     const p = document.createElement('p');
     p.className = classe || 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed';
     p.textContent = testo;
@@ -420,7 +419,7 @@ window.avviaOcr = async function() {
     _oRicordaLingue(lingue);
 
     const modal = document.getElementById('ocr-modal');
-    const conferma = modal.querySelector('#ocr-confirm');
+    const conferma = modal.querySelector<HTMLButtonElement>('#ocr-confirm');
     conferma.disabled = true;
     _oStato.inCorso = true;
     document.getElementById('ocr-result').classList.add('hidden-tab');
@@ -568,7 +567,7 @@ async function _oInserisciBozze(m, esiti) {
  * senza, l'utente dovrebbe scegliere fra perdere il lavoro fatto e rinunciare all'OCR.
  */
 function _oChiediSovrascrittura() {
-    return new Promise((risolvi) => {
+    return new Promise<string>((risolvi) => {
         const modal = document.getElementById('ocr-overwrite-modal');
         if (!modal) { risolvi('sovrascrivi'); return; }
 
@@ -576,9 +575,9 @@ function _oChiediSovrascrittura() {
             modal.classList.add('hidden-tab');
             risolvi(scelta);
         };
-        modal.querySelector('#ocr-ow-replace').onclick = () => chiudi('sovrascrivi');
-        modal.querySelector('#ocr-ow-append').onclick = () => chiudi('accoda');
-        modal.querySelector('#ocr-ow-cancel').onclick = () => chiudi('annulla');
+        modal.querySelector<HTMLElement>('#ocr-ow-replace').onclick = () => chiudi('sovrascrivi');
+        modal.querySelector<HTMLElement>('#ocr-ow-append').onclick = () => chiudi('accoda');
+        modal.querySelector<HTMLElement>('#ocr-ow-cancel').onclick = () => chiudi('annulla');
         modal.classList.remove('hidden-tab');
     });
 }

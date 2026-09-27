@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Import IIIF — il modale.
 //
 // Tre strati come per l'import CSV (2.4): la lettura del manifest sta nel main
@@ -27,7 +25,7 @@ function _iiT(id, fallback) {
 let _iiStato = null;
 
 /** I codici di `fetchManifest.ts` e di `normalizza()` tradotti. Il modello non parla italiano. */
-function _iiMotivo(codice, extra) {
+function _iiMotivo(codice, extra?) {
     switch (codice) {
         case 'url_non_valido': return _iiT('iiif_err_url', "L'indirizzo non e' valido: serve un URL http o https.");
         case 'timeout': return _iiT('iiif_err_timeout', 'Il server della biblioteca non ha risposto in tempo.');
@@ -87,11 +85,11 @@ window.apriImportIiif = function(opzioni) {
 
     const opt = opzioni || {};
     const scheda = opt.idScheda ? appData.manoscritti.find(x => String(x.id) === String(opt.idScheda)) : null;
-    _iiStato = { modalita: scheda ? 'aggiungi' : 'nuova', idScheda: scheda ? scheda.id : null, norm: null, url: '', selezione: new Set() };
+    _iiStato = { modalita: scheda ? 'aggiungi' : 'nuova', idScheda: scheda ? scheda.id : null, norm: null, url: '', selezione: new Set<number>() };
 
     _iiEl('iiif-url').value = (scheda && scheda.iiifManifestUrl) || '';
     _iiEl('iiif-anteprima').classList.add('hidden-tab');
-    _iiEl('iiif-conferma').disabled = true;
+    (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = true;
     _iiMostraErrore('');
 
     // In modalita' "aggiungi" la scheda c'e' gia': chiedere di nuovo segnatura, modello e
@@ -150,11 +148,11 @@ window.leggiManifestIiif = async function(event) {
     const url = _iiEl('iiif-url').value.trim();
     if (!url) return;
 
-    const btn = _iiEl('iiif-leggi');
+    const btn = _iiEl('iiif-leggi') as HTMLButtonElement;
     btn.disabled = true;
     _iiMostraErrore('');
     _iiEl('iiif-anteprima').classList.add('hidden-tab');
-    _iiEl('iiif-conferma').disabled = true;
+    (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = true;
 
     try {
         const esito = await window.apiIiif.leggiManifest(url);
@@ -231,7 +229,7 @@ function _iiDisegnaAnteprima() {
     }).join(''));
 
     griglia.onchange = (e) => {
-        const casella = e.target;
+        const casella = e.target as HTMLInputElement;
         if (!casella || casella.type !== 'checkbox') return;
         const etichetta = casella.closest('.iiif-carta');
         if (!etichetta) return;
@@ -260,7 +258,7 @@ function _iiAggiornaConteggio() {
     const totale = _iiStato.norm.carte.length;
     _iiEl('iiif-selezionate').textContent = _iiT('iiif_selected_count', '{var0} di {var1} carte selezionate')
         .replace('{var0}', String(n)).replace('{var1}', String(totale));
-    _iiEl('iiif-conferma').disabled = n === 0;
+    (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = n === 0;
 }
 
 /** L'espressione `1-10, 25, 40-60` comanda le caselle. */
@@ -294,10 +292,10 @@ window.selezionaTutteIiif = function(tutte) {
 window.confermaImportIiif = async function() {
     if (!_iiStato || !_iiStato.norm) return;
     const { norm, url, modalita } = _iiStato;
-    const indici = Array.from(_iiStato.selezione).sort((a, b) => a - b);
+    const indici = Array.from(_iiStato.selezione as Set<number>).sort((a, b) => a - b);
     if (!indici.length) return;
 
-    const btn = _iiEl('iiif-conferma');
+    const btn = _iiEl('iiif-conferma') as HTMLButtonElement;
     btn.disabled = true;
 
     try {

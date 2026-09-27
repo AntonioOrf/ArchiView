@@ -1,4 +1,3 @@
-// @ts-nocheck
 // --- MENU CONTESTUALE UNIFICATO (Fase 4.3, submenu dalla Fase 0 di MENU_GROUPING_TODO) ---
 // Unica implementazione per: menu record, menu cartella sidebar, menu sfondo lista,
 // pulsanti overflow "⋯". Sostituisce l'HTML generato a mano in 3 punti di app.ts.
@@ -16,6 +15,8 @@
 
 let _menuStack = [];          // [{ el, voceGenitore }] — indice 0 = menu principale
 let _menuOrigineFocus = null;
+// Voce di menu con sottomenu: le proprietà __ viaggiano sul nodo del pulsante.
+type VoceMenu = HTMLButtonElement & { __submenu?: any; __livello?: number; __submenuAperto?: boolean };
 let _menuAncora = null;
 let _menuTimerHover = null;
 // Posizioni di scroll al momento dell'apertura, per i contenitori sopra l'origine del menu.
@@ -48,16 +49,16 @@ function _menuContiene(target) {
     return _menuStack.some(l => l.el.contains(target));
 }
 
-function _menuVociAttive(el) {
+function _menuVociAttive(el?): HTMLElement[] {
     const menu = el || _menuTop();
     if (!menu) return [];
-    return Array.from(menu.querySelectorAll('[role="menuitem"]:not([disabled])'));
+    return Array.from(menu.querySelectorAll('[role="menuitem"]:not([disabled])')) as HTMLElement[];
 }
 
 function _menuSpostaFuoco(delta) {
     const voci = _menuVociAttive();
     if (voci.length === 0) return;
-    const corrente = voci.indexOf(document.activeElement);
+    const corrente = voci.indexOf(document.activeElement as HTMLElement);
     // -1 (nessuna voce a fuoco) + delta 1 → 0: la prima voce, come atteso.
     const prossimo = (corrente + delta + voci.length) % voci.length;
     voci[prossimo].focus();
@@ -75,7 +76,7 @@ function _menuOnKeyDown(e) {
         case 'Home': { e.preventDefault(); const v = _menuVociAttive(); if (v.length) v[0].focus(); break; }
         case 'End': { e.preventDefault(); const v = _menuVociAttive(); if (v.length) v[v.length - 1].focus(); break; }
         case 'ArrowRight': {
-            const btn = document.activeElement;
+            const btn = document.activeElement as VoceMenu;
             if (btn && btn.__submenu) { e.preventDefault(); _apriSottomenu(btn, true); }
             break;
         }
@@ -184,7 +185,7 @@ function _costruisciMenu(elenco, livello) {
             continue;
         }
         const sottovoci = Array.isArray(voce.submenu) ? voce.submenu.filter(Boolean) : null;
-        const btn = document.createElement('button');
+        const btn = document.createElement('button') as VoceMenu;
         btn.type = 'button';
         btn.setAttribute('role', 'menuitem');
         btn.tabIndex = -1;
@@ -356,7 +357,7 @@ window.apriMenuContestuale = function(origine, voci) {
 };
 
 /** Pulsante overflow "⋯" riusabile (Fase 4.1 / 4.2). costruisciVoci() è valutata al click. */
-window.creaBottoneOverflow = function(costruisciVoci, opzioni = {}) {
+window.creaBottoneOverflow = function(costruisciVoci, opzioni: { className?: string; label?: string; iconClass?: string; preparaApertura?: () => HTMLElement | null | void } = {}) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = opzioni.className || 'btn btn-ghost btn-icon';
@@ -374,7 +375,7 @@ window.creaBottoneOverflow = function(costruisciVoci, opzioni = {}) {
         // preparaApertura può ri-renderizzare il contenitore (es. selezionare la scheda):
         // in quel caso restituisce il pulsante nuovo, altrimenti ancoreremmo il menu a un
         // nodo staccato dal DOM, il cui getBoundingClientRect è tutto zeri.
-        let ancora = btn;
+        let ancora: HTMLElement = btn;
         if (typeof opzioni.preparaApertura === 'function') {
             const sostituto = opzioni.preparaApertura();
             if (sostituto) ancora = sostituto;
