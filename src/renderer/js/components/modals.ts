@@ -1,4 +1,3 @@
-// @ts-nocheck
 window.apriPdfInterno = async function(fileName) {
     if (window.apiBrowser) {
         apriModal(window.srcAllegato(fileName, { frammento: '#pagemode=none' }), 'pdf');
@@ -7,9 +6,9 @@ window.apriPdfInterno = async function(fileName) {
 
 
 function apriModal(sorgente, tipo = 'img') {
-    const modalImg = document.getElementById('modal-img');
+    const modalImg = document.getElementById('modal-img') as HTMLImageElement;
     const modalPdf = document.getElementById('modal-pdf');
-    const viewport = document.getElementById('modal-img-viewport');
+    const viewport = document.getElementById('modal-img-viewport') as HTMLElement & { _imageViewer?: any };
     if (viewport) viewport.classList.add('hidden-tab');
     modalPdf.classList.add('hidden');
 
@@ -38,7 +37,7 @@ function apriModal(sorgente, tipo = 'img') {
 function chiudiModal() {
     document.getElementById('image-modal').classList.add('hidden-tab');
     document.getElementById('modal-pdf').src = '';
-    const viewport = document.getElementById('modal-img-viewport');
+    const viewport = document.getElementById('modal-img-viewport') as HTMLElement & { _imageViewer?: any };
     if (viewport && viewport._imageViewer) viewport._imageViewer.reimposta();
 }
 
@@ -289,10 +288,10 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null,
     }
     
     // Rimuovi vecchi listener clonando i pulsanti
-    const newBtn = btnYes.cloneNode(true);
+    const newBtn = btnYes.cloneNode(true) as HTMLElement;
     btnYes.parentNode.replaceChild(newBtn, btnYes);
     
-    const newBtnCancel = btnCancel.cloneNode(true);
+    const newBtnCancel = btnCancel.cloneNode(true) as HTMLElement;
     btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
     
     newBtn.onclick = async () => {
@@ -331,10 +330,10 @@ window.mostraInfoConfirm = function(titolo, testo, testoSì, testoNo, onConfirmC
     btnYes.textContent = testoSì;
     btnNo.textContent = testoNo;
 
-    const newBtnYes = btnYes.cloneNode(true);
+    const newBtnYes = btnYes.cloneNode(true) as HTMLElement;
     btnYes.parentNode.replaceChild(newBtnYes, btnYes);
     
-    const newBtnNo = btnNo.cloneNode(true);
+    const newBtnNo = btnNo.cloneNode(true) as HTMLElement;
     btnNo.parentNode.replaceChild(newBtnNo, btnNo);
     
     newBtnYes.onclick = () => {

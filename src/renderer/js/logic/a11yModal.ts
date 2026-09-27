@@ -1,4 +1,3 @@
-// @ts-nocheck
 // P2.3 — Accessibilità modali centralizzata:
 // - semantica ARIA (role="dialog" / aria-modal / aria-labelledby) impostata a runtime
 // - focus spostato dentro il modale all'apertura e ripristinato al trigger alla chiusura
@@ -35,7 +34,8 @@
     }
 
     function getFocusable(win) {
-        return Array.from(win.querySelectorAll(FOCUSABLE)).filter(el => el.offsetParent !== null && !el.hasAttribute('disabled'));
+        return Array.from(win.querySelectorAll(FOCUSABLE) as NodeListOf<HTMLElement>)
+            .filter(el => el.offsetParent !== null && !el.hasAttribute('disabled'));
     }
 
     function getTopModal() {
@@ -141,14 +141,16 @@
             for (const mut of mutations) {
                 mut.addedNodes.forEach(node => {
                     if (node.nodeType !== 1) return;
-                    if (node.classList && node.classList.contains('modal-overlay')) attach(node);
-                    if (node.querySelectorAll) node.querySelectorAll('.modal-overlay').forEach(attach);
+                    const el = node as Element;
+                    if (el.classList && el.classList.contains('modal-overlay')) attach(el);
+                    if (el.querySelectorAll) el.querySelectorAll('.modal-overlay').forEach(attach);
                 });
                 // Modale rimosso dal DOM mentre era aperto → ripristina il focus al trigger
                 mut.removedNodes.forEach(node => {
                     if (node.nodeType !== 1) return;
-                    if (openTriggers.has(node)) onClose(node);
-                    if (node.querySelectorAll) node.querySelectorAll('.modal-overlay').forEach(m => { if (openTriggers.has(m)) onClose(m); });
+                    const el = node as Element;
+                    if (openTriggers.has(el)) onClose(el);
+                    if (el.querySelectorAll) el.querySelectorAll('.modal-overlay').forEach(m => { if (openTriggers.has(m)) onClose(m); });
                 });
             }
         });
