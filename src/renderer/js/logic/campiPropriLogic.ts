@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.7 — campi propri della scheda.
 //
 // Le DEFINIZIONI in composizione stanno nel campo nascosto `#form-campi-propri`, come gli
@@ -149,7 +147,7 @@ window.confermaCampoProprio = function() {
         return;
     }
 
-    const def = { id, tipo, label: id };
+    const def: Record<string, any> = { id, tipo, label: id };
     if (vocabolario) def.vocabolario = vocabolario;
     else if (opzioni.length) def.opzioni = opzioni;
     const authority = document.getElementById('campo-proprio-authority').value;

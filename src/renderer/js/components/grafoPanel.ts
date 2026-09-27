@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.5 — La vista a grafo dei collegamenti.
 //
 // Il pannello "Schede collegate" risponde a "con che cosa è collegata QUESTA scheda". Il
@@ -374,7 +372,7 @@ function _grAggancia() {
 
     svg.addEventListener('pointerdown', (e) => {
         if (!_grStato) return;
-        const g = e.target.closest('.grafo-nodo');
+        const g = (e.target as Element).closest('.grafo-nodo');
         if (g) {
             const p = _grStato.perId.get(g.dataset.id);
             if (p) {
@@ -426,7 +424,7 @@ function _grAggancia() {
     // Doppio clic: apre la scheda. È l'unica azione distruttiva-ish della schermata (si
     // cambia vista), quindi non sta sul clic singolo, che serve a esplorare.
     svg.addEventListener('dblclick', (e) => {
-        const g = e.target.closest('.grafo-nodo');
+        const g = (e.target as Element).closest('.grafo-nodo');
         if (!g) return;
         window.chiudiGrafo();
         if (typeof editItem === 'function') editItem(g.dataset.id);

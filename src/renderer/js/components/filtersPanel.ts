@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fase 1.3 — Pannello filtri avanzati e ricerche salvate.
 //
 // Fino alla 2.4.6 i filtri erano esattamente tre (cartella, testo, tag) e vivevano in tre
@@ -458,7 +457,7 @@ window.apriPannelloFiltri = function(ancora) {
     _pannello = box;
     _riempiPannello(); // posiziona anche (_posizionaPannello)
 
-    const primo = box.querySelector('select, input, button');
+    const primo = box.querySelector<HTMLElement>('select, input, button');
     if (primo) primo.focus();
 
     document.addEventListener('mousedown', _chiudiSuPointerDown, true);

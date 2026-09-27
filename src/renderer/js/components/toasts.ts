@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Il container toast è già in HTML: niente check dinamico
 // azioneCustom = {label, onClick}: pulsante d'azione con etichetta propria (es. "Ricevi ora"),
 // distinto da azioneAnnulla che è sempre etichettato "Annulla".
@@ -7,7 +6,7 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null, az
     
     // Non far apparire più di 3 messaggi identici
     const existingToasts = Array.from(container.children);
-    const ugualiCount = existingToasts.filter(t => t.innerText.trim().includes(testo.trim())).length;
+    const ugualiCount = existingToasts.filter(t => (t as HTMLElement).innerText.trim().includes(testo.trim())).length;
     if (ugualiCount >= 3) return;
 
     // Il toast è puramente visivo: senza questo gli utenti di screen reader non ricevono

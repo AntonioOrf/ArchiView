@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.5 — il pannello "Persone e luoghi" e i collegamenti fra schede.
 //
 // I nomi di persona erano già in archivio da sempre: sono i valori delle `dynamic_list`
@@ -290,7 +288,7 @@ window.renderRelazioniForm = function() {
     const box = document.getElementById('form-relazioni-list');
     if (!box) return;
     window.renderBacklinkForm();
-    const perId = new Map((appData.manoscritti || []).map(m => [String(m.id), m]));
+    const perId = new Map<string, any>((appData.manoscritti || []).map(m => [String(m.id), m]));
     const relazioni = _apRelazioniForm();
 
     box.innerHTML = '';

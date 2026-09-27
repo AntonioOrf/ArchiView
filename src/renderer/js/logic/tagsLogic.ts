@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.4 — Tag come entità: le operazioni di ARCHIVIO (rinomina, fusione, eliminazione,
 // colore) e la resa dei chip.
 //

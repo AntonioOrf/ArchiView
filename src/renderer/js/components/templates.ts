@@ -1,4 +1,3 @@
-// @ts-nocheck
 window.modalsHtml = `
     <!-- Modal Benvenuto / Selezione Workspace Iniziale -->
     <div id="welcome-modal" class="modal-overlay hidden-tab z-70 bg-stone-900/80 backdrop-blur-sm">

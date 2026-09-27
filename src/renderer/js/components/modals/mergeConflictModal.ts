@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     function initMergeConflictModal() {
         if (!document.getElementById('merge-conflict-modal')) {
@@ -276,7 +274,7 @@
             ? `<span class="text-green-600 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> ${window.t("merge_all_resolved", "All conflicts have been resolved!")}</span>`
             : `${window.t("merge_conflicts_to_resolve", "Conflicts to resolve:")} <b class="text-red-500">${irrisolti}</b>`;
 
-        const btnApply = document.getElementById('btn-resolve-all');
+        const btnApply = document.getElementById('btn-resolve-all') as HTMLButtonElement;
         btnApply.disabled = irrisolti > 0;
 
         if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('conflict-counter')] });

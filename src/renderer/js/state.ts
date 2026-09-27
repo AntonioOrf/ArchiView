@@ -1,4 +1,3 @@
-// @ts-nocheck
 // La forma del database vuoto la decide `shared/model.ts`, non questo file. Era un letterale
 // qui, e un archivio NUOVO non passa dalle migrazioni: tutto ciò che una migrazione installa
 // — i vocabolari controllati della v4, per dirne una — su un archivio nuovo non esisteva mai,
@@ -378,9 +377,9 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
             appData.tipiDocumento = Array.from(tipiMap.values());
             
             // 3. Fondi i manoscritti (schede)
-            const resolvedMap = new Map((resolvedCards || []).map(r => [r.id, r]));
-            const localMap = new Map((appData.manoscritti || []).map(m => [m.id, m]));
-            const externalMap = new Map((nuovoDati.manoscritti || []).map(m => [m.id, m]));
+            const resolvedMap = new Map<string, any>((resolvedCards || []).map(r => [r.id, r]));
+            const localMap = new Map<string, any>((appData.manoscritti || []).map(m => [m.id, m]));
+            const externalMap = new Map<string, any>((nuovoDati.manoscritti || []).map(m => [m.id, m]));
             
             const mergedManoscritti = [];
             const deletionsList = [];

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     // Iniezione dinamica dell'HTML della modale all'avvio
     document.addEventListener('DOMContentLoaded', () => {

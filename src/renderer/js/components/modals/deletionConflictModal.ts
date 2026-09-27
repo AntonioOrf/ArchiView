@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('deletion-conflict-modal')) {
@@ -120,7 +118,7 @@
             ? '<span class="text-green-600 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Tutte le schede verificate!</span>' 
             : `File da verificare: <b class="text-red-500">${pending}</b>`;
 
-        const btnApply = document.getElementById('btn-resolve-deletions');
+        const btnApply = document.getElementById('btn-resolve-deletions') as HTMLButtonElement;
         btnApply.disabled = pending > 0;
 
         if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('deletion-counter')] });

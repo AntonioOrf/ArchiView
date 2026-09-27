@@ -1,4 +1,3 @@
-﻿// @ts-nocheck
 import { i18n } from "@lingui/core";
 import { messages as enMessages } from "../../locales/en/messages.js";
 import { messages as itMessages } from "../../locales/it/messages.js";
@@ -1983,7 +1982,6 @@ const customEn = {
     "placeholder_field_options": "parchment\npaper",
     "label_field_required": "Required: the record cannot be saved while it is empty",
     "label_field_unique": "Unique value: warn if another record has the same value",
-    "btn_apply": "Apply",
     "msg_enum_no_options": "A pick list needs at least one value.",
     "msg_link_non_valido": "Invalid address.",
     "err_field_required": "The field \"{var0}\" is required.",
@@ -3033,7 +3031,6 @@ const customIt = {
     "placeholder_field_options": "pergamena\ncarta",
     "label_field_required": "Obbligatorio: la scheda non si salva se è vuoto",
     "label_field_unique": "Valore unico: avvisa se un'altra scheda ha lo stesso valore",
-    "btn_apply": "Applica",
     "msg_enum_no_options": "Un elenco a scelta ha bisogno di almeno un valore.",
     "msg_link_non_valido": "Indirizzo non valido.",
     "err_field_required": "Il campo \"{var0}\" è obbligatorio.",
@@ -3404,13 +3401,13 @@ window.applicaTraduzioniHtml = function() {
     });
 
     // Sostituisce il title
-    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    document.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach(el => {
         const key = el.getAttribute('data-i18n-title');
         el.title = window.t(key, el.title || key);
     });
 
     // Sostituisce il placeholder
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    document.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
         if (!el.hasAttribute('data-i18n-ph-default')) {
             el.setAttribute('data-i18n-ph-default', el.placeholder || '');

@@ -1,4 +1,3 @@
-// @ts-nocheck
 window.apriImpostazioni = async function() {
     document.getElementById('settings-modal').classList.remove('hidden-tab');
     if (window.apiBrowser && window.apiBrowser.getWorkspacePath && window.apiSettings) {
@@ -16,7 +15,7 @@ window.apriImpostazioni = async function() {
                 usernameInput.addEventListener('change', async (e) => {
                     if (window.apiSettings) {
                         const currentSettings = await window.apiSettings.get();
-                        currentSettings.username = e.target.value.trim();
+                        currentSettings.username = (e.target as HTMLInputElement).value.trim();
                         await window.apiSettings.save(currentSettings);
                         mostraMessaggio(window.t("msg_nome_collaboratore_salvat", "Nome collaboratore salvato."), "success");
                     }
@@ -301,7 +300,7 @@ function mapErrorCodeToMessage(errorCode, rawError) {
 function renderUpdateBanner() {
     const banner = document.getElementById('update-banner');
     const text = document.getElementById('update-banner-text');
-    const btn = document.getElementById('btn-scarica-aggiornamento');
+    const btn = document.getElementById('btn-scarica-aggiornamento') as HTMLButtonElement;
     const notesBtn = document.getElementById('btn-note-rilascio');
     if (!banner || !text || !btn) return;
 

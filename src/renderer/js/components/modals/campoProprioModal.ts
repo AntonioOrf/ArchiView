@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.7 — il campo che vive su UNA scheda sola. Il modello documento resta una base:
 // qui si dichiara ciò che quel manoscritto ha e gli altri no (una nota di possesso, una
 // filigrana, un colophon anomalo), senza far comparire una colonna vuota su tutto l'archivio.

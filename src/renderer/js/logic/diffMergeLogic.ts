@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 window.getRecordHash = function(record) {
     if (!record) return null;
     const r = { ...record };
@@ -32,8 +30,8 @@ window.getRecordHash = function(record) {
  *                     timestamp qui sotto, che è quella di prima.
  */
 window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, baseObjects = {}) {
-    const localMap = new Map((locali || []).map(m => [m.id, m]));
-    const externalMap = new Map((esterni || []).map(m => [m.id, m]));
+    const localMap = new Map<string, any>((locali || []).map(m => [m.id, m]));
+    const externalMap = new Map<string, any>((esterni || []).map(m => [m.id, m]));
     
     const conflitti = [];
     // allegatoTipo è un campo derivato da allegati: viene risolto implicitamente

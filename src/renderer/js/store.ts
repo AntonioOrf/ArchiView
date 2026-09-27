@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 window.Store = {
     get manoscritti() { return appData?.manoscritti || []; },
     get cartelle() { return appData?.cartelle || []; },

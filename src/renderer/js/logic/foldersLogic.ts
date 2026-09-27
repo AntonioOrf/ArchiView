@@ -1,6 +1,5 @@
-// @ts-nocheck
 function aggiungiCartella() {
-    const input = document.getElementById('folder-name-input');
+    const input = document.getElementById('folder-name-input') as HTMLInputElement;
     // Radice ('') → nessun prefisso: la nuova cartella nasce al primo livello
     input.value = window.cartellaAttuale ? window.cartellaAttuale + '/' : '';
     document.getElementById('folder-modal').classList.remove('hidden-tab');

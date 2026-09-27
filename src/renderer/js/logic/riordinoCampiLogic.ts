@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.8 — riordino dei campi di UNA scheda.
 //
 // L'ordine vive sul record (`ordineCampi`) e riguarda solo quella scheda: il modello e le
@@ -184,7 +182,7 @@ function _pulsanteSposta(icona, titolo, azione) {
     return b;
 }
 
-function _sposta(indice, delta, tornaAlFuoco) {
+function _sposta(indice, delta, tornaAlFuoco?) {
     const ids = _idsCorrenti();
     const nuovo = indice + delta;
     if (nuovo < 0 || nuovo >= ids.length) return;
@@ -194,7 +192,7 @@ function _sposta(indice, delta, tornaAlFuoco) {
     _disegnaElencoRiordino();
     if (tornaAlFuoco) {
         const riga = document.querySelector(`#form-riordino-lista .riordino-riga[data-campo="${CSS.escape(preso)}"]`);
-        if (riga) riga.focus();
+        if (riga) (riga as HTMLElement).focus();
     }
 }
 
@@ -208,7 +206,7 @@ function _applicaOrdineDalDom() {
 function _salvaOrdine(ids) {
     // La scrittura passa dal modello: è lui a decidere che un ordine uguale a quello
     // naturale NON si salva (una chiave in più cambierebbe l'impronta del record).
-    const finto = {};
+    const finto: { ordineCampi?: string[] } = {};
     window.Model.scriviOrdineCampi(finto, ids, _ordineNaturale());
     scriviOrdineCampiForm(finto.ordineCampi || []);
     window.isFormDirty = true;

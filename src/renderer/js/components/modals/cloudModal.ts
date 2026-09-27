@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     // Cambia la chiave i18n di un elemento già tradotto. Serve resettare anche data-i18n-default,
     // altrimenti applicaTraduzioniHtml continuerebbe a usare come fallback il testo della chiave
@@ -31,7 +29,7 @@
     // Stato di caricamento uniforme per i bottoni async: disabled + aria-busy + spinner.
     // Senza aria-busy uno screen reader non ha modo di sapere che l'operazione è in corso.
     const testiOriginali = new WeakMap();
-    function impostaStatoCaricamento(btn, attivo, testo) {
+    function impostaStatoCaricamento(btn, attivo, testo?) {
         if (!btn) return;
         if (attivo) {
             if (!testiOriginali.has(btn)) testiOriginali.set(btn, btn.innerHTML);

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     // Il contenuto NON è più scritto a mano qui: arriva da window.changelogData, generato
     // in build da RELEASE_NOTES.md (scripts/build-changelog.js). Il modal scritto a mano

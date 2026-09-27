@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 1.2 — Visualizzatore immagini (zoom, pan, rotazione, filtri paleografici).
 //
 // UN SOLO componente per i due percorsi che mostrano un allegato immagine — il modal
@@ -142,7 +140,7 @@
          * Vale anche con l'immagine ruotata — la rotazione agisce dopo la traslazione, quindi
          * non entra in questo conto (t' = c(1-k) + k·t).
          */
-        function zoomVerso(fattore, clientX, clientY) {
+        function zoomVerso(fattore, clientX?, clientY?) {
             const nuova = limita(stato.scala * fattore, SCALA_MIN, SCALA_MAX);
             const k = nuova / stato.scala;
             if (k === 1) return;

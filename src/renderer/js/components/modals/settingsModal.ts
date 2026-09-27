@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     window.cambiaTabImpostazioni = function(targetId) {
         document.querySelectorAll('.settings-tab-content').forEach(el => {

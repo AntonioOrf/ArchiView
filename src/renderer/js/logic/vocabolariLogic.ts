@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fasi 3.3, 3.5 e 3.6 — le operazioni d'archivio su vocabolari controllati, anagrafica di
 // persone e luoghi, relazioni fra schede e duplicati della segnatura.
 //

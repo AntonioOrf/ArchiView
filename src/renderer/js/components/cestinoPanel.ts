@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 4.1 — Il pannello "Cestino".
 //
 // Le mutazioni NON stanno qui: sono in `logic/cestinoLogic.ts`, che a sua volta parla con
@@ -16,14 +14,14 @@ function _cpT(id, fallback) {
 }
 
 /** Gli id selezionati per l'azione in massa. Sopravvive ai ridisegni della lista. */
-let _cpSelezionati = new Set();
+let _cpSelezionati = new Set<string>();
 /** L'ultimo elenco letto dal disco: la lista si ridisegna senza rileggere il file. */
 let _cpVoci = [];
 
 window.apriCestino = async function() {
     const modal = document.getElementById('cestino-modal');
     if (!modal) return;
-    _cpSelezionati = new Set();
+    _cpSelezionati = new Set<string>();
     modal.classList.remove('hidden-tab');
     await window.disegnaCestino();
 };

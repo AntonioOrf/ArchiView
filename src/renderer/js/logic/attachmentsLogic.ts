@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // --- Trascrizione per allegato (Fase 2.3-bis) --------------------------------
 //
 // L'editor di sinistra è agganciato all'allegato mostrato a destra, non più alla scheda:
@@ -100,7 +98,7 @@ async function apriTrascrizione(id) {
     // un avviso è peggio di un pulsante assente.
     const btnOcr = document.getElementById('btn-ocr-trasc');
     
-    const imgPreview = document.getElementById('trasc-img-preview');
+    const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
     const pdfPreview = document.getElementById('trasc-pdf-preview');
     const noAllegato = document.getElementById('trasc-no-allegato');
 
@@ -302,7 +300,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
         });
     }
 
-    const imgPreview = document.getElementById('trasc-img-preview');
+    const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
     const pdfPreview = document.getElementById('trasc-pdf-preview');
     const noAllegato = document.getElementById('trasc-no-allegato');
 
@@ -349,7 +347,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
             noAllegato.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
 
-            const btnHub = document.getElementById('btn-scarica-allegato-hub');
+            const btnHub = document.getElementById('btn-scarica-allegato-hub') as HTMLButtonElement;
             if (btnHub) {
                 btnHub.onclick = async () => {
                     btnHub.disabled = true;
@@ -550,14 +548,14 @@ window.materializzaCarteIiif = async function(idScheda, indici) {
 // call site che prima facevano `imgPreview.classList.add('hidden')` avrebbero dovuto
 // ricordarsene ciascuno.
 window.nascondiAnteprimaImmagine = function() {
-    const viewport = document.getElementById('trasc-img-viewport');
+    const viewport = document.getElementById('trasc-img-viewport') as HTMLElement & { _imageViewer?: any };
     if (!viewport) return;
     viewport.classList.add('hidden-tab');
     if (viewport._imageViewer) viewport._imageViewer.reimposta();
 };
 
 window.mostraAnteprimaImmagine = function() {
-    const viewport = document.getElementById('trasc-img-viewport');
+    const viewport = document.getElementById('trasc-img-viewport') as HTMLElement & { _imageViewer?: any };
     const img = document.getElementById('trasc-img-preview');
     if (!viewport || !img) return;
     viewport.classList.remove('hidden-tab');

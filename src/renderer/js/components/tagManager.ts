@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.4 — Il pannello "Gestione tag".
 //
 // Prima della 3.4 un tag esisteva solo come sottostringa dentro il campo `tags` di N

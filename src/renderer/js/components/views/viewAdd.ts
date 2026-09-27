@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         const mainElement = document.querySelector('main');

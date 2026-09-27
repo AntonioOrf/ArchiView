@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 window.pusherInstance = null;
 window.pusherChannel = null;
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fasi 2.5 e 2.6 — Esportazione della trascrizione e citazioni bibliografiche: superficie.
 //
 // UN SOLO modale per cinque formati (HTML, Markdown, RTF, BibTeX, RIS) e non due, perché la
@@ -73,7 +72,7 @@ function _xIdsAmbito(id) {
 
 /** Quante delle schede scelte hanno davvero del testo: è l'unico numero che conta qui. */
 function _xConTrascrizione(ids) {
-    const indice = new Map((appData.manoscritti || []).map(m => [String(m.id), m]));
+    const indice = new Map<string, any>((appData.manoscritti || []).map(m => [String(m.id), m]));
     let n = 0;
     for (const id of ids) {
         const m = indice.get(String(id));
@@ -202,7 +201,7 @@ function _xAggiornaConteggio() {
     const nota = document.getElementById('tx-count');
     if (!nota) return;
     const ids = _xIdsAmbito(window.__txAmbito);
-    const bottone = document.getElementById('tx-export');
+    const bottone = document.getElementById('tx-export') as HTMLButtonElement;
     if (bottone) bottone.disabled = ids.length === 0;
     if (_xTipoFormato(window.impostazioniExportTesto.formato) === 'citazione') {
         nota.textContent = _xT('tx_count_citations', '{var0} citazioni da esportare.').replace('{var0}', String(ids.length));
@@ -276,7 +275,7 @@ window.esportaTesto = async function() {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(_xT('tx_none', 'Non c\'è nessuna scheda da esportare.'), 'warning');
         return;
     }
-    const bottone = document.getElementById('tx-export');
+    const bottone = document.getElementById('tx-export') as HTMLButtonElement;
     if (bottone) bottone.disabled = true;
     try {
         // L'export si fa DAL DISCO, e l'editor della trascrizione vive in memoria finché non

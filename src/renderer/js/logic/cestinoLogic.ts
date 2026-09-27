@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 4.1 — Il cestino, lato renderer.
 //
 // Tre strati, come per i tag (3.4) e le azioni in massa (1.5): qui stanno le MUTAZIONI,

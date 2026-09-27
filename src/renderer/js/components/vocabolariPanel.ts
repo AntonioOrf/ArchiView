@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 3.3 — il pannello "Vocabolari" — e Fase 3.6 — il rilevatore di segnature duplicate.
 //
 // Stanno nello stesso file perché sono due modali piccoli e senza stato condiviso con il

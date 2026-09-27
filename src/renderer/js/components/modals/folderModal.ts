@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('folder-modal')) {

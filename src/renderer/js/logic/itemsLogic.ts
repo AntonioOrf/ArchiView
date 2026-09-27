@@ -1,4 +1,3 @@
-// @ts-nocheck
 async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
     const m = appData.manoscritti.find(x => x.id === idManoscritto);
     if (m && m.cartella !== nuovoPathCartella) {
@@ -139,7 +138,7 @@ async function handleFormSubmit(e) {
     // che gli era stato mostrato.
     const definizioni = window.campiDefinitiDelForm();
     const campiPropriScheda = window.campiPropriForm();
-    const dynamicData = window.leggiCampiDinamici(definizioni);
+    const dynamicData: Record<string, any> = window.leggiCampiDinamici(definizioni);
 
     // Validazione: blocca solo ciò che l'utente ha dichiarato obbligatorio, o malformato.
     if (window.pulisciErroriCampi) window.pulisciErroriCampi();

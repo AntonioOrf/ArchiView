@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Stato globale per le cartelle espansive
 // '' = radice virtuale, espansa di default
 window.cartelleEspanse = window.cartelleEspanse || new Set(['']);
@@ -619,7 +618,7 @@ window.azzeraFiltriRicerca = function() {
  * l'operazione e' idempotente e sopravvive al cambio lingua.
  */
 window.applicaScorciatoieTooltip = function() {
-    document.querySelectorAll('[data-shortcut]').forEach(el => {
+    document.querySelectorAll<HTMLElement>('[data-shortcut]').forEach(el => {
         const sc = el.getAttribute('data-shortcut');
         if (!sc) return;
         const suffisso = ' (' + sc + ')';

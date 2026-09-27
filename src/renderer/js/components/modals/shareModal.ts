@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Modal "Condivisione" — Hub-first. Consolida la gestione di inviti, membri e stato
 // del repository (prima sparsa tra cloudModal, settingsModal e welcomeModal).
 // Quattro stati mutuamente esclusivi: locale (crea Hub), Drive legacy (migra), membro, owner.
@@ -338,7 +336,7 @@
         if (!code) return;
         const link = `archiview://join/${code}`;
         const row = document.getElementById('share-invite-linkrow');
-        const linkInput = document.getElementById('share-invite-link');
+        const linkInput = document.getElementById('share-invite-link') as HTMLInputElement;
         if (linkInput) linkInput.value = link;
         if (row) { row.classList.remove('hidden-tab'); if (window.lucide) lucide.createIcons({ nodes: [row] }); }
         try {
@@ -354,7 +352,7 @@
     };
 
     window.copiaInvitoShare = async function() {
-        const linkInput = document.getElementById('share-invite-link');
+        const linkInput = document.getElementById('share-invite-link') as HTMLInputElement;
         if (!linkInput || !linkInput.value) return;
         try { await navigator.clipboard.writeText(linkInput.value); mostraMessaggio(window.t("msg_codice_copiato_negli_appu", "Codice copiato negli appunti!"), "success"); }
         catch { linkInput.select(); }

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Fase 2.4 — Il wizard di import CSV.
 //
 // Tre strati, come per i tag (3.4), le azioni in massa (1.5) e il cestino (4.1): l'analisi e
@@ -251,7 +249,7 @@ function _ipRicalcola() {
     });
 }
 
-function _ipSelect(valore, opzioni, onChange, className) {
+function _ipSelect(valore, opzioni, onChange, className?) {
     const sel = document.createElement('select');
     sel.className = className || 'form-input';
     for (const o of opzioni) {
@@ -369,7 +367,8 @@ function _ipApriNuovoCampo(riga, indice) {
     annulla.type = 'button';
     annulla.className = 'btn btn-ghost justify-center';
     annulla.textContent = _ipT('btn_cancel', 'Annulla');
-    annulla.onclick = () => { s.mappatura[indice] = ''; _ipDisegna(); };
+    const annullaCreazione = () => { s.mappatura[indice] = ''; _ipDisegna(); };
+    annulla.onclick = annullaCreazione;
 
     const crea = () => {
         const id = window.CsvImport.idCampoNuovo(nome.value, s.colonne);
@@ -388,7 +387,7 @@ function _ipApriNuovoCampo(riga, indice) {
         if (e.key === 'Enter') { e.preventDefault(); crea(); }
         // Esc annulla la SOLA creazione: senza stopPropagation chiuderebbe anche il wizard,
         // buttando via la mappatura di venti colonne per un tasto solo.
-        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); annulla.onclick(); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); annullaCreazione(); }
     };
 
     box.appendChild(nome);
@@ -647,7 +646,7 @@ function _ipDisegna() {
     const prevSlot = document.getElementById('import-csv-preview');
     if (prevSlot) _ipDisegnaAnteprima(prevSlot);
 
-    const conferma = document.getElementById('import-csv-confirm');
+    const conferma = document.getElementById('import-csv-confirm') as HTMLButtonElement;
     if (conferma) {
         const quante = s.esito.riepilogo.nuove + s.esito.riepilogo.aggiornate;
         conferma.disabled = quante === 0;
