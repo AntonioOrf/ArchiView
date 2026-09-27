@@ -3,10 +3,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Prima di qualunque render: decide se animazioni e pagine lunghe sono ammesse.
         if (window.initModalitaPrestazioni) await window.initModalitaPrestazioni();
 
-        if (window.modalsHtml) {
-            document.body.insertAdjacentHTML('afterbegin', window.modalsHtml);
-        }
-
         if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
             const workspace = await window.apiBrowser.getWorkspacePath();
             // Chiave per le preferenze locali per-archivio (es. ultimo modello usato).
@@ -411,7 +407,7 @@ async function avviaApp() {
                         <span class="text-xs truncate text-amber-900 font-semibold" title="${escapeHTML(file.name)}">
                             <i data-lucide="file" class="w-3 h-3 inline-block mr-1"></i>${escapeHTML(file.name)}
                         </span>
-                        <button type="button" onclick="window.rimuoviPendingFile(${index})" class="text-amber-600 hover:text-red-600 p-1 bg-white border border-amber-200 rounded shadow-sm">
+                        <button type="button" ${window.azione('click', 'rimuoviPendingFile', index)} class="text-amber-600 hover:text-red-600 p-1 bg-white border border-amber-200 rounded shadow-sm">
                             <i data-lucide="x" class="w-3 h-3"></i>
                         </button>
                     </div>
