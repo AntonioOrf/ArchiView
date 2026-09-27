@@ -886,7 +886,7 @@ window.esportaManoscritto = async function(id) {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip([id]);
     if (res.success) {
-        if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_completata_c", "Esportazione completata con successo!"), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_completata_c", "Esportazione completata con successo!"), "success");
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
     }
@@ -911,7 +911,7 @@ window.esportaSpecificaCartella = async function(folderName) {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(ids);
     if (res.success) {
-        if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
     }
@@ -1140,7 +1140,7 @@ window.esportaSelezionati = async function() {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(window.selectedRecords);
     if (res.success) {
-        if (typeof mostraMessaggio === 'function', window.t("dialog_export_zip", "Esporta Backup in ZIP")) mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
         window.selectedRecords = [];
         window.aggiornaStatoSelezione();
         if (typeof renderMain === 'function') renderMain();
