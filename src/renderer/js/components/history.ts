@@ -426,7 +426,7 @@ function formatRelativeDate(ts) {
         return d.toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' }) +
             ' ' + d.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
     }
-    const rtf = new Intl.RelativeTimeFormat('it', { numeric: 'auto' });
+    const rtf = new Intl.RelativeTimeFormat(window.localeAttuale(), { numeric: 'auto' });
     const units = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
     for (const [unit, secs] of units) {
         if (abs >= secs) return rtf.format(Math.round(diffSec / secs), unit);
