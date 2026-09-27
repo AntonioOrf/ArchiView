@@ -2,7 +2,9 @@ import { test, expect } from './fixtures';
 
 test.describe('Avvio applicazione', () => {
   test('la finestra si apre con titolo corretto', async ({ electronApp, page }) => {
-    expect(await page.title()).toBe('ArchiView');
+    // toHaveTitle ritenta: sotto il carico della suite completa il titolo letto una volta
+    // sola poteva arrivare prima che il documento lo avesse.
+    await expect(page).toHaveTitle('ArchiView');
 
     // La finestra non è distrutta e ha dimensioni reali.
     const isVisible = await electronApp.evaluate(async ({ BrowserWindow }) => {
