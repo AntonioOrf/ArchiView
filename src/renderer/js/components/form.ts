@@ -666,7 +666,7 @@ window.renderAllegatiForm = async function(allegatiList) {
         let content = '';
         if (al.tipo === 'pdf') {
             content = `
-                <div class="flex items-center gap-2 truncate cursor-pointer hover:text-red-700 flex-1" onclick="apriPdfInterno('${escapeHTML(al.nome)}')">
+                <div class="flex items-center gap-2 truncate cursor-pointer hover:text-red-700 flex-1" onclick="apriPdfInterno(${jsArg(al.nome)})">
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
                     <i data-lucide="file-text" class="w-6 h-6 text-red-600 shrink-0"></i>
                     <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || 'PDF')}</span>
@@ -683,7 +683,7 @@ window.renderAllegatiForm = async function(allegatiList) {
                 srcPieno = window.srcAllegato(al, { lato: 2000 });
             }
             content = `
-                <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" onclick="apriModal('${escapeHTML(srcPieno)}', 'img')">
+                <div class="flex items-center gap-2 truncate cursor-pointer hover:opacity-80 flex-1" onclick="apriModal(${jsArg(srcPieno)}, 'img')">
                     <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 shrink-0"></i>
                     <img src="${escapeHTML(src)}" alt="${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}" class="w-8 h-8 object-cover rounded-sm border border-stone-200 shrink-0">
                     <span class="text-xs font-semibold truncate" title="${escapeHTML(al.originalName || al.nome)}">${escapeHTML(al.originalName || window.t('attachment_image', 'Immagine'))}</span>

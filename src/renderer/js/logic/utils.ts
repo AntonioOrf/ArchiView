@@ -13,6 +13,25 @@ window.escapeHTML = function(str) {
          .replace(/'/g, "&#039;");
 };
 
+// Argomento stringa per un handler inline: onclick="fn(${jsArg(v)})" — SENZA apici attorno.
+// escapeHTML da solo non basta: il browser decodifica le entità dell'attributo PRIMA di
+// passare il codice al parser JS, quindi &#039; torna ' e chiude la stringa. Si codifica
+// prima come letterale JS (JSON.stringify) e poi come attributo: la decodifica HTML annulla
+// il secondo strato e al parser arriva un letterale ben formato, qualunque sia il valore.
+window.jsArg = function(v) {
+    return window.escapeHTML(JSON.stringify(v === null || v === undefined ? '' : String(v)));
+};
+
+/**
+ * Locale per Intl/toLocale*: segue la lingua scelta nell'app. Prima le date erano scritte
+ * con 'it-IT' fisso in otto punti, quindi un utente con l'interfaccia in inglese leggeva
+ * "21/09/2026" e i mesi in italiano; altrove si passava `undefined` (locale del sistema),
+ * cioè un terzo formato ancora. Unico punto di verità.
+ */
+window.localeAttuale = function() {
+    return window.linguaAttuale === 'en' ? 'en-US' : 'it-IT';
+};
+
 window.sanitizeHTML = function(html) {
     if (typeof DOMPurify !== 'undefined') {
         return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|file|archiview|local-asset|iiif-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });

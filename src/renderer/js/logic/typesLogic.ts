@@ -438,13 +438,13 @@ function apriManageTypesModal() {
         // import della 2.4 permette — non si poteva più né ritipizzare né togliere.
         // L'eliminazione resta preclusa: il modello tornerebbe da solo al riavvio
         // (`applicaModelliPredefiniti`), cioè sarebbe un pulsante che non fa nulla.
-        const btnModifica = `<button type="button" onclick="modificaTipoDocumento('${tipo.id}')" class="btn btn-ghost btn-icon text-stone-600 hover:text-amber-700 hover:bg-amber-50" title="${escapeHTML(window.t('btn_edit', 'Modifica'))}" aria-label="${escapeHTML(window.t('btn_edit', 'Modifica'))}"><i data-lucide="edit-2" class="w-4 h-4"></i></button>`;
+        const btnModifica = `<button type="button" onclick="modificaTipoDocumento(${jsArg(tipo.id)})" class="btn btn-ghost btn-icon text-stone-600 hover:text-amber-700 hover:bg-amber-50" title="${escapeHTML(window.t('btn_edit', 'Modifica'))}" aria-label="${escapeHTML(window.t('btn_edit', 'Modifica'))}"><i data-lucide="edit-2" class="w-4 h-4"></i></button>`;
         let buttonsHTML = '';
         if (isDefault) {
             buttonsHTML = btnModifica;
         } else {
             buttonsHTML = btnModifica + `
-                <button type="button" onclick="eliminaTipoDocumento('${tipo.id}')" class="btn btn-ghost btn-icon text-red-500 hover:text-red-700 hover:bg-red-50" title="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}" aria-label="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button type="button" onclick="eliminaTipoDocumento(${jsArg(tipo.id)})" class="btn btn-ghost btn-icon text-red-500 hover:text-red-700 hover:bg-red-50" title="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}" aria-label="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             `;
         }
 

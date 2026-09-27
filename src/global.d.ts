@@ -24,6 +24,8 @@ declare var lucide: any;
 declare var DOMPurify: any;
 declare var sanitizeHTML: any;
 declare var escapeHTML: any;
+declare var jsArg: any;
+declare var localeAttuale: any;
 declare var mostraMessaggio: any;
 declare var controllaAggiornamenti: any;
 declare var cambiaAllegatoRelativo: any;
