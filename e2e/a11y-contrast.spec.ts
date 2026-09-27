@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures';
 import { createLocalWorkspace, seedItems, openView, openSidebarPanel } from './helpers';
+import { preparaSchermateSecondarie } from './a11ySchermate';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -148,7 +149,7 @@ function scansiona({ radiceSel, modo }: { radiceSel: string; modo: 'testo' | 'bo
 }
 
 test.describe('Accessibilità: contrasto del testo', () => {
-  test('7.1 — nessun testo sotto il minimo WCAG AA in nessuno dei quattro temi', async ({ page, userDataDir }) => {
+  test('7.1 — nessun testo sotto il minimo WCAG AA in nessuno dei quattro temi', async ({ page, electronApp, userDataDir }) => {
     test.setTimeout(180_000);
     // Transizioni di colore azzerate: altrimenti dopo il cambio tema si misurano valori a metà.
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -231,6 +232,7 @@ test.describe('Accessibilità: contrasto del testo', () => {
         apri: async () => { await openView(page, 'list'); await page.evaluate(() => (window as any).apriPannelloFiltri()); await expect(page.locator('#pannello-filtri')).toBeVisible(); },
         chiudi: async () => { await page.keyboard.press('Escape'); },
       },
+      ...await preparaSchermateSecondarie(page, electronApp, userDataDir),
     ];
 
     const risultati: Record<string, Violazione[]> = {};

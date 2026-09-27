@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures';
 import { createLocalWorkspace, createFolder, seedItems } from './helpers';
+import { preparaSchermateSecondarie } from './a11ySchermate';
 import * as path from 'path';
 
 // Fase 5 — coerenza tecnica e accessibilità.
@@ -113,8 +114,9 @@ test.describe('Accessibilità e scala z-index', () => {
     await expect(overlay).toBeVisible();
   });
 
-  test('5.6 — nessun controllo senza nome accessibile e nessuna icona letta dallo screen reader', async ({ page, userDataDir }) => {
+  test('5.6 — nessun controllo senza nome accessibile e nessuna icona letta dallo screen reader', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    const secondarie = await preparaSchermateSecondarie(page, electronApp, userDataDir);
     await page.evaluate(() => (window as any).renderMain());
 
     // Lucide mette aria-hidden sulle icone da sé (v1.x): il rischio vero è il bottone che
@@ -151,6 +153,11 @@ test.describe('Accessibilità e scala z-index', () => {
       await raccogli(dove);
       await page.keyboard.press('Escape');
       await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay')).filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(0);
+    }
+    for (const s of secondarie) {
+      await s.apri();
+      await raccogli(s.nome);
+      await s.chiudi();
     }
     expect(problemi).toEqual([]);
   });
@@ -212,8 +219,9 @@ test.describe('Accessibilità e scala z-index', () => {
     expect(await page.evaluate(() => document.getElementById('contenuto-principale')!.contains(document.activeElement))).toBe(true);
   });
 
-  test('5.9 — WCAG 2.5.8: nessun bersaglio sotto 24px senza lo spazio che lo compensa', async ({ page, userDataDir }) => {
+  test('5.9 — WCAG 2.5.8: nessun bersaglio sotto 24px senza lo spazio che lo compensa', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
+    const secondarie = await preparaSchermateSecondarie(page, electronApp, userDataDir);
     await seedItems(page, 3, { tagPrefix: 't' });
     await page.evaluate(() => (window as any).renderMain());
 
@@ -262,6 +270,12 @@ test.describe('Accessibilità e scala z-index', () => {
     await page.locator('#custom-type-extra-input').fill('Campo');
     await page.locator('#custom-type-extra-input').press('Enter');
     problemi.push(...await scansiona('nuovo-tipo'));
+    await page.keyboard.press('Escape');
+    for (const s of secondarie) {
+      await s.apri();
+      problemi.push(...await scansiona(s.nome));
+      await s.chiudi();
+    }
     expect(problemi).toEqual([]);
   });
 
