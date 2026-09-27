@@ -747,7 +747,7 @@ function renderTabellaSchede(paginated) {
         const allegati = normalizzaAllegati(m);
         const tags = window.Model.tags(m);
         const data = m.lastModified
-            ? new Date(m.lastModified).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            ? new Date(m.lastModified).toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : '';
 
         const celleCampi = visibili.map(c => {
@@ -1223,7 +1223,7 @@ function renderMain(resetPage = true) {
 
             let dateHTML = '';
             if (m.lastModified) {
-                const dataFormat = new Date(m.lastModified).toLocaleDateString('it-IT', { 
+                const dataFormat = new Date(m.lastModified).toLocaleDateString(window.localeAttuale(), { 
                     day: '2-digit', month: '2-digit', year: 'numeric', 
                     hour: '2-digit', minute: '2-digit' 
                 });

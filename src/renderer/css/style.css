@@ -59,9 +59,13 @@
     --color-warning-border: #f59e0b;
 
     --radius-sm: 0;
+    /* Scrollbar, tendine native e caret seguono il tema: senza, nei temi scuri restavano
+       chiari (i temi si applicano con una classe, non con prefers-color-scheme). */
+    color-scheme: light;
 }
 
 :root.dark-theme {
+    color-scheme: dark;
     /* Accenti primari - Arancio rossi */
     --color-primary: #ea580c;
     /* WCAG 1.4.3: primary-hover è anche il colore del testo d'accento (.text-amber-800/900,
@@ -104,6 +108,7 @@
 }
 
 :root.blue-dark-theme {
+    color-scheme: dark;
     /* Accenti primari - Blu chiaro su sfondo scuro */
     --color-primary: #60a5fa;
     --color-primary-hover: #93c5fd;    /* come dark-theme: #3b82f6 su slate-800 dava 2.8–4.0:1 */
@@ -250,7 +255,7 @@ input[type="file"]::file-selector-button {
     margin-right: 0.5rem;
     cursor: pointer;
     font-weight: bold;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 input[type="file"]::file-selector-button:hover {
     background-color: var(--color-primary) !important;
@@ -317,7 +322,7 @@ button, .btn {
     border-radius: var(--radius-sm);
     font-weight: 600;
     font-size: 0.875rem;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     cursor: pointer;
     border: 1px solid transparent;
     outline: none;
@@ -406,7 +411,7 @@ button, .btn {
     background-color: var(--color-bg-panel);
     color: var(--color-text-main);
     outline: none;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     font-family: inherit;
 }
 .form-input:focus {
@@ -1256,7 +1261,7 @@ button, .btn {
 
 .sidebar-action-btn {
     color: var(--color-text-muted);
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 .sidebar-action-btn.rename:hover {
     color: var(--color-primary-hover);

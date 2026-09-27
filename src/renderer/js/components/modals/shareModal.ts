@@ -219,7 +219,7 @@
                 || (window.appData && window.appData.nomeArchivio)
                 || window.t("hub_fallback_name", "Archivio condiviso");
             const meta = window.hubConfig.lastLoadedAt
-                ? window.t("share_last_update", "Ultimo aggiornamento: {var0}").replace('{var0}', new Date(window.hubConfig.lastLoadedAt).toLocaleString(window.linguaAttuale === 'en' ? 'en-US' : 'it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }))
+                ? window.t("share_last_update", "Ultimo aggiornamento: {var0}").replace('{var0}', new Date(window.hubConfig.lastLoadedAt).toLocaleString(window.localeAttuale(), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }))
                 : window.t("share_last_update_unknown", "Ultimo aggiornamento: sconosciuto");
             const attachmentsOn = window.hubConfig.attachmentsMode !== 'off';
             const settings = window.apiSettings ? await window.apiSettings.get() : {};

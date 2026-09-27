@@ -117,7 +117,7 @@ window.controllaModificheInEntrata = async function(manual = false) {
     if (apiCloud && window.driveStatus && window.driveStatus.isAuthenticated) {
         if (manual) {
             window.toggleSyncProgress(true, 'Controllo Modifiche');
-            window.updateSyncProgress(100, "Ricerca in corso...");
+            window.updateSyncProgress(100, "Ricerca in corso…");
         }
         try {
             const remoteModifiedTime = await apiCloud.checkUpdates();
@@ -294,7 +294,7 @@ window.aggiornaStatoDriveHub = function() {
 window.loginCloud = async function(provider, forceLocal = false) {
     const api = provider === 'microsoft' ? window.apiMicrosoft : window.apiDrive;
     if (api) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_apri_il_browser_per_compl", "Apri il browser per completare l'accesso..."), "info");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_apri_il_browser_per_compl", "Apri il browser per completare l'accesso…"), "info");
         try {
             await api.auth(forceLocal);
             await aggiornaStatoDrive();
@@ -376,7 +376,7 @@ window.collegaArchivioEsistenteDrive = async function() {
     document.getElementById('cloud-local-section')?.classList.add('hidden-tab');
     document.getElementById('cloud-shared-section')?.classList.add('hidden-tab');
     section.classList.remove('hidden-tab');
-    list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-stone-500 p-4 text-center">${escapeHTML(window.t('msg_ricerca_archivi_drive', 'Ricerca degli archivi sul tuo Drive...'))}</p>`);
+    list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-stone-500 p-4 text-center">${escapeHTML(window.t('msg_ricerca_archivi_drive', 'Ricerca degli archivi sul tuo Drive…'))}</p>`);
 
     try {
         await window.apiDrive.auth();
@@ -396,7 +396,7 @@ window.collegaArchivioEsistenteDrive = async function() {
             div.className = "p-3 border rounded-lg flex justify-between items-center gap-3 " +
                 (isCurrent
                     ? "border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/60 dark:bg-emerald-900/20"
-                    : "border-stone-200 dark:border-stone-700 cursor-pointer hover:border-blue-400 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-all");
+                    : "border-stone-200 dark:border-stone-700 cursor-pointer hover:border-blue-400 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors");
             const dateStr = v.modifiedTime ? new Date(v.modifiedTime).toLocaleDateString() : '—';
             div.innerHTML = window.sanitizeHTML(`
                 <div class="flex items-center gap-3 min-w-0">
@@ -427,13 +427,13 @@ function confermaCollegamentoArchivio(vault, cfg) {
     const esegui = async () => {
         try {
             if (typeof mostraProgressoCloud === 'function') {
-                mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_relink", "Collegamento all'archivio su Drive..."));
+                mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_relink", "Collegamento all'archivio su Drive…"));
             }
             const tipo = (cfg && cfg.vaultType && cfg.vaultType !== 'local') ? cfg.vaultType : 'backup';
             await window.apiBrowser.setVaultType({ vaultType: tipo, sharedVaultId: vault.id, driveAutofetch: true });
             if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
             window.chiudiCollegaArchivioDrive();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_collegato", "Archivio collegato. Sincronizzazione in corso..."), "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_collegato", "Archivio collegato. Sincronizzazione in corso…"), "success");
             await window.sincronizzaGoogleDrive();
         } catch (e) {
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
@@ -464,7 +464,7 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
         // e nulla impedisce di lanciare due sync sovrapposte.
         const btnModal = document.getElementById('btn-cloud-drive-sync');
         if (window.impostaStatoCaricamentoCloud) {
-            window.impostaStatoCaricamentoCloud(btnModal, true, window.t('btn_syncing', 'Sincronizzazione...'));
+            window.impostaStatoCaricamentoCloud(btnModal, true, window.t('btn_syncing', 'Sincronizzazione…'));
         }
         window.toggleSyncProgress(true, 'sync_in_progress');
         
@@ -528,8 +528,8 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso..."), "warning");
-                console.warn("409_CONFLICT: auto-healing in progress...");
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso…"), "warning");
+                console.warn("409_CONFLICT: auto-healing in progress…");
                 try {
                     const retryData = await apiCloud.pull();
                     if (retryData && retryData.database) {
@@ -714,8 +714,8 @@ window.caricaSulCloud = async function(silent = false) {
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso..."), "warning");
-                console.warn("409_CONFLICT in caricaSulCloud: auto-healing in progress...");
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso…"), "warning");
+                console.warn("409_CONFLICT in caricaSulCloud: auto-healing in progress…");
                 try {
                     const retryData = await apiCloud.pull();
                     if (retryData && retryData.database) {
@@ -769,7 +769,7 @@ window.caricaSulCloud = async function(silent = false) {
 };
 
 window.sincronizzaGoogleDriveBackground = async function() {
-    console.log("Sincronizzazione in background avviata da Pusher...");
+    console.log("Sincronizzazione in background avviata da Pusher…");
     await window.sincronizzaGoogleDrive(true);
     // Dopo aver sincronizzato (scaricato le modifiche), forza il ricaricamento dell'interfaccia
     if (typeof apriDatabase === 'function') {
@@ -808,7 +808,7 @@ window.trasformaInCondiviso = async function() {
     if(btn) btn.disabled = true;
     
     if (typeof mostraProgressoCloud === 'function') {
-        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso..."));
+        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso…"));
     }
 
     try {
@@ -819,7 +819,7 @@ window.trasformaInCondiviso = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_shared", "Impostazione Archivio come condiviso..."));
+            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_shared", "Impostazione Archivio come condiviso…"));
         }
         
         if (window.apiBrowser && window.apiBrowser.setVaultType) {
@@ -830,7 +830,7 @@ window.trasformaInCondiviso = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')..."));
+            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')…"));
         }
         await window.sincronizzaGoogleDrive(true);
         
@@ -852,7 +852,7 @@ window.trasformaInPersonale = async function() {
     else if (btn) btn.disabled = true;
 
     if (typeof mostraProgressoCloud === 'function') {
-        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso..."));
+        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso…"));
     }
 
     try {
@@ -863,7 +863,7 @@ window.trasformaInPersonale = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_backup", "Impostazione Backup Personale..."));
+            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_backup", "Impostazione Backup Personale…"));
         }
         
         if (window.apiBrowser && window.apiBrowser.setVaultType) {
@@ -872,7 +872,7 @@ window.trasformaInPersonale = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')..."));
+            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')…"));
         }
         await window.sincronizzaGoogleDrive(true);
 
@@ -903,7 +903,7 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
 
     const esegui = async () => {
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_migrate_title", "Migrazione su Hub"), window.t("prog_migrate_pull", "Scarico le ultime modifiche da Google Drive..."));
+            mostraProgressoCloud(window.t("prog_migrate_title", "Migrazione su Hub"), window.t("prog_migrate_pull", "Scarico le ultime modifiche da Google Drive…"));
         }
         try {
             // 1. Pull finale da Drive per fondere eventuali modifiche remote non ancora scaricate.
@@ -954,7 +954,7 @@ window.scollegaCloud = async function() {
     if (window.hubConfig) {
         const scollega = async () => {
             if (typeof mostraProgressoCloud === 'function') {
-                mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
+                mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud…"));
             }
             try {
                 if (window.hubAutofetchTimer) { clearInterval(window.hubAutofetchTimer); window.hubAutofetchTimer = null; }
@@ -976,7 +976,7 @@ window.scollegaCloud = async function() {
     }
     const scollegaLegacy = async () => {
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud..."));
+            mostraProgressoCloud(window.t("prog_disc_title", "Scollegamento"), window.t("prog_disc_desc", "Disattivazione della sincronizzazione Cloud…"));
         }
         try {
             if (window.apiBrowser && window.apiBrowser.setVaultType) {

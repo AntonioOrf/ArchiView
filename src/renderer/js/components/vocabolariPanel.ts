@@ -238,7 +238,7 @@ window.disegnaDuplicati = function() {
             // Cartella e data distinguono due schede che per definizione hanno la stessa
             // segnatura: senza, l'elenco sarebbe N righe identiche.
             const dove = m.cartella || _vpT('folder_root_label', 'Archivio');
-            const quando = m.lastModified ? new Date(m.lastModified).toLocaleDateString('it-IT') : '';
+            const quando = m.lastModified ? new Date(m.lastModified).toLocaleDateString(window.localeAttuale()) : '';
             btn.textContent = dove + (quando ? ' · ' + quando : '');
             btn.onclick = () => {
                 window.chiudiDuplicati();

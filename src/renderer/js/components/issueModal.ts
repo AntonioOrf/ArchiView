@@ -20,7 +20,7 @@
                             <form id="issue-form" class="space-y-4" onsubmit="inviaIssueForm(event)">
                                 <div>
                                     <label class="form-label" data-i18n="issue_title">Titolo della segnalazione *</label>
-                                    <input type="text" id="issue-title-input" required class="form-input" data-i18n-placeholder="placeholder_issue_title" placeholder="Es. Errore durante il salvataggio o caricamento file...">
+                                    <input type="text" id="issue-title-input" required class="form-input" data-i18n-placeholder="placeholder_issue_title" placeholder="Es. Errore durante il salvataggio o caricamento file…">
                                 </div>
                                 <div>
                                     <label class="form-label" data-i18n="issue_type">Tipo di segnalazione</label>
@@ -32,7 +32,7 @@
                                 </div>
                                 <div>
                                     <label class="form-label" data-i18n="issue_description">Descrizione dettagliata *</label>
-                                    <textarea id="issue-desc-input" required class="form-input min-h-[120px] resize-y" data-i18n-placeholder="placeholder_issue_desc" placeholder="Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada..."></textarea>
+                                    <textarea id="issue-desc-input" required class="form-input min-h-[120px] resize-y" data-i18n-placeholder="placeholder_issue_desc" placeholder="Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada…"></textarea>
                                 </div>
                                 <div class="modal-footer mt-4">
                                     <button type="button" onclick="chiudiIssueModal()" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
@@ -88,7 +88,7 @@
 
         const button = event.target.querySelector('button[type="submit"]');
         const oldText = button.textContent;
-        button.textContent = window.t('btn_sending', 'Invio in corso...');
+        button.textContent = window.t('btn_sending', 'Invio in corso…');
         button.disabled = true;
 
         const payload = {

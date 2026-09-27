@@ -313,7 +313,7 @@ window.apriOcrModal = async function(recordId, indice) {
     avanzamento.className = 'hidden-tab flex flex-col gap-2';
     avanzamento.innerHTML = window.sanitizeHTML(`
         <div class="w-full h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
-            <div id="ocr-progress-bar" class="h-full bg-amber-600 transition-all" style="width:0%"></div>
+            <div id="ocr-progress-bar" class="h-full bg-amber-600 transizione-larghezza" style="width:0%"></div>
         </div>
         <p id="ocr-progress-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
     `);
@@ -911,7 +911,7 @@ async function _oRenderLingue() {
             </div>
             <div class="modal-body">
                 <div class="w-full h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden mb-2">
-                    <div id="ocr-bulk-bar" class="h-full bg-amber-600 transition-all" style="width:0%"></div>
+                    <div id="ocr-bulk-bar" class="h-full bg-amber-600 transizione-larghezza" style="width:0%"></div>
                 </div>
                 <p id="ocr-bulk-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
                 <div class="modal-footer">

@@ -399,7 +399,7 @@ const CONFIG_CAMPI = {
     // catalogo dei campi base, per la stessa ragione del `type`: il modello condiviso non
     // conosce i campi base, e ripeterla lì sarebbero due elenchi da tenere allineati.
     attori_dinamici: { label: 'Persone / Attori', type: 'dynamic_list', authority: 'persona', keyPlaceholder: 'Ruolo (es. Venditore)', valPlaceholder: 'Nome della persona' },
-    dichiarante: { label: 'Dichiarante', placeholder: 'Es. famiglia, istituzione...', type: 'text' },
+    dichiarante: { label: 'Dichiarante', placeholder: 'Es. famiglia, istituzione…', type: 'text' },
     beni_dinamici: { label: 'Beni (Proprietà)', type: 'dynamic_list', keyPlaceholder: 'Bene (es. Casa, Terreno)', valPlaceholder: 'Valore (es. 10 fiorini)' },
     debiti_dinamici: { label: 'Debiti', type: 'dynamic_list', keyPlaceholder: 'Creditore / Motivo', valPlaceholder: 'Ammontare' },
     crediti_dinamici: { label: 'Crediti', type: 'dynamic_list', keyPlaceholder: 'Debitore / Motivo', valPlaceholder: 'Ammontare' },

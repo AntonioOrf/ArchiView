@@ -129,7 +129,7 @@ async function renderCronologiaCloud(list) {
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
             <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history...")}</span>
+            <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history…")}</span>
         </li>`;
 
     try {
@@ -152,8 +152,8 @@ async function renderCronologiaCloud(list) {
 
         revisions.forEach((rev, index) => {
             const data = new Date(rev.modifiedTime);
-            const dataStr = data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const oraStr = data.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            const dataStr = data.toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const oraStr = data.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
             const autore = rev.lastModifyingUser
                 ? (rev.lastModifyingUser.displayName || rev.lastModifyingUser.emailAddress || 'Sconosciuto')
                 : 'Sconosciuto';
@@ -219,7 +219,7 @@ function calcolaDiffsManoscritti(oldList, newList) {
 }
 
 async function apriDiffRevisioneCloud(fileId, revisionId, label) {
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_revisione", "Caricamento revisione..."), "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_revisione", "Caricamento revisione…"), "info");
     try {
         const revDb = await window.caricaRevisioneCloud(fileId, revisionId);
         if (!revDb || !revDb.manoscritti) {
@@ -423,8 +423,8 @@ function formatRelativeDate(ts) {
     const abs = Math.abs(diffSec);
     if (abs > 60 * 60 * 24 * 30) {
         const d = new Date(ts);
-        return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
-            ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+            ' ' + d.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
     }
     const rtf = new Intl.RelativeTimeFormat('it', { numeric: 'auto' });
     const units = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
@@ -439,7 +439,7 @@ async function renderHubHistoryList(list) {
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
             <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history...")}</span>
+            <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history…")}</span>
         </li>`;
 
     try {
@@ -526,8 +526,8 @@ function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
         ? window.t("hub_history_owner", "Proprietario")
         : (entry.authorLabel || window.t("hub_generic_author", "Collaboratore"));
     const data = new Date(entry.createdAt);
-    const dataStr = data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const oraStr = data.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const dataStr = data.toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const oraStr = data.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
     const label = `v${entry.version} – ${dataStr} ${oraStr} – ${autore}`;
     const hasPrevious = versionSet.has(entry.version - 1);
 
@@ -605,7 +605,7 @@ function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
 
 // Confronta due snapshot Hub: `newVersionOrNull === null` → confronto con appData corrente.
 async function apriDiffVersioneHub(oldVersion, newVersionOrNull, label) {
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_revisione", "Caricamento revisione..."), "info");
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_revisione", "Caricamento revisione…"), "info");
     try {
         const [oldSnap, newList] = await Promise.all([
             window.caricaVersioneHub(oldVersion),
@@ -739,8 +739,8 @@ function _snApriMenu(e, voce) {
     e.stopPropagation();
 
     const data = new Date(voce.creatoIl);
-    const dataStr = data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const oraStr = data.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const dataStr = data.toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const oraStr = data.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
     const label = `${dataStr} ${oraStr} – ${_snEtichettaMotivo(voce.motivo)}`;
 
     // Il menu contestuale unificato (`apriMenuContestuale`) invece di quello disegnato a mano
@@ -776,7 +776,7 @@ async function _snCarica(nome) {
 }
 
 window.confrontaSnapshot = async function(nome, label) {
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_caricamento_revisione', 'Caricamento revisione...'), 'info');
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_caricamento_revisione', 'Caricamento revisione…'), 'info');
     try {
         const db = await _snCarica(nome);
         const diffs = calcolaDiffsManoscritti(db.manoscritti || [], appData.manoscritti || []);

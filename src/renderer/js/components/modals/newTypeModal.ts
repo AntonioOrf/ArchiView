@@ -66,7 +66,7 @@
                     <div>
                         <label class="form-label" data-i18n="label_selected_fields">Campi selezionati (trascina per riordinare)</label>
                         <div id="custom-fields-list" class="flex flex-wrap gap-2 min-h-14 p-3 bg-stone-50 border border-stone-200 rounded-sm items-center shadow-inner">
-                            <span class="text-xs text-stone-400 italic" id="empty-fields-placeholder" data-i18n="placeholder_empty_fields">Seleziona o aggiungi dei campi...</span>
+                            <span class="text-xs text-stone-400 italic" id="empty-fields-placeholder" data-i18n="placeholder_empty_fields">Seleziona o aggiungi dei campi…</span>
                         </div>
                     </div>
 

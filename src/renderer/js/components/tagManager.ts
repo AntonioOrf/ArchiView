@@ -249,7 +249,7 @@ window.fondiTagSelezionati = async function() {
             </div>
             <div class="modal-body">
                 <input id="tag-manager-filter" type="text" class="form-input mb-3"
-                       data-i18n-placeholder="placeholder_tags" placeholder="Filtra tag...">
+                       data-i18n-placeholder="placeholder_tags" placeholder="Filtra tag…">
                 <div id="tag-manager-list" class="tag-manager-list"></div>
                 <div id="tag-merge-bar" class="tag-merge-bar hidden">
                     <label for="tag-merge-target" class="text-xs text-stone-500 dark:text-stone-400" data-i18n="tag_merge_into">Fondi i tag scelti in:</label>

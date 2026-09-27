@@ -88,7 +88,7 @@
             const div = document.createElement('div');
             div.setAttribute('role', 'button');
             div.setAttribute('tabindex', '0');
-            div.className = `p-3 rounded border cursor-pointer transition-all flex flex-col gap-1 ${
+            div.className = `p-3 rounded border cursor-pointer transition-colors flex flex-col gap-1 ${
                 isSelected 
                     ? 'bg-amber-50 border-amber-500 shadow-sm' 
                     : 'bg-stone-50 border-stone-200 hover:bg-stone-100'
@@ -162,7 +162,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
                         role="button" tabindex="0" aria-label="${escapeHTML(window.t("merge_local_label", "Your Change (Local)"))}"
-                        class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-all cursor-pointer hover:border-amber-400 hover:shadow-md ${localChosen ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/10' : 'border-stone-200'}">
+                        class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-colors cursor-pointer hover:border-amber-400 hover:shadow-md ${localChosen ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/10' : 'border-stone-200'}">
                         <span class="text-[9px] uppercase font-bold text-amber-700 absolute -top-2 left-2 bg-amber-50 px-1 border border-amber-200 rounded">${window.t("merge_local_label", "Your Change (Local)")}</span>
                         <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(localVal, campo)}</div>
                         <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
@@ -172,7 +172,7 @@
                     </div>
                     <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
                         role="button" tabindex="0" aria-label="${escapeHTML(window.t("merge_cloud_label", "Cloud Change (Server)"))}"
-                        class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-all cursor-pointer hover:border-amber-400 hover:shadow-md ${externalChosen ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/10' : 'border-stone-200'}">
+                        class="flex flex-col gap-2 p-3 bg-white border rounded relative transition-colors cursor-pointer hover:border-amber-400 hover:shadow-md ${externalChosen ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/10' : 'border-stone-200'}">
                         <span class="text-[9px] uppercase font-bold text-stone-500 absolute -top-2 left-2 bg-stone-50 px-1 border border-stone-200 rounded">${window.t("merge_cloud_label", "Cloud Change (Server)")}</span>
                         <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(externalVal, campo)}</div>
                         <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"

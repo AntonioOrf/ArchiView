@@ -42,7 +42,7 @@
                     <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                 </button>
                 <button onclick="mostraCloudExplorer()" class="btn btn-ghost text-sm text-stone-500 mt-1 hover:text-stone-700 w-full justify-center">
-                    <span data-i18n="btn_restore_drive">Ripristina da Google Drive...</span>
+                    <span data-i18n="btn_restore_drive">Ripristina da Google Drive…</span>
                 </button>
             </div>
 
@@ -50,13 +50,13 @@
             <div id="welcome-create-form" class="hidden-tab mt-4 text-left border border-stone-200 p-4 rounded-md bg-stone-50">
                 <div class="mb-3">
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_archive_name">Nome dell\'archivio</label>
-                    <input type="text" id="welcome-new-folder-name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-all text-sm" placeholder="Es. Archivio Manoscritti" data-i18n-placeholder="placeholder_archive_name" onkeydown="if(event.key === 'Enter') creaCartellaIniziale()">
+                    <input type="text" id="welcome-new-folder-name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-colors text-sm" placeholder="Es. Archivio Manoscritti" data-i18n-placeholder="placeholder_archive_name" onkeydown="if(event.key === 'Enter') creaCartellaIniziale()">
                 </div>
                 <div class="mb-3">
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_position">Posizione</label>
                     <div class="flex gap-2">
                         <input type="text" id="welcome-new-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                        <button onclick="selezionaPercorsoBase()" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300 hover:bg-stone-200" data-i18n="btn_browse">Sfoglia...</button>
+                        <button onclick="selezionaPercorsoBase()" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300 hover:bg-stone-200" data-i18n="btn_browse">Sfoglia…</button>
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
@@ -114,9 +114,9 @@
                                 <span data-i18n="join_step2_hint">First <strong>accept the sharing email from Google Drive</strong>. The folder will appear in <em>"Shared with me"</em>.</span>
                             </div>
                             <button type="button" onclick="apriGooglePicker()" id="btn-open-picker"
-                                class="btn btn-secondary w-full justify-center py-3 text-sm font-medium shadow-sm bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 transition-all">
+                                class="btn btn-secondary w-full justify-center py-3 text-sm font-medium shadow-sm bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 transition-colors">
                                 <i data-lucide="folder-search" class="w-5 h-5 mr-2 text-blue-600"></i>
-                                <span data-i18n="btn_browse_drive">Sfoglia Google Drive...</span>
+                                <span data-i18n="btn_browse_drive">Sfoglia Google Drive…</span>
                             </button>
                             <div id="join-picker-ok" class="hidden-tab mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-sm text-emerald-700 flex items-center gap-2">
                                 <i data-lucide="folder-check" class="w-4 h-4 text-emerald-600 shrink-0"></i>
@@ -140,7 +140,7 @@
                             <p class="text-[11px] text-stone-500 mb-2 ml-7 leading-snug"><span data-i18n="join_step3_hint">Choose where to save the local copy of the archive on your PC.</span></p>
                             <div class="flex gap-2">
                                 <input type="text" id="welcome-join-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                                <button onclick="selezionaPercorsoBaseJoin()" class="btn btn-secondary px-3 py-1 text-sm shrink-0" data-i18n="btn_browse">Sfoglia...</button>
+                                <button onclick="selezionaPercorsoBaseJoin()" class="btn btn-secondary px-3 py-1 text-sm shrink-0" data-i18n="btn_browse">Sfoglia…</button>
                             </div>
                         </div>
 
@@ -210,7 +210,7 @@
     window.mostraCloudExplorer = async function() {
         if (!window.apiDrive) return;
         
-        mostraMessaggio(window.t("msg_autenticazione_e_ricerca_", "Autenticazione e ricerca archivi in corso..."), "info");
+        mostraMessaggio(window.t("msg_autenticazione_e_ricerca_", "Autenticazione e ricerca archivi in corso…"), "info");
         try {
             await window.apiDrive.auth();
             const vaults = await window.apiDrive.listVaults();
@@ -226,7 +226,7 @@
             } else {
                 vaults.forEach(v => {
                     const div = document.createElement('div');
-                    div.className = "p-3 bg-white border border-stone-200 rounded cursor-pointer hover:border-amber-400 hover:shadow-md transition-all flex justify-between items-center";
+                    div.className = "p-3 bg-white border border-stone-200 rounded cursor-pointer hover:border-amber-400 hover:shadow-md transition-colors flex justify-between items-center";
                     const dateStr = new Date(v.modifiedTime).toLocaleDateString();
                     
                     const escapedName = v.name.replace(/[&<>'"]/g, tag => ({
@@ -443,7 +443,7 @@
         if (!window.apiDrive) return;
         try {
             mostraMessaggio(
-                window.t("msg_autenticazione_e_ricerca_", "Apertura di Google Picker nel browser... Attendi."),
+                window.t("msg_autenticazione_e_ricerca_", "Apertura di Google Picker nel browser… Attendi."),
                 "info"
             );
 
@@ -488,14 +488,14 @@
             const btnH = document.getElementById('btn-join-connect') as HTMLButtonElement;
             if (btnH) { btnH.disabled = true; btnH.textContent = '...'; }
             try {
-                mostraMessaggio(window.t("msg_connessione_all_archivio_", "Connessione all'Archivio in corso..."), "info");
+                mostraMessaggio(window.t("msg_connessione_all_archivio_", "Connessione all'Archivio in corso…"), "info");
                 const ok = await window.eseguiJoinHub(window.welcomeHubInvite, basePath);
                 if (!ok) throw new Error(window.t("msg_error_creating_files", "Error creating local files."));
                 document.getElementById('welcome-modal')?.classList.add('hidden-tab');
                 const archiveName = window.welcomeHubInvite.name;
                 const successMsg = archiveName
                     ? window.t("msg_connesso_con_successo_nome", 'Connesso con successo a "{var0}"! Riavvio in corso...').replace('{var0}', archiveName)
-                    : window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso...");
+                    : window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso…");
                 mostraMessaggio(successMsg, "success");
             } catch (e: any) {
                 mostraMessaggio(e.message, "error");
@@ -565,7 +565,7 @@
                     const success = await window.apiBrowser.cloneWorkspaceHub(basePath, defaultName, driveConfig, driveData.database);
                     if (success) {
                         document.getElementById('welcome-modal').classList.add('hidden-tab');
-                        mostraMessaggio(window.t("msg_archivio_ripristinato_con", "Archivio ripristinato con successo! Riavvio in corso..."), "success");
+                        mostraMessaggio(window.t("msg_archivio_ripristinato_con", "Archivio ripristinato con successo! Riavvio in corso…"), "success");
                     } else {
                         throw new Error(window.t("msg_error_creating_files", "Error creating local files."));
                     }
@@ -599,7 +599,7 @@
         
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = window.sanitizeHTML(`<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i> ${window.t("btn_creating", "Creating...")}`);
+            btn.innerHTML = window.sanitizeHTML(`<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i> ${window.t("btn_creating", "Creating…")}`);
             if (window.lucide) lucide.createIcons({ nodes: [btn] });
         }
         

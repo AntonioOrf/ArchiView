@@ -17,7 +17,7 @@
             </div>
             <div class="modal-body">
                 <label class="form-label font-medium mb-1 block" data-i18n="label_folder_name">Nome della cartella o percorso</label>
-                <input type="text" id="folder-name-input" data-i18n-placeholder="label_folder_name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-all">
+                <input type="text" id="folder-name-input" data-i18n-placeholder="label_folder_name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-colors">
                 <p class="text-xs text-stone-500 mt-2 flex items-center gap-1" data-i18n="hint_folder_name">
                     <i data-lucide="info" class="w-3 h-3"></i> Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle.
                 </p>

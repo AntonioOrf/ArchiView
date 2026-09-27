@@ -379,7 +379,7 @@ function renderSidebar() {
         // scheda qui" smettono di essere raggiungibili solo col tasto destro.
         // opacity-0 su hover ma focus-within lo rivela: resta raggiungibile da tastiera.
         const actionContainer = document.createElement('div');
-        actionContainer.className = "opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center transition-all";
+        actionContainer.className = "opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center transition-opacity";
 
         const btnOverflow = window.creaBottoneOverflow(
             () => window.vociMenuCartella(fullPath),

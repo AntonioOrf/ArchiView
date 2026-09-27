@@ -196,7 +196,7 @@ msgstr "Folder:"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_please_wait"
-msgstr "Please wait..."
+msgstr "Please wait…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -211,7 +211,7 @@ msgstr "Activate Cloud Sync"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_activating"
-msgstr "Activating..."
+msgstr "Activating…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -241,7 +241,7 @@ msgstr "Start Tutorial"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_download_starting"
-msgstr "Starting download..."
+msgstr "Starting download…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -357,7 +357,7 @@ msgstr "Bug / Application error"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_change_folder"
-msgstr "Change Folder..."
+msgstr "Change Folder…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -387,7 +387,7 @@ msgstr "Upload to Cloud"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "upload_in_progress"
-msgstr "Uploading..."
+msgstr "Uploading…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -397,12 +397,12 @@ msgstr "Local Attachments Folder (Optional)"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_motivazione_processo"
-msgstr "Cause and reasons for the trial..."
+msgstr "Cause and reasons for the trial…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_search"
-msgstr "Search in all records..."
+msgstr "Search in all records…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -532,12 +532,12 @@ msgstr "Check if a new version of the program is available on GitHub."
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_check_updates"
-msgstr "Checking for updates..."
+msgstr "Checking for updates…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "settings_drive_checking"
-msgstr "Checking in progress..."
+msgstr "Checking in progress…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -662,7 +662,7 @@ msgstr "Debtor / Reason"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_issue_desc"
-msgstr "Describe the problem, how to reproduce it, or what you expect to happen..."
+msgstr "Describe the problem, how to reproduce it, or what you expect to happen…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -672,7 +672,7 @@ msgstr "Detailed description *"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_elementi_economici"
-msgstr "Economic details..."
+msgstr "Economic details…"
 
 #~ msgid "dialog_export_zip"
 #~ msgstr "Export Backup as ZIP"
@@ -796,12 +796,12 @@ msgstr "E.g. Anthony"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_issue_title"
-msgstr "E.g. Error saving or loading files..."
+msgstr "E.g. Error saving or loading files…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_dichiarante"
-msgstr "E.g. family, institution..."
+msgstr "E.g. family, institution…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -811,7 +811,7 @@ msgstr "E.g. Florence"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_tipo_di_atto"
-msgstr "E.g. marriage, sale, testament..."
+msgstr "E.g. marriage, sale, testament…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -826,12 +826,12 @@ msgstr "E.g. Plut. 40.1 or Deed 12"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_magistratura"
-msgstr "E.g. Podestà, Captain of the People..."
+msgstr "E.g. Podestà, Captain of the People…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_custom_field"
-msgstr "E.g. Support, Watermark..."
+msgstr "E.g. Support, Watermark…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -856,7 +856,7 @@ msgstr "Export Backup to ZIP"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_condanne"
-msgstr "Any sentences, acquittals or penalties..."
+msgstr "Any sentences, acquittals or penalties…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -881,7 +881,7 @@ msgstr "Filter by Tag"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_tags"
-msgstr "Select tags..."
+msgstr "Select tags…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -941,7 +941,7 @@ msgstr "Version Control"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "sidebar_manage_archives"
-msgstr "Manage archives..."
+msgstr "Manage archives…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1086,7 +1086,7 @@ msgstr "Please enter a name for the document type."
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_installing"
-msgstr "Installing..."
+msgstr "Installing…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1725,7 +1725,7 @@ msgstr "Notes"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_Marginalia"
-msgstr "Marginal notes..."
+msgstr "Marginal notes…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1870,7 +1870,7 @@ msgstr "Previous (Alt + Left Arrow)"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_backup_init"
-msgstr "Preparing backup..."
+msgstr "Preparing backup…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2045,7 +2045,7 @@ msgstr "Download the latest changes from the Cloud"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "download_in_progress"
-msgstr "Downloading..."
+msgstr "Downloading…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2130,7 +2130,7 @@ msgstr "Are you sure?"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_select_folder"
-msgstr "Select Folder..."
+msgstr "Select Folder…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2140,7 +2140,7 @@ msgstr "Select model or create new"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_empty_fields"
-msgstr "Select or add fields..."
+msgstr "Select or add fields…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2196,7 +2196,7 @@ msgstr "Synchronization"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "sync_in_progress"
-msgstr "Syncing..."
+msgstr "Syncing…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2226,7 +2226,7 @@ msgstr "Remote Synchronization"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_syncing"
-msgstr "Syncing..."
+msgstr "Syncing…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts

@@ -196,7 +196,7 @@ msgstr "Archivio:"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_please_wait"
-msgstr "Attendere prego..."
+msgstr "Attendere prego…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -211,7 +211,7 @@ msgstr "Attiva Sincronizzazione Cloud"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_activating"
-msgstr "Attivazione in corso..."
+msgstr "Attivazione in corso…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -241,7 +241,7 @@ msgstr "Avvia Tutorial"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_download_starting"
-msgstr "Avvio download..."
+msgstr "Avvio download…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -306,7 +306,7 @@ msgstr "Bug / Errore del programma"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_change_folder"
-msgstr "Cambia Cartella..."
+msgstr "Cambia Cartella…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -346,12 +346,12 @@ msgstr "Cartella Allegati Locale (Opzionale)"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_motivazione_processo"
-msgstr "Causa e ragioni del processo..."
+msgstr "Causa e ragioni del processo…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_search"
-msgstr "Cerca in tutte le schede..."
+msgstr "Cerca in tutte le schede…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -481,12 +481,12 @@ msgstr "Controlla se è disponibile una nuova versione del programma su GitHub."
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_check_updates"
-msgstr "Controllo aggiornamenti in corso..."
+msgstr "Controllo aggiornamenti in corso…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "settings_drive_checking"
-msgstr "Controllo in corso..."
+msgstr "Controllo in corso…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -611,7 +611,7 @@ msgstr "Debitore / Motivo"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_issue_desc"
-msgstr "Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada..."
+msgstr "Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -621,7 +621,7 @@ msgstr "Descrizione dettagliata *"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_elementi_economici"
-msgstr "Dettagli economici..."
+msgstr "Dettagli economici…"
 
 #~ msgid "dialog_export_zip"
 #~ msgstr "Esporta Backup in ZIP"
@@ -745,12 +745,12 @@ msgstr "Es. Antonio"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_issue_title"
-msgstr "Es. Errore durante il salvataggio o caricamento file..."
+msgstr "Es. Errore durante il salvataggio o caricamento file…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_dichiarante"
-msgstr "Es. famiglia, istituzione..."
+msgstr "Es. famiglia, istituzione…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -760,7 +760,7 @@ msgstr "Es. Firenze"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_tipo_di_atto"
-msgstr "Es. matrimonio, vendita, testamento..."
+msgstr "Es. matrimonio, vendita, testamento…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -775,12 +775,12 @@ msgstr "Es. Plut. 40.1 o Atto 12"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_magistratura"
-msgstr "Es. Podestà, Capitano del Popolo..."
+msgstr "Es. Podestà, Capitano del Popolo…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_custom_field"
-msgstr "Es. Supporto, Filigrana..."
+msgstr "Es. Supporto, Filigrana…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -805,7 +805,7 @@ msgstr "Esporta Backup in ZIP"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_condanne"
-msgstr "Eventuali condanne, assoluzioni o pene..."
+msgstr "Eventuali condanne, assoluzioni o pene…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -830,7 +830,7 @@ msgstr "Filtra per Tag"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_tags"
-msgstr "Seleziona tag..."
+msgstr "Seleziona tag…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -890,7 +890,7 @@ msgstr "Gestione Versioni"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "sidebar_manage_archives"
-msgstr "Gestisci archivi..."
+msgstr "Gestisci archivi…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1035,7 +1035,7 @@ msgstr "Inserisci un nome per il tipo di documento."
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_installing"
-msgstr "Installazione..."
+msgstr "Installazione…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1593,7 +1593,7 @@ msgstr "Note"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_Marginalia"
-msgstr "Note marginali..."
+msgstr "Note marginali…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1738,7 +1738,7 @@ msgstr "Precedente (Alt + Freccia Sinistra)"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "msg_backup_init"
-msgstr "Preparazione del backup in corso..."
+msgstr "Preparazione del backup in corso…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -1998,7 +1998,7 @@ msgstr "Sei sicuro?"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_select_folder"
-msgstr "Seleziona Cartella..."
+msgstr "Seleziona Cartella…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2008,7 +2008,7 @@ msgstr "Seleziona modello o creane uno nuovo"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "placeholder_empty_fields"
-msgstr "Seleziona o aggiungi dei campi..."
+msgstr "Seleziona o aggiungi dei campi…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
@@ -2073,7 +2073,7 @@ msgstr "Sincronizzazione Remota"
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts
 msgid "btn_syncing"
-msgstr "Sincronizzazione..."
+msgstr "Sincronizzazione…"
 
 #. js-lingui-explicit-id
 #: src/renderer/js/logic/i18n.ts

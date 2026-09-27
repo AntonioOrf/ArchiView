@@ -72,7 +72,7 @@
 
         const ultimo = settings && settings.lastSyncTime;
         if (ultimo) {
-            const locale = window.linguaAttuale === 'en' ? 'en-US' : 'it-IT';
+            const locale = window.localeAttuale();
             righe.push(['clock', window.t('cloud_status_last_sync', 'Ultima sincronizzazione'),
                 new Date(ultimo).toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })]);
         }
@@ -243,7 +243,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
             <h3 class="text-lg font-bold mb-2 text-stone-800 dark:text-stone-100" id="cloud-progress-title"><span data-i18n="msg_operation_progress">Operazione in corso</span></h3>
-            <p class="text-sm text-stone-600 dark:text-stone-400" id="cloud-progress-message"><span data-i18n="msg_please_wait">Attendere prego...</span></p>
+            <p class="text-sm text-stone-600 dark:text-stone-400" id="cloud-progress-message"><span data-i18n="msg_please_wait">Attendere prego…</span></p>
         </div>
     </div>
             `;
@@ -255,7 +255,7 @@
     window.cambiaAccountGoogleVault = async function() {
         if (!window.apiDrive) return;
         const esegui = async () => {
-            mostraProgressoCloud(window.t("prog_auth_title", "Autenticazione in corso"), window.t("prog_auth_desc2", "Accedi con il nuovo account nel browser..."));
+            mostraProgressoCloud(window.t("prog_auth_title", "Autenticazione in corso"), window.t("prog_auth_desc2", "Accedi con il nuovo account nel browser…"));
             try {
                 await window.apiDrive.auth(true);
                 await window.aggiornaStatoDrive();
@@ -402,8 +402,8 @@
         if (!confirmed) return;
 
         const btn = document.getElementById('btn-cloud-clean-orphans');
-        impostaStatoCaricamento(btn, true, window.t("cloud_cleaning_in_progress", "Pulizia in corso..."));
-        if (window.annunciaA11y) window.annunciaA11y(window.t("cloud_cleaning_in_progress", "Pulizia in corso..."));
+        impostaStatoCaricamento(btn, true, window.t("cloud_cleaning_in_progress", "Pulizia in corso…"));
+        if (window.annunciaA11y) window.annunciaA11y(window.t("cloud_cleaning_in_progress", "Pulizia in corso…"));
 
         try {
             // getApiCloud è async: senza await si testava .pulisciAllegatiOrfani su una Promise,

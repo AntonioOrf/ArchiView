@@ -232,11 +232,11 @@ window.esportaBackupZip = async function() {
         const progDiv = document.createElement('div');
         progDiv.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-4 rounded-sm shadow-2xl z-toast min-w-[300px] border border-stone-700 text-center flex flex-col gap-2';
         progDiv.innerHTML = window.sanitizeHTML(`
-            <div class="font-bold text-sm">Esportazione in corso...</div>
+            <div class="font-bold text-sm">Esportazione in corso…</div>
             <div class="w-full bg-stone-700 h-2 rounded-full overflow-hidden">
-                <div id="export-progress-bar" class="bg-amber-500 h-full w-0 transition-all duration-300"></div>
+                <div id="export-progress-bar" class="bg-amber-500 h-full w-0 transizione-larghezza"></div>
             </div>
-            <div id="export-progress-text" class="text-xs text-stone-300">Calcolo...</div>
+            <div id="export-progress-text" class="text-xs text-stone-300">Calcolo…</div>
         `);
         document.body.appendChild(progDiv);
 

@@ -195,7 +195,7 @@ async function avviaApp() {
         await window.apiSettings.save(settings);
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_cloud", "Avvio configurazione cloud..."));
+            mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_cloud", "Avvio configurazione cloud…"));
         }
 
         setTimeout(async () => {

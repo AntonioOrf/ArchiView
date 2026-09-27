@@ -353,7 +353,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
             if (btnHub) {
                 btnHub.onclick = async () => {
                     btnHub.disabled = true;
-                    btnHub.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> ${window.t("attachment_downloading", "Download in corso...")}`;
+                    btnHub.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> ${window.t("attachment_downloading", "Download in corso…")}`;
                     if (window.lucide) lucide.createIcons({ nodes: [btnHub] });
                     try {
                         // sincronizzaAllegatiHub mostra già i toast aggregati (caricati/scaricati/

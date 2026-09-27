@@ -93,10 +93,10 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="folder-tree" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_workspace">Cartella di Lavoro (Archivio)</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_workspace_desc">Questa cartella contiene il tuo database e tutti gli allegati copiati.</p>
                             <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-workspace-path">
-                                <span data-i18n="label_loading">Loading...</span>
+                                <span data-i18n="label_loading">Loading…</span>
                             </div>
                             <button onclick="cambiaCartellaLavoro()" class="btn btn-secondary mt-3">
-                                <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_change_folder">Cambia Cartella...</span></button>
+                                <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_change_folder">Cambia Cartella…</span></button>
                             <p class="text-xs text-amber-700 mt-2 font-medium flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> <span data-i18n="settings_workspace_restart">L'app verrà riavviata se cambi la cartella.</span></p>
                         </div>
 
@@ -104,11 +104,11 @@
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_local_attachments_title">Cartella Allegati Locale (Opzionale)</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_local_attachments_desc">Consente di salvare le immagini localmente sul PC, escludendole dal cloud condiviso per risparmiare spazio.</p>
                             <div class="flex items-center gap-2 p-2.5 bg-stone-100 border border-stone-200 rounded-sm text-sm font-mono text-stone-700 break-all" id="settings-attachments-path">
-                                <span data-i18n="label_loading">Loading...</span>
+                                <span data-i18n="label_loading">Loading…</span>
                             </div>
                             <div class="flex gap-2 mt-3">
                                 <button onclick="cambiaCartellaAllegati()" class="btn btn-secondary">
-                                    <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_select_folder">Seleziona Cartella...</span>
+                                    <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_select_folder">Seleziona Cartella…</span>
                                 </button>
                                 <button onclick="ripristinaCartellaAllegatiPredefinita()" id="btn-restore-attachments" class="btn btn-ghost text-red-500 hover:bg-red-50 hover:text-red-700 flex items-center gap-1 hidden-tab">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span data-i18n="btn_restore_default">Ripristina di default</span>

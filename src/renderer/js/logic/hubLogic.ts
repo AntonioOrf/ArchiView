@@ -78,7 +78,7 @@ window.riceviModificheHub = async function(isSilent = false) {
         return;
     }
 
-    // if (!isSilent) mostraMessaggio(window.t("msg_ricezione_modifiche_dall_", "Ricezione modifiche dall'Hub in corso..."), "info");
+    // if (!isSilent) mostraMessaggio(window.t("msg_ricezione_modifiche_dall_", "Ricezione modifiche dall'Hub in corso…"), "info");
     
     try {
         const repoId = window.hubConfig.repoId;
@@ -348,7 +348,7 @@ window.inviaModificheHub = async function() {
         return;
     }
 
-    mostraMessaggio(window.t("msg_invio_modifiche_al_server", "Invio modifiche al server..."), "info");
+    mostraMessaggio(window.t("msg_invio_modifiche_al_server", "Invio modifiche al server…"), "info");
 
     // Il push usa appData in memoria, ma la sync allegati che segue legge il DB dal disco.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
@@ -496,7 +496,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
 
 window.sincronizzaConHub = async function() {
     // Deprecata: per compatibilità, esegue prima pull e poi push (se non ci sono conflitti bloccanti)
-    mostraMessaggio(window.t("msg_sincronizzazione", "Sincronizzazione..."), "info");
+    mostraMessaggio(window.t("msg_sincronizzazione", "Sincronizzazione…"), "info");
     await window.riceviModificheHub(true);
     await window.inviaModificheHub();
 };
@@ -608,7 +608,7 @@ window.creaRepositoryHub = async function(name) {
     // Overlay bloccante per l'intera durata (non il solo toast, che si autonasconde dopo 3.5s
     // mentre le fetch verso l'Hub sono ancora in corso e l'utente resta senza feedback).
     if (typeof window.mostraProgressoCloud === 'function') {
-        window.mostraProgressoCloud(window.t("prog_hub_prepare_title", "Preparazione dell'archivio condiviso"), window.t("msg_creazione_repository", "Creazione del repository in corso..."));
+        window.mostraProgressoCloud(window.t("prog_hub_prepare_title", "Preparazione dell'archivio condiviso"), window.t("msg_creazione_repository", "Creazione del repository in corso…"));
     }
     try {
         const r = await window.apiBrowser.hubCreateRepo(name || null);
@@ -805,7 +805,7 @@ window.eseguiJoinHub = async function(invite, basePath) {
 };
 
 window.clonaRepositoryHub = async function(url, repoId, key, encKey, pusher) {
-    mostraMessaggio(window.t("msg_connessione_al_repository", "Connessione al repository..."), "info");
+    mostraMessaggio(window.t("msg_connessione_al_repository", "Connessione al repository…"), "info");
     
     try {
         const res = await fetch(`${url}/api/repos/${repoId}/pull`, {
@@ -842,7 +842,7 @@ window.clonaRepositoryHub = async function(url, repoId, key, encKey, pusher) {
                 const folderName = sanitizeVaultFolderName(sharedName) || `Vault_${repoId}`;
                 const success = await window.apiBrowser.cloneWorkspaceHub(basePath, folderName, hubConfigObj, data.database);
                 if (success) {
-                    mostraMessaggio(window.t("msg_archivio_clonato_con_succ", "Archivio clonato con successo! Riavvio in corso..."), "success");
+                    mostraMessaggio(window.t("msg_archivio_clonato_con_succ", "Archivio clonato con successo! Riavvio in corso…"), "success");
                 } else {
                     throw new Error("Errore durante la creazione dei file locali.");
                 }

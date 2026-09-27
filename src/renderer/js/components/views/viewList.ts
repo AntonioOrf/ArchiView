@@ -15,7 +15,7 @@
                             <span id="titolo-cartella-attuale"></span>
                         </h1>
                         <div class="flex items-center gap-3 mt-1">
-                            <span id="counter-results" class="text-sm text-stone-500 font-medium">Caricamento...</span>
+                            <span id="counter-results" class="text-sm text-stone-500 font-medium">Caricamento…</span>
                             <!-- Unico segnale della selezione ora che la barra non c'è più:
                                  testo, non pulsanti — le azioni stanno tutte nel tasto destro. -->
                             <span id="selection-indicator" class="hidden text-sm font-semibold" style="color: var(--color-primary);"></span>
