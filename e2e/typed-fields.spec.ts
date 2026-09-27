@@ -146,6 +146,38 @@ test.describe('Campi tipizzati', () => {
     await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
   });
 
+  test('3.1.4b — WCAG 3.3.1/4.1.2: l errore sta sul campo, che ha un nome e lo annuncia', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Tipi');
+    await creaTipoConCampi(page);
+
+    await page.evaluate(() => (window as any).switchTab('add'));
+    await page.locator('#form-tipo-documento').selectOption({ label: 'Codice tipizzato' });
+    await page.evaluate(() => (window as any).renderDynamicFields());
+    const carte = page.locator('#dyn-carte');
+
+    // Nome accessibile dall'etichetta, senza i pulsanti che l'etichetta può contenere.
+    await expect(carte).toHaveAccessibleName(/^carte$/i);
+    await expect(carte).toHaveAttribute('aria-required', 'true');
+
+    await page.locator('#form-segnatura').fill('OBB-2');
+    await page.evaluate(() => (document.getElementById('manoscritto-form') as HTMLFormElement)
+      .dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })));
+
+    await expect(carte).toBeFocused();
+    await expect(carte).toHaveAttribute('aria-invalid', 'true');
+    await expect(carte).toHaveAccessibleDescription(/obbligatorio/);
+    await expect(page.locator('#dyn-carte-errore')).toBeVisible();
+    // L'errore non scade da solo: dopo il vecchio timeout di 2,5 s è ancora lì.
+    await page.waitForTimeout(2800);
+    await expect(page.locator('#dyn-carte-errore')).toBeVisible();
+
+    // Correggere il valore toglie l'errore.
+    await carte.fill('3');
+    await expect(carte).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('#dyn-carte-errore')).toHaveCount(0);
+    expect(await carte.getAttribute('aria-describedby')).toBeNull();
+  });
+
   test('3.1.5 — un valore ripetuto in un campo unico avvisa ma NON blocca', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Tipi');
 

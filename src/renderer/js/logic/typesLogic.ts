@@ -18,6 +18,8 @@ function sbloccaFormTipo() {
 
 function apriNewTypeModal() {
     editingTypeId = null;
+    _lavoroPersonalizzato = null;
+    _modelloPrecedente = null;
     sbloccaFormTipo();
     document.getElementById('new-type-select').value = 'custom';
     document.getElementById('new-type-select').disabled = false;
@@ -40,11 +42,25 @@ function modelloPredefinito(id) {
     return window.Model.modelloPredefinito(id);
 }
 
+// U1 / WCAG 3.2.2 — la tendina dei modelli sostituisce nome e campi a ogni `change`, e su
+// Windows una <select> chiusa lo emette a ogni freccia: scorrere i modelli da tastiera
+// cancellava alla prima pressione il tipo personalizzato in costruzione. Uscendo da
+// "personalizzato" il lavoro si mette da parte — le pillole stesse, con dataset e handler,
+// cioè con tipo, obbligo ed elenco di ciascun campo — e torna quando lo si riseleziona.
+let _lavoroPersonalizzato = null;
+let _modelloPrecedente = null;
+
 function applicaModello() {
     const sel = document.getElementById('new-type-select').value;
     const nameInput = document.getElementById('custom-type-name');
     const extraInput = document.getElementById('custom-type-extra-input');
     const placeholder = document.getElementById('empty-fields-placeholder');
+
+    if (_modelloPrecedente === 'custom' && sel !== 'custom') {
+        const pill = Array.from(document.querySelectorAll('.custom-field-item'));
+        if (nameInput.value.trim() || pill.length) _lavoroPersonalizzato = { nome: nameInput.value, pill };
+    }
+    _modelloPrecedente = sel;
     
     // Pulisce il form
     nameInput.value = '';
@@ -56,6 +72,19 @@ function applicaModello() {
     if (placeholder) placeholder.classList.remove('hidden');
 
     document.querySelectorAll('.custom-type-field').forEach(cb => cb.checked = false);
+
+    if (sel === 'custom' && _lavoroPersonalizzato) {
+        const lista = document.getElementById('custom-fields-list');
+        nameInput.value = _lavoroPersonalizzato.nome;
+        for (const p of _lavoroPersonalizzato.pill) {
+            lista.appendChild(p);
+            const cb = document.querySelector(`.custom-type-field[value="${CSS.escape(p.dataset.val)}"]`);
+            if (cb) cb.checked = true;
+        }
+        if (placeholder && _lavoroPersonalizzato.pill.length) placeholder.classList.add('hidden');
+        _lavoroPersonalizzato = null;
+        return;
+    }
 
     // Seleziona campi in base al modello
     if (sel !== 'custom') {

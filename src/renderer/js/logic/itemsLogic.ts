@@ -142,15 +142,16 @@ async function handleFormSubmit(e) {
     const dynamicData = window.leggiCampiDinamici(definizioni);
 
     // Validazione: blocca solo ciò che l'utente ha dichiarato obbligatorio, o malformato.
+    if (window.pulisciErroriCampi) window.pulisciErroriCampi();
     const errore = primoErroreCampi(definizioni, dynamicData);
     if (errore) {
         mostraMessaggio(errore.messaggio, 'error');
-        const el = document.getElementById(window.idControlloCampo(errore.campo));
-        if (el) {
-            el.focus();
-            el.classList.add('ring-2', 'ring-red-500');
-            setTimeout(() => el.classList.remove('ring-2', 'ring-red-500'), 2500);
-        }
+        // Il messaggio resta accanto al campo (segnalaErroreCampo); il toast serve a chi ha
+        // il campo fuori schermo. Il fuoco va sul primo campo in errore (3.3.1).
+        const el = window.segnalaErroreCampo
+            ? window.segnalaErroreCampo(errore.campo, errore.messaggio)
+            : document.getElementById(window.idControlloCampo(errore.campo));
+        if (el) el.focus();
         return;
     }
 
@@ -308,6 +309,7 @@ async function editItem(id) {
     // che sequenza disegnare i controlli.
     if (window.scriviOrdineCampiForm) window.scriviOrdineCampiForm(window.Model.ordineCampi(m));
     if (window.riordinoCampiAttivo && window.chiudiRiordinoCampi) window.chiudiRiordinoCampi(true);
+    if (window.azzeraMemoriaCompilazione) window.azzeraMemoriaCompilazione();
     renderDynamicFields();
     
     document.getElementById('form-segnatura').value = m.segnatura || '';

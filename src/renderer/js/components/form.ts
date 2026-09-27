@@ -110,6 +110,98 @@ function idControlloCampo(campoId) {
 window.idControlloCampo = idControlloCampo;
 
 /**
+ * WCAG 1.3.1 / 4.1.2 — l'etichetta di un campo dinamico non era collegata al controllo: lo
+ * screen reader annunciava "modifica testo" senza dire QUALE campo. Il nome passa da
+ * aria-labelledby su uno span col solo testo, non dal <label> intero: quello di un campo
+ * proprio contiene anche i pulsanti "promuovi"/"togli", che finirebbero nel nome.
+ * htmlFor resta per il click sull'etichetta che porta al controllo.
+ */
+function collegaEtichettaCampo(gruppo, label, campoId, def) {
+    const idCtrl = idControlloCampo(campoId);
+    const idTesto = 'lbl-' + idCtrl;
+    const testo = label.firstChild;
+    if (testo && testo.nodeType === Node.TEXT_NODE) {
+        const span = document.createElement('span');
+        span.id = idTesto;
+        span.textContent = testo.textContent;
+        label.replaceChild(span, testo);
+    }
+    const controllo = gruppo.querySelector('#' + CSS.escape(idCtrl));
+    if (controllo) {
+        label.htmlFor = idCtrl;
+        controllo.setAttribute('aria-labelledby', idTesto);
+        if (def.obbligatorio) controllo.setAttribute('aria-required', 'true');
+        return;
+    }
+    // Lista chiave-valore: più controlli, nessuno "è" il campo. Il gruppo porta il nome.
+    const lista = gruppo.querySelector('.dynamic-list-container');
+    if (lista) {
+        lista.setAttribute('role', 'group');
+        lista.setAttribute('aria-labelledby', idTesto);
+    }
+}
+
+function _togliDaDescrittori(el, id) {
+    const resto = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(x => x && x !== id);
+    if (resto.length) el.setAttribute('aria-describedby', resto.join(' '));
+    else el.removeAttribute('aria-describedby');
+}
+
+/**
+ * WCAG 3.3.1 — l'errore di un campo si identifica sul campo: aria-invalid, messaggio
+ * testuale accanto (icona + testo, non il solo colore) collegato con aria-describedby,
+ * così chi arriva sul campo lo sente leggere. Prima c'era un anello rosso che spariva dopo
+ * 2,5 secondi: solo colore, e solo per chi guardava in quel momento.
+ * Ritorna il controllo (per il focus) o null se il campo non ha un controllo singolo.
+ */
+window.segnalaErroreCampo = function(campoId, messaggio) {
+    const el = document.getElementById(idControlloCampo(campoId));
+    if (!el) return null;
+    const idMsg = el.id + '-errore';
+    let msg = document.getElementById(idMsg);
+    if (!msg) {
+        msg = document.createElement('p');
+        msg.id = idMsg;
+        msg.className = 'campo-errore';
+        (el.closest('.form-group') || el.parentElement).appendChild(msg);
+    }
+    msg.replaceChildren();
+    const icona = document.createElement('i');
+    icona.setAttribute('data-lucide', 'alert-circle');
+    icona.className = 'w-3.5 h-3.5 shrink-0';
+    const testo = document.createElement('span');
+    testo.textContent = messaggio;
+    msg.append(icona, testo);
+    if (window.lucide) lucide.createIcons({ nodes: [msg] });
+
+    el.setAttribute('aria-invalid', 'true');
+    const descr = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+    if (!descr.includes(idMsg)) el.setAttribute('aria-describedby', descr.concat(idMsg).join(' '));
+
+    // L'errore resta finché l'utente non tocca il campo, non per un tempo fisso.
+    const pulisci = () => {
+        el.removeAttribute('aria-invalid');
+        _togliDaDescrittori(el, idMsg);
+        msg.remove();
+        el.removeEventListener('input', pulisci);
+        el.removeEventListener('change', pulisci);
+    };
+    el.addEventListener('input', pulisci);
+    el.addEventListener('change', pulisci);
+    return el;
+};
+
+window.pulisciErroriCampi = function() {
+    const form = document.getElementById('manoscritto-form');
+    if (!form) return;
+    form.querySelectorAll('.campo-errore').forEach(m => {
+        const el = document.getElementById(m.id.replace(/-errore$/, ''));
+        if (el) { el.removeAttribute('aria-invalid'); _togliDaDescrittori(el, m.id); }
+        m.remove();
+    });
+};
+
+/**
  * Fase 3.7 — legge dal DOM i valori dei campi dinamici, nel tipo dichiarato.
  *
  * Estratta da `handleFormSubmit` perché ora la leggono in due: il salvataggio e il ridisegno
@@ -186,6 +278,27 @@ function popolaCampiDinamici(definizioni, valori) {
 }
 window.popolaCampiDinamici = popolaCampiDinamici;
 
+// --- U1 / WCAG 3.2.2: cambiare tipo non deve far perdere ciò che si è scritto -------
+//
+// Su Windows una <select> chiusa emette `change` a OGNI freccia: chi scorre i tipi da
+// tastiera ridisegnava il form a ogni passo, e i valori dei campi che il tipo intermedio
+// non prevede sparivano per sempre (anche tornando al tipo di partenza). Ora i valori
+// della compilazione in corso restano in memoria e tornano quando il campo ricompare.
+// La memoria vale per UNA compilazione: la azzerano la scheda nuova e l'apertura in
+// modifica, così un valore non può mai passare da una scheda all'altra. Al salvataggio
+// conta solo ciò che è a schermo: i campi del tipo scelto.
+let _valoriCompilazione = {};
+let _defsDisegnate = [];
+window.azzeraMemoriaCompilazione = function() { _valoriCompilazione = {}; };
+
+/** Handler del cambio tipo fatto dall'utente (onchange di #form-tipo-documento). */
+window.cambiaTipoDocumentoForm = function() {
+    Object.assign(_valoriCompilazione, leggiCampiDinamici(_defsDisegnate));
+    renderDynamicFields();
+    const defs = campiDefinitiDelForm().filter(d => Object.prototype.hasOwnProperty.call(_valoriCompilazione, d.id));
+    popolaCampiDinamici(defs, _valoriCompilazione);
+};
+
 function renderDynamicFields() {
     const tipoId = document.getElementById('form-tipo-documento').value;
     const tipo = appData.tipiDocumento.find(t => t.id === tipoId) || appData.tipiDocumento[0];
@@ -194,7 +307,8 @@ function renderDynamicFields() {
     container.innerHTML = '';
 
     const propri = _idCampiPropriForm();
-    campiDefinitiDelForm().forEach(def => {
+    _defsDisegnate = campiDefinitiDelForm();
+    _defsDisegnate.forEach(def => {
         const campoId = def.id;
         const conf = CONFIG_CAMPI[campoId] || { label: campoId, placeholder: '', type: def.tipo };
         const proprio = propri.has(campoId);
@@ -362,6 +476,7 @@ function renderDynamicFields() {
             div.appendChild(el);
         }
         
+        collegaEtichettaCampo(div, label, campoId, def);
         container.appendChild(div);
     });
 
@@ -545,6 +660,7 @@ function resetForm() {
     // Fase 3.7: il ridisegno serve comunque, anche se il modello non cambia — i controlli
     // dei campi propri della scheda precedente sono ancora nel contenitore.
     applicaUltimoTipoDocumento();
+    window.azzeraMemoriaCompilazione();
     renderDynamicFields();
     document.getElementById('form-title').textContent = window.t('title_new_record', 'Compila Nuova Scheda');
     

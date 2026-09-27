@@ -37,7 +37,7 @@
                             <label class="form-label">
                                 <i data-lucide="file-type" class="w-4 h-4"></i> <span data-i18n="label_doc_type">Tipo Documento:</span>
                             </label>
-                            <select id="form-tipo-documento" onchange="renderDynamicFields()" class="form-input"></select>
+                            <select id="form-tipo-documento" onchange="cambiaTipoDocumentoForm()" class="form-input"></select>
                         </div>
                     </div>
 
