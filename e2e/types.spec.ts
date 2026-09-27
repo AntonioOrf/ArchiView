@@ -10,6 +10,34 @@ test.describe('Tipi Documento', () => {
     await expect(page.locator('#new-type-modal')).toBeVisible();
   });
 
+  test('WCAG 2.5.7 — i campi del modello si riordinano con i pulsanti, senza trascinare', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
+
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#new-type-select').selectOption('custom');
+    await page.locator('#custom-type-name').fill('Ordine');
+    for (const c of ['Primo', 'Secondo']) {
+      await page.locator('#custom-type-extra-input').fill(c);
+      await page.locator('#custom-type-extra-input').press('Enter');
+    }
+    const ordine = () => page.locator('#custom-fields-list .custom-field-item').evaluateAll(
+      p => p.map(x => (x as HTMLElement).dataset.val).filter(v => v === 'Primo' || v === 'Secondo'));
+    expect(await ordine()).toEqual(['Primo', 'Secondo']);
+
+    const destra = page.locator('.custom-field-item[data-val="Primo"] .pill-sposta').nth(1);
+    await expect(destra).toHaveAttribute('aria-label', /Primo/);
+    await destra.click();
+    expect(await ordine()).toEqual(['Secondo', 'Primo']);
+    // Il fuoco resta sul pulsante, anche se la pillola si è spostata nel DOM.
+    await expect(destra).toBeFocused();
+    await expect(page.locator('#a11y-live-polite')).toContainText('Primo');
+
+    await page.evaluate(() => (window as any).confermaCreaTipo());
+    const tipo = (await getAppData(page)).tipiDocumento.find((t: any) => t.nome === 'Ordine');
+    const campi = tipo.campi.filter((c: string) => c === 'Primo' || c === 'Secondo');
+    expect(campi).toEqual(['Secondo', 'Primo']);
+  });
+
   test('crea un tipo documento custom con campi personalizzati', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
 

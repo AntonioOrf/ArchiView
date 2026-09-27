@@ -301,3 +301,91 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
 };
 
 
+
+// WCAG 2.5.7 — alternativa senza trascinamento allo spostamento di una cartella: prima il
+// drag nell'albero era l'unico modo. Le destinazioni sono filtrate a monte (niente sé stessa,
+// niente discendenti, niente genitore attuale) invece di rifiutarle dopo la scelta.
+// Markup via createElement/textContent: i nomi delle cartelle sono dati utente.
+window.apriSpostaCartella = function(pathSorgente) {
+    if (!pathSorgente) return; // la radice non si sposta
+    const esistente = document.getElementById('sposta-cartella-modal');
+    if (esistente) esistente.remove();
+
+    const genitore = pathSorgente.includes('/') ? pathSorgente.slice(0, pathSorgente.lastIndexOf('/')) : '';
+    const destinazioni = [''].concat((appData.cartelle || []).slice().sort((a, b) => window.confrontaNaturale(a, b)))
+        .filter(c => c !== genitore && c !== pathSorgente && !c.startsWith(pathSorgente + '/'));
+
+    const overlay = document.createElement('div');
+    overlay.id = 'sposta-cartella-modal';
+    overlay.className = 'modal-overlay z-modal-nested';
+
+    const finestra = document.createElement('div');
+    finestra.className = 'modal-window max-w-sm p-6 flex flex-col gap-4';
+
+    const titolo = document.createElement('h3');
+    titolo.className = 'modal-title text-lg font-bold text-stone-800';
+    titolo.textContent = window.t('folder_move_title', 'Sposta cartella');
+
+    const nota = document.createElement('p');
+    nota.className = 'text-sm text-stone-600';
+    nota.textContent = window.t('folder_move_hint', 'Scegli dove spostare «{var0}» e tutto il suo contenuto.')
+        .replace('{var0}', pathSorgente.split('/').pop());
+
+    finestra.append(titolo, nota);
+
+    const chiudi = () => overlay.remove();
+    const azioni = document.createElement('div');
+    azioni.className = 'flex justify-end gap-2';
+    const annulla = document.createElement('button');
+    annulla.type = 'button';
+    annulla.className = 'btn btn-ghost';
+    annulla.setAttribute('data-modal-cancel', ''); // Esc passa di qui (chiudiModaleTop)
+    annulla.textContent = window.t('btn_cancel', 'Annulla');
+    annulla.onclick = chiudi;
+
+    if (destinazioni.length === 0) {
+        const vuoto = document.createElement('p');
+        vuoto.className = 'text-sm text-stone-600';
+        vuoto.textContent = window.t('folder_move_none', 'Non ci sono altre cartelle in cui spostarla.');
+        finestra.appendChild(vuoto);
+        azioni.appendChild(annulla);
+    } else {
+        const etichetta = document.createElement('label');
+        etichetta.className = 'flex flex-col gap-1 text-sm font-semibold text-stone-700';
+        etichetta.textContent = window.t('folder_move_label', 'Cartella di destinazione');
+        const sel = document.createElement('select');
+        sel.id = 'sposta-cartella-dest';
+        sel.className = 'form-input font-normal';
+        for (const c of destinazioni) {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c === '' ? window.t('folder_root_label', 'Radice') : c;
+            sel.appendChild(opt);
+        }
+        etichetta.appendChild(sel);
+        finestra.appendChild(etichetta);
+
+        const conferma = document.createElement('button');
+        conferma.type = 'button';
+        conferma.id = 'sposta-cartella-conferma';
+        conferma.className = 'btn btn-primary';
+        conferma.textContent = window.t('btn_move', 'Sposta');
+        conferma.onclick = async () => {
+            const dest = sel.value;
+            chiudi();
+            try {
+                await spostaCartella(pathSorgente, dest);
+            } catch (err) {
+                console.error('Spostamento cartella fallito:', err);
+                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_folder_move_error', 'Impossibile spostare la cartella.'), 'error');
+            }
+        };
+        azioni.append(annulla, conferma);
+    }
+
+    finestra.appendChild(azioni);
+    overlay.appendChild(finestra);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) chiudi(); });
+    document.body.appendChild(overlay);
+    if (window.lucide) lucide.createIcons({ nodes: [overlay] });
+};

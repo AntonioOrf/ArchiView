@@ -1460,6 +1460,8 @@ window.vociMenuCartella = function(folderPath) {
     if (!isRadice) {
         voci.push({ separator: true });
         voci.push({ label: window.t('menu_rename_short', 'Rinomina'), title: window.t('menu_rename_folder', 'Rinomina cartella'), icon: 'edit-2', onSelect: () => window.rinominaCartellaDaSidebar(folderPath) });
+        // Alternativa al drag nell'albero (WCAG 2.5.7): spostare una cartella non richiede trascinare.
+        voci.push({ label: window.t('menu_move_short', 'Sposta in…'), title: window.t('menu_move_folder', "Sposta la cartella in un'altra"), icon: 'folder-input', onSelect: () => window.apriSpostaCartella(folderPath) });
 
         const vociEsporta = [
             { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) },

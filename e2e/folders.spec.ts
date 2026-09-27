@@ -78,6 +78,9 @@ test.describe('Cartelle', () => {
     await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
     await page.locator('#btn-bottom-confirm-yes').click();
 
+    // L'eliminazione è asincrona (tombstone + commit): leggere subito appData dopo il click
+    // era una corsa, persa circa una volta su cinque senza retry.
+    await expect.poll(async () => (await getAppData(page)).manoscritti.some((m: any) => m.segnatura === 'MS-FOLDER-DEL')).toBe(false);
     const appData = await getAppData(page);
     expect(appData.manoscritti.find((m: any) => m.segnatura === 'MS-FOLDER-DEL')).toBeUndefined();
     expect(appData.deletedIds).toContain(idPrima);
@@ -116,6 +119,42 @@ test.describe('Cartelle', () => {
     await page.evaluate(() => { (window as any).cartellaAttuale = 'Altrove'; });
     await riga.click();
     expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('');
+  });
+
+  test('WCAG 2.5.7 — una cartella si sposta dal menu, senza trascinarla', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
+    await createFolder(page, 'Notarile');
+    await createFolder(page, 'Notarile/Imbreviature');
+    await createFolder(page, 'Fiscale');
+
+    await page.evaluate(() => (window as any).apriMenuContestuale(
+      new MouseEvent('contextmenu', { clientX: 40, clientY: 100 }), (window as any).vociMenuCartella('Notarile')));
+    await page.locator('#custom-context-menu button', { hasText: /Sposta in|Move to/ }).click();
+
+    const dialog = page.locator('#sposta-cartella-modal');
+    await expect(dialog.locator('.modal-window')).toHaveAttribute('role', 'dialog');
+    // Destinazioni valide soltanto: né sé stessa, né una sua sottocartella.
+    const opzioni = await dialog.locator('#sposta-cartella-dest option').evaluateAll(o => o.map(x => (x as HTMLOptionElement).value));
+    expect(opzioni).toEqual(['Fiscale']);
+    await expect(page.locator('#sposta-cartella-dest')).toBeFocused();
+
+    await page.locator('#sposta-cartella-dest').selectOption('Fiscale');
+    await page.locator('#sposta-cartella-conferma').click();
+    await expect(dialog).toHaveCount(0);
+
+    await expect.poll(async () => (await getAppData(page)).cartelle.slice().sort()).toEqual(
+      ['Fiscale', 'Fiscale/Notarile', 'Fiscale/Notarile/Imbreviature']);
+  });
+
+  test('WCAG 2.5.7 — Esc chiude il dialog di spostamento senza spostare nulla', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
+    await createFolder(page, 'A');
+    await createFolder(page, 'B');
+    await page.evaluate(() => (window as any).apriSpostaCartella('A'));
+    await expect(page.locator('#sposta-cartella-modal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#sposta-cartella-modal')).toHaveCount(0);
+    expect((await getAppData(page)).cartelle.slice().sort()).toEqual(['A', 'B']);
   });
 
   test("l archivio non si rinomina ne si elimina dal menu della sua riga", async ({ page, userDataDir }) => {

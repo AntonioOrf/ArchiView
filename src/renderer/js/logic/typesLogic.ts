@@ -235,6 +235,25 @@ function aggiungiPill(val, label, isBase, bloccato) {
     if (btnRimuovi) btnRimuovi.onclick = () => rimuoviPillDalPulsante(btnRimuovi, val);
     const btnCfg = pill.querySelector('.pill-config');
     if (btnCfg) btnCfg.onclick = () => window.apriEditorCampo(btnCfg);
+    // WCAG 2.5.7: il trascinamento non può essere l'unico modo di ordinare i campi del
+    // modello. Due pulsanti (non tasti rapidi soltanto: il criterio chiede un puntatore
+    // singolo SENZA trascinare). Il bersaglio da 24px (2.5.8) sta in style.css (.pill-sposta).
+    if (!bloccato) {
+        const segnaposto = pill.querySelector('.pill-tipo');
+        for (const [delta, icona, chiave, testo] of [
+            [-1, 'chevron-left', 'field_move_left', 'Sposta a sinistra'],
+            [1, 'chevron-right', 'field_move_right', 'Sposta a destra'],
+        ]) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'pill-sposta text-stone-400 hover:text-amber-700 transition-colors';
+            b.title = window.t(chiave, testo);
+            b.setAttribute('aria-label', b.title + ': ' + finalLabel);
+            b.innerHTML = '<i data-lucide="' + icona + '" class="w-3 h-3" aria-hidden="true"></i>';
+            b.onclick = () => spostaPill(pill, delta, b, finalLabel);
+            segnaposto.before(b);
+        }
+    }
     // Il tipo di partenza: quello del campo base se esiste, altrimenti testo.
     scriviDefinizioneSuPillola(pill, window.Model.definizioneCampo(null, val, CONFIG_CAMPI));
     list.appendChild(pill);
@@ -243,6 +262,23 @@ function aggiungiPill(val, label, isBase, bloccato) {
     if (isBase) {
         const cb = document.querySelector(`.custom-type-field[value="${val}"]`);
         if (cb) cb.checked = true;
+    }
+}
+
+/** Stesso effetto del drop: cambia solo la posizione nel DOM, che è l'ordine che si salva. */
+function spostaPill(pill, delta, pulsante, etichetta) {
+    const list = pill.parentElement;
+    if (!list) return;
+    const pills = Array.from(list.querySelectorAll('.custom-field-item'));
+    const j = pills.indexOf(pill) + delta;
+    if (j < 0 || j >= pills.length) return;
+    list.insertBefore(pill, delta < 0 ? pills[j] : pills[j].nextSibling);
+    // Spostare il nodo toglie il fuoco al pulsante: senza riprenderlo, chi usa la tastiera
+    // ripartirebbe dall'inizio della pagina a ogni passo.
+    pulsante.focus();
+    if (window.annunciaA11y) {
+        window.annunciaA11y(window.t('field_moved_pos', '{var0}: posizione {var1} di {var2}')
+            .replace('{var0}', etichetta).replace('{var1}', String(j + 1)).replace('{var2}', String(pills.length)));
     }
 }
 
