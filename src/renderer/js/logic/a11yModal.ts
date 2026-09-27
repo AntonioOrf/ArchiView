@@ -175,8 +175,13 @@
         }
         const sotto = () => {
             const main = document.querySelector('body > div main');
-            // Anche lo skip link: porterebbe a un <main> coperto e inerte.
-            return [document.querySelector('body > .skip-link'), document.querySelector('body > header'), main && main.parentElement].filter(Boolean) as HTMLElement[];
+            // Anche lo skip link: porterebbe a un <main> coperto e inerte. E i due banner nel
+            // flusso della pagina (aggiornamento, invito al tutorial): coperti dalla vista ma
+            // raggiungibili col Tab se comparivano prima di aprirla.
+            return [
+                document.querySelector('body > .skip-link'), document.querySelector('body > header'), main && main.parentElement,
+                document.getElementById('update-banner'), document.getElementById('tutorial-banner'),
+            ].filter(Boolean) as HTMLElement[];
         };
         let aperta = isVisible(vista);
         let trigger = null;

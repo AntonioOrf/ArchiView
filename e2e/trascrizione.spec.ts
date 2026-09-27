@@ -24,6 +24,10 @@ test.describe('Vista Trascrizione', () => {
   test('O4 — aperta, la vista tiene il fuoco: l app coperta non si raggiunge col Tab', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trascrizione');
     const id = await createItemWithAttachment(page, 'MS-TRASC-FOCUS', FIXTURE_PNG);
+    // L'invito al tutorial compare 1,5s dopo l'avvio, nel flusso della pagina: se era già a
+    // schermo aprendo la vista, i suoi pulsanti (coperti) restavano raggiungibili col Tab.
+    // Lo si mostra qui, invece di dipendere dai tempi, e il test fallisce ogni volta.
+    await page.evaluate(() => document.getElementById('tutorial-banner')!.classList.remove('hidden-tab'));
     await page.evaluate((i) => (window as any).apriTrascrizione(i), id);
     const vista = page.locator('#view-trascrizione');
     await expect(vista).toBeVisible();
