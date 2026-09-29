@@ -686,6 +686,18 @@ function _linguiExtraction() {
     i18n._({ id: "ocr_overwrite_title", message: "Trascrizione già presente" });
     i18n._({ id: "ocr_overwrite_desc", message: "Alcune carte hanno già una trascrizione. La bozza dell'OCR può sostituirla o essere aggiunta in fondo. Il testo sostituito non è recuperabile." });
     i18n._({ id: "trasc_current_sheet", message: "Carta {var0} di {var1} — {var2}" });
+    i18n._({ id: "trasc_page_of", message: "p. {var0} di {var1}" });
+    i18n._({ id: "pdf_prev_page", message: "Pagina precedente" });
+    i18n._({ id: "pdf_next_page", message: "Pagina successiva" });
+    i18n._({ id: "pdf_page_number", message: "Numero di pagina" });
+    i18n._({ id: "pdf_search_placeholder", message: "Cerca nel PDF" });
+    i18n._({ id: "pdf_searching", message: "Ricerca… {var0}/{var1}" });
+    i18n._({ id: "pdf_no_results", message: "Nessun risultato" });
+    i18n._({ id: "pdf_results", message: "Trovato in {var0} pagine" });
+    i18n._({ id: "pdf_source_pdf", message: "Testo del PDF" });
+    i18n._({ id: "pdf_source_transcription", message: "Trascrizione" });
+    i18n._({ id: "pdf_open_failed_title", message: "PDF non leggibile" });
+    i18n._({ id: "pdf_open_failed_desc", message: "Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile." });
     i18n._({ id: "ocr_overwrite_append", message: "Aggiungi in fondo" });
     i18n._({ id: "ocr_overwrite_replace", message: "Sostituisci" });
     i18n._({ id: "ocr_bulk_title", message: "OCR delle schede selezionate" });
@@ -2317,7 +2329,19 @@ const customEn = {
     "filter_has_ocr": "With OCR text",
     "filter_no_ocr": "Without OCR text",
     "settings_ocr_desc": "Text recognition (OCR) works without a connection, but each language has to be installed once. The data stays on this computer and is not synchronised.",
-    "trasc_current_sheet": "Sheet {var0} of {var1} — {var2}"
+    "trasc_current_sheet": "Sheet {var0} of {var1} — {var2}",
+    "trasc_page_of": "p. {var0} of {var1}",
+    "pdf_prev_page": "Previous page",
+    "pdf_next_page": "Next page",
+    "pdf_page_number": "Page number",
+    "pdf_search_placeholder": "Search the PDF",
+    "pdf_searching": "Searching… {var0}/{var1}",
+    "pdf_no_results": "No results",
+    "pdf_results": "Found on {var0} pages",
+    "pdf_source_pdf": "PDF text",
+    "pdf_source_transcription": "Transcription",
+    "pdf_open_failed_title": "Unreadable PDF",
+    "pdf_open_failed_desc": "The file cannot be opened: it may be damaged or password-protected. The transcription can still be edited."
 };
 
 const customIt = {
@@ -3370,7 +3394,19 @@ const customIt = {
     "filter_has_ocr": "Con testo OCR",
     "filter_no_ocr": "Senza testo OCR",
     "settings_ocr_desc": "Il riconoscimento del testo (OCR) funziona senza connessione, ma ogni lingua va installata una volta. I dati restano su questo computer e non vengono sincronizzati.",
-    "trasc_current_sheet": "Carta {var0} di {var1} — {var2}"
+    "trasc_current_sheet": "Carta {var0} di {var1} — {var2}",
+    "trasc_page_of": "p. {var0} di {var1}",
+    "pdf_prev_page": "Pagina precedente",
+    "pdf_next_page": "Pagina successiva",
+    "pdf_page_number": "Numero di pagina",
+    "pdf_search_placeholder": "Cerca nel PDF",
+    "pdf_searching": "Ricerca… {var0}/{var1}",
+    "pdf_no_results": "Nessun risultato",
+    "pdf_results": "Trovato in {var0} pagine",
+    "pdf_source_pdf": "Testo del PDF",
+    "pdf_source_transcription": "Trascrizione",
+    "pdf_open_failed_title": "PDF non leggibile",
+    "pdf_open_failed_desc": "Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile."
 };
 
 window.t = function(key, fallback) {

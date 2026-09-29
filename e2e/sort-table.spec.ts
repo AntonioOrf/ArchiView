@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, dismissOverlays } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Sort' });
+
 /**
  * Semina schede con segnature e date di modifica CONTROLLATE.
  * `seedItems` di helpers.ts non basta qui: genera segnature già ordinate

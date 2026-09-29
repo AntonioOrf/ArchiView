@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'UI' });
+
 test.describe('UI: impostazioni, lingua, tema', () => {
   test('apre e chiude la modale impostazioni', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');

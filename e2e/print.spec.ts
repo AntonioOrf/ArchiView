@@ -4,6 +4,8 @@ import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 import * as fs from 'fs';
 
+test.use({ seedWorkspace: 'Stampa' });
+
 /**
  * Fase 2.2 — stampa e PDF.
  *

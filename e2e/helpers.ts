@@ -1,5 +1,6 @@
 import { type ElectronApplication, type Page, expect } from '@playwright/test';
 import * as path from 'path';
+import { seededWorkspaces } from './fixtures';
 
 /**
  * Crea un archivio locale attraverso la welcome modal e attende il reload dell'app.
@@ -11,6 +12,22 @@ export async function createLocalWorkspace(
   basePath: string,
   name = 'TestArchive',
 ): Promise<string> {
+  // Workspace pre-seminato dalla fixture (test.use({ seedWorkspace })): l'app è partita già
+  // dentro l'archivio, resta solo da attendere che sia pronta. Un percorso diverso da quello
+  // seminato è un errore di configurazione dello spec, non un caso da assecondare in silenzio.
+  const seeded = seededWorkspaces.get(page);
+  if (seeded !== undefined) {
+    const richiesto = path.join(basePath, name);
+    if (path.resolve(richiesto) !== path.resolve(seeded)) {
+      throw new Error(`createLocalWorkspace: richiesto ${richiesto} ma la fixture ha seminato ${seeded}. ` +
+        `Allinea test.use({ seedWorkspace }) al nome usato nello spec, o toglilo.`);
+    }
+    await page.waitForFunction(() => (window as any).__appPronta === true, null, { timeout: 15_000 });
+    await expect(page.locator('#welcome-modal')).toBeHidden();
+    await dismissOverlays(page, { attendiChangelog: false });
+    return seeded;
+  }
+
   // La welcome modal deve essere visibile al primo avvio.
   await expect(page.locator('#welcome-modal')).toBeVisible();
 
@@ -63,12 +80,16 @@ export async function createFolder(page: Page, folderName: string): Promise<void
 }
 
 /** Chiude changelog, banner di conferma e toast che potrebbero coprire elementi cliccabili. */
-export async function dismissOverlays(page: Page): Promise<void> {
+export async function dismissOverlays(page: Page, { attendiChangelog = true } = {}): Promise<void> {
   // Il changelog è asincrono (dopo avviaApp): dagli il tempo di comparire, poi chiudilo.
+  // Con `lastSeenVersion` già alla versione corrente (workspace seminato) non compare mai:
+  // aspettarlo costerebbe 3s a vuoto per test.
   const changelog = page.locator('#changelog-modal');
-  try {
-    await changelog.waitFor({ state: 'visible', timeout: 3_000 });
-  } catch { /* può non comparire: ok */ }
+  if (attendiChangelog) {
+    try {
+      await changelog.waitFor({ state: 'visible', timeout: 3_000 });
+    } catch { /* può non comparire: ok */ }
+  }
 
   await page.evaluate(() => {
     (window as any).chiudiChangelogModal?.();

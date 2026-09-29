@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Allegati' });
+
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 const FIXTURE_PDF = path.join(__dirname, 'fixtures', 'sample.pdf');
 

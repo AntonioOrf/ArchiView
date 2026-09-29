@@ -112,6 +112,62 @@ function setupAttachmentsIpc() {
     const safeFileName = path.basename(fileName);
     return path.join(state.attachmentsDirPath, safeFileName);
   });
+
+  // Visualizzatore PDF della trascrizione. pdf.js gira nel renderer ma non può leggere
+  // `local-asset://` (la pagina è su file://, e Chromium nega le richieste cross-origin verso
+  // schemi non http), quindi i byte li fornisce il main, A INTERVALLI: pdf.js chiede solo
+  // i pezzi che gli servono per la pagina da disegnare, e un facsimile da 300 MB non
+  // transita mai intero né in memoria né sull'IPC.
+  ipcMain.handle('pdf-allegato-info', async (event, fileName) => {
+    try {
+      const percorso = percorsoPdfAllegato(fileName);
+      const st = await fsp.stat(percorso);
+      if (!st.isFile()) throw new Error('L\'allegato non è un file');
+      // Il primo pezzo viaggia con la risposta: è quello che pdf.js chiede comunque per
+      // primo, e risparmia un giro di IPC sull'apertura.
+      const iniziale = await leggiIntervallo(percorso, 0, Math.min(st.size, PDF_PEZZO_INIZIALE));
+      return { ok: true, dimensione: st.size, iniziale };
+    } catch (error) {
+      return { ok: false, errore: error.message };
+    }
+  });
+
+  ipcMain.handle('pdf-allegato-intervallo', async (event, fileName, inizio, fine) => {
+    try {
+      if (!Number.isSafeInteger(inizio) || !Number.isSafeInteger(fine) || inizio < 0 || fine <= inizio) {
+        throw new Error('Intervallo non valido');
+      }
+      if (fine - inizio > PDF_MAX_INTERVALLO) throw new Error('Intervallo troppo ampio');
+      const dati = await leggiIntervallo(percorsoPdfAllegato(fileName), inizio, fine);
+      return { ok: true, dati };
+    } catch (error) {
+      return { ok: false, errore: error.message };
+    }
+  });
+}
+
+const PDF_PEZZO_INIZIALE = 64 * 1024;
+// Tetto per singola richiesta: pdf.js raggruppa pezzi contigui, ma un renderer compromesso
+// non deve poter chiedere il file intero in un colpo e far esplodere la memoria del main.
+const PDF_MAX_INTERVALLO = 16 * 1024 * 1024;
+
+/** Solo PDF della cartella allegati: l'API esiste per il visualizzatore, non per leggere file. */
+function percorsoPdfAllegato(fileName: unknown): string {
+  if (!state.attachmentsDirPath) throw new Error('Cartella allegati non definita');
+  const percorso = safeAttachmentPath(state.attachmentsDirPath, fileName as string);
+  if (path.extname(percorso).toLowerCase() !== '.pdf') throw new Error('L\'allegato non è un PDF');
+  return percorso;
+}
+
+async function leggiIntervallo(percorso: string, inizio: number, fine: number): Promise<Uint8Array> {
+  const fh = await fsp.open(percorso, 'r');
+  try {
+    const buffer = Buffer.alloc(fine - inizio);
+    const { bytesRead } = await fh.read(buffer, 0, buffer.length, inizio);
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, bytesRead);
+  } finally {
+    await fh.close();
+  }
 }
 
 function setupAttachmentsProtocol() {

@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createItemWithAttachment, getAppData } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Viewer' });
+
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 const FIXTURE_PDF = path.join(__dirname, 'fixtures', 'sample.pdf');
 
@@ -162,13 +164,15 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await page.locator('#trasc-img-viewport [data-iv="rot-cw"]').click();
     expect(await trasformazione(page, '#trasc-img-preview')).toContain('rotate(90deg)');
 
-    // Passando a un allegato PDF il viewport immagine sparisce (e con esso la barra):
-    // la scheda-esca di questo test è proprio il secondo allegato, di tipo diverso.
+    // Un PDF usa lo STESSO viewport (pdfViewer.ts vi disegna la pagina): passando al
+    // secondo allegato la barra resta, ma la rotazione della carta precedente no.
     await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PDF);
     await expect(page.locator('#trascrizione-thumbnails .allegato-btn')).toHaveCount(2);
     await page.locator('#btn-next-allegato').click();
-    await expect(page.locator('#trasc-pdf-preview')).toBeVisible();
-    await expect(page.locator('#trasc-img-viewport')).toBeHidden();
+    await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
+    await expect(page.locator('#trasc-img-preview')).toHaveAttribute('src', /^blob:/);
+    await expect(page.locator('#trasc-img-viewport .iv-barra')).toBeVisible();
+    await expect.poll(() => trasformazione(page, '#trasc-img-preview')).toContain('rotate(0deg)');
 
     // Tornando all'immagine, la rotazione precedente NON deve essere sopravvissuta.
     await page.locator('#btn-prev-allegato').click();

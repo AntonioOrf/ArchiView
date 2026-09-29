@@ -525,14 +525,43 @@ async function _oApplicaEsiti(m, esiti, lingue, opzioni) {
  *
  * @returns true se almeno una bozza è stata scritta.
  */
+/**
+ * Dove va ogni bozza. Un PDF si scrive pagina per pagina, ciascuna sulla sua trascrizione:
+ * è ciò che rende sfogliabile, a sinistra, un OCR di trenta pagine. Un'immagine resta una
+ * scrittura sola sull'allegato (`pagina` 0).
+ */
+function _oScritturePerPagina(m, utili) {
+    const allegati = _oAllegati(m);
+    const out = [];
+    for (const e of utili) {
+        const a = allegati[e.indice];
+        const pagine = (e.risultato.pagine || []).filter(p => p && p.html && p.numero > 0);
+        if (!a || a.tipo !== 'pdf' || pagine.length === 0) {
+            out.push({ indice: e.indice, pagina: 0, html: e.risultato.html });
+            continue;
+        }
+        // L'intestazione dell'OCR (lingue, data) sta in testa al blocco unito: va sulla prima
+        // pagina riconosciuta, non ripetuta su tutte.
+        const origine = /^<p class="ocr-origine">[\s\S]*?<\/p>\n?/.exec(e.risultato.html);
+        pagine.forEach((p, k) => {
+            out.push({ indice: e.indice, pagina: p.numero, html: (k === 0 && origine ? origine[0] : '') + p.html });
+        });
+    }
+    return out;
+}
+
 async function _oInserisciBozze(m, esiti) {
     const utili = (esiti || []).filter(e => e.risultato && e.risultato.html);
     if (utili.length === 0) return false;
 
+    // Quanto battuto nell'editor e non ancora salvato va messo nel record PRIMA di leggerlo:
+    // "accoda" lo leggerebbe senza, e la ricarica dell'editor alla fine lo cancellerebbe.
+    if (window.salvaEditorTrascrizioneInMemoria) window.salvaEditorTrascrizioneInMemoria();
     window.migraTrascrizioneSuAllegati(m);
 
-    const inConflitto = utili.filter(e =>
-        window.trascrizioneHaTesto(window.leggiTrascrizioneAllegato(m, e.indice)));
+    const scritture = _oScritturePerPagina(m, utili);
+    const inConflitto = scritture.filter(s =>
+        window.trascrizioneHaTesto(window.leggiTrascrizioneAllegato(m, s.indice, s.pagina)));
 
     let scelta = 'sovrascrivi';
     if (inConflitto.length > 0) {
@@ -540,12 +569,12 @@ async function _oInserisciBozze(m, esiti) {
         if (scelta === 'annulla') return false;
     }
 
-    for (const e of utili) {
-        const precedente = window.leggiTrascrizioneAllegato(m, e.indice);
+    for (const s of scritture) {
+        const precedente = window.leggiTrascrizioneAllegato(m, s.indice, s.pagina);
         const nuovo = (scelta === 'accoda' && window.trascrizioneHaTesto(precedente))
-            ? precedente + '\n' + e.risultato.html
-            : e.risultato.html;
-        window.scriviTrascrizioneAllegato(m, e.indice, nuovo);
+            ? precedente + '\n' + s.html
+            : s.html;
+        window.scriviTrascrizioneAllegato(m, s.indice, nuovo, s.pagina);
     }
 
     // `m.trascrizione` è la forma derivata: va ricalcolata qui, perché questo percorso

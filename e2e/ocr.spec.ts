@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createItemWithAttachment, getAppData, openView } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Ocr' });
+
 /**
  * Fase 2.3 — OCR degli allegati.
  *
@@ -319,5 +321,56 @@ test.describe('OCR degli allegati', () => {
     // pulsante per rimediare.
     await expect(page.locator('#ocr-confirm')).toBeDisabled();
     await expect(page.locator('#ocr-body')).toContainText('Nessuna lingua installata');
+  });
+
+  test('2.3.12 — su un PDF ogni pagina riconosciuta va sulla trascrizione della sua pagina', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    const id = await createItemWithAttachment(page, 'OCR-PDF', path.join(__dirname, 'fixtures', 'multipage.pdf'));
+    await stubMotore(electronApp);
+    // Il motore vero restituisce l'HTML per pagina accanto al blocco unito (ocrService.ts).
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('ocr-esegui');
+      ipcMain.handle('ocr-esegui', () => ({
+        ok: true,
+        piano: 'Uno\n\nTre',
+        html: '<p class="ocr-origine"><em>Bozza OCR</em></p>\n<p class="ocr-pagina"><strong>[p. 1]</strong></p>\n<p>Uno</p>\n<p class="ocr-pagina"><strong>[p. 3]</strong></p>\n<p>Tre</p>',
+        confidenza: 90,
+        lingue: ['ita'],
+        motore: 'tesseract',
+        pagine: [
+          { numero: 1, origine: 'ocr', confidenza: 90, html: '<p>Uno</p>' },
+          { numero: 2, origine: 'ocr', confidenza: 0, html: '' },
+          { numero: 3, origine: 'ocr', confidenza: 90, html: '<p>Tre</p>' }
+        ],
+        paginePdf: 3,
+        pagineElaborate: 3,
+        caratteri: 8
+      }));
+    });
+
+    // Vista aperta sulla p. 3, con testo battuto e non salvato: l'OCR non deve cancellarlo.
+    await page.evaluate((rid) => (window as any).apriTrascrizione(rid), id);
+    await expect(page.locator('#trasc-pdf-totale')).toHaveText('/ 3');
+    await page.evaluate(() => (window as any).cambiaPaginaPdf(3));
+    await expect(page.locator('#trasc-pdf-pagina')).toHaveValue('3');
+    await page.locator('#trascrizione-editor').click();
+    await page.keyboard.type('Letto a mano');
+
+    await eseguiOcr(page, id, { bozza: true, indice: false });
+    await expect(page.locator('#ocr-overwrite-modal')).toBeVisible();
+    await page.locator('#ocr-ow-append').click();
+    await expect(page.locator('#ocr-result')).toBeVisible();
+
+    const rec = (await getAppData(page)).manoscritti.find((m: any) => m.id === id);
+    const pagine = rec.allegati[0].pagine;
+    expect(pagine[0]).toContain('Uno');
+    expect(pagine[0]).toContain('ocr-origine');
+    expect(pagine[1] || '').toBe('');
+    expect(pagine[2]).toContain('Letto a mano');
+    expect(pagine[2]).toContain('Tre');
+    expect(pagine[2].indexOf('Letto a mano')).toBeLessThan(pagine[2].indexOf('Tre'));
+    expect(pagine[2]).not.toContain('ocr-origine');
+    // E l'editor, ancora sulla p. 3, mostra il risultato.
+    await expect(page.locator('#trascrizione-editor')).toContainText('Tre');
   });
 });

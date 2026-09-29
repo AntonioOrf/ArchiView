@@ -3,6 +3,8 @@ import { createLocalWorkspace, createItemViaForm, seedItems, getAppData } from '
 import * as path from 'path';
 import * as fs from 'fs';
 
+test.use({ seedWorkspace: 'List' });
+
 test.describe('Vista Lista', () => {
   test('empty state e counter a zero su archivio vuoto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'List');

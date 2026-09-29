@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createItemWithAttachment, createItemViaForm } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Modals' });
+
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 
 test.describe('Modali minori', () => {

@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Form' });
+
 test.describe('Vista Form (add/edit)', () => {
   test('cambiare tipo documento rigenera i campi dinamici', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Form');

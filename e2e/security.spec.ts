@@ -337,6 +337,37 @@ test.describe('Security Regression Tests', () => {
     expect(await page.evaluate(() => (window as any).apiBrowser.salvaAllegato('sample.png', 'id1'))).toBeNull();
   });
 
+  // Visualizzatore PDF: il renderer legge byte dal main. Solo PDF della cartella allegati,
+  // solo intervalli sensati, mai un file intero in una richiesta.
+  test('pdf-allegato-*: niente traversal, niente non-PDF, intervalli limitati', async ({ page, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const path = await import('path');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'PdfIpc');
+    const pdf = path.join(__dirname, 'fixtures', 'multipage.pdf');
+    const png = path.join(__dirname, 'fixtures', 'sample.png');
+    const rPdf = await page.evaluate(([p]) => (window as any).apiBrowser.salvaAllegato(p, 'id1'), [pdf]);
+    const rPng = await page.evaluate(([p]) => (window as any).apiBrowser.salvaAllegato(p, 'id2'), [png]);
+
+    const api = (metodo: string, ...args: any[]) =>
+      page.evaluate(([m, a]) => (window as any).apiBrowser[m](...a), [metodo, args] as [string, any[]]);
+
+    const info = await api('pdfAllegatoInfo', rPdf.fileName);
+    expect(info.ok).toBe(true);
+    expect(info.dimensione).toBeGreaterThan(1000);
+    const intervallo = await api('pdfAllegatoIntervallo', rPdf.fileName, 0, 5);
+    expect(intervallo.ok).toBe(true);
+    expect(Buffer.from(intervallo.dati).toString('latin1')).toBe('%PDF-');
+
+    // Un'immagine è un allegato, ma questa API non la legge.
+    expect((await api('pdfAllegatoInfo', rPng.fileName)).ok).toBe(false);
+    // Il percorso si riduce al nome: fuori dalla cartella allegati non si esce.
+    expect((await api('pdfAllegatoInfo', '..\\..\\' + rPdf.fileName)).ok).toBe(true);
+    expect((await api('pdfAllegatoInfo', 'C:\\Windows\\win.ini')).ok).toBe(false);
+    for (const [a, b] of [[-1, 10], [10, 5], [0, 64 * 1024 * 1024], [0.5, 10], ['0', 10]]) {
+      expect((await api('pdfAllegatoIntervallo', rPdf.fileName, a, b)).ok, `intervallo ${a}-${b}`).toBe(false);
+    }
+  });
+
   // S2 (REVIEW-SECURITY.md): un data-on-* in un HTML condiviso non deve diventare un comando.
   test('una trascrizione con data-on-* non chiama funzioni (sanitize, registro, editor)', async ({ page, userDataDir }) => {
     const { createLocalWorkspace, seedItems } = await import('./helpers');

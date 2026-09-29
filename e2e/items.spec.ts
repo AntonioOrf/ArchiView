@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Schede' });
+
 test.describe('Schede (manoscritti)', () => {
   test('crea, cerca e modifica una scheda', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schede');

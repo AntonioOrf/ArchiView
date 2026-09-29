@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     verificaHashAllegato: (fileName, expectedHash) => ipcRenderer.invoke('verifica-hash-allegato', fileName, expectedHash),
     mostraCartellaAllegato: (fileName) => ipcRenderer.invoke('mostra-cartella-allegato', fileName),
     getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
+    // Visualizzatore PDF della trascrizione: dimensione + primo pezzo, poi intervalli di byte.
+    pdfAllegatoInfo: (fileName) => ipcRenderer.invoke('pdf-allegato-info', fileName),
+    pdfAllegatoIntervallo: (fileName, inizio, fine) => ipcRenderer.invoke('pdf-allegato-intervallo', fileName, inizio, fine),
     getPathForFile: (file) => webUtils.getPathForFile(file),
     
     onRequestClose: (callback) => ipcRenderer.on('request-close', () => callback()),

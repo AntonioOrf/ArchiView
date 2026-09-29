@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, seedItems, openSidebarPanel } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Tags' });
+
 test.describe('Tag e Ricerca', () => {
   test('il pannello tag mostra i tag delle schede', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Tags');

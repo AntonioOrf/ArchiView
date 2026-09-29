@@ -84,3 +84,6 @@ graphify-out/
 # Configurazione locale di Claude Code e skill installate
 .claude/
 skills-lock.json
+PIANO-FUNZIONALITA.md
+REVIEW-FRONTEND.md
+REVIEW-SECURITY.md

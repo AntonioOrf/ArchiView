@@ -170,7 +170,15 @@ function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?) {
     confidenza,
     lingue,
     motore: 'tesseract',
-    pagine: pagine.map(p => ({ numero: p.numero, origine: p.origine, confidenza: p.confidenza })),
+    // L'HTML di ciascuna pagina, oltre al blocco unito: il renderer scrive ogni pagina di un
+    // PDF sulla SUA trascrizione. Rifarlo dividendo `html` sui marcatori sarebbe possibile,
+    // ma farebbe dipendere la scrittura dal formato di un testo pensato per essere letto.
+    pagine: pagine.map(p => ({
+      numero: p.numero,
+      origine: p.origine,
+      confidenza: p.confidenza,
+      html: p.righe && p.righe.length ? testoOcrInHtml(p.righe) : ''
+    })),
     paginePdf: paginePdf || pagine.length,
     pagineElaborate: pagineFatte || pagine.length,
     caratteri: piano.length

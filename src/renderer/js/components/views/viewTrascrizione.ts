@@ -77,15 +77,30 @@
 
             <div id="trascrizione-allegato-panel" class="flex-1 bg-stone-200/50 shadow-inner border border-stone-300/50 rounded-sm overflow-hidden relative flex flex-col transizione-larghezza hidden-tab min-w-[250px]">
                 <div id="trascrizione-thumbnails" class="flex gap-2 p-2 bg-stone-100 border-b border-stone-300 overflow-x-auto hidden-tab shrink-0"></div>
+                <!-- Barra del PDF: quale pagina, e la ricerca. Sta sopra la pagina e non
+                     nell'editor perché riguarda il documento; la pagina scelta qui porta con
+                     sé il testo di sinistra. Solo su un allegato PDF. -->
+                <div id="trasc-pdf-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
+                    <button id="btn-pdf-pagina-prec" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaPaginaPdfRelativa" data-args-click="[-1]" class="btn btn-ghost btn-icon rounded" data-i18n-title="pdf_prev_page" data-i18n-aria-label="pdf_prev_page"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                    <input id="trasc-pdf-pagina" type="number" min="1" inputmode="numeric" class="w-14 px-1 py-0.5 text-center border border-stone-300 rounded-sm bg-white tabular-nums" data-i18n-aria-label="pdf_page_number" data-on-change="vaiAPaginaPdfDaCampo">
+                    <span id="trasc-pdf-totale" class="tabular-nums whitespace-nowrap"></span>
+                    <button id="btn-pdf-pagina-succ" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaPaginaPdfRelativa" data-args-click="[1]" class="btn btn-ghost btn-icon rounded" data-i18n-title="pdf_next_page" data-i18n-aria-label="pdf_next_page"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                    <span id="trasc-pdf-stato" class="ml-2 italic text-stone-500 truncate" role="status" aria-live="polite"></span>
+                    <div class="flex-1"></div>
+                    <div class="relative">
+                        <input id="trasc-pdf-cerca" type="search" autocomplete="off" class="px-2 py-0.5 border border-stone-300 rounded-sm bg-white" data-i18n-placeholder="pdf_search_placeholder" data-i18n-aria-label="pdf_search_placeholder" aria-controls="trasc-pdf-risultati" placeholder="Cerca nel PDF">
+                        <ul id="trasc-pdf-risultati" class="hidden-tab mt-1 max-h-72 overflow-y-auto bg-white border border-stone-300 rounded-sm shadow-lg text-stone-800"></ul>
+                    </div>
+                </div>
                 <div class="flex-1 relative flex justify-center items-center overflow-hidden group">
                     <button id="btn-prev-allegato" data-on-click="cambiaAllegatoRelativo" data-args-click="[-1]" data-i18n-title="tooltip_prev" data-i18n-aria-label="tooltip_prev" class="btn btn-icon absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                     <!-- Fase 1.2 — stesso viewport del modal (zoom/pan/rotazione/filtri):
                          un solo componente, imageViewer.ts. Visibilità con hidden-tab, non
-                         con la utility hidden (vedi nota in imagePdfModal.ts). -->
+                         con la utility hidden (vedi nota in imagePdfModal.ts). Mostra anche
+                         le pagine dei PDF, disegnate da pdfViewer.ts. -->
                     <div id="trasc-img-viewport" class="iv-viewport hidden-tab" tabindex="0">
                         <img id="trasc-img-preview" alt="" class="max-w-full max-h-full object-contain" />
                     </div>
-                    <iframe id="trasc-pdf-preview" class="w-full h-full bg-white hidden" src=""></iframe>
                     <!-- Import IIIF — barra della carta remota. Compare solo quando la carta
                          in mostra arriva da un manifest e non è ancora stata scaricata:
                          porta l'attribuzione, che è un obbligo della licenza e non un

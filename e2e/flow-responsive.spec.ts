@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createFolder, seedItems } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Flow' });
+
 // Fase 6 — verifica dei percorsi che le fasi precedenti hanno toccato.
 test.describe('Percorsi di verifica', () => {
   test('6.2 — ricerca → cambio tab → cartella: griglia e chip filtri restano d\'accordo', async ({ page, userDataDir }) => {

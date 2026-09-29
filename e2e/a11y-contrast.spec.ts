@@ -4,6 +4,8 @@ import { preparaSchermateSecondarie } from './a11ySchermate';
 import * as fs from 'fs';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Contrasto' });
+
 // WCAG 1.4.3 — contrasto del testo misurato sul rendering reale, nei quattro temi.
 // Le classi Tailwind da sole non dicono nulla: style.css rimappa .text-stone-* sui token del
 // tema (con !important) e i modali scuri hanno un secondo remap. Si misura quindi il colore

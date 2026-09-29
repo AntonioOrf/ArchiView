@@ -4,6 +4,8 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'TestArchive' });
+
 // `appData` vive nello scope del bundle del renderer, non su `window`.
 declare const appData: any;
 

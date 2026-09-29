@@ -1672,6 +1672,25 @@ summary:focus:not(:focus-visible) { outline: none; }
     inset: 0;
 }
 
+/* Barra del PDF (pdfViewer.ts): la tendina dei risultati scende SOPRA la pagina disegnata.
+   Regole qui e non utility: `z-20`, `top-full` e le larghezze non sono nel tailwind.css
+   generato, e senza z-index la tendina finiva sotto il viewport, visibile ma non cliccabile. */
+#trasc-pdf-cerca {
+    width: 11rem;
+}
+#trasc-pdf-risultati {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 30;
+    width: 20rem;
+    max-width: 80vw;
+}
+#trasc-pdf-risultati button:hover,
+#trasc-pdf-risultati button:focus-visible {
+    background-color: var(--color-bg-hover);
+}
+
 /* ============================================================
    COMMAND PALETTE E SCORCIATOIE (Fase 1.4) — commandPalette.ts
    Colori dalle variabili di tema, non `dark:` sparse: la palette è un pannello

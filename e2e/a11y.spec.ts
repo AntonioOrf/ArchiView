@@ -3,6 +3,8 @@ import { createLocalWorkspace, createFolder, seedItems } from './helpers';
 import { preparaSchermateSecondarie } from './a11ySchermate';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'A11y' });
+
 // Fase 5 — coerenza tecnica e accessibilità.
 test.describe('Accessibilità e scala z-index', () => {
   test('5.1 — nessun z-index numerico fuori scala e ordine dei livelli rispettato', async ({ page, userDataDir }) => {

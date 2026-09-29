@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'A11yG' });
+
 // Fase 6 — effetti globali delle regole a11y introdotte con il Cloud modal.
 // Coprono superfici che vanno oltre il modal: live region condivisa, focus ring su
 // controlli non-.btn, prefers-reduced-motion, e i rami di driveLogic che nessun test

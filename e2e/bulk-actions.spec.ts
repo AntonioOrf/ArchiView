@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createFolder, dismissOverlays } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Massa' });
+
 /**
  * Fase 1.5 — azioni in massa, selezione dell'intero risultato e scorciatoie.
  *

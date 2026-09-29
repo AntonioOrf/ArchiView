@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Types' });
+
 test.describe('Tipi Documento', () => {
   test('apriNewTypeModal apre il modal di creazione', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');

@@ -28,8 +28,13 @@ type AVAllegato = {
   tipo: 'pdf' | 'immagine' | string;
   originalName?: string;
   hash?: string;
-  /** Trascrizione della singola carta (Fase 2.3-bis). */
+  /**
+   * Trascrizione della singola carta (Fase 2.3-bis). Su un PDF è la forma DERIVATA di
+   * `pagine`, con i marcatori `[p. N]` (vedi `componiPagineAllegato` in utils.ts).
+   */
   trascrizione?: string;
+  /** Solo PDF: trascrizione per pagina, indice 0 = p. 1. Pagine vuote = ''. */
+  pagine?: string[];
   /**
    * Import IIIF: la carta è un RIFERIMENTO, il file in `allegati_manoscritti/` non esiste
    * ancora. `nome` è comunque già deciso e riservato, così materializzare la carta fa

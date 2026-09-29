@@ -744,9 +744,6 @@ async function avviaApp() {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
             leftPanel.style.transition = 'none';
-            // Disabilita pointer events su iframe durante il drag
-            const iframe = document.getElementById('trasc-pdf-preview');
-            if (iframe) iframe.style.pointerEvents = 'none';
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -766,8 +763,6 @@ async function avviaApp() {
                 isResizing = false;
                 document.body.style.cursor = '';
                 leftPanel.style.transition = '';
-                const iframe = document.getElementById('trasc-pdf-preview');
-                if (iframe) iframe.style.pointerEvents = '';
 
                 appData.trascrizioneEditorWidth = leftPanel.style.width;
                 if (typeof salvaTutto === 'function') await salvaTutto();

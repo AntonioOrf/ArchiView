@@ -10,6 +10,13 @@
 // gli script del renderer in un unico scope.
 let _taRecordCorrente = null;
 let _taIndiceCorrente = 0;
+// Pagina del PDF agganciata all'editor, da 1. Zero quando la carta non è un PDF — o è un PDF
+// che non si è potuto aprire, e allora l'editor lavora sul testo dell'allegato intero.
+let _taPaginaCorrente = 0;
+// Cambiare carta è asincrono (verifica dell'hash, apertura del PDF): cliccando in fretta,
+// la continuazione di una richiesta vecchia NON deve agganciare l'editor alla sua carta
+// dopo che quella nuova lo ha già fatto. Ogni richiesta prende un numero; vince l'ultimo.
+let _taGenerazioneCarta = 0;
 
 /**
  * Travasa ciò che è nell'editor nell'allegato a cui è agganciato. Va chiamata PRIMA di
@@ -23,21 +30,46 @@ function _taSalvaEditorInMemoria() {
     if (!editor) return;
     const m = appData.manoscritti.find(x => String(x.id) === String(_taRecordCorrente));
     if (!m) return;
-    window.scriviTrascrizioneAllegato(m, _taIndiceCorrente, editor.innerHTML);
+    window.scriviTrascrizioneAllegato(m, _taIndiceCorrente, editor.innerHTML, _taPaginaCorrente);
 }
 
 /**
- * Carica nell'editor il testo della carta `indice`. NON tocca `trascrizioneNonSalvata`:
- * le modifiche pendenti su un'altra carta restano pendenti, e il flag deve continuare a
- * dire la verità finché non si salva davvero.
+ * Mentre un PDF si apre l'editor mostra ancora la carta precedente: se accettasse testo,
+ * quanto battuto in quell'istante verrebbe sostituito dalla pagina nuova e perso. Lo si
+ * blocca finché l'aggancio non è deciso; `_taCaricaEditor` lo sblocca sempre.
  */
-function _taCaricaEditor(m, indice) {
+let _taFuocoPrimaDelBlocco = false;
+function _taBloccaEditor(bloccato) {
+    const editor = document.getElementById('trascrizione-editor');
+    if (!editor) return;
+    if (bloccato && editor.getAttribute('contenteditable') !== 'false') {
+        _taFuocoPrimaDelBlocco = document.activeElement === editor;
+    }
+    editor.setAttribute('contenteditable', bloccato ? 'false' : 'true');
+    if (bloccato) editor.setAttribute('aria-busy', 'true');
+    else editor.removeAttribute('aria-busy');
+}
+
+/**
+ * Carica nell'editor il testo della carta `indice` (e della pagina `pagina`, se PDF). NON
+ * tocca `trascrizioneNonSalvata`: le modifiche pendenti su un'altra carta restano pendenti,
+ * e il flag deve continuare a dire la verità finché non si salva davvero.
+ */
+function _taCaricaEditor(m, indice, pagina = 0) {
     const editor = document.getElementById('trascrizione-editor');
     if (!editor || !m) return;
-    const testo = window.leggiTrascrizioneAllegato(m, indice);
+    const testo = window.leggiTrascrizioneAllegato(m, indice, pagina);
+    const bloccato = editor.getAttribute('contenteditable') === 'false';
+    const avevaFuoco = bloccato ? _taFuocoPrimaDelBlocco : document.activeElement === editor;
     editor.innerHTML = window.sanitizeHTML(testo || '<p><br></p>');
     _taRecordCorrente = m.id;
     _taIndiceCorrente = indice;
+    _taPaginaCorrente = pagina;
+    _taBloccaEditor(false);
+    _taFuocoPrimaDelBlocco = false;
+    // Il blocco durante l'apertura del PDF toglie il fuoco all'editor: chi sfogliava con
+    // Alt+freccia deve poter continuare a scrivere senza tornare a cliccare nel testo.
+    if (avevaFuoco) editor.focus();
     _taAggiornaEtichetta(m, indice);
 }
 
@@ -46,27 +78,37 @@ function _taAggiornaEtichetta(m, indice) {
     const barra = document.getElementById('trascrizione-carta');
     if (!barra) return;
     const allegati = (m && Array.isArray(m.allegati)) ? m.allegati : [];
-    if (allegati.length < 2) {
+    const totPagine = _taPaginaCorrente > 0 ? window.PdfViewer.numeroPagine() : 0;
+    if (allegati.length < 2 && totPagine < 2) {
         barra.classList.add('hidden-tab');
         return;
     }
     const a = allegati[indice];
     const nome = (a && (a.originalName || a.nome)) || String(indice + 1);
-    barra.textContent = window.t('trasc_current_sheet', 'Carta {var0} di {var1} — {var2}')
+    let testo = allegati.length < 2 ? nome : window.t('trasc_current_sheet', 'Carta {var0} di {var1} — {var2}')
         .replace('{var0}', String(indice + 1))
         .replace('{var1}', String(allegati.length))
         .replace('{var2}', nome);
+    if (totPagine > 1) {
+        testo += ', ' + window.t('trasc_page_of', 'p. {var0} di {var1}')
+            .replace('{var0}', String(_taPaginaCorrente))
+            .replace('{var1}', String(totPagine));
+    }
+    barra.textContent = testo;
     barra.classList.remove('hidden-tab');
 }
 
 /** Riaggancio dall'esterno (l'OCR scrive sul record e vuole vedere l'editor aggiornato). */
 window.ricaricaEditorTrascrizione = function(m, indice) {
     if (!m || String(_taRecordCorrente) !== String(m.id)) return false;
-    _taCaricaEditor(m, typeof indice === 'number' ? indice : _taIndiceCorrente);
+    // La pagina resta quella aperta: dopo un riordino l'indice cambia ma il PDF è lo stesso.
+    _taCaricaEditor(m, typeof indice === 'number' ? indice : _taIndiceCorrente, _taPaginaCorrente);
     return true;
 };
 
+window.salvaEditorTrascrizioneInMemoria = _taSalvaEditorInMemoria;
 window.indiceCartaCorrente = function() { return _taIndiceCorrente; };
+window.paginaPdfCorrente = function() { return _taPaginaCorrente; };
 
 async function apriTrascrizione(id) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
@@ -84,8 +126,11 @@ async function apriTrascrizione(id) {
     // L'aggancio parte SEMPRE dalla prima carta: `cambiaAllegatoTrascrizione` più sotto
     // conferma o cambia l'indice, e senza questa riga il primo travaso finirebbe
     // sull'indice lasciato dalla scheda precedente.
+    // Invalida anche un cambio di carta ancora in volo sulla scheda precedente.
+    _taGenerazioneCarta++;
     _taRecordCorrente = m.id;
     _taIndiceCorrente = 0;
+    _taPaginaCorrente = 0;
     _taCaricaEditor(m, 0);
     window.trascrizioneNonSalvata = false;
     
@@ -99,14 +144,12 @@ async function apriTrascrizione(id) {
     const btnOcr = document.getElementById('btn-ocr-trasc');
     
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
-    const pdfPreview = document.getElementById('trasc-pdf-preview');
     const noAllegato = document.getElementById('trasc-no-allegato');
 
     window.nascondiAnteprimaImmagine();
-    pdfPreview.classList.add('hidden');
+    _taNascondiBarraPdf();
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
-    pdfPreview.src = '';
 
     const thumbContainer = document.getElementById('trascrizione-thumbnails');
     if (thumbContainer) thumbContainer.innerHTML = window.sanitizeHTML('');
@@ -188,7 +231,9 @@ window.renderThumbnailsTrascrizione = function(id) {
                     await salvaTutto();
                     if(typeof renderMain === 'function') renderMain();
                     window.renderThumbnailsTrascrizione(id);
-                    window.cambiaAllegatoTrascrizione(m.allegati[window.currentAllegatoIndex || 0].nome, m.allegati[window.currentAllegatoIndex || 0].tipo, window.currentAllegatoIndex || 0);
+                    const ic = window.currentAllegatoIndex || 0;
+                    // Rinominare non è voltare pagina: si resta dove si era.
+                    window.cambiaAllegatoTrascrizione(m.allegati[ic].nome, m.allegati[ic].tipo, ic, _taPaginaCorrente || undefined);
                 });
             };
 
@@ -261,7 +306,35 @@ window.renderThumbnailsTrascrizione = function(id) {
     }
 };
 
-window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
+/**
+ * Frecce sopra l'allegato. Sono continue: dentro un PDF scorrono le pagine, al bordo passano
+ * alla carta vicina — il codice si sfoglia come una sequenza sola, qualunque sia la forma in
+ * cui le carte sono arrivate.
+ */
+function _taAggiornaNavigazione(m, index) {
+    const btnPrev = document.getElementById('btn-prev-allegato');
+    const btnNext = document.getElementById('btn-next-allegato');
+    if (!btnPrev || !btnNext || !m) return;
+    const n = (m.allegati || []).length;
+    const totPagine = _taPaginaCorrente > 0 ? window.PdfViewer.numeroPagine() : 0;
+    if (n > 1 || totPagine > 1) {
+        btnPrev.classList.remove('hidden');
+        btnNext.classList.remove('hidden');
+        btnPrev.style.display = (index > 0 || _taPaginaCorrente > 1) ? 'block' : 'none';
+        btnNext.style.display = (index < n - 1 || (totPagine > 0 && _taPaginaCorrente < totPagine)) ? 'block' : 'none';
+    } else {
+        btnPrev.classList.add('hidden');
+        btnNext.classList.add('hidden');
+    }
+}
+
+/**
+ * `pagina` vale solo per i PDF: omessa è la prima, -1 è l'ultima (ci si arriva tornando
+ * indietro dalla carta successiva).
+ */
+window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
+    const generazione = ++_taGenerazioneCarta;
+    const superata = () => generazione !== _taGenerazioneCarta;
     // Fase 2.3-bis: il travaso deve precedere `_taCaricaEditor`, che è ciò che sposta
     // `_taIndiceCorrente` sulla carta nuova. Senza questa riga, quanto battuto sulla carta
     // che si sta lasciando non verrebbe mai messo al sicuro e sparirebbe al primo cambio:
@@ -271,23 +344,13 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     window.currentAllegatoIndex = index;
     const id = document.getElementById('trascrizione-id').value;
     const m = appData.manoscritti.find(x => x.id === id);
+    const isPdf = tipo === 'pdf';
     if (m) {
-        _taCaricaEditor(m, index);
-        let allegatiRender = m.allegati || [];
-        const btnPrev = document.getElementById('btn-prev-allegato');
-        const btnNext = document.getElementById('btn-next-allegato');
-        if (btnPrev && btnNext) {
-            if (allegatiRender.length > 1) {
-                btnPrev.classList.remove('hidden');
-                btnNext.classList.remove('hidden');
-                btnPrev.style.display = index > 0 ? 'block' : 'none';
-                btnNext.style.display = index < allegatiRender.length - 1 ? 'block' : 'none';
-            } else {
-                btnPrev.classList.add('hidden');
-                btnNext.classList.add('hidden');
-            }
-        }
-        
+        // Un PDF si aggancia solo quando se ne conosce la pagina, cioè dopo averlo aperto.
+        if (isPdf) _taBloccaEditor(true);
+        else _taCaricaEditor(m, index);
+        _taAggiornaNavigazione(m, index);
+
         const thumbBtns = document.querySelectorAll('#trascrizione-thumbnails .allegato-btn');
         thumbBtns.forEach((btn, i) => {
             if (i === index) {
@@ -301,16 +364,19 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
     }
 
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
-    const pdfPreview = document.getElementById('trasc-pdf-preview');
     const noAllegato = document.getElementById('trasc-no-allegato');
 
     window.nascondiAnteprimaImmagine();
-    pdfPreview.classList.add('hidden');
+    _taNascondiBarraPdf();
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
-    pdfPreview.src = '';
+
+    // Se il PDF non si può mostrare, l'editor lavora sul testo dell'allegato intero: meglio
+    // una trascrizione con i marcatori di pagina in vista che un editor bloccato.
+    const agganciaSenzaPagine = () => { if (m && isPdf) _taCaricaEditor(m, index, 0); };
 
     if (!nome) {
+        agganciaSenzaPagine();
         noAllegato.classList.remove('hidden');
         return;
     }
@@ -322,6 +388,8 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
 
     if (expectedHash && window.apiBrowser && window.apiBrowser.verificaHashAllegato) {
         const result = await window.apiBrowser.verificaHashAllegato(nome, expectedHash);
+        if (superata()) return;
+        if (result.status === 'missing' || result.status === 'corrupted') agganciaSenzaPagine();
         if (result.status === 'missing') {
             const hubBtn = window.hubConfig ? `
                 <button id="btn-scarica-allegato-hub" class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-sm transition-colors">
@@ -390,9 +458,18 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
 
     const allegato = (m && m.allegati && m.allegati[index]) || { nome, tipo };
 
-    if (tipo === 'pdf') {
-        pdfPreview.src = window.srcAllegato(allegato, { cacheBuster: true, frammento: '#pagemode=none' });
-        pdfPreview.classList.remove('hidden');
+    if (isPdf) {
+        const r = await window.PdfViewer.apri(nome);
+        if (superata()) return;
+        if (!r.ok || !m) {
+            agganciaSenzaPagine();
+            _taMostraErrorePdf();
+            return;
+        }
+        const n = pagina === -1 ? r.pagine : Math.min(Math.max(1, Number(pagina) || 1), r.pagine);
+        _taCaricaEditor(m, index, n);
+        _taAggiornaNavigazione(m, index);
+        await _taMostraPaginaPdf(m, index, n);
     } else {
         const altName = allegato.originalName || window.t('attachment_image', 'Immagine');
         imgPreview.alt = altName;
@@ -423,6 +500,245 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index) {
 
     window.aggiornaBarraIiif(m, index);
 };
+
+// --- PDF: pagina per pagina ---------------------------------------------------
+
+function _taNascondiBarraPdf() {
+    const barra = document.getElementById('trasc-pdf-bar');
+    if (barra) barra.classList.add('hidden-tab');
+    _taChiudiRisultatiPdf();
+}
+
+function _taMostraErrorePdf() {
+    const noAllegato = document.getElementById('trasc-no-allegato');
+    if (!noAllegato) return;
+    window.nascondiAnteprimaImmagine();
+    _taNascondiBarraPdf();
+    noAllegato.innerHTML = window.sanitizeHTML(
+        '<div class="text-stone-400 mb-2"><i data-lucide="file-x" class="w-12 h-12 mx-auto text-amber-500"></i></div>' +
+        `<h3 class="text-lg font-medium text-stone-300">${escapeHTML(window.t('pdf_open_failed_title', 'PDF non leggibile'))}</h3>` +
+        `<p class="text-sm text-stone-500 mt-1 max-w-md mx-auto">${escapeHTML(window.t('pdf_open_failed_desc', 'Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile.'))}</p>`
+    );
+    noAllegato.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons({ nodes: [noAllegato] });
+}
+
+/** Disegna la pagina `n` e allinea la barra. Il testo dell'editor lo aggancia il chiamante. */
+async function _taMostraPaginaPdf(m, index, n) {
+    const barra = document.getElementById('trasc-pdf-bar');
+    const campo = document.getElementById('trasc-pdf-pagina') as HTMLInputElement;
+    const totale = window.PdfViewer.numeroPagine();
+    if (barra) barra.classList.remove('hidden-tab');
+    if (campo) {
+        campo.value = String(n);
+        campo.max = String(totale);
+    }
+    const etTotale = document.getElementById('trasc-pdf-totale');
+    if (etTotale) etTotale.textContent = '/ ' + totale;
+    const prec = document.getElementById('btn-pdf-pagina-prec') as HTMLButtonElement;
+    const succ = document.getElementById('btn-pdf-pagina-succ') as HTMLButtonElement;
+    if (prec) prec.disabled = n <= 1;
+    if (succ) succ.disabled = n >= totale;
+
+    const img = document.getElementById('trasc-img-preview') as HTMLImageElement;
+    const viewport = document.getElementById('trasc-img-viewport');
+    const a = m && m.allegati ? m.allegati[index] : null;
+    img.onerror = null;
+    img.alt = ((a && (a.originalName || a.nome)) || 'PDF') + ', ' +
+        window.t('trasc_page_of', 'p. {var0} di {var1}').replace('{var0}', String(n)).replace('{var1}', String(totale));
+    window.mostraAnteprimaImmagine();
+    try {
+        await window.PdfViewer.mostraPagina(n, img, viewport);
+    } catch (e) {
+        console.error('[PDF] Resa della pagina fallita:', e);
+        _taMostraErrorePdf();
+    }
+}
+
+/**
+ * Cambio di pagina dentro il PDF aperto. Stessa regola del cambio di carta: prima si mette
+ * al sicuro il testo della pagina che si lascia, poi si aggancia quella nuova.
+ */
+window.cambiaPaginaPdf = async function(pagina) {
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    const index = _taIndiceCorrente;
+    const a = m && m.allegati ? m.allegati[index] : null;
+    const totale = window.PdfViewer.numeroPagine();
+    if (!a || a.tipo !== 'pdf' || !totale || _taPaginaCorrente < 1) return;
+    const n = Math.min(Math.max(1, Math.floor(Number(pagina)) || 1), totale);
+    if (n === _taPaginaCorrente) return;
+    // Un cambio di carta ancora in volo non deve poi riagganciare l'editor sopra questo.
+    _taGenerazioneCarta++;
+    _taSalvaEditorInMemoria();
+    _taCaricaEditor(m, index, n);
+    _taAggiornaNavigazione(m, index);
+    await _taMostraPaginaPdf(m, index, n);
+};
+
+window.cambiaPaginaPdfRelativa = function(dir) {
+    if (_taPaginaCorrente > 0) window.cambiaPaginaPdf(_taPaginaCorrente + dir);
+};
+
+window.vaiAPaginaPdfDaCampo = function() {
+    const campo = document.getElementById('trasc-pdf-pagina') as HTMLInputElement;
+    if (!campo) return;
+    const n = Number(campo.value);
+    if (!Number.isFinite(n) || n < 1) { campo.value = String(_taPaginaCorrente || 1); return; }
+    window.cambiaPaginaPdf(n);
+};
+
+// --- PDF: ricerca --------------------------------------------------------------
+//
+// Cerca in due testi: il livello testo del PDF (vuoto sulle scansioni non passate da un OCR)
+// e le trascrizioni per pagina. Il secondo è quello che conta su un manoscritto: il PDF di
+// una riproduzione non contiene parole, la trascrizione sì.
+
+let _taTimerRicercaPdf = null;
+
+function _taChiudiRisultatiPdf() {
+    const lista = document.getElementById('trasc-pdf-risultati');
+    if (lista) { lista.classList.add('hidden-tab'); lista.innerHTML = ''; }
+    const campo = document.getElementById('trasc-pdf-cerca');
+    if (campo) campo.setAttribute('aria-expanded', 'false');
+}
+
+function _taStatoPdf(testo) {
+    const stato = document.getElementById('trasc-pdf-stato');
+    if (stato) stato.textContent = testo || '';
+}
+
+/** Pagine della trascrizione che contengono `q`, con estratto. Solo testo, niente markup. */
+function _taCercaNelleTrascrizioni(m, index, q) {
+    const a = m && m.allegati ? m.allegati[index] : null;
+    if (!a) return [];
+    window.migraTrascrizionePdfSuPagine(a);
+    const pagine = Array.isArray(a.pagine) ? a.pagine : [];
+    const out = [];
+    // <template> e non <div>: il suo contenuto è inerte, un <img> dentro una trascrizione non
+    // parte a caricare solo perché la si sta cercando.
+    const contenitore = document.createElement('template');
+    for (let k = 0; k < pagine.length; k++) {
+        if (!window.trascrizioneHaTesto(pagine[k])) continue;
+        // Testo dal DOM, non regex sui tag: le entità (&amp;, &nbsp;) vanno decodificate o
+        // "Pietro &amp; Paolo" non si troverebbe cercando "&".
+        contenitore.innerHTML = window.sanitizeHTML(pagine[k]);
+        const testo = contenitore.content.textContent || '';
+        const i = window.normalizzaTesto(testo).indexOf(q);
+        if (i !== -1) out.push({ pagina: k + 1, estratto: window.estrattoAttorno(testo, i, q.length) });
+    }
+    return out;
+}
+
+async function _taEseguiRicercaPdf(query) {
+    const id = document.getElementById('trascrizione-id').value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    const lista = document.getElementById('trasc-pdf-risultati');
+    const campo = document.getElementById('trasc-pdf-cerca');
+    const q = window.normalizzaTesto(query).trim();
+    if (!m || !lista || !q || _taPaginaCorrente < 1) { _taChiudiRisultatiPdf(); _taStatoPdf(''); return; }
+
+    // Il testo che l'utente sta battendo fa parte della ricerca.
+    _taSalvaEditorInMemoria();
+    const index = _taIndiceCorrente;
+    const daTrascrizione = _taCercaNelleTrascrizioni(m, index, q);
+
+    const risultatiPdf = await window.PdfViewer.cerca(query, (n, tot) => {
+        _taStatoPdf(window.t('pdf_searching', 'Ricerca… {var0}/{var1}').replace('{var0}', String(n)).replace('{var1}', String(tot)));
+    });
+    if (risultatiPdf === null) return; // superata da una ricerca più recente
+
+    const voci = [
+        ...daTrascrizione.map(r => ({ ...r, fonte: 'trascrizione' })),
+        ...risultatiPdf.map(r => ({ ...r, fonte: 'pdf' }))
+    ].sort((x, y) => x.pagina - y.pagina || (x.fonte === 'trascrizione' ? -1 : 1));
+
+    lista.innerHTML = '';
+    const pagineTrovate = new Set(voci.map(v => v.pagina)).size;
+    _taStatoPdf(pagineTrovate
+        ? window.t('pdf_results', 'Trovato in {var0} pagine').replace('{var0}', String(pagineTrovate))
+        : window.t('pdf_no_results', 'Nessun risultato'));
+    if (!voci.length) { _taChiudiRisultatiPdf(); return; }
+
+    const fonti = {
+        trascrizione: window.t('pdf_source_transcription', 'Trascrizione'),
+        pdf: window.t('pdf_source_pdf', 'Testo del PDF')
+    };
+    for (const v of voci) {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'w-full text-left px-2 py-1.5 border-b border-stone-100 text-xs';
+        // textContent ovunque: estratti e fonti vengono da un file e da una trascrizione.
+        const testa = document.createElement('span');
+        testa.className = 'font-semibold';
+        testa.textContent = 'p. ' + v.pagina;
+        const fonte = document.createElement('span');
+        fonte.className = 'ml-2 text-stone-500';
+        fonte.textContent = fonti[v.fonte];
+        const estratto = document.createElement('span');
+        estratto.className = 'block text-stone-600 truncate';
+        estratto.textContent = v.estratto;
+        btn.append(testa, fonte, estratto);
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
+        btn.addEventListener('click', () => {
+            _taChiudiRisultatiPdf();
+            window.cambiaPaginaPdf(v.pagina);
+        });
+        li.appendChild(btn);
+        lista.appendChild(li);
+    }
+    lista.classList.remove('hidden-tab');
+    if (campo) campo.setAttribute('aria-expanded', 'true');
+}
+
+/** Ascoltatori della barra PDF: una volta sola, la vista è creata una volta sola. */
+function _taAgganciaBarraPdf() {
+    const campo = document.getElementById('trasc-pdf-cerca') as HTMLInputElement;
+    if (!campo || campo.dataset.agganciato) return;
+    campo.dataset.agganciato = '1';
+    campo.addEventListener('input', () => {
+        clearTimeout(_taTimerRicercaPdf);
+        _taTimerRicercaPdf = setTimeout(() => _taEseguiRicercaPdf(campo.value), 250);
+    });
+    campo.addEventListener('keydown', (e) => {
+        const lista = document.getElementById('trasc-pdf-risultati');
+        if (e.key === 'Escape') {
+            if (lista && !lista.classList.contains('hidden-tab')) {
+                e.preventDefault();
+                e.stopPropagation();
+                _taChiudiRisultatiPdf();
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const primo = lista && lista.querySelector('button');
+            if (primo) (primo as HTMLButtonElement).click();
+        } else if (e.key === 'ArrowDown') {
+            const primo = lista && lista.querySelector('button');
+            if (primo) { e.preventDefault(); (primo as HTMLButtonElement).focus(); }
+        }
+    });
+    const lista = document.getElementById('trasc-pdf-risultati');
+    if (lista) {
+        lista.addEventListener('keydown', (e) => {
+            const voci = Array.from(lista.querySelectorAll('button'));
+            const i = voci.indexOf(document.activeElement as HTMLButtonElement);
+            if (e.key === 'ArrowDown' && i < voci.length - 1) { e.preventDefault(); voci[i + 1].focus(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); (i > 0 ? voci[i - 1] : campo).focus(); }
+            else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); _taChiudiRisultatiPdf(); campo.focus(); }
+        });
+    }
+    // PagSu/PagGiù sul visualizzatore: sfogliano come le frecce, attraversando le carte.
+    const viewport = document.getElementById('trasc-img-viewport');
+    if (viewport) {
+        viewport.addEventListener('keydown', (e) => {
+            if (e.key !== 'PageDown' && e.key !== 'PageUp') return;
+            e.preventDefault();
+            window.cambiaAllegatoRelativo(e.key === 'PageDown' ? 1 : -1);
+        });
+    }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(_taAgganciaBarraPdf, 0));
 
 // --- Import IIIF: carte remote ------------------------------------------------
 
@@ -571,10 +887,20 @@ window.cambiaAllegatoRelativo = function(dir) {
     if (!m) return;
     
     let allegatiRender = m.allegati || [];
+    const corrente = allegatiRender[window.currentAllegatoIndex || 0];
+    // Dentro un PDF si scorrono prima le pagine; al bordo si passa alla carta vicina.
+    if (corrente && corrente.tipo === 'pdf' && _taPaginaCorrente > 0) {
+        const n = _taPaginaCorrente + dir;
+        if (n >= 1 && n <= window.PdfViewer.numeroPagine()) {
+            window.cambiaPaginaPdf(n);
+            return;
+        }
+    }
     let newIndex = (window.currentAllegatoIndex || 0) + dir;
     if (newIndex >= 0 && newIndex < allegatiRender.length) {
         const al = allegatiRender[newIndex];
-        window.cambiaAllegatoTrascrizione(al.nome, al.tipo, newIndex);
+        // Tornando indietro su un PDF si entra dalla sua ultima pagina, come voltando carta.
+        window.cambiaAllegatoTrascrizione(al.nome, al.tipo, newIndex, dir < 0 && al.tipo === 'pdf' ? -1 : undefined);
     }
 };
 
@@ -621,8 +947,10 @@ window.confermaUscitaTrascrizione = function() {
         switchTab('list');
     }
     
-    // Prima di chiudere fermiamo l'iframe
-    document.getElementById('trasc-pdf-preview').src = '';
+    // Il PDF aperto tiene worker, documento e pagine disegnate: fuori dalla vista non serve.
+    _taGenerazioneCarta++;
+    _taNascondiBarraPdf();
+    window.PdfViewer.chiudi();
     
     // Resetta l'espansione dell'editor prima di tornare indietro
     const editorPanel = document.getElementById('trascrizione-editor-panel');

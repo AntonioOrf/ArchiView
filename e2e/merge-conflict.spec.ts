@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, injectConflict } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Merge' });
+
 test.describe('Conflitti di merge (dati iniettati)', () => {
   test('rilevaConflitti individua un conflitto 3-way sul campo modificato da entrambi', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');

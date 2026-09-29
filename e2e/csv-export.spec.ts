@@ -4,6 +4,8 @@ import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 import * as fs from 'fs';
 
+test.use({ seedWorkspace: 'Csv' });
+
 /**
  * Fase 2.1 — esportazione CSV/TSV.
  *

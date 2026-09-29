@@ -5,6 +5,16 @@ import * as path from 'path';
 
 type DialogResult = { canceled?: boolean; filePaths?: string[]; filePath?: string };
 
+type ArchiViewOptions = {
+  /**
+   * Nome dell'archivio da pre-seminare in `userDataDir/ws/<nome>` PRIMA del lancio: l'app
+   * parte già dentro il workspace, senza welcome modal, reload del renderer e changelog.
+   * Opt-in per file (`test.use({ seedWorkspace: 'Fase3' })`): chi testa il primo avvio o il
+   * welcome flow lascia il default `undefined` e ottiene l'app vergine di sempre.
+   */
+  seedWorkspace: string | undefined;
+};
+
 type ArchiViewFixtures = {
   /** userData temporanea, isolata per ogni test. */
   userDataDir: string;
@@ -15,6 +25,30 @@ type ArchiViewFixtures = {
 };
 
 const repoRoot = path.resolve(__dirname, '..');
+const appVersion: string = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')).version;
+
+/**
+ * Pagine avviate su un workspace pre-seminato → percorso del workspace. Letta da
+ * createLocalWorkspace (helpers.ts), che in quel caso salta il welcome flow.
+ */
+export const seededWorkspaces = new WeakMap<Page, string>();
+
+/**
+ * Scrive su disco lo stato che il welcome flow lascerebbe dopo "Crea Nuova Cartella Locale"
+ * (vedi create-workspace-in-path → initWorkspace): cartella del workspace + settings.json che
+ * la punta. Il resto (.archiview-vault.json, allegati_manoscritti/) lo crea initWorkspace al
+ * boot. `lastSeenVersion` = versione corrente: il changelog del primo avvio non compare.
+ * Misurato: risparmia ~0,7s per test in seriale (welcome + reload), di più sotto contesa.
+ */
+function seedWorkspaceOnDisk(userDataDir: string, name: string): string {
+  const ws = path.join(userDataDir, 'ws', name);
+  fs.mkdirSync(ws, { recursive: true });
+  fs.writeFileSync(
+    path.join(userDataDir, 'settings.json'),
+    JSON.stringify({ workspacePath: ws, recentWorkspaces: [ws], lastSeenVersion: appVersion }, null, 2),
+  );
+  return ws;
+}
 
 /**
  * Avvia l'app Electron con una userData temporanea e la env var di isolamento.
@@ -86,7 +120,9 @@ export async function stubDialog(app: ElectronApplication, result: DialogResult)
   }, result);
 }
 
-export const test = base.extend<ArchiViewFixtures>({
+export const test = base.extend<ArchiViewFixtures & ArchiViewOptions>({
+  seedWorkspace: [undefined, { option: true }],
+
   userDataDir: async ({}, use) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archiview-e2e-'));
     await use(dir);
@@ -96,14 +132,16 @@ export const test = base.extend<ArchiViewFixtures>({
     } catch { /* i lock di Chromium possono ritardare la rimozione: ignora */ }
   },
 
-  electronApp: async ({ userDataDir }, use) => {
+  electronApp: async ({ userDataDir, seedWorkspace }, use) => {
+    if (seedWorkspace) seedWorkspaceOnDisk(userDataDir, seedWorkspace);
     const { app } = await launchApp(userDataDir);
     await use(app);
     await closeApp(app);
   },
 
-  page: async ({ electronApp }, use) => {
+  page: async ({ electronApp, userDataDir, seedWorkspace }, use) => {
     const page = await electronApp.firstWindow();
+    if (seedWorkspace) seededWorkspaces.set(page, path.join(userDataDir, 'ws', seedWorkspace));
     await use(page);
   },
 });

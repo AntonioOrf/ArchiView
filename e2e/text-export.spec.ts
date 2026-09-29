@@ -4,6 +4,8 @@ import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 import * as fs from 'fs';
 
+test.use({ seedWorkspace: 'Export' });
+
 /**
  * Fasi 2.5 e 2.6 — export della trascrizione (HTML, Markdown, RTF) e citazioni (BibTeX, RIS).
  *

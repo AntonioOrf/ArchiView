@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createItemWithAttachment } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Tour' });
+
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 
 /**

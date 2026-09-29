@@ -4,8 +4,12 @@ import * as path from 'path';
 
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 const FIXTURE_PDF = path.join(__dirname, 'fixtures', 'sample.pdf');
+// Tre pagine con testo distinto ("Pagina uno alfa", "… due beta", "… tre gamma").
+const FIXTURE_PDF3 = path.join(__dirname, 'fixtures', 'multipage.pdf');
 
 test.describe('Vista Trascrizione', () => {
+  test.use({ seedWorkspace: 'Trasc' });
+
   test('apertura con allegato immagine mostra editor e anteprima', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-IMG', FIXTURE_PNG);
@@ -22,7 +26,7 @@ test.describe('Vista Trascrizione', () => {
   });
 
   test('O4 — aperta, la vista tiene il fuoco: l app coperta non si raggiunge col Tab', async ({ page, userDataDir }) => {
-    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trascrizione');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-FOCUS', FIXTURE_PNG);
     // L'invito al tutorial compare 1,5s dopo l'avvio, nel flusso della pagina: se era già a
     // schermo aprendo la vista, i suoi pulsanti (coperti) restavano raggiungibili col Tab.
@@ -53,14 +57,14 @@ test.describe('Vista Trascrizione', () => {
     expect(await page.evaluate(() => (document.querySelector('main')!.parentElement as any).inert)).toBe(false);
   });
 
-  test('apertura con allegato PDF mostra la preview PDF', async ({ page, userDataDir }) => {
+  test('apertura con allegato PDF mostra la pagina disegnata da pdf.js', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-PDF', FIXTURE_PDF);
 
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
-    await expect(page.locator('#trasc-pdf-preview')).toBeVisible();
-    const src = await page.locator('#trasc-pdf-preview').getAttribute('src');
-    expect(src).toBeTruthy();
+    await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
+    await expect(page.locator('#trasc-img-preview')).toHaveAttribute('src', /^blob:/);
+    await expect(page.locator('#trasc-pdf-totale')).toHaveText('/ 1');
   });
 
   test('thumbnails e navigazione tra due allegati', async ({ page, userDataDir }) => {
@@ -75,9 +79,10 @@ test.describe('Vista Trascrizione', () => {
 
     await expect(page.locator('#btn-next-allegato')).toBeVisible();
     await page.locator('#btn-next-allegato').click();
-    await expect(page.locator('#trasc-pdf-preview')).toBeVisible();
+    await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
 
     await page.locator('#btn-prev-allegato').click();
+    await expect(page.locator('#trasc-pdf-bar')).toBeHidden();
     await expect(page.locator('#trasc-img-preview')).toBeVisible();
   });
 
@@ -90,9 +95,10 @@ test.describe('Vista Trascrizione', () => {
 
     await page.locator('#view-trascrizione').click();
     await page.keyboard.press('Alt+ArrowRight');
-    await expect(page.locator('#trasc-pdf-preview')).toBeVisible();
+    await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
 
     await page.keyboard.press('Alt+ArrowLeft');
+    await expect(page.locator('#trasc-pdf-bar')).toBeHidden();
     await expect(page.locator('#trasc-img-preview')).toBeVisible();
   });
 
@@ -295,5 +301,120 @@ test.describe('Vista Trascrizione', () => {
     const una = await createItemWithAttachment(page, 'MS-CARTE-6', FIXTURE_PNG);
     await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), una);
     await expect(page.locator('#trascrizione-carta')).toBeHidden();
+  });
+});
+
+test.describe('Trascrizione per pagina nei PDF', () => {
+  test.use({ seedWorkspace: 'Pagine' });
+
+  const editor = (page) => page.locator('#trascrizione-editor');
+  const paginaAperta = (page) => page.locator('#trasc-pdf-pagina');
+
+  test('il testo segue la pagina, e sopravvive al salvataggio e alla riapertura', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Pagine');
+    const id = await createItemWithAttachment(page, 'MS-PDF-PAG', FIXTURE_PDF3);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+
+    await expect(page.locator('#trasc-pdf-totale')).toHaveText('/ 3');
+    await expect(page.locator('#trascrizione-carta')).toContainText('p. 1 di 3');
+
+    await editor(page).click();
+    await page.keyboard.type('Testo prima pagina');
+    // I pulsanti di pagina non rubano il fuoco: si continua a scrivere senza cliccare.
+    await page.locator('#btn-pdf-pagina-succ').click();
+    await expect(paginaAperta(page)).toHaveValue('2');
+    await expect(page.locator('#trascrizione-carta')).toContainText('p. 2 di 3');
+    await expect(editor(page)).not.toContainText('Testo prima pagina');
+    await expect(editor(page)).toBeFocused();
+    await page.keyboard.type('Testo seconda pagina');
+
+    await page.locator('#btn-pdf-pagina-prec').click();
+    await expect(editor(page)).toContainText('Testo prima pagina');
+    await expect(editor(page)).not.toContainText('Testo seconda pagina');
+
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('#toast-container')).toBeVisible({ timeout: 8_000 });
+    const rec = (await getAppData(page)).manoscritti.find((m: any) => m.id === id);
+    expect(rec.allegati[0].pagine[0]).toContain('Testo prima pagina');
+    expect(rec.allegati[0].pagine[1]).toContain('Testo seconda pagina');
+    expect(rec.allegati[0].pagine).toHaveLength(2);
+    // La derivata della scheda porta i numeri di pagina: è ciò che leggono ricerca ed export.
+    expect(rec.trascrizione).toContain('[p. 2]');
+
+    await page.evaluate(() => (window as any).chiudiTrascrizione());
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(editor(page)).toContainText('Testo prima pagina');
+    await paginaAperta(page).fill('2');
+    await paginaAperta(page).press('Enter');
+    await expect(editor(page)).toContainText('Testo seconda pagina');
+  });
+
+  test('le frecce sono continue: pagine del PDF, poi la carta vicina', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Pagine');
+    const id = await createItemWithAttachment(page, 'MS-PDF-NAV', FIXTURE_PDF3);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PNG);
+    await expect(page.locator('#trascrizione-thumbnails .allegato-btn')).toHaveCount(2);
+    await expect(paginaAperta(page)).toHaveValue('1');
+
+    await page.locator('#btn-next-allegato').click();
+    await expect(paginaAperta(page)).toHaveValue('2');
+    await page.locator('#btn-next-allegato').click();
+    await expect(paginaAperta(page)).toHaveValue('3');
+    // Dall'ultima pagina si passa all'immagine.
+    await page.locator('#btn-next-allegato').click();
+    await expect(page.locator('#trasc-pdf-bar')).toBeHidden();
+    await expect(page.locator('#btn-next-allegato')).toBeHidden();
+
+    // Tornando indietro si rientra nel PDF dalla sua ultima pagina, come voltando carta.
+    await page.locator('#btn-prev-allegato').click();
+    await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
+    await expect(paginaAperta(page)).toHaveValue('3');
+    await expect(page.locator('#trascrizione-carta')).toContainText('Carta 1 di 2');
+    await expect(page.locator('#trascrizione-carta')).toContainText('p. 3 di 3');
+
+    // Anche da tastiera, attraversando il bordo.
+    await page.locator('#trasc-img-viewport').focus();
+    await page.keyboard.press('PageDown');
+    await expect(page.locator('#trasc-pdf-bar')).toBeHidden();
+    await page.keyboard.press('Alt+ArrowLeft');
+    await expect(paginaAperta(page)).toHaveValue('3');
+  });
+
+  test('la ricerca trova nel PDF e nelle trascrizioni, e porta alla pagina', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Pagine');
+    const id = await createItemWithAttachment(page, 'MS-PDF-CERCA', FIXTURE_PDF3);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#trasc-pdf-totale')).toHaveText('/ 3');
+
+    const cerca = page.locator('#trasc-pdf-cerca');
+    const risultati = page.locator('#trasc-pdf-risultati');
+
+    // Livello testo del PDF.
+    await cerca.fill('beta');
+    await expect(risultati).toBeVisible();
+    await expect(risultati.locator('button')).toHaveCount(1);
+    await expect(risultati).toContainText('p. 2');
+    await risultati.locator('button').first().click();
+    await expect(paginaAperta(page)).toHaveValue('2');
+    await expect(risultati).toBeHidden();
+
+    // Trascrizione della pagina 3, non ancora salvata: si trova lo stesso.
+    await page.locator('#btn-pdf-pagina-succ').click();
+    await expect(paginaAperta(page)).toHaveValue('3');
+    await editor(page).click();
+    await page.keyboard.type('Bartholomeus notarius');
+    await cerca.fill('');
+    await cerca.fill('notarius');
+    await expect(risultati).toContainText('p. 3');
+    await expect(risultati).toContainText('Trascrizione');
+    await page.locator('#btn-pdf-pagina-prec').click();
+    await expect(paginaAperta(page)).toHaveValue('2');
+    await cerca.press('Enter');
+    await expect(paginaAperta(page)).toHaveValue('3');
+    await expect(editor(page)).toContainText('Bartholomeus notarius');
+
+    await cerca.fill('inesistente');
+    await expect(page.locator('#trasc-pdf-stato')).toHaveText(/Nessun risultato|No results/);
   });
 });

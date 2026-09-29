@@ -37,7 +37,10 @@ function carica() {
     'leggiTrascrizioneAllegato',
     'scriviTrascrizioneAllegato',
     'migraTrascrizioneSuAllegati',
-    'componiTrascrizioneRecord'
+    'componiTrascrizioneRecord',
+    'componiPagineAllegato',
+    'dividiTrascrizionePerPagine',
+    'migraTrascrizionePdfSuPagine'
   ];
   const codice = nomi.map(n => estraiFunzione(src, n)).join('\n');
   const window = {
@@ -173,6 +176,101 @@ const carta = (nome, trascrizione) => ({ nome, originalName: nome, tipo: 'immagi
   const derivata = w.componiTrascrizioneRecord(m);
   assert.ok(derivata.indexOf('Tre') < derivata.indexOf('Uno'), 'e la derivata segue il nuovo ordine');
   ok('il riordino delle carte porta con se\' le trascrizioni');
+}
+
+// --- Trascrizione per pagina nei PDF -----------------------------------------
+const pdf = (nome, trascrizione) => {
+  const a = { nome, originalName: nome, tipo: 'pdf' };
+  if (trascrizione !== undefined) a.trascrizione = trascrizione;
+  return a;
+};
+const MARCA = (n) => `<p class="ocr-pagina"><strong>[p. ${n}]</strong></p>`;
+
+// --- Test 9: ogni pagina ha il suo testo -------------------------------------
+{
+  const m = { allegati: [pdf('a.pdf')] };
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 1), '', 'PDF nuovo: pagina vuota');
+  w.scriviTrascrizioneAllegato(m, 0, '<p>Uno</p>', 1);
+  w.scriviTrascrizioneAllegato(m, 0, '<p>Tre</p>', 3);
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 1), '<p>Uno</p>');
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 2), '', 'la pagina saltata resta vuota');
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 3), '<p>Tre</p>');
+  const d = m.allegati[0].trascrizione;
+  assert.ok(d.includes(MARCA(1)) && d.includes(MARCA(3)) && !d.includes(MARCA(2)), 'la derivata porta i numeri delle pagine con testo');
+  assert.ok(w.componiTrascrizioneRecord(m).includes('<p>Tre</p>'), 'e arriva alla derivata della scheda');
+  ok('PDF: il testo segue la pagina');
+}
+
+// --- Test 10: sfogliare non sporca il record ----------------------------------
+// Il travaso scrive l'editor a ogni cambio pagina, anche vuoto.
+{
+  const m = { allegati: [pdf('a.pdf')] };
+  w.scriviTrascrizioneAllegato(m, 0, '<p>Uno</p>', 1);
+  for (let p = 2; p <= 50; p++) w.scriviTrascrizioneAllegato(m, 0, '<p><br></p>', p);
+  assert.deepStrictEqual(m.allegati[0].pagine, ['<p>Uno</p>'], 'nessuna pagina vuota accumulata');
+  assert.strictEqual(m.allegati[0].trascrizione, '<p>Uno</p>', 'solo p. 1: derivata senza marcatore');
+  w.scriviTrascrizioneAllegato(m, 0, '<p><br></p>', 1);
+  assert.deepStrictEqual(m.allegati[0].pagine, [], 'cancellare l\'unica pagina svuota tutto');
+  assert.strictEqual(m.allegati[0].trascrizione, '');
+  ok('PDF: le pagine solo sfogliate non entrano nel database');
+}
+
+// --- Test 11: la vecchia trascrizione OCR si divide esattamente --------------
+{
+  const vecchia = '<p class="ocr-origine"><em>OCR</em></p>\n' + MARCA(1) + '\n<p>Alfa</p>\n' + MARCA(2) + '\n<p>Beta</p>';
+  const a = pdf('a.pdf', vecchia);
+  assert.strictEqual(w.migraTrascrizionePdfSuPagine(a), true, 'la prima volta divide');
+  assert.strictEqual(a.pagine.length, 2);
+  assert.ok(a.pagine[0].includes('OCR') && a.pagine[0].includes('Alfa'), 'l\'intestazione resta sulla p. 1');
+  assert.strictEqual(a.pagine[1], '<p>Beta</p>');
+  a.trascrizione = w.componiPagineAllegato(a.pagine);
+  assert.strictEqual(w.migraTrascrizionePdfSuPagine(a), false, 'la seconda volta non fa nulla');
+  ok('PDF: la trascrizione OCR multipagina si divide sui marcatori');
+}
+
+// --- Test 12: senza marcatori tutto sulla p. 1 --------------------------------
+{
+  const a = pdf('a.pdf', '<p>Blocco unico</p>');
+  const m = { allegati: [a] };
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 1), '<p>Blocco unico</p>');
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 2), '');
+  assert.strictEqual(w.migraTrascrizionePdfSuPagine(pdf('b.pdf', '<p><br></p>')), false, 'niente testo, niente pagine');
+  assert.strictEqual(w.migraTrascrizionePdfSuPagine(carta('c.png', '<p>x</p>')), false, 'le immagini non si toccano');
+  ok('PDF: una trascrizione senza marcatori finisce sulla prima pagina');
+}
+
+// --- Test 13: andata e ritorno senza perdite -----------------------------------
+{
+  const pagine = ['<p>Uno</p>', '', '<p>Tre</p>\n<p>ancora</p>', '<ul><li>Quattro</li></ul>'];
+  const d = w.componiPagineAllegato(pagine);
+  const back = w.dividiTrascrizionePerPagine(d);
+  assert.deepStrictEqual(back, pagine, 'dividi(componi(x)) === x');
+  // Due OCR accodati sulla stessa pagina: si sommano.
+  const doppio = MARCA(2) + '\n<p>A</p>\n' + MARCA(2) + '\n<p>B</p>';
+  assert.deepStrictEqual(w.dividiTrascrizionePerPagine(doppio), ['', '<p>A</p>\n<p>B</p>']);
+  ok('PDF: componi e dividi sono l\'una l\'inversa dell\'altra');
+}
+
+// --- Test 14: una modifica da versione vecchia vince sulle pagine ------------
+// Il collega senza le pagine modifica la derivata: al ritorno le pagine vanno rifatte da
+// lì, altrimenti il suo lavoro sparisce dietro un array che non ha mai visto.
+{
+  const m = { allegati: [pdf('a.pdf')] };
+  w.scriviTrascrizioneAllegato(m, 0, '<p>Uno</p>', 1);
+  w.scriviTrascrizioneAllegato(m, 0, '<p>Due</p>', 2);
+  m.allegati[0].trascrizione = m.allegati[0].trascrizione.replace('Due', 'Due corretto');
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 2), '<p>Due corretto</p>');
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0, 1), '<p>Uno</p>');
+  ok('PDF: la derivata modificata altrove ricostruisce le pagine');
+}
+
+// --- Test 15: senza pagina, un PDF si comporta come prima --------------------
+{
+  const m = { allegati: [pdf('a.pdf', '<p>Tutto</p>')] };
+  assert.strictEqual(w.leggiTrascrizioneAllegato(m, 0), '<p>Tutto</p>');
+  w.scriviTrascrizioneAllegato(m, 0, '<p>Nuovo</p>');
+  assert.strictEqual(m.allegati[0].trascrizione, '<p>Nuovo</p>');
+  ok('PDF: senza numero di pagina resta il testo dell\'allegato');
 }
 
 console.log(`\ntrascrizioneAllegati: ${test} test superati.`);

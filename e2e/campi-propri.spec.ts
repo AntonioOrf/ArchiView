@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, getAppData } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Propri' });
+
 /**
  * Fase 3.7 — campi propri della scheda.
  *

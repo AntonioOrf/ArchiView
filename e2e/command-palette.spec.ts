@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createFolder } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Palette' });
+
 /**
  * Fase 1.4 — command palette (Ctrl+K) e pannello delle scorciatoie ("?").
  *

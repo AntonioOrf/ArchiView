@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'CloudState' });
+
 // Fase 3 — il controllo cloud unico. Gli stati si pilotano da window.statoCloud senza
 // bisogno di un account reale: qui si verifica la mappatura stato → etichetta → azioni.
 async function impostaStato(page: any, patch: Record<string, unknown>, extra: Record<string, unknown> = {}) {

@@ -55,6 +55,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'cambiaLingua',
     'cambiaModalitaPrestazioni',
     'cambiaPagina',
+    'cambiaPaginaPdfRelativa',
     'cambiaTabImpostazioni',
     'cambiaTemaSelezionato',
     'cambiaTipoAnagrafica',
@@ -187,4 +188,5 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'toggleVaultSwitcher',
     'trasformaInPersonale',
     'uniscitiDaShareModal',
+    'vaiAPaginaPdfDaCampo',
 ]);

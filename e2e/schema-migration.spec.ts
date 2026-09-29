@@ -3,6 +3,8 @@ import { createLocalWorkspace, dismissOverlays } from './helpers';
 import * as path from 'path';
 import * as fs from 'fs';
 
+test.use({ seedWorkspace: 'Schema' });
+
 /**
  * Fase 3.0 — schema versionato e catena di migrazioni.
  *

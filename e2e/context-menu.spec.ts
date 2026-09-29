@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createFolder, seedItems } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Menu' });
+
 // Fase 4 — le azioni che prima esistevano solo nel tasto destro devono avere
 // un accesso visibile ("⋯") e il menu deve essere navigabile da tastiera.
 test.describe('Menu contestuale e overflow', () => {

@@ -4,6 +4,8 @@ import { createLocalWorkspace, seedItems, getAppData } from './helpers';
 import * as fs from 'fs';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Imp' });
+
 // `appData` vive nello scope del bundle del renderer, non su `window`: dentro page.evaluate
 // e' una variabile globale come le altre, e va solo dichiarata al compilatore dello spec.
 declare const appData: any;

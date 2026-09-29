@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { seedItems, createLocalWorkspace, dismissOverlays } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Filtri' });
+
 /**
  * Semina schede con proprietà CONTROLLATE per i filtri della Fase 1.3.
  * `seedItems` di helpers.ts non basta: genera record tutti uguali, cioè un seme su cui

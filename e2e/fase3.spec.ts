@@ -2,6 +2,8 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
+test.use({ seedWorkspace: 'Fase3' });
+
 // `appData` vive nello scope del bundle del renderer, non su `window`: dentro page.evaluate
 // è una variabile globale come le altre, e va solo dichiarata al compilatore dello spec.
 declare const appData: any;
