@@ -78,4 +78,49 @@ assert.strictEqual(nomeCartellaSicuro('../../Startup'), '.._.._Startup');
 assert.strictEqual(nomeCartellaSicuro('..'), 'Vault_Condiviso');
 assert.strictEqual(nomeCartellaSicuro('CON'), '_CON');
 
+// 7. dentroCartellaReale: una cartella raggiunta da un alias (junction, nome breve 8.3) contiene
+//    lo stesso i file risolti con realpath. Sul runner GitHub la cartella dati dell'app sta sotto
+//    C:\Users\RUNNER~1\…: senza risolverla, un file interno sembrava "fuori" e si allegava.
+{
+  const fs = require('fs');
+  const os = require('os');
+  const { dentroCartellaReale } = require('../out/main/ipc/pathSafety');
+  const radice = fs.mkdtempSync(path.join(os.tmpdir(), 'archiview-alias-'));
+  try {
+    const vera = path.join(radice, 'dati-veri');
+    fs.mkdirSync(vera);
+    const file = path.join(vera, 'segreto.json');
+    fs.writeFileSync(file, '{}');
+    const reale = fs.realpathSync.native(file);
+
+    assert.strictEqual(dentroCartellaReale(reale, vera), true);
+    assert.strictEqual(dentroCartellaReale(reale, radice), true);
+    assert.strictEqual(dentroCartellaReale(reale, path.join(radice, 'altra')), false);
+    assert.strictEqual(dentroCartellaReale(reale, path.join(radice, 'dati-veri-bis')), false);
+
+    // Alias con junction (nessun privilegio richiesto su Windows; symlink di cartella altrove)
+    const alias = path.join(radice, 'alias');
+    fs.symlinkSync(vera, alias, 'junction');
+    assert.strictEqual(dentroCartellaReale(reale, alias), true, 'cartella raggiunta via junction');
+
+    // Alias con nome breve 8.3, se il volume li genera
+    if (process.platform === 'win32') {
+      const lungo = path.join(radice, 'nome molto lungo della cartella');
+      fs.mkdirSync(lungo);
+      fs.writeFileSync(path.join(lungo, 'x.json'), '{}');
+      const breve = require('child_process').execSync(`cmd /c for %I in ("${lungo}") do @echo %~sI`, { encoding: 'utf8' }).trim();
+      if (breve && breve !== lungo && breve.includes('~')) {
+        assert.strictEqual(dentroCartellaReale(fs.realpathSync.native(path.join(lungo, 'x.json')), breve), true, 'cartella raggiunta via nome 8.3');
+      } else {
+        console.log('  (nomi 8.3 non attivi su questo volume: controllo saltato)');
+      }
+    }
+
+    // Input non validi
+    for (const [f, d] of [[reale, ''], [null, vera], [reale, null]]) assert.strictEqual(dentroCartellaReale(f, d), false);
+  } finally {
+    fs.rmSync(radice, { recursive: true, force: true });
+  }
+}
+
 console.log('pathSafety tests passed.');

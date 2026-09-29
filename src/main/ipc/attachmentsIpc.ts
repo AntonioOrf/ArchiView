@@ -4,7 +4,7 @@ const fs = require('fs');
 const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
 const crypto = require('crypto');
-const { safeAttachmentPath } = require('./pathSafety');
+const { safeAttachmentPath, dentroCartellaReale } = require('./pathSafety');
 
 /**
  * Il percorso sorgente arriva dal renderer (file scelto o trascinato). Non si può legare a un
@@ -17,10 +17,8 @@ async function verificaSorgenteAllegato(sourcePath: unknown): Promise<void> {
   const reale = await fsp.realpath(sourcePath);
   const st = await fsp.stat(reale);
   if (!st.isFile()) throw new Error('L\'allegato non è un file');
-  const dentro = (dir: string) => {
-    const rel = path.relative(path.resolve(dir), reale);
-    return !rel.startsWith('..') && !path.isAbsolute(rel);
-  };
+  // Cartelle risolte come il file: con un alias (8.3, junction) il file sembrerebbe fuori.
+  const dentro = (dir: string) => dentroCartellaReale(reale, dir);
   const ws = state.workspacePath;
   // userData sì, ma non il workspace aperto quando sta lì (l'archivio del tutorial).
   const inUserData = dentro(app.getPath('userData')) && !(ws && dentro(ws));

@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 
 // Sanitizza un nome di allegato proveniente da fonti NON fidate (DB di vault condivisi/Hub,
 // listing OneDrive/Drive di altri collaboratori). Impedisce path traversal e path assoluti:
@@ -57,5 +58,19 @@ function nomeCartellaSicuro(nome: unknown, riserva = 'Vault_Condiviso'): string 
   return s.slice(0, 200);
 }
 
-module.exports = { safeAttachmentPath, safeAttachmentPathOrNull, safeChildDir, nomeCartellaSicuro };
+/**
+ * True se `fileReale` (già passato da realpath) sta dentro `dir`. Anche `dir` va risolta con la
+ * stessa funzione nativa: un alias (nome breve 8.3 come `RUNNER~1`, junction, collegamento
+ * simbolico) farebbe sembrare "fuori" un file che è dentro, e il controllo si aggirerebbe
+ * passando dall'alias. Se `dir` non esiste si confronta il percorso così com'è.
+ */
+function dentroCartellaReale(fileReale: string, dir: string): boolean {
+  if (typeof fileReale !== 'string' || typeof dir !== 'string' || !dir) return false;
+  let base: string;
+  try { base = fs.realpathSync.native(dir); } catch { base = path.resolve(dir); }
+  const rel = path.relative(base, fileReale);
+  return !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+module.exports = { safeAttachmentPath, safeAttachmentPathOrNull, safeChildDir, nomeCartellaSicuro, dentroCartellaReale };
 export {};
