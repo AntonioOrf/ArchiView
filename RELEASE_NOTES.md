@@ -1,3 +1,18 @@
+## ArchiView 3.2.1 — PDF ricercabili e pagine raddrizzate
+
+Il testo riconosciuto dall'OCR si può ora portare fuori dall'archivio: una copia dell'allegato in PDF, con il testo cercabile e selezionabile sopra la scansione. Le pagine scansionate di traverso vengono raddrizzate da sole.
+
+### Novità
+
+- **PDF ricercabile**: nel riconoscimento del testo c'è l'opzione "Salva una copia come PDF ricercabile". Il file conserva le pagine originali dell'allegato, senza perdita di qualità, e vi aggiunge il testo riconosciuto, invisibile ma cercabile e copiabile in qualunque lettore PDF. Con "Tutti gli allegati della scheda" si ottiene un unico PDF.
+- **Pagine raddrizzate in automatico**: con "Rilevamento orientamento" installato (da Gestisci lingue), le pagine girate di 90° o capovolte si ruotano prima del riconoscimento e nel PDF ricercabile appaiono dritte. Quando l'orientamento è incerto il testo si legge nei due versi e si tiene la lettura migliore; il risultato dice quante pagine sono state raddrizzate.
+
+### Correzioni
+
+- **Allegati e cartelle interne dell'app**: i file interni di ArchiView non si possono allegare nemmeno quando la loro cartella è raggiunta tramite un collegamento o un nome abbreviato di Windows.
+
+---
+
 ## ArchiView 3.2.0 — PDF pagina per pagina e archivi condivisi più sicuri
 
 I PDF si leggono e si trascrivono una pagina alla volta, con gli stessi strumenti delle carte fotografate. La condivisione degli archivi è stata rivista da cima a fondo: il server non legge più le schede e le trascrizioni, e le notifiche arrivano solo ai membri.
