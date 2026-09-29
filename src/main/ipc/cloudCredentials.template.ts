@@ -10,4 +10,3 @@ export const MS_CLIENT_ID = "INSERISCI_QUI_IL_TUO_MS_CLIENT_ID";
 // Credenziali Pusher & Vercel (Webhook) per Realtime Sync
 export const PUSHER_KEY = "INSERISCI_QUI_PUSHER_KEY";
 export const PUSHER_CLUSTER = "INSERISCI_QUI_PUSHER_CLUSTER";
-export const PUSHER_WEBHOOK = "INSERISCI_QUI_VERCEL_WEBHOOK_URL";

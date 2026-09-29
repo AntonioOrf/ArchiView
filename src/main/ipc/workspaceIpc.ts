@@ -39,8 +39,7 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
         if (publicCfg.pusherKey) {
           fs.writeFileSync(path.join(newPath, '.archiview-drive.json'), JSON.stringify({
             pusherKey: publicCfg.pusherKey,
-            pusherCluster: publicCfg.pusherCluster || '',
-            pusherWebhook: publicCfg.pusherWebhook || (publicCfg.hubUrl ? `${publicCfg.hubUrl}/api/ping` : '')
+            pusherCluster: publicCfg.pusherCluster || ''
           }, null, 2), 'utf8');
         }
     }

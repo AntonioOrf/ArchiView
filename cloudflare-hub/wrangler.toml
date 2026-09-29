@@ -24,7 +24,7 @@ CREATE_MAX_GLOBAL_DAY = "500"  # tetto globale al giorno
 # --- Secret da impostare con `wrangler secret put <NOME>` (NON committare) ---
 #   CREATE_SECRET    -> gate anti-abuso su POST /api/repos (bakeato nel client)
 #   TURNSTILE_SECRET -> opz.: se impostato, POST /api/repos esige token Turnstile
-#   PUSHER_APP_ID    -> relay ping (sostituisce vercel-hub)
+#   PUSHER_APP_ID    -> notifiche realtime: pubblicazione dopo il push + firma canali privati
 #   PUSHER_KEY
 #   PUSHER_SECRET
 #   PUSHER_CLUSTER

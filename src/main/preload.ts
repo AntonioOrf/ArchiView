@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     hubMembers: () => ipcRenderer.invoke('hub-members'),
     hubRevokeMember: (memberId) => ipcRenderer.invoke('hub-revoke-member', memberId),
     hubJoin: (code, basePath) => ipcRenderer.invoke('hub-join', code, basePath),
+    hubRealtimeAuth: (socketId, channel) => ipcRenderer.invoke('hub-realtime-auth', socketId, channel),
     getRecentWorkspaces: () => ipcRenderer.invoke('get-recent-workspaces'),
     loadTutorialWorkspace: () => ipcRenderer.invoke('load-tutorial-workspace'),
     openRecentWorkspace: (folderPath) => ipcRenderer.invoke('open-recent-workspace', folderPath),

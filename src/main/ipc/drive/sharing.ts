@@ -33,7 +33,7 @@ async function generateInviteCode(): Promise<string> {
       "",                                          // r: refresh_token (non condiviso per sicurezza)
       settings.pusherKey || creds.PUSHER_KEY || "",
       settings.pusherCluster || creds.PUSHER_CLUSTER || "",
-      settings.pusherWebhook || creds.PUSHER_WEBHOOK || "",
+      "",                                          // webhook: non più usato (S6), campo tenuto per il formato
       settings.driveAutofetch ? 1 : 0,
       vaultFolderId,
       projectName
@@ -59,7 +59,7 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   while (b64.length % 4 !== 0) b64 += '=';
   const parts = Buffer.from(b64, 'base64').toString('utf8').split('|');
   if (parts.length < 5) throw new Error("Codice incompleto");
-  const [refreshToken, pKey, pCluster, pWebhook, pAuto, vaultId] = parts;
+  const [refreshToken, pKey, pCluster, , pAuto, vaultId] = parts; // parts[3] = webhook, ignorato (S6)
 
   // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
@@ -74,10 +74,10 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   // userData/cloud-tokens/ (cloudTokenStore), mai dentro il workspace.
 
   const settingsToSave: any = { isSharedVault: true };
-  if (pKey || pWebhook) {
+  // Il webhook dell'invito si ignora (S6): era un URL a cui l'app inviava il nome del canale.
+  if (pKey) {
     settingsToSave.pusherKey = pKey;
     settingsToSave.pusherCluster = pCluster;
-    settingsToSave.pusherWebhook = pWebhook;
     settingsToSave.driveAutofetch = pAuto === "1";
   }
   if (vaultId) {
@@ -126,7 +126,6 @@ async function joinByFolderId(vaultId: string, vaultName: string, basePath: stri
     sharedVaultId: vaultId,
     pusherKey: customPusher?.pusherKey || creds.PUSHER_KEY || "",
     pusherCluster: customPusher?.pusherCluster || creds.PUSHER_CLUSTER || "",
-    pusherWebhook: customPusher?.pusherWebhook || creds.PUSHER_WEBHOOK || "",
     driveAutofetch: customPusher ? customPusher.driveAutofetch : true
   };
   initWorkspace(newPath);

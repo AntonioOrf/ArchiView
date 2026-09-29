@@ -42,7 +42,6 @@ jobs:
           export const MS_CLIENT_ID = "";
           export const PUSHER_KEY = "";
           export const PUSHER_CLUSTER = "";
-          export const PUSHER_WEBHOOK = "";
           export const HUB_URL = "";
           export const HUB_CREATE_SECRET = "";
           EOF

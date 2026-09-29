@@ -1,8 +1,0 @@
-{
-  "name": "archiview-pusher-hub",
-  "version": "1.0.0",
-  "description": "Vercel Serverless Function per notificare ArchiView tramite Pusher",
-  "dependencies": {
-    "pusher": "^5.2.0"
-  }
-}

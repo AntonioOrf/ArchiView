@@ -10,7 +10,8 @@
     "migrate:local": "wrangler d1 execute archiview-hub --local --file=./src/schema.sql",
     "smoke": "node test/smoke.mjs",
     "e2e": "node test/e2e.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "realtime": "node test/realtime.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260811.1",

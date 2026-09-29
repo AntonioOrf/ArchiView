@@ -523,7 +523,6 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             if (window.driveStatus) window.driveStatus.isAuthenticated = true;
 
             // Invia Ping Realtime a Pusher tramite Vercel Serverless
-            inviaPingPusher();
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {
@@ -566,7 +565,6 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
                     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_sincron", "Conflitto risolto! Sincronizzazione completata in sicurezza."), "success");
-                    inviaPingPusher();
                 } catch(retryErr) {
                     window.impostaErroreCloud(retryErr.message);
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
@@ -709,7 +707,6 @@ window.caricaSulCloud = async function(silent = false) {
             
             window.azzeraErroreCloud();
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_completato_in", "Caricamento completato in sicurezza!"), "success");
-            inviaPingPusher();
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {
@@ -753,7 +750,6 @@ window.caricaSulCloud = async function(silent = false) {
                     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
                     window.azzeraErroreCloud();
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_caricam", "Conflitto risolto! Caricamento completato in sicurezza."), "success");
-                    inviaPingPusher();
                 } catch(retryErr) {
                     if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
                 }
@@ -766,43 +762,6 @@ window.caricaSulCloud = async function(silent = false) {
         }
     }
 };
-
-window.sincronizzaGoogleDriveBackground = async function() {
-    console.log("Sincronizzazione in background avviata da Pusher…");
-    await window.sincronizzaGoogleDrive(true);
-    // Dopo aver sincronizzato (scaricato le modifiche), forza il ricaricamento dell'interfaccia
-    // NB: window.apriDatabase non è definita da nessuna parte, quindi questo ricaricamento
-    // non avviene mai (lo era già prima; segnalato nella review del 27/09/2026).
-    if (typeof window.apriDatabase === 'function') {
-        const workspacePath = await window.apiBrowser.getWorkspacePath();
-        if (workspacePath) {
-            window.apriDatabase(workspacePath, true);
-        }
-    }
-};
-
-async function inviaPingPusher() {
-    if (!window.apiBrowser || !window.apiBrowser.getVaultConfig) return;
-    const vc = await window.apiBrowser.getVaultConfig();
-    const pusherWebhook = vc.realtime && vc.realtime.pusherWebhook;
-
-    if (pusherWebhook && window.currentPusherChannelName) {
-        try {
-            await fetch(pusherWebhook, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    channel: window.currentPusherChannelName,
-                    event: 'drive-updated',
-                    data: { senderId: window.myAppInstanceId }
-                })
-            });
-            console.log("Ping Pusher inviato con successo.");
-        } catch (err) {
-            console.warn("Impossibile inviare ping Pusher:", err);
-        }
-    }
-}
 
 window.trasformaInCondiviso = async function() {
     const btn = document.getElementById('btn-trasforma-condiviso') as HTMLButtonElement;

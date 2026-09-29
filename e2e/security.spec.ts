@@ -212,6 +212,107 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
+  // S6 (REVIEW-SECURITY.md): realtime Hub su canale privato. SDK locale sotto CSP, firma
+  // chiesta dal main con la repoKey, notifica = solo controllo, il proprio push non è una novità.
+  test('realtime Hub: SDK locale, iscrizione autorizzata dal main, evento → solo controllo', async ({ page, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const path = await import('path');
+    const fs = await import('fs');
+    const http = await import('http');
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'HubRealtime');
+    const wsPath = typeof ws === 'string' && fs.existsSync(ws) ? ws : await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath());
+
+    const richieste: any[] = [];
+    const server = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (c) => { body += c; });
+      req.on('end', () => {
+        richieste.push({ url: req.url, auth: req.headers.authorization, body });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ auth: 'chiave-pusher:firma-di-prova' }));
+      });
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
+    try {
+      const hubUrl = `http://127.0.0.1:${(server.address() as any).port}`;
+      fs.writeFileSync(path.join(wsPath, '.archiview-hub.json'), JSON.stringify({
+        hubUrl, repoId: 'repo_rt', repoKey: 'CHIAVE-RT', version: 3, pusherKey: 'chiave-pusher', pusherCluster: 'eu'
+      }));
+      const violazioni: string[] = [];
+      await page.exposeFunction('segnalaCsp', (v: string) => { violazioni.push(v); });
+      await page.evaluate(() => document.addEventListener('securitypolicyviolation',
+        (e) => (window as any).segnalaCsp(`${e.violatedDirective} ${e.blockedURI}`)));
+
+      // Avvio come all'apertura del vault: config pubblica, poi autofetch + realtime.
+      await page.evaluate(async () => {
+        const w = window as any;
+        w.hubConfig = await w.apiBrowser.loadHubConfig();
+        await w.avviaRealtimeHub();
+      });
+      expect(await page.evaluate(() => typeof (window as any).Pusher === 'function')).toBe(true);
+      const src = await page.evaluate(() => Array.from(document.scripts).map((s) => s.src).filter((s) => /pusher/i.test(s)));
+      expect(src.length).toBeGreaterThan(0);
+      for (const s of src) expect(s).not.toMatch(/^https?:/);
+      // L5: il renderer non fa più fetch (le chiamate cloud sono nel main): solo il WebSocket Pusher.
+      const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]')!.getAttribute('content') || '');
+      expect((/connect-src([^;]*)/.exec(csp) || [])[1].trim()).toBe("'self' wss://*.pusher.com");
+      expect(csp).not.toContain('js.pusher.com');
+
+      // Il main valida prima di chiamare il Worker: né canali altrui né socket id strani partono.
+      const auth = (socketId: string, channel: string) => page.evaluate(([s, c]) => (window as any).apiBrowser.hubRealtimeAuth(s, c), [socketId, channel]);
+      expect(await auth('1.2', 'private-repo-altro')).toMatchObject({ ok: false, status: 0 });
+      expect(await auth('1.2:x', 'private-repo-repo_rt')).toMatchObject({ ok: false, status: 0 });
+      expect(richieste.length).toBe(0);
+
+      // Percorso completo dell'SDK: channelAuthorizer → customHandler → IPC → main → Worker.
+      const firma = await page.evaluate(() => new Promise((resolve) => {
+        (window as any).pusherInstance.config.channelAuthorizer(
+          { socketId: '123.456', channelName: 'private-repo-repo_rt' }, (err: any, data: any) => resolve({ err: err && String(err), data }));
+      }));
+      expect(firma).toEqual({ err: null, data: { auth: 'chiave-pusher:firma-di-prova' } });
+      expect(richieste).toHaveLength(1);
+      expect(richieste[0].url).toBe('/api/repos/repo_rt/realtime-auth');
+      expect(richieste[0].auth).toBe('Bearer CHIAVE-RT');
+      expect(JSON.parse(richieste[0].body)).toEqual({ socketId: '123.456', channel: 'private-repo-repo_rt' });
+      expect(await page.evaluate(() => JSON.stringify((window as any).hubConfig))).not.toContain('CHIAVE-RT');
+
+      // Evento: versione già nota → niente; più recente → solo il controllo (nessun merge).
+      const chiamate = await page.evaluate(async () => {
+        const w = window as any;
+        let n = 0;
+        w.controllaModificheHub = async () => { n++; };
+        const ch = w.pusherInstance.channel('private-repo-repo_rt');
+        ch.emit('hub-updated', { version: 3 });
+        await new Promise((r) => setTimeout(r, 50));
+        const dopoVecchia = n;
+        ch.emit('hub-updated', { version: 4 });
+        await new Promise((r) => setTimeout(r, 50));
+        return [dopoVecchia, n];
+      });
+      expect(chiamate).toEqual([0, 1]);
+
+      // Il proprio push: l'evento arriva prima della risposta, ma non diventa una novità.
+      const proprio = await page.evaluate(async () => {
+        const w = window as any;
+        let n = 0;
+        w.controllaModificheHub = async () => { n++; };
+        let risolvi: any;
+        w.hubPushInCorso = new Promise((r) => { risolvi = r; });
+        w.pusherInstance.channel('private-repo-repo_rt').emit('hub-updated', { version: 5 });
+        await new Promise((r) => setTimeout(r, 50));
+        w.hubConfig.version = 5; risolvi(); w.hubPushInCorso = null;
+        await new Promise((r) => setTimeout(r, 50));
+        return n;
+      });
+      expect(proprio).toBe(0);
+
+      await page.evaluate(() => (window as any).pusherInstance && (window as any).pusherInstance.disconnect());
+      expect(violazioni.filter((v) => !/^img-src/.test(v))).toEqual([]);
+    } finally {
+      server.close();
+    }
+  });
+
   // S4 (REVIEW-SECURITY.md): l'id della scheda arriva dal vault e finiva nel percorso di copia.
   test('salva-allegato: id ostile resta nella cartella allegati, file interni non allegabili', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');

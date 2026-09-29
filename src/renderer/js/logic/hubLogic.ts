@@ -30,6 +30,16 @@ async function inizializzaHubConfig() {
 }
 document.addEventListener('DOMContentLoaded', inizializzaHubConfig);
 
+// Push in corso: l'handler realtime lo attende prima di confrontare le versioni, altrimenti la
+// notifica del proprio push (che può arrivare prima della risposta) sembrerebbe una novità.
+window.hubPushInCorso = null;
+function pushHub(parentVersion, database) {
+    const p = window.apiBrowser.hubPush(parentVersion, database);
+    window.hubPushInCorso = p;
+    p.finally(() => { if (window.hubPushInCorso === p) window.hubPushInCorso = null; }).catch(() => {});
+    return p;
+}
+
 window.avviaAutofetchHub = async function() {
     if (window.hubAutofetchTimer) {
         clearInterval(window.hubAutofetchTimer);
@@ -49,6 +59,7 @@ window.avviaAutofetchHub = async function() {
             window.controllaModificheHub(false);
         }, intervalMinutes * 60 * 1000);
     }
+    if (typeof window.avviaRealtimeHub === 'function') window.avviaRealtimeHub();
 };
 
 // Azzera badge/contatore "modifiche in entrata" (usato dopo un pull riuscito o quando risulta
@@ -335,7 +346,7 @@ window.inviaModificheHub = async function() {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
 
     try {
-        const resPush = await window.apiBrowser.hubPush(window.hubConfig.version, appData);
+        const resPush = await pushHub(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
             if (resPush.status === 409) {
@@ -414,7 +425,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         appData.tipiDocumento = snap.database.tipiDocumento || [];
         await salvaTutto();
 
-        const resPush = await window.apiBrowser.hubPush(window.hubConfig.version, appData);
+        const resPush = await pushHub(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
             if (resPush.status === 409) {
@@ -562,9 +573,6 @@ window.creaRepositoryHub = async function(name) {
             if (typeof window.nascondiProgressoCloud === 'function') window.nascondiProgressoCloud();
             mostraMessaggio(r?.error || window.t("msg_errore_creazione_repo", "Errore creazione repository."), "error");
             return false;
-        }
-        if (window.apiBrowser.setRealtimeConfig) {
-            await window.apiBrowser.setRealtimeConfig({ pusherKey: r.pusherKey, pusherCluster: r.pusherCluster, pusherWebhook: r.pusherWebhook });
         }
         window.hubConfig = r.config;
         // Aggiorna subito header/widget: senza questo i controlli sync sparirebbero

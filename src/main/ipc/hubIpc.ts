@@ -89,7 +89,6 @@ function setupHubIpc() {
       const push = await chiamataHub(cfg, 'POST', '/push', { body: await corpoPush(cfg, 0, database), timeoutMs: TIMEOUT_DB_MS });
       if (!push.ok) return { ok: false, error: push.error || `Push iniziale fallito (HTTP ${push.status}).` };
 
-      const pusherWebhook = `${HUB_URL}/api/ping`;
       const salvato = saveHubConfig({
         ...cfg, dbCifrato: true,
         version: push.data.version, lastLoadedAt: Date.now(), attachmentsMode: 'drive-links',
@@ -97,7 +96,7 @@ function setupHubIpc() {
         pusherKey: PUSHER_KEY, pusherCluster: PUSHER_CLUSTER
       });
       if (!salvato) return { ok: false, error: "Repository creato ma configurazione locale non salvata." };
-      return { ok: true, config: loadHubConfigPubblica(), pusherKey: PUSHER_KEY, pusherCluster: PUSHER_CLUSTER, pusherWebhook };
+      return { ok: true, config: loadHubConfigPubblica(), pusherKey: PUSHER_KEY, pusherCluster: PUSHER_CLUSTER };
     } catch (e: any) {
       console.error("Errore creazione repo Hub:", e);
       const timedOut = e.name === 'TimeoutError' || e.name === 'AbortError';
@@ -204,9 +203,20 @@ function setupHubIpc() {
     const ok = clonaWorkspace(basePath, nomeCartella, {
       ...cfg, dbCifrato, version: r.data.version, lastLoadedAt: Date.now(),
       attachmentsMode: 'drive-links', role: 'member', name: sharedName,
-      pusherKey: inv.pusherKey, pusherCluster: inv.pusherCluster, pusherWebhook: `${inv.hubUrl}/api/ping`
+      pusherKey: inv.pusherKey, pusherCluster: inv.pusherCluster
     }, database);
     return ok ? { ok: true, status: 200, data: { name: sharedName } } : { ok: false, status: 0, error: "Errore durante la creazione dei file locali." };
+  });
+
+  // Firma per iscriversi al canale privato del repo (S6): la chiede il main con la repoKey.
+  // Solo il canale del vault aperto e un socket id nel formato Pusher arrivano al Worker.
+  ipcMain.handle('hub-realtime-auth', async (event: any, socketId: string, channel: string) => {
+    const cfg = configAttiva();
+    if (!cfg) return NON_COLLEGATO;
+    if (typeof socketId !== 'string' || !/^\d{1,20}\.\d{1,20}$/.test(socketId) || channel !== `private-repo-${cfg.repoId}`) {
+      return { ok: false, status: 0, error: 'Richiesta di iscrizione non valida.' };
+    }
+    return chiamataHub(cfg, 'POST', '/realtime-auth', { body: { socketId, channel }, timeoutMs: 15000 });
   });
 
   // Sincronizza gli allegati del vault Hub (upload dei propri chunk se autenticato Google,

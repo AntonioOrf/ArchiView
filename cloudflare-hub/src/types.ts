@@ -14,6 +14,8 @@ export interface Env {
   PUSHER_KEY?: string;
   PUSHER_SECRET?: string;
   PUSHER_CLUSTER?: string;
+  // Solo test: base URL di un finto Pusher. In produzione non va impostato.
+  PUSHER_HOST?: string;
 }
 
 export type Role = 'owner' | 'member';

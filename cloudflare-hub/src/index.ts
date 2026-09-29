@@ -6,10 +6,10 @@ import { handlePush } from './routes/push';
 import { handleAddMember, handleListMembers, handleRevokeMember } from './routes/members';
 import { handleGetVersion, handleListVersions } from './routes/versions';
 import { handleDeleteChunk, handleGetIndex, handlePutIndex } from './routes/attachments';
-import { handlePing } from './routes/ping';
+import { handleRealtimeAuth } from './routes/realtime';
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (req.method === 'OPTIONS') return preflight();
 
     const url = new URL(req.url);
@@ -23,10 +23,8 @@ export default {
 
       if (seg[0] !== 'api') return err(404, 'Not found');
 
-      // POST /api/ping
-      if (seg.length === 2 && seg[1] === 'ping' && M === 'POST') {
-        return handlePing(req, env);
-      }
+      // /api/ping (relay Pusher aperto) rimosso: S6 in REVIEW-SECURITY.md. Ora pubblica il
+      // Worker stesso dopo un push; risponde il 404 in fondo.
 
       if (seg[1] === 'repos') {
         // POST /api/repos
@@ -41,7 +39,7 @@ export default {
         }
         // /api/repos/:id/push
         if (seg.length === 4 && seg[3] === 'push' && M === 'POST') {
-          return handlePush(req, env, repoId);
+          return handlePush(req, env, repoId, ctx);
         }
         // /api/repos/:id/versions
         if (seg.length === 4 && seg[3] === 'versions' && M === 'GET') {
@@ -50,6 +48,10 @@ export default {
         // /api/repos/:id/versions/:n
         if (seg.length === 5 && seg[3] === 'versions' && M === 'GET') {
           return handleGetVersion(req, env, repoId, seg[4]);
+        }
+        // /api/repos/:id/realtime-auth
+        if (seg.length === 4 && seg[3] === 'realtime-auth' && M === 'POST') {
+          return handleRealtimeAuth(req, env, repoId);
         }
         // /api/repos/:id/members
         if (seg.length === 4 && seg[3] === 'members') {

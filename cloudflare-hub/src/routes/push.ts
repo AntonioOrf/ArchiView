@@ -2,9 +2,10 @@ import type { Env } from '../types';
 import { bearer, resolveAuth } from '../auth';
 import { pruneVersions, writeVersion } from '../db';
 import { err, json } from '../http';
+import { EVENTO_AGGIORNATO, canaleRepo, pubblica } from '../pusher';
 
 // POST /api/repos/:id/push  body: { parentVersion, database }
-export async function handlePush(req: Request, env: Env, repoId: string): Promise<Response> {
+export async function handlePush(req: Request, env: Env, repoId: string, ctx?: ExecutionContext): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
 
@@ -58,6 +59,10 @@ export async function handlePush(req: Request, env: Env, repoId: string): Promis
   try {
     await pruneVersions(env, repoId, Number(env.MAX_VERSIONS || '20'));
   } catch { /* ignore */ }
+
+  // Notifica ai membri connessi (S6): dopo la risposta, senza farla attendere né fallire.
+  const notifica = pubblica(env, canaleRepo(repoId), EVENTO_AGGIORNATO, { version: newVersion });
+  if (ctx) ctx.waitUntil(notifica);
 
   return json({ version: newVersion });
 }

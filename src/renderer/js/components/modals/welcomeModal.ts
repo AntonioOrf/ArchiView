@@ -346,12 +346,12 @@
             const parts = decoded.split('|');
             if (parts.length < 5) throw new Error('formato non valido');
 
-            const [, pKey, pCluster, pWebhook, pAuto, , vaultName] = parts;
+            // Il campo webhook (parts[3]) si ignora: nessun ping parte più dal client (S6).
+            const [, pKey, pCluster, , pAuto, , vaultName] = parts;
 
             window.welcomePusherCreds = {
                 pusherKey: pKey || '',
                 pusherCluster: pCluster || '',
-                pusherWebhook: pWebhook || '',
                 driveAutofetch: pAuto === '1'
             };
 

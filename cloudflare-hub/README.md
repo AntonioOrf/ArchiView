@@ -2,7 +2,7 @@
 
 Backend di sincronizzazione **gratuito** per ArchiView. Serve il DB JSON versionato
 (pull/push con guardia di concorrenza) e l'indice degli allegati (hash → link pubblico
-su Drive personale). Il client esiste già in `src/renderer/js/logic/hubLogic.ts`.
+su Drive personale). Il client sta nel main di ArchiView: `src/main/ipc/hubIpc.ts` e `hubClient.ts`.
 
 ## Protocollo
 
@@ -17,7 +17,11 @@ su Drive personale). Il client esiste già in `src/renderer/js/logic/hubLogic.ts
 | `GET /api/repos/:id/attachments/index` | membro | → `{files, chunks}` |
 | `POST /api/repos/:id/attachments/index` | membro | `{files?, chunks?}` upsert last-writer-wins |
 | `DELETE /api/repos/:id/attachments/chunks/:hash` | uploader/owner | pulizia post-revoca |
-| `POST /api/ping` | — | `{channel, event, data?}` relay Pusher (sostituisce vercel-hub) |
+| `POST /api/repos/:id/realtime-auth` | membro/owner | `{socketId, channel}` → `{auth}`: firma per iscriversi a `private-repo-:id` |
+
+Dopo ogni push riuscito il Worker pubblica `hub-updated {version}` su `private-repo-:id`
+(Pusher REST, in `waitUntil`). Nessun endpoint pubblica per conto del client: il vecchio
+relay aperto `/api/ping` è stato rimosso.
 
 Le chiavi (owner/membro) sono 32 byte random base64url, mostrate **una sola volta**;
 sul server resta solo lo SHA-256 hex. Il DB è gzippato e spezzato in righe ≤900KB;
@@ -45,6 +49,7 @@ npx wrangler secret put PUSHER_CLUSTER
 
 # 4a. Sviluppo locale
 npm run dev            # http://localhost:8787
+npm run realtime       # test del realtime: avvia da sé wrangler dev e un finto Pusher
 
 # 4b. Deploy
 npm run deploy

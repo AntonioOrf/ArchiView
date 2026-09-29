@@ -28,7 +28,6 @@ function applyCredsFallback(cfg: any) {
       const creds = require('./cloudCredentials');
       cfg.realtime.pusherKey = creds.PUSHER_KEY || null;
       cfg.realtime.pusherCluster = creds.PUSHER_CLUSTER || null;
-      cfg.realtime.pusherWebhook = creds.PUSHER_WEBHOOK || null;
     } catch (e) { /* cloudCredentials opzionale */ }
   }
   return cfg;
@@ -74,13 +73,13 @@ function setupVaultIpc() {
 
   // Imposta la config realtime (Pusher + autofetch) preservando tipo e sharedVaultId del vault.
   ipcMain.handle('set-realtime-config', (event: any, payload: any) => {
-    const { pusherKey, pusherCluster, pusherWebhook, driveAutofetch } = payload || {};
+    // pusherWebhook non si accetta più (S6): nessun ping parte dal client.
+    const { pusherKey, pusherCluster, driveAutofetch } = payload || {};
     const legacy: any = buildLegacyFromConfig(currentConfig());
 
     if (driveAutofetch !== undefined) legacy.driveAutofetch = !!driveAutofetch;
     if (pusherKey !== undefined) legacy.pusherKey = pusherKey;
     if (pusherCluster !== undefined) legacy.pusherCluster = pusherCluster;
-    if (pusherWebhook !== undefined) legacy.pusherWebhook = pusherWebhook;
 
     saveAllSettings(legacy);
     return applyCredsFallback(currentConfig());
