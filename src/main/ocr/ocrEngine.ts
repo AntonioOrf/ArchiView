@@ -39,12 +39,69 @@ function rinviaChiusura() {
 }
 
 async function chiudiMotore() {
-  const w = worker;
+  const aperti = [worker, workerOsd].filter(Boolean);
   worker = null;
+  workerOsd = null;
   chiaveLingue = '';
   if (timerInattivita) { clearTimeout(timerInattivita); timerInattivita = null; }
-  if (w) {
+  for (const w of aperti) {
     try { await w.terminate(); } catch (errore) { console.error('[OCR] Terminazione worker:', errore); }
+  }
+}
+
+// ── Rilevamento dell'orientamento ────────────────────────────────────────────────────────
+// Worker a sé: l'OSD esiste solo nel motore legacy di Tesseract (OEM 0), il riconoscimento
+// gira sull'LSTM. Un worker combinato caricherebbe i modelli legacy di OGNI lingua, che i
+// dati `tessdata_fast` installati da `ocrLangs` nemmeno contengono.
+let workerOsd = null;
+
+/**
+ * Da qui in su la rotazione si applica senza discutere. È la soglia predefinita di OCRmyPDF
+ * (`--rotate-pages-threshold`). Fra `SOGLIA_MINIMA_ORIENTAMENTO` e questa la proposta è
+ * `incerto` e il servizio la verifica riconoscendo nei due versi: su una carta di sei righe
+ * a 200 dpi il verso giusto usciva con 13,06, cioè scartato da una soglia secca.
+ * Sotto il minimo l'OSD tira a indovinare (pagine quasi bianche) e la proposta si ignora.
+ */
+const SOGLIA_ORIENTAMENTO = 14;
+const SOGLIA_MINIMA_ORIENTAMENTO = 2;
+
+function orientamentoDisponibile() { return linguaInstallata('osd'); }
+
+/**
+ * Di quanti gradi (0/90/180/270, senso orario) va ruotata `sorgente` per avere il testo
+ * dritto. `null` se l'OSD non è installato o non ha trovato abbastanza testo per decidere;
+ * `incerto` se ha un'ipotesi sotto soglia, che il chiamante deve verificare prima di applicarla.
+ */
+async function rilevaOrientamento(sorgente): Promise<{ gradi: number; confidenza: number; incerto: boolean } | null> {
+  if (!orientamentoDisponibile()) return null;
+  if (!workerOsd) {
+    const { createWorker } = require('tesseract.js');
+    workerOsd = await createWorker('osd', 0, {
+      langPath: cartellaLingue(),
+      gzip: false,
+      cacheMethod: 'none',
+      legacyCore: true,
+      legacyLang: true,
+      errorHandler: (e) => console.error('[OCR] Errore worker OSD:', e)
+    });
+  }
+  inUso = true;
+  try {
+    const { data } = await workerOsd.detect(sorgente);
+    // `orientation_degrees` è già la correzione oraria: verificato su una carta ruotata nei
+    // quattro versi (90° orari → 270, 270° orari → 90).
+    const gradi = Number(data && data.orientation_degrees);
+    const confidenza = Number(data && data.orientation_confidence) || 0;
+    if (![0, 90, 180, 270].includes(gradi)) return null;
+    if (gradi !== 0 && confidenza < SOGLIA_MINIMA_ORIENTAMENTO) return { gradi: 0, confidenza, incerto: false };
+    return { gradi, confidenza, incerto: gradi !== 0 && confidenza < SOGLIA_ORIENTAMENTO };
+  } catch (errore) {
+    // Pagina bianca o quasi: DetectOS fallisce, e non è un motivo per fermare l'OCR.
+    console.error('[OCR] Rilevamento orientamento:', errore);
+    return null;
+  } finally {
+    inUso = false;
+    rinviaChiusura();
   }
 }
 
@@ -110,8 +167,12 @@ function righeDaBlocchi(blocchi) {
 /**
  * Riconosce un'immagine. `sorgente` è un percorso su disco (allegato immagine) oppure un
  * Buffer (pagina PDF appena rasterizzata): tesseract.js accetta entrambi in Node.
+ *
+ * `pdf`: `'testo'` chiede anche la pagina PDF di solo testo invisibile, `'completa'` quella
+ * con l'immagine sotto (vedi `pdfRicercabile.ts`). Il PDF lo scrive il renderer di
+ * Tesseract nel worker thread, sullo stesso riconoscimento: nessuna seconda passata.
  */
-async function riconosci(sorgente, lingue, onProgresso) {
+async function riconosci(sorgente, lingue, onProgresso, pdf?: 'testo' | 'completa') {
   const mancanti = linguaMancanti(lingue);
   if (mancanti.length) {
     // `any` esplicito: il codice d'errore viaggia fino al renderer, che lo traduce in un
@@ -125,12 +186,17 @@ async function riconosci(sorgente, lingue, onProgresso) {
   const w = await ottieniWorker(lingue, onProgresso);
   inUso = true;
   try {
-    const risultato = await w.recognize(sorgente, {}, { text: true, blocks: true });
+    const risultato = await w.recognize(
+      sorgente,
+      pdf ? { pdfTitle: 'ArchiView OCR', pdfTextOnly: pdf === 'testo' } : {},
+      { text: true, blocks: true, pdf: !!pdf }
+    );
     const dati = (risultato && risultato.data) || {};
     return {
       righe: righeDaBlocchi(dati.blocks),
       testoGrezzo: dati.text || '',
-      confidenza: typeof dati.confidence === 'number' ? dati.confidence : 0
+      confidenza: typeof dati.confidence === 'number' ? dati.confidence : 0,
+      pdf: pdf && dati.pdf ? Uint8Array.from(dati.pdf) : null
     };
   } finally {
     inUso = false;
@@ -138,5 +204,8 @@ async function riconosci(sorgente, lingue, onProgresso) {
   }
 }
 
-module.exports = { riconosci, chiudiMotore, linguaMancanti, normalizzaLingue, righeDaBlocchi };
+module.exports = {
+  riconosci, chiudiMotore, linguaMancanti, normalizzaLingue, righeDaBlocchi,
+  rilevaOrientamento, orientamentoDisponibile, SOGLIA_ORIENTAMENTO, SOGLIA_MINIMA_ORIENTAMENTO
+};
 export {};

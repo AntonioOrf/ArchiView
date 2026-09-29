@@ -104,6 +104,33 @@ function _oLinguePredefinite() {
     return installate.slice(0, 1);
 }
 
+/** Il rilevamento dell'orientamento è una "lingua" a sé (`osd`), da installare come le altre. */
+function _oOsdInstallato() {
+    return _oStato.lingue.some(l => l.codice === 'osd' && l.installata);
+}
+
+/**
+ * Raddrizzamento attivo di default quando `osd` c'è: chi l'ha installato lo vuole. Si ricorda
+ * solo lo spegnimento, in localStorage per la stessa ragione delle lingue.
+ */
+function _oRaddrizzaPredefinito() {
+    if (!_oOsdInstallato()) return false;
+    try {
+        return localStorage.getItem('archiview.ocr.raddrizza') !== '0';
+    } catch (errore) {
+        console.error('[OCR] localStorage non leggibile:', errore);
+        return true;
+    }
+}
+
+function _oRicordaRaddrizza(attivo) {
+    try {
+        localStorage.setItem('archiview.ocr.raddrizza', attivo ? '1' : '0');
+    } catch (errore) {
+        console.error('[OCR] localStorage non scrivibile:', errore);
+    }
+}
+
 function _oRicordaLingue(lingue) {
     try {
         localStorage.setItem('archiview.ocr.lingue', lingue.join('+'));
@@ -271,11 +298,30 @@ window.apriOcrModal = async function(recordId, indice) {
     // Lingue
     corpo.appendChild(_oRiga(_oT('ocr_langs', 'Lingue'), _oBlocccoLingue(preselezione)));
 
+    // Orientamento: disattivato (non nascosto) senza `osd`, con l'indicazione di dove si
+    // installa — un'opzione che non compare non si scopre.
+    const orientamento = document.createElement('div');
+    orientamento.className = 'flex flex-col gap-1';
+    const raddrizza = _oCheckbox('ocr-raddrizza', _oT('ocr_straighten', 'Raddrizza le pagine scansionate di traverso'), _oRaddrizzaPredefinito());
+    const inputRaddrizza = raddrizza.querySelector('input');
+    if (!_oOsdInstallato()) {
+        inputRaddrizza.disabled = true;
+        raddrizza.classList.add('opacity-60');
+    }
+    orientamento.appendChild(raddrizza);
+    orientamento.appendChild(_oNota(_oOsdInstallato()
+        ? _oT('ocr_straighten_hint', 'Le pagine girate di 90° o capovolte si ruotano prima del riconoscimento; nel PDF ricercabile appaiono dritte. Se l\'orientamento è incerto si legge nei due versi e si tiene la lettura migliore.')
+        : _oT('ocr_straighten_missing', 'Per usarlo installa «Rilevamento orientamento» da Gestisci lingue.')));
+    corpo.appendChild(_oRiga(_oT('ocr_orientation', 'Orientamento'), orientamento));
+
     // Destinazione
     const destinazione = document.createElement('div');
     destinazione.className = 'flex flex-col gap-1';
     destinazione.appendChild(_oCheckbox('ocr-dest-bozza', _oT('ocr_dest_draft', 'Inserisci come bozza nella trascrizione'), true));
     destinazione.appendChild(_oCheckbox('ocr-dest-indice', _oT('ocr_dest_index', 'Rendi il testo cercabile'), true));
+    // Spento di default: apre un dialogo di salvataggio, e non deve comparire a chi voleva
+    // solo il testo nella trascrizione.
+    destinazione.appendChild(_oCheckbox('ocr-dest-pdf', _oT('ocr_dest_pdf', 'Salva una copia come PDF ricercabile'), false));
     corpo.appendChild(_oRiga(_oT('ocr_destination', 'Destinazione'), destinazione));
     corpo.appendChild(_oNota(_oT('ocr_dest_hint',
         'Il testo cercabile resta legato all\'allegato e non tocca la trascrizione: serve a ritrovare la scheda, non a sostituire il lavoro di lettura.')));
@@ -357,6 +403,7 @@ function _oAggiornaAvanzamento(dati) {
     const fasi = {
         pagina: _oT('ocr_phase_page', 'Pagina'),
         rasterizzazione: _oT('ocr_phase_raster', 'Preparazione immagine'),
+        orientamento: _oT('ocr_phase_orientation', 'Rilevamento orientamento'),
         riconoscimento: _oT('ocr_phase_recognize', 'Riconoscimento'),
         'recognizing text': _oT('ocr_phase_recognize', 'Riconoscimento'),
         'loading language traineddata': _oT('ocr_phase_lang', 'Caricamento lingua'),
@@ -385,7 +432,9 @@ async function _oEseguiSuAllegato(m, indice, lingue, opzioni) {
         lingue,
         dpi: opzioni.dpi,
         maxPagine: opzioni.maxPagine,
-        intestazione: opzioni.bozza ? intestazione : ''
+        intestazione: opzioni.bozza ? intestazione : '',
+        pdf: !!opzioni.pdf,
+        raddrizza: !!opzioni.raddrizza
     });
 }
 
@@ -406,9 +455,12 @@ window.avviaOcr = async function() {
         dpi: Number(document.getElementById('ocr-dpi').value) || 300,
         maxPagine: Math.max(1, Number(document.getElementById('ocr-max-pagine').value) || 20),
         bozza: document.getElementById('ocr-dest-bozza').checked,
-        indice: document.getElementById('ocr-dest-indice').checked
+        indice: document.getElementById('ocr-dest-indice').checked,
+        pdf: document.getElementById('ocr-dest-pdf').checked,
+        raddrizza: document.getElementById('ocr-raddrizza').checked
     };
-    if (!opzioni.bozza && !opzioni.indice) {
+    if (_oOsdInstallato()) _oRicordaRaddrizza(opzioni.raddrizza);
+    if (!opzioni.bozza && !opzioni.indice && !opzioni.pdf) {
         if (typeof mostraMessaggio === 'function') {
             mostraMessaggio(_oT('ocr_pick_dest', 'Scegli almeno una destinazione per il testo.'), 'info');
         }
@@ -417,6 +469,13 @@ window.avviaOcr = async function() {
 
     // La scelta delle lingue si ricorda: in un fondo si lavora per mesi sulla stessa.
     _oRicordaLingue(lingue);
+
+    // Il dialogo di salvataggio viene PRIMA dell'OCR: chiederlo dopo minuti di lavoro,
+    // con l'utente magari altrove, lascerebbe il risultato appeso a una finestra modale.
+    if (opzioni.pdf) {
+        const avvio = await _oIniziaPdf(m, sorgente);
+        if (!avvio) return;
+    }
 
     const modal = document.getElementById('ocr-modal');
     const conferma = modal.querySelector<HTMLButtonElement>('#ocr-confirm');
@@ -429,6 +488,7 @@ window.avviaOcr = async function() {
         : [Number(sorgente)];
 
     const esiti = [];
+    let annullato = false;
     try {
         for (let k = 0; k < indici.length; k++) {
             const i = indici[k];
@@ -437,6 +497,7 @@ window.avviaOcr = async function() {
             if (r && r.ok) {
                 esiti.push({ indice: i, risultato: r });
             } else if (r && r.codice === 'annullato') {
+                annullato = true;
                 break;
             } else if (r) {
                 console.error('[OCR] Allegato', i, 'fallito:', r);
@@ -451,6 +512,10 @@ window.avviaOcr = async function() {
 
     document.getElementById('ocr-progress').classList.add('hidden-tab');
 
+    // Un annullamento scarta il PDF: a metà sarebbe un documento con carte mancanti che
+    // non dice di esserlo.
+    const pdf = opzioni.pdf ? await _oConcludiPdf(annullato) : null;
+
     if (esiti.length === 0) {
         if (typeof mostraMessaggio === 'function') {
             mostraMessaggio(_oT('ocr_failed', 'Nessun testo riconosciuto.'), 'warning');
@@ -458,8 +523,46 @@ window.avviaOcr = async function() {
         return;
     }
 
-    await _oApplicaEsiti(m, esiti, lingue, opzioni);
+    await _oApplicaEsiti(m, esiti, lingue, opzioni, pdf);
 };
+
+/** Nome proposto: l'allegato scelto, o la segnatura quando il PDF raccoglie tutta la scheda. */
+function _oNomePdf(m, sorgente) {
+    const a = sorgente === 'tutti' ? null : _oAllegati(m)[Number(sorgente)];
+    const base = a
+        ? String(a.originalName || a.nome || '').replace(/\.[^.]+$/, '')
+        : String(m.segnatura || m.titolo || '');
+    return `${base || 'OCR'} - OCR.pdf`;
+}
+
+async function _oIniziaPdf(m, sorgente) {
+    try {
+        const r = await window.apiOcr.pdfInizia(_oNomePdf(m, sorgente), _oT('ocr_pdf_save_title', 'Salva PDF ricercabile'));
+        if (r && r.ok) return true;
+        if (r && !r.canceled && typeof mostraMessaggio === 'function') {
+            mostraMessaggio(_oT('ocr_pdf_failed', 'PDF ricercabile non salvato.'), 'error');
+        }
+    } catch (errore) {
+        console.error('[OCR] Avvio PDF ricercabile:', errore);
+    }
+    return false;
+}
+
+/** @returns `{ok, pagine, nome}` dal main, oppure `{ok:false}`: mai un'eccezione. */
+async function _oConcludiPdf(scarta) {
+    try {
+        const r = await window.apiOcr.pdfConcludi(scarta);
+        if (r && r.ok && r.pagine > 0 && typeof mostraMessaggio === 'function') {
+            mostraMessaggio(_oT('ocr_pdf_saved', 'PDF ricercabile salvato: {var0}').replace('{var0}', r.nome || ''), 'success');
+        } else if ((!r || !r.ok) && typeof mostraMessaggio === 'function') {
+            mostraMessaggio(_oT('ocr_pdf_failed', 'PDF ricercabile non salvato.'), 'error');
+        }
+        return r || { ok: false };
+    } catch (errore) {
+        console.error('[OCR] Scrittura PDF ricercabile:', errore);
+        return { ok: false };
+    }
+}
 
 /**
  * Scrittura sul record.
@@ -469,7 +572,14 @@ window.avviaOcr = async function() {
  * qualcosa si CHIEDE, e in mancanza di risposta non si scrive. È la regola che rende la
  * funzione utilizzabile su un archivio vero.
  */
-async function _oApplicaEsiti(m, esiti, lingue, opzioni) {
+async function _oApplicaEsiti(m, esiti, lingue, opzioni, pdf?) {
+    // Solo PDF: il record non cambia, e un salvataggio a vuoto sporcherebbe `lastModified`
+    // e il sync per nulla.
+    if (!opzioni.indice && !opzioni.bozza) {
+        _oMostraRisultato(esiti, false, opzioni, pdf);
+        return;
+    }
+
     const adesso = Date.now();
     let username = 'Anonimo';
     try {
@@ -508,7 +618,7 @@ async function _oApplicaEsiti(m, esiti, lingue, opzioni) {
     // testo appena riconosciuto non si troverebbe fino al riavvio.
     if (!window.Store && window.invalidaCacheRicerca) window.invalidaCacheRicerca();
 
-    _oMostraRisultato(esiti, bozzaInserita, opzioni);
+    _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf);
 }
 
 /**
@@ -611,7 +721,7 @@ function _oChiediSovrascrittura() {
     });
 }
 
-function _oMostraRisultato(esiti, bozzaInserita, opzioni) {
+function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
     const box = document.getElementById('ocr-result');
     if (!box) return;
     box.innerHTML = '';
@@ -651,7 +761,31 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni) {
             ? _oT('ocr_saved_draft', 'Bozza inserita nella trascrizione.')
             : _oT('ocr_draft_skipped', 'Trascrizione lasciata invariata.'));
     }
+    // Quante pagine sono state girate, e quante no per dubbio: una rotazione silenziosa
+    // sembrerebbe un errore la prima volta che l'utente apre il PDF e trova la carta diversa.
+    const pagineOcr = esiti.flatMap(e => e.risultato.pagine || []);
+    const raddrizzate = pagineOcr.filter(p => p && p.rotazione).length;
+    const incerte = pagineOcr.filter(p => p && p.orientamentoIncerto).length;
+    if (raddrizzate) {
+        stato.push(_oT('ocr_straightened', 'Pagine raddrizzate: {var0}.').replace('{var0}', String(raddrizzate)));
+    }
+    if (incerte) {
+        stato.push(_oT('ocr_orientation_unsure', 'Pagine forse girate ma lasciate com\'erano (orientamento incerto): {var0}.').replace('{var0}', String(incerte)));
+    }
+    if (opzioni.pdf && pdf && pdf.ok && pdf.pagine > 0) {
+        stato.push(_oT('ocr_pdf_saved', 'PDF ricercabile salvato: {var0}').replace('{var0}', pdf.nome || ''));
+    }
     box.appendChild(_oNota(stato.join(' ')));
+
+    // Allegati rimasti fuori dal PDF: tipicamente un PDF protetto da password, che pdf-lib
+    // non sa copiare. Il testo c'è comunque, va detto che il file no.
+    if (opzioni.pdf && esiti.some(e => e.risultato.pdfErrore)) {
+        const cifrati = esiti.some(e => e.risultato.pdfErrore === 'pdf_cifrato');
+        box.appendChild(_oNota(cifrati
+            ? _oT('ocr_pdf_encrypted', 'Alcuni PDF sono protetti e non sono stati inclusi nel PDF ricercabile.')
+            : _oT('ocr_pdf_partial', 'Alcuni allegati non sono stati inclusi nel PDF ricercabile.'),
+            'text-xs text-amber-800 dark:text-amber-300 leading-relaxed'));
+    }
 
     if (typeof mostraMessaggio === 'function') {
         mostraMessaggio(_oT('ocr_done', 'Riconoscimento completato.'), 'success');
@@ -723,7 +857,8 @@ window.ocrSelezionati = async function() {
                     lingue,
                     dpi: 300,
                     maxPagine: 20,
-                    intestazione: ''
+                    intestazione: '',
+                    raddrizza: _oRaddrizzaPredefinito()
                 });
                 if (r && r.ok && r.piano) {
                     allegati[i].ocr = {

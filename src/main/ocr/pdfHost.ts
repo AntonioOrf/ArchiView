@@ -129,8 +129,13 @@ async function testoPagina(numero) {
   return chiama(`window.__pdfTesto(${Number(numero)})`);
 }
 
-async function immaginePagina(numero, dpi) {
-  return chiama(`window.__pdfImmagine(${Number(numero)}, ${Number(dpi) || 300})`);
+async function immaginePagina(numero, dpi, rotazioneExtra?) {
+  return chiama(`window.__pdfImmagine(${Number(numero)}, ${Number(dpi) || 300}, ${Number(rotazioneExtra) || 0})`);
+}
+
+/** Allegato immagine ruotato in senso orario (0/90/180/270), come PNG base64. */
+async function immagineRuotata(nomeFile, gradi) {
+  return chiama(`window.__immagineRuotata(${JSON.stringify(path.basename(nomeFile))}, ${Number(gradi) || 0})`);
 }
 
 async function chiudiPdf() {
@@ -145,5 +150,5 @@ function distruggi() {
   pronta = null;
 }
 
-module.exports = { SCHEMA, registraProtocollo, apriPdf, testoPagina, immaginePagina, chiudiPdf, distruggi };
+module.exports = { SCHEMA, registraProtocollo, apriPdf, testoPagina, immaginePagina, immagineRuotata, chiudiPdf, distruggi };
 export {};

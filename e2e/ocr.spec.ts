@@ -373,4 +373,113 @@ test.describe('OCR degli allegati', () => {
     // E l'editor, ancora sulla p. 3, mostra il risultato.
     await expect(page.locator('#trascrizione-editor')).toContainText('Tre');
   });
+
+  test('2.3.13 — PDF ricercabile: dialogo prima dell\'OCR, motore con pdf, record intatto', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    const id = await createItemWithAttachment(page, 'OCR-PDF', FIXTURE_PNG);
+    await stubMotore(electronApp);
+    // Il dialogo di salvataggio e la scrittura sono del main (pdfRicercabile.ts, coperto da
+    // test/pdfRicercabile.test.js): qui si verifica l'ordine delle chiamate e cosa ci passa.
+    await electronApp.evaluate(({ ipcMain }) => {
+      (globalThis as any).__pdfChiamate = [];
+      ipcMain.removeHandler('ocr-pdf-inizia');
+      ipcMain.handle('ocr-pdf-inizia', (_e: any, nome: string) => {
+        (globalThis as any).__pdfChiamate.push({ inizia: nome, ocrGiaFatti: (globalThis as any).__ocrChiamate.length });
+        return { ok: true };
+      });
+      ipcMain.removeHandler('ocr-pdf-concludi');
+      ipcMain.handle('ocr-pdf-concludi', (_e: any, scarta: boolean) => {
+        (globalThis as any).__pdfChiamate.push({ concludi: scarta });
+        return { ok: true, pagine: 1, nome: 'carta - OCR.pdf' };
+      });
+    });
+    const prima = (await getAppData(page)).manoscritti.find((m: any) => m.id === id);
+
+    await page.evaluate((rid) => (window as any).apriOcrModal(rid, 0), id);
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await page.locator('#ocr-dest-bozza').setChecked(false);
+    await page.locator('#ocr-dest-indice').setChecked(false);
+    await page.locator('#ocr-dest-pdf').setChecked(true);
+    await page.locator('#ocr-confirm').click();
+    await expect(page.locator('#ocr-result')).toContainText('carta - OCR.pdf');
+
+    const pdf = await electronApp.evaluate(() => (globalThis as any).__pdfChiamate);
+    expect(pdf).toHaveLength(2);
+    expect(pdf[0].inizia).toMatch(/ - OCR\.pdf$/);
+    expect(pdf[0].ocrGiaFatti).toBe(0);
+    expect(pdf[1]).toEqual({ concludi: false });
+    const chiamate = await chiamateMotore(electronApp);
+    expect(chiamate).toHaveLength(1);
+    expect(chiamate[0].pdf).toBe(true);
+
+    // Solo PDF: né testo cercabile né trascrizione, e nessun salvataggio a vuoto.
+    const dopo = (await getAppData(page)).manoscritti.find((m: any) => m.id === id);
+    expect(dopo.allegati[0].ocr).toBeUndefined();
+    expect(dopo.lastModified).toBe(prima.lastModified);
+  });
+
+  test('2.3.15 — raddrizzamento: attivo con osd, comunicato nel risultato; spento senza', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    const id = await createItemWithAttachment(page, 'OCR-GIRATA', FIXTURE_PNG);
+    await stubMotore(electronApp);
+
+    // Senza `osd`: l'opzione c'è ma è disattivata, e al motore arriva spenta.
+    await page.evaluate((rid) => (window as any).apriOcrModal(rid, 0), id);
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await expect(page.locator('#ocr-raddrizza')).toBeDisabled();
+    await expect(page.locator('#ocr-raddrizza')).not.toBeChecked();
+    await page.evaluate(() => (window as any).chiudiOcrModal());
+
+    // Con `osd` installato e una pagina che il motore dichiara girata.
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('ocr-lingue');
+      ipcMain.handle('ocr-lingue', () => ({
+        ok: true,
+        lingue: [
+          { codice: 'ita', nome: 'Italiano', installata: true, dimensione: 4000000 },
+          { codice: 'osd', nome: 'Rilevamento orientamento', installata: true, dimensione: 10000000 }
+        ]
+      }));
+      ipcMain.removeHandler('ocr-esegui');
+      ipcMain.handle('ocr-esegui', (_e: any, parametri: any) => {
+        (globalThis as any).__ocrChiamate.push(parametri);
+        return {
+          ok: true, piano: 'Testo', html: '<p>Testo</p>', confidenza: 90, lingue: parametri.lingue, motore: 'tesseract',
+          pagine: [{ numero: 1, origine: 'ocr', confidenza: 90, rotazione: 90, orientamentoIncerto: false }],
+          paginePdf: 1, pagineElaborate: 1, caratteri: 5
+        };
+      });
+    });
+    await azzeraChiamate(electronApp);
+    await page.evaluate((rid) => (window as any).apriOcrModal(rid, 0), id);
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await expect(page.locator('#ocr-raddrizza')).toBeEnabled();
+    await expect(page.locator('#ocr-raddrizza')).toBeChecked();
+    // `osd` non è una lingua di riconoscimento: non compare fra le lingue da scegliere.
+    await expect(page.locator('#ocr-lang-osd')).toHaveCount(0);
+    await page.locator('#ocr-dest-bozza').setChecked(false);
+    await page.locator('#ocr-confirm').click();
+    await expect(page.locator('#ocr-result')).toContainText('Pagine raddrizzate: 1');
+    const chiamate = await chiamateMotore(electronApp);
+    expect(chiamate[0].raddrizza).toBe(true);
+    expect(chiamate[0].lingue).toEqual(['ita']);
+  });
+
+  test('2.3.14 — PDF ricercabile: dialogo annullato, l\'OCR non parte', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    const id = await createItemWithAttachment(page, 'OCR-PDF-NO', FIXTURE_PNG);
+    await stubMotore(electronApp);
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('ocr-pdf-inizia');
+      ipcMain.handle('ocr-pdf-inizia', () => ({ ok: false, canceled: true }));
+    });
+
+    await page.evaluate((rid) => (window as any).apriOcrModal(rid, 0), id);
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await page.locator('#ocr-dest-pdf').setChecked(true);
+    await page.locator('#ocr-confirm').click();
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    expect(await chiamateMotore(electronApp)).toHaveLength(0);
+    await expect(page.locator('#ocr-result')).toBeHidden();
+  });
 });

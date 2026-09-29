@@ -95,6 +95,8 @@ contextBridge.exposeInMainWorld('apiOcr', {
     esegui: (opzioni) => ipcRenderer.invoke('ocr-esegui', opzioni),
     annulla: () => ipcRenderer.invoke('ocr-annulla'),
     stato: () => ipcRenderer.invoke('ocr-stato'),
+    pdfInizia: (nomeSuggerito, titolo) => ipcRenderer.invoke('ocr-pdf-inizia', nomeSuggerito, titolo),
+    pdfConcludi: (scarta) => ipcRenderer.invoke('ocr-pdf-concludi', scarta),
     onProgress: (callback) => ipcRenderer.on('ocr-progress', (event, dati) => callback(dati))
 });
 

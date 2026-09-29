@@ -8,8 +8,9 @@ const path = require('path');
 const fs = require('fs');
 const { state } = require('../workspaceManager');
 const pdfHost = require('./pdfHost');
-const { riconosci, linguaMancanti, normalizzaLingue } = require('./ocrEngine');
+const { riconosci, linguaMancanti, normalizzaLingue, rilevaOrientamento } = require('./ocrEngine');
 const { testoOcrPiano, testoOcrInHtml, unisciPagine } = require('./ocrText');
+const pdfRicercabile = require('./pdfRicercabile');
 
 /**
  * Una pagina il cui livello testo supera questa soglia di caratteri alfanumerici è un PDF
@@ -71,18 +72,86 @@ async function elaboraPaginaPdf(numero, opzioni, segnala) {
     return { numero, righe: [], origine: 'errore', confidenza: 0, errore: img && img.errore };
   }
 
+  // La versione raddrizzata si rasterizza di nuovo con la rotazione aggiunta: pdf.js ruota il
+  // vettoriale, nessuna perdita da ricampionare la PNG.
+  const { esito, rotazione, orientamentoIncerto } = await riconosciOrientato({
+    originale: Buffer.from(img.png, 'base64'),
+    ruota: async (gradi) => {
+      const r = await pdfHost.immaginePagina(numero, opzioni.dpi, gradi);
+      return r && r.ok ? Buffer.from(r.png, 'base64') : null;
+    },
+    raddrizza: opzioni.raddrizza,
+    lingue: opzioni.lingue,
+    pdf: opzioni.pdf ? 'testo' : undefined,
+    numero,
+    segnala
+  });
+  return {
+    numero, righe: esito.righe, origine: 'ocr', confidenza: esito.confidenza, livelloPdf: esito.pdf,
+    rotazione, orientamentoIncerto
+  };
+}
+
+/**
+ * Di quanti punti la lettura nel verso proposto deve battere quella nel verso originale
+ * perché una proposta incerta dell'OSD venga accettata. Il testo letto di traverso esce
+ * come rumore a confidenza bassa (in prova: simboli sparsi contro 85+ sul verso giusto): il
+ * margine serve solo a non girare una carta per un pareggio.
+ */
+const MARGINE_ARBITRATO = 10;
+
+/**
+ * Riconoscimento con raddrizzamento.
+ *
+ * - OSD sicuro → si riconosce solo la versione ruotata.
+ * - OSD incerto → ARBITRATO: si riconosce nei due versi e vince la lettura con confidenza
+ *   nettamente migliore. Costa un OCR in più, ma solo sulle pagine dubbie, ed evita sia di
+ *   girare per errore una carta dritta sia di lasciarne storta una che l'OSD aveva capito.
+ * - Nessuna proposta, rotazione fallita → l'originale, come senza l'opzione.
+ */
+async function riconosciOrientato({ originale, ruota, raddrizza, lingue, pdf, numero, segnala }) {
+  const leggi = (sorgente) => riconosci(sorgente, lingue, (p) => {
+    segnala({ fase: p.fase, pagina: numero, progresso: p.progresso });
+  }, pdf);
+  const semplice = async (orientamentoIncerto = false) => {
+    verificaAnnullamento();
+    segnala({ fase: 'riconoscimento', pagina: numero });
+    return { esito: await leggi(originale), rotazione: 0, orientamentoIncerto };
+  };
+
+  if (!raddrizza) return semplice();
+  verificaAnnullamento();
+  segnala({ fase: 'orientamento', pagina: numero });
+  const orient = await rilevaOrientamento(originale);
+  if (!orient || !orient.gradi) return semplice();
+
+  const ruotata = await ruota(orient.gradi);
+  if (!ruotata) {
+    console.error('[OCR] Rotazione della pagina fallita, si riconosce l\'originale');
+    return semplice();
+  }
+
   verificaAnnullamento();
   segnala({ fase: 'riconoscimento', pagina: numero });
-  const esito = await riconosci(Buffer.from(img.png, 'base64'), opzioni.lingue, (p) => {
-    segnala({ fase: p.fase, pagina: numero, progresso: p.progresso });
-  });
-  return { numero, righe: esito.righe, origine: 'ocr', confidenza: esito.confidenza };
+  const suRuotata = await leggi(ruotata);
+  if (!orient.incerto) return { esito: suRuotata, rotazione: orient.gradi, orientamentoIncerto: false };
+
+  verificaAnnullamento();
+  segnala({ fase: 'orientamento', pagina: numero });
+  const suOriginale = await leggi(originale);
+  if (suRuotata.confidenza >= suOriginale.confidenza + MARGINE_ARBITRATO) {
+    return { esito: suRuotata, rotazione: orient.gradi, orientamentoIncerto: false };
+  }
+  return { esito: suOriginale, rotazione: 0, orientamentoIncerto: true };
 }
 
 /**
  * OCR di un allegato.
  *
- * `opzioni`: `{ nomeFile, tipo, lingue, dpi, maxPagine, intestazione }`.
+ * `opzioni`: `{ nomeFile, tipo, lingue, dpi, maxPagine, intestazione, pdf, raddrizza }`.
+ * Con `pdf` l'allegato si accoda anche al PDF ricercabile aperto da `pdfRicercabile.apri`.
+ * Con `raddrizza` le pagine scansionate di traverso si ruotano prima del riconoscimento
+ * (serve `osd` installato; senza, l'opzione è ignorata in silenzio).
  * `onProgresso` riceve `{fase, pagina, pagine, progresso}` ad ogni passo: su un PDF di
  * trenta carte l'operazione dura minuti, e una barra ferma è indistinguibile da un blocco.
  */
@@ -109,12 +178,41 @@ async function eseguiOcr(opzioni, onProgresso) {
 
   try {
     const percorso = percorsoAllegato(o.nomeFile);
+    const conPdf = !!o.pdf && pdfRicercabile.attiva();
 
     if (o.tipo !== 'pdf') {
-      segnala({ fase: 'riconoscimento', pagina: 1, pagine: 1 });
-      const esito = await riconosci(percorso, lingue, (p) => segnala({ ...p, pagina: 1, pagine: 1 }));
-      const pagine = [{ numero: 1, righe: esito.righe, origine: 'ocr', confidenza: esito.confidenza }];
-      return componiRisultato(pagine, lingue, o);
+      let incorporabile = false;
+      if (conPdf) {
+        // Bastano i primi byte per il formato e l'EXIF, non il file intero.
+        const fh = await fs.promises.open(percorso, 'r');
+        try {
+          const testa = Buffer.alloc(512);
+          const { bytesRead } = await fh.read(testa, 0, 512, 0);
+          incorporabile = pdfRicercabile.immagineIncorporabile(testa.subarray(0, bytesRead));
+        } finally {
+          await fh.close();
+        }
+      }
+      // La rotazione di un'immagine la fa il canvas della finestra host: il main non ne ha uno.
+      const { esito, rotazione, orientamentoIncerto } = await riconosciOrientato({
+        originale: percorso,
+        ruota: async (gradi) => {
+          const r = await pdfHost.immagineRuotata(path.basename(percorso), gradi);
+          if (!r || !r.ok) console.error('[OCR] Rotazione immagine fallita:', r && r.errore);
+          return r && r.ok ? Buffer.from(r.png, 'base64') : null;
+        },
+        raddrizza: !!o.raddrizza,
+        lingue,
+        pdf: conPdf ? (incorporabile ? 'testo' : 'completa') : undefined,
+        numero: 1,
+        segnala: (d) => segnala({ ...d, pagine: 1 })
+      });
+      const pagine = [{ numero: 1, righe: esito.righe, origine: 'ocr', confidenza: esito.confidenza, rotazione, orientamentoIncerto }];
+      const risultato = componiRisultato(pagine, lingue, o);
+      if (conPdf) {
+        risultato.pdfErrore = await accodaAlPdf(() => pdfRicercabile.aggiungiImmagine(percorso, esito.pdf, incorporabile, rotazione));
+      }
+      return risultato;
     }
 
     const apertura = await pdfHost.apriPdf(path.basename(o.nomeFile));
@@ -127,10 +225,20 @@ async function eseguiOcr(opzioni, onProgresso) {
     for (let n = 1; n <= totale; n++) {
       verificaAnnullamento();
       segnala({ fase: 'pagina', pagina: n, pagine: totale });
-      pagine.push(await elaboraPaginaPdf(n, { ...o, lingue }, (d) => segnala({ ...d, pagine: totale })));
+      pagine.push(await elaboraPaginaPdf(n, { ...o, lingue, pdf: conPdf }, (d) => segnala({ ...d, pagine: totale })));
     }
     await pdfHost.chiudiPdf();
-    return componiRisultato(pagine, lingue, o, apertura.pagine, totale);
+    const risultato = componiRisultato(pagine, lingue, o, apertura.pagine, totale);
+    if (conPdf) {
+      const livelli = new Map();
+      const rotazioni = new Map();
+      for (const p of pagine) {
+        if (p.livelloPdf) livelli.set(p.numero, p.livelloPdf);
+        if (p.rotazione) rotazioni.set(p.numero, p.rotazione);
+      }
+      risultato.pdfErrore = await accodaAlPdf(() => pdfRicercabile.aggiungiPdf(percorso, livelli, rotazioni));
+    }
+    return risultato;
   } catch (errore) {
     if (errore && errore.codice === 'annullato') return { ok: false, codice: 'annullato' };
     console.error('[OCR] Riconoscimento fallito:', errore);
@@ -141,7 +249,21 @@ async function eseguiOcr(opzioni, onProgresso) {
   }
 }
 
-function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?) {
+/**
+ * Un errore nel PDF ricercabile non invalida l'OCR: il testo è già riconosciuto e va comunque
+ * nella trascrizione. Torna il codice, che il renderer mostra accanto al risultato.
+ */
+async function accodaAlPdf(azione) {
+  try {
+    await azione();
+    return null;
+  } catch (errore) {
+    console.error('[OCR] PDF ricercabile:', errore);
+    return (errore && errore.codice) || 'errore';
+  }
+}
+
+function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?): any {
   const utili = pagine.filter(p => p.righe && p.righe.length);
   const multipagina = pagine.length > 1;
 
@@ -177,6 +299,8 @@ function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?) {
       numero: p.numero,
       origine: p.origine,
       confidenza: p.confidenza,
+      rotazione: p.rotazione || 0,
+      orientamentoIncerto: !!p.orientamentoIncerto,
       html: p.righe && p.righe.length ? testoOcrInHtml(p.righe) : ''
     })),
     paginePdf: paginePdf || pagine.length,

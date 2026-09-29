@@ -657,6 +657,19 @@ function _linguiExtraction() {
     i18n._({ id: "ocr_destination", message: "Destinazione" });
     i18n._({ id: "ocr_dest_draft", message: "Inserisci come bozza nella trascrizione" });
     i18n._({ id: "ocr_dest_index", message: "Rendi il testo cercabile" });
+    i18n._({ id: "ocr_orientation", message: "Orientamento" });
+    i18n._({ id: "ocr_straighten", message: "Raddrizza le pagine scansionate di traverso" });
+    i18n._({ id: "ocr_straighten_hint", message: "Le pagine girate di 90° o capovolte si ruotano prima del riconoscimento; nel PDF ricercabile appaiono dritte. Se l'orientamento è incerto si legge nei due versi e si tiene la lettura migliore." });
+    i18n._({ id: "ocr_straighten_missing", message: "Per usarlo installa «Rilevamento orientamento» da Gestisci lingue." });
+    i18n._({ id: "ocr_phase_orientation", message: "Rilevamento orientamento" });
+    i18n._({ id: "ocr_straightened", message: "Pagine raddrizzate: {var0}." });
+    i18n._({ id: "ocr_orientation_unsure", message: "Pagine forse girate ma lasciate com'erano (orientamento incerto): {var0}." });
+    i18n._({ id: "ocr_dest_pdf", message: "Salva una copia come PDF ricercabile" });
+    i18n._({ id: "ocr_pdf_save_title", message: "Salva PDF ricercabile" });
+    i18n._({ id: "ocr_pdf_saved", message: "PDF ricercabile salvato: {var0}" });
+    i18n._({ id: "ocr_pdf_failed", message: "PDF ricercabile non salvato." });
+    i18n._({ id: "ocr_pdf_encrypted", message: "Alcuni PDF sono protetti e non sono stati inclusi nel PDF ricercabile." });
+    i18n._({ id: "ocr_pdf_partial", message: "Alcuni allegati non sono stati inclusi nel PDF ricercabile." });
     i18n._({ id: "ocr_dest_hint", message: "Il testo cercabile resta legato all'allegato e non tocca la trascrizione: serve a ritrovare la scheda, non a sostituire il lavoro di lettura." });
     i18n._({ id: "ocr_advanced", message: "Opzioni avanzate" });
     i18n._({ id: "ocr_dpi", message: "Risoluzione di scansione dei PDF" });
@@ -2292,6 +2305,19 @@ const customEn = {
     "ocr_destination": "Destination",
     "ocr_dest_draft": "Insert as a draft in the transcription",
     "ocr_dest_index": "Make the text searchable",
+    "ocr_orientation": "Orientation",
+    "ocr_straighten": "Straighten pages scanned sideways",
+    "ocr_straighten_hint": "Pages turned by 90° or upside down are rotated before recognition; in the searchable PDF they appear upright. If the orientation is uncertain, both ways are read and the better reading is kept.",
+    "ocr_straighten_missing": "To use it, install “Orientation detection” from Manage languages.",
+    "ocr_phase_orientation": "Detecting orientation",
+    "ocr_straightened": "Pages straightened: {var0}.",
+    "ocr_orientation_unsure": "Pages possibly turned but left as they were (uncertain orientation): {var0}.",
+    "ocr_dest_pdf": "Save a copy as a searchable PDF",
+    "ocr_pdf_save_title": "Save searchable PDF",
+    "ocr_pdf_saved": "Searchable PDF saved: {var0}",
+    "ocr_pdf_failed": "Searchable PDF not saved.",
+    "ocr_pdf_encrypted": "Some PDFs are protected and were not included in the searchable PDF.",
+    "ocr_pdf_partial": "Some attachments were not included in the searchable PDF.",
     "ocr_dest_hint": "Searchable text stays attached to the file and does not touch the transcription: it is there to find the record again, not to replace the work of reading it.",
     "ocr_advanced": "Advanced options",
     "ocr_dpi": "PDF scanning resolution",
@@ -3357,6 +3383,19 @@ const customIt = {
     "ocr_destination": "Destinazione",
     "ocr_dest_draft": "Inserisci come bozza nella trascrizione",
     "ocr_dest_index": "Rendi il testo cercabile",
+    "ocr_orientation": "Orientamento",
+    "ocr_straighten": "Raddrizza le pagine scansionate di traverso",
+    "ocr_straighten_hint": "Le pagine girate di 90° o capovolte si ruotano prima del riconoscimento; nel PDF ricercabile appaiono dritte. Se l'orientamento è incerto si legge nei due versi e si tiene la lettura migliore.",
+    "ocr_straighten_missing": "Per usarlo installa «Rilevamento orientamento» da Gestisci lingue.",
+    "ocr_phase_orientation": "Rilevamento orientamento",
+    "ocr_straightened": "Pagine raddrizzate: {var0}.",
+    "ocr_orientation_unsure": "Pagine forse girate ma lasciate com'erano (orientamento incerto): {var0}.",
+    "ocr_dest_pdf": "Salva una copia come PDF ricercabile",
+    "ocr_pdf_save_title": "Salva PDF ricercabile",
+    "ocr_pdf_saved": "PDF ricercabile salvato: {var0}",
+    "ocr_pdf_failed": "PDF ricercabile non salvato.",
+    "ocr_pdf_encrypted": "Alcuni PDF sono protetti e non sono stati inclusi nel PDF ricercabile.",
+    "ocr_pdf_partial": "Alcuni allegati non sono stati inclusi nel PDF ricercabile.",
     "ocr_dest_hint": "Il testo cercabile resta legato all'allegato e non tocca la trascrizione: serve a ritrovare la scheda, non a sostituire il lavoro di lettura.",
     "ocr_advanced": "Opzioni avanzate",
     "ocr_dpi": "Risoluzione di scansione dei PDF",

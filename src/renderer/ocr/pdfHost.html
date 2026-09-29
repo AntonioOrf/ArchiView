@@ -73,13 +73,17 @@ window.__pdfTesto = async function (numero) {
   }
 };
 
-/** Rasterizza una pagina in PNG. `dpi` decide la resa dell'OCR: sotto i 200 il testo si sfalda. */
-window.__pdfImmagine = async function (numero, dpi) {
+/**
+ * Rasterizza una pagina in PNG. `dpi` decide la resa dell'OCR: sotto i 200 il testo si sfalda.
+ * `extra` (0/90/180/270, orario) si somma a `/Rotate`: è il raddrizzamento di una carta
+ * scansionata di traverso, deciso dal main dopo il rilevamento dell'orientamento.
+ */
+window.__pdfImmagine = async function (numero, dpi, extra) {
   try {
     if (!documento) return { ok: false, errore: 'nessun documento' };
     const pagina = await documento.getPage(numero);
     const scala = (dpi || 300) / 72;
-    const viewport = pagina.getViewport({ scale: scala });
+    const viewport = pagina.getViewport({ scale: scala, rotation: (pagina.rotate + (Number(extra) || 0)) % 360 });
     const canvas = document.createElement('canvas');
     canvas.width = Math.floor(viewport.width);
     canvas.height = Math.floor(viewport.height);
@@ -94,6 +98,37 @@ window.__pdfImmagine = async function (numero, dpi) {
     canvas.width = 0;
     canvas.height = 0;
     return { ok: true, png: dataUrl.slice(dataUrl.indexOf(',') + 1), larghezza: viewport.width, altezza: viewport.height };
+  } catch (errore) {
+    return { ok: false, errore: String(errore && errore.message ? errore.message : errore) };
+  }
+};
+
+/**
+ * Un allegato immagine ruotato di `gradi` in senso orario, in PNG. Serve il canvas per la
+ * stessa ragione della rasterizzazione: il main non ne ha uno. `from-image` applica l'EXIF
+ * come fa Tesseract, così la rotazione si somma a un'immagine già orientata allo stesso modo.
+ */
+window.__immagineRuotata = async function (nomeFile, gradi) {
+  try {
+    const risposta = await fetch('ocr-host://app/allegato/' + encodeURIComponent(nomeFile));
+    if (!risposta.ok) throw new Error('HTTP ' + risposta.status);
+    const bmp = await createImageBitmap(await risposta.blob(), { imageOrientation: 'from-image' });
+    const verticale = gradi === 90 || gradi === 270;
+    const canvas = document.createElement('canvas');
+    canvas.width = verticale ? bmp.height : bmp.width;
+    canvas.height = verticale ? bmp.width : bmp.height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Asse y verso il basso: un angolo positivo è una rotazione oraria.
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(gradi * Math.PI / 180);
+    ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+    bmp.close();
+    const dataUrl = canvas.toDataURL('image/png');
+    canvas.width = 0;
+    canvas.height = 0;
+    return { ok: true, png: dataUrl.slice(dataUrl.indexOf(',') + 1) };
   } catch (errore) {
     return { ok: false, errore: String(errore && errore.message ? errore.message : errore) };
   }
