@@ -1,4 +1,4 @@
-// Server HTTP effimero per i redirect OAuth (Google, Microsoft) e per il Google Picker.
+// Server HTTP effimero per il redirect OAuth di Google e per il Google Picker.
 //
 // `server.listen(porta)` senza host ascolta su TUTTE le interfacce: chiunque sulla stessa rete
 // poteva mandare un `?code=` al server di login in attesa (S3 in REVIEW-SECURITY.md). Qui si

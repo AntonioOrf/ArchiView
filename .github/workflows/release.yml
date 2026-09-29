@@ -33,7 +33,6 @@ jobs:
           export const GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";
           export const GOOGLE_CLIENT_SECRET = "${{ secrets.GOOGLE_CLIENT_SECRET }}";
           export const GOOGLE_API_KEY = "${{ secrets.GOOGLE_API_KEY }}";
-          export const MS_CLIENT_ID = "${{ secrets.MS_CLIENT_ID }}";
           export const PUSHER_KEY = "${{ secrets.PUSHER_KEY }}";
           export const PUSHER_CLUSTER = "${{ secrets.PUSHER_CLUSTER }}";
           export const HUB_URL = "${{ secrets.HUB_URL }}";

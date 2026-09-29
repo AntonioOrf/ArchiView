@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { state, getActiveVaultFlags } = require('./workspaceManager');
 
-// Store centralizzato dei token cloud (Google + Microsoft).
+// Store centralizzato dei token cloud (Google; Microsoft solo per la pulizia dei residui).
 //
 // I token vivono SEMPRE in userData/cloud-tokens/, MAI dentro la cartella del workspace:
 // - il blob DPAPI (safeStorage) è legato a utente+macchina, quindi non deve finire in una
@@ -35,7 +35,7 @@ function activeVaultKey(): string {
   return 'global';
 }
 
-function tokenPathFor(provider: 'google' | 'ms' | 'hub', key: string): string {
+function tokenPathFor(provider: 'google' | 'hub', key: string): string {
   return path.join(tokensDir(), `${provider}-${sanitizeKey(key)}.json`);
 }
 
@@ -155,7 +155,7 @@ function moveFile(src: string, dst: string): void {
 // Migra il token globale legacy e quello locale del workspace attivo verso la nuova location.
 // legacyLocalFor: risolve il vecchio percorso locale dato il workspacePath (null se n/d).
 function migrateLegacy(
-  provider: 'google' | 'ms',
+  provider: 'google',
   legacyGlobalPath: string | null,
   legacyLocalFor: (ws: string) => string | null
 ): void {
@@ -182,8 +182,29 @@ function migrateLegacy(
   }
 }
 
+// OneDrive rimosso: cancella i token MSAL rimasti (cloud-tokens/ms-*.json, il vecchio globale in
+// userData e quello legacy nel workspace aperto). Contengono un refresh token ancora valido
+// per l'account Microsoft dell'utente: non devono restare su disco senza più uno scopo.
+function purgeMicrosoftTokens(): number {
+  const candidati: string[] = [path.join(app.getPath('userData'), 'ms-tokens-global.json')];
+  try {
+    for (const nome of fs.readdirSync(tokensDir())) {
+      if (/^ms-.*\.json$/.test(nome)) candidati.push(path.join(tokensDir(), nome));
+    }
+  } catch { /* cartella token assente: niente da pulire */ }
+  if (state.workspacePath) candidati.push(path.join(state.workspacePath, '.ms-tokens.json'));
+  let rimossi = 0;
+  for (const p of candidati) {
+    try { if (fs.existsSync(p)) { fs.unlinkSync(p); rimossi++; } } catch (e: any) {
+      console.warn('[cloudTokenStore] token Microsoft non rimosso:', p, e && e.message);
+    }
+  }
+  return rimossi;
+}
+
 module.exports = {
   tokensDir,
+  purgeMicrosoftTokens,
   activeVaultKey,
   tokenPathFor,
   writeSerialized,

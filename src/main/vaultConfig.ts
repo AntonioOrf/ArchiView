@@ -23,7 +23,7 @@ function emptyConfig() {
   return {
     schemaVersion: 1,
     vaultType: 'local',      // 'local' | 'backup' | 'shared'
-    provider: 'none',        // 'none' | 'google' | 'microsoft' | 'hub'
+    provider: 'none',        // 'none' | 'google' | 'hub'
     sync: {
       sharedVaultId: null,
       driveAutofetch: false,
@@ -36,6 +36,20 @@ function emptyConfig() {
 
 // Deriva il modello normalizzato dai file legacy (+ settings globali per il vault attivo).
 // Non scrive nulla.
+// OneDrive è stato rimosso (non aveva controllo conflitti, dedup allegati né inviti). Un vault
+// rimasto con provider 'microsoft' torna locale: i dati restano sul disco, niente sync. Senza
+// questo passerebbe a Google Drive con l'id di una cartella OneDrive.
+function degradaMicrosoft(cfg) {
+  if (!cfg || cfg.provider !== 'microsoft') return cfg;
+  return {
+    ...cfg,
+    vaultType: 'local',
+    provider: 'none',
+    migratedFromMicrosoft: true,
+    sync: { ...(cfg.sync || {}), sharedVaultId: null }
+  };
+}
+
 function deriveFromLegacy(folderPath, globalSettings) {
   const cfg = emptyConfig();
   const drive = safeReadJson(path.join(folderPath, DRIVE_FILE)) || {};
@@ -85,7 +99,7 @@ function deriveFromLegacy(folderPath, globalSettings) {
   cfg.realtime.pusherCluster = drive.pusherCluster || ga.pusherCluster || null;
   cfg.realtime.pusherWebhook = drive.pusherWebhook || ga.pusherWebhook || null;
 
-  return cfg;
+  return degradaMicrosoft(cfg);
 }
 
 // Ritorna il modello normalizzato: legge il file unificato se presente,
@@ -95,13 +109,13 @@ function readVaultConfig(folderPath, globalSettings) {
   const existing = safeReadJson(path.join(folderPath, VAULT_FILE));
   if (existing && existing.schemaVersion) {
     const base = emptyConfig();
-    return {
+    return degradaMicrosoft({
       ...base,
       ...existing,
       sync: { ...base.sync, ...(existing.sync || {}) },
       hub: { ...base.hub, ...(existing.hub || {}) },
       realtime: { ...base.realtime, ...(existing.realtime || {}) }
-    };
+    });
   }
   return deriveFromLegacy(folderPath, globalSettings);
 }

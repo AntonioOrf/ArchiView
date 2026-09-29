@@ -27,7 +27,6 @@ const { setupSettingsIpc } = require('./ipc/settingsIpc');
 const { setupVaultIpc } = require('./ipc/vaultIpc');
 const { setupHubIpc } = require('./ipc/hubIpc');
 const { setupDriveIpc } = require('./ipc/drive');
-const { setupMsIpc } = require('./ipc/msSync');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
 const { setupOcrIpc } = require('./ipc/ocrIpc');
 const { setupIiifIpc } = require('./ipc/iiifIpc');
@@ -163,6 +162,8 @@ if (!gotTheLock) {
     if (savedWorkspace) {
       initWorkspace(savedWorkspace);
     }
+    // OneDrive rimosso: via i token MSAL rimasti (dopo initWorkspace, che fissa il workspace).
+    try { require('./cloudTokenStore').purgeMicrosoftTokens(); } catch (e) { console.warn('Pulizia token Microsoft non riuscita:', e); }
 
   setupDatabaseIpc();
   setupAttachmentsIpc();
@@ -172,7 +173,6 @@ if (!gotTheLock) {
   setupVaultIpc();
   setupHubIpc();
   setupDriveIpc();
-  setupMsIpc();
   setupExportImportIpc();
   setupOcrIpc();
   setupIiifIpc();

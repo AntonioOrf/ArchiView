@@ -157,15 +157,4 @@ contextBridge.exposeInMainWorld('apiDrive', {
     getFileMeta: (fileId) => ipcRenderer.invoke('drive-get-file-meta', fileId)
 });
 
-contextBridge.exposeInMainWorld('apiMicrosoft', {
-    auth: (forceLocal) => ipcRenderer.invoke('ms-auth', forceLocal),
-    logout: () => ipcRenderer.invoke('ms-logout'),
-    status: () => ipcRenderer.invoke('ms-status'),
-    pull: (vaultId) => ipcRenderer.invoke('ms-pull', vaultId),
-    sync: () => ipcRenderer.invoke('ms-sync'),
-    checkUpdates: () => ipcRenderer.invoke('ms-check-updates'),
-    generateInvite: () => ipcRenderer.invoke('ms-generate-invite'),
-    pulisciAllegatiOrfani: () => ipcRenderer.invoke('ms-clean-orphans'),
-    peekDb: (vaultId) => ipcRenderer.invoke('ms-peek-db', vaultId)
-});
 export {};

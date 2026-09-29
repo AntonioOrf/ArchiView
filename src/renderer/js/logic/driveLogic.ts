@@ -100,12 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Unico provider cloud "a file": Google Drive (OneDrive rimosso, vedi vaultConfig.ts).
 window.getApiCloud = async function() {
-    if (!window.apiSettings) return window.apiDrive;
-    const settings = await window.apiSettings.get();
-    if (settings.cloudProvider === 'microsoft' && window.apiMicrosoft) {
-        return window.apiMicrosoft;
-    }
     return window.apiDrive;
 };
 
@@ -291,7 +287,7 @@ window.aggiornaStatoDriveHub = function() {
 };
 
 window.loginCloud = async function(provider, forceLocal = false) {
-    const api = provider === 'microsoft' ? window.apiMicrosoft : window.apiDrive;
+    const api = window.apiDrive;
     if (api) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_apri_il_browser_per_compl", "Apri il browser per completare l'accesso…"), "info");
         try {
@@ -319,15 +315,7 @@ window.loginGoogleDrive = async function(forceLocal = false) {
 // esattamente il sintomo da cui nasce questa richiesta. Essendo lo stato già "non connesso",
 // non stiamo sacrificando un refresh silenzioso utile.
 window.connettiAccountCloud = async function() {
-    let provider = 'google';
-    try {
-        if (window.apiSettings) {
-            const settings = await window.apiSettings.get();
-            if (settings.cloudProvider === 'microsoft' && window.apiMicrosoft) provider = 'microsoft';
-        }
-    } catch (e) { /* provider non leggibile → Google, il default dell'app */ }
-
-    await window.loginCloud(provider, true);
+    await window.loginCloud('google', true);
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 
     // Se il login è partito dal modal Cloud, il suo riepilogo mostra ancora "Non connesso":

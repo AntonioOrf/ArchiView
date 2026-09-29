@@ -39,7 +39,6 @@ jobs:
           export const GOOGLE_CLIENT_ID = "";
           export const GOOGLE_CLIENT_SECRET = "";
           export const GOOGLE_API_KEY = "";
-          export const MS_CLIENT_ID = "";
           export const PUSHER_KEY = "";
           export const PUSHER_CLUSTER = "";
           export const HUB_URL = "";
