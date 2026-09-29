@@ -1,14 +1,32 @@
-## ArchiView 3.1.3 — Risoluzione Conflitti e Salvaguardia Sincronizzazione
+## ArchiView 3.2.0 — PDF pagina per pagina e archivi condivisi più sicuri
 
-Il modale di risoluzione dei conflitti e il motore di sincronizzazione con Google Drive e OneDrive
-sono stati perfezionati per offrire un'interazione intuitiva ed evitare qualsiasi rischio di perdita dati.
+I PDF si leggono e si trascrivono una pagina alla volta, con gli stessi strumenti delle carte fotografate. La condivisione degli archivi è stata rivista da cima a fondo: il server non legge più le schede e le trascrizioni, e le notifiche arrivano solo ai membri.
+
+### Importante per gli archivi condivisi
+
+- **Tutti i membri devono aggiornare prima di inviare modifiche.** Da questa versione il database di un archivio condiviso viene cifrato prima di arrivare al server. Le versioni precedenti di ArchiView non sanno leggerlo: vedrebbero l'archivio vuoto e proporrebbero di eliminare le schede. Chi non ha ancora aggiornato non deve confermare quella richiesta.
 
 ### Novità
 
+- **PDF pagina per pagina**: il PDF si apre nel visualizzatore della trascrizione con zoom, rotazione e filtri paleografici, come le immagini. Si passa da una pagina all'altra e si cerca nel testo del PDF o nella trascrizione. Anche un facsimile molto grande si apre senza essere caricato per intero.
+- **Trascrizione per pagina**: ogni pagina di un PDF ha la sua trascrizione. L'OCR di un PDF scrive ciascuna pagina al suo posto.
+- **Notifiche immediate tra i membri di un archivio condiviso**: quando un collega invia modifiche, gli altri ne sono avvisati subito, anche su computer diversi.
 - **Schede di merge interattive**: l'intera superficie della scheda di confronto (Locale e Cloud) è ora cliccabile con feedback visivo immediato e supporto completo alla navigazione da tastiera (Enter e Spazio).
 - **Risoluzione cancellazioni reattiva**: ripristinata la piena funzionalità dei pulsanti "Mantieni" ed "Elimina" nel modale dei file rimossi dal server.
 - **Nessuna modifica locale persa se il caricamento fallisce**: la base del merge a tre vie resta la versione scaricata dal server, così una sincronizzazione il cui caricamento non va a buon fine (offline, errore di rete) non fa scartare le modifiche locali alla sincronizzazione successiva.
 - **Conflitti sempre mostrati senza una base**: la base non viene più creata dai dati locali. Quando manca (primo avvio, archivio precedente alla migrazione), ogni differenza tra la scheda locale e quella del server apre il modale dei conflitti invece di essere decisa in automatico.
+
+### Sicurezza
+
+- **Il server dell'archivio condiviso non legge i contenuti**: schede, trascrizioni e nome dell'archivio viaggiano e restano cifrati; il server non può nemmeno spacciare una versione vecchia per quella attuale.
+- **Le chiavi dell'archivio non lasciano il processo principale** dell'app e l'interfaccia non le vede mai.
+- **Accesso a Google più protetto**: la pagina di accesso accetta risposte solo dal proprio computer e solo per il login avviato dall'app.
+- **Contenuti condivisi innocui**: un allegato o un testo ricevuto da un collaboratore non può più scrivere file fuori dalla cartella dell'archivio né avviare comandi dell'app.
+
+### Rimosso
+
+- **OneDrive**: il collegamento a OneDrive non era più selezionabile. Un archivio ancora collegato torna locale e i dati restano sul disco; gli accessi Microsoft salvati vengono cancellati.
+- Gli archivi su Google Drive ricevono gli aggiornamenti con il controllo periodico (ogni 5 minuti) invece che con le notifiche immediate, che tra computer diversi non funzionavano.
 
 ---
 
