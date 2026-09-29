@@ -114,16 +114,7 @@ function setupDriveIpc() {
   });
 
   // Utilities
-  ipcMain.handle('drive-get-client-id', async () => {
-    try {
-      const creds = require('../cloudCredentials');
-      const clientId = creds.GOOGLE_CLIENT_ID;
-      const apiKey = creds.GOOGLE_API_KEY || '';
-      return { clientId, appId: clientId ? clientId.split('-')[0] : '', apiKey };
-    } catch (e) {
-      return { clientId: '', appId: '', apiKey: '' };
-    }
-  });
+  // `drive-get-client-id` rimosso: nessuno lo chiamava e passava la chiave API Google al renderer.
   ipcMain.handle('drive-open-external-picker', async () => {
     return await openExternalPicker();
   });
