@@ -291,6 +291,7 @@ window._updateState = window._updateState || { status: 'idle' };
 function mapErrorCodeToMessage(errorCode, rawError) {
     switch (errorCode) {
         case 'offline': return window.t("msg_update_offline");
+        case 'release-incomplete': return window.t("msg_update_release_incomplete");
         case 'no-release': return window.t("msg_update_no_release");
         case 'rate-limited': return window.t("msg_update_rate_limited");
         default: return window.t("msg_update_generic") + (rawError || '');
@@ -343,8 +344,16 @@ function renderUpdateBanner() {
         case 'error':
             banner.classList.add('bg-red-600', 'border-red-700');
             text.textContent = mapErrorCodeToMessage(s.errorCode, s.errorMessage);
-            btn.textContent = window.t("btn_download_update");
-            btn.onclick = avviaDownloadAggiornamento;
+            // Se è fallito il CONTROLLO non c'è nulla da scaricare: "Scarica" rifaceva il controllo
+            // di nascosto e, se nel frattempo la release era completa, scaricava davvero — il
+            // messaggio d'errore e il download riuscito sembravano contraddirsi.
+            if (s.fase === 'check') {
+                btn.textContent = window.t("btn_update_retry");
+                btn.onclick = () => window.controllaAggiornamenti(true);
+            } else {
+                btn.textContent = window.t("btn_download_update");
+                btn.onclick = avviaDownloadAggiornamento;
+            }
             banner.classList.remove('hidden-tab');
             break;
         default: // idle
@@ -384,8 +393,13 @@ function setupUpdateEventListeners() {
 
     if (window.apiBrowser.onUpdateError) {
         window.apiBrowser.onUpdateError((payload) => {
-            // Errore asincrono (rete caduta a metà download, checksum non valido, ecc.)
-            window._updateState = { ...window._updateState, status: 'error', errorCode: payload && payload.errorCode, errorMessage: payload && payload.error };
+            // Errore asincrono (rete caduta a metà download, checksum non valido, ecc.).
+            // electron-updater emette 'error' ANCHE quando fallisce il controllo, che però arriva
+            // già come risultato di checkForUpdates: qui conta solo durante download/installazione,
+            // altrimenti un controllo automatico fallito diventava un banner rosso con "Scarica".
+            const s = window._updateState.status;
+            if (s !== 'downloading' && s !== 'installing') return;
+            window._updateState = { ...window._updateState, status: 'error', fase: 'download', errorCode: payload && payload.errorCode, errorMessage: payload && payload.error };
             renderUpdateBanner();
         });
     }
@@ -408,9 +422,17 @@ window.controllaAggiornamenti = async function(mostraAvvisi = true) {
     if (result.devMode) {
         return; // Build non pacchettizzata: nessun canale di update disponibile
     } else if (result.error) {
-        window._updateState = { status: 'error', errorCode: result.errorCode, errorMessage: result.error };
+        // Nel controllo automatico gli errori passeggeri (niente rete, release in pubblicazione,
+        // nessuna release) non meritano un banner rosso: il prossimo controllo li risolve da sé.
+        const passeggero = ['offline', 'release-incomplete', 'no-release'].includes(result.errorCode);
+        if (!mostraAvvisi && passeggero) {
+            window._updateState = { status: 'idle' };
+            renderUpdateBanner();
+            return;
+        }
+        window._updateState = { status: 'error', fase: 'check', errorCode: result.errorCode, errorMessage: result.error };
         renderUpdateBanner();
-        if (mostraAvvisi) mostraMessaggio(mapErrorCodeToMessage(result.errorCode, result.error), "error");
+        if (mostraAvvisi) mostraMessaggio(mapErrorCodeToMessage(result.errorCode, result.error), result.errorCode === 'release-incomplete' ? "info" : "error");
     } else if (result.updateAvailable) {
         window._updateState = {
             status: 'available',

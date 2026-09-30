@@ -539,6 +539,8 @@ function _linguiExtraction() {
     i18n._({ id: "msg_backup_error", message: "Errore durante il backup: " });
     i18n._({ id: "msg_check_updates", message: "Controllo aggiornamenti in corso…" });
     i18n._({ id: "msg_update_error", message: "Errore controllo aggiornamenti: " });
+    i18n._({ id: "msg_update_release_incomplete", message: "È in corso la pubblicazione di una nuova versione: riprova tra qualche minuto." });
+    i18n._({ id: "btn_update_retry", message: "Riprova" });
     i18n._({ id: "msg_up_to_date", message: "Il programma è già aggiornato" });
 
     i18n._({ id: "msg_file_save_error", message: "Errore durante il salvataggio." });
@@ -1837,6 +1839,8 @@ const customEn = {
     "msg_connesso_con_successo_nome": "Connected successfully to \"{var0}\"! Restarting…",
     "msg_update_offline": "No Internet connection: cannot check for updates.",
     "msg_update_no_release": "No published release found on GitHub.",
+    "msg_update_release_incomplete": "A new version is being published: try again in a few minutes.",
+    "btn_update_retry": "Try again",
     "msg_update_rate_limited": "Too many requests to GitHub, try again in a few minutes.",
     "msg_update_generic": "Error during update: ",
     "btn_release_notes": "What's new in this version",
@@ -2935,6 +2939,8 @@ const customIt = {
     "msg_connesso_con_successo_nome": "Connesso con successo a \"{var0}\"! Riavvio in corso…",
     "msg_update_offline": "Nessuna connessione a Internet: impossibile controllare gli aggiornamenti.",
     "msg_update_no_release": "Nessuna versione pubblicata trovata su GitHub.",
+    "msg_update_release_incomplete": "È in corso la pubblicazione di una nuova versione: riprova tra qualche minuto.",
+    "btn_update_retry": "Riprova",
     "msg_update_rate_limited": "Troppe richieste a GitHub, riprova tra qualche minuto.",
     "msg_update_generic": "Errore durante l'aggiornamento: ",
     "btn_release_notes": "Novità di questa versione",

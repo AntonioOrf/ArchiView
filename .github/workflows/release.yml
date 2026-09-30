@@ -39,7 +39,10 @@ jobs:
           export const HUB_CREATE_SECRET = "${{ secrets.HUB_CREATE_SECRET }}";
           EOF
 
-      - name: Pre-crea la Release (evita la race di electron-builder)
+      # La Release nasce BOZZA: una release pubblicata senza ancora latest.yml e' visibile agli
+      # updater, che ricevono un 404 e mostrano "Nessuna versione pubblicata" (3.2.1: due minuti
+      # fra la pubblicazione e il caricamento di latest.yml). Si pubblica solo nell'ultimo step.
+      - name: Pre-crea la Release come bozza (evita la race di electron-builder)
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
@@ -50,10 +53,24 @@ jobs:
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $tag gia' esistente: nessuna creazione."
           else
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "${tag#v}" --notes-file RELEASE_NOTES.md --verify-tag
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "${tag#v}" --notes-file RELEASE_NOTES.md --verify-tag --draft
           fi
 
-      - name: Costruisci e pubblica la Release
+      - name: Costruisci e carica gli artefatti
         run: npm run publish-app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pubblica la Release (solo con latest.yml e installer presenti)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          asset=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          echo "$asset"
+          grep -qx 'latest.yml' <<< "$asset" || { echo "latest.yml mancante: la Release resta bozza."; exit 1; }
+          grep -qx "ArchiView-Setup-${tag#v}.exe" <<< "$asset" || { echo "Installer mancante: la Release resta bozza."; exit 1; }
+          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest

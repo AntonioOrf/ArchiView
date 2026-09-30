@@ -30,6 +30,13 @@ function runTests() {
   }
   console.log("✅ Test 2: assenza di release classificata come 'no-release'.");
 
+  // 2-bis) Release pubblicata ma latest.yml non ancora caricato (messaggio reale di
+  // electron-updater, visto con la 3.2.1): è una pubblicazione in corso, non un'assenza.
+  assert.strictEqual(classifyUpdateError(new Error(
+    'Cannot find latest.yml in the latest release artifacts (https://github.com/AntonioOrf/ArchiView/releases/download/v3.2.1/latest.yml): HttpError: 404 \n"method: GET url: https://github.com/AntonioOrf/ArchiView/releases/download/v3.2.1/latest.yml"'
+  )), 'release-incomplete');
+  console.log("✅ Test 2-bis: release senza latest.yml classificata come 'release-incomplete'.");
+
   // 3) Rate limit / permessi GitHub → 'rate-limited'
   const rateLimitedCases = [
     new Error('403 API rate limit exceeded'),
