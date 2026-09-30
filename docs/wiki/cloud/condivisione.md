@@ -33,12 +33,25 @@ quando la rete è disponibile. Non serve alcun account Google né altra registra
 
 Da membro puoi ricevere, inviare e **uscire** dall'archivio; gli inviti restano al titolare.
 
+::: warning Tutti sulla stessa versione
+Dalla versione 3.2.0 il contenuto di un archivio condiviso viene cifrato prima di arrivare al
+server, e le versioni precedenti di ArchiView non sanno leggerlo: vedrebbero l'archivio vuoto e
+proporrebbero di eliminare le schede. **Tutti i membri devono aggiornare prima di inviare
+modifiche.** Chi non ha ancora aggiornato e vede quella richiesta non deve confermarla.
+:::
+
 ## Che cosa vede chi partecipa
 
 Tutto quello che c'è nell'archivio condiviso: schede, trascrizioni, modelli, tag, allegati.
 
 **Non** viene condiviso ciò che è personale o legato alla tua macchina: il cestino, gli snapshot
 locali, le ricerche salvate, le impostazioni di stampa e la lingua dell'OCR.
+
+Il server che ospita l'archivio, invece, non vede nulla: schede, trascrizioni, nome dell'archivio
+e allegati gli arrivano cifrati. Le chiavi restano sui computer dei partecipanti.
+
+Un allegato o un testo ricevuto da un collaboratore non può scrivere file fuori dalla cartella
+dell'archivio né avviare comandi dell'app.
 
 ## Lavorare bene in gruppo
 

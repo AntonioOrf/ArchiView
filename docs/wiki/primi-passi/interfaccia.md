@@ -55,7 +55,9 @@ schede hai selezionato.
 
 - `Ctrl+K` apre l'elenco dei comandi: qualunque funzione, senza cercarla nei menu.
 - `?` mostra tutte le scorciatoie.
-- Il **tasto destro** funziona ovunque: su una scheda, su una cartella, su un archivio.
+- Il **tasto destro** funziona ovunque: su una scheda, su una cartella, su un archivio. Le voci
+  affini sono raccolte in sottomenu (**Vedi**, **Esporta**, **Su N schede**), che si aprono col
+  mouse o con la freccia destra e si chiudono con la sinistra o con `Esc`.
 
 Vedi [Comandi rapidi e scorciatoie](/guida/scorciatoie).
 

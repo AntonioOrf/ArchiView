@@ -27,7 +27,12 @@ Whoever creates the archive is its **owner**: they generate invitations and can 
 access. The others are **members**: they receive, send, and can leave. See
 [Sharing with others](/en/sync/sharing).
 
-Attachments are synchronised **encrypted**: whoever hosts the files cannot read them.
+Everything travels and is stored **encrypted**: records, transcriptions, the archive's name and the
+attachments. The server keeps the data but cannot read it, and cannot even pass off an old version of
+the archive as the current one.
+
+When a colleague sends changes, the other members are **notified straight away**, even on different
+computers: you do not need to check by hand to know there is something new.
 
 ## The status, at the top right
 
@@ -50,14 +55,24 @@ or sending), **download**, **upload**, and the link to Change control.
 If two people edit the same record, the program never overwrites anything silently: see
 [When two edits collide](/en/sync/conflicts).
 
-## Google Drive and OneDrive
+## Google Drive
 
 Earlier versions used Google Drive for shared archives. That route still works for **personal
 backup** and for existing shared archives, which can be migrated to the Hub with a dedicated command
-(Advanced options in the cloud window).
+(Advanced options in the cloud window). After migrating, collaborators have to be invited again:
+Google Drive permissions cannot be transferred.
+
+An archive on Google Drive does not receive instant notifications: it checks for news by itself
+**every 5 minutes**.
 
 New shared archives are created on the Hub only: it is faster, does not require each collaborator to
 have a Google account, and makes revoking access truly effective.
+
+::: info OneDrive
+Since version 3.2.0 the OneDrive connection no longer exists. An archive still connected to it goes
+back to **local**: the data stays on disk, and saved Microsoft sign-ins are deleted. To synchronise
+it again, convert it into a shared archive on the Hub.
+:::
 
 ::: tip Privacy
 In local mode no data leaves the computer. What is processed when you enable synchronisation is

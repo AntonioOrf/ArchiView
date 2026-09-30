@@ -38,19 +38,25 @@ search runs across every folder of the open archive.
 The list of earlier versions of the archive saved on the remote, which can be consulted and restored.
 
 **Hub**  
-The common server on which a shared archive lives. Every participant still keeps their own complete
-local copy.
+The common server on which a shared archive lives. It stores the data encrypted, without being able
+to read it; every participant still keeps their own complete local copy.
 
 **Link (relation)**  
 A reference between two records: it is written on one, and the other shows it as incoming. See
 [Links](/en/guide/links).
+
+**IIIF**  
+The standard libraries use to publish digitised manuscripts. A IIIF *manifest* describes the folios
+of a codex; ArchiView imports it without downloading the images. See
+[Importing from IIIF](/en/guide/iiif).
 
 **Metadata**  
 The data describing the document (shelfmark, date, author, writing support…), as distinct from the
 transcription, which is the text of the document.
 
 **OCR**  
-Automatic recognition of text inside images and PDFs. It runs on your computer. See
+Automatic recognition of text inside images and PDFs. It runs on your computer, and can save a copy
+of the attachment as a searchable PDF. See
 [OCR](/en/guide/ocr).
 
 **Personal archive**  

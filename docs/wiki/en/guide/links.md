@@ -16,7 +16,7 @@ reference. You do not have to record it twice, and the two halves can never dive
 | Where | What it shows |
 | --- | --- |
 | Badge on the record in the list | How many references it has, in both directions; clickable |
-| Right-click menu, "Linked" | The links panel |
+| Right-click menu, **View**, "Linked" | The links panel |
 | "Linked records" panel | *Refers to* and *is referred to by*, kept apart, one click to open |
 | Advanced filters | Only linked records (or only isolated ones) |
 

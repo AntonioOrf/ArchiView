@@ -8,9 +8,13 @@ From the record form, in the attachments section. Files are **copied** into the
 `allegati_manoscritti` folder of your working folder: if you later move or delete the original, the
 record keeps working.
 
+A manuscript already digitised by a library can be added without downloading it: see
+[Importing from IIIF](/en/guide/iiif).
+
 ## Viewing
 
-The built-in viewer opens images and PDFs without leaving the program. The commands:
+The built-in viewer opens images and PDFs without leaving the program. The commands also apply to the
+pages of a PDF, which are browsed one at a time (see [Transcription](/en/guide/transcription#pdfs-one-page-at-a-time)):
 
 ![The attachment viewer next to the editor, with the zoom, rotation and filter bar](/img/en/trascrizione.png){.light-only}
 ![The attachment viewer next to the editor, with the zoom, rotation and filter bar](/img/en/trascrizione-scuro.png){.dark-only}
@@ -22,6 +26,7 @@ The built-in viewer opens images and PDFs without leaving the program. The comma
 | Rotate by 90 degrees | <kbd>R</kbd> key |
 | Fit to page or width | Viewer buttons |
 | Previous / next attachment | `Alt` + left/right arrows |
+| Previous / next page (across attachments too) | `Page Up` / `Page Down` |
 | Full screen | `Alt+F` |
 | Fit to page / actual size | `0` / `1` |
 

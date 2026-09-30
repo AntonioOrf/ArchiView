@@ -17,6 +17,20 @@ have just written is stored before every change of folio: nothing is lost moving
 
 If the record has no attachments, you write a single transcription, as always.
 
+## PDFs, one page at a time
+
+A PDF opens in the same viewer as images, with zoom, rotation and filters, and is browsed **page by
+page**: the arrows and the page number in the viewer bar, or `Page Up` and `Page Down`. After the
+last page you carry on to the next attachment.
+
+The transcription is **per page** too: every page of the PDF has its own text, and the indication at
+the top tells you which page you are working on ("p. 3 of 12"). When the text leaves the program
+(printing, export), the pages are joined in order, each preceded by its `[p. N]` marker.
+
+The **Search the PDF** field finds a word in the PDF's own text (if it has one) or in your
+transcription, and takes you to the right page. Even a facsimile of hundreds of pages opens at once:
+the file is read a piece at a time, not loaded whole.
+
 ## The viewer
 
 It has all the commands described in [Attachments](/en/guide/attachments): zoom, panning, rotation,

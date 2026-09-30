@@ -19,10 +19,25 @@ you choose which to keep, **one decision per field**.
 The starting point is already the **merged** record, with every non-conflicting change already
 incorporated: choosing for one field does not lose the other person's work on the remaining fields.
 
+To choose, click anywhere on the version you want to keep, **Your Change (Local)** or **Cloud Change
+(Server)**. With the keyboard: `Tab` to move between them, `Enter` or `Space` to choose.
+
+### When the program cannot tell what changed
+
+To work out who changed what, the program compares both versions with the last one downloaded from the
+server. If that reference point is missing (a computer's first connection, a very old archive), every
+difference between your record and the server's opens the conflict window: the program would rather
+ask you one more question than take a wrong decision.
+
+If sending your changes fails (no network, server error), your local work stays as it is and goes out
+at the next synchronisation.
+
 ## Deletions
 
-If someone deleted a record you modified, the program tells you instead of letting your work vanish
-without warning.
+If someone deleted from the server a record you still have in your archive, the program tells you
+instead of letting your work vanish without warning. For each record you choose whether to **keep**
+your local copy or **delete** it from your archive too, then confirm your choices; cancelling the
+download postpones the decision.
 
 ## How to reduce their number
 

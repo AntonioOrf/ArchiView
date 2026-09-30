@@ -17,6 +17,9 @@ tutto ciò che aggiungi, invece, resta.
 Dal pulsante di **gestione modelli** nella barra sopra l'elenco: da lì si crea un modello nuovo
 scegliendo i campi che servono.
 
+I campi compaiono nella scheda nell'ordine in cui li disponi: si trascinano, oppure si spostano
+con le frecce **Sposta a sinistra** e **Sposta a destra** accanto a ciascun campo.
+
 L'interfaccia della scheda si adatta da sola al modello scelto.
 
 ## Il tipo di un campo

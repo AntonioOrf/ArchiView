@@ -17,6 +17,9 @@ add, on the other hand, is kept.
 From the **model management** button in the bar above the list: there you create a new model by
 choosing the fields you need.
 
+Fields appear in the record in the order you arrange them: drag them, or move them with the **Move
+left** and **Move right** arrows next to each field.
+
 The record form adapts automatically to the chosen model.
 
 ## The type of a field

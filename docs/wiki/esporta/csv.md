@@ -3,7 +3,7 @@
 L'esportazione CSV/TSV serve per lavorare sui **dati** delle schede fuori dall'app: un foglio di
 calcolo, un grafico, un'analisi statistica, un elenco da consegnare.
 
-Si trova nel menu «⋯» sopra l'elenco, nel menu del tasto destro su una scheda o su una cartella,
+Si trova nel menu «⋯» sopra l'elenco, nel menu del tasto destro su una scheda o su una cartella (sottomenu **Esporta**),
 e nella palette dei comandi (`Ctrl+K` → «csv» o «excel»).
 
 ## Che cosa contiene il file

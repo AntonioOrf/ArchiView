@@ -17,14 +17,16 @@ pages**, not just those visible on screen.
 
 ## Available actions
 
-With a selection active, the right-click menu applies the action to all chosen records:
+With a selection active, the right-click menu applies the action to all chosen records. Bulk actions
+are in the **On N records** submenu, whose label tells you how many records you are about to change;
+exports are in the **Export** submenu.
 
 ![The window for actions on several records, with the count of records affected](/img/en/azioni-massa.png){.light-only}
 ![The window for actions on several records, with the count of records affected](/img/en/azioni-massa-scuro.png){.dark-only}
 
 | Action | Shortcut |
 | --- | --- |
-| Move to another archive | `Ctrl+Shift+M` |
+| Move to another folder | `Ctrl+Shift+M` |
 | Change the document type | `Ctrl+Shift+T` |
 | Add or remove tags | `Ctrl+Shift+L` |
 | Find and replace in a field | `Ctrl+H` |

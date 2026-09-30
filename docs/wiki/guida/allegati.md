@@ -8,9 +8,13 @@ Dall'editor della scheda, nella sezione dedicata agli allegati. I file vengono *
 la cartella `allegati_manoscritti` della tua cartella di lavoro: se in seguito sposti o cancelli
 l'originale, la scheda continua a funzionare.
 
+Un manoscritto già digitalizzato da una biblioteca si aggiunge senza scaricarlo: vedi
+[Importare da IIIF](/guida/iiif).
+
 ## Visualizzare
 
-Il visore integrato apre immagini e PDF senza uscire dal programma. I comandi:
+Il visore integrato apre immagini e PDF senza uscire dal programma. I comandi valgono anche per le
+pagine di un PDF, che si sfogliano una alla volta (vedi [Trascrizione](/guida/trascrizione#i-pdf-una-pagina-alla-volta)):
 
 ![Il visore degli allegati affiancato all'editor, con la barra di zoom, rotazione e filtri](/img/trascrizione.png){.light-only}
 ![Il visore degli allegati affiancato all'editor, con la barra di zoom, rotazione e filtri](/img/trascrizione-scuro.png){.dark-only}
@@ -22,6 +26,7 @@ Il visore integrato apre immagini e PDF senza uscire dal programma. I comandi:
 | Ruotare di 90 gradi | Tasto <kbd>R</kbd> |
 | Adattare alla pagina o alla larghezza | Pulsanti del visore |
 | Allegato precedente / successivo | `Alt` + frecce sinistra/destra |
+| Pagina precedente / successiva (anche fra allegati) | `PagSu` / `PagGiù` |
 | A schermo intero | `Alt+F` |
 | Adatta alla pagina / dimensione reale | `0` / `1` |
 

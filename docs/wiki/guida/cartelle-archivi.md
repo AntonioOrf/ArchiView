@@ -10,6 +10,10 @@ per fondo, per serie, per anno, per ricerca in corso. Servono a sfogliare comoda
 Le trovi nel pannello a sinistra, icona a forma di cartella. Clic destro su una cartella per
 crearne, rinominarne o eliminarne.
 
+Per spostare una cartella, con tutto il suo contenuto, dentro un'altra puoi trascinarla nell'albero
+oppure usare, dal menu del tasto destro, **Sposta in…** e scegliere la destinazione da un elenco:
+non serve il mouse.
+
 ## Che cosa mostra una scheda nell'albero
 
 Nell'albero ogni scheda si presenta con la sua **segnatura**. Quando la segnatura da sola non

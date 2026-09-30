@@ -1,7 +1,7 @@
 # Stampare e salvare in PDF
 
 `Ctrl+P` apre la finestra di stampa. La stessa funzione è nel menu «⋯» sopra l'elenco, nel menu
-del tasto destro su una scheda («Stampa la selezione»), nel menu di una cartella e nella palette
+del tasto destro su una scheda o su una cartella (**Esporta** → **Stampa**) e nella palette
 dei comandi.
 
 ## I tre layout

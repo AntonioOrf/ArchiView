@@ -16,7 +16,7 @@ in entrata. Non devi registrarlo due volte, e non c'è modo che le due metà div
 | Dove | Cosa mostra |
 | --- | --- |
 | Badge sulla scheda nell'elenco | Quanti rimandi ha, nei due versi; ci si clicca |
-| Menu del tasto destro → «Collegate» | Il pannello dei collegamenti |
+| Menu del tasto destro → **Vedi** → «Collegate» | Il pannello dei collegamenti |
 | Pannello «Schede collegate» | *Rimanda a* e *è richiamata da*, separati, con un clic per aprire |
 | Filtri avanzati | Solo le schede collegate (o solo quelle isolate) |
 

@@ -56,8 +56,13 @@ sulla scheda.
 Il comando che chiede al remoto se ci sono novità, senza scaricarle né inviare nulla.
 
 **Hub**  
-Il server comune su cui vive un archivio condiviso. Ogni partecipante conserva comunque la sua
-copia completa in locale.
+Il server comune su cui vive un archivio condiviso. Conserva i dati cifrati, senza poterli
+leggere; ogni partecipante conserva comunque la sua copia completa in locale.
+
+**IIIF**  
+Lo standard con cui le biblioteche pubblicano i manoscritti digitalizzati. Un *manifest* IIIF
+descrive le carte di un codice; ArchiView lo importa senza scaricare le immagini. Vedi
+[Importare da IIIF](/guida/iiif).
 
 **Metadati**  
 I dati che descrivono il documento (segnatura, data, autore, supporto…), distinti dalla
@@ -68,7 +73,8 @@ L'elenco dei campi che compaiono in una scheda. Determina la forma del tuo archi
 [Modelli di documento](/guida/modelli).
 
 **OCR**  
-Riconoscimento automatico del testo dentro immagini e PDF. Gira sul tuo computer. Vedi
+Riconoscimento automatico del testo dentro immagini e PDF. Gira sul tuo computer, e può salvare
+una copia dell'allegato come PDF ricercabile. Vedi
 [OCR](/guida/ocr).
 
 **Ricerca salvata**  

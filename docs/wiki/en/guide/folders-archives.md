@@ -10,6 +10,9 @@ manager: by fonds, by series, by year, by ongoing research. They make browsing c
 You find them in the left panel, under the folder icon. Right-click a folder to create, rename or
 delete folders.
 
+To move a folder, with everything in it, into another one you can drag it in the tree or use
+**Move to…** from the right-click menu and pick the destination from a list: no mouse needed.
+
 ## What a record shows in the tree
 
 In the tree every record is listed by its **shelfmark**. When the shelfmark alone is not enough

@@ -18,7 +18,7 @@ docs/
 
 L'italiano è la radice (`wiki/`, servito su `/wiki/`); l'inglese sta in `wiki/en/` (servito su
 `/wiki/en/`) con percorsi inglesi: `getting-started/`, `guide/`, `export/`, `sync/`, `data/`.
-Le due alberature hanno le stesse 31 pagine e vanno aggiornate insieme: una pagina modificata in una
+Le due alberature hanno le stesse 32 pagine e vanno aggiornate insieme: una pagina modificata in una
 lingua sola lascia l'altra a descrivere un comportamento diverso.
 
 Menu e barra laterale di ciascuna lingua stanno in `locales` dentro `wiki/.vitepress/config.mts`.

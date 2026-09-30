@@ -55,7 +55,9 @@ records you have selected.
 
 - `Ctrl+K` opens the command list: any feature, without hunting through menus.
 - `?` shows every keyboard shortcut.
-- The **right mouse button** works everywhere: on a record, on a folder, on an archive.
+- The **right mouse button** works everywhere: on a record, on a folder, on an archive. Related items
+  are grouped in submenus (**View**, **Export**, **On N records**), opened with the mouse or the right
+  arrow and closed with the left arrow or `Esc`.
 
 See [Commands and shortcuts](/en/guide/shortcuts).
 

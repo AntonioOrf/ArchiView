@@ -3,7 +3,8 @@
 Two exports meant for people who **write**: the text of transcriptions to bring into an article,
 and bibliographic citations to put into Zotero or LaTeX.
 
-They are reached from the right-click menu of a record or folder, from the command palette and from
+They are reached from the right-click menu of a record or folder (**Export**, **Export text**), from
+the command palette and from
 the export button inside the transcription environment.
 
 ## Five formats

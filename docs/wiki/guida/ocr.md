@@ -36,7 +36,9 @@ Dalla scheda, sull'allegato che ti interessa. Le opzioni:
 
 - **lingue** da usare;
 - **risoluzione (dpi)** per i PDF: più alta significa più preciso e più lento;
-- **numero massimo di pagine**, per non lanciare un lavoro di un'ora su un registro intero.
+- **numero massimo di pagine**, per non lanciare un lavoro di un'ora su un registro intero;
+- **raddrizza le pagine scansionate di traverso** (vedi sotto);
+- **salva una copia come PDF ricercabile** (vedi sotto).
 
 Il riconoscimento si può **annullare** mentre è in corso: ciò che è già stato letto viene
 conservato.
@@ -46,6 +48,33 @@ conservato.
 Se il PDF contiene già un livello di testo (perché nasce digitale, o è stato già passato
 all'OCR da qualcun altro), l'app lo **legge direttamente**, pagina per pagina, e riconosce solo
 le pagine che ne sono prive. È più preciso e incomparabilmente più veloce.
+
+Il testo di ogni pagina va alla **trascrizione di quella pagina**: vedi
+[I PDF, una pagina alla volta](/guida/trascrizione#i-pdf-una-pagina-alla-volta).
+
+### Pagine girate o capovolte
+
+Le scansioni fatte in fretta hanno spesso pagine ruotate di 90° o sottosopra, e su quelle l'OCR
+legge solo rumore. Con l'opzione **Raddrizza le pagine scansionate di traverso** l'app riconosce
+l'orientamento e ruota la pagina prima di leggerla. Quando l'orientamento è incerto legge la
+pagina nei due versi e tiene la lettura migliore. Alla fine il risultato dice quante pagine sono
+state raddrizzate, e quali sono state lasciate com'erano perché il dubbio restava.
+
+L'opzione richiede un piccolo pacchetto in più, **Rilevamento orientamento**, che si installa da
+**Gestisci lingue** come le lingue.
+
+## Il PDF ricercabile
+
+Con **Salva una copia come PDF ricercabile** il testo riconosciuto esce dall'archivio: l'app
+salva, dove scegli tu, una copia dell'allegato in PDF con il testo nascosto sotto la scansione,
+**cercabile e copiabile** in qualunque lettore PDF. Le pagine originali restano identiche, senza
+perdita di qualità; quelle raddrizzate compaiono dritte.
+
+Con «Tutti gli allegati della scheda» si ottiene un **unico PDF** con tutte le carte. I PDF
+protetti da password non si possono includere, e l'app lo segnala.
+
+È il modo più semplice per dare a un collega, o a un altro programma, la versione consultabile
+di un fondo scansionato.
 
 ## Dove finisce il testo riconosciuto
 

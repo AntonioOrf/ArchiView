@@ -3,7 +3,7 @@
 Se hai già schedato in un foglio di calcolo, che è il caso più frequente, non serve ridigitare
 nulla: il file si importa, colonna per colonna.
 
-Il comando è nel menu «⋯» sopra l'elenco, accanto a «Importa», e nella palette dei comandi
+Il comando è nel menu «⋯» sopra l'elenco (**Importa** → **Importa CSV**) e nella palette dei comandi
 (`Ctrl+K` → «csv» o «excel»).
 
 ## Prima di importare

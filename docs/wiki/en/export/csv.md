@@ -3,7 +3,7 @@
 CSV/TSV export is for working on record **data** outside the program: a spreadsheet, a chart, a
 statistical analysis, a list to hand over.
 
-It is in the "⋯" menu above the list, in the right-click menu of a record or folder, and in the
+It is in the "⋯" menu above the list, in the right-click menu of a record or folder (**Export** submenu), and in the
 command palette (`Ctrl+K`, "csv" or "excel").
 
 ## What the file contains

@@ -33,12 +33,25 @@ is available. No Google account or other registration is needed.
 
 As a member you can receive, send and **leave** the archive; invitations remain with the owner.
 
+::: warning Everyone on the same version
+Since version 3.2.0 the content of a shared archive is encrypted before it reaches the server, and
+earlier versions of ArchiView cannot read it: they would see an empty archive and offer to delete the
+records. **All members must update before sending changes.** Anyone who has not updated yet and sees
+that request must not confirm it.
+:::
+
 ## What participants see
 
 Everything in the shared archive: records, transcriptions, models, tags, attachments.
 
 What is personal or tied to your machine is **not** shared: the trash, local snapshots, saved
 searches, print settings and the OCR language.
+
+The server hosting the archive, on the other hand, sees nothing: records, transcriptions, the
+archive's name and attachments reach it encrypted. The keys stay on the participants' computers.
+
+An attachment or a text received from a collaborator cannot write files outside the archive folder or
+trigger commands in the program.
 
 ## Working well as a group
 

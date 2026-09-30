@@ -21,7 +21,7 @@ features:
     details: Creare una scheda, scegliere il modello di documento, aggiungere campi che il modello non prevede e tenere tutto in ordine fra cartelle e archivi.
     link: /guida/schede
   - title: Trascrivere
-    details: Il documento a sinistra, il testo a destra, una trascrizione per ogni carta. Contrasto e negativo per le scritture difficili, OCR per quelle tarde.
+    details: Il documento a sinistra, il testo a destra, una trascrizione per ogni carta o pagina di PDF. Manoscritti importati da IIIF, contrasto e negativo per le scritture difficili, OCR e PDF ricercabili per quelle tarde.
     link: /guida/trascrizione
   - title: Ritrovare tutto
     details: Ricerca dentro metadati e trascrizioni, tag, vocabolari controllati, datazioni storiche ordinabili, filtri combinabili e ricerche salvate.
@@ -30,7 +30,7 @@ features:
     details: Stampa e PDF in tre layout, esportazione in CSV, trascrizioni in HTML, Markdown e RTF, citazioni per Zotero e LaTeX.
     link: /esporta/stampa
   - title: Lavorare in gruppo
-    details: Archivio condiviso con inviti revocabili, allegati cifrati, conflitti risolti campo per campo. Ognuno tiene la sua copia completa.
+    details: Archivio condiviso con inviti revocabili, contenuti cifrati che il server non legge, avvisi immediati e conflitti risolti campo per campo. Ognuno tiene la sua copia completa.
     link: /cloud/sincronizzazione
   - title: Non perdere niente
     details: Annulla e ripeti, cestino, snapshot automatici, cronologia di ogni scheda. E i dati in file leggibili sul tuo disco.

@@ -54,7 +54,7 @@ usa la cronologia della scheda, qui sotto.
 
 ## 4. Cronologia di una scheda
 
-Menu del tasto destro su una scheda → **Cronologia**: mostra come quella scheda cambiava nel
+Menu del tasto destro su una scheda → **Vedi** → **Cronologia**: mostra come quella scheda cambiava nel
 tempo, ricostruita dagli snapshot, con le differenze evidenziate campo per campo.
 
 È lo strumento giusto per la domanda più frequente: *«questa data l'avevo scritta diversa?»*.

@@ -21,7 +21,7 @@ features:
     details: Create a record, choose the document model, add fields the model does not provide for, and keep everything in order across folders and archives.
     link: /en/guide/records
   - title: Transcribing
-    details: The document on one side, the text on the other, one transcription per folio. Contrast and negative for difficult hands, OCR for later scripts.
+    details: The document on one side, the text on the other, one transcription per folio or PDF page. Manuscripts imported via IIIF, contrast and negative for difficult hands, OCR and searchable PDFs for later scripts.
     link: /en/guide/transcription
   - title: Finding everything again
     details: Search inside metadata and transcriptions, tags, controlled vocabularies, sortable historical dates, combinable filters and saved searches.
@@ -30,7 +30,7 @@ features:
     details: Printing and PDF in three layouts, CSV export, transcriptions in HTML, Markdown and RTF, citations for Zotero and LaTeX.
     link: /en/export/print
   - title: Working as a team
-    details: Shared archive with revocable invitations, encrypted attachments, conflicts resolved field by field. Everyone keeps a complete copy.
+    details: Shared archive with revocable invitations, content encrypted so the server cannot read it, instant notifications and conflicts resolved field by field. Everyone keeps a complete copy.
     link: /en/sync/how-it-works
   - title: Losing nothing
     details: Undo and redo, trash, automatic snapshots, a history for every record. And your data in readable files on your own disk.

@@ -98,6 +98,7 @@ export default defineConfig({
               { text: 'Datazioni storiche', link: '/guida/date-storiche' },
               { text: 'Cartelle e archivi', link: '/guida/cartelle-archivi' },
               { text: 'Allegati', link: '/guida/allegati' },
+              { text: 'Importare da IIIF', link: '/guida/iiif' },
               { text: 'Trascrizione', link: '/guida/trascrizione' },
               { text: 'OCR degli allegati', link: '/guida/ocr' }
             ]
@@ -198,6 +199,7 @@ export default defineConfig({
               { text: 'Historical dates', link: '/en/guide/historical-dates' },
               { text: 'Folders and archives', link: '/en/guide/folders-archives' },
               { text: 'Attachments', link: '/en/guide/attachments' },
+              { text: 'Importing from IIIF', link: '/en/guide/iiif' },
               { text: 'Transcription', link: '/en/guide/transcription' },
               { text: 'OCR of attachments', link: '/en/guide/ocr' }
             ]

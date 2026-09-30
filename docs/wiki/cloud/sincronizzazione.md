@@ -28,7 +28,12 @@ Chi crea l'archivio ne è il **titolare**: genera gli inviti e può revocare l'a
 Gli altri sono **membri**: ricevono, inviano e possono uscire. Vedi
 [Condividere con altri](/cloud/condivisione).
 
-Gli allegati vengono sincronizzati **cifrati**: chi ospita i file non è in grado di leggerli.
+Tutto viaggia e resta **cifrato**: schede, trascrizioni, il nome dell'archivio e gli allegati.
+Il server conserva i dati ma non è in grado di leggerli, e non può nemmeno spacciare una versione
+vecchia dell'archivio per quella attuale.
+
+Quando un collega invia delle modifiche, gli altri membri ne sono **avvisati subito**, anche se
+lavorano su computer diversi: non serve controllare a mano per sapere che c'è qualcosa di nuovo.
 
 ## Lo stato, in alto a destra
 
@@ -52,14 +57,25 @@ né inviare), **scarica**, **carica**, e il collegamento al Controllo modifiche.
 Se due persone modificano la stessa scheda, l'app non sovrascrive nulla in silenzio: vedi
 [Quando due modifiche si scontrano](/cloud/conflitti).
 
-## Google Drive e OneDrive
+## Google Drive
 
 Le versioni precedenti usavano Google Drive per gli archivi condivisi. Quel percorso resta
 funzionante per il **backup personale** e per gli archivi condivisi già esistenti, che si possono
-migrare all'Hub con un comando dedicato (Opzioni avanzate della finestra cloud).
+migrare all'Hub con un comando dedicato (Opzioni avanzate della finestra cloud). Dopo la
+migrazione bisogna invitare di nuovo i collaboratori: i permessi di Google Drive non si
+trasferiscono.
+
+Un archivio su Google Drive non riceve avvisi immediati: controlla da solo se ci sono novità
+**ogni 5 minuti**.
 
 I nuovi archivi condivisi si creano solo sull'Hub: è più veloce, non richiede a ciascun
 collaboratore un account Google e permette di revocare l'accesso davvero.
+
+::: info OneDrive
+Dalla versione 3.2.0 il collegamento a OneDrive non esiste più. Un archivio che vi era ancora
+collegato torna **locale**: i dati restano sul disco, e gli accessi Microsoft salvati vengono
+cancellati. Per sincronizzarlo di nuovo, convertilo in archivio condiviso sull'Hub.
+:::
 
 ::: tip Privacy
 In modalità locale nessun dato lascia il computer. Il dettaglio di che cosa viene trattato quando

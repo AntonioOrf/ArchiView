@@ -54,7 +54,7 @@ history, below.
 
 ## 4. Record history
 
-Right-click a record, **History**: it shows how that record changed over time, reconstructed from the
+Right-click a record, **View**, **History**: it shows how that record changed over time, reconstructed from the
 snapshots, with the differences highlighted field by field.
 
 It is the right tool for the most common question: *"did I write this date differently before?"*.

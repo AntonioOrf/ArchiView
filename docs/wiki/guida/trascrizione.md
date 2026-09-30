@@ -17,6 +17,20 @@ nulla passando da una carta all'altra.
 
 Se la scheda non ha allegati, si scrive su un'unica trascrizione, come da sempre.
 
+## I PDF, una pagina alla volta
+
+Un PDF si apre nello stesso visore delle immagini, con zoom, rotazione e filtri, e si sfoglia
+**pagina per pagina**: le frecce e il numero di pagina nella barra del visore, oppure `PagSu` e
+`PagGiù`. Arrivati all'ultima pagina, si prosegue con l'allegato successivo.
+
+Anche la trascrizione è **per pagina**: ogni pagina del PDF ha il suo testo, e l'indicazione in
+alto dice a quale pagina stai lavorando («p. 3 di 12»). Quando il testo esce dall'app (stampa,
+esportazione), le pagine vengono unite nell'ordine, ciascuna preceduta dal suo marcatore `[p. N]`.
+
+Il campo **Cerca nel PDF** trova una parola nel testo del PDF stesso (se ne ha uno) oppure nella
+tua trascrizione, e porta alla pagina giusta. Anche un facsimile di centinaia di pagine si apre
+subito: il file viene letto un pezzo alla volta, non caricato per intero.
+
 ## Il visore
 
 Ha tutti i comandi descritti in [Allegati](/guida/allegati): ingrandimento, spostamento,

@@ -3,7 +3,7 @@
 If you have already catalogued in a spreadsheet, which is the most common case, there is no need to
 retype anything: the file is imported column by column.
 
-The command is in the "⋯" menu above the list, next to "Import", and in the command palette
+The command is in the "⋯" menu above the list (**Import**, **Import CSV**) and in the command palette
 (`Ctrl+K`, "csv" or "excel").
 
 ## Before importing

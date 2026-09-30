@@ -3,7 +3,8 @@
 Due esportazioni pensate per chi **scrive**: il testo delle trascrizioni da portare in un
 articolo, e le citazioni bibliografiche da versare in Zotero o in LaTeX.
 
-Si raggiungono dal menu del tasto destro su una scheda o su una cartella, dalla palette dei
+Si raggiungono dal menu del tasto destro su una scheda o su una cartella (**Esporta** →
+**Esporta testo**), dalla palette dei
 comandi e dal pulsante di esportazione dentro l'ambiente di trascrizione.
 
 ## Cinque formati

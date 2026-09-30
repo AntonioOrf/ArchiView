@@ -17,14 +17,16 @@ successive**, non solo quelle visibili a schermo.
 
 ## Azioni disponibili
 
-Con la selezione attiva, il menu del tasto destro applica l'azione a tutte le schede scelte:
+Con la selezione attiva, il menu del tasto destro applica l'azione a tutte le schede scelte. Le
+azioni in massa stanno nel sottomenu **Su N schede**, che nell'etichetta dice quante schede stai
+per cambiare; le esportazioni nel sottomenu **Esporta**.
 
 ![La finestra delle azioni su più schede, con il conteggio delle schede interessate](/img/azioni-massa.png){.light-only}
 ![La finestra delle azioni su più schede, con il conteggio delle schede interessate](/img/azioni-massa-scuro.png){.dark-only}
 
 | Azione | Scorciatoia |
 | --- | --- |
-| Spostare in un altro archivio | `Ctrl+Maiusc+M` |
+| Spostare in un'altra cartella | `Ctrl+Maiusc+M` |
 | Cambiare il tipo di documento | `Ctrl+Maiusc+T` |
 | Aggiungere o rimuovere tag | `Ctrl+Maiusc+L` |
 | Trova e sostituisci in un campo | `Ctrl+H` |

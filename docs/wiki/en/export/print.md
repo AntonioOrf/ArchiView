@@ -1,7 +1,7 @@
 # Printing and saving as PDF
 
 `Ctrl+P` opens the print window. The same feature is in the "⋯" menu above the list, in the
-right-click menu of a record ("Print selection"), in the menu of a folder and in the command palette.
+right-click menu of a record or folder (**Export**, **Print**) and in the command palette.
 
 ## The three layouts
 

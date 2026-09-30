@@ -34,7 +34,9 @@ From the record, on the attachment you are interested in. The options:
 
 - **languages** to use;
 - **resolution (dpi)** for PDFs: higher means more accurate and slower;
-- **maximum number of pages**, so you do not start an hour-long job on a whole register.
+- **maximum number of pages**, so you do not start an hour-long job on a whole register;
+- **straighten pages scanned sideways** (see below);
+- **save a copy as a searchable PDF** (see below).
 
 Recognition can be **cancelled** while it is running: whatever has already been read is kept.
 
@@ -43,6 +45,33 @@ Recognition can be **cancelled** while it is running: whatever has already been 
 If the PDF already contains a text layer (because it was born digital, or someone else already ran
 OCR on it), the program **reads it directly**, page by page, and only recognises the pages that
 lack one. That is more accurate and incomparably faster.
+
+The text of each page goes to **that page's transcription**: see
+[PDFs, one page at a time](/en/guide/transcription#pdfs-one-page-at-a-time).
+
+### Pages turned sideways or upside down
+
+Hurried scans often have pages rotated by 90° or upside down, and on those OCR reads nothing but
+noise. With the **Straighten pages scanned sideways** option the program detects the orientation and
+rotates the page before reading it. When the orientation is uncertain it reads the page both ways and
+keeps the better reading. At the end the result tells you how many pages were straightened, and which
+were left as they were because the doubt remained.
+
+The option needs a small extra pack, **Orientation detection**, installed from **Manage languages**
+like the languages.
+
+## The searchable PDF
+
+With **Save a copy as a searchable PDF** the recognised text leaves the archive: the program saves,
+wherever you choose, a PDF copy of the attachment with the text hidden beneath the scan,
+**searchable and copyable** in any PDF reader. The original pages stay identical, with no loss of
+quality; straightened pages appear upright.
+
+With "All attachments of this record" you get a **single PDF** with every folio. Password-protected
+PDFs cannot be included, and the program says so.
+
+It is the simplest way to give a colleague, or another program, a searchable version of a scanned
+fonds.
 
 ## Where the recognised text goes
 
