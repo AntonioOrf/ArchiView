@@ -31,54 +31,16 @@ const outDir = path.resolve(
 const LARGHEZZA = 1280;
 const ALTEZZA = 800;
 
-// L'allegato dei test è un quadrato grigio: nel visore sembrerebbe un'immagine rotta.
-// Ne generiamo uno che somigli a una carta di registro, con Electron stesso.
-const ALLEGATO = path.join(os.tmpdir(), 'archiview-wiki-carta.png');
-
-const PAGINA_HTML = `<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;padding:0;width:900px;height:1250px;}
-  body{background:#e3d5b4;font-family:'Palatino Linotype','Book Antiqua',Georgia,serif;
-       color:#4a3722;position:relative;overflow:hidden;}
-  .macchie{position:absolute;inset:0;
-    background:
-      radial-gradient(ellipse 200px 140px at 12% 8%, rgba(120,88,45,.16), transparent 70%),
-      radial-gradient(ellipse 260px 180px at 88% 78%, rgba(120,88,45,.14), transparent 70%),
-      radial-gradient(ellipse 160px 120px at 70% 20%, rgba(90,64,30,.10), transparent 70%);}
-  .foglio{position:relative;padding:96px 92px;}
-  .marg{position:absolute;left:38px;top:150px;width:42px;font-size:15px;line-height:1.5;
-        font-style:italic;color:#6b4f2c;transform:rotate(-1.5deg);}
-  h1{font-size:26px;font-variant:small-caps;letter-spacing:.06em;margin:0 0 28px;font-weight:normal;}
-  p{font-size:21px;line-height:1.72;margin:0 0 14px;text-align:justify;
-    text-indent:0;letter-spacing:.01em;}
-  .capolettera{float:left;font-size:64px;line-height:.86;padding:4px 10px 0 0;color:#7a2f18;}
-  .fine{margin-top:34px;font-style:italic;font-size:19px;}
-  .riga{margin-top:46px;border-top:1px solid rgba(90,64,30,.28);padding-top:10px;
-        font-size:15px;font-style:italic;color:#6b4f2c;display:flex;justify-content:space-between;}
-</style></head><body>
-  <div class="macchie"></div>
-  <div class="marg">de venditione terre</div>
-  <div class="foglio">
-    <h1>Anno Domini M CCC XL, indictione VIII</h1>
-    <p><span class="capolettera">I</span>n nomine Domini amen. Anno ab incarnatione eiusdem
-    millesimo trecentesimo quadragesimo, indictione octava, die duodecimo mensis maii, actum
-    Florentie in populo Sancti Petri Maioris, presentibus testibus ad hec vocatis et rogatis
-    Iohanne quondam Bindi et Lapo quondam Ricchi de Florentia.</p>
-    <p>Bindus quondam Lapi de Florentia, per se et suos heredes, dedit, vendidit et tradidit
-    Nere filie sue et eius heredibus petiam unam terre laboratorie posite in populo Sancti
-    Petri de Valle Pese, cui a primo via, a secundo fossatum, a tertio bona heredum Ricchi,
-    a quarto bona ecclesie Sancti Michaelis.</p>
-    <p>Pro pretio librarum quinquaginta florenorum parvorum, quas dictus venditor confessus
-    fuit se habuisse et recepisse a dicta emptrice, renuntians exceptioni non numerate
-    pecunie et non habite.</p>
-    <p>Quam venditionem promisit dictus venditor legiptime defendere et disbrigare ab omni
-    persona, collegio et universitate, sub pena dupli dicte quantitatis.</p>
-    <p class="fine">Ego Iohannes quondam Lapi, imperiali auctoritate iudex ordinarius et
-    notarius publicus, hiis omnibus interfui et rogatus scribere scripsi.</p>
-    <div class="riga"><span>c. 42r</span><span>ASF, Notarile antecosimiano 1042</span></div>
-  </div>
-</body></html>`;
+// Una pagina vera di un'edizione a stampa: l'OCR e il visore vanno mostrati su un testo reale,
+// non su una carta disegnata. MGH, Scriptores XXII (Hannover 1872), p. 104: Goffredo da
+// Viterbo, Memoria seculorum. Pubblico dominio, dalla scansione Internet Archive
+// `monumentagermani0000unse_n9j2` (Wikimedia Commons, pagina 120 del PDF).
+const ALLEGATO = path.join(repoRoot, 'scripts', 'assets', 'mgh-ss22-p104.jpg');
 
 fs.mkdirSync(outDir, { recursive: true });
+
+/** Le prime righe della pagina MGH, come le trascriverebbe chi la sta schedando. */
+const TRASC_MGH = '<p>Gallorum, Saxonum et Suevorum et Romanorum et Francorum, Teotonicorum et Lombardorum et Hunorum et Gothorum et Guisogothorum et Austrogothorum et Anglorum et Pannoniorum, Atheniensium et Sicilie et Crete et Sardinie et Guandalorum, similiter ystorias imperatorum Romanorum, et omnium pontificum gesta et annos et menses et dies, et nomina eorum principaliter.</p><p>Apponemus etiam nativitatem et miracula domini nostri Ihesu Christi et mortem et resurrectionem et ascensionem et adventum Spiritus sancti.</p>';
 
 /** Dati d'esempio: un fondo notarile verosimile ma inventato. */
 const SCHEDE = [
@@ -91,6 +53,8 @@ const SCHEDE = [
   { seg: 'ASF, Giud. 91', tipo: 'atti', data: '1339', oggetto: 'Causa matrimoniale Buondelmonti-Donati', tags: 'cause matrimoniali' },
   { seg: 'ASF, Est. 12', tipo: 'fiscali', data: '1347', oggetto: 'Estimo del popolo di San Frediano', tags: 'estimi' },
   { seg: 'ASF, Est. 13', tipo: 'fiscali', data: 's.d.', oggetto: 'Frammento di estimo, popolo non identificato', tags: 'estimi, lacunoso' },
+  // In coda: gli indici delle schede sopra servono ai collegamenti di `seed`.
+  { seg: 'MGH, SS 22, p. 104', tipo: 'edizioni', data: '1872', autore: 'Goffredo da Viterbo', titolo: 'Memoria seculorum', note: 'Monumenta Germaniae Historica, Scriptores XXII, ed. G. Waitz, Hannover 1872.', tags: 'edizioni', trascrizione: TRASC_MGH },
 ];
 
 const CSV_ESEMPIO = [
@@ -138,11 +102,26 @@ async function main() {
     dialog.showMessageBoxSync = () => 0;
   }, csvPath);
 
-  await creaPaginaDiEsempio(app);
+  // Lingue OCR finte, come in `e2e/ocr.spec.ts`: scaricare i dati veri costerebbe decine
+  // di MB a ogni run, e senza lingue il modale mostra solo "Nessuna lingua installata".
+  await app.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('ocr-lingue');
+    ipcMain.handle('ocr-lingue', () => ({
+      ok: true,
+      lingue: [
+        { codice: 'lat', nome: 'Latino', installata: true, dimensione: 4_300_000 },
+        { codice: 'ita', nome: 'Italiano', installata: true, dimensione: 4_100_000 },
+        { codice: 'ita_old', nome: 'Italiano (ortografia antica)', installata: false, dimensione: 0 },
+        { codice: 'osd', nome: 'Rilevamento orientamento', installata: true, dimensione: 10_500_000 },
+      ],
+    }));
+  });
 
   await creaWorkspace(page, basePath);
   await seed(page);
   const idAllegato = await aggiungiAllegato(page);
+  // La pagina MGH è in latino: la scelta ricordata dal modale deve dirlo.
+  await page.evaluate(() => localStorage.setItem('archiview.ocr.lingue', 'lat'));
 
   // Quattro passate: due lingue per due temi. La wiki italiana usa le schermate in
   // italiano, quella inglese le proprie: una guida che mostra un'interfaccia in
@@ -323,29 +302,6 @@ async function passata(page, tema, idAllegato, cartella) {
   return n;
 }
 
-/**
- * Disegna la carta d'esempio in una finestra nascosta e la salva come PNG.
- * Electron sa già renderizzare e catturare: non serve alcuna dipendenza in più.
- */
-async function creaPaginaDiEsempio(app) {
-  // `app.evaluate` gira nel main come modulo ESM: niente `require`, quindi il PNG
-  // torna qui come data URL e lo scrive Node.
-  const dataUrl = await app.evaluate(async ({ BrowserWindow }, html) => {
-    const win = new BrowserWindow({
-      width: 900, height: 1250, show: false,
-      webPreferences: { nodeIntegration: false, contextIsolation: true },
-    });
-    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-    await new Promise((r) => setTimeout(r, 700)); // i font di sistema vanno lasciati caricare
-    const immagine = await win.webContents.capturePage();
-    const url = immagine.toDataURL();
-    win.destroy();
-    return url;
-  }, PAGINA_HTML);
-  fs.writeFileSync(ALLEGATO, Buffer.from(dataUrl.split(',')[1], 'base64'));
-  console.log(`  carta d'esempio: ${ALLEGATO}`);
-}
-
 /** Crea un archivio locale dalla welcome modal (stesso percorso di `e2e/helpers.ts`). */
 async function creaWorkspace(page, basePath) {
   await page.locator('#welcome-modal').waitFor({ state: 'visible', timeout: 20_000 });
@@ -378,8 +334,12 @@ async function creaWorkspace(page, basePath) {
 /** Popola l'archivio con cartelle, schede d'esempio e qualche collegamento. */
 async function seed(page) {
   await page.evaluate(async (schede) => {
-    appData.cartelle = ['Imbreviature', 'Imbreviature/Ser Giovanni di Lapo', 'Atti giudiziari', 'Estimi'];
-    const cartellaDi = { imbreviature: 'Imbreviature', atti: 'Atti giudiziari', fiscali: 'Estimi' };
+    appData.cartelle = ['Imbreviature', 'Imbreviature/Ser Giovanni di Lapo', 'Atti giudiziari', 'Estimi', 'Edizioni'];
+    // Nessuno dei tre modelli predefiniti descrive un'edizione a stampa.
+    if (!appData.tipiDocumento.some((t) => t.id === 'edizioni')) {
+      appData.tipiDocumento.push({ id: 'edizioni', nome: 'Edizioni a stampa', campi: ['autore', 'titolo', 'dataCronica', 'note'] });
+    }
+    const cartellaDi = { imbreviature: 'Imbreviature', atti: 'Atti giudiziari', fiscali: 'Estimi', edizioni: 'Edizioni' };
     const ora = Date.now();
 
     appData.manoscritti = schede.map((s, i) => ({
@@ -392,14 +352,16 @@ async function seed(page) {
       Notaio: s.notaio || '',
       tipo_di_atto: s.atto || '',
       oggetto: s.oggetto || '',
-      note: s.tipo === 'fiscali' ? s.oggetto : '',
+      autore: s.autore || '',
+      titolo: s.titolo || '',
+      note: s.note || (s.tipo === 'fiscali' ? s.oggetto : ''),
       motivazione_processo: s.tipo === 'atti' ? s.oggetto : '',
       tags: s.tags || '',
       allegati: [],
       attori_dinamici: s.notaio
         ? [{ chiave: 'Venditore', valore: 'Bindo di Lapo' }, { chiave: 'Acquirente', valore: 'Nera di Bindo' }]
         : [],
-      trascrizione: i < 3
+      trascrizione: s.trascrizione ? s.trascrizione : i < 3
         ? '<p>In nomine Domini amen. Anno Domini millesimo trecentesimo quadragesimo, indictione octava, die XII mensis maii.</p><p>Bindus quondam Lapi de Florentia vendidit et tradidit Nerae filiae sue petiam unam terre posite in populo Sancti Petri.</p>'
         : '',
       lastModified: ora - i * 86_400_000,
@@ -420,15 +382,16 @@ async function seed(page) {
   await page.waitForTimeout(800);
 }
 
-/** Aggiunge un allegato reale alla prima scheda, per la trascrizione e per l'OCR. */
+/** Aggiunge la pagina MGH alla scheda dell'edizione, per la trascrizione e per l'OCR. */
 async function aggiungiAllegato(page) {
-  await page.evaluate(() => window.editItem(appData.manoscritti[0].id));
+  const id = await page.evaluate(() => appData.manoscritti.find((m) => m.tipoDocumento === 'edizioni').id);
+  await page.evaluate((i) => window.editItem(i), id);
   await page.locator('#manoscritto-form').waitFor({ state: 'visible' });
   await page.locator('#form-allegato').setInputFiles(ALLEGATO);
   await page.waitForTimeout(800);
   await page.locator('#btn-submit-form').click();
   await page.waitForTimeout(1800);
-  return page.evaluate(() => appData.manoscritti[0].id);
+  return id;
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
