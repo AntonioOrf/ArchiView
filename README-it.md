@@ -18,7 +18,86 @@
 
 Il cuore dell'applicazione si basa su un sistema di modelli di documento completamente dinamico. Puoi utilizzare i modelli predefiniti (Imbreviature notarili, Atti giudiziari, Documenti fiscali) o assemblare nuovi tipi di documento scegliendo solo i campi informativi di cui hai realmente bisogno (Titolo, Autori, Segnatura, Supporto, ecc.). L'interfaccia si adatterà automaticamente al modello scelto.
 
+## Riconoscimento del Testo (OCR)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/ocr-dark.png">
+  <img alt="Finestra Riconosci testo (OCR) sopra la vista di trascrizione" src="docs/screenshots/it/ocr.png">
+</picture>
+
+Riconosci il testo di scansioni e PDF interamente offline, con i pacchetti di lingua da installare solo quando servono. Il risultato può entrare nella trascrizione come bozza, oppure restare legato all'allegato come testo cercabile, per ritrovare la scheda. Il riconoscimento può anche salvare una copia dell'allegato come **PDF ricercabile**, e le pagine scansionate di traverso o capovolte vengono raddrizzate da sole.
+
+## Ricerca, Filtri e Tag
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/filtri-dark.png">
+        <img alt="Pannello dei filtri: tipo, intervallo di date, secolo, allegati, trascrizione, testo OCR" src="docs/screenshots/it/filtri.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/tag-dark.png">
+        <img alt="Filtro per tag nella barra laterale, con il numero di schede per tag" src="docs/screenshots/it/tag.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Filtra l'archivio per tipo di documento, intervallo di date storiche o secolo, e secondo la presenza di allegati, trascrizione, testo OCR o collegamenti. La casella di ricerca accetta interrogazioni `campo:valore` (per esempio `notaio:rossi`, `tag:pergamena`) e frasi esatte, e le ricerche si possono salvare. I tag hanno un pannello proprio nella barra laterale, con il conteggio delle schede.
+
+## Collegamenti e Grafo
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/collegamenti-dark.png">
+        <img alt="Schede collegate a un atto: collegamenti in uscita e in entrata" src="docs/screenshots/it/collegamenti.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/grafo-dark.png">
+        <img alt="Grafo dei collegamenti: le schede come nodi raggruppati" src="docs/screenshots/it/grafo.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Collega le schede fra loro con collegamenti tipizzati (atto collegato, copia di, e così via). Ogni scheda mostra le schede a cui rimanda e quelle che la citano. Il grafo dei collegamenti dà una vista d'insieme dell'archivio: un clic su un nodo lo isola con i suoi vicini, un doppio clic apre la scheda.
+
+## Archivi Condivisi
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/condivisione-dark.png">
+  <img alt="Finestra Condivisione: condividi l'archivio online o entra con un invito" src="docs/screenshots/it/condivisione.png">
+</picture>
+
+Crea gratuitamente un archivio condiviso e invita i colleghi con un link. Schede, trascrizioni e nome dell'archivio vengono cifrati prima di lasciare il computer, così il server non può leggerli. Quando qualcuno invia modifiche, gli altri membri ne sono avvisati subito. Se ti serve solo una copia privata, puoi invece fare il backup su Google Drive.
+
+## Stampa ed Esportazione
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/stampa-dark.png">
+        <img alt="Finestra Stampa e PDF: scheda singola, regesto/inventario o elenco tabellare" src="docs/screenshots/it/stampa.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/esporta-testo-dark.png">
+        <img alt="Finestra Esporta testo e citazioni: HTML, Markdown, RTF e BibTeX" src="docs/screenshots/it/esporta-testo.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Stampa una scheda, una cartella o l'intero archivio, o salvali in PDF, in tre formati: scheda singola con miniature e trascrizione, regesto/inventario come un inventario a stampa, oppure elenco tabellare, con frontespizio facoltativo. Le trascrizioni si esportano in HTML, Markdown o RTF (per Word e LibreOffice), le citazioni in BibTeX per LaTeX, Zotero e JabRef.
 
 ## Ulteriori Caratteristiche
 

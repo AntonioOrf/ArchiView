@@ -18,6 +18,87 @@ A text editor with a "split-screen" view to comfortably display the original ima
 
 The core of the application relies on a fully dynamic document template system. You can use predefined templates (Notarial deeds, Judicial acts, Tax documents) or assemble new document types by choosing only the data fields you actually need (Title, Authors, Shelfmark, Medium, etc.). The interface will automatically adapt to the chosen template.
 
+## Text Recognition (OCR)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/ocr-dark.png">
+  <img alt="Recognise text (OCR) dialog over the transcription view" src="docs/screenshots/en/ocr.png">
+</picture>
+
+Recognise the text of scans and PDFs entirely offline, with language packs you install only when needed. The result can go into the transcription as a draft, or stay attached to the file as searchable text so you can find the record later. Recognition can also save a copy of the attachment as a **searchable PDF**, and pages scanned sideways or upside down are straightened automatically.
+
+## Search, Filters and Tags
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/filtri-dark.png">
+        <img alt="Filter panel with type, date range, century, attachment, transcription and OCR filters" src="docs/screenshots/en/filtri.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/tag-dark.png">
+        <img alt="Tag filter in the sidebar with the number of records per tag" src="docs/screenshots/en/tag.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Filter the archive by document type, historical date range or century, and by whether a record has attachments, a transcription, OCR text or links. The search box accepts `field:value` queries (for example `notaio:rossi`, `tag:parchment`) and exact phrases, and searches can be saved. Tags live in their own sidebar panel with a count for each tag.
+
+## Linked Records and Graph
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/collegamenti-dark.png">
+        <img alt="Linked records of a deed: outgoing and incoming links" src="docs/screenshots/en/collegamenti.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/grafo-dark.png">
+        <img alt="Link graph showing records as nodes grouped into clusters" src="docs/screenshots/en/grafo.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Connect records to one another with typed links (a related deed, a copy of, and so on). Each record lists the records it points to and the ones that refer to it. The link graph gives an overview of the whole archive: click a node to isolate it with its neighbours, and double-click it to open the record.
+
+## Shared Archives
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/condivisione-dark.png">
+  <img alt="Sharing dialog: share an archive online or join one with an invite" src="docs/screenshots/en/condivisione.png">
+</picture>
+
+Create a free shared archive and invite colleagues with a link. Records, transcriptions and the archive name are encrypted before they leave your computer, so the server cannot read them. Other members are notified as soon as someone sends changes. If you only want a private backup, you can back the archive up to Google Drive instead.
+
+## Print and Export
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/stampa-dark.png">
+        <img alt="Print and PDF dialog: single record sheet, regest/inventory or tabular list" src="docs/screenshots/en/stampa.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/esporta-testo-dark.png">
+        <img alt="Export text and citations dialog: HTML, Markdown, RTF and BibTeX" src="docs/screenshots/en/esporta-testo.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Print a record, a folder or the whole archive, or save it as a PDF, in one of three layouts: a full record sheet with thumbnails and transcription, a regest/inventory like a printed finding aid, or a tabular list, with an optional title page. Transcriptions can be exported as HTML, Markdown or RTF (for Word and LibreOffice), and citations as BibTeX for LaTeX, Zotero and JabRef.
+
 ## Additional Features
 
 - **IIIF Manifest Import**: Directly import digitized manuscripts from BnF/Gallica, e-codices, Vatican Library, British Library, Bodleian, and any library supporting the IIIF Presentation standard (v2 and v3). Browse folios immediately with remote streaming, offline LRU caching, and on-demand local downloading for OCR and offline use.
