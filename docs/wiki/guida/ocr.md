@@ -31,8 +31,8 @@ collega che non ha installato quella lingua non ne subisce le conseguenze.
 
 Dalla scheda, sull'allegato che ti interessa. Le opzioni:
 
-![La finestra dell'OCR, con la scelta delle lingue, della risoluzione e del numero di pagine](/img/ocr.png){.light-only}
-![La finestra dell'OCR, con la scelta delle lingue, della risoluzione e del numero di pagine](/img/ocr-scuro.png){.dark-only}
+![La finestra dell'OCR, con la scelta delle lingue, dell'orientamento delle pagine e della destinazione del testo](/img/ocr.png){.light-only}
+![La finestra dell'OCR, con la scelta delle lingue, dell'orientamento delle pagine e della destinazione del testo](/img/ocr-scuro.png){.dark-only}
 
 - **lingue** da usare;
 - **risoluzione (dpi)** per i PDF: più alta significa più preciso e più lento;

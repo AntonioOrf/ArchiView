@@ -29,8 +29,8 @@ has not installed that language is not affected by it.
 
 From the record, on the attachment you are interested in. The options:
 
-![The OCR window, with the choice of languages, resolution and number of pages](/img/en/ocr.png){.light-only}
-![The OCR window, with the choice of languages, resolution and number of pages](/img/en/ocr-scuro.png){.dark-only}
+![The OCR window, with the choice of languages, page orientation and where the text goes](/img/en/ocr.png){.light-only}
+![The OCR window, with the choice of languages, page orientation and where the text goes](/img/en/ocr-scuro.png){.dark-only}
 
 - **languages** to use;
 - **resolution (dpi)** for PDFs: higher means more accurate and slower;
