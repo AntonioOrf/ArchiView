@@ -1,6 +1,9 @@
 _Read this in [Italian](README-it.md)_
 
-<img padding=20i width="1920" height="1280" alt="914_1x_shots_so" src="https://github.com/user-attachments/assets/973bffbb-f596-47ad-97d3-151f5f10075b" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/vista-griglia-dark.png">
+  <img alt="ArchiView main window: folder tree on the left, records of the selected folder as cards" src="docs/screenshots/en/vista-griglia.png">
+</picture>
 
 # ArchiView
 
@@ -8,13 +11,19 @@ _Read this in [Italian](README-it.md)_
 
 ## Integrated Transcription Environment
 
-<img width="1920" height="1280" alt="83_1x_shots_so" src="https://github.com/user-attachments/assets/07bbe09f-12a6-4948-abac-83dd21c9fe0e" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/trascrizione-dark.png">
+  <img alt="Transcription view: editor on the left, a page of the MGH edition on the right with the viewer toolbar" src="docs/screenshots/en/trascrizione.png">
+</picture>
 
 A text editor with a "split-screen" view to comfortably display the original images or PDFs of the document side-by-side during transcription work.
 
 ## Modular Data Management
 
-<img width="1920" height="1280" alt="832_1x_shots_so" src="https://github.com/user-attachments/assets/ecd03e76-77de-4eff-b733-ad6bbea0b084" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/form-scheda-dark.png">
+  <img alt="Record form built from the Notarial imbreviatures model: shelfmark, notary, dates, people, type of deed" src="docs/screenshots/en/form-scheda.png">
+</picture>
 
 The core of the application relies on a fully dynamic document template system. You can use predefined templates (Notarial deeds, Judicial acts, Tax documents) or assemble new document types by choosing only the data fields you actually need (Title, Authors, Shelfmark, Medium, etc.). The interface will automatically adapt to the chosen template.
 
@@ -29,43 +38,19 @@ Recognise the text of scans and PDFs entirely offline, with language packs you i
 
 ## Search, Filters and Tags
 
-<table>
-  <tr>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/filtri-dark.png">
-        <img alt="Filter panel with type, date range, century, attachment, transcription and OCR filters" src="docs/screenshots/en/filtri.png">
-      </picture>
-    </td>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/tag-dark.png">
-        <img alt="Tag filter in the sidebar with the number of records per tag" src="docs/screenshots/en/tag.png">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/filtri-dark.png">
+  <img alt="Filter panel with type, date range, century, attachment, transcription and OCR filters" src="docs/screenshots/en/filtri.png">
+</picture>
 
 Filter the archive by document type, historical date range or century, and by whether a record has attachments, a transcription, OCR text or links. The search box accepts `field:value` queries (for example `notaio:rossi`, `tag:parchment`) and exact phrases, and searches can be saved. Tags live in their own sidebar panel with a count for each tag.
 
 ## Linked Records and Graph
 
-<table>
-  <tr>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/collegamenti-dark.png">
-        <img alt="Linked records of a deed: outgoing and incoming links" src="docs/screenshots/en/collegamenti.png">
-      </picture>
-    </td>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/grafo-dark.png">
-        <img alt="Link graph showing records as nodes grouped into clusters" src="docs/screenshots/en/grafo.png">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/grafo-dark.png">
+  <img alt="Link graph showing records as nodes grouped into clusters" src="docs/screenshots/en/grafo.png">
+</picture>
 
 Connect records to one another with typed links (a related deed, a copy of, and so on). Each record lists the records it points to and the ones that refer to it. The link graph gives an overview of the whole archive: click a node to isolate it with its neighbours, and double-click it to open the record.
 
@@ -80,22 +65,10 @@ Create a free shared archive and invite colleagues with a link. Records, transcr
 
 ## Print and Export
 
-<table>
-  <tr>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/stampa-dark.png">
-        <img alt="Print and PDF dialog: single record sheet, regest/inventory or tabular list" src="docs/screenshots/en/stampa.png">
-      </picture>
-    </td>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/esporta-testo-dark.png">
-        <img alt="Export text and citations dialog: HTML, Markdown, RTF and BibTeX" src="docs/screenshots/en/esporta-testo.png">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/stampa-dark.png">
+  <img alt="Print and PDF dialog: single record sheet, regest/inventory or tabular list" src="docs/screenshots/en/stampa.png">
+</picture>
 
 Print a record, a folder or the whole archive, or save it as a PDF, in one of three layouts: a full record sheet with thumbnails and transcription, a regest/inventory like a printed finding aid, or a tabular list, with an optional title page. Transcriptions can be exported as HTML, Markdown or RTF (for Word and LibreOffice), and citations as BibTeX for LaTeX, Zotero and JabRef.
 

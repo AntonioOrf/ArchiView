@@ -1,20 +1,29 @@
 *Leggi in [Inglese](README.md)*
 
-<img padding=20i width="1920" height="1280" alt="914_1x_shots_so" src="https://github.com/user-attachments/assets/973bffbb-f596-47ad-97d3-151f5f10075b" />
-
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/vista-griglia-dark.png">
+  <img alt="La finestra principale di ArchiView: albero delle cartelle a sinistra, schede della cartella come riquadri" src="docs/screenshots/it/vista-griglia.png">
+</picture>
 
 # ArchiView
 
 **ArchiView** è un'applicazione desktop (creata con Electron) progettata come gestionale offline per catalogare, archiviare e trascrivere manoscritti e documenti storici.
 
 ## Ambiente di Trascrizione Integrato
-<img width="1920" height="1280" alt="83_1x_shots_so" src="https://github.com/user-attachments/assets/07bbe09f-12a6-4948-abac-83dd21c9fe0e" />
 
- Un editor di testo con vista "split-screen" per affiancare comodamente le immagini o i PDF originali del documento durante il lavoro di trascrizione.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/trascrizione-dark.png">
+  <img alt="Vista di trascrizione: editor a sinistra, una pagina dell'edizione MGH a destra con la barra del visore" src="docs/screenshots/it/trascrizione.png">
+</picture>
 
- ## Gestione Modulare dei Dati
- 
-   <img width="1920" height="1280" alt="832_1x_shots_so" src="https://github.com/user-attachments/assets/ecd03e76-77de-4eff-b733-ad6bbea0b084" />
+Un editor di testo con vista "split-screen" per affiancare comodamente le immagini o i PDF originali del documento durante il lavoro di trascrizione.
+
+## Gestione Modulare dei Dati
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/form-scheda-dark.png">
+  <img alt="Il form della scheda costruito dal modello Imbreviature notarili: segnatura, notaio, date, persone, tipo di atto" src="docs/screenshots/it/form-scheda.png">
+</picture>
 
 Il cuore dell'applicazione si basa su un sistema di modelli di documento completamente dinamico. Puoi utilizzare i modelli predefiniti (Imbreviature notarili, Atti giudiziari, Documenti fiscali) o assemblare nuovi tipi di documento scegliendo solo i campi informativi di cui hai realmente bisogno (Titolo, Autori, Segnatura, Supporto, ecc.). L'interfaccia si adatterà automaticamente al modello scelto.
 
@@ -29,43 +38,19 @@ Riconosci il testo di scansioni e PDF interamente offline, con i pacchetti di li
 
 ## Ricerca, Filtri e Tag
 
-<table>
-  <tr>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/filtri-dark.png">
-        <img alt="Pannello dei filtri: tipo, intervallo di date, secolo, allegati, trascrizione, testo OCR" src="docs/screenshots/it/filtri.png">
-      </picture>
-    </td>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/tag-dark.png">
-        <img alt="Filtro per tag nella barra laterale, con il numero di schede per tag" src="docs/screenshots/it/tag.png">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/filtri-dark.png">
+  <img alt="Pannello dei filtri: tipo, intervallo di date, secolo, allegati, trascrizione, testo OCR" src="docs/screenshots/it/filtri.png">
+</picture>
 
 Filtra l'archivio per tipo di documento, intervallo di date storiche o secolo, e secondo la presenza di allegati, trascrizione, testo OCR o collegamenti. La casella di ricerca accetta interrogazioni `campo:valore` (per esempio `notaio:rossi`, `tag:pergamena`) e frasi esatte, e le ricerche si possono salvare. I tag hanno un pannello proprio nella barra laterale, con il conteggio delle schede.
 
 ## Collegamenti e Grafo
 
-<table>
-  <tr>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/collegamenti-dark.png">
-        <img alt="Schede collegate a un atto: collegamenti in uscita e in entrata" src="docs/screenshots/it/collegamenti.png">
-      </picture>
-    </td>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/grafo-dark.png">
-        <img alt="Grafo dei collegamenti: le schede come nodi raggruppati" src="docs/screenshots/it/grafo.png">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/grafo-dark.png">
+  <img alt="Grafo dei collegamenti: le schede come nodi raggruppati" src="docs/screenshots/it/grafo.png">
+</picture>
 
 Collega le schede fra loro con collegamenti tipizzati (atto collegato, copia di, e così via). Ogni scheda mostra le schede a cui rimanda e quelle che la citano. Il grafo dei collegamenti dà una vista d'insieme dell'archivio: un clic su un nodo lo isola con i suoi vicini, un doppio clic apre la scheda.
 
@@ -80,22 +65,10 @@ Crea gratuitamente un archivio condiviso e invita i colleghi con un link. Schede
 
 ## Stampa ed Esportazione
 
-<table>
-  <tr>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/stampa-dark.png">
-        <img alt="Finestra Stampa e PDF: scheda singola, regesto/inventario o elenco tabellare" src="docs/screenshots/it/stampa.png">
-      </picture>
-    </td>
-    <td width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/esporta-testo-dark.png">
-        <img alt="Finestra Esporta testo e citazioni: HTML, Markdown, RTF e BibTeX" src="docs/screenshots/it/esporta-testo.png">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/stampa-dark.png">
+  <img alt="Finestra Stampa e PDF: scheda singola, regesto/inventario o elenco tabellare" src="docs/screenshots/it/stampa.png">
+</picture>
 
 Stampa una scheda, una cartella o l'intero archivio, o salvali in PDF, in tre formati: scheda singola con miniature e trascrizione, regesto/inventario come un inventario a stampa, oppure elenco tabellare, con frontespizio facoltativo. Le trascrizioni si esportano in HTML, Markdown o RTF (per Word e LibreOffice), le citazioni in BibTeX per LaTeX, Zotero e JabRef.
 
