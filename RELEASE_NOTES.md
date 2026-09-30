@@ -1,3 +1,12 @@
+## ArchiView 3.2.2 — Trascinamento delle pagine e aggiornamenti più affidabili
+
+### Correzioni
+
+- **Pagine e carte si trascinano col mouse**: nel visualizzatore della trascrizione una pagina PDF o un'immagine si sposta col tasto sinistro a qualunque ingrandimento, anche senza zoom. Prima, con uno o due scatti di zoom, si muoveva solo di pochi pixel e il trascinamento sembrava non funzionare. Un quarto della pagina resta sempre in vista, così non la si perde fuori dal riquadro.
+- **Aggiornamenti**: mentre una nuova versione è in pubblicazione, l'app non mostra più "Nessuna versione pubblicata" ma invita a riprovare fra qualche minuto. Un controllo automatico non riuscito per cause passeggere (niente rete, versione in pubblicazione) non mostra più il banner rosso, e quando il controllo fallisce il pulsante è "Riprova" invece di "Scarica".
+
+---
+
 ## ArchiView 3.2.1 — PDF ricercabili e pagine raddrizzate
 
 Il testo riconosciuto dall'OCR si può ora portare fuori dall'archivio: una copia dell'allegato in PDF, con il testo cercabile e selezionabile sopra la scansione. Le pagine scansionate di traverso vengono raddrizzate da sole.
