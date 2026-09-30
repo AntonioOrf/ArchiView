@@ -10,8 +10,12 @@
  * mostra l'una o l'altra secondo il tema scelto da chi legge (classi `light-only` e
  * `dark-only` in `.vitepress/theme/custom.css`).
  *
- * Uso:  node scripts/wiki-screenshots.mjs [cartella-di-destinazione]
+ * Uso:  node scripts/wiki-screenshots.mjs [cartella-di-destinazione] [--schermo-intero]
  * Default: ../ArchiView-site/docs/wiki/public/img
+ *
+ * `--schermo-intero` apre l'app a tutto schermo invece che nella finestra 1280×800: è la
+ * vista del README, dove l'immagine deve mostrare l'app com'è sul monitor di chi la usa.
+ * La scala resta 1:1 (niente zoom del sistema), quindi la risoluzione è quella dello schermo.
  *
  * Prima serve una build aggiornata: `npm run build-css && npm run build-ts`.
  */
@@ -23,12 +27,13 @@ import { fileURLToPath } from 'url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.resolve(
-  process.argv[2] || path.join(repoRoot, '..', 'ArchiView-site', 'docs', 'wiki', 'public', 'img')
+  process.argv.slice(2).find((a) => !a.startsWith('--')) || path.join(repoRoot, '..', 'ArchiView-site', 'docs', 'wiki', 'public', 'img')
 );
 
 // Finestra ampia ma non enorme: su una pagina di documentazione uno screenshot 1440px
 // va ridotto al 60% e le etichette non si leggono più.
 const LARGHEZZA = 1280;
+const SCHERMO_INTERO = process.argv.includes('--schermo-intero');
 const ALTEZZA = 800;
 
 // Una pagina vera di un'edizione a stampa: l'OCR e il visore vanno mostrati su un testo reale,
@@ -78,7 +83,8 @@ async function main() {
   }
 
   const app = await electron.launch({
-    args: ['.'],
+    // Scala 1:1: con lo zoom di Windows al 125% lo screenshot mostrerebbe l'interfaccia ingrandita.
+    args: ['.', '--force-device-scale-factor=1'],
     cwd: repoRoot,
     env: { ...cleanEnv, ARCHIVIEW_E2E_USER_DATA: userDataDir, PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1' },
   });
@@ -88,11 +94,13 @@ async function main() {
   await page.waitForLoadState('domcontentloaded');
 
   // Dimensione deterministica: senza, lo screenshot dipende dallo schermo di chi lo genera.
-  await app.evaluate(({ BrowserWindow }, [w, h]) => {
+  await app.evaluate(({ BrowserWindow }, [w, h, intero]) => {
     const win = BrowserWindow.getAllWindows()[0];
+    if (intero) { win.setFullScreen(true); return; }
     win.setSize(w, h);
     win.center();
-  }, [LARGHEZZA, ALTEZZA]);
+  }, [LARGHEZZA, ALTEZZA, SCHERMO_INTERO]);
+  if (SCHERMO_INTERO) await page.waitForTimeout(1200); // l'animazione del tutto schermo
 
   // I dialog nativi non sono pilotabili da Playwright: il wizard di import ne apre uno.
   await app.evaluate(({ dialog }, percorso) => {
@@ -359,7 +367,7 @@ async function seed(page) {
       tags: s.tags || '',
       allegati: [],
       attori_dinamici: s.notaio
-        ? [{ chiave: 'Venditore', valore: 'Bindo di Lapo' }, { chiave: 'Acquirente', valore: 'Nera di Bindo' }]
+        ? [{ k: 'Venditore', v: 'Bindo di Lapo' }, { k: 'Acquirente', v: 'Nera di Bindo' }]
         : [],
       trascrizione: s.trascrizione ? s.trascrizione : i < 3
         ? '<p>In nomine Domini amen. Anno Domini millesimo trecentesimo quadragesimo, indictione octava, die XII mensis maii.</p><p>Bindus quondam Lapi de Florentia vendidit et tradidit Nerae filiae sue petiam unam terre posite in populo Sancti Petri.</p>'
