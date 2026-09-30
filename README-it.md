@@ -40,6 +40,10 @@ Il modo più semplice per utilizzare **ArchiView** è scaricare l'ultima version
 2. Scarica il file eseguibile per il tuo sistema operativo.
 3. Avvia direttamente il file scaricato.
 
+## Guida Utente (Wiki)
+
+La guida completa all'uso — installazione, interfaccia, schede, trascrizione, ricerca, sincronizzazione e condivisione, esportazione e stampa, FAQ — è disponibile nella **[Wiki di ArchiView](https://archiview.web.app/wiki/)** (anche in [inglese](https://archiview.web.app/wiki/en/)).
+
 ---
 
 ## Per gli Sviluppatori (Compilazione da sorgente)

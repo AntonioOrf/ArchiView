@@ -38,6 +38,10 @@ The easiest way to use **ArchiView** is to download the latest release:
 2. Download the executable file for your operating system.
 3. Run the downloaded file directly.
 
+## User Guide (Wiki)
+
+The complete user guide — installation, interface, records, transcription, search, sync and sharing, export and print, FAQ — is available in the **[ArchiView Wiki](https://archiview.web.app/wiki/en/)** (also in [Italian](https://archiview.web.app/wiki/)).
+
 ---
 
 ## For Developers (Building from source)
