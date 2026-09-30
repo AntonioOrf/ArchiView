@@ -655,6 +655,14 @@ function _linguiExtraction() {
     i18n._({ id: "ocr_lang_remove", message: "Rimuovi" });
     i18n._({ id: "ocr_lang_installing", message: "Download…" });
     i18n._({ id: "ocr_lang_removing", message: "Rimozione…" });
+    i18n._({ id: "ocr_lang_name_ita", message: "Italiano" });
+    i18n._({ id: "ocr_lang_name_lat", message: "Latino" });
+    i18n._({ id: "ocr_lang_name_eng", message: "Inglese" });
+    i18n._({ id: "ocr_lang_name_fra", message: "Francese" });
+    i18n._({ id: "ocr_lang_name_deu", message: "Tedesco" });
+    i18n._({ id: "ocr_lang_name_spa", message: "Spagnolo" });
+    i18n._({ id: "ocr_lang_name_ita_old", message: "Italiano (ortografia antica)" });
+    i18n._({ id: "ocr_lang_name_osd", message: "Rilevamento orientamento" });
     i18n._({ id: "ocr_lang_error", message: "Operazione non riuscita: serve una connessione per scaricare i dati di lingua." });
     i18n._({ id: "ocr_destination", message: "Destinazione" });
     i18n._({ id: "ocr_dest_draft", message: "Inserisci come bozza nella trascrizione" });
@@ -2305,6 +2313,14 @@ const customEn = {
     "ocr_lang_remove": "Remove",
     "ocr_lang_installing": "Downloading…",
     "ocr_lang_removing": "Removing…",
+    "ocr_lang_name_ita": "Italian",
+    "ocr_lang_name_lat": "Latin",
+    "ocr_lang_name_eng": "English",
+    "ocr_lang_name_fra": "French",
+    "ocr_lang_name_deu": "German",
+    "ocr_lang_name_spa": "Spanish",
+    "ocr_lang_name_ita_old": "Italian (old spelling)",
+    "ocr_lang_name_osd": "Orientation detection",
     "ocr_lang_error": "Operation failed: a connection is needed to download language data.",
     "ocr_destination": "Destination",
     "ocr_dest_draft": "Insert as a draft in the transcription",
@@ -3385,6 +3401,14 @@ const customIt = {
     "ocr_lang_remove": "Rimuovi",
     "ocr_lang_installing": "Download…",
     "ocr_lang_removing": "Rimozione…",
+    "ocr_lang_name_ita": "Italiano",
+    "ocr_lang_name_lat": "Latino",
+    "ocr_lang_name_eng": "Inglese",
+    "ocr_lang_name_fra": "Francese",
+    "ocr_lang_name_deu": "Tedesco",
+    "ocr_lang_name_spa": "Spagnolo",
+    "ocr_lang_name_ita_old": "Italiano (ortografia antica)",
+    "ocr_lang_name_osd": "Rilevamento orientamento",
     "ocr_lang_error": "Operazione non riuscita: serve una connessione per scaricare i dati di lingua.",
     "ocr_destination": "Destinazione",
     "ocr_dest_draft": "Inserisci come bozza nella trascrizione",
@@ -3475,6 +3499,8 @@ window.cambiaLingua = async function(lang) {
     // Rendi nuovamente l'interfaccia principale per applicare i cambiamenti
     if (typeof renderMain === 'function') renderMain();
     if (typeof renderSidebar === 'function') renderSidebar();
+    // Il chip cloud si ridisegna solo ai cambi di stato: senza, resta nella lingua precedente.
+    if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 }
 
 window.applicaTraduzioniHtml = function() {

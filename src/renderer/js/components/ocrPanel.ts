@@ -48,6 +48,9 @@ const _oStato = {
 
 function _oT(k, d) { return window.t(k, d); }
 
+/** Il main manda i nomi in italiano: si traducono per codice, col nome del main come ripiego. */
+function _oNomeLingua(l) { return _oT('ocr_lang_name_' + l.codice, l.nome); }
+
 function _oRecord() {
     if (!_oStato.recordId) return null;
     return appData.manoscritti.find(x => String(x.id) === String(_oStato.recordId)) || null;
@@ -211,7 +214,7 @@ function _oBlocccoLingue(preselezione) {
         griglia.className = 'flex flex-wrap gap-x-4 gap-y-1';
         griglia.id = 'ocr-langs-choice';
         for (const l of installate) {
-            griglia.appendChild(_oCheckbox('ocr-lang-' + l.codice, l.nome, preselezione.includes(l.codice)));
+            griglia.appendChild(_oCheckbox('ocr-lang-' + l.codice, _oNomeLingua(l), preselezione.includes(l.codice)));
         }
         contenitore.appendChild(griglia);
         contenitore.appendChild(_oNota(_oT('ocr_langs_hint',
@@ -951,7 +954,7 @@ async function _oRenderLingue() {
         sinistra.className = 'flex flex-col';
         const nome = document.createElement('span');
         nome.className = 'text-sm';
-        nome.textContent = l.nome;
+        nome.textContent = _oNomeLingua(l);
         const dettaglio = document.createElement('span');
         dettaglio.className = 'text-xs text-stone-500 dark:text-stone-400';
         dettaglio.textContent = l.installata

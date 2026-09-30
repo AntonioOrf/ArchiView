@@ -31,6 +31,8 @@ window.apriGrafo = function() {
     if (!modal) return;
     modal.classList.remove('hidden-tab');
     window.costruisciGrafo();
+    // Il riquadro nasce al DOMContentLoaded: senza, resta nella lingua di quel momento.
+    _grAggiornaDettaglio();
 };
 
 window.chiudiGrafo = function() {
@@ -535,7 +537,7 @@ function _grAggiornaDettaglio() {
                 </div>
                 <p id="grafo-avviso" class="hidden text-xs text-amber-800 dark:text-amber-300 mb-2"></p>
                 <div class="grafo-area">
-                    <svg id="grafo-svg" class="grafo-svg" role="img" aria-label="Grafo dei collegamenti fra schede"></svg>
+                    <svg id="grafo-svg" class="grafo-svg" role="img" data-i18n-aria-label="graph_title" aria-label="Grafo dei collegamenti"></svg>
                     <aside id="grafo-dettaglio" class="grafo-dettaglio"></aside>
                 </div>
                 <div class="modal-footer">
