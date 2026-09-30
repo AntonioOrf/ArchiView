@@ -13,6 +13,8 @@
     const SCALA_MIN = 0.1;
     const SCALA_MAX = 12;
     const PASSO_ZOOM = 1.2;
+    // Frazione dell'immagine (o del viewport, se più piccolo) che il pan lascia sempre in vista.
+    const QUOTA_VISIBILE = 0.25;
 
     /**
      * Scala richiesta da una modalità di adattamento. Funzione PURA (nessun DOM): è il solo
@@ -110,15 +112,18 @@
             };
         }
 
-        // Il pan è consentito solo entro il debordo reale dell'immagine: portarla del tutto
-        // fuori dal viewport (e non ritrovarla più) è il modo classico di rompere uno zoom.
+        // Il pan è libero a qualunque scala, ma una parte dell'immagine resta sempre nel
+        // viewport: portarla del tutto fuori (e non ritrovarla più) è il modo classico di
+        // rompere uno zoom. Il limite precedente — il solo debordo reale — era troppo stretto:
+        // una carta adattata alla pagina e ingrandita di uno o due scatti si spostava di
+        // poche decine di pixel, e il trascinamento sembrava non funzionare.
         function limitaTraslazione() {
             const d = dimensioni();
             const ruotato = Math.abs((stato.rot % 180 + 180) % 180 - 90) < 1;
             const larghezza = (ruotato ? d.ch : d.cw) * stato.scala;
             const altezza = (ruotato ? d.cw : d.ch) * stato.scala;
-            const maxX = Math.max(0, (larghezza - d.vw) / 2);
-            const maxY = Math.max(0, (altezza - d.vh) / 2);
+            const maxX = Math.max(0, (larghezza + d.vw) / 2 - Math.min(larghezza, d.vw) * QUOTA_VISIBILE);
+            const maxY = Math.max(0, (altezza + d.vh) / 2 - Math.min(altezza, d.vh) * QUOTA_VISIBILE);
             stato.tx = limita(stato.tx, -maxX, maxX);
             stato.ty = limita(stato.ty, -maxY, maxY);
         }
@@ -128,7 +133,7 @@
             img.style.transformOrigin = 'center center';
             img.style.transform = `translate(${stato.tx}px, ${stato.ty}px) rotate(${stato.rot}deg) scale(${stato.scala})`;
             img.style.filter = `brightness(${stato.luminosita}%) contrast(${stato.contrasto}%) invert(${stato.inverti ? 1 : 0})`;
-            viewport.classList.toggle('iv-trascinabile', stato.scala > 1.001);
+            viewport.classList.add('iv-trascinabile');
 
             const d = dimensioni();
             const percento = d.nw && d.cw ? Math.round(stato.scala * (d.cw / d.nw) * 100) : Math.round(stato.scala * 100);
@@ -158,7 +163,14 @@
             stato.tx = 0;
             // "Adatta alla larghezza" su una carta alta serve proprio a leggerla dall'alto:
             // riportare la vista in cima è ciò che ci si aspetta, non centrarla.
-            stato.ty = modo === 'larghezza' ? Number.MAX_SAFE_INTEGER : 0;
+            // Il bordo superiore sul bordo del viewport: il debordo, non il limite del pan, che
+            // ora lascerebbe la carta a metà schermo.
+            stato.ty = 0;
+            if (modo === 'larghezza') {
+                const d = dimensioni();
+                const ruotato = Math.abs((stato.rot % 180 + 180) % 180 - 90) < 1;
+                stato.ty = Math.max(0, ((ruotato ? d.cw : d.ch) * stato.scala - d.vh) / 2);
+            }
             applica();
         }
 

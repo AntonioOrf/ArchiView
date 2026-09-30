@@ -194,5 +194,45 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await expect(page.locator('#trascrizione-editor')).toContainText('r0+1-');
     expect(await trasformazione(page, '#trasc-img-preview')).toContain('scale(1)');
   });
+
+  // Il pan era limitato al solo debordo: una pagina PDF adattata e ingrandita di uno scatto si
+  // spostava di pochi pixel, e il trascinamento col sinistro sembrava rotto.
+  test('una pagina PDF si trascina col sinistro, anche poco o per nulla ingrandita', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Viewer');
+    const id = await createItemWithAttachment(page, 'MS-IV-PAN', path.join(__dirname, 'fixtures', 'multipage.pdf'));
+    await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#trasc-img-preview')).toHaveAttribute('src', /^blob:/);
+
+    const traslazione = async () => {
+      const t = await trasformazione(page, '#trasc-img-preview');
+      const m = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)/.exec(t);
+      return m ? { x: Number(m[1]), y: Number(m[2]) } : { x: NaN, y: NaN };
+    };
+    const trascina = async (dx: number, dy: number) => {
+      const box = (await page.locator('#trasc-img-viewport').boundingBox())!;
+      const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+      await page.mouse.move(cx, cy);
+      await page.mouse.down();
+      await page.mouse.move(cx + dx, cy + dy, { steps: 10 });
+      await page.mouse.up();
+    };
+
+    // Senza zoom: la pagina segue il cursore.
+    await trascina(120, 80);
+    expect(await traslazione()).toEqual({ x: 120, y: 80 });
+
+    // Uno scatto di zoom: il trascinamento resta pieno, non ridotto al debordo.
+    await page.locator('#trasc-img-viewport [data-iv="fit"]').click();
+    await page.locator('#trasc-img-viewport [data-iv="zoom-in"]').click();
+    await trascina(-150, 0);
+    expect((await traslazione()).x).toBeLessThanOrEqual(-149);
+
+    // Trascinata lontanissimo, un quarto della pagina resta comunque in vista.
+    await trascina(-5000, -5000);
+    const img = (await page.locator('#trasc-img-preview').boundingBox())!;
+    const vp = (await page.locator('#trasc-img-viewport').boundingBox())!;
+    expect(img.x + img.width - vp.x).toBeGreaterThan(Math.min(img.width, vp.width) * 0.24);
+    expect(img.y + img.height - vp.y).toBeGreaterThan(Math.min(img.height, vp.height) * 0.24);
+  });
 });
 
