@@ -18,7 +18,7 @@ const PROJECTS = {
   a11y: ['a11y', 'a11y-global', 'a11y-contrast'],
   smoke: ['app', 'workspace', 'security'],
   ui: ['ui', 'list-view', 'sidebar-panels', 'context-menu', 'modals-misc', 'flow-responsive', 'form', 'sort-table', 'image-viewer', 'filters', 'command-palette', 'tutorial', 'bulk-actions', 'updater'],
-  data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict', 'csv-export', 'csv-import', 'iiif-import', 'ocr', 'print', 'text-export', 'schema-migration', 'typed-fields', 'campi-propri', 'data-storica', 'tags-entity', 'fase3', 'fase4'],
+  data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict', 'csv-export', 'csv-import', 'iiif-import', 'ocr', 'print', 'text-export', 'schema-migration', 'typed-fields', 'campi-propri', 'data-storica', 'tags-entity', 'fase3', 'fase4', 'cross-archive'],
   cloud: ['cloud-status', 'cloud-offline']
 };
 

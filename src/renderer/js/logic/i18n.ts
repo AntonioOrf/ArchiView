@@ -1177,10 +1177,192 @@ function _linguiExtraction() {
     i18n._({ id: "tree_label_auto", message: "Automatica (nome principale)" });
     i18n._({ id: "tree_sort_heading", message: "Ordina l’albero per" });
     i18n._({ id: "tree_sort_secondary", message: "Etichetta secondaria" });
+    // Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 2)
+    i18n._({ id: "cross_toggle", message: "Cerca anche negli altri archivi" });
+    i18n._({ id: "cross_title", message: "Negli altri archivi" });
+    i18n._({ id: "cross_more", message: "Mostra altri risultati" });
+    i18n._({ id: "cross_searching", message: "Ricerca negli altri archivi…" });
+    i18n._({ id: "cross_error", message: "Ricerca negli altri archivi non riuscita: {var0}" });
+    i18n._({ id: "cross_no_archives", message: "Nessun altro archivio recente: gli archivi aperti almeno una volta in ArchiView compaiono qui." });
+    i18n._({ id: "cross_none", message: "Nessuna scheda negli altri archivi ({var0} consultati)." });
+    i18n._({ id: "cross_found_one", message: "1 scheda in un altro archivio" });
+    i18n._({ id: "cross_found_many", message: "{var0} schede in {var1} altri archivi" });
+    i18n._({ id: "cross_truncated", message: "troppi risultati, restringi la ricerca" });
+    i18n._({ id: "cross_unreachable", message: "Non raggiungibili (cartella spostata o disco scollegato): {var0}" });
+    i18n._({ id: "cross_shared", message: "condiviso" });
+    i18n._({ id: "cross_future", message: "Creato con una versione più recente di ArchiView: alcuni campi potrebbero mancare." });
+    i18n._({ id: "cross_no_shelfmark", message: "(senza segnatura)" });
+    i18n._({ id: "cross_open_preview", message: "Apri l'anteprima di {var0} ({var1})" });
+    i18n._({ id: "cross_loading", message: "Caricamento…" });
+    i18n._({ id: "cross_preview_error", message: "Anteprima non disponibile" });
+    i18n._({ id: "cross_read_only", message: "sola lettura" });
+    i18n._({ id: "cross_preview_empty", message: "Nessun campo compilato." });
+    i18n._({ id: "cross_attachments", message: "Allegati ({var0})" });
+    i18n._({ id: "cross_pdf_hint", message: "PDF: si apre dal suo archivio." });
+    i18n._({ id: "cross_field_transcription", message: "Trascrizione" });
+    i18n._({ id: "cross_field_ocr", message: "Testo riconosciuto (OCR)" });
+    i18n._({ id: "settings_cross_title", message: "Ricerca tra archivi" });
+    i18n._({ id: "settings_cross_desc", message: "Gli archivi aperti almeno una volta su questo computer in cui cercare con \"Cerca anche negli altri archivi\". Vengono soltanto letti, mai modificati." });
+    i18n._({ id: "settings_cross_hint_toggle", message: "Avvisami quando scrivo un nome che compare in altri archivi" });
+    i18n._({ id: "settings_cross_list_title", message: "Archivi in cui cercare" });
+    i18n._({ id: "settings_cross_none", message: "Nessun altro archivio aperto su questo computer." });
+    i18n._({ id: "settings_cross_unreachable", message: "cartella non trovata" });
+    i18n._({ id: "msg_cross_saved", message: "Preferenza salvata." });
+    i18n._({ id: "msg_cross_save_failed", message: "Preferenza non salvata: {var0}" });
+    i18n._({ id: "cross_hint_one", message: "Trovato in un altro archivio" });
+    i18n._({ id: "cross_hint_many_one", message: "Trovato in {var0} schede di un altro archivio" });
+    i18n._({ id: "cross_hint_many", message: "Trovato in {var0} schede di {var1} altri archivi" });
+    i18n._({ id: "cross_namesakes_title", message: "{var0} negli altri archivi" });
+    i18n._({ id: "cross_namesakes_hint", message: "Stesso nome, non per forza la stessa persona: aprile per decidere." });
+    i18n._({ id: "cross_namesakes_link", message: "Collega" });
+    i18n._({ id: "cross_namesakes_link_title", message: "Aggiungi un rimando a questa scheda" });
+    i18n._({ id: "cross_links_title", message: "Rimandi ad altri archivi" });
+    i18n._({ id: "cross_links_add", message: "Aggiungi un rimando a un altro archivio" });
+    i18n._({ id: "cross_links_none", message: "Nessun rimando." });
+    i18n._({ id: "cross_links_unavailable", message: "archivio non disponibile su questo computer" });
+    i18n._({ id: "cross_links_open", message: "Apri l'anteprima" });
+    i18n._({ id: "cross_links_remove", message: "Togli il rimando" });
+    i18n._({ id: "cross_links_picker_title", message: "Rimando a un altro archivio" });
+    i18n._({ id: "cross_links_type_label", message: "Tipo di rimando" });
+    i18n._({ id: "cross_links_search_label", message: "Scheda da collegare" });
+    i18n._({ id: "cross_links_search_placeholder", message: "Segnatura, persona, luogo…" });
+    i18n._({ id: "cross_links_picker_hint", message: "Scrivi per cercare negli altri archivi." });
+    i18n._({ id: "cross_links_picker_none", message: "Nessuna scheda trovata negli altri archivi." });
+    i18n._({ id: "cross_links_already", message: "già collegata" });
+    i18n._({ id: "cross_provenance", message: "Copiata da {var0} · {var1}, il {var2}." });
+    i18n._({ id: "cross_provenance_open", message: "Apri l'originale" });
+    i18n._({ id: "cross_copy_own_field_one", message: "Un campo diventa campo proprio della scheda: {var0}" });
+    i18n._({ id: "cross_copy_transcriptions_field", message: "Le trascrizioni delle carte non copiate vanno nel campo \"Trascrizioni delle carte non copiate\"." });
+    i18n._({ id: "field_trascrizioni_non_copiate", message: "Trascrizioni delle carte non copiate" });
+    i18n._({ id: "cross_copy_button", message: "Copia in questo archivio" });
+    i18n._({ id: "cross_copy_title", message: "Copia in questo archivio" });
+    i18n._({ id: "cross_copy_type_label", message: "Tipo di documento in questo archivio" });
+    i18n._({ id: "cross_copy_summary", message: "Che cosa succederà" });
+    i18n._({ id: "cross_copy_confirm", message: "Copia" });
+    i18n._({ id: "cross_copy_from", message: "Da: {var0} · {var1}" });
+    i18n._({ id: "cross_copy_attachments", message: "Copia anche gli allegati ({var0} file, {var1})" });
+    i18n._({ id: "cross_copy_no_attachments", message: "Nessun allegato da copiare su questo computer" });
+    i18n._({ id: "cross_copy_shared_warning", message: "Questo archivio è condiviso: la scheda copiata sarà visibile ai suoi membri." });
+    i18n._({ id: "cross_copy_type", message: "Tipo di documento: {var0}" });
+    i18n._({ id: "cross_copy_folder", message: "Cartella: {var0}" });
+    i18n._({ id: "cross_copy_root", message: "Cartella: radice dell'archivio" });
+    i18n._({ id: "cross_copy_own_fields", message: "{var0} campi diventano campi propri della scheda: {var1}" });
+    i18n._({ id: "cross_copy_people", message: "Persone e luoghi: {var0}" });
+    i18n._({ id: "cross_copy_known", message: "già in questo archivio" });
+    i18n._({ id: "cross_copy_new", message: "nuovo" });
+    i18n._({ id: "cross_copy_authority", message: "Grafia e note dall'anagrafica di origine: {var0}" });
+    i18n._({ id: "cross_copy_tags", message: "Tag nuovi: {var0}" });
+    i18n._({ id: "cross_copy_links", message: "{var0} rimandi a schede dell'archivio di origine" });
+    i18n._({ id: "cross_copy_att_summary", message: "Allegati: {var0} copiati, {var1} IIIF, {var2} non presenti su questo computer" });
+    i18n._({ id: "cross_copy_transcription", message: "Senza allegati la trascrizione resta sulla scheda, in un unico testo." });
+    i18n._({ id: "cross_copy_vocab", message: "I valori dei vocabolari di origine vengono scritti nei campi copiati: i vocabolari di questo archivio non cambiano." });
+    i18n._({ id: "cross_copy_provenance", message: "La copia ricorda da dove viene e non cambia se l'originale viene modificato." });
+    i18n._({ id: "cross_copy_progress", message: "Copia degli allegati: {var0} di {var1}…" });
+    i18n._({ id: "cross_copy_undo", message: "Copia di {var0} da {var1}" });
+    i18n._({ id: "cross_copy_done", message: "Scheda copiata in questo archivio." });
+    i18n._({ id: "cross_copy_some_failed", message: "{var0} allegati non copiati." });
+    i18n._({ id: "cross_copy_failed_all", message: "Copia non riuscita: {var0}" });
+    i18n._({ id: "cross_copy_value", message: "Copia il valore" });
+    i18n._({ id: "cross_value_copied", message: "Valore copiato: incollalo dove serve." });
+    i18n._({ id: "cross_copy_failed", message: "Copia negli appunti non riuscita." });
+    i18n._({ id: "cross_insert_value", message: "Inserisci nella scheda aperta" });
+    i18n._({ id: "cross_value_inserted", message: "Inserito in \"{var0}\"." });
+    i18n._({ id: "cross_insert_overwrite", message: "Il campo \"{var0}\" è già compilato: sostituirne il contenuto?" });
 }
 
 // Wrapper per compatibilità con il codice esistente
 const customEn = {
+    // --- Ricerca tra archivi ---
+    "cross_toggle": "Also search other archives",
+    "cross_title": "In other archives",
+    "cross_more": "Show more results",
+    "cross_searching": "Searching other archives…",
+    "cross_error": "Search in other archives failed: {var0}",
+    "cross_no_archives": "No other recent archives: archives opened at least once in ArchiView appear here.",
+    "cross_none": "No records in other archives ({var0} searched).",
+    "cross_found_one": "1 record in another archive",
+    "cross_found_many": "{var0} records in {var1} other archives",
+    "cross_truncated": "too many results, narrow the search",
+    "cross_unreachable": "Unreachable (folder moved or drive disconnected): {var0}",
+    "cross_shared": "shared",
+    "cross_future": "Created with a newer version of ArchiView: some fields may be missing.",
+    "cross_no_shelfmark": "(no shelfmark)",
+    "cross_open_preview": "Open the preview of {var0} ({var1})",
+    "cross_loading": "Loading…",
+    "cross_preview_error": "Preview not available",
+    "cross_read_only": "read only",
+    "cross_preview_empty": "No fields filled in.",
+    "cross_attachments": "Attachments ({var0})",
+    "cross_pdf_hint": "PDF: open it from its own archive.",
+    "cross_field_transcription": "Transcription",
+    "cross_field_ocr": "Recognised text (OCR)",
+    "settings_cross_title": "Search across archives",
+    "settings_cross_desc": "The archives opened at least once on this computer to search with \"Also search other archives\". They are only read, never modified.",
+    "settings_cross_hint_toggle": "Tell me when I type a name that appears in other archives",
+    "settings_cross_list_title": "Archives to search",
+    "settings_cross_none": "No other archive opened on this computer.",
+    "settings_cross_unreachable": "folder not found",
+    "msg_cross_saved": "Preference saved.",
+    "msg_cross_save_failed": "Preference not saved: {var0}",
+    "cross_hint_one": "Found in another archive",
+    "cross_hint_many_one": "Found in {var0} records of another archive",
+    "cross_hint_many": "Found in {var0} records of {var1} other archives",
+    "cross_namesakes_title": "{var0} in other archives",
+    "cross_namesakes_hint": "Same name, not necessarily the same person: open them to decide.",
+    "cross_namesakes_link": "Link",
+    "cross_namesakes_link_title": "Add a link to this record",
+    "cross_links_title": "Links to other archives",
+    "cross_links_add": "Add a link to another archive",
+    "cross_links_none": "No links.",
+    "cross_links_unavailable": "archive not available on this computer",
+    "cross_links_open": "Open the preview",
+    "cross_links_remove": "Remove the link",
+    "cross_links_picker_title": "Link to another archive",
+    "cross_links_type_label": "Link type",
+    "cross_links_search_label": "Record to link",
+    "cross_links_search_placeholder": "Shelfmark, person, place…",
+    "cross_links_picker_hint": "Type to search other archives.",
+    "cross_links_picker_none": "No records found in other archives.",
+    "cross_links_already": "already linked",
+    "cross_provenance": "Copied from {var0} · {var1}, on {var2}.",
+    "cross_provenance_open": "Open the original",
+    "cross_copy_own_field_one": "One field becomes a field of this record only: {var0}",
+    "cross_copy_transcriptions_field": "The transcriptions of attachments not copied go into the field \"Transcriptions of attachments not copied\".",
+    "field_trascrizioni_non_copiate": "Transcriptions of attachments not copied",
+    "cross_copy_button": "Copy into this archive",
+    "cross_copy_title": "Copy into this archive",
+    "cross_copy_type_label": "Document type in this archive",
+    "cross_copy_summary": "What will happen",
+    "cross_copy_confirm": "Copy",
+    "cross_copy_from": "From: {var0} · {var1}",
+    "cross_copy_attachments": "Also copy the attachments ({var0} files, {var1})",
+    "cross_copy_no_attachments": "No attachments to copy on this computer",
+    "cross_copy_shared_warning": "This archive is shared: the copied record will be visible to its members.",
+    "cross_copy_type": "Document type: {var0}",
+    "cross_copy_folder": "Folder: {var0}",
+    "cross_copy_root": "Folder: archive root",
+    "cross_copy_own_fields": "{var0} fields become fields of this record only: {var1}",
+    "cross_copy_people": "People and places: {var0}",
+    "cross_copy_known": "already in this archive",
+    "cross_copy_new": "new",
+    "cross_copy_authority": "Spelling and notes from the source index: {var0}",
+    "cross_copy_tags": "New tags: {var0}",
+    "cross_copy_links": "{var0} links to records in the source archive",
+    "cross_copy_att_summary": "Attachments: {var0} copied, {var1} IIIF, {var2} not on this computer",
+    "cross_copy_transcription": "Without attachments the transcription stays on the record as a single text.",
+    "cross_copy_vocab": "The source vocabularies' values are written into the copied fields: this archive's vocabularies do not change.",
+    "cross_copy_provenance": "The copy remembers where it comes from and does not change if the original is edited.",
+    "cross_copy_progress": "Copying attachments: {var0} of {var1}…",
+    "cross_copy_undo": "Copy of {var0} from {var1}",
+    "cross_copy_done": "Record copied into this archive.",
+    "cross_copy_some_failed": "{var0} attachments not copied.",
+    "cross_copy_failed_all": "Copy failed: {var0}",
+    "cross_copy_value": "Copy the value",
+    "cross_value_copied": "Value copied: paste it where you need it.",
+    "cross_copy_failed": "Copy to clipboard failed.",
+    "cross_insert_value": "Insert into the open record",
+    "cross_value_inserted": "Inserted into \"{var0}\".",
+    "cross_insert_overwrite": "The field \"{var0}\" is already filled in: replace its content?",
     // --- Etichetta secondaria delle schede nell'albero ---
     "tree_label_title": "Secondary label on records",
     "tree_label_heading": "Show under the shelfmark",
@@ -2391,6 +2573,97 @@ const customEn = {
 };
 
 const customIt = {
+    // --- Ricerca tra archivi ---
+    "cross_toggle": "Cerca anche negli altri archivi",
+    "cross_title": "Negli altri archivi",
+    "cross_more": "Mostra altri risultati",
+    "cross_searching": "Ricerca negli altri archivi…",
+    "cross_error": "Ricerca negli altri archivi non riuscita: {var0}",
+    "cross_no_archives": "Nessun altro archivio recente: gli archivi aperti almeno una volta in ArchiView compaiono qui.",
+    "cross_none": "Nessuna scheda negli altri archivi ({var0} consultati).",
+    "cross_found_one": "1 scheda in un altro archivio",
+    "cross_found_many": "{var0} schede in {var1} altri archivi",
+    "cross_truncated": "troppi risultati, restringi la ricerca",
+    "cross_unreachable": "Non raggiungibili (cartella spostata o disco scollegato): {var0}",
+    "cross_shared": "condiviso",
+    "cross_future": "Creato con una versione più recente di ArchiView: alcuni campi potrebbero mancare.",
+    "cross_no_shelfmark": "(senza segnatura)",
+    "cross_open_preview": "Apri l'anteprima di {var0} ({var1})",
+    "cross_loading": "Caricamento…",
+    "cross_preview_error": "Anteprima non disponibile",
+    "cross_read_only": "sola lettura",
+    "cross_preview_empty": "Nessun campo compilato.",
+    "cross_attachments": "Allegati ({var0})",
+    "cross_pdf_hint": "PDF: si apre dal suo archivio.",
+    "cross_field_transcription": "Trascrizione",
+    "cross_field_ocr": "Testo riconosciuto (OCR)",
+    "settings_cross_title": "Ricerca tra archivi",
+    "settings_cross_desc": "Gli archivi aperti almeno una volta su questo computer in cui cercare con \"Cerca anche negli altri archivi\". Vengono soltanto letti, mai modificati.",
+    "settings_cross_hint_toggle": "Avvisami quando scrivo un nome che compare in altri archivi",
+    "settings_cross_list_title": "Archivi in cui cercare",
+    "settings_cross_none": "Nessun altro archivio aperto su questo computer.",
+    "settings_cross_unreachable": "cartella non trovata",
+    "msg_cross_saved": "Preferenza salvata.",
+    "msg_cross_save_failed": "Preferenza non salvata: {var0}",
+    "cross_hint_one": "Trovato in un altro archivio",
+    "cross_hint_many_one": "Trovato in {var0} schede di un altro archivio",
+    "cross_hint_many": "Trovato in {var0} schede di {var1} altri archivi",
+    "cross_namesakes_title": "{var0} negli altri archivi",
+    "cross_namesakes_hint": "Stesso nome, non per forza la stessa persona: aprile per decidere.",
+    "cross_namesakes_link": "Collega",
+    "cross_namesakes_link_title": "Aggiungi un rimando a questa scheda",
+    "cross_links_title": "Rimandi ad altri archivi",
+    "cross_links_add": "Aggiungi un rimando a un altro archivio",
+    "cross_links_none": "Nessun rimando.",
+    "cross_links_unavailable": "archivio non disponibile su questo computer",
+    "cross_links_open": "Apri l'anteprima",
+    "cross_links_remove": "Togli il rimando",
+    "cross_links_picker_title": "Rimando a un altro archivio",
+    "cross_links_type_label": "Tipo di rimando",
+    "cross_links_search_label": "Scheda da collegare",
+    "cross_links_search_placeholder": "Segnatura, persona, luogo…",
+    "cross_links_picker_hint": "Scrivi per cercare negli altri archivi.",
+    "cross_links_picker_none": "Nessuna scheda trovata negli altri archivi.",
+    "cross_links_already": "già collegata",
+    "cross_provenance": "Copiata da {var0} · {var1}, il {var2}.",
+    "cross_provenance_open": "Apri l'originale",
+    "cross_copy_own_field_one": "Un campo diventa campo proprio della scheda: {var0}",
+    "cross_copy_transcriptions_field": "Le trascrizioni delle carte non copiate vanno nel campo \"Trascrizioni delle carte non copiate\".",
+    "field_trascrizioni_non_copiate": "Trascrizioni delle carte non copiate",
+    "cross_copy_button": "Copia in questo archivio",
+    "cross_copy_title": "Copia in questo archivio",
+    "cross_copy_type_label": "Tipo di documento in questo archivio",
+    "cross_copy_summary": "Che cosa succederà",
+    "cross_copy_confirm": "Copia",
+    "cross_copy_from": "Da: {var0} · {var1}",
+    "cross_copy_attachments": "Copia anche gli allegati ({var0} file, {var1})",
+    "cross_copy_no_attachments": "Nessun allegato da copiare su questo computer",
+    "cross_copy_shared_warning": "Questo archivio è condiviso: la scheda copiata sarà visibile ai suoi membri.",
+    "cross_copy_type": "Tipo di documento: {var0}",
+    "cross_copy_folder": "Cartella: {var0}",
+    "cross_copy_root": "Cartella: radice dell'archivio",
+    "cross_copy_own_fields": "{var0} campi diventano campi propri della scheda: {var1}",
+    "cross_copy_people": "Persone e luoghi: {var0}",
+    "cross_copy_known": "già in questo archivio",
+    "cross_copy_new": "nuovo",
+    "cross_copy_authority": "Grafia e note dall'anagrafica di origine: {var0}",
+    "cross_copy_tags": "Tag nuovi: {var0}",
+    "cross_copy_links": "{var0} rimandi a schede dell'archivio di origine",
+    "cross_copy_att_summary": "Allegati: {var0} copiati, {var1} IIIF, {var2} non presenti su questo computer",
+    "cross_copy_transcription": "Senza allegati la trascrizione resta sulla scheda, in un unico testo.",
+    "cross_copy_vocab": "I valori dei vocabolari di origine vengono scritti nei campi copiati: i vocabolari di questo archivio non cambiano.",
+    "cross_copy_provenance": "La copia ricorda da dove viene e non cambia se l'originale viene modificato.",
+    "cross_copy_progress": "Copia degli allegati: {var0} di {var1}…",
+    "cross_copy_undo": "Copia di {var0} da {var1}",
+    "cross_copy_done": "Scheda copiata in questo archivio.",
+    "cross_copy_some_failed": "{var0} allegati non copiati.",
+    "cross_copy_failed_all": "Copia non riuscita: {var0}",
+    "cross_copy_value": "Copia il valore",
+    "cross_value_copied": "Valore copiato: incollalo dove serve.",
+    "cross_copy_failed": "Copia negli appunti non riuscita.",
+    "cross_insert_value": "Inserisci nella scheda aperta",
+    "cross_value_inserted": "Inserito in \"{var0}\".",
+    "cross_insert_overwrite": "Il campo \"{var0}\" è già compilato: sostituirne il contenuto?",
     // --- Etichetta secondaria delle schede nell'albero ---
     "tree_label_title": "Etichetta secondaria delle schede",
     "tree_label_heading": "Mostra sotto la segnatura",

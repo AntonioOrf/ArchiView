@@ -469,6 +469,10 @@ async function avviaApp() {
         'authority-modal': 'chiudiAnagrafica',
         'relazioni-modal': 'chiudiCollegamenti',
         'grafo-modal': 'chiudiGrafo',
+        'altro-archivio-modal': 'chiudiAnteprimaAltroArchivio',
+        'copia-archivio-modal': 'chiudiCopiaAltroArchivio',
+        'rimando-esterno-modal': 'chiudiSelettoreRimando',
+        'omonimi-modal': 'chiudiOmonimiAltriArchivi',
         // Fase 5.3 — prima mancavano: Esc li nascondeva con il fallback `hidden-tab`,
         // che sui modali creati e rimossi al volo lasciava il nodo nel DOM, e sui
         // conflitti di sync abbandonava la callback di risoluzione senza annullarla.

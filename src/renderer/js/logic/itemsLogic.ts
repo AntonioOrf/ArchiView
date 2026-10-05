@@ -230,6 +230,10 @@ async function handleFormSubmit(e) {
     // l'ultimo collegamento lascerebbe in piedi quello vecchio. `undefined` è il modo in
     // cui il patch dice "togli questa chiave" — vedi il contratto di `updateManoscritto`.
     if (!Object.prototype.hasOwnProperty.call(newData, 'relazioni')) newData.relazioni = undefined;
+    // Rimandi ad altri archivi: stesso campo nascosto e stessa regola delle relazioni (merge →
+    // `undefined` per togliere l'ultimo). `provenienza` non passa dal form e il merge la conserva.
+    if (typeof window.rimandiEsterniForm === 'function') window.Model.scriviRimandiEsterni(newData, window.rimandiEsterniForm());
+    if (!Object.prototype.hasOwnProperty.call(newData, 'rimandiEsterni')) newData.rimandiEsterni = undefined;
     
     // Mantieni valori storici fissi per compatibilità con le vecchie card
     if(!newData.titolo && dynamicData.titolo) newData.titolo = dynamicData.titolo;
@@ -314,6 +318,7 @@ async function editItem(id) {
     document.getElementById('form-segnatura').value = m.segnatura || '';
     document.getElementById('form-tags').value = m.tags || '';
     if (typeof window.caricaRelazioniForm === 'function') window.caricaRelazioniForm(m);
+    if (typeof window.caricaRimandiEsterniForm === 'function') window.caricaRimandiEsterniForm(m);
     
     let allegatiList = [];
     if (m.allegati) {

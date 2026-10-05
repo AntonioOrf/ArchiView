@@ -110,6 +110,20 @@
                                 <i data-lucide="link" class="w-4 h-4"></i>
                             </button>
                         </div>
+
+                        <!-- Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 4): rimandi a schede
+                             di ALTRI archivi, chiave separata da 'relazioni'. Handler in
+                             crossArchivePanel.ts. -->
+                        <div class="mt-4">
+                            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1" data-i18n="cross_links_title">Rimandi ad altri archivi</p>
+                            <input type="hidden" id="form-rimandi-esterni" value="[]">
+                            <div id="form-rimandi-esterni-list" class="space-y-1 mb-2"></div>
+                            <button type="button" id="btn-rimando-esterno" class="btn btn-secondary">
+                                <i data-lucide="library" class="w-4 h-4"></i>
+                                <span data-i18n="cross_links_add">Aggiungi un rimando a un altro archivio</span>
+                            </button>
+                        </div>
+                        <p id="form-provenienza" class="hidden mt-3 text-xs text-stone-500 dark:text-stone-400"></p>
                     </div>
 
                 </form>

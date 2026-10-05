@@ -51,6 +51,9 @@
          caricamento: l'ordine con model.js conta comunque, ed è questo. -->
     <script defer src="js/shared/csvImport.js"></script>
     <script defer src="js/shared/iiifManifest.js"></script>
+    <!-- Copia di una scheda da un altro archivio (ricerca tra archivi, Fase 3): pura, dopo
+         model.js di cui usa le funzioni. -->
+    <script defer src="js/shared/copiaScheda.js"></script>
     <script defer src="js/logic/i18n.js"></script>
     <script defer src="js/logic/utils.js"></script>
     <script defer src="js/logic/azioniConsentite.js"></script>
@@ -156,6 +159,9 @@
     <script defer src="js/components/modals.js"></script>
     <script defer src="js/components/form.js"></script>
     <script defer src="js/components/mainView.js"></script>
+    <!-- Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 2): DOPO mainView, di cui usa
+         `etichettaCampo` solo al disegno, e prima di app.js per la chiusura con Esc. -->
+    <script defer src="js/components/crossArchivePanel.js"></script>
     <script defer src="js/components/sidebar.js"></script>
     <!-- Wizard di import CSV (Fase 2.4): l'analisi sta in js/shared/csvImport.js, qui c'è
          solo il modale. Prima di app.js per la voce di menu e la chiusura con Esc. -->

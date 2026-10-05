@@ -625,6 +625,8 @@ function resetForm() {
     // Fase 3.5: senza questo, i collegamenti della scheda appena chiusa resterebbero nel
     // form e finirebbero addosso alla prossima scheda creata.
     if (typeof window.caricaRelazioniForm === 'function') window.caricaRelazioniForm(null);
+    // Ricerca tra archivi: rimandi esterni e provenienza appartengono alla scheda chiusa.
+    if (typeof window.caricaRimandiEsterniForm === 'function') window.caricaRimandiEsterniForm(null);
 
     // Fase 3.7, per la stessa ragione: i campi propri appartengono alla SCHEDA, e restare
     // nel form vorrebbe dire ritrovarseli addosso su ogni scheda creata dopo.

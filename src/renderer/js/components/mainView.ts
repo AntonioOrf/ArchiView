@@ -1020,6 +1020,8 @@ function renderMain(resetPage = true) {
     const isGlobalSearch = search !== '' || window.activeTags.size > 0;
 
     renderIntestazioneVista(isGlobalSearch, search);
+    // Ricerca tra archivi: decide da sé se serve una richiesta (interruttore, testo, query già fatta).
+    if (typeof window.aggiornaRicercaAltriArchivi === 'function') window.aggiornaRicercaAltriArchivi();
 
     // Filtro per Cartella (se non globale) E per Ricerca Profonda E per (Multi) Tag
     const filtered = window.getManoscrittiFiltrati();

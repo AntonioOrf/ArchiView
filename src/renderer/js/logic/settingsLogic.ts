@@ -24,6 +24,11 @@ window.apriImpostazioni = async function() {
             }
         }
         
+        // Ricerca tra archivi: interruttore del suggerimento ed elenco degli archivi.
+        const sugg = document.getElementById('settings-cross-suggerimenti') as HTMLInputElement;
+        if (sugg) sugg.checked = settings.suggerimentiAltriArchivi !== false;
+        if (window.popolaArchiviRicerca) window.popolaArchiviRicerca();
+
         // Modalità prestazioni ridotte (preferenza globale, file in userData)
         const perfToggle = document.getElementById('settings-low-perf');
         if (perfToggle) perfToggle.checked = !!window.modalitaPrestazioniRidotte;
@@ -132,6 +137,104 @@ window.apriImpostazioni = async function() {
  * non conserva nulla e una rotazione che cancella tutto, cioè disattivare le due reti di
  * sicurezza per un carattere digitato male.
  */
+// --- Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 6) -------------------------------
+//
+// Due chiavi in settings.json, entrambe di QUESTO computer:
+//   crossArchiveEsclusi       — id degli archivi da non interrogare (assente o [] = nessuno)
+//   suggerimentiAltriArchivi  — false spegne l'avviso nel form (assente o true = attivo)
+// Si legge e si scrive solo la propria chiave, subito prima del salvataggio (regola della
+// skill impostazioni-ui finché settingsStore non esiste).
+// ⚠️ Valori ESPLICITI, mai `delete`: save-settings fonde l'oggetto con quello su disco
+// ({ ...attuali, ...nuove }), quindi una chiave cancellata qui resterebbe nel file col valore
+// vecchio — riammettere un archivio non avrebbe effetto.
+
+window.popolaArchiviRicerca = async function() {
+    const lista = document.getElementById('settings-cross-archivi');
+    if (!lista || !window.apiBrowser || !window.apiBrowser.crossArchiveArchivi) return;
+    let archivi = [];
+    try {
+        const r = await window.apiBrowser.crossArchiveArchivi();
+        if (r && r.ok) archivi = r.archivi;
+    } catch (e) {
+        console.error('Elenco degli archivi recenti non disponibile:', e);
+    }
+    lista.innerHTML = '';
+    if (archivi.length === 0) {
+        const vuoto = document.createElement('li');
+        vuoto.className = 'text-xs text-stone-500 italic';
+        vuoto.textContent = window.t('settings_cross_none', 'Nessun altro archivio aperto su questo computer.');
+        lista.appendChild(vuoto);
+        return;
+    }
+    for (const a of archivi) {
+        const li = document.createElement('li');
+        const label = document.createElement('label');
+        label.className = 'flex items-center gap-2 text-sm';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = !a.escluso;
+        box.dataset.archivio = a.id;
+        // Nessun handler qui: il change sale fino a #settings-cross-archivi, che ha l'azione
+        // dichiarativa (data-on-change) nel markup statico.
+        label.appendChild(box);
+        const nome = document.createElement('span');
+        nome.textContent = a.nome;   // dato: textContent
+        nome.translate = false;
+        label.appendChild(nome);
+        if (a.tipo === 'shared') {
+            const badge = document.createElement('span');
+            badge.className = 'card-badge mb-0';
+            badge.textContent = window.t('cross_shared', 'condiviso');
+            label.appendChild(badge);
+        }
+        if (a.raggiungibile === false) {
+            const nota = document.createElement('span');
+            nota.className = 'text-xs text-stone-500 italic';
+            nota.textContent = window.t('settings_cross_unreachable', 'cartella non trovata');
+            label.appendChild(nota);
+        }
+        li.appendChild(label);
+        lista.appendChild(li);
+    }
+};
+
+window.salvaArchiviRicerca = async function() {
+    if (!window.apiSettings) return;
+    try {
+        const lista = document.getElementById('settings-cross-archivi');
+        const caselle = lista ? Array.from(lista.querySelectorAll('input[type="checkbox"][data-archivio]')) as HTMLInputElement[] : [];
+        const mostrati = new Set(caselle.map(c => c.dataset.archivio));
+        const settings = await window.apiSettings.get();
+        // Le esclusioni di archivi che ora non compaiono (usciti dai recenti) restano: se
+        // l'archivio torna, torna escluso come l'aveva lasciato l'utente.
+        const prima = Array.isArray(settings.crossArchiveEsclusi) ? settings.crossArchiveEsclusi.map(String) : [];
+        const esclusi = prima.filter(id => !mostrati.has(id))
+            .concat(caselle.filter(c => !c.checked).map(c => c.dataset.archivio));
+        settings.crossArchiveEsclusi = esclusi;
+        await window.apiSettings.save(settings);
+        if (typeof window.invalidaCacheAltriArchivi === 'function') window.invalidaCacheAltriArchivi();
+        mostraMessaggio(window.t('msg_cross_saved', 'Preferenza salvata.'), 'success');
+    } catch (e) {
+        console.error('Salvataggio degli archivi in cui cercare non riuscito:', e);
+        mostraMessaggio(window.t('msg_cross_save_failed', 'Preferenza non salvata: {var0}').replace('{var0}', e && e.message ? e.message : String(e)), 'error');
+    }
+};
+
+window.salvaSuggerimentiAltriArchivi = async function() {
+    if (!window.apiSettings) return;
+    try {
+        const box = document.getElementById('settings-cross-suggerimenti') as HTMLInputElement;
+        const settings = await window.apiSettings.get();
+        settings.suggerimentiAltriArchivi = !(box && !box.checked);
+        await window.apiSettings.save(settings);
+        if (typeof window.invalidaCacheAltriArchivi === 'function') window.invalidaCacheAltriArchivi();
+        mostraMessaggio(window.t('msg_cross_saved', 'Preferenza salvata.'), 'success');
+    } catch (e) {
+        console.error('Salvataggio del suggerimento non riuscito:', e);
+        mostraMessaggio(window.t('msg_cross_save_failed', 'Preferenza non salvata: {var0}').replace('{var0}', e && e.message ? e.message : String(e)), 'error');
+    }
+};
+
 window.salvaImpostazioniSicurezza = async function() {
     if (!window.apiSettings) return;
     const settings = await window.apiSettings.get();

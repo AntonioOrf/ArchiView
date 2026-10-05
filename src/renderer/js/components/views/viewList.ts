@@ -142,6 +142,21 @@
                     <i data-lucide="file-box" class="w-12 h-12 text-stone-300 mx-auto mb-3"></i>
                     <p id="empty-state-text" class="text-stone-500 italic text-lg mb-4" data-i18n="folder_empty">La cartella è vuota.</p>
                 </div>
+
+                <!-- Ricerca tra archivi: sezione separata, DOPO l'elenco e l'empty state. Le
+                     schede degli altri archivi non entrano nella griglia né in appData
+                     (vedi crossArchivePanel.ts). -->
+                <section id="altri-archivi" class="hidden mt-6 mb-10" aria-labelledby="altri-archivi-titolo">
+                    <h2 id="altri-archivi-titolo" class="text-lg font-bold text-amber-800 flex items-center gap-2">
+                        <i data-lucide="library" class="w-5 h-5" aria-hidden="true"></i>
+                        <span data-i18n="cross_title">Negli altri archivi</span>
+                    </h2>
+                    <p id="altri-archivi-stato" class="text-sm text-stone-500 dark:text-stone-400 mt-1 mb-3" role="status" aria-live="polite"></p>
+                    <div id="altri-archivi-lista"></div>
+                    <button type="button" id="altri-archivi-altri" class="hidden btn btn-secondary mt-3">
+                        <span data-i18n="cross_more">Mostra altri risultati</span>
+                    </button>
+                </section>
             </div>
             `;
             mainElement.insertAdjacentHTML('beforeend', html);

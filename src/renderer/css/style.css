@@ -2203,6 +2203,182 @@ label:has(> input[type="radio"]) {
     cursor: default;
 }
 
+/* --- Ricerca tra archivi (crossArchivePanel.ts) --- */
+.altri-archivi-gruppo + .altri-archivi-gruppo {
+    margin-top: 1rem;
+}
+.altri-archivi-gruppo-titolo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border-light);
+    margin-bottom: 0.25rem;
+}
+.altri-archivi-gruppo-titolo .card-badge {
+    margin-bottom: 0;
+}
+.altri-archivi-conteggio {
+    margin-left: auto;
+    font-weight: 400;
+    color: var(--color-text-muted);
+}
+.altri-archivi-risultato {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-main);
+}
+.altri-archivi-risultato:hover {
+    background-color: var(--color-bg-hover);
+}
+.altri-archivi-risultato:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+.altri-archivi-testa {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+.altri-archivi-segnatura {
+    font-weight: 600;
+}
+.altri-archivi-tipo,
+.altri-archivi-campo {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+.altri-archivi-estratto {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+.altri-archivi-estratto mark {
+    background-color: var(--color-warning-light);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+.altri-archivi-campi {
+    display: grid;
+    grid-template-columns: minmax(8rem, max-content) 1fr;
+    gap: 0.375rem 1rem;
+    font-size: 0.875rem;
+}
+.altri-archivi-campi dt {
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+.altri-archivi-campi dd {
+    margin: 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    color: var(--color-text-main);
+}
+.altri-archivi-sottotitolo {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+.altri-archivi-allegato {
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--color-border-light);
+}
+.altri-archivi-immagine {
+    display: block;
+    max-width: 100%;
+    max-height: 24rem;
+    margin-top: 0.375rem;
+    border-radius: var(--radius-sm);
+}
+.altri-archivi-trascrizione {
+    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    color: var(--color-text-main);
+    overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+    .altri-archivi-campi {
+        grid-template-columns: 1fr;
+    }
+}
+
+.altri-archivi-campi dd {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+.altri-archivi-valore {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.altri-archivi-azioni {
+    display: inline-flex;
+    gap: 0.125rem;
+    flex: 0 0 auto;
+}
+.altri-archivi-azione {
+    padding: 0.25rem;
+}
+.copia-archivio-riepilogo {
+    list-style: disc;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--color-text-main);
+}
+.copia-archivio-riepilogo li + li {
+    margin-top: 0.25rem;
+}
+.copia-archivio-avviso {
+    background-color: var(--color-warning-light);
+    border: 1px solid var(--color-warning-border);
+    color: var(--color-text-main);
+}
+
+.suggerimento-altri-archivi {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-primary-border);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-hover);
+}
+.dynamic-list-row > .suggerimento-altri-archivi {
+    flex-basis: 100%;
+    max-width: max-content;
+    margin-top: 0;
+}
+.suggerimento-altri-archivi:hover {
+    text-decoration: underline;
+}
+.suggerimento-altri-archivi:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+.omonimi-voce {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.omonimi-voce > .altri-archivi-risultato {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 /* --- Modale conflitti di sincronizzazione: le due versioni di un campo -------------
    Lo stato "scelta" sta QUI e non nelle utility: il pulsante porta .btn-secondary, che è
    fuori da @layer e batteva bg-amber-500/text-white, per cui scelto e non scelto erano

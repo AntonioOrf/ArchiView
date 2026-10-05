@@ -155,6 +155,21 @@
                             </button>
                         </div>
 
+                        <!-- Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 6): preferenze di QUESTO
+                             computer in settings.json. L'elenco lo riempie popolaArchiviRicerca. -->
+                        <div class="border-t border-stone-200 pt-6">
+                            <h4 id="settings-cross-title" class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="library" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_cross_title">Ricerca tra archivi</span></h4>
+                            <p id="settings-cross-desc" class="text-sm text-stone-600 mb-3" data-i18n="settings_cross_desc">Gli archivi aperti almeno una volta su questo computer in cui cercare con "Cerca anche negli altri archivi". Vengono soltanto letti, mai modificati.</p>
+                            <label class="flex items-center gap-2 text-sm mb-3">
+                                <input type="checkbox" id="settings-cross-suggerimenti" data-on-change="salvaSuggerimentiAltriArchivi">
+                                <span data-i18n="settings_cross_hint_toggle">Avvisami quando scrivo un nome che compare in altri archivi</span>
+                            </label>
+                            <fieldset aria-describedby="settings-cross-desc">
+                                <legend class="text-xs font-semibold text-stone-600 mb-1" data-i18n="settings_cross_list_title">Archivi in cui cercare</legend>
+                                <ul id="settings-cross-archivi" class="space-y-1" data-on-change="salvaArchiviRicerca"></ul>
+                            </fieldset>
+                        </div>
+
                         <div class="border-t border-stone-200 pt-6">
                             <h4 class="font-semibold mb-1 flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-amber-700"></i> <span data-i18n="settings_backup">Backup Dati</span></h4>
                             <p class="text-sm text-stone-600 mb-3" data-i18n="settings_backup_desc">Crea un file compresso contenente l'intero archivio e tutti gli allegati.</p>
