@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // Nome del file unificato (fonte di verità per il tipo/provider di un vault)
 const VAULT_FILE = '.archiview-vault.json';
@@ -139,13 +140,33 @@ function syncUnifiedFromLegacy(folderPath, globalSettings) {
     if (!fs.existsSync(folderPath)) return null;
   } catch (e) { return null; }
   const cfg = deriveFromLegacy(folderPath, globalSettings);
+  // L'identità dell'archivio non è uno stato derivabile dai legacy: rigenerare il file non
+  // deve cambiarla, o ogni rimando da un altro archivio diventerebbe orfano.
+  const prima = safeReadJson(path.join(folderPath, VAULT_FILE));
+  if (prima && typeof prima.archivioId === 'string' && prima.archivioId) cfg.archivioId = prima.archivioId;
   writeVaultConfig(folderPath, cfg);
   return cfg;
+}
+
+// Identità stabile dell'archivio (ricerca tra archivi): sopravvive allo spostamento della
+// cartella, che è il motivo per cui non si usa il percorso. Generata alla prima richiesta e
+// scritta solo nel file unificato, che non viaggia con la sincronizzazione.
+// Ritorna null se la cartella non esiste o non è scrivibile: il chiamante ricade sul percorso.
+function assicuraArchivioId(folderPath, globalSettings) {
+  if (!folderPath) return null;
+  try {
+    if (!fs.existsSync(folderPath)) return null;
+  } catch (e) { return null; }
+  const cfg = readVaultConfig(folderPath, globalSettings);
+  if (typeof cfg.archivioId === 'string' && cfg.archivioId) return cfg.archivioId;
+  cfg.archivioId = crypto.randomUUID();
+  return writeVaultConfig(folderPath, cfg) ? cfg.archivioId : null;
 }
 
 module.exports = {
   readVaultConfig,
   writeVaultConfig,
-  syncUnifiedFromLegacy
+  syncUnifiedFromLegacy,
+  assicuraArchivioId
 };
 export {};

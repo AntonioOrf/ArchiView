@@ -63,8 +63,11 @@ export async function launchApp(userDataDir: string): Promise<{ app: ElectronApp
     cleanEnv[k] = v;
   }
 
+  // ARCHIVIEW_E2E_EXE punta all'eseguibile impacchettato (es. dist/win-unpacked/ArchiView.exe):
+  // stessi test, ma con il codice dentro app.asar come lo riceve l'utente. Senza, si usa out/.
+  const exe = process.env.ARCHIVIEW_E2E_EXE;
   const app = await electron.launch({
-    args: ['.'],
+    ...(exe ? { executablePath: path.resolve(repoRoot, exe), args: [] } : { args: ['.'] }),
     cwd: repoRoot,
     env: {
       ...cleanEnv,

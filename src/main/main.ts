@@ -34,6 +34,7 @@ const { setupPrintIpc } = require('./ipc/printIpc');
 const { setupTextExportIpc } = require('./ipc/textExportIpc');
 // Fase 4 — cestino, snapshot locali e cronologia per scheda.
 const { setupSafetyIpc } = require('./ipc/safetyIpc');
+const { setupCrossArchiveIpc } = require('./ipc/crossArchiveIpc');
 const pdfHost = require('./ocr/pdfHost');
 const printHost = require('./print/printHost');
 const iiifImageHost = require('./iiif/imageHost');
@@ -183,6 +184,7 @@ if (!gotTheLock) {
   setupPrintIpc();
   setupTextExportIpc();
   setupSafetyIpc();
+  setupCrossArchiveIpc();
 
   ipcMain.handle('apri-link-esterno', async (event, url) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
