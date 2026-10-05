@@ -77,6 +77,11 @@ artifacts/
 # prodotto e cambiano a ogni sessione. CODEMAP.md e CLAUDE.md sono ignorati sopra.
 *_TODO.md
 ROADMAP.md
+PIANO-*.md
+REVIEW-*.md
+# Contesto di design di Impeccable (PRODUCT.md, configurazione locale)
+PRODUCT.md
+.impeccable/
 
 # Analisi e output grafi
 graphify-out/
@@ -84,6 +89,3 @@ graphify-out/
 # Configurazione locale di Claude Code e skill installate
 .claude/
 skills-lock.json
-PIANO-FUNZIONALITA.md
-REVIEW-FRONTEND.md
-REVIEW-SECURITY.md
