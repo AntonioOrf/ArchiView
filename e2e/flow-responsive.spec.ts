@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { createLocalWorkspace, createFolder, seedItems } from './helpers';
+import { createLocalWorkspace, createFolder, seedItems, openView } from './helpers';
 import * as path from 'path';
 
 test.use({ seedWorkspace: 'Flow' });
@@ -57,6 +57,37 @@ test.describe('Percorsi di verifica', () => {
     await expect(filtri).toBeHidden();
     const etichettaRadice = await page.evaluate(() => (window as any).etichettaRadice());
     await expect(page.locator('#titolo-cartella-attuale')).toHaveText(etichettaRadice);
+  });
+
+  // Audit front-end P1-3: sotto md la sidebar si impilava sopra il contenuto e <main> restava
+  // alto ~50px (#view-list a 0). Si ridimensiona la FINESTRA vera, non il viewport emulato.
+  test('6.3b — a metà schermo di un portatile (683px) la vista principale resta utilizzabile', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Flow');
+    await seedItems(page, 2);
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      w.unmaximize();
+      w.setSize(683, 740);
+    });
+    await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeLessThan(700);
+
+    for (const vista of ['list', 'add'] as const) {
+      await openView(page, vista);
+      const g = await page.evaluate((v) => {
+        const r = document.getElementById('view-' + v)!.getBoundingClientRect();
+        const m = document.getElementById('contenuto-principale')!.getBoundingClientRect();
+        return { vistaH: r.height, mainH: m.height, mainW: m.width };
+      }, vista);
+      expect(g.mainH, `${vista}: altezza di <main>`).toBeGreaterThan(400);
+      expect(g.mainW, `${vista}: larghezza di <main>`).toBeGreaterThan(360);
+      expect(g.vistaH, `${vista}: altezza della vista`).toBeGreaterThan(300);
+    }
+    await expect(page.locator('#sidebar')).toBeVisible();
+    await openView(page, 'list');
+    await expect(page.locator('#view-list .card-scheda').first()).toBeInViewport();
+    const scrollaOrizzontale = await page.evaluate(() =>
+      document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(scrollaOrizzontale).toBe(false);
   });
 
   test('6.3 — sotto i 768px nessuna funzione sparisce e la pagina non scrolla in orizzontale', async ({ page, userDataDir }) => {

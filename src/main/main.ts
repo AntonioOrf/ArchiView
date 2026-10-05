@@ -66,6 +66,10 @@ function createWindow() {
   state.mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    // Sotto questa soglia sidebar (w-60) e vista principale non convivono più. 640 lascia
+    // passare la metà schermo di Windows Snap anche su un portatile 1280×800.
+    minWidth: 640,
+    minHeight: 480,
     title: "ArchiView",
     icon: iconPath,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#282828' : '#fafaf9',
