@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { state, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
 const { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } = require('./auth');
-const { getOrCreateFolder, uploadFile } = require('./fileOps');
+const { getOrCreateFolder, uploadFile, withDriveRetry } = require('./fileOps');
 
 // Verifica che la cartella del vault sia raggiungibile con l'account attualmente autenticato.
 // Senza questo probe una cartella inaccessibile produce solo una files.list vuota, indistinguibile
@@ -21,22 +21,6 @@ async function assertVaultFolderAccessible(vaultFolderId: string): Promise<void>
 // true se il vault è già dichiarato cloud (shared o backup personale).
 function isCloudVault(s: any): boolean {
   return !!(s && (s.isSharedVault || s.isPersonalCloud));
-}
-
-async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3): Promise<any> {
-  let delay = 1000;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (e: any) {
-      const status = e?.response?.status ?? e?.code;
-      const retryable = status === 429 || status === 500 || status === 503 || status === 'ECONNRESET' || status === 'ETIMEDOUT';
-      if (!retryable || attempt === maxRetries) throw e;
-      await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
-    }
-  }
-  throw new Error('unreachable');
 }
 
 async function listVaultsFromDrive(): Promise<any[]> {

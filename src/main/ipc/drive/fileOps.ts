@@ -6,6 +6,22 @@ const { driveState } = require('./auth');
 
 const escapeDriveQuery = (str: string) => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
+async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3): Promise<any> {
+  let delay = 1000;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      const status = e?.response?.status ?? e?.code;
+      const retryable = status === 429 || status === 500 || status === 503 || status === 'ECONNRESET' || status === 'ETIMEDOUT';
+      if (!retryable || attempt === maxRetries) throw e;
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
+  throw new Error('unreachable');
+}
+
 async function getOrCreateFolder(folderName: string, parentId: string | null = null): Promise<string> {
   let q = `name='${escapeDriveQuery(folderName)}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   if (parentId) q += ` and '${parentId}' in parents`;
@@ -129,5 +145,5 @@ async function downloadFile(fileId: string, destPath: string): Promise<void> {
   await pipeline(res.data, dest);
 }
 
-module.exports = { escapeDriveQuery, getOrCreateFolder, uploadFile, uploadFileReturningId, makeFilePublic, asyncPool, downloadFile };
+module.exports = { escapeDriveQuery, withDriveRetry, getOrCreateFolder, uploadFile, uploadFileReturningId, makeFilePublic, asyncPool, downloadFile };
 export {};
