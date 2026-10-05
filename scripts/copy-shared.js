@@ -13,7 +13,7 @@ const radice = path.join(__dirname, '..');
 const sorgente = path.join(radice, 'out', 'shared');
 const destinazione = path.join(radice, 'out', 'renderer', 'js', 'shared');
 
-const daCopiare = ['model.js', 'dataStorica.js', 'csvImport.js', 'iiifManifest.js'];
+const daCopiare = ['model.js', 'dataStorica.js', 'csvImport.js', 'iiifManifest.js', 'copiaScheda.js'];
 
 fs.mkdirSync(destinazione, { recursive: true });
 

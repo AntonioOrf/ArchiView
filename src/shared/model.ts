@@ -220,7 +220,12 @@ const AV_CHIAVI_SERVIZIO = [
   // diventerebbe esso stesso una colonna del CSV e una riga della stampa.
   'campiPropri',
   // Fase 3.8: `ordineCampi` è un elenco di id, non un dato della scheda.
-  'ordineCampi'
+  'ordineCampi',
+  // Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md): da dove viene una scheda copiata e i
+  // rimandi a schede di ALTRI archivi. Separati da `relazioni`, che puntano solo a schede di
+  // questo: un id di un altro archivio lì dentro sembrerebbe un rimando rotto.
+  'provenienza',
+  'rimandiEsterni'
 ];
 
 /** Tipo documento assegnato alle schede che non ne hanno uno valido. */
@@ -1254,6 +1259,51 @@ function avRelazioniDi(m: any): AVRelazione[] {
  * `relazioni: []` comparso su ogni scheda mai collegata ne cambierebbe l'impronta
  * (`getRecordHash`) e la farebbe apparire modificata a ogni collega — vedi `avCreaScheda`.
  */
+/**
+ * Ricerca tra archivi — rimandi a schede di ALTRI archivi. Separati da `relazioni` perché
+ * quelle puntano a id di questo archivio: un id esterno lì dentro sembrerebbe un rimando
+ * rotto, e una versione precedente dell'app lo tratterebbe come tale.
+ *
+ * `archivioNome` e `segnatura` sono copie prese al momento del rimando: servono a dire di
+ * che cosa si tratta anche su un computer dove quell'archivio non c'è.
+ */
+type AVRimandoEsterno = { archivioId: string; schedaId: string; archivioNome?: string; segnatura?: string; tipo?: string };
+
+function avRimandiEsterniDi(m: any): AVRimandoEsterno[] {
+  const grezzi = m && Array.isArray(m.rimandiEsterni) ? m.rimandiEsterni : [];
+  const out: AVRimandoEsterno[] = [];
+  const visti: { [k: string]: boolean } = {};
+  for (const r of grezzi) {
+    if (!r || typeof r !== 'object') continue;
+    const archivioId = String(r.archivioId || '').trim();
+    const schedaId = String(r.schedaId || '').trim();
+    if (!archivioId || !schedaId || visti[archivioId + '\u0000' + schedaId]) continue;
+    visti[archivioId + '\u0000' + schedaId] = true;
+    const x: AVRimandoEsterno = { archivioId, schedaId };
+    for (const k of ['archivioNome', 'segnatura', 'tipo']) {
+      const v = r[k] === null || r[k] === undefined ? '' : String(r[k]).trim();
+      if (v) (x as any)[k] = v;
+    }
+    out.push(x);
+  }
+  return out;
+}
+
+/** Come `avScriviRelazioni`: elenco vuoto = chiave rimossa, mai `[]` (cambierebbe l'impronta). */
+function avScriviRimandiEsterni(m: any, lista: any): boolean {
+  if (!m) return false;
+  const nuovi = avRimandiEsterniDi({ rimandiEsterni: lista });
+  const prima = JSON.stringify(avRimandiEsterniDi(m));
+  if (nuovi.length === 0) {
+    if (m.rimandiEsterni === undefined) return false;
+    delete m.rimandiEsterni;
+    return prima !== '[]';
+  }
+  if (JSON.stringify(nuovi) === prima && Array.isArray(m.rimandiEsterni)) return false;
+  m.rimandiEsterni = nuovi;
+  return true;
+}
+
 function avScriviRelazioni(m: any, lista: any): boolean {
   if (!m) return false;
   const nuove = avRelazioniDi({ relazioni: lista });
@@ -2078,6 +2128,8 @@ const ArchiViewModel = {
   // Relazioni e authority (Fase 3.5)
   relazioni: avRelazioniDi,
   scriviRelazioni: avScriviRelazioni,
+  rimandiEsterni: avRimandiEsterniDi,
+  scriviRimandiEsterni: avScriviRimandiEsterni,
   aggiungiRelazione: avAggiungiRelazione,
   rimuoviRelazione: avRimuoviRelazione,
   relazioniEntranti: avRelazioniEntranti,
