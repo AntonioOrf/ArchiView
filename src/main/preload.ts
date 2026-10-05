@@ -138,6 +138,13 @@ contextBridge.exposeInMainWorld('apiIiif', {
     onProgress: (callback) => ipcRenderer.on('iiif-progress', (event, dati) => callback(dati))
 });
 
+// ArchiView Scanner. Il renderer chiede "ricevi" e ottiene l'esito: niente percorsi né id
+// Drive. Fase 0: nessuna UI, si prova dalla console (`await apiScanner.riceviDaDrive()`).
+contextBridge.exposeInMainWorld('apiScanner', {
+    riceviDaDrive: () => ipcRenderer.invoke('scanner-ricevi-drive'),
+    onProgress: (callback) => ipcRenderer.on('scanner-progress', (event, dati) => callback(dati))
+});
+
 contextBridge.exposeInMainWorld('apiSettings', {
     get: () => ipcRenderer.invoke('get-settings'),
     save: (settings) => ipcRenderer.invoke('save-settings', settings)

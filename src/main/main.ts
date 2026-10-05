@@ -35,6 +35,8 @@ const { setupTextExportIpc } = require('./ipc/textExportIpc');
 // Fase 4 — cestino, snapshot locali e cronologia per scheda.
 const { setupSafetyIpc } = require('./ipc/safetyIpc');
 const { setupCrossArchiveIpc } = require('./ipc/crossArchiveIpc');
+// ArchiView Scanner — ricezione dei lotti dal telefono (PIANO-SCANNER.md).
+const { setupScannerIpc } = require('./ipc/scannerIpc');
 const pdfHost = require('./ocr/pdfHost');
 const printHost = require('./print/printHost');
 const iiifImageHost = require('./iiif/imageHost');
@@ -185,6 +187,7 @@ if (!gotTheLock) {
   setupTextExportIpc();
   setupSafetyIpc();
   setupCrossArchiveIpc();
+  setupScannerIpc();
 
   ipcMain.handle('apri-link-esterno', async (event, url) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
