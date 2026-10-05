@@ -1,0 +1,37 @@
+name: ArchiView Scanner (Android)
+
+# Solo typecheck e bundle JS: la build nativa (APK) si fa con `npx expo run:android` o EAS.
+# Gira anche quando cambia il validatore condiviso, che l'app carica da ../src/shared.
+on:
+  pull_request:
+    paths: ["mobile/**", "src/shared/scannerLotto.ts", ".github/workflows/mobile.yml"]
+  push:
+    branches: [main]
+    paths: ["mobile/**", "src/shared/scannerLotto.ts", ".github/workflows/mobile.yml"]
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Installa le dipendenze
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Bundle Android
+        run: npx expo export --platform android --output-dir ../out-mobile

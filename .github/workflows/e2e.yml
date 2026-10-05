@@ -1,9 +1,12 @@
 name: E2E Tests
 
 on:
+  # L'app Android (mobile/) ha il suo workflow: una modifica solo lì non tocca il desktop.
   pull_request:
+    paths-ignore: ["mobile/**"]
   push:
     branches: [main]
+    paths-ignore: ["mobile/**"]
 
 jobs:
   e2e:

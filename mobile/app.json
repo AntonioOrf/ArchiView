@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "ArchiView Scanner",
+    "slug": "archiview-scanner",
+    "version": "0.1.0",
+    "scheme": "archiview-scanner",
+    "platforms": ["android"],
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "com.antonioorf.archiview.scanner",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "La fotocamera serve a scansionare i documenti d'archivio.",
+          "photosPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ]
+  }
+}
