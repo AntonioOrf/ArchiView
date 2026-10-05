@@ -106,6 +106,46 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(resolved[0].segnatura).toBe('Valore Cloud');
   });
 
+  // Audit front-end P1-1: il pulsante "scelto" portava bg-amber-500/text-white, ma .btn-secondary
+  // (style.css, fuori da @layer) vince sulle utility v4 e lo rendeva identico all'altro.
+  test('la scelta fatta si vede in ogni tema e si annuncia con aria-pressed', async ({ page, userDataDir }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    await injectConflict(page);
+
+    const cardLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]').first();
+    const cardCloud = page.locator('div[data-resolve-card="true"][data-resolve-scelta="external"]').first();
+    await expect(cardLocale).toHaveAttribute('aria-pressed', 'false');
+    await expect(cardCloud).toHaveAttribute('aria-pressed', 'false');
+
+    await page.locator('button[data-resolve-scelta="local"]').first().click();
+    await expect(cardLocale).toHaveAttribute('aria-pressed', 'true');
+    await expect(cardCloud).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('button[data-resolve-scelta="local"]').first()).toHaveAttribute('aria-pressed', 'true');
+
+    for (const tema of ['light', 'dark', 'amber-light', 'blue-dark']) {
+      await page.evaluate((t) => (window as any).applicaTema(t), tema);
+      const m = await page.evaluate(() => {
+        const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+        const rgb = (c: string) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); return Array.from(ctx.getImageData(0, 0, 1, 1).data); };
+        const lum = (c: number[]) => { const v = c.slice(0, 3).map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+        const ratio = (a: number[], b: number[]) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+        const scelto = document.querySelector('button[data-resolve-scelta="local"]')!;
+        const altro = document.querySelector('button[data-resolve-scelta="external"]')!;
+        const s = getComputedStyle(scelto), a = getComputedStyle(altro);
+        return {
+          diversi: s.backgroundColor !== a.backgroundColor,
+          testo: ratio(rgb(s.color), rgb(s.backgroundColor)),
+          // il pulsante scelto deve staccarsi da quello non scelto (1.4.11: 3:1)
+          stacco: ratio(rgb(s.backgroundColor), rgb(a.backgroundColor)),
+        };
+      });
+      expect(m.diversi, `${tema}: pulsante scelto identico all'altro`).toBe(true);
+      expect(m.testo, `${tema}: testo del pulsante scelto`).toBeGreaterThanOrEqual(4.5);
+      expect(m.stacco, `${tema}: stacco scelto/non scelto`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   test('accessibilità da tastiera: Enter o Spazio sulla scheda attiva la selezione', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
