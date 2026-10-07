@@ -187,8 +187,10 @@ function setupWorkspaceIpc() {
     }
     initWorkspace(newPath);
     if (config) {
+      // Dal renderer passano solo preferenze (i flag autoStart*), non percorsi né chiavi del vault (N2).
       const { saveAllSettings } = require('../workspaceManager');
-      saveAllSettings(config);
+      const { filtraImpostazioniRenderer } = require('../impostazioniRenderer');
+      saveAllSettings(filtraImpostazioniRenderer(config));
     }
     if (state.mainWindow) {
         state.mainWindow.reload();

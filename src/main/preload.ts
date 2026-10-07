@@ -147,7 +147,11 @@ contextBridge.exposeInMainWorld('apiScanner', {
 
 contextBridge.exposeInMainWorld('apiSettings', {
     get: () => ipcRenderer.invoke('get-settings'),
-    save: (settings) => ipcRenderer.invoke('save-settings', settings)
+    save: (settings) => ipcRenderer.invoke('save-settings', settings),
+    // Percorsi: li sceglie o li toglie il main, il renderer non li scrive (N2).
+    scegliCartellaAllegati: (titolo) => ipcRenderer.invoke('scegli-cartella-allegati', titolo),
+    ripristinaCartellaAllegati: () => ipcRenderer.invoke('ripristina-cartella-allegati'),
+    rimuoviArchivioRecente: (percorso) => ipcRenderer.invoke('rimuovi-archivio-recente', percorso)
 });
 
 contextBridge.exposeInMainWorld('apiDrive', {

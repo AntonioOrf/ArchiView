@@ -994,12 +994,8 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     
     return new Promise<void>((resolve) => {
         const finishRemoval = async () => {
-            const settings = await window.apiSettings.get();
-            if (settings.recentWorkspaces) {
-                settings.recentWorkspaces = settings.recentWorkspaces.filter(p => p !== pathToRemove);
-                await window.apiSettings.save(settings);
-                window.aggiornaListaVault();
-            }
+            // La lista dei recenti la scrive il main (N2): qui si chiede solo di togliere una voce.
+            if (await window.apiSettings.rimuoviArchivioRecente(pathToRemove)) window.aggiornaListaVault();
         };
 
         document.getElementById('btn-delete-files').onclick = async () => {

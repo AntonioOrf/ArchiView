@@ -293,13 +293,10 @@ window.salvaAllegatiModeHub = async function() {
 };
 
 window.cambiaCartellaAllegati = async function() {
-    if (window.apiBrowser && window.apiBrowser.selectBaseDirectory && window.apiSettings) {
-        const path = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
+    if (window.apiSettings && window.apiSettings.scegliCartellaAllegati) {
+        // Dialogo e salvataggio nel main: il renderer non scrive percorsi nelle impostazioni.
+        const path = await window.apiSettings.scegliCartellaAllegati(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
         if (path) {
-            const settings = await window.apiSettings.get();
-            settings.customAttachmentsPath = path;
-            await window.apiSettings.save(settings);
-            
             // Aggiorna la visualizzazione
             const attachmentsPathDiv = document.getElementById('settings-attachments-path');
             const btnRestore = document.getElementById('btn-restore-attachments');
@@ -313,10 +310,8 @@ window.cambiaCartellaAllegati = async function() {
 
 window.ripristinaCartellaAllegatiPredefinita = async function() {
     if (window.apiSettings && window.apiBrowser) {
-        const settings = await window.apiSettings.get();
-        delete settings.customAttachmentsPath;
-        await window.apiSettings.save(settings);
-        
+        await window.apiSettings.ripristinaCartellaAllegati();
+
         const p = await window.apiBrowser.getWorkspacePath();
         const attachmentsPathDiv = document.getElementById('settings-attachments-path');
         const btnRestore = document.getElementById('btn-restore-attachments');

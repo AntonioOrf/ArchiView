@@ -473,4 +473,51 @@ test.describe('Security Regression Tests', () => {
     expect(remoti).toEqual([]);
   });
 
+  // N2: le chiavi che decidono quali cartelle il main legge, copia o cestina non arrivano
+  // dal renderer. Prima un renderer compromesso le scriveva con save-settings e poi mandava
+  // nel cestino una cartella qualsiasi passando da delete-vault-local.
+  test('save-settings: percorsi e chiavi del vault non scrivibili dal renderer', async ({ page, electronApp, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const { stubDialog } = await import('./fixtures');
+    const path = await import('path');
+    const fs = await import('fs');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
+    const vittima = path.join(userDataDir, 'vittima');
+    fs.mkdirSync(vittima, { recursive: true });
+    fs.writeFileSync(path.join(vittima, 'database_manoscritti.json'), JSON.stringify({ manoscritti: [], cartelle: [] }));
+
+    const prima = await page.evaluate(() => (window as any).apiSettings.get());
+    await page.evaluate(async (v) => {
+      const s = await (window as any).apiSettings.get();
+      await (window as any).apiSettings.save({
+        ...s, lang: 'en', recentWorkspaces: [v], customAttachmentsPath: v, workspacePath: v,
+        isSharedVault: true, sharedVaultId: 'cartella-altrui', crossArchiveEsclusi: ['a', 7, 'b']
+      });
+    }, vittima);
+    const dopo = await page.evaluate(() => (window as any).apiSettings.get());
+    expect(dopo.lang).toBe('en');
+    expect(dopo.recentWorkspaces).toEqual(prima.recentWorkspaces);
+    expect(dopo.workspacePath).toBe(prima.workspacePath);
+    expect(dopo.customAttachmentsPath).toBeUndefined();
+    expect(dopo.crossArchiveEsclusi).toEqual(['a', 'b']);
+    expect((await page.evaluate(() => (window as any).apiBrowser.getVaultConfig())).sharedVaultId).not.toBe('cartella-altrui');
+
+    expect((await page.evaluate((v) => (window as any).apiBrowser.deleteVaultLocal(v), vittima)).success).toBe(false);
+    expect(fs.existsSync(vittima)).toBe(true);
+    const archivi = await page.evaluate(() => (window as any).apiBrowser.crossArchiveArchivi());
+    expect(archivi.archivi.map((a: any) => a.nome)).not.toContain('vittima');
+    const allegati = await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'));
+    expect(path.dirname(allegati)).not.toBe(vittima);
+
+    // La cartella allegati personalizzata passa da un dialogo aperto dal main, e si ripristina.
+    const scelta = path.join(userDataDir, 'allegati-altrove');
+    fs.mkdirSync(scelta);
+    await stubDialog(electronApp, { canceled: false, filePaths: [scelta] });
+    expect(await page.evaluate(() => (window as any).apiSettings.scegliCartellaAllegati('Titolo'))).toBe(scelta);
+    expect(path.dirname(await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x')))).toBe(scelta);
+    await page.evaluate(() => (window as any).apiSettings.ripristinaCartellaAllegati());
+    expect((await page.evaluate(() => (window as any).apiSettings.get())).customAttachmentsPath).toBeUndefined();
+    expect(path.basename(path.dirname(await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'))))).toBe('allegati_manoscritti');
+  });
+
 });

@@ -62,14 +62,7 @@ function saveAllSettings(newSettings) {
 
   // Update attachments directory dynamically if workspace is active
   if (state.workspacePath) {
-    if (updated.customAttachmentsPath) {
-      state.attachmentsDirPath = updated.customAttachmentsPath;
-    } else {
-      state.attachmentsDirPath = path.join(state.workspacePath, 'allegati_manoscritti');
-    }
-    if (!fs.existsSync(state.attachmentsDirPath)) {
-      fs.mkdirSync(state.attachmentsDirPath, { recursive: true });
-    }
+    applicaCartellaAllegati(updated);
 
     // Scrivi lo stato del vault (.archiview-drive.json + modello unico) SOLO se newSettings
     // contiene davvero delle vault keys. Altrimenti un save "globale" (es. lastSyncTime,
@@ -98,6 +91,28 @@ function saveAllSettings(newSettings) {
   }
 
   return updated;
+}
+
+/** Cartella allegati dell'archivio aperto: quella personalizzata o la predefinita. */
+function applicaCartellaAllegati(settings) {
+  if (!state.workspacePath) return;
+  state.attachmentsDirPath = settings.customAttachmentsPath || path.join(state.workspacePath, 'allegati_manoscritti');
+  if (!fs.existsSync(state.attachmentsDirPath)) {
+    fs.mkdirSync(state.attachmentsDirPath, { recursive: true });
+  }
+}
+
+/**
+ * Toglie delle chiavi globali. `saveAllSettings` unisce e quindi non può cancellare: un
+ * `delete` fatto nel renderer prima del salvataggio si perdeva (es. il ripristino della
+ * cartella allegati predefinita non aveva effetto).
+ */
+function rimuoviImpostazioni(chiavi: string[]) {
+  const current = getAllSettings();
+  for (const k of chiavi) delete current[k];
+  fs.writeFileSync(settingsPath, JSON.stringify(stripVaultKeys(current), null, 2));
+  applicaCartellaAllegati(current);
+  return current;
 }
 
 function loadWorkspace() {
@@ -285,6 +300,7 @@ module.exports = {
   initWorkspace,
   getAllSettings,
   saveAllSettings,
+  rimuoviImpostazioni,
   getActiveVaultFlags,
   saveHubConfig,
   loadHubConfig,
