@@ -128,7 +128,7 @@ async function avviaApp() {
 
     if (window.apiBrowser && window.apiBrowser.onDatabaseModificatoEsterno) {
         window.apiBrowser.onDatabaseModificatoEsterno(async () => {
-            const nuovoDati = await window.apiBrowser.leggiDati();
+            const nuovoDati = await window.leggiDatiArchivio();
             if (nuovoDati) {
                 await window.sincronizzaEUnisciDati(nuovoDati);
                 mostraMessaggio(window.t("msg_l_archivio_stato_sincroni", "L'archivio è stato sincronizzato in tempo reale."), "info");
@@ -1604,7 +1604,7 @@ window.incollaRecord = async function(targetFolderOverride) {
             window.copiedFolderPath = null;
             // Ricarica DB
             if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-            await window.apiBrowser.leggiDati().then(async dati => {
+            await window.leggiDatiArchivio().then(async dati => {
                 appData = dati;
                 if (window.Store) {
                     await window.Store.commit();
@@ -1675,7 +1675,7 @@ window.incollaRecord = async function(targetFolderOverride) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", "{var0} record duplicati con successo!").replace("{var0}", String(res.count)), "success");
         // Ricarica DB
         if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        await window.apiBrowser.leggiDati().then(async dati => {
+        await window.leggiDatiArchivio().then(async dati => {
             appData = dati;
             if (window.Store) {
                 await window.Store.commit();

@@ -978,7 +978,7 @@ window.ripristinaRevisioneCloud = async function(fileId, revisionId) {
     await window.apiDrive.restoreRevision(fileId, revisionId);
     // Ricarica i dati dal file locale aggiornato
     if (window.apiBrowser) {
-        const nuoviDati = await window.apiBrowser.leggiDati();
+        const nuoviDati = await window.leggiDatiArchivio();
         if (nuoviDati && typeof window.sincronizzaEUnisciDati === 'function') {
             await window.sincronizzaEUnisciDati(nuoviDati);
         }

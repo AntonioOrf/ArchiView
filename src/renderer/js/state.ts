@@ -13,9 +13,22 @@ Object.defineProperty(window, 'appData', {
 });
 window.cartellaAttuale = '';
 
+// Unico punto di lettura del DB: `leggi-dati` restituisce il testo del file (O4), si analizza
+// qui. Un file illeggibile vale `null` come quando lo analizzava il main.
+window.leggiDatiArchivio = async function() {
+    const testo = await window.apiBrowser.leggiDati();
+    if (typeof testo !== 'string') return testo ?? null;
+    try {
+        return JSON.parse(testo);
+    } catch (err) {
+        console.error('[Dati] database_manoscritti.json non è JSON valido:', err);
+        return null;
+    }
+};
+
 async function initData() {
     if (window.apiBrowser) {
-        const datiSalvati = await window.apiBrowser.leggiDati();
+        const datiSalvati = await window.leggiDatiArchivio();
         const datiBaseSalvati = await window.apiBrowser.leggiDatiBase();
         if (datiSalvati) {
             // Fase 3.0 — la catena di migrazioni ha preso il posto delle due migrazioni

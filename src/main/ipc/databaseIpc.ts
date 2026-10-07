@@ -97,7 +97,10 @@ function setupDatabaseIpc() {
         startWatcher();
         const data = await fsp.readFile(state.dataFilePath, 'utf8');
         ricorda(contenutiNoti, hashContenuto(data));
-        return JSON.parse(data);
+        // O4: si restituisce il testo e lo analizza il renderer (`leggiDatiArchivio` in
+        // state.ts). Un oggetto passerebbe per lo structured clone dell'intero archivio,
+        // e il JSON.parse qui sarebbe solo lavoro in più sul thread del main.
+        return data;
       }
     } catch (error) { 
       console.error(error); 
