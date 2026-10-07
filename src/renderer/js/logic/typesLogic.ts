@@ -276,7 +276,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
             b.className = 'pill-sposta text-stone-400 hover:text-amber-700 transition-colors';
             b.title = window.t(chiave, testo);
             b.setAttribute('aria-label', b.title + ': ' + finalLabel);
-            b.innerHTML = '<i data-lucide="' + icona + '" class="w-3 h-3" aria-hidden="true"></i>';
+            b.innerHTML = '<i data-lucide="' + escapeHTML(icona) + '" class="w-3 h-3" aria-hidden="true"></i>';
             b.onclick = () => spostaPill(pill, delta, b, finalLabel);
             segnaposto.before(b);
         }

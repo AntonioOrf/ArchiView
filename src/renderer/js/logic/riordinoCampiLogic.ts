@@ -177,7 +177,7 @@ function _pulsanteSposta(icona, titolo, azione) {
     b.className = 'riordino-freccia';
     b.title = titolo;
     b.setAttribute('aria-label', titolo);
-    b.innerHTML = `<i data-lucide="${icona}" class="w-4 h-4"></i>`;
+    b.innerHTML = `<i data-lucide="${escapeHTML(icona)}" class="w-4 h-4"></i>`;
     b.onclick = azione;
     return b;
 }

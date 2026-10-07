@@ -43,7 +43,7 @@ function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurre
             font-size: 0.78rem; text-align: left;
             transition: background 0.1s;
         `;
-        btn.innerHTML = `<i data-lucide="${icon}" style="width:13px;height:13px;flex-shrink:0;"></i> ${text}`;
+        btn.innerHTML = `<i data-lucide="${escapeHTML(icon)}" style="width:13px;height:13px;flex-shrink:0;"></i> ${escapeHTML(text)}`;
         btn.onmouseenter = () => btn.style.background = '#292524';
         btn.onmouseleave = () => btn.style.background = 'transparent';
         btn.onclick = (ev) => { ev.stopPropagation(); chiudiHistoryContextMenu(); onclick(); };
@@ -479,7 +479,8 @@ async function renderHubHistoryList(list) {
             col.className = 'flex flex-col min-w-0 flex-1';
             const line1 = document.createElement('span');
             line1.className = `text-xs font-semibold ${isCurrent ? 'text-amber-700 dark:text-amber-400' : 'text-stone-700 dark:text-stone-300'} truncate`;
-            line1.innerHTML = `<span style="font-family:monospace;">v${entry.version}</span> · ${escapeHTML(autore)}`;
+            // entry.version arriva dall'Hub: un server di terzi può restituire qualsiasi cosa.
+            line1.innerHTML = `<span style="font-family:monospace;">v${escapeHTML(String(entry.version))}</span> · ${escapeHTML(autore)}`;
             const line2 = document.createElement('span');
             line2.className = 'text-[10px] text-stone-400 truncate';
             line2.textContent = `${formatRelativeDate(entry.createdAt)} · ${dimensioneKb} KB`;
@@ -556,7 +557,7 @@ function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
             font-size: 0.78rem; text-align: left;
             transition: background 0.1s;
         `;
-        btn.innerHTML = `<i data-lucide="${icon}" style="width:13px;height:13px;flex-shrink:0;"></i> ${text}`;
+        btn.innerHTML = `<i data-lucide="${escapeHTML(icon)}" style="width:13px;height:13px;flex-shrink:0;"></i> ${escapeHTML(text)}`;
         btn.onmouseenter = () => btn.style.background = '#292524';
         btn.onmouseleave = () => btn.style.background = 'transparent';
         btn.onclick = (ev) => { ev.stopPropagation(); chiudiHistoryContextMenu(); onclick(); };
@@ -565,7 +566,7 @@ function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
 
     const header = document.createElement('div');
     header.style.cssText = 'padding: 6px 10px 5px; font-size: 0.68rem; color: #78716c; border-bottom: 1px solid #292524; margin-bottom: 4px; line-height: 1.4;';
-    header.innerHTML = `<strong style="color:#a8a29e;">v${entry.version} – ${escapeHTML(dataStr)} ${escapeHTML(oraStr)}</strong><br>${escapeHTML(autore)}`;
+    header.innerHTML = `<strong style="color:#a8a29e;">v${escapeHTML(String(entry.version))} –${escapeHTML(dataStr)} ${escapeHTML(oraStr)}</strong><br>${escapeHTML(autore)}`;
     menu.appendChild(header);
 
     menu.appendChild(menuItem('git-compare', window.t("history_compare_now", "Compare with current"), '#93c5fd',
