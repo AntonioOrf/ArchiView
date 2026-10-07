@@ -393,14 +393,8 @@
         if (modalWin) { modalWin.classList.remove('max-w-lg', 'p-8'); modalWin.classList.add('max-w-3xl'); }
         if (window.lucide) lucide.createIcons({ nodes: [joinForm] });
 
-        // Precarica Google Picker API in background
-        if (!document.getElementById('google-api-script')) {
-            const script = document.createElement('script');
-            script.id = 'google-api-script';
-            script.src = 'https://apis.google.com/js/api.js';
-            document.head.appendChild(script);
-        }
-
+        // Il Google Picker si apre nel browser esterno (openExternalPicker): nessuno script
+        // remoto entra nel renderer, che ha accesso pieno al bridge (N3).
         if (window.apiBrowser?.getDocumentsPath) {
             let initialPath = await window.apiBrowser.getDocumentsPath();
             if (window.apiSettings) {

@@ -463,4 +463,14 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
+  // N3: nessuno script remoto nel renderer (il Picker Google gira nel browser esterno).
+  test('nessuno script remoto: CSP senza domini Google, join senza api.js', async ({ page }) => {
+    const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]')!.getAttribute('content') || '');
+    expect((/script-src([^;]*)/.exec(csp) || [])[1].trim()).toBe("'self'");
+    expect(csp).not.toMatch(/google\.com/);
+    await page.evaluate(() => (window as any).mostraJoinForm());
+    const remoti = await page.evaluate(() => Array.from(document.scripts).map((s) => s.src).filter((s) => /^https?:/.test(s)));
+    expect(remoti).toEqual([]);
+  });
+
 });
