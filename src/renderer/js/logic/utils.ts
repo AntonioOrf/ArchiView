@@ -324,13 +324,19 @@ window.contaFiltriAvanzati = function(filtri) {
  * I valori vuoti vanno SEMPRE in coda, in entrambe le direzioni: sono record incompleti,
  * e vederseli in testa quando si inverte l'ordine è rumore, non informazione.
  */
+// Un solo collator: `localeCompare` con opzioni ne costruisce uno a ogni confronto, e
+// ordinare migliaia di schede ne faceva decine di migliaia (misurato nel render della sidebar).
+// Per specifica `a.localeCompare(b, loc, opz)` equivale a `new Intl.Collator(loc, opz).compare(a, b)`.
+// Il collator sta sulla funzione stessa: test/naturalSort.test.js ne estrae solo il corpo.
 window.confrontaNaturale = function(a, b) {
     const sa = window.normalizzaTesto(a).trim();
     const sb = window.normalizzaTesto(b).trim();
     if (!sa && !sb) return 0;
     if (!sa) return 1;
     if (!sb) return -1;
-    return sa.localeCompare(sb, undefined, { numeric: true, sensitivity: 'base' });
+    const self = window.confrontaNaturale;
+    if (!self.collatore) self.collatore = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+    return self.collatore.compare(sa, sb);
 };
 
 window.salvaStatoPosizione = async function() {

@@ -3776,6 +3776,11 @@ window.cambiaLingua = async function(lang) {
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 }
 
+// Traduzione con markup → HTML sanitizzato. Le stringhe sono poche centinaia e fisse, mentre
+// applicaTraduzioniHtml gira su tutto il documento a ogni modale montato: senza cache ogni
+// giro ripassava da DOMPurify le stesse stringhe (misurato: era il costo principale dell'avvio).
+const _traduzioniSanitizzate = new Map<string, string>();
+
 window.applicaTraduzioniHtml = function() {
     // Sostituisce il testo (innerHTML).
     // Il testo statico presente nell'HTML (in italiano) viene memorizzato come
@@ -3787,7 +3792,23 @@ window.applicaTraduzioniHtml = function() {
             el.setAttribute('data-i18n-default', el.textContent || '');
         }
         const def = el.getAttribute('data-i18n-default') || key;
-        el.innerHTML = window.sanitizeHTML(window.t(key, def));
+        const testo = window.t(key, def);
+        // Senza `<` né `&` innerHTML e textContent producono lo stesso DOM: niente parser,
+        // niente DOMPurify. Se il nodo contiene già quel testo non si tocca (né layout né
+        // mutazioni per gli observer).
+        if (!/[<&]/.test(testo)) {
+            const n = el.firstChild;
+            if (!(n && n === el.lastChild && n.nodeType === Node.TEXT_NODE && (n as Text).data === testo)) {
+                el.textContent = testo;
+            }
+            return;
+        }
+        let html = _traduzioniSanitizzate.get(testo);
+        if (html === undefined) {
+            html = window.sanitizeHTML(testo);
+            _traduzioniSanitizzate.set(testo, html);
+        }
+        if (el.innerHTML !== html) el.innerHTML = html;
     });
 
     // Sostituisce il title

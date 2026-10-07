@@ -260,7 +260,7 @@ function renderSidebar() {
             }
         };
 
-        const titoloFile = escapeHTML(m.segnatura || m.titolo || 'Senza Titolo');
+        const titoloFile = m.segnatura || m.titolo || 'Senza Titolo';
 
         fileRow.draggable = true;
         fileRow.ondragstart = (e) => {
@@ -272,18 +272,28 @@ function renderSidebar() {
 
         // Etichetta secondaria: secondo rigo, mai al posto della segnatura. Il `title`
         // serve perché a 288px di sidebar entrambe le righe vengono tagliate.
+        // DOM costruito a mano invece di innerHTML + sanitizeHTML: una riga per record, e su
+        // migliaia di record DOMPurify era la voce più pesante del render della sidebar.
+        // textContent rende i valori inerti senza bisogno di escape.
         const secondaria = etichettaSecondaria(m);
-        const icona = `<i data-lucide="file-text" class="w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}"></i>`;
+        const icona = document.createElement('i');
+        icona.setAttribute('data-lucide', 'file-text');
+        icona.className = `w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-600' : 'opacity-60'}`;
+        const titolo = document.createElement('span');
+        titolo.className = 'truncate';
+        titolo.setAttribute('translate', 'no');
+        titolo.textContent = titoloFile;
         if (secondaria) {
             fileRow.title = (m.segnatura || m.titolo || '') + ' — ' + secondaria;
-            fileRow.innerHTML = window.sanitizeHTML(
-                `${icona}<span class="flex flex-col min-w-0 flex-1 leading-tight">` +
-                `<span class="truncate" translate="no">${titoloFile}</span>` +
-                `<span class="truncate text-[10px] opacity-70 sidebar-file-sub">${escapeHTML(secondaria)}</span>` +
-                `</span>`
-            );
+            const colonna = document.createElement('span');
+            colonna.className = 'flex flex-col min-w-0 flex-1 leading-tight';
+            const sub = document.createElement('span');
+            sub.className = 'truncate text-[10px] opacity-70 sidebar-file-sub';
+            sub.textContent = secondaria;
+            colonna.append(titolo, sub);
+            fileRow.append(icona, colonna);
         } else {
-            fileRow.innerHTML = window.sanitizeHTML(`${icona}<span class="truncate" translate="no">${titoloFile}</span>`);
+            fileRow.append(icona, titolo);
         }
         return fileRow;
     }
