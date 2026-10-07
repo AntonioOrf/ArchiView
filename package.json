@@ -10,7 +10,7 @@
   "main": "out/main/main.js",
   "scripts": {
     "build-css": "npx @tailwindcss/cli -i ./src/renderer/css/input.css -o ./src/renderer/css/tailwind.css --minify",
-    "copy-assets": "shx mkdir -p out/renderer && node scripts/build-html.js && shx cp -r src/renderer/css src/renderer/vendor out/renderer/ && node scripts/copy-ocr-host.js && node scripts/copy-pdf-viewer.js && node scripts/copy-shared.js",
+    "copy-assets": "shx mkdir -p out/renderer && node scripts/build-html.js && shx cp -r src/renderer/css src/renderer/vendor out/renderer/ && node scripts/build-lucide-subset.js && node scripts/copy-ocr-host.js && node scripts/copy-pdf-viewer.js && node scripts/copy-shared.js",
     "extract": "lingui extract",
     "compile": "lingui compile",
     "build-ts": "npm run compile && tsc && npx esbuild src/renderer/js/logic/i18n.ts --bundle --outfile=out/renderer/js/logic/i18n.js --allow-overwrite && npm run copy-assets && node scripts/build-changelog.js && node scripts/build-renderer-bundle.js",
