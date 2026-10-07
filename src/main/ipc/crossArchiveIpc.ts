@@ -17,6 +17,8 @@ const { readVaultConfig, assicuraArchivioId } = require('../vaultConfig');
 const { leggiPerfConfig } = require('../perfConfig');
 const { IndiceWorker } = require('../crossArchive/client');
 const { safeAttachmentPathOrNull, safeAttachmentPath } = require('./pathSafety');
+// sha256 in streaming: un PDF da centinaia di MB non deve passare tutto in memoria.
+const { hashFile } = require('../chunkingLogic');
 
 import type { IndiceArchivi } from '../crossArchive/indiceMemoria';
 
@@ -284,14 +286,6 @@ async function dimensioniAllegati(percorso: string, scheda: any): Promise<(numbe
     if (!file) return null;
     try { return (await fs.promises.stat(file)).size; } catch (e) { return null; }
   }));
-}
-
-/** sha256 in streaming: un PDF da centinaia di MB non deve passare tutto in memoria. */
-function hashFile(file: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const h = crypto.createHash('sha256');
-    fs.createReadStream(file).on('data', (c: any) => h.update(c)).on('error', reject).on('end', () => resolve(h.digest('hex')));
-  });
 }
 
 /** Nome libero nella cartella allegati dell'archivio aperto, con lo stesso schema di `salva-allegato`. */

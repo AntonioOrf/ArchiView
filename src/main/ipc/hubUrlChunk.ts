@@ -36,5 +36,32 @@ async function fetchChunkGuardata(url: string, fetchImpl: typeof fetch = fetch):
   throw new Error(`troppi redirect (>${MAX_REDIRECT})`);
 }
 
-module.exports = { urlChunkAmmesso, fetchChunkGuardata, HOST_CHUNK_AMMESSI };
+/**
+ * Corpo della risposta, o null se supera `max` byte, dichiarati o effettivi (un server può
+ * omettere o falsare Content-Length). Si smette di leggere appena il tetto è passato.
+ */
+async function leggiConTetto(res: Response, max: number): Promise<Buffer | null> {
+  const dichiarati = Number(res.headers.get('content-length'));
+  if (Number.isFinite(dichiarati) && dichiarati > max) {
+    try { await res.body?.cancel(); } catch { /* già chiuso */ }
+    return null;
+  }
+  if (!res.body) return Buffer.alloc(0);
+  const parti: Buffer[] = [];
+  let totale = 0;
+  const lettore = res.body.getReader();
+  for (;;) {
+    const { done, value } = await lettore.read();
+    if (done) break;
+    totale += value.byteLength;
+    if (totale > max) {
+      try { await lettore.cancel(); } catch { /* già chiuso */ }
+      return null;
+    }
+    parti.push(Buffer.from(value));
+  }
+  return Buffer.concat(parti, totale);
+}
+
+module.exports = { urlChunkAmmesso, fetchChunkGuardata, leggiConTetto, HOST_CHUNK_AMMESSI };
 export {};

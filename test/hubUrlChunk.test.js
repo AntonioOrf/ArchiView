@@ -1,6 +1,6 @@
 // Test della whitelist degli URL dei chunk Hub (N8): host Google soltanto, redirect compresi.
 const assert = require('assert');
-const { urlChunkAmmesso, fetchChunkGuardata } = require('../out/main/ipc/hubUrlChunk');
+const { urlChunkAmmesso, fetchChunkGuardata, leggiConTetto } = require('../out/main/ipc/hubUrlChunk');
 
 async function run() {
   console.log('Running hubUrlChunk tests...');
@@ -77,6 +77,20 @@ async function run() {
     'https://drive.google.com/uc?id=e': { status: 404 },
   }));
   assert.strictEqual(r404.status, 404);
+
+  // 8. Tetto sul corpo: un URL dell'indice può puntare a un file pubblico qualsiasi.
+  // Stream a pezzi da 1 KB senza Content-Length: il dichiarato non basta, conta il letto.
+  let pezziLetti = 0;
+  const flusso = (pezzi) => new Response(new ReadableStream({
+    pull(c) { if (pezziLetti >= pezzi) { c.close(); return; } pezziLetti++; c.enqueue(new Uint8Array(1024)); }
+  }));
+  assert.strictEqual((await leggiConTetto(flusso(4), 4096)).length, 4096);
+  pezziLetti = 0;
+  assert.strictEqual(await leggiConTetto(flusso(1000), 4096), null);
+  assert.ok(pezziLetti < 10, `lettura non interrotta al tetto: ${pezziLetti} pezzi`);
+  const dichiaratoTroppo = new Response('x', { headers: { 'content-length': '999999999' } });
+  assert.strictEqual(await leggiConTetto(dichiaratoTroppo, 4096), null);
+  assert.strictEqual((await leggiConTetto(new Response('abc'), 4096)).toString(), 'abc');
 
   console.log('hubUrlChunk tests passed.');
 }

@@ -2,7 +2,7 @@ const { app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { state, getActiveVaultFlags } = require('../../workspaceManager');
+const { state, finestraPrincipale, getActiveVaultFlags } = require('../../workspaceManager');
 const tokenStore = require('../../cloudTokenStore');
 const { avviaServerLoopback, leggiCallbackOAuth } = require('../loopbackServer');
 
@@ -360,7 +360,7 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
               const about = await driveState.drive.about.get({ fields: 'user' });
               if (about?.data?.user?.emailAddress) tokens.email = about.data.user.emailAddress;
             } catch (e) { /* non bloccante */ }
-            const win = require('electron').BrowserWindow.getAllWindows()[0];
+            const win = finestraPrincipale();
             if (win) win.webContents.send('drive-status-updated', { authenticated: true });
 
             const currentLocalPath = getLocalTokenPath();

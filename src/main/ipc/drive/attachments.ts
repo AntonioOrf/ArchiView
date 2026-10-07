@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { state, getAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
+const { state, finestraPrincipale, getAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
 const { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChunkPath, hashFile } = require('../../chunkingLogic');
 const { driveState, loadSavedTokens } = require('./auth');
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
@@ -118,7 +118,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     } while (pageToken);
   }
 
-  const win = require('electron').BrowserWindow.getAllWindows()[0];
+  const win = finestraPrincipale();
 
   let iDown = 0;
   const totalDown = chunkIdsToDownload.length;

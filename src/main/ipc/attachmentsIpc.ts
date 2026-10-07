@@ -4,8 +4,8 @@ const { pathToFileURL } = require('url');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
-const crypto = require('crypto');
-const { safeAttachmentPath, dentroCartellaReale } = require('./pathSafety');
+const { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale } = require('./pathSafety');
+const { hashFile } = require('../chunkingLogic');
 
 /**
  * Il percorso sorgente arriva dal renderer (file scelto o trascinato). Non si può legare a un
@@ -50,13 +50,11 @@ function setupAttachmentsIpc() {
       const destPath = safeAttachmentPath(state.attachmentsDirPath, fileName);
 
       await fsp.copyFile(sourcePath, destPath);
-      
-      const fileBuffer = await fsp.readFile(destPath);
-      const hashSum = crypto.createHash('sha256');
-      hashSum.update(fileBuffer);
-      const hash = hashSum.digest('hex');
 
-      return { fileName, ext, hash }; 
+      // O5: in streaming. Prima il file intero passava in RAM (PDF da centinaia di MB).
+      const hash = await hashFile(destPath);
+
+      return { fileName, ext, hash };
     } catch (error) {
       console.error("Errore copia allegato:", error);
       return null;
@@ -66,17 +64,14 @@ function setupAttachmentsIpc() {
   ipcMain.handle('verifica-hash-allegato', async (event, fileName, expectedHash) => {
     try {
       if (!state.attachmentsDirPath || !fileName || !expectedHash) return { status: 'missing', path: '' };
-      const safeFileName = path.basename(fileName);
-      const destPath = path.join(state.attachmentsDirPath, safeFileName);
-      if (!fs.existsSync(destPath)) {
+      // Stesso criterio dei nomi di tutti gli allegati (N7): `path.basename('..')` restituiva '..'.
+      const destPath = safeAttachmentPathOrNull(state.attachmentsDirPath, fileName);
+      if (!destPath || !fs.existsSync(destPath)) {
         return { status: 'missing', path: state.attachmentsDirPath };
       }
-      
-      const fileBuffer = await fsp.readFile(destPath);
-      const hashSum = crypto.createHash('sha256');
-      hashSum.update(fileBuffer);
-      const hash = hashSum.digest('hex');
-      
+
+      const hash = await hashFile(destPath);
+
       if (hash === expectedHash) {
         return { status: 'ok' };
       } else {

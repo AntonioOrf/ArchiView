@@ -44,22 +44,50 @@ const state = {
   mainWindow: null
 };
 
+/**
+ * Finestra principale ancora viva, o null. O8: `BrowserWindow.getAllWindows()[0]` non è
+ * garantito essere lei quando sono aperti l'host PDF o quello di stampa, e gli eventi di
+ * avanzamento finivano a una finestra senza listener.
+ */
+function finestraPrincipale() {
+  const w = state.mainWindow;
+  return w && !w.isDestroyed() ? w : null;
+}
+
+// O6: copia in memoria di settings.json. Lo scrive solo questo processo (istanza singola) e
+// solo da `scriviImpostazioni`, quindi la cache resta allineata al disco; prima ogni lettura
+// (anche una per ricerca tra archivi) era readFileSync + JSON.parse.
+// Si restituisce sempre una copia: i chiamanti modificano l'oggetto prima di salvarlo.
+let cacheImpostazioni: any = null;
+
 function getAllSettings() {
-  if (fs.existsSync(settingsPath)) {
-    try {
-      return JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    } catch (error) {
-      console.error("Errore lettura settings:", error);
+  if (cacheImpostazioni === null) {
+    if (!fs.existsSync(settingsPath)) {
+      cacheImpostazioni = {};
+    } else {
+      try {
+        cacheImpostazioni = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      } catch (error) {
+        // Non in cache: un errore transitorio (file bloccato dall'antivirus) memorizzato come
+        // {} farebbe sì che il salvataggio successivo riscriva il file senza le altre chiavi.
+        console.error("Errore lettura settings:", error);
+        return {};
+      }
     }
   }
-  return {};
+  return structuredClone(cacheImpostazioni);
+}
+
+function scriviImpostazioni(impostazioni) {
+  scriviAtomicoSync(settingsPath, JSON.stringify(impostazioni, null, 2));
+  cacheImpostazioni = structuredClone(impostazioni);
 }
 
 function saveAllSettings(newSettings) {
   const current = getAllSettings();
   const updated = { ...current, ...newSettings };
   // Il settings.json globale NON contiene più stato di vault: le vault keys vanno solo nel file del vault.
-  scriviAtomicoSync(settingsPath, JSON.stringify(stripVaultKeys(updated), null, 2));
+  scriviImpostazioni(stripVaultKeys(updated));
 
   // Update attachments directory dynamically if workspace is active
   if (state.workspacePath) {
@@ -111,7 +139,7 @@ function applicaCartellaAllegati(settings) {
 function rimuoviImpostazioni(chiavi: string[]) {
   const current = getAllSettings();
   for (const k of chiavi) delete current[k];
-  scriviAtomicoSync(settingsPath, JSON.stringify(stripVaultKeys(current), null, 2));
+  scriviImpostazioni(stripVaultKeys(current));
   applicaCartellaAllegati(current);
   return current;
 }
@@ -191,7 +219,7 @@ function initWorkspace(folderPath) {
       recentWorkspaces
   };
 
-  scriviAtomicoSync(settingsPath, JSON.stringify(updatedGlobal, null, 2));
+  scriviImpostazioni(updatedGlobal);
 
   // Migrazione/refresh del modello unificato (.archiview-vault.json), legacy mantenuti.
   // Passiamo currentSettings (non strippato) come fallback per il vault attivo durante l'upgrade.
@@ -297,6 +325,7 @@ function aggiornaHubConfigDalRenderer(parziale: any): boolean {
 
 module.exports = {
   state,
+  finestraPrincipale,
   loadWorkspace,
   initWorkspace,
   getAllSettings,

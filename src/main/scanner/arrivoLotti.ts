@@ -19,7 +19,7 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
-const { pipeline } = require('stream/promises');
+const { hashFile } = require('../chunkingLogic');
 const ScannerLotto = require('../../shared/scannerLotto');
 
 /** Oltre questa dimensione `lotto.json` non è un manifest (2000 pagine stanno sotto i 500 KB). */
@@ -83,9 +83,7 @@ async function esiste(p: string): Promise<boolean> {
 async function verificaFile(percorso: string, atteso: PaginaLotto): Promise<void> {
   const st = await fsp.stat(percorso);
   if (st.size !== atteso.byte) throw new ErroreLotto('byte_diversi', { file: atteso.file, attesi: atteso.byte, trovati: st.size });
-  const h = crypto.createHash('sha256');
-  await pipeline(fs.createReadStream(percorso), h);
-  const sha = h.digest('hex');
+  const sha = await hashFile(percorso);
   if (sha !== atteso.sha256) throw new ErroreLotto('sha256_diverso', { file: atteso.file });
 }
 

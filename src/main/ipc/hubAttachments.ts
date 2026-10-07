@@ -1,13 +1,13 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { state, loadHubConfig } = require('../workspaceManager');
+const { state, finestraPrincipale, loadHubConfig } = require('../workspaceManager');
 const { splitFileIntoChunks } = require('../chunkingLogic');
 const { loadSavedTokens } = require('./drive/auth');
 const { getOrCreateFolder, uploadFileReturningId, makeFilePublic, asyncPool } = require('./drive/fileOps');
 const { GOOGLE_API_KEY } = require('./cloudCredentials');
 const { safeAttachmentPathOrNull } = require('./pathSafety');
-const { fetchChunkGuardata } = require('./hubUrlChunk');
+const { fetchChunkGuardata, leggiConTetto } = require('./hubUrlChunk');
 
 // Sincronizzazione allegati per vault Hub.
 // Modello: i chunk (5MB, content-addressable) vivono sul Drive PERSONALE di ogni utente con
@@ -57,9 +57,14 @@ const primaryUrl = (id: string) => `https://www.googleapis.com/drive/v3/files/${
 const fallbackUrl = (id: string) => `https://drive.google.com/uc?export=download&id=${id}`;
 
 function progress(percent: number, message: string): void {
-  const win = require('electron').BrowserWindow.getAllWindows()[0];
+  const win = finestraPrincipale();
   if (win) win.webContents.send('sync-progress', { percent, message });
 }
+
+// Un blob è nonce(12) + al più 5 MB cifrati + tag(16): oltre, non è un nostro chunk. L'URL
+// arriva dall'indice Hub (terzi) e può puntare a qualunque file pubblico su Drive; senza tetto
+// `arrayBuffer()` lo terrebbe tutto in memoria, e il download ne legge fino a 9 insieme.
+const MAX_BYTE_CHUNK = 5 * 1024 * 1024 + 12 + 16;
 
 // Scarica un singolo blob verificandone l'integrità. Ritorna il Buffer del ciphertext o null
 // (link morto/interstitial/chunk corrotto → allegato "non disponibile", nessun crash).
@@ -70,7 +75,8 @@ async function fetchVerifiedChunk(urls: string[], expectedHash: string): Promise
       const res = await fetchChunkGuardata(url);
       if (!res.ok) { console.warn(`[hub-att]   chunk ${expectedHash.slice(0, 8)} status=${res.status} url=${url.slice(0, 60)}`); continue; }
       const ct = res.headers.get('content-type') || '';
-      const buf = Buffer.from(await res.arrayBuffer());
+      const buf = await leggiConTetto(res, MAX_BYTE_CHUNK);
+      if (!buf) { console.warn(`[hub-att]   chunk ${expectedHash.slice(0, 8)} oltre ${MAX_BYTE_CHUNK}B: scartato`); continue; }
       if (ct.includes('text/html') || HTML_RE.test(buf.subarray(0, 64).toString('utf8'))) { console.warn(`[hub-att]   chunk ${expectedHash.slice(0, 8)} html/interstitial ct=${ct}`); continue; } // interstitial/errore
       if (sha256hex(buf) !== expectedHash) { console.warn(`[hub-att]   chunk ${expectedHash.slice(0, 8)} sha256 mismatch (${buf.length}B)`); continue; } // corrotto
       return buf;
@@ -258,6 +264,20 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
     }
 
     // ---------- DOWNLOAD (qualsiasi membro, zero Google) ----------
+    // O7: più file in parallelo e, per ciascuno, i chunk a gruppi scaricati insieme e scritti
+    // in ordine su un file temporaneo, poi rinominato. In memoria restano al più FILE_PARALLELI ×
+    // CHUNK_PARALLELI chunk (5 MB l'uno) invece dell'intero file; e un'interruzione non lascia
+    // più un file troncato che `existsSync` farebbe passare per già scaricato.
+    const FILE_PARALLELI = 3;
+    const CHUNK_PARALLELI = 3;
+    // Temporanei di un run interrotto (chiusura dell'app, crash): i run sono serializzati,
+    // quindi nessuno di questi file è in scrittura adesso.
+    try {
+      for (const f of await fs.promises.readdir(attDir)) {
+        if (/^\.archiview-scarico-[0-9a-f]{16}\.part$/.test(f)) await fs.promises.rm(path.join(attDir, f), { force: true });
+      }
+    } catch { /* best-effort */ }
+    const daScaricare: string[] = [];
     for (const [fileName] of used) {
       const localPath = safeAttachmentPathOrNull(attDir, fileName);
       if (!localPath) { console.warn(`[hub-att] download saltato, nome non sicuro: ${fileName}`); continue; }
@@ -267,35 +287,62 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
         console.warn(`[hub-att] download file="${fileName}" NON pubblicato (entry=${!!entry} deleted=${entry?.deleted})`);
         notPublished++; continue;
       }
-      console.log(`[hub-att] download file="${fileName}" chunks=${entry.hashes.length}`);
-
-      const plaintextParts: Buffer[] = [];
-      let ok = true;
-      let decryptError = false;
-      for (const ctHash of entry.hashes) {
-        const chunk = remoteChunks.get(ctHash);
-        const urls = chunk
-          ? [chunk.url, chunk.driveFileId ? fallbackUrl(chunk.driveFileId) : null].filter(Boolean) as string[]
-          : [];
-        if (!urls.length) console.warn(`[hub-att]   chunk ${ctHash.slice(0, 8)} assente dall'indice remoto`);
-        const blob = urls.length ? await fetchVerifiedChunk(urls, ctHash) : null;
-        if (!blob) { ok = false; break; }
-        try { plaintextParts.push(decryptChunk(key, blob)); }
-        catch { ok = false; decryptError = true; console.error(`[hub-att]   chunk ${ctHash.slice(0, 8)} decrypt fallito (tag GCM non valido → encKey diversa)`); break; } // tag GCM non valido → encKey diversa da quella dell'uploader
-      }
-
-      if (ok) {
-        fs.writeFileSync(localPath, Buffer.concat(plaintextParts));
-        downloaded++;
-        console.log(`[hub-att] download file="${fileName}" OK (${Buffer.concat(plaintextParts).length}B)`);
-        const win = require('electron').BrowserWindow.getAllWindows()[0];
-        if (win) win.webContents.send('allegato-scaricato', fileName);
-      } else {
-        unavailable++;
-        if (decryptError) { decryptFailed++; errors.push(`Allegato "${fileName}": chiave di cifratura non corrispondente.`); }
-        else errors.push(`Allegato "${fileName}": chunk non scaricabile (link scaduto o non pubblicato).`);
-      }
+      daScaricare.push(fileName);
     }
+
+    // Un chunk: scaricato, verificato (sha256 del ciphertext) e decifrato. Errore tipizzato
+    // per distinguere la chiave sbagliata dal link morto nel messaggio all'utente.
+    const scaricaChunk = async (ctHash: string): Promise<Buffer> => {
+      const chunk = remoteChunks.get(ctHash);
+      const urls = chunk
+        ? [chunk.url, chunk.driveFileId ? fallbackUrl(chunk.driveFileId) : null].filter(Boolean) as string[]
+        : [];
+      if (!urls.length) console.warn(`[hub-att]   chunk ${ctHash.slice(0, 8)} assente dall'indice remoto`);
+      const blob = urls.length ? await fetchVerifiedChunk(urls, ctHash) : null;
+      if (!blob) throw new Error('chunk-non-scaricabile');
+      try { return decryptChunk(key, blob); }
+      catch {
+        // tag GCM non valido → encKey diversa da quella dell'uploader
+        console.error(`[hub-att]   chunk ${ctHash.slice(0, 8)} decrypt fallito (tag GCM non valido → encKey diversa)`);
+        throw new Error('decrypt');
+      }
+    };
+
+    await asyncPool(FILE_PARALLELI, daScaricare, async (fileName: string) => {
+      const localPath = safeAttachmentPathOrNull(attDir, fileName) as string;
+      const entry = remoteFiles.get(fileName);
+      const hashes: string[] = entry.hashes;
+      console.log(`[hub-att] download file="${fileName}" chunks=${hashes.length}`);
+      // Nome temporaneo casuale, non `<nome>.part`: il nome dell'allegato viene dal vault, e
+      // un collaboratore potrebbe sceglierlo per far sovrascrivere un file locale `x.part`.
+      const parziale = path.join(attDir, `.archiview-scarico-${crypto.randomBytes(8).toString('hex')}.part`);
+      let scritti = 0;
+      try {
+        const fh = await fs.promises.open(parziale, 'w');
+        try {
+          for (let i = 0; i < hashes.length; i += CHUNK_PARALLELI) {
+            const gruppo = await Promise.all(hashes.slice(i, i + CHUNK_PARALLELI).map(scaricaChunk));
+            for (const parte of gruppo) {
+              await fh.write(parte);
+              scritti += parte.length;
+            }
+          }
+        } finally {
+          await fh.close();
+        }
+        await fs.promises.rename(parziale, localPath);
+        downloaded++;
+        console.log(`[hub-att] download file="${fileName}" OK (${scritti}B)`);
+        const win = finestraPrincipale();
+        if (win) win.webContents.send('allegato-scaricato', fileName);
+      } catch (e: any) {
+        try { await fs.promises.rm(parziale, { force: true }); } catch { /* best-effort */ }
+        unavailable++;
+        if (e?.message === 'decrypt') { decryptFailed++; errors.push(`Allegato "${fileName}": chiave di cifratura non corrispondente.`); }
+        else if (e?.message === 'chunk-non-scaricabile') errors.push(`Allegato "${fileName}": chunk non scaricabile (link scaduto o non pubblicato).`);
+        else errors.push(`Allegato "${fileName}": scrittura su disco non riuscita (${e?.message || e}).`);
+      }
+    });
 
     console.log(`[hub-att] done uploaded=${uploaded} downloaded=${downloaded} unavailable=${unavailable} notPublished=${notPublished} decryptFailed=${decryptFailed} errors=${errors.length}`);
     return { uploaded, downloaded, unavailable, skippedUpload, hasLocalAttachments, notPublished, decryptFailed, errors };
