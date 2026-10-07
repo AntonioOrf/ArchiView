@@ -72,6 +72,41 @@ async function run() {
   await assert.rejects(() => extractZipStreaming(zip5, path.join(tmpRoot, 'allegati5')));
   console.log('✅ Test 5: archivio corrotto rifiutato.');
 
+  // Test 6: tetto sullo spazio disco — allegati oltre lo spazio libero (meno il margine)
+  // rifiutati prima di scrivere, senza .part residui
+  const { MARGINE_DISCO_BYTES } = require('../out/main/ipc/zipStreaming');
+  const zip6 = path.join(tmpRoot, 'grande.zip');
+  await creaZip(zip6, {
+    'schedatura.json': '{"manoscritti":[]}',
+    'allegati/a.bin': Buffer.alloc(4000, 1),
+    'allegati/b.bin': Buffer.alloc(4000, 2),
+  });
+  const dest6 = path.join(tmpRoot, 'allegati6');
+  await assert.rejects(
+    () => extractZipStreaming(zip6, dest6, { spazioLibero: () => MARGINE_DISCO_BYTES + 6000 }),
+    /Spazio su disco insufficiente/);
+  assert.ok(fs.existsSync(path.join(dest6, 'a.bin')), 'il primo allegato sta nel tetto');
+  assert.ok(!fs.existsSync(path.join(dest6, 'b.bin')), 'il secondo supera il tetto e non si scrive');
+  assert.deepStrictEqual(fs.readdirSync(dest6).filter(f => f.endsWith('.part')), []);
+  // Spazio sufficiente o ignoto: estrazione completa
+  const dest6b = path.join(tmpRoot, 'allegati6b');
+  await extractZipStreaming(zip6, dest6b, { spazioLibero: () => null });
+  assert.deepStrictEqual(fs.readdirSync(dest6b).sort(), ['a.bin', 'b.bin']);
+  console.log('✅ Test 6: tetto sullo spazio disco.');
+
+  // Test 7: nomi ostili (ADS, riservati di Windows) saltati, il resto estratto
+  const zip7 = path.join(tmpRoot, 'nomi.zip');
+  await creaZip(zip7, {
+    'schedatura.json': '{"manoscritti":[]}',
+    'allegati/foto.jpg:Zone.Identifier': 'ads',
+    'allegati/CON.txt': 'riservato',
+    'allegati/buono.txt': 'ok',
+  });
+  const dest7 = path.join(tmpRoot, 'allegati7');
+  await extractZipStreaming(zip7, dest7);
+  assert.deepStrictEqual(fs.readdirSync(dest7), ['buono.txt']);
+  console.log('✅ Test 7: nomi di allegato non validi saltati.');
+
   console.log('Tutti i test zipStreaming passati con successo!');
 }
 
