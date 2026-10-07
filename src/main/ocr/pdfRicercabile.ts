@@ -18,7 +18,10 @@
 
 const fsp = require('fs').promises;
 const path = require('path');
-const { PDFDocument, degrees } = require('pdf-lib');
+// pdf-lib si carica al primo PDF ricercabile: richiesto in testa costava ~100 ms all'avvio
+// del main, che passa di qui (ocrIpc) prima ancora di creare la finestra.
+let _pdfLib: any = null;
+const pdfLib = () => (_pdfLib ??= require('pdf-lib'));
 
 type Sessione = { percorso: string; doc: any; pagine: number };
 
@@ -27,7 +30,7 @@ let sessione: Sessione | null = null;
 function attiva(): boolean { return sessione !== null; }
 
 async function apri(percorso: string) {
-  sessione = { percorso, doc: await PDFDocument.create(), pagine: 0 };
+  sessione = { percorso, doc: await pdfLib().PDFDocument.create(), pagine: 0 };
   sessione.doc.setProducer('ArchiView');
   sessione.doc.setTitle(path.basename(percorso, path.extname(percorso)));
 }
@@ -87,7 +90,7 @@ function disegnaStrato(pagina: any, strato: any) {
     y,
     width: verticale ? box.height : box.width,
     height: verticale ? box.width : box.height,
-    rotate: degrees(rot)
+    rotate: pdfLib().degrees(rot)
   });
 }
 
@@ -105,7 +108,7 @@ async function aggiungiPdf(percorsoSorgente: string, livelli: Map<number, Uint8A
   const byte = await fsp.readFile(percorsoSorgente);
   let sorgente;
   try {
-    sorgente = await PDFDocument.load(byte, { updateMetadata: false });
+    sorgente = await pdfLib().PDFDocument.load(byte, { updateMetadata: false });
   } catch (errore) {
     // pdf-lib non decifra: con `ignoreEncryption` copierebbe flussi ancora cifrati, cioè
     // pagine bianche. Meglio dirlo che consegnare un PDF che sembra riuscito.
@@ -119,7 +122,7 @@ async function aggiungiPdf(percorsoSorgente: string, livelli: Map<number, Uint8A
   for (let i = 0; i < copiate.length; i++) {
     const pagina = s.doc.addPage(copiate[i]);
     const extra = (rotazioni && rotazioni.get(i + 1)) || 0;
-    if (extra) pagina.setRotation(degrees(((pagina.getRotation().angle || 0) + extra) % 360));
+    if (extra) pagina.setRotation(pdfLib().degrees(((pagina.getRotation().angle || 0) + extra) % 360));
     const livello = livelli.get(i + 1);
     if (livello) await sovrapponiTesto(s.doc, pagina, livello);
     s.pagine++;
@@ -139,7 +142,7 @@ async function aggiungiImmagine(percorsoSorgente: string, pdfTesseract: Uint8Arr
   if (!pdfTesseract) throw new Error('Il motore non ha prodotto la pagina PDF');
 
   if (!incorporabile) {
-    const completa = await PDFDocument.load(pdfTesseract);
+    const completa = await pdfLib().PDFDocument.load(pdfTesseract);
     const [pagina] = await s.doc.copyPages(completa, [0]);
     s.doc.addPage(pagina);
     s.pagine++;
@@ -157,7 +160,7 @@ async function aggiungiImmagine(percorsoSorgente: string, pdfTesseract: Uint8Arr
   const h = verticale ? strato.width : strato.height;
   const pagina = s.doc.addPage([w, h]);
   pagina.drawImage(immagine, { x: 0, y: 0, width: w, height: h });
-  if (rotazione) pagina.setRotation(degrees(rotazione));
+  if (rotazione) pagina.setRotation(pdfLib().degrees(rotazione));
   disegnaStrato(pagina, strato);
   s.pagine++;
 }

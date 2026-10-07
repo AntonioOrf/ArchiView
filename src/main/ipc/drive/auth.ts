@@ -112,7 +112,11 @@ function initGoogle(): void {
     throw new Error("Credenziali Google Drive mancanti. Il file cloudCredentials.ts non è configurato.");
   }
 
-  const { google } = require('googleapis');
+  // Solo il modulo Drive, non `require('googleapis')`: il pacchetto completo carica le
+  // definizioni di ~300 API e bloccava il main per circa un secondo subito dopo la creazione
+  // della finestra (misurato: 1.300 ms contro 110). `drive()` senza `this` è previsto da
+  // googleapis-common (`context.google?._options`).
+  const google = require('googleapis/build/src/apis/drive');
   driveState.googleInstance = google;
   driveState.oauth2Client = new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
 
