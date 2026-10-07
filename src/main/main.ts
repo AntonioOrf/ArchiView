@@ -164,6 +164,11 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    // L2 + N9: permessi concessi solo alla finestra principale e solo quelli usati; nessun
+    // webContents secondario naviga, apre finestre o aggancia <webview>. Prima di createWindow.
+    require('./guardieWebContents').installaGuardieWebContents(
+      app, require('electron').session.defaultSession, () => state.mainWindow
+    );
     // N1: nessuna richiesta file: verso un host di rete (hash NTLM), tranne dentro l'archivio
     // aperto e la sua cartella allegati, che possono stare su un NAS.
     require('./guardiaFile').installaGuardiaFile(

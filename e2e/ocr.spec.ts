@@ -99,6 +99,31 @@ async function eseguiOcr(page, id: string, opzioni: { bozza: boolean; indice: bo
 
 test.describe('OCR degli allegati', () => {
 
+  // L1: l'host PDF (pdf.js in una finestra nascosta) gira in sandbox. Il motore stubbato degli
+  // altri test non lo tocca: qui lo si chiama dal main, come fanno OCR e miniature di stampa.
+  test('host PDF in sandbox: apre il PDF, legge il testo e disegna una pagina', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    await createItemWithAttachment(page, 'OCR-HOST', path.join(__dirname, 'fixtures', 'multipage.pdf'));
+    const nome = (await getAppData(page)).manoscritti.find((m: any) => m.segnatura === 'OCR-HOST').allegati[0].nome;
+
+    const esito = await electronApp.evaluate(async ({ BrowserWindow }, n) => {
+      // Lo stesso modulo già caricato da main.ts (cache dei moduli), non una seconda istanza.
+      const cache = (process as any).mainModule.constructor._cache;
+      const host = cache[Object.keys(cache).find((k) => /[\\/]ocr[\\/]pdfHost\.js$/.test(k))!].exports;
+      const apertura = await host.apriPdf(n);
+      const testo = await host.testoPagina(1);
+      const img = await host.immaginePagina(1, 72);
+      await host.chiudiPdf();
+      const finestra = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().startsWith(host.SCHEMA + ':'));
+      const sandbox = finestra ? finestra.webContents.getLastWebPreferences().sandbox : null;
+      return { apertura, testoOk: !!(testo && testo.ok), pngOk: !!(img && img.ok && img.png && img.png.length > 100), sandbox };
+    }, nome);
+    expect(esito.apertura.ok).toBe(true);
+    expect(esito.testoOk).toBe(true);
+    expect(esito.pngOk).toBe(true);
+    expect(esito.sandbox).toBe(true);
+  });
+
   test('2.3.1 — il testo riconosciuto viene salvato sull\'allegato', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
     const id = await createItemWithAttachment(page, 'OCR-1', FIXTURE_PNG);

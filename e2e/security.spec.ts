@@ -518,6 +518,88 @@ test.describe('Security Regression Tests', () => {
     await page.evaluate(() => (window as any).apiSettings.ripristinaCartellaAllegati());
     expect((await page.evaluate(() => (window as any).apiSettings.get())).customAttachmentsPath).toBeUndefined();
     expect(path.basename(path.dirname(await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'))))).toBe('allegati_manoscritti');
+
+    // Una preferenza svuotata si toglie davvero dal file (prima il valore vecchio restava).
+    await page.evaluate(async () => {
+      const api = (window as any).apiSettings;
+      await api.save({ ...(await api.get()), snapshotRecenti: 10 });
+      await api.save({ ...(await api.get()), snapshotRecenti: null });
+    });
+    expect((await page.evaluate(() => (window as any).apiSettings.get())).snapshotRecenti).toBeUndefined();
+  });
+
+  // L2: senza handler Electron concedeva ogni permesso a qualsiasi pagina.
+  test('permessi: negati tutti tranne appunti e schermo intero della finestra principale', async ({ page, electronApp }) => {
+    expect(await page.evaluate(() => Notification.requestPermission())).toBe('denied');
+    const media = await page.evaluate(() => navigator.mediaDevices.getUserMedia({ audio: true }).then(() => 'concesso', (e) => e.name));
+    expect(media).not.toBe('concesso');
+    expect(await page.evaluate(() => navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((s) => s.state))).toBe('denied');
+
+    // Un webContents secondario (come gli host PDF e stampa) non naviga da solo e non apre finestre.
+    const esito = await electronApp.evaluate(async ({ BrowserWindow }) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      try {
+        await w.loadURL('data:text/html,<p>host</p>');
+        await w.webContents.executeJavaScript('location.href = "https://example.org/"; window.open("https://example.org/")');
+        await new Promise((r) => setTimeout(r, 500));
+        return { url: w.webContents.getURL(), finestre: BrowserWindow.getAllWindows().length };
+      } finally {
+        w.destroy();
+      }
+    });
+    expect(esito.url).toMatch(/^data:/);
+    expect(esito.finestre).toBe(2);
+  });
+
+  // N4: un allegato dichiarato `pdf` che è un .html o un .svg non deve girare come pagina
+  // nell'iframe del modal, e local-asset serve solo immagini e PDF con un tipo fisso.
+  test('local-asset: solo immagini e PDF, con header; un "PDF" che non lo è non si apre', async ({ page, electronApp, userDataDir }) => {
+    const { createLocalWorkspace } = await import('./helpers');
+    const path = await import('path');
+    const fs = await import('fs');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'LocalAsset');
+    const dir = path.dirname(await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x')));
+    const pagina = '<html><body><script>parent.postMessage("eseguito", "*")</script></body></html>';
+    fs.writeFileSync(path.join(dir, 'ostile.html'), pagina);
+    fs.writeFileSync(path.join(dir, 'ostile.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>parent.postMessage("eseguito", "*")</script></svg>');
+    fs.copyFileSync(path.join(__dirname, 'fixtures', 'sample.png'), path.join(dir, 'carta 50% #1.png'));
+    fs.copyFileSync(path.join(__dirname, 'fixtures', 'sample.pdf'), path.join(dir, 'doc.pdf'));
+    fs.writeFileSync(path.join(path.dirname(dir), 'fuori.png'), fs.readFileSync(path.join(__dirname, 'fixtures', 'sample.png')));
+
+    // Risposte del protocollo, lette dal main.
+    const chiedi = (url: string) => electronApp.evaluate(async ({ net }, u) => {
+      const r = await net.fetch(u);
+      return { status: r.status, tipo: r.headers.get('content-type'), nosniff: r.headers.get('x-content-type-options'), csp: r.headers.get('content-security-policy') };
+    }, url);
+    expect((await chiedi('local-asset://ostile.html')).status).toBe(403);
+    expect((await chiedi('local-asset://%2e%2e')).status).toBe(403);
+    expect((await chiedi('local-asset://..%5Cfuori.png')).status).not.toBe(200);
+    const png = await chiedi('local-asset://' + encodeURIComponent('carta 50% #1.png') + '?t=123');
+    expect(png).toMatchObject({ status: 200, tipo: 'image/png', nosniff: 'nosniff' });
+    expect(png.csp).toContain("default-src 'none'");
+    expect(await chiedi('local-asset://doc.pdf')).toMatchObject({ status: 200, tipo: 'application/pdf', nosniff: 'nosniff' });
+    const svg = await chiedi('local-asset://ostile.svg');
+    expect(svg.csp).toContain("default-src 'none'");
+
+    // Nell'iframe del modal: nessuno script di un allegato gira, qualunque sia la strada.
+    await page.evaluate(() => {
+      (window as any).__eseguito = 0;
+      window.addEventListener('message', (e) => { if (e.data === 'eseguito') (window as any).__eseguito++; });
+    });
+    await page.evaluate(() => (window as any).apriPdfInterno('ostile.html'));
+    await page.evaluate(() => (window as any).apriModal('local-asset://ostile.html', 'pdf'));
+    await page.evaluate(() => (window as any).apriModal('local-asset://ostile.svg', 'pdf'));
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => (window as any).__eseguito)).toBe(0);
+
+    // Il PDF vero si apre ancora.
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => (window as any).apriPdfInterno('doc.pdf'));
+    await expect(page.locator('#modal-pdf')).toBeVisible();
+    expect(await page.locator('#modal-pdf').getAttribute('src')).toContain('local-asset://doc.pdf');
+    // Con gli header nuovi il visualizzatore nativo di Chromium parte ancora.
+    await expect.poll(() => page.frames().some((f) => f.url().startsWith('chrome-extension://'))).toBe(true);
   });
 
 });

@@ -5,10 +5,16 @@ const fs = require('fs');
 // listing OneDrive/Drive di altri collaboratori). Impedisce path traversal e path assoluti:
 // il file può essere scritto/letto SOLO dentro `dir`.
 // Ritorna il path assoluto sicuro, oppure lancia se il nome è malevolo/vuoto.
+// N7: anche i nomi che Windows interpreta in modo speciale. `x.jpg:flusso` scriverebbe uno
+// stream alternato (ADS) di x.jpg, `CON`/`nul.txt` un dispositivo, `x.` e `x ` un file diverso
+// da quello chiesto (Windows toglie punto e spazio finali).
 function safeAttachmentPath(dir: string, rawName: string): string {
   if (typeof rawName !== 'string' || !rawName) throw new Error('Nome allegato non valido');
   const base = path.basename(rawName);                 // rimuove ../ e componenti di percorso
-  if (!base || base === '.' || base === '..') throw new Error('Nome allegato non valido');
+  if (!base || base === '.' || base === '..' || /[. ]$/.test(base) || base.length > 255
+      || CARATTERI_VIETATI.test(base) || NOMI_RISERVATI_WIN.test(base)) {
+    throw new Error('Nome allegato non valido');
+  }
   const resolved = path.resolve(dir, base);
   const rel = path.relative(dir, resolved);
   if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error('Path traversal bloccato');

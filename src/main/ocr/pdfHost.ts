@@ -96,7 +96,9 @@ async function avvia() {
       nodeIntegration: false,
       // Nessun preload: il main parla con la pagina solo via executeJavaScript, e la pagina
       // non ha alcun canale per parlare col main. Meno superficie, meno da rivedere.
-      sandbox: false,
+      // L1: sandbox attiva. Senza preload non serve Node nel renderer, e pdf.js (worker
+      // compreso) gira uguale: lo verifica l'e2e dell'OCR su PDF.
+      sandbox: true,
       backgroundThrottling: false
     }
   });

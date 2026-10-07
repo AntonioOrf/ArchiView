@@ -1,5 +1,6 @@
 const { ipcMain, shell, protocol, net, app } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
@@ -168,17 +169,65 @@ async function leggiIntervallo(percorso: string, inizio: number, fine: number): 
   }
 }
 
+// N4 — local-asset serve solo immagini e PDF, con un tipo deciso dall'estensione e non dal
+// contenuto. `al.tipo` arriva dal vault: un "pdf" che si chiama x.html o x.svg finiva come
+// pagina nell'iframe del modal, con i suoi script. HTML e qualsiasi altro tipo non si servono;
+// l'SVG sì (è un'immagine legittima in un <img>), ma con una CSP che ne spegne gli script se
+// qualcuno lo carica come documento.
+const TIPI_LOCAL_ASSET: { [ext: string]: string } = {
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.jfif': 'image/jpeg', '.png': 'image/png',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.avif': 'image/avif',
+  '.ico': 'image/x-icon', '.tif': 'image/tiff', '.tiff': 'image/tiff', '.svg': 'image/svg+xml',
+  '.pdf': 'application/pdf'
+};
+// Non al PDF: il visualizzatore nativo di Chromium è un documento a sé, e una CSP sul PDF
+// rischia di spegnerlo. Un PDF non esegue script in quel visualizzatore.
+const CSP_LOCAL_ASSET = "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'";
+
+function negato(motivo: string): Response {
+  console.warn(`[SECURITY] local-asset: ${motivo}`);
+  return new Response('Access Denied', { status: 403 });
+}
+
+async function rispostaLocalAsset(url: string): Promise<Response> {
+  if (!state.attachmentsDirPath) return negato('cartella allegati non definita');
+  // Query (`?t=` anti-cache) e frammento sono parte dell'URL, non del nome: un `#` o un `?`
+  // veri nel nome arrivano codificati (%23, %3F).
+  const grezzo = url.slice('local-asset://'.length).split(/[?#]/)[0];
+  let nome: string;
+  try {
+    nome = decodeURIComponent(grezzo);
+  } catch {
+    return negato('nome non decodificabile');
+  }
+  let percorso: string;
+  try {
+    // Rifiuta `..`, `.` e vuoto: path.basename('..') restituiva `..`, cioè la cartella padre.
+    percorso = safeAttachmentPath(state.attachmentsDirPath, nome);
+  } catch {
+    return negato('nome non valido');
+  }
+  const tipo = TIPI_LOCAL_ASSET[path.extname(percorso).toLowerCase()];
+  if (!tipo) return negato(`tipo non servito (${path.extname(percorso) || 'senza estensione'})`);
+
+  try {
+    // pathToFileURL codifica `#`, `%` e `?` del nome, e scrive bene i percorsi UNC.
+    const r = await net.fetch(pathToFileURL(percorso).href);
+    if (!r.ok) return new Response(null, { status: r.status });
+    const headers: { [k: string]: string } = { 'Content-Type': tipo, 'X-Content-Type-Options': 'nosniff' };
+    if (tipo !== 'application/pdf') headers['Content-Security-Policy'] = CSP_LOCAL_ASSET;
+    const lunghezza = r.headers.get('content-length');
+    if (lunghezza) headers['Content-Length'] = lunghezza;
+    return new Response(r.body, { status: 200, headers });
+  } catch (error) {
+    // File assente o illeggibile: niente dettagli del filesystem verso il renderer.
+    console.error('Errore lettura local-asset:', error && error.message);
+    return new Response(null, { status: 404 });
+  }
+}
+
 function setupAttachmentsProtocol() {
-  protocol.handle('local-asset', (request) => {
-    // path.basename elimina qualsiasi traversal relativo o assoluto: solo il nome file
-    const safeFileName = path.basename(decodeURIComponent(request.url.slice('local-asset://'.length)));
-    if (!safeFileName) {
-      console.warn(`[SECURITY] Richiesta local-asset con path vuoto bloccata.`);
-      return new Response('Access Denied', { status: 403 });
-    }
-    const resolvedPath = path.join(state.attachmentsDirPath, safeFileName);
-    return net.fetch('file://' + resolvedPath);
-  });
+  protocol.handle('local-asset', (request) => rispostaLocalAsset(request.url));
 }
 
 module.exports = { setupAttachmentsIpc, setupAttachmentsProtocol };

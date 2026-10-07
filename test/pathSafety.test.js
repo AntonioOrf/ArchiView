@@ -78,6 +78,21 @@ assert.strictEqual(nomeCartellaSicuro('../../Startup'), '.._.._Startup');
 assert.strictEqual(nomeCartellaSicuro('..'), 'Vault_Condiviso');
 assert.strictEqual(nomeCartellaSicuro('CON'), '_CON');
 
+// 6b. N7 — safeAttachmentPath sulla stessa tabella: o rifiuta o resta figlia diretta di dir.
+for (const nome of NOMI_OSTILI) {
+  const esito = safeAttachmentPathOrNull(dir, nome);
+  assert.ok(esito === null || path.dirname(esito) === dir, `safeAttachmentPath("${nome}") esce da dir: ${esito}`);
+}
+// Stream alternati (ADS), dispositivi, punto/spazio finali, controlli, nomi troppo lunghi.
+for (const nome of ['x.txt:ads', 'foto.jpg:Zone.Identifier', 'dati:flusso', 'CON', 'nul.txt', 'Com1.jpg', 'lpt9',
+  'x.', 'x ', 'a\u0000b', 'tab\tin', 'a<b.png', 'a|b.png', 'a?.png', 'a*.png', 'a".png', 'x'.repeat(256)]) {
+  assert.strictEqual(safeAttachmentPathOrNull(dir, nome), null, `"${nome}" doveva essere rifiutato`);
+}
+// Nomi reali di allegati restano validi.
+for (const nome of ['carta 12r.tif', 'Fondo (1500) – c. 3v.jpg', 'perché.pdf', 'p0001.jpg', '.archiview-x.png', 'console.png', 'x'.repeat(255)]) {
+  assert.strictEqual(safeAttachmentPath(dir, nome), path.join(dir, nome));
+}
+
 // 7. dentroCartellaReale: una cartella raggiunta da un alias (junction, nome breve 8.3) contiene
 //    lo stesso i file risolti con realpath. Sul runner GitHub la cartella dati dell'app sta sotto
 //    C:\Users\RUNNER~1\…: senza risolverla, un file interno sembrava "fuori" e si allegava.

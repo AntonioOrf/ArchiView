@@ -1,4 +1,9 @@
 window.apriPdfInterno = async function(fileName) {
+    // N4: il tipo `pdf` arriva dal vault, il nome decide cosa finisce nell'iframe.
+    if (typeof fileName !== 'string' || !/\.pdf$/i.test(fileName)) {
+        console.warn('[Allegati] Non è un PDF, non si apre nel visualizzatore:', fileName);
+        return;
+    }
     if (window.apiBrowser) {
         apriModal(window.srcAllegato(fileName, { frammento: '#pagemode=none' }), 'pdf');
     }
