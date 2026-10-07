@@ -149,7 +149,7 @@ async function _bSalva() {
     if (window.Store) {
         await window.Store.commit();
     } else {
-        await window.apiBrowser.salvaDati(appData);
+        await window.salvaTutto();
         if (typeof renderMain === 'function') renderMain();
         if (typeof renderSidebar === 'function') renderSidebar();
     }

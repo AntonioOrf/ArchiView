@@ -64,7 +64,7 @@ async function _oSalva() {
     if (window.Store) {
         await window.Store.commit();
     } else {
-        await window.apiBrowser.salvaDati(appData);
+        await window.salvaTutto();
         if (typeof renderMain === 'function') renderMain();
     }
 }

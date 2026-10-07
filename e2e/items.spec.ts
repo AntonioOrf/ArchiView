@@ -5,6 +5,25 @@ import * as path from 'path';
 test.use({ seedWorkspace: 'Schede' });
 
 test.describe('Schede (manoscritti)', () => {
+  // N5: il watcher riconosce le scritture proprie dal contenuto. Prima ignorava ogni modifica
+  // per 1 s dopo un salvataggio, e un cambiamento esterno vero (client Drive, seconda istanza)
+  // arrivato in quella finestra si perdeva.
+  test('una modifica esterna subito dopo un salvataggio arriva lo stesso', async ({ page, userDataDir }) => {
+    const { seedItems } = await import('./helpers');
+    const fs = await import('fs');
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schede');
+    await seedItems(page, 1);
+    const file = path.join(path.dirname(await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'))), '..', 'database_manoscritti.json');
+
+    await page.evaluate(() => (window as any).salvaTutto());
+    const db = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const copia = { ...db.manoscritti[0], id: 'esterno-1', segnatura: 'MS-ESTERNO', lastModified: Date.now() };
+    db.manoscritti.push(copia);
+    fs.writeFileSync(file, JSON.stringify(db));
+
+    await expect.poll(() => page.evaluate(() => (window as any).appData.manoscritti.some((m: any) => m.id === 'esterno-1')),
+      { timeout: 5_000 }).toBe(true);
+  });
   test('crea, cerca e modifica una scheda', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schede');
 

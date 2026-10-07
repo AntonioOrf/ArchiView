@@ -1,13 +1,55 @@
 const { ipcMain } = require('electron');
 const fs = require('fs');
 const fsp = require('fs').promises;
+const path = require('path');
+const crypto = require('crypto');
 const { state } = require('../workspaceManager');
 const Model = require('../../shared/model');
 const { forseCreaSnapshotAutomatico } = require('../snapshots');
+const { scriviAtomico } = require('../scritturaAtomica');
 
 let watcher = null;
-let isSavingSelf = false;
 let watcherDebounceTimer = null;
+
+// N5 — Il watcher riconosce le scritture proprie dal CONTENUTO, non da una finestra di tempo:
+// prima `isSavingSelf` restava attivo 1 s dopo ogni salvataggio, e un cambiamento esterno vero
+// (client Drive desktop, seconda istanza) in quella finestra si perdeva.
+// `contenutiNoti`: hash degli ultimi contenuti scritti o letti da noi. `firmeNote`: dimensione e
+// mtime dopo le nostre scritture, per riconoscerle con uno stat senza rileggere il file.
+const MAX_NOTI = 4;
+const contenutiNoti: string[] = [];
+const firmeNote: string[] = [];
+
+function ricorda(lista: string[], valore: string) {
+  if (lista.includes(valore)) return;
+  lista.push(valore);
+  if (lista.length > MAX_NOTI) lista.shift();
+}
+
+function hashContenuto(contenuto: string | Buffer): string {
+  return crypto.createHash('sha256').update(contenuto).digest('hex');
+}
+
+function firma(st): string {
+  return `${st.size}:${st.mtimeMs}`;
+}
+
+async function verificaCambiamentoEsterno(percorso: string) {
+  try {
+    if (percorso !== state.dataFilePath) return;
+    const st = await fsp.stat(percorso);
+    if (firmeNote.includes(firma(st))) return;
+    const hash = hashContenuto(await fsp.readFile(percorso));
+    if (contenutiNoti.includes(hash)) return;
+    if (state.mainWindow && !state.mainWindow.isDestroyed()) {
+      state.mainWindow.webContents.send('database-modificato-esterno');
+    }
+  } catch (error) {
+    // File momentaneamente assente o bloccato (rename in corso, client di sync): il
+    // prossimo evento del watcher riproverà.
+    if (error && error.code !== 'ENOENT') console.error("Errore verifica modifica esterna del database:", error);
+  }
+}
 
 function startWatcher() {
   if (watcher) {
@@ -19,16 +61,12 @@ function startWatcher() {
 
   if (!state.dataFilePath || !fs.existsSync(state.dataFilePath)) return;
 
+  const percorso = state.dataFilePath;
   try {
-    watcher = fs.watch(state.dataFilePath, (event) => {
+    watcher = fs.watch(percorso, (event) => {
       if (event === 'change') {
-        if (isSavingSelf) return;
         clearTimeout(watcherDebounceTimer);
-        watcherDebounceTimer = setTimeout(() => {
-          if (state.mainWindow && !state.mainWindow.isDestroyed()) {
-            state.mainWindow.webContents.send('database-modificato-esterno');
-          }
-        }, 150);
+        watcherDebounceTimer = setTimeout(() => { void verificaCambiamentoEsterno(percorso); }, 150);
       }
     });
   } catch (error) {
@@ -58,6 +96,7 @@ function setupDatabaseIpc() {
       if (state.dataFilePath && fs.existsSync(state.dataFilePath)) {
         startWatcher();
         const data = await fsp.readFile(state.dataFilePath, 'utf8');
+        ricorda(contenutiNoti, hashContenuto(data));
         return JSON.parse(data);
       }
     } catch (error) { 
@@ -86,19 +125,14 @@ function setupDatabaseIpc() {
         payload = JSON.stringify(dati);
       }
 
-      isSavingSelf = true;
+      // Il contenuto si registra PRIMA del rename: l'evento del watcher può arrivare subito.
+      const percorso = state.dataFilePath;
+      ricorda(contenutiNoti, hashContenuto(payload));
 
-      // Scrittura atomica: file temporaneo + rename. Su macchine lente un crash a metà
-      // write() lasciava il database troncato e irrecuperabile.
-      const tmpPath = `${state.dataFilePath}.tmp`;
-      const fh = await fsp.open(tmpPath, 'w');
-      try {
-        await fh.writeFile(payload, 'utf8');
-        await fh.sync();
-      } finally {
-        await fh.close();
-      }
-      await fsp.rename(tmpPath, state.dataFilePath);
+      // Scrittura atomica (temporaneo univoco + rename) e in coda alle altre dello stesso
+      // file: un crash a metà non tronca il DB, due salvataggi sovrapposti non si mescolano.
+      await scriviAtomico(percorso, payload);
+      try { ricorda(firmeNote, firma(await fsp.stat(percorso))); } catch (_) {}
 
       // Il rename sostituisce l'inode: il watcher va riagganciato al nuovo file.
       startWatcher();
@@ -109,14 +143,9 @@ function setupDatabaseIpc() {
       // salvataggio (vedi la decisione 3 in testa a snapshots.ts).
       void forseCreaSnapshotAutomatico(payload);
 
-      // Restituisce il controllo dopo un piccolo delay per far passare l'evento di scrittura del filesystem
-      setTimeout(() => {
-        isSavingSelf = false;
-      }, 1000);
-
       return { success: true };
     } catch (error) {
-      isSavingSelf = false;
+      console.error("Errore salvataggio database:", error);
       return { success: false, error: error.message };
     }
   });
@@ -124,7 +153,6 @@ function setupDatabaseIpc() {
   ipcMain.handle('leggi-dati-base', async () => {
     try {
       if (state.workspacePath) {
-        const path = require('path');
         const basePath = path.join(state.workspacePath, '.archiview-base.json');
         if (fs.existsSync(basePath)) {
           const data = await fsp.readFile(basePath, 'utf8');
@@ -140,9 +168,8 @@ function setupDatabaseIpc() {
   ipcMain.handle('salva-dati-base', async (event, dati) => {
     try {
       if (!state.workspacePath) throw new Error("Workspace non impostato");
-      const path = require('path');
       const basePath = path.join(state.workspacePath, '.archiview-base.json');
-      await fsp.writeFile(basePath, JSON.stringify(dati));
+      await scriviAtomico(basePath, JSON.stringify(dati));
       return { success: true };
     } catch (error) {
       console.error("Errore salvataggio dati base:", error);

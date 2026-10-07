@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { app } = require('electron');
 const { syncUnifiedFromLegacy, readVaultConfig } = require('./vaultConfig');
+const { scriviAtomicoSync } = require('./scritturaAtomica');
 
 const userDataPath = app.getPath('userData');
 const settingsPath = path.join(userDataPath, 'settings.json');
@@ -58,7 +59,7 @@ function saveAllSettings(newSettings) {
   const current = getAllSettings();
   const updated = { ...current, ...newSettings };
   // Il settings.json globale NON contiene più stato di vault: le vault keys vanno solo nel file del vault.
-  fs.writeFileSync(settingsPath, JSON.stringify(stripVaultKeys(updated), null, 2));
+  scriviAtomicoSync(settingsPath, JSON.stringify(stripVaultKeys(updated), null, 2));
 
   // Update attachments directory dynamically if workspace is active
   if (state.workspacePath) {
@@ -82,7 +83,7 @@ function saveAllSettings(newSettings) {
           driveAutofetch: updated.driveAutofetch || false
       };
       try {
-          fs.writeFileSync(driveSettingsPath, JSON.stringify(driveSettings, null, 2));
+          scriviAtomicoSync(driveSettingsPath, JSON.stringify(driveSettings, null, 2));
       } catch(e) { console.error("Errore salvataggio drive settings:", e); }
 
       // Allinea il modello unificato dopo ogni modifica ai legacy
@@ -110,7 +111,7 @@ function applicaCartellaAllegati(settings) {
 function rimuoviImpostazioni(chiavi: string[]) {
   const current = getAllSettings();
   for (const k of chiavi) delete current[k];
-  fs.writeFileSync(settingsPath, JSON.stringify(stripVaultKeys(current), null, 2));
+  scriviAtomicoSync(settingsPath, JSON.stringify(stripVaultKeys(current), null, 2));
   applicaCartellaAllegati(current);
   return current;
 }
@@ -177,7 +178,7 @@ function initWorkspace(folderPath) {
               driveAutofetch: currentSettings.driveAutofetch || false
           };
           try {
-              fs.writeFileSync(driveSettingsPath, JSON.stringify(workspaceDriveSettings, null, 2));
+              scriviAtomicoSync(driveSettingsPath, JSON.stringify(workspaceDriveSettings, null, 2));
           } catch(e) { console.error("Errore migrazione drive settings locali:", e); }
       }
   }
@@ -190,7 +191,7 @@ function initWorkspace(folderPath) {
       recentWorkspaces
   };
 
-  fs.writeFileSync(settingsPath, JSON.stringify(updatedGlobal, null, 2));
+  scriviAtomicoSync(settingsPath, JSON.stringify(updatedGlobal, null, 2));
 
   // Migrazione/refresh del modello unificato (.archiview-vault.json), legacy mantenuti.
   // Passiamo currentSettings (non strippato) come fallback per il vault attivo durante l'upgrade.

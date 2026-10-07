@@ -1032,7 +1032,7 @@ window.importaManoscritto = async function() {
             await window.Store.commit();
             if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
         } else {
-            await window.apiBrowser.salvaDati(appData);
+            await window.salvaTutto();
             if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
             if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
             if (typeof renderSidebar === 'function') renderSidebar();
@@ -1169,7 +1169,7 @@ window.eliminaSelezionati = async function() {
         if (window.Store) {
             await window.Store.commit();
         } else {
-            await window.apiBrowser.salvaDati(appData);
+            await window.salvaTutto();
             if (typeof renderMain === 'function') renderMain();
             if (typeof renderSidebar === 'function') renderSidebar();
         }
@@ -1185,7 +1185,7 @@ window.eliminaSelezionati = async function() {
             if (window.Store) {
                 await window.Store.commit();
             } else {
-                await window.apiBrowser.salvaDati(appData);
+                await window.salvaTutto();
                 if (typeof renderMain === 'function') renderMain();
             }
         };
@@ -1653,7 +1653,7 @@ window.incollaRecord = async function(targetFolderOverride) {
             if (window.Store) {
                 await window.Store.commit();
             } else {
-                await window.apiBrowser.salvaDati(appData);
+                await window.salvaTutto();
                 if (typeof renderSidebar === 'function') renderSidebar();
                 if (typeof renderMain === 'function') renderMain();
             }

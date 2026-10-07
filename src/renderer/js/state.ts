@@ -47,7 +47,13 @@ async function initData() {
                 // Si scrive subito: una migrazione che resta in memoria verrebbe rifatta a
                 // ogni apertura, e nel frattempo il file su disco resterebbe nel formato
                 // vecchio per chiunque altro lo legga (export, stampa, sync).
-                await window.apiBrowser.salvaDati(JSON.stringify(appData));
+                // Un fallimento non deve impedire l'apertura: la migrazione resta in memoria
+                // e il prossimo salvataggio la scrive.
+                try {
+                    await salvaTutto({ pendenti: false });
+                } catch (err) {
+                    console.error('[Schema] Salvataggio dopo la migrazione non riuscito:', err);
+                }
             }
         } else if (datiBaseSalvati) {
             appData.baseObjects = datiBaseSalvati;
@@ -205,7 +211,7 @@ let saveTimer = null;
 let saveDirty = false;
 let saveChain = Promise.resolve();
 
-async function eseguiSalvataggio() {
+async function eseguiSalvataggio(pendenti = true) {
     // Rete di sicurezza per le mutazioni che non passano da Store.commit().
     if (typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
     if (!window.apiBrowser) return;
@@ -222,17 +228,25 @@ async function eseguiSalvataggio() {
     if (res && res.success === false) throw new Error(res.error || "Salvataggio fallito");
 
     // Segnala modifiche pendenti se siamo connessi al cloud
-    if (window.driveStatus && window.driveStatus.isAuthenticated) {
+    if (pendenti && window.driveStatus && window.driveStatus.isAuthenticated) {
         if (typeof window.impostaModifichePendenti === 'function') {
             window.impostaModifichePendenti(true);
         }
     }
 }
 
-function salvaTutto() {
+// `pendenti: false` per le scritture che non sono modifiche dell'utente (migrazione all'apertura,
+// risultato di una sync appena scaricata): non vanno segnalate come da caricare.
+// N5: ogni scrittura del DB passa da qui, anche quelle: una chiamata diretta a `salvaDati`
+// scavalcava la catena e poteva sovrapporsi a un salvataggio differito.
+function salvaTutto({ pendenti = true } = {}) {
+    // Un salvataggio differito ancora in attesa è una modifica dell'utente: assorbirlo qui
+    // non deve togliergli il segnale "da caricare".
+    const segnala = pendenti || saveDirty || !!saveTimer;
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
     saveDirty = false;
-    const p = saveChain.then(eseguiSalvataggio, eseguiSalvataggio);
+    const esegui = () => eseguiSalvataggio(segnala);
+    const p = saveChain.then(esegui, esegui);
     saveChain = p.catch(() => {});
     return p;
 }
@@ -484,8 +498,17 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     await window.apiSettings.save(settings);
                 }
                 if (window.apiBrowser) {
-                    await window.apiBrowser.salvaDati(appData);
-                    await window.apiBrowser.salvaDatiBase(appData.baseObjects || {});
+                    // La base si scrive solo se il DB è stato scritto: una base nuova accanto
+                    // a un DB vecchio farebbe passare per modifiche locali le differenze.
+                    try {
+                        await salvaTutto({ pendenti: false });
+                        await window.apiBrowser.salvaDatiBase(appData.baseObjects || {});
+                    } catch (err) {
+                        console.error("Errore nel salvataggio dopo la sincronizzazione:", err);
+                        if (typeof mostraMessaggio === 'function') {
+                            mostraMessaggio(window.t("msg_errore_salvataggio", "Errore nel salvataggio dei dati: ") + (err.message || err), "error");
+                        }
+                    }
                 }
                 
                 if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
