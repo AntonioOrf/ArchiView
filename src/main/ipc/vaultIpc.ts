@@ -20,27 +20,15 @@ function buildLegacyFromConfig(cfg: any) {
   };
 }
 
-// Fallback delle credenziali Pusher di default (prima era in settingsIpc.get-settings, load-bearing
-// per il realtime del proprietario di un vault condiviso che non ha pusher* persistiti).
-function applyCredsFallback(cfg: any) {
-  if (cfg && cfg.realtime && !cfg.realtime.pusherKey) {
-    try {
-      const creds = require('./cloudCredentials');
-      cfg.realtime.pusherKey = creds.PUSHER_KEY || null;
-      cfg.realtime.pusherCluster = creds.PUSHER_CLUSTER || null;
-    } catch (e) { /* cloudCredentials opzionale */ }
-  }
-  return cfg;
-}
-
 function currentConfig() {
   return readVaultConfig(state.workspacePath, getAllSettings());
 }
 
 function setupVaultIpc() {
-  // Ritorna la config normalizzata del vault ATTIVO (con fallback creds pusher).
+  // Ritorna la config normalizzata del vault ATTIVO. Il realtime dei vault Hub legge le chiavi
+  // Pusher da .archiview-hub.json (load-hub-config); i vault Drive non ne hanno.
   ipcMain.handle('get-vault-config', () => {
-    return applyCredsFallback(currentConfig());
+    return currentConfig();
   });
 
   // Imposta il tipo di vault ('local' | 'backup' | 'shared') e i campi correlati.
@@ -68,21 +56,7 @@ function setupVaultIpc() {
     if (provider !== undefined) legacy.cloudProvider = provider;
 
     saveAllSettings(legacy);
-    return applyCredsFallback(currentConfig());
-  });
-
-  // Imposta la config realtime (Pusher + autofetch) preservando tipo e sharedVaultId del vault.
-  ipcMain.handle('set-realtime-config', (event: any, payload: any) => {
-    // pusherWebhook non si accetta più (S6): nessun ping parte dal client.
-    const { pusherKey, pusherCluster, driveAutofetch } = payload || {};
-    const legacy: any = buildLegacyFromConfig(currentConfig());
-
-    if (driveAutofetch !== undefined) legacy.driveAutofetch = !!driveAutofetch;
-    if (pusherKey !== undefined) legacy.pusherKey = pusherKey;
-    if (pusherCluster !== undefined) legacy.pusherCluster = pusherCluster;
-
-    saveAllSettings(legacy);
-    return applyCredsFallback(currentConfig());
+    return currentConfig();
   });
 }
 

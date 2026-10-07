@@ -28,7 +28,6 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     getWorkspacePath: () => ipcRenderer.invoke('get-workspace-path'),
     getVaultConfig: () => ipcRenderer.invoke('get-vault-config'),
     setVaultType: (payload) => ipcRenderer.invoke('set-vault-type', payload),
-    setRealtimeConfig: (payload) => ipcRenderer.invoke('set-realtime-config', payload),
     saveHubConfig: (config) => ipcRenderer.invoke('save-hub-config', config),
     loadHubConfig: () => ipcRenderer.invoke('load-hub-config'),
     disconnectHub: () => ipcRenderer.invoke('disconnect-hub'),
@@ -174,7 +173,7 @@ contextBridge.exposeInMainWorld('apiDrive', {
     shareVault: (email) => ipcRenderer.invoke('drive-share-vault', email),
     listPermissions: () => ipcRenderer.invoke('drive-list-permissions'),
     removePermission: (permissionId) => ipcRenderer.invoke('drive-remove-permission', permissionId),
-    joinByFolderId: (folderId, vaultName, basePath, customPusher) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath, customPusher),
+    joinByFolderId: (folderId, vaultName, basePath, invito) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath, invito),
     // --- Storico Versioni Cloud ---
     getDbFileId: () => ipcRenderer.invoke('drive-get-db-file-id'),
     listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),

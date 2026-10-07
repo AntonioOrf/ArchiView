@@ -509,8 +509,6 @@ window.sincronizzaGoogleDrive = async function(silent = false) {
             // Dopo una sync riuscita, aggiorna lo stato auth (potrebbe essere rimasto false
             // se all'avvio il token era drive.file e il check scope l'aveva marcato non auth)
             if (window.driveStatus) window.driveStatus.isAuthenticated = true;
-
-            // Invia Ping Realtime a Pusher tramite Vercel Serverless
         } catch (e) {
             console.error(e);
             if (e.message && e.message.includes("409_CONFLICT")) {

@@ -285,7 +285,7 @@
     function resetJoinState() {
         window.welcomeJoinVaultId = null;
         window.welcomeJoinVaultName = null;
-        window.welcomePusherCreds = null;
+        window.welcomeDriveInvite = null;
         window.welcomeHubInvite = null;
 
         const codeInput = document.getElementById('welcome-join-code') as HTMLInputElement;
@@ -304,7 +304,8 @@
     }
 
     // --- Decodifica codice invito (frontend, nessuna chiamata IPC) ---
-    // Il codice è puro base64: |pusherKey|pusherCluster|pusherWebhook|autoFetch|vaultId|vaultName
+    // Il codice è puro base64: refreshToken|pusherKey|pusherCluster|webhook|autoFetch|vaultId|vaultName
+    // (i primi quattro campi sono vuoti negli inviti nuovi, ignorati in quelli vecchi).
 
     window.handleJoinCodeInput = function(rawCode: string) {
         const okDiv  = document.getElementById('join-code-ok');
@@ -313,7 +314,7 @@
 
         okDiv?.classList.add('hidden-tab');
         errDiv?.classList.add('hidden-tab');
-        window.welcomePusherCreds = null;
+        window.welcomeDriveInvite = null;
 
         let code = rawCode.trim();
         if (code.startsWith('archiview://join/')) code = code.slice('archiview://join/'.length);
@@ -324,7 +325,7 @@
         const hubInvite = window.decodeHubInvite ? window.decodeHubInvite(rawCode) : null;
         if (hubInvite) {
             window.welcomeHubInvite = hubInvite;
-            window.welcomePusherCreds = null;
+            window.welcomeDriveInvite = null;
             const archiveLabel = hubInvite.name
                 ? `"${hubInvite.name}"`
                 : window.t("hub_fallback_name", "Questo archivio condiviso");
@@ -346,14 +347,10 @@
             const parts = decoded.split('|');
             if (parts.length < 5) throw new Error('formato non valido');
 
-            // Il campo webhook (parts[3]) si ignora: nessun ping parte più dal client (S6).
-            const [, pKey, pCluster, , pAuto, , vaultName] = parts;
+            // parts[1..3] (Pusher e webhook) si ignorano: i vault Drive non hanno realtime.
+            const [, , , , pAuto, , vaultName] = parts;
 
-            window.welcomePusherCreds = {
-                pusherKey: pKey || '',
-                pusherCluster: pCluster || '',
-                driveAutofetch: pAuto === '1'
-            };
+            window.welcomeDriveInvite = { driveAutofetch: pAuto === '1' };
 
             const displayName = (vaultName || 'Archivio Condiviso').replace(/_ArchiView$/, '');
             if (okText) okText.textContent =
@@ -456,7 +453,7 @@
                 }
 
                 // Se il codice invito non era stato inserito, marca step 1 come saltato
-                if (!window.welcomePusherCreds) updateJoinStepBadge(1, 'done');
+                if (!window.welcomeDriveInvite) updateJoinStepBadge(1, 'done');
                 updateJoinStepBadge(2, 'done');
                 updateJoinStepBadge(3, 'active');
 
@@ -516,7 +513,7 @@
 
         try {
             mostraMessaggio(window.t("msg_connessione_all_archivio_", "Connessione all'Archivio in corso..."), "info");
-            await window.apiDrive.joinByFolderId(vaultId, vaultName, basePath, window.welcomePusherCreds || null);
+            await window.apiDrive.joinByFolderId(vaultId, vaultName, basePath, window.welcomeDriveInvite || null);
             document.getElementById('welcome-modal')?.classList.add('hidden-tab');
             mostraMessaggio(window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso..."), "success");
         } catch (e: any) {

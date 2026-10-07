@@ -26,14 +26,13 @@ async function generateInviteCode(): Promise<string> {
       saveAllSettings(settings);
     }
 
-    let creds: any = {};
-    try { creds = require('../cloudCredentials'); } catch (e) { /* opzionale */ }
-
+    // I vault Drive non hanno realtime: i campi Pusher e webhook restano vuoti, tenuti solo
+    // perché le posizioni del formato non cambino per i client che leggono il codice.
     const parts = [
       "",                                          // r: refresh_token (non condiviso per sicurezza)
-      settings.pusherKey || creds.PUSHER_KEY || "",
-      settings.pusherCluster || creds.PUSHER_CLUSTER || "",
-      "",                                          // webhook: non più usato (S6), campo tenuto per il formato
+      "",                                          // pusherKey
+      "",                                          // pusherCluster
+      "",                                          // webhook
       settings.driveAutofetch ? 1 : 0,
       vaultFolderId,
       projectName
@@ -59,7 +58,8 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   while (b64.length % 4 !== 0) b64 += '=';
   const parts = Buffer.from(b64, 'base64').toString('utf8').split('|');
   if (parts.length < 5) throw new Error("Codice incompleto");
-  const [refreshToken, pKey, pCluster, , pAuto, vaultId] = parts; // parts[3] = webhook, ignorato (S6)
+  // parts[1..3] = Pusher e webhook: ignorati, i vault Drive non hanno realtime.
+  const [, , , , pAuto, vaultId] = parts;
 
   // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
@@ -73,13 +73,7 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   // condiviso passa dal Google Picker (vedi openExternalPicker). I token vivono in
   // userData/cloud-tokens/ (cloudTokenStore), mai dentro il workspace.
 
-  const settingsToSave: any = { isSharedVault: true };
-  // Il webhook dell'invito si ignora (S6): era un URL a cui l'app inviava il nome del canale.
-  if (pKey) {
-    settingsToSave.pusherKey = pKey;
-    settingsToSave.pusherCluster = pCluster;
-    settingsToSave.driveAutofetch = pAuto === "1";
-  }
+  const settingsToSave: any = { isSharedVault: true, driveAutofetch: pAuto === "1" };
   if (vaultId) {
     settingsToSave.sharedVaultId = vaultId;
     settingsToSave.promptCloudAuth = true;
@@ -109,7 +103,9 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   return true;
 }
 
-async function joinByFolderId(vaultId: string, vaultName: string, basePath: string, customPusher: any): Promise<boolean> {
+// `invito`: opzioni lette dal codice d'invito Drive (oggi solo driveAutofetch), null se si è
+// arrivati dal solo Picker.
+async function joinByFolderId(vaultId: string, vaultName: string, basePath: string, invito: any): Promise<boolean> {
   const name = vaultName || "Vault_Condiviso";
   // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
@@ -118,15 +114,10 @@ async function joinByFolderId(vaultId: string, vaultName: string, basePath: stri
   }
   fs.mkdirSync(newPath, { recursive: true });
 
-  let creds: any = {};
-  try { creds = require('../cloudCredentials'); } catch (e) { /* opzionale */ }
-
   const settingsToSave: any = {
     isSharedVault: true,
     sharedVaultId: vaultId,
-    pusherKey: customPusher?.pusherKey || creds.PUSHER_KEY || "",
-    pusherCluster: customPusher?.pusherCluster || creds.PUSHER_CLUSTER || "",
-    driveAutofetch: customPusher ? customPusher.driveAutofetch : true
+    driveAutofetch: invito ? !!invito.driveAutofetch : true
   };
   initWorkspace(newPath);
   saveAllSettings(settingsToSave);

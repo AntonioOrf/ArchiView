@@ -55,11 +55,11 @@ test.describe('Cloud: stati UI offline', () => {
     await page.locator('#welcome-join-code').fill('codice-non-valido-!!!');
 
     const stato = await page.evaluate(() => ({
-      pusherCreds: (window as any).welcomePusherCreds,
+      driveInvite: (window as any).welcomeDriveInvite,
       hubInvite: (window as any).welcomeHubInvite,
       errText: document.getElementById('join-code-err')?.textContent,
     }));
-    expect(stato.pusherCreds).toBeNull();
+    expect(stato.driveInvite).toBeNull();
     expect(stato.hubInvite).toBeNull();
     expect(stato.errText).toBeTruthy();
   });

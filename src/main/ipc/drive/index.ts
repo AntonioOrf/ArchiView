@@ -81,9 +81,9 @@ function setupDriveIpc() {
       throw new Error("Codice invito non valido o errore nella creazione: " + e.message);
     }
   });
-  ipcMain.handle('drive-join-folder-id', async (event: any, vaultId: string, vaultName: string, basePath: string, customPusher: any) => {
+  ipcMain.handle('drive-join-folder-id', async (event: any, vaultId: string, vaultName: string, basePath: string, invito: any) => {
     try {
-      return await joinByFolderId(vaultId, vaultName, basePath, customPusher);
+      return await joinByFolderId(vaultId, vaultName, basePath, invito);
     } catch (e: any) {
       throw new Error("Errore connessione archivio: " + e.message);
     }

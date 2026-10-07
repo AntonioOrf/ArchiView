@@ -34,14 +34,8 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
         // non li ritroverebbe al riavvio).
         if (publicCfg.repoId && (repoKey || encKey)) saveHubSecrets(publicCfg.repoId, { repoKey, encKey }, newPath);
         const configPath = path.join(newPath, '.archiview-hub.json');
+        // Le chiavi Pusher restano in .archiview-hub.json: è da lì che le legge il realtime Hub.
         fs.writeFileSync(configPath, JSON.stringify(publicCfg, null, 2), 'utf8');
-        // Realtime: deriveFromLegacy legge i campi Pusher da .archiview-drive.json.
-        if (publicCfg.pusherKey) {
-          fs.writeFileSync(path.join(newPath, '.archiview-drive.json'), JSON.stringify({
-            pusherKey: publicCfg.pusherKey,
-            pusherCluster: publicCfg.pusherCluster || ''
-          }, null, 2), 'utf8');
-        }
     }
 
     // Se hubConfig contiene dati Drive (è stato "abusato" per passare impostazioni Drive)
@@ -223,8 +217,8 @@ function setupWorkspaceIpc() {
     }
   });
 
-  // Dal renderer solo il ripristino Drive: la config Hub con i segreti la scrive hub-join nel main
-  // (S8 in REVIEW-SECURITY.md), altrimenti il renderer potrebbe legare un vault a un Hub arbitrario.
+  // Dal renderer solo il ripristino Drive: la config Hub con i segreti la scrive hub-join nel main,
+  // altrimenti il renderer potrebbe legare un vault a un Hub arbitrario.
   ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, driveConfig, database) => {
     if (driveConfig && (driveConfig.hubUrl || driveConfig.repoKey || driveConfig.encKey)) {
       console.error("[SECURITY] clone-workspace-hub: config Hub dal renderer rifiutata.");
