@@ -9,15 +9,33 @@ on:
     paths-ignore: ["mobile/**"]
 
 jobs:
+  # Audit delle sole dipendenze che finiscono nell'installer (npm audit legge il lockfile,
+  # non serve installare). Quelle di sviluppo (lingui, shx, electron-builder) restano fuori:
+  # i loro advisory aperti non hanno correzioni senza downgrade e non girano sulla macchina utente.
+  security-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: npm audit (produzione)
+        run: npm run security-check
+
   e2e:
     runs-on: windows-latest
 
     steps:
       - name: Checkout del codice
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           # 24, non 22: package-lock.json e' generato da npm 11 (node 24), che pota le
           # dipendenze del sottoalbero opzionale @tailwindcss/oxide-wasm32-wasi. L'npm 10
@@ -61,7 +79,7 @@ jobs:
 
       - name: Carica report in caso di fallimento
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report
           path: |
