@@ -82,6 +82,37 @@ clic: «da trascrivere 1432», «carte senza allegato», «atti giudiziari dell'
 Le ricerche salvate sono **tue e di questo computer**: non vengono sincronizzate, perché citano
 cartelle e tipi che sull'altro computer potrebbero non esistere.
 
+## Cercare negli altri archivi
+
+Sotto la casella di ricerca, **«Cerca anche negli altri archivi»** estende la stessa ricerca a
+tutti gli archivi aperti almeno una volta su questo computer, senza lasciare quello in cui lavori.
+I risultati compaiono in una sezione a parte, **sotto l'elenco**: le schede dell'archivio aperto
+restano dove sono e non si mescolano con le altre.
+
+Gli altri archivi vengono **soltanto letti, mai modificati**. Valgono le stesse regole della
+ricerca normale: accenti e maiuscole non contano, più parole devono comparire tutte.
+
+Un clic su un risultato apre l'**anteprima** della scheda, in sola lettura, con i campi, la
+trascrizione e le miniature degli allegati (un PDF si apre dal suo archivio). Da lì:
+
+- **Copia il valore** o **Inserisci nella scheda aperta**, per un singolo campo;
+- **Copia in questo archivio**, per l'intera scheda o solo alcuni campi, con gli allegati se ci
+  sono su questo computer.
+
+Prima di confermare la copia vedi che cosa succederà: il tipo di documento in questo archivio, la
+cartella (quella aperta), quali persone e luoghi esistono già e quali sono nuovi, quali campi
+diventano propri della scheda perché il tuo modello non li ha. La scheda copiata **ricorda da dove
+viene** («Copiata da…», con il link all'originale) e non cambia se l'originale viene modificato.
+
+::: warning Archivi condivisi
+Se l'archivio aperto è condiviso, la scheda copiata e i suoi allegati diventano visibili a tutti i
+suoi membri. La finestra di copia lo ricorda prima di confermare.
+:::
+
+In **Impostazioni → Archivio Dati → Ricerca tra archivi** scegli in quali archivi cercare e puoi
+spegnere l'avviso sugli omonimi (vedi [Collegamenti](/guida/collegamenti#rimandi-ad-altri-archivi)).
+Un archivio spostato o su un disco scollegato compare come «non raggiungibile» e viene saltato.
+
 ## Ordinamento e vista tabellare
 
 L'elenco si ordina per segnatura, per un campo del tipo di documento, per data di modifica o per

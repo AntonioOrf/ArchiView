@@ -29,6 +29,26 @@ diverse, e fonderle confonderebbe l'originale con la sua copia.
 I rimandi in entrata si vedono ma non si modificano dalla scheda che li riceve: si tolgono dalla
 scheda che li ha scritti.
 
+## Rimandi ad altri archivi
+
+Un collegamento può puntare anche a una scheda di **un altro archivio**: nell'editor, sezione
+**«Rimandi ad altri archivi»** → «Aggiungi un rimando a un altro archivio». Scegli il tipo di
+rimando e cerca la scheda per segnatura, persona o luogo; un clic sul rimando ne apre
+l'anteprima in sola lettura.
+
+Il rimando sta solo sulla scheda che lo scrive: l'altro archivio non viene toccato. Su un
+computer dove quell'archivio non c'è, il rimando resta visibile come «archivio non disponibile su
+questo computer».
+
+### Lo stesso nome in altri archivi
+
+Quando scrivi una persona in un campo, ArchiView controlla se lo stesso nome compare in altri
+archivi e lo segnala sotto il campo («Trovato in un altro archivio»). Aprendo l'avviso vedi le
+schede, con un **Collega** per aggiungere subito il rimando.
+
+È solo un'indicazione: **stesso nome, non per forza la stessa persona**. L'avviso si spegne in
+Impostazioni → Archivio Dati → Ricerca tra archivi.
+
 ## Anagrafica di persone e luoghi
 
 L'app ricava da sola l'elenco delle **persone** (dai campi attori e famiglia) e dei **luoghi**

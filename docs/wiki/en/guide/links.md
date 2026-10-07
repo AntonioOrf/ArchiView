@@ -29,6 +29,24 @@ different statements, and merging them would confuse the original with its copy.
 Incoming references can be seen but not edited from the record that receives them: they are removed
 from the record that wrote them.
 
+## Links to other archives
+
+A link can also point to a record in **another archive**: in the form, section **"Links to other
+archives"**, "Add a link to another archive". Choose the link type and search for the record by
+shelfmark, person or place; clicking the link opens its read-only preview.
+
+The link lives only on the record that writes it: the other archive is not touched. On a computer
+where that archive is missing, the link stays visible as "archive not available on this computer".
+
+### The same name in other archives
+
+When you type a person into a field, ArchiView checks whether the same name appears in other
+archives and says so under the field ("Found in another archive"). Opening the notice shows the
+records, with a **Link** button to add the reference straight away.
+
+It is only a hint: **same name, not necessarily the same person**. The notice can be turned off in
+Settings, Data archive, Search across archives.
+
 ## Authority list of people and places
 
 The program builds by itself the list of **people** (from the parties and family fields) and

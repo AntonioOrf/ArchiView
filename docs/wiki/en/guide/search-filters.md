@@ -82,6 +82,38 @@ A combination of filters you use often can be **saved under a name** and recalle
 Saved searches are **yours and tied to this computer**: they are not synchronised, because they
 refer to folders and types that might not exist on the other computer.
 
+## Searching other archives
+
+Below the search box, **"Also search other archives"** extends the same search to every archive
+opened at least once on this computer, without leaving the one you are working in. Results appear
+in a separate section **below the list**: the records of the open archive stay where they are and
+are never mixed with the others.
+
+Other archives are **only read, never modified**. The usual search rules apply: accents and case do
+not matter, and several words must all appear.
+
+Clicking a result opens a read-only **preview** of the record, with its fields, transcription and
+attachment thumbnails (a PDF opens from its own archive). From there:
+
+- **Copy the value** or **Insert into the open record**, for a single field;
+- **Copy into this archive**, for the whole record or only some fields, with the attachments if
+  they are on this computer.
+
+Before confirming the copy you see what will happen: the document type in this archive, the folder
+(the open one), which people and places already exist and which are new, which fields become fields
+of that record only because your model does not have them. The copied record **remembers where it
+comes from** ("Copied from…", with a link to the original) and does not change if the original is
+edited.
+
+::: warning Shared archives
+If the open archive is shared, the copied record and its attachments become visible to all its
+members. The copy window reminds you before you confirm.
+:::
+
+In **Settings, Data archive, Search across archives** you choose which archives to search and can
+turn off the namesake notice (see [Links](/en/guide/links#links-to-other-archives)). An archive that
+has been moved or sits on a disconnected drive shows as "unreachable" and is skipped.
+
 ## Sorting and table view
 
 The list can be sorted by shelfmark, by a field of the document type, by modification date or by
