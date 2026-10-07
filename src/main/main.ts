@@ -41,9 +41,12 @@ const pdfHost = require('./ocr/pdfHost');
 const printHost = require('./print/printHost');
 const iiifImageHost = require('./iiif/imageHost');
 const iiifCache = require('./iiif/imageCache');
+const schemaApp = require('./schemaApp');
 
 // Protocollo custom per servire allegati
 protocol.registerSchemesAsPrivileged([
+  // O3: la finestra principale. `codeCache` vale solo con `standard`.
+  { scheme: schemaApp.SCHEMA, privileges: schemaApp.PRIVILEGI },
   { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true } },
   // Host PDF dell'OCR (Fase 2.3). Serve `standard: true` — e non solo `secure` come per
   // local-asset — perché la pagina host carica pdf.js come modulo ES e ne avvia il worker:
@@ -96,9 +99,8 @@ function createWindow() {
   }
 
   state.mainWindow.setMenuBarVisibility(false);
-  const indexPath = path.join(__dirname, '..', 'renderer', 'index.html');
-  const indexUrl = pathToFileURL(indexPath).href;
-  state.mainWindow.loadFile(indexPath);
+  const indexUrl = schemaApp.URL_INDEX;
+  state.mainWindow.loadURL(indexUrl);
 
   // Sicurezza: blocca la navigazione verso destinazioni esterne.
   // ATTENZIONE: da Electron 34+ questo evento viene emesso anche per i reload avviati dal
@@ -175,6 +177,7 @@ if (!gotTheLock) {
       require('electron').session.defaultSession,
       () => [state.workspacePath, state.attachmentsDirPath]
     );
+    schemaApp.registraProtocollo(path.join(__dirname, '..', 'renderer'));
     setupAttachmentsProtocol();
     pdfHost.registraProtocollo();
     printHost.registraProtocollo();

@@ -806,7 +806,11 @@ window.cambiaTemaSelezionato = async function(theme) {
 window.initTheme = async function() {
     const settings = await window.apiSettings.get();
     const savedTheme = settings.theme || 'system';
-    
+    // localStorage è solo la copia letta da temaIniziale.js per il primo frame: va riallineata
+    // qui, o resta vuota quando cambia l'origine della pagina (passaggio a app://, O3) e il
+    // tema scelto arriva solo dopo un lampo di quello di sistema, a ogni avvio.
+    try { localStorage.setItem('theme', savedTheme); } catch (e) { /* solo il primo frame */ }
+
     // Set the select element if it's already in the DOM (unlikely since it's in a modal, but safe)
     const sel = document.getElementById('settings-theme');
     if (sel) sel.value = savedTheme;

@@ -2,9 +2,9 @@
 //
 // `<img src="file://host/share/x.png">` in un HTML condiviso (una trascrizione) fa tentare a
 // Windows una connessione SMB verso host, e la connessione porta con sé l'hash NTLM
-// dell'utente: basta aprire la scheda. La CSP non aiuta, perché su una pagina file:// la
-// voce `'self'` copre ogni URL file:. DOMPurify scarta già lo schema: questa è la seconda
-// difesa, nel main, indipendente da qualunque sanitizer.
+// dell'utente: basta aprire la scheda. DOMPurify scarta già lo schema e, da quando la finestra
+// gira su app:// (O3), anche la CSP lo blocca; questa è la terza difesa, nel main,
+// indipendente dal renderer: vale per ogni webContents della sessione.
 //
 // Restano ammessi i percorsi di rete DENTRO l'archivio aperto o la sua cartella allegati:
 // chi tiene l'archivio su un NAS (\\nas\fondo) deve continuare a vedere i propri allegati.

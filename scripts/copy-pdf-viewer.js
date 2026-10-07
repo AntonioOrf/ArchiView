@@ -3,7 +3,7 @@
 // copy-ocr-host.js).
 //
 // Cartella distinta da out/renderer/ocr: quella è servita dallo schema `ocr-host://` alla
-// finestra offscreen, questa è caricata da file:// dalla pagina principale. Condividerla
+// finestra offscreen, questa è caricata da app:// dalla pagina principale. Condividerla
 // legherebbe due sottosistemi che non hanno ragione di dipendere l'uno dall'altro.
 const fs = require('fs');
 const path = require('path');

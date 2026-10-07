@@ -1,3 +1,5 @@
+import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { test, expect } from './fixtures';
 
 test.describe('Security Regression Tests', () => {
@@ -461,6 +463,22 @@ test.describe('Security Regression Tests', () => {
       }), src);
       expect(esito, src).toBe('bloccata');
     }
+  });
+
+  // O3: la finestra principale gira su app://archiview, quindi `'self'` non comprende più
+  // `file:`. Su file:// un'immagine del disco passava la CSP: un HTML condiviso poteva
+  // sondare l'esistenza di file locali (onload/onerror) e rimaneva solo la guardia del main.
+  test('origine app://: la CSP non lascia caricare file: nemmeno locali', async ({ page }) => {
+    expect(await page.evaluate(() => location.origin)).toBe('app://archiview');
+    const src = pathToFileURL(path.resolve(__dirname, 'fixtures', 'sample.png')).href;
+    const esito = await page.evaluate((src) => new Promise<string>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve('caricata');
+      img.onerror = () => resolve('bloccata');
+      setTimeout(() => resolve('in attesa'), 3000);
+      img.src = src;
+    }), src);
+    expect(esito).toBe('bloccata');
   });
 
   // N3: nessuno script remoto nel renderer (il Picker Google gira nel browser esterno).
