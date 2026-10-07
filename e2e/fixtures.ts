@@ -72,6 +72,8 @@ export async function launchApp(userDataDir: string): Promise<{ app: ElectronApp
     env: {
       ...cleanEnv,
       ARCHIVIEW_E2E_USER_DATA: userDataDir,
+      // Finestra fuori schermo e senza focus; ARCHIVIEW_E2E_VISIBLE=1 (o PWDEBUG) per vederla.
+      ...(process.env.ARCHIVIEW_E2E_VISIBLE || process.env.PWDEBUG ? {} : { ARCHIVIEW_E2E_BACKGROUND: '1' }),
       // Deterministico: nessun download di browser Playwright serve per Electron.
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1',
     },

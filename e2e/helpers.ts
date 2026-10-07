@@ -52,7 +52,10 @@ export async function createLocalWorkspace(
   }, basePath);
 
   // Conferma creazione. creaCartellaIniziale() gestisce l'assenza di `event`.
-  await page.evaluate(() => (window as any).creaCartellaIniziale());
+  // Lanciata fuori dall'evaluate: finisce con un reload, e se l'evaluate ne attendesse la
+  // promise morirebbe con "Execution context was destroyed" quando il reload arriva prima
+  // della risposta (sistematico con la finestra fuori schermo, che non disegna).
+  await page.evaluate(() => { setTimeout(() => (window as any).creaCartellaIniziale(), 0); });
 
   // Il main process ricarica la finestra: attendi l'app pronta (header + niente welcome).
   await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });

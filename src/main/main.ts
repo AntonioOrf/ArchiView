@@ -85,7 +85,15 @@ function createWindow() {
     }
   });
 
-  state.mainWindow.once('ready-to-show', () => state.mainWindow.show());
+  // E2E in background: fuori schermo, senza focus né icona nella barra, così i test non
+  // interrompono chi lavora. Non `show: false`: una finestra nascosta non disegna.
+  if (process.env.ARCHIVIEW_E2E_USER_DATA && process.env.ARCHIVIEW_E2E_BACKGROUND) {
+    state.mainWindow.setSkipTaskbar(true);
+    state.mainWindow.setPosition(-32000, -32000);
+    state.mainWindow.once('ready-to-show', () => state.mainWindow.showInactive());
+  } else {
+    state.mainWindow.once('ready-to-show', () => state.mainWindow.show());
+  }
 
   state.mainWindow.setMenuBarVisibility(false);
   const indexPath = path.join(__dirname, '..', 'renderer', 'index.html');

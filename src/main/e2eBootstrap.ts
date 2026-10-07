@@ -15,5 +15,14 @@ if (e2eUserData) {
   }
 }
 
+// Test in background: la finestra vive fuori dallo schermo (vedi createWindow). Windows la
+// considererebbe occlusa e Chromium la passerebbe a visibilityState 'hidden', con rAF
+// fermo: Playwright aspetta la stabilità degli elementi via rAF e si bloccherebbe.
+if (e2eUserData && process.env.ARCHIVIEW_E2E_BACKGROUND) {
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+}
+
 module.exports = {};
 export {};
