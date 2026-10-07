@@ -156,6 +156,12 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    // N1: nessuna richiesta file: verso un host di rete (hash NTLM), tranne dentro l'archivio
+    // aperto e la sua cartella allegati, che possono stare su un NAS.
+    require('./guardiaFile').installaGuardiaFile(
+      require('electron').session.defaultSession,
+      () => [state.workspacePath, state.attachmentsDirPath]
+    );
     setupAttachmentsProtocol();
     pdfHost.registraProtocollo();
     printHost.registraProtocollo();

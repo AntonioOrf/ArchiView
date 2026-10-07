@@ -37,7 +37,9 @@ window.sanitizeHTML = function(html) {
             });
             _hookAzioniRegistrato = true;
         }
-        return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|file|archiview|local-asset|iiif-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });
+        // Niente `file:`: `file://host/x` in un HTML condiviso fa partire una connessione SMB
+        // con l'hash NTLM dell'utente (N1). Il main blocca comunque quelle richieste.
+        return DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|archiview|local-asset|iiif-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i });
     }
     return window.escapeHTML(html); // Fallback to escape if DOMPurify is not loaded
 };

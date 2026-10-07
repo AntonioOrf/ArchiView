@@ -439,4 +439,28 @@ test.describe('Security Regression Tests', () => {
     expect(await page.evaluate(() => (window as any).__chiamate)).toEqual(['apriCestino']);
   });
 
+  // N1 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): un `file://host/…` in un HTML condiviso fa tentare
+  // a Windows una connessione SMB verso host, con l'hash NTLM dell'utente. La CSP non lo ferma
+  // (`img-src 'self'` su una pagina file:// copre ogni file:), quindi due difese indipendenti.
+  test('file:// verso un host remoto: tolto dal sanitizer e bloccato dal main', async ({ page }) => {
+    const pulito = await page.evaluate(() => (window as any).sanitizeHTML(
+      '<p><img src="file://192.0.2.1/s/x.png"><img src="FILE:////192.0.2.1/s/y.png">'
+      + '<a href="file://192.0.2.1/s/z">z</a><img src="local-asset://ok.png"></p>'));
+    expect(pulito).not.toContain('192.0.2.1');
+    expect(pulito).toContain('local-asset://ok.png');
+
+    // Rete indipendente dal sanitizer: la richiesta muore subito nel main invece di restare
+    // appesa al tentativo SMB (192.0.2.1 è TEST-NET, nessuno risponde).
+    for (const src of ['file://192.0.2.1/s/x.png', 'file:////192.0.2.1/s/x.png']) {
+      const esito = await page.evaluate((src) => new Promise<string>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve('caricata');
+        img.onerror = () => resolve('bloccata');
+        setTimeout(() => resolve('in attesa'), 3000);
+        img.src = src;
+      }), src);
+      expect(esito, src).toBe('bloccata');
+    }
+  });
+
 });
