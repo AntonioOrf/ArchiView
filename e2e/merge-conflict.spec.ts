@@ -124,7 +124,13 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await expect(page.locator('button[data-resolve-scelta="local"]').first()).toHaveAttribute('aria-pressed', 'true');
 
     for (const tema of ['light', 'dark', 'amber-light', 'blue-dark']) {
-      await page.evaluate((t) => (window as any).applicaTema(t), tema);
+      // Il cambio di tema avvia transizioni di colore: anche a 0,01 ms (reduced motion) il primo
+      // getComputedStyle può cadere prima del frame che le chiude e leggere il tema precedente.
+      // Sotto il carico della suite completa succedeva. Si aspetta che finiscano.
+      await page.evaluate(async (t) => {
+        (window as any).applicaTema(t);
+        await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {})));
+      }, tema);
       const m = await page.evaluate(() => {
         const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
         const rgb = (c: string) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); return Array.from(ctx.getImageData(0, 0, 1, 1).data); };
