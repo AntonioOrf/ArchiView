@@ -299,7 +299,7 @@ function loadHubConfig() {
   return null;
 }
 
-// Vista per il renderer (S8 in REVIEW-SECURITY.md): senza repoKey/encKey, con un flag che dice
+// Vista per il renderer: senza repoKey/encKey, con un flag che dice
 // se il vault può ancora parlare con l'Hub (segreti presenti nel token store).
 function loadHubConfigPubblica() {
   const cfg = loadHubConfig();

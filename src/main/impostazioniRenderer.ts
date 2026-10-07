@@ -1,4 +1,4 @@
-// Cosa il renderer può scrivere in settings.json (N2 in PIANO-SICUREZZA-OTTIMIZZAZIONE.md).
+// Cosa il renderer può scrivere in settings.json.
 //
 // Prima `save-settings` univa al file qualsiasi oggetto arrivasse. Alcune chiavi però decidono
 // quali cartelle il main legge, copia o cestina: `recentWorkspaces` (ricerca tra archivi,

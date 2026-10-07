@@ -1,4 +1,4 @@
-// S2 (REVIEW-SECURITY.md): il dispatcher di logic/azioni.ts chiama per nome solo le funzioni di
+// Il dispatcher di logic/azioni.ts chiama per nome solo le funzioni di
 // logic/azioniConsentite.ts. Il test tiene il registro allineato ai template (un pulsante nuovo
 // con un nome fuori registro sarebbe muto) e verifica che non ci entrino funzioni distruttive
 // senza conferma, che nessun pulsante dovrebbe chiamare direttamente.

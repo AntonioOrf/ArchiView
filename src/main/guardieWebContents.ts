@@ -1,4 +1,4 @@
-// Permessi e navigazione per TUTTI i webContents (L2 e N9 in PIANO-SICUREZZA-OTTIMIZZAZIONE.md).
+// Permessi e navigazione per TUTTI i webContents.
 //
 // Senza handler Electron concede ogni permesso (microfono, fotocamera, notifiche, posizione…)
 // a qualsiasi pagina, iframe compresi. Qui si concede solo ciò che l'app usa, e solo alla

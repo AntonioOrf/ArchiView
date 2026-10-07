@@ -1,4 +1,4 @@
-// Realtime Hub (S6 in REVIEW-SECURITY.md), a livello di protocollo Worker.
+// Realtime Hub, a livello di protocollo Worker.
 // Avvia da sé `wrangler dev` in locale (D1 locale, segreti di prova) e un finto Pusher che
 // registra le pubblicazioni. Nessun account Cloudflare o Pusher richiesto.
 // Uso:  npm run realtime

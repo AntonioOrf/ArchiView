@@ -1,4 +1,4 @@
-// L2 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): permessi concessi solo alla finestra principale e
+// Permessi concessi solo alla finestra principale e
 // solo quelli che l'app usa. Senza handler Electron li concedeva tutti, a qualsiasi pagina.
 const assert = require('assert');
 const { permessoConcesso } = require('../out/main/guardieWebContents');

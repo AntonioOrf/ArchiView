@@ -1,4 +1,4 @@
-// Schema `app://` della finestra principale (PIANO-SICUREZZA-OTTIMIZZAZIONE.md, O3).
+// Schema `app://` della finestra principale.
 //
 // Prima il renderer girava su `file://`: V8 ricompilava da zero il bundle a ogni avvio
 // (Chromium non tiene cache del codice per `file:`), e nella CSP `'self'` comprendeva

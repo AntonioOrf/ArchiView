@@ -1,4 +1,4 @@
-// Registro chiuso delle azioni (S2 in REVIEW-SECURITY.md).
+// Registro chiuso delle azioni.
 //
 // Il dispatcher di logic/azioni.ts chiama per nome solo le funzioni elencate in
 // logic/azioniConsentite.ts. L'elenco si ricava dai sorgenti: ogni nome che compare in un

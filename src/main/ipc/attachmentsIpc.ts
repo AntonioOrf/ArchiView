@@ -41,7 +41,7 @@ function setupAttachmentsIpc() {
         .substring(0, 50);
 
       // L'id della scheda arriva dal vault (anche condiviso): con "..\\..\\x" il file allegato
-      // veniva copiato fuori dalla cartella allegati (S4 in REVIEW-SECURITY.md).
+      // veniva copiato fuori dalla cartella allegati.
       const idPulito = typeof documentoId === 'string' || typeof documentoId === 'number'
         ? String(documentoId).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64)
         : '';
@@ -83,7 +83,7 @@ function setupAttachmentsIpc() {
     }
   });
 
-  // `apri-pdf-esterno` rimosso (L4 in REVIEW-SECURITY.md): nessuno lo chiamava, e faceva
+  // `apri-pdf-esterno` rimosso: nessuno lo chiamava, e faceva
   // shell.openPath su un nome arrivato dal vault, cioè eseguiva un .hta/.lnk condiviso.
 
   ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {

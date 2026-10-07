@@ -1,4 +1,4 @@
-// Blocco delle richieste `file:` verso un host di rete (N1 in PIANO-SICUREZZA-OTTIMIZZAZIONE.md).
+// Blocco delle richieste `file:` verso un host di rete.
 //
 // `<img src="file://host/share/x.png">` in un HTML condiviso (una trascrizione) fa tentare a
 // Windows una connessione SMB verso host, e la connessione porta con sé l'hash NTLM

@@ -1,4 +1,4 @@
-// Scrittura atomica di file JSON del main (N5 in PIANO-SICUREZZA-OTTIMIZZAZIONE.md):
+// Scrittura atomica di file JSON del main:
 // database, base del merge, settings.json.
 //
 // Prima ogni salvataggio del DB apriva lo STESSO `<file>.tmp` con flag 'w': due salvataggi

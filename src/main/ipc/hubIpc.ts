@@ -9,7 +9,7 @@ const {
 const { clonaWorkspace } = require('./workspaceIpc');
 const { nomeCartellaSicuro } = require('./pathSafety');
 
-// Tutte le chiamate all'Hub passano da qui (S8 in REVIEW-SECURITY.md): repoKey ed encKey si
+// Tutte le chiamate all'Hub passano da qui: repoKey ed encKey si
 // leggono dal token store del vault aperto e non tornano mai al renderer, che riceve
 // { ok, status, data?, error? }. status 0 = Hub non raggiungibile.
 

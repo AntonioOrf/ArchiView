@@ -23,7 +23,7 @@ export default {
 
       if (seg[0] !== 'api') return err(404, 'Not found');
 
-      // /api/ping (relay Pusher aperto) rimosso: S6 in REVIEW-SECURITY.md. Ora pubblica il
+      // /api/ping (relay Pusher aperto) rimosso. Ora pubblica il
       // Worker stesso dopo un push; risponde il 404 in fondo.
 
       if (seg[1] === 'repos') {

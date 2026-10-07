@@ -1,4 +1,4 @@
-// N2 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): dal renderer passano solo preferenze. Percorsi
+// Dal renderer passano solo preferenze. Percorsi
 // (archivi recenti, cartella allegati, archivio aperto) e chiavi del vault li scrive il main.
 const assert = require('assert');
 const { filtraImpostazioniRenderer: filtra, chiaviDaRimuovere } = require('../out/main/impostazioniRenderer');

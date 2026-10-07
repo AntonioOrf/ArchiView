@@ -567,7 +567,7 @@ window.creaRepositoryHub = async function(name) {
         }
 
         // Il main crea il repo, genera la encKey, fa il push iniziale (v0 → v1) e salva la config:
-        // qui torna solo la parte pubblica (S8 in REVIEW-SECURITY.md).
+        // qui torna solo la parte pubblica.
         const r = await window.apiBrowser.hubCreateRepo(finalName, window.appData);
         if (!r || !r.ok) {
             if (typeof window.nascondiProgressoCloud === 'function') window.nascondiProgressoCloud();

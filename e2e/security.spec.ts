@@ -117,7 +117,7 @@ test.describe('Security Regression Tests', () => {
     expect(xssFired).toBe(false);
   });
 
-  // S8 (REVIEW-SECURITY.md): le chiavi dell'Hub restano nel main.
+  // Le chiavi dell'Hub restano nel main.
   test('config Hub: nessuna chiave nel renderer, hubUrl e segreti non riscrivibili da lì', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -147,7 +147,7 @@ test.describe('Security Regression Tests', () => {
     expect(await api('hubJoin', invito, userDataDir)).toMatchObject({ ok: false, status: 0 });
   });
 
-  // S7 (REVIEW-SECURITY.md): il database arriva all'Hub cifrato e torna in chiaro solo nel client.
+  // Il database arriva all'Hub cifrato e torna in chiaro solo nel client.
   test('Hub: database cifrato sul server, decifrato al pull, downgrade in chiaro rifiutato', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -214,7 +214,7 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // S6 (REVIEW-SECURITY.md): realtime Hub su canale privato. SDK locale sotto CSP, firma
+  // Realtime Hub su canale privato. SDK locale sotto CSP, firma
   // chiesta dal main con la repoKey, notifica = solo controllo, il proprio push non è una novità.
   test('realtime Hub: SDK locale, iscrizione autorizzata dal main, evento → solo controllo', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
@@ -315,7 +315,7 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // S4 (REVIEW-SECURITY.md): l'id della scheda arriva dal vault e finiva nel percorso di copia.
+  // L'id della scheda arriva dal vault e finiva nel percorso di copia.
   test('salva-allegato: id ostile resta nella cartella allegati, file interni non allegabili', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -370,7 +370,7 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // S2 (REVIEW-SECURITY.md): un data-on-* in un HTML condiviso non deve diventare un comando.
+  // Un data-on-* in un HTML condiviso non deve diventare un comando.
   test('una trascrizione con data-on-* non chiama funzioni (sanitize, registro, editor)', async ({ page, userDataDir }) => {
     const { createLocalWorkspace, seedItems } = await import('./helpers');
     const path = await import('path');
@@ -441,7 +441,7 @@ test.describe('Security Regression Tests', () => {
     expect(await page.evaluate(() => (window as any).__chiamate)).toEqual(['apriCestino']);
   });
 
-  // N1 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): un `file://host/…` in un HTML condiviso fa tentare
+  // Un `file://host/…` in un HTML condiviso fa tentare
   // a Windows una connessione SMB verso host, con l'hash NTLM dell'utente. La CSP non lo ferma
   // (`img-src 'self'` su una pagina file:// copre ogni file:), quindi due difese indipendenti.
   test('file:// verso un host remoto: tolto dal sanitizer e bloccato dal main', async ({ page }) => {

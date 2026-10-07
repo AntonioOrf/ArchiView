@@ -1,7 +1,6 @@
 // Conversione delle icone lucide (`<i data-lucide="nome">` → `<svg>`).
 //
-// Sostituisce `lucide.createIcons` per due difetti di lucide 1.x misurati all'avvio
-// (PIANO-SICUREZZA-OTTIMIZZAZIONE.md, Fase 3):
+// Sostituisce `lucide.createIcons` per due difetti di lucide 1.x misurati all'avvio:
 //  1. l'opzione è `root`, non `nodes`: le chiamate `createIcons({ nodes: [...] })` sparse nel
 //     codice scandivano in realtà l'intero documento;
 //  2. l'`<svg>` prodotto conserva `data-lucide`, quindi ogni chiamata ricreava da capo TUTTE

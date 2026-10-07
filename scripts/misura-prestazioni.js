@@ -1,4 +1,4 @@
-// Baseline di prestazioni (PIANO-SICUREZZA-OTTIMIZZAZIONE.md, Fase 3, punto 17).
+// Baseline di prestazioni.
 //
 // Avvia l'app buildata (out/) su un archivio sintetico e misura:
 //  - avvio:       dal lancio del processo all'app pronta (wall clock) e dalla navigazione al

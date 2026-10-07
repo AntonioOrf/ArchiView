@@ -298,7 +298,7 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
       // login_hint salta il chooser puntando all'account già in uso (solo re-auth, non cambio account).
       if (!forceLocal && loginHint) authUrlParams.login_hint = loginHint;
 
-      // PKCE + state (S3 in REVIEW-SECURITY.md): senza, il primo `?code=` arrivato al server
+      // PKCE + state: senza, il primo `?code=` arrivato al server
       // veniva scambiato, anche quello di un account altrui iniettato da un'altra pagina o
       // dalla rete (login CSRF: la vittima sincronizzava il vault sul Drive dell'attaccante).
       const { codeVerifier, codeChallenge } = await driveState.oauth2Client.generateCodeVerifierAsync();

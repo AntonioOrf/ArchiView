@@ -1,4 +1,4 @@
-// Client HTTP dell'Hub e formato degli inviti HUB1. Vive nel main (S8 in REVIEW-SECURITY.md):
+// Client HTTP dell'Hub e formato degli inviti HUB1. Vive nel main:
 // repoKey ed encKey non escono mai da qui verso il renderer, che riceve solo dati ed esiti.
 //
 // Nessuna dipendenza da electron: testabile in Node puro (test/hubClient.test.js).
@@ -103,7 +103,7 @@ function decodificaInvito(raw: unknown): InvitoHub | null {
   return { hubUrl: url, repoId, memberKey, encKey: encKey || null, pusherKey: pusherKey || '', pusherCluster: pusherCluster || '', name };
 }
 
-// --- Cifratura del database (S7 in REVIEW-SECURITY.md) ---
+// --- Cifratura del database ---
 //
 // Il server conserva il database così come lo riceve: cifrato, chi legge D1 (o gestisce un Hub
 // self-hosted) non vede schede e trascrizioni. Busta:

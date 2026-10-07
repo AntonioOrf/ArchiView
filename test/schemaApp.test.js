@@ -1,4 +1,4 @@
-// Schema app:// della finestra principale (PIANO-SICUREZZA-OTTIMIZZAZIONE.md, O3): si serve
+// Schema app:// della finestra principale: si serve
 // solo la cartella del renderer, e solo i tipi di file in elenco.
 const assert = require('assert');
 const path = require('path');

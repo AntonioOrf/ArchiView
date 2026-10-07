@@ -1,7 +1,7 @@
 // Server HTTP effimero per il redirect OAuth di Google e per il Google Picker.
 //
 // `server.listen(porta)` senza host ascolta su TUTTE le interfacce: chiunque sulla stessa rete
-// poteva mandare un `?code=` al server di login in attesa (S3 in REVIEW-SECURITY.md). Qui si
+// poteva mandare un `?code=` al server di login in attesa. Qui si
 // ascolta solo sul loopback, IPv4 e IPv6: gli URI di redirect registrati dicono `localhost`, e
 // il browser può risolverlo in 127.0.0.1 o in ::1. Porte e URI restano quelli registrati.
 //

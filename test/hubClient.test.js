@@ -1,4 +1,4 @@
-// S8 (REVIEW-SECURITY.md): client Hub nel main. La repoKey va solo all'Hub configurato, su
+// Client Hub nel main. La repoKey va solo all'Hub configurato, su
 // HTTPS (o loopback), mai seguendo un redirect; gli inviti restano compatibili col formato
 // generato finora dal renderer.
 const assert = require('assert');

@@ -1,4 +1,4 @@
-// N5 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): salvataggi concorrenti dello stesso file.
+// Salvataggi concorrenti dello stesso file.
 // Prima ogni salvataggio apriva lo stesso `<file>.tmp`: due scritture sovrapposte lo
 // troncavano o lo mescolavano, e il rename poteva pubblicare un file misto o fallire.
 const assert = require('assert');

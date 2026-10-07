@@ -1,4 +1,4 @@
-// N1 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): richieste file: verso un host di rete bloccate nel
+// Richieste file: verso un host di rete bloccate nel
 // main (hash NTLM via SMB), tranne dentro l'archivio aperto o la sua cartella allegati.
 const assert = require('assert');
 const { richiestaFileBloccata: bloccata } = require('../out/main/guardiaFile');

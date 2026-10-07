@@ -1,4 +1,4 @@
-// S3 (REVIEW-SECURITY.md): server di redirect OAuth e del Picker. Un callback vale solo sul
+// Server di redirect OAuth e del Picker. Un callback vale solo sul
 // path registrato e con lo `state` emesso per quel login; il server ascolta solo sul loopback.
 const assert = require('assert');
 const http = require('http');

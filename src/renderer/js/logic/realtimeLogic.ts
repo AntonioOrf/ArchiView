@@ -1,4 +1,4 @@
-// Notifiche realtime dei vault Hub (S6 in REVIEW-SECURITY.md).
+// Notifiche realtime dei vault Hub.
 //
 // Dopo ogni push riuscito è il Worker a pubblicare `hub-updated {version}` sul canale privato
 // `private-repo-<repoId>`. Iscriversi richiede una firma che il Worker rilascia solo a chi ha una

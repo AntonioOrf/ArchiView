@@ -1,4 +1,4 @@
-// S1 (REVIEW-SECURITY.md): gli hash di index.json su Drive diventano nomi di file nella cache
+// Gli hash di index.json su Drive diventano nomi di file nella cache
 // dei chunk. index.json è scrivibile da ogni collaboratore, quindi un "hash" come
 // `../../Startup/x.bat` non deve mai produrre un percorso fuori dalla cache.
 const path = require('path');

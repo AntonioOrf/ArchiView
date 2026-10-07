@@ -1,7 +1,7 @@
 import type { Env } from './types';
 import { hmacSha256hex, md5hex } from './crypto';
 
-// Realtime Hub (S6 in REVIEW-SECURITY.md). Nessun endpoint pubblica per conto del client:
+// Realtime Hub. Nessun endpoint pubblica per conto del client:
 // il Worker pubblica da sé dopo un push riuscito, e ci si iscrive solo a canali privati
 // autorizzati da una chiave del repo. Il vecchio relay aperto /api/ping è stato rimosso.
 

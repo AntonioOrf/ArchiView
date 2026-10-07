@@ -12,7 +12,7 @@ function setupSettingsIpc() {
     return getAllSettings();
   });
 
-  // Solo preferenze (N2 in PIANO-SICUREZZA-OTTIMIZZAZIONE.md): percorsi e chiavi del vault
+  // Solo preferenze: percorsi e chiavi del vault
   // li scrive il main, dai canali qui sotto o dai flussi di apertura/join.
   ipcMain.handle('save-settings', (event, newSettings) => {
     try {

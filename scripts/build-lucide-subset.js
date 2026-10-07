@@ -1,5 +1,5 @@
 // Sostituisce out/renderer/vendor/lucide.min.js (~390 KB, ~2.000 icone) con le sole icone
-// usate dall'app (PIANO-SICUREZZA-OTTIMIZZAZIONE.md, O2).
+// usate dall'app.
 //
 // Quali icone: ogni parola in kebab-case che compare in un sorgente del renderer o di
 // src/shared e che è il nome di un'icona lucide. È una sovra-inclusione voluta: "check",
