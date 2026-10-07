@@ -1,3 +1,34 @@
+## ArchiView 3.3.0 — Ricerca tra archivi e avvio più rapido
+
+Si può cercare una persona, un luogo o una segnatura in tutti gli archivi aperti su questo computer, senza cambiare archivio, e copiare una scheda da uno all'altro. L'app si apre in un terzo del tempo e la sicurezza è stata rivista da cima a fondo.
+
+### Novità
+
+- **Cerca anche negli altri archivi**: con la casella sotto la ricerca, i risultati degli altri archivi compaiono in una sezione sotto l'elenco. Ogni scheda si apre in anteprima, in sola lettura; gli altri archivi vengono soltanto letti, mai modificati.
+- **Copia in questo archivio**: dall'anteprima una scheda si copia per intero o in parte, anche con gli allegati. Prima di confermare si vede cosa succederà (tipo di documento, cartella, persone e luoghi già presenti o nuovi, campi che diventano propri della scheda). La copia ricorda da dove viene e non cambia se l'originale viene modificato.
+- **Rimandi ad altri archivi**: nella scheda, la sezione "Rimandi ad altri archivi" collega una scheda a quella di un altro archivio, che si apre in anteprima con un clic.
+- **Lo stesso nome in altri archivi**: scrivendo una persona in un campo, ArchiView avvisa se lo stesso nome compare in altri archivi. Si disattiva in Impostazioni → Archivio Dati, dove si scelgono anche gli archivi in cui cercare.
+
+### Miglioramenti
+
+- **Avvio molto più rapido**: su un archivio di 5.000 schede la finestra è pronta in circa un terzo del tempo, e riaprire o ridisegnare l'elenco costa molto meno.
+- **Salvataggio più robusto**: il database si scrive sempre in modo completo anche quando più salvataggi arrivano insieme, e una modifica fatta da fuori (un altro computer tramite il client Drive) subito dopo un salvataggio viene riconosciuta.
+- **Allegati degli archivi condivisi**: si scaricano più in fretta, più file insieme, e un download interrotto non lascia un file a metà.
+- **Sicurezza**: protezioni aggiuntive sui contenuti che arrivano da archivi condivisi, inviti e file importati. L'aggiornamento è consigliato a tutti.
+
+### Correzioni
+
+- **Finestra stretta**: sotto i 768 pixel l'elenco delle schede restava alto pochi pixel; ora la vista resta usabile anche a metà schermo.
+- **Conflitti di sincronizzazione**: la versione scelta nel confronto fra Locale e Cloud ora si vede ed è annunciata dai lettori di schermo.
+- **Impostazioni**: "Ripristina cartella allegati predefinita" non aveva effetto, e svuotando i campi di copie di sicurezza e cestino (quante copie, quanti giorni) al riavvio tornava il valore precedente invece di quello predefinito.
+- **Traduzioni**: lo stato del cloud, il suggerimento del grafo e i nomi delle lingue OCR seguono la lingua scelta.
+
+### Da sapere
+
+- Al primo avvio dopo l'aggiornamento alcune preferenze di comodità ripartono dal valore iniziale: le lingue e l'opzione "raddrizza" del riconoscimento del testo, l'ultimo modello usato in ogni archivio e la casella "Cerca anche negli altri archivi". Basta reimpostarle una volta.
+
+---
+
 ## ArchiView 3.2.2 — Trascinamento delle pagine e aggiornamenti più affidabili
 
 ### Correzioni
