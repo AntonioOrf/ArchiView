@@ -75,7 +75,11 @@ export default {
 
       return err(404, 'Not found');
     } catch (e: any) {
-      return err(500, 'Errore interno: ' + (e?.message || 'sconosciuto'));
+      // Il dettaglio (messaggi D1, nomi di tabelle e colonne) va nei log del Worker, non al
+      // client: il riferimento basta a ritrovarlo con `wrangler tail`.
+      const rif = crypto.randomUUID().slice(0, 8);
+      console.error(`[${rif}] ${req.method} ${new URL(req.url).pathname}:`, e?.stack || e?.message || e);
+      return err(500, `Errore interno del server (rif. ${rif}).`);
     }
   },
 };
