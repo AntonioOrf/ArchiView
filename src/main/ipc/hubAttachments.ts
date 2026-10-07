@@ -7,6 +7,7 @@ const { loadSavedTokens } = require('./drive/auth');
 const { getOrCreateFolder, uploadFileReturningId, makeFilePublic, asyncPool } = require('./drive/fileOps');
 const { GOOGLE_API_KEY } = require('./cloudCredentials');
 const { safeAttachmentPathOrNull } = require('./pathSafety');
+const { fetchChunkGuardata } = require('./hubUrlChunk');
 
 // Sincronizzazione allegati per vault Hub.
 // Modello: i chunk (5MB, content-addressable) vivono sul Drive PERSONALE di ogni utente con
@@ -65,7 +66,8 @@ function progress(percent: number, message: string): void {
 async function fetchVerifiedChunk(urls: string[], expectedHash: string): Promise<Buffer | null> {
   for (const url of urls) {
     try {
-      const res = await fetch(url);
+      // URL dall'indice Hub (terzi): solo host Google, redirect compresi.
+      const res = await fetchChunkGuardata(url);
       if (!res.ok) { console.warn(`[hub-att]   chunk ${expectedHash.slice(0, 8)} status=${res.status} url=${url.slice(0, 60)}`); continue; }
       const ct = res.headers.get('content-type') || '';
       const buf = Buffer.from(await res.arrayBuffer());

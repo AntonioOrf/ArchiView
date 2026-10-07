@@ -1,7 +1,7 @@
 // Test delle guardie di rete IIIF: indirizzi privati (SSRF) e lettura del corpo con tetto.
 // Non richiede Electron: `fetchGuardata` (l'unica parte che lo usa) non viene toccata.
 const assert = require('assert');
-const { ipPrivato, hostPrivato, urlPubblico, leggiCorpoLimitato, autorizzaOrigine, origineAutorizzata } =
+const { ipPrivato, hostPrivato, urlPubblico, soloViaProxy, leggiCorpoLimitato, autorizzaOrigine, origineAutorizzata } =
   require('../out/main/iiif/reteSicura');
 
 async function run() {
@@ -22,6 +22,28 @@ async function run() {
     assert.strictEqual(ipPrivato(ip), true, `${ip} doveva essere privato`);
   }
   for (const ip of ['2001:4860:4860::8888', '::ffff:8.8.8.8', '2a00:1450::1']) {
+    assert.strictEqual(ipPrivato(ip), false, `${ip} doveva essere pubblico`);
+  }
+
+  // 2b. L6: IPv4 compatibile, NAT64, 6to4, SIIT, Teredo e altri blocchi riservati
+  for (const ip of [
+    '::7f00:1', '::127.0.0.1', '::8.8.8.8', '::a00:1',           // ::/96 compatibile
+    '64:ff9b::7f00:1', '64:ff9b::10.0.0.1', '64:ff9b::c0a8:101', // NAT64 verso privato
+    '64:ff9b:1::8.8.8.8',                                         // NAT64 uso locale
+    '2002:7f00:1::', '2002:c0a8:101::1',                          // 6to4 verso privato
+    '::ffff:0:7f00:1', '::ffff:0:10.0.0.1',                       // SIIT
+    '2001:0:4136:e378::1',                                        // Teredo
+    '2001:db8::1', '100::1', 'fec0::1',
+    '0:0:0:0:0:0:0:1', '0000:0000:0000:0000:0000:ffff:7f00:0001',
+  ]) assert.strictEqual(ipPrivato(ip), true, `${ip} doveva essere privato`);
+  for (const ip of ['64:ff9b::808:808', '64:ff9b::8.8.8.8', '2002:808:808::1', '::ffff:0:8.8.8.8',
+    '2001:4860::8888', '2600::1']) {
+    assert.strictEqual(ipPrivato(ip), false, `${ip} doveva essere pubblico`);
+  }
+  for (const ip of ['192.0.0.8', '198.18.0.1', '198.19.255.255']) {
+    assert.strictEqual(ipPrivato(ip), true, `${ip} doveva essere privato`);
+  }
+  for (const ip of ['192.0.1.1', '198.20.0.1', '198.17.0.1']) {
     assert.strictEqual(ipPrivato(ip), false, `${ip} doveva essere pubblico`);
   }
 
@@ -48,7 +70,19 @@ async function run() {
   assert.strictEqual(await hostPrivato('app.localhost', lookup), true);
   assert.strictEqual(await hostPrivato('[::1]', lookup), true);
   assert.strictEqual(await hostPrivato('', lookup), true);
-  assert.strictEqual(await hostPrivato('sconosciuto.example', lookup), false, 'DNS assente: decide Chromium/proxy');
+  // L6: DNS che fallisce o non restituisce nulla → si nega; solo dietro proxy decide il proxy
+  assert.strictEqual(await hostPrivato('sconosciuto.example', lookup), true, 'DNS fallito: si nega');
+  assert.strictEqual(await hostPrivato('vuoto.example', async () => []), true, 'risposta vuota: si nega');
+  assert.strictEqual(await hostPrivato('sconosciuto.example', lookup, { viaProxy: true }), false, 'dietro proxy risolve il proxy');
+  assert.strictEqual(await hostPrivato('router.lan', lookup, { viaProxy: true }), true, 'risolto privato: negato anche via proxy');
+  assert.strictEqual(await urlPubblico('https://sconosciuto.example/x.jpg', lookup), false);
+
+  // Regole proxy (formato PAC di resolveProxy)
+  assert.strictEqual(soloViaProxy('DIRECT'), false);
+  assert.strictEqual(soloViaProxy(''), false);
+  assert.strictEqual(soloViaProxy('PROXY proxy.bib.it:8080'), true);
+  assert.strictEqual(soloViaProxy('PROXY a:1; HTTPS b:2'), true);
+  assert.strictEqual(soloViaProxy('PROXY a:1; DIRECT'), false, 'con DIRECT di riserva Chromium può andare diretto');
 
   // 5. URL
   assert.strictEqual(await urlPubblico('https://iiif.biblioteca.it/iiif/1/full/max/0/default.jpg', lookup), true);

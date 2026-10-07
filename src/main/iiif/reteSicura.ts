@@ -9,27 +9,81 @@
 // (`net.fetch` con `redirect: 'manual'` in Electron annulla la richiesta invece di
 // restituire il 302, e `response.url` resta vuoto: da lì i salti non si vedono.)
 //
-// ⚠️ Compromesso accettato: il DNS lo risolve Node qui e Chromium di nuovo alla
-// connessione. Un host che cambia risposta fra le due (DNS rebinding) passa. Chiudere anche
-// quella finestra vorrebbe dire lasciare lo stack di rete di Chromium, e perdere proxy di
-// sistema e certificati aziendali, che nelle biblioteche sono la norma.
+// DNS rebinding: la guardia risolve con `session.resolveHost`, cioè con il resolver di
+// Chromium e della stessa sessione che poi si connette (stessi DNS, DoH, file hosts). La
+// risposta finisce nella cache host della sessione e la connessione, che parte subito dopo,
+// la ritrova lì. Resta un margine teorico (cache scaduta o svuotata fra i due passi), molto
+// più stretto dei due resolver indipendenti (Node + Chromium) di prima. Chiuderlo del tutto
+// vorrebbe dire lasciare lo stack di rete di Chromium, e perdere proxy di sistema e
+// certificati aziendali, che nelle biblioteche sono la norma.
 
 const dns = require('dns');
 const net = require('net');
 
-/** Loopback, reti private, link-local, CGNAT, "questa rete", multicast/riservati. */
+/**
+ * Loopback, reti private, link-local, CGNAT, "questa rete", IETF (192.0.0.0/24),
+ * benchmark (198.18.0.0/15), multicast/riservati.
+ */
 function ipv4Privato(ip: string): boolean {
   const p = ip.split('.').map(Number);
   if (p.length !== 4 || p.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true;
-  const [a, b] = p;
+  const [a, b, c] = p;
   return a === 0
     || a === 10
     || a === 127
     || (a === 100 && b >= 64 && b <= 127)
     || (a === 169 && b === 254)
     || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 0 && c === 0)
     || (a === 192 && b === 168)
+    || (a === 198 && (b === 18 || b === 19))
     || a >= 224;
+}
+
+/** IPv6 testuale (già validato da `net.isIP`) → 8 gruppi da 16 bit. */
+function gruppiIpv6(ip: string): number[] {
+  let testo = ip;
+  // Coda in notazione puntata (::ffff:10.0.0.1) → due gruppi esadecimali
+  const puntata = testo.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/);
+  if (puntata) {
+    const q = puntata[2].split('.').map(Number);
+    testo = puntata[1] + ((q[0] << 8) | q[1]).toString(16) + ':' + ((q[2] << 8) | q[3]).toString(16);
+  }
+  const [testa, coda] = testo.split('::');
+  const sx = testa ? testa.split(':') : [];
+  const dx = coda !== undefined && coda ? coda.split(':') : [];
+  const zeri = coda !== undefined ? 8 - sx.length - dx.length : 0;
+  return [...sx, ...Array(zeri).fill('0'), ...dx].map(g => parseInt(g, 16));
+}
+
+const ipv4DaGruppi = (alto: number, basso: number) =>
+  [alto >> 8, alto & 255, basso >> 8, basso & 255].join('.');
+
+function ipv6Privato(ip: string): boolean {
+  const g = gruppiIpv6(ip);
+  if (g.length !== 8 || g.some(n => !Number.isInteger(n) || n < 0 || n > 0xffff)) return true;
+  const zeri = (da: number, a: number) => g.slice(da, a).every(n => n === 0);
+
+  // ::/96 (IPv4 compatibile, deprecato: ::7f00:1 = 127.0.0.1), :: e ::1 compresi.
+  // Nessun server pubblico ci sta: si nega tutto il blocco.
+  if (zeri(0, 6)) return true;
+  // ::ffff:0:0/96 (mappato) e ::ffff:0:0:0/96 (SIIT)
+  if (zeri(0, 5) && g[5] === 0xffff) return ipv4Privato(ipv4DaGruppi(g[6], g[7]));
+  if (zeri(0, 4) && g[4] === 0xffff && g[5] === 0) return ipv4Privato(ipv4DaGruppi(g[6], g[7]));
+  // NAT64: 64:ff9b::/96 porta all'IPv4 incapsulato; 64:ff9b:1::/48 è per uso locale
+  if (g[0] === 0x64 && g[1] === 0xff9b) {
+    if (g[2] === 1) return true;
+    if (zeri(2, 6)) return ipv4Privato(ipv4DaGruppi(g[6], g[7]));
+  }
+  // 6to4: 2002:AABB:CCDD::/48 incapsula AA.BB.CC.DD
+  if (g[0] === 0x2002) return ipv4Privato(ipv4DaGruppi(g[1], g[2]));
+  return (g[0] === 0x2001 && g[1] === 0)        // 2001::/32 Teredo (IPv4 offuscato)
+    || (g[0] === 0x2001 && g[1] === 0xdb8)      // 2001:db8::/32 documentazione
+    || (g[0] === 0x100 && zeri(1, 4))           // 100::/64 discard
+    || (g[0] & 0xfe00) === 0xfc00               // fc00::/7 unique local
+    || (g[0] & 0xffc0) === 0xfe80               // fe80::/10 link-local
+    || (g[0] & 0xffc0) === 0xfec0               // fec0::/10 site-local (deprecato)
+    || (g[0] & 0xff00) === 0xff00;              // ff00::/8 multicast
 }
 
 /**
@@ -40,53 +94,61 @@ function ipPrivato(indirizzo: string): boolean {
   const ip = String(indirizzo || '').replace(/^\[|\]$/g, '').split('%')[0].toLowerCase();
   const tipo = net.isIP(ip);
   if (tipo === 4) return ipv4Privato(ip);
-  if (tipo !== 6) return true;
+  if (tipo === 6) return ipv6Privato(ip);
+  return true;
+}
 
-  if (ip === '::' || ip === '::1') return true;
-  // IPv4 incapsulato (::ffff:10.0.0.1, anche nella forma esadecimale ::ffff:a00:1)
-  const mappato = ip.match(/^::ffff:(?:0:)?(\d+\.\d+\.\d+\.\d+)$/);
-  if (mappato) return ipv4Privato(mappato[1]);
-  const mappatoHex = ip.match(/^::ffff:(?:0:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
-  if (mappatoHex) {
-    const alto = parseInt(mappatoHex[1], 16), basso = parseInt(mappatoHex[2], 16);
-    return ipv4Privato([alto >> 8, alto & 255, basso >> 8, basso & 255].join('.'));
-  }
-  const primo = parseInt(ip.split(':')[0] || '0', 16);
-  return (primo & 0xfe00) === 0xfc00      // fc00::/7 unique local
-    || (primo & 0xffc0) === 0xfe80        // fe80::/10 link-local
-    || (primo & 0xff00) === 0xff00;       // ff00::/8 multicast
+type Lookup = (host: string, opzioni: any) => Promise<Array<{ address: string }>>;
+
+interface OpzioniHost {
+  /**
+   * La richiesta esce da un proxy (nessun `DIRECT` fra le regole): a risolvere e connettersi
+   * è il proxy, non questa macchina. Solo in quel caso un DNS locale che non risponde non
+   * basta a negare.
+   */
+  viaProxy?: boolean;
 }
 
 /**
  * `true` se l'host è, o risolve verso, un indirizzo privato. Basta UN indirizzo privato fra
  * quelli restituiti: Chromium potrebbe scegliere proprio quello.
  *
- * Se il DNS locale non risponde si lascia passare: senza risoluzione Chromium non può
- * connettersi direttamente a un indirizzo della LAN, e dietro un proxy (che risolve lui)
- * la rete raggiunta è quella del proxy, non quella dell'utente.
+ * DNS che fallisce: si nega, salvo `viaProxy`. Il resolver di Chromium potrebbe rispondere
+ * dove questo non ha risposto (configurazione diversa, risposta che cambia), e una risposta
+ * mai vista non si può classificare.
  */
-async function hostPrivato(hostname: string, lookup = dns.promises.lookup): Promise<boolean> {
+async function hostPrivato(hostname: string, lookup: Lookup = dns.promises.lookup, opzioni: OpzioniHost = {}): Promise<boolean> {
   const host = String(hostname || '').replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase();
   if (!host) return true;
   if (net.isIP(host)) return ipPrivato(host);
   if (host === 'localhost' || host.endsWith('.localhost')) return true;
   try {
     const indirizzi = await lookup(host, { all: true, verbatim: true });
+    if (!Array.isArray(indirizzi) || !indirizzi.length) return !opzioni.viaProxy;
     return indirizzi.some((r: any) => ipPrivato(r.address));
+  } catch {
+    return !opzioni.viaProxy;
+  }
+}
+
+/** `true` se l'URL è http/https e non punta alla rete locale. */
+async function urlPubblico(url: string, lookup: Lookup = dns.promises.lookup, opzioni: OpzioniHost = {}): Promise<boolean> {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    return !(await hostPrivato(u.hostname, lookup, opzioni));
   } catch {
     return false;
   }
 }
 
-/** `true` se l'URL è http/https e non punta alla rete locale. */
-async function urlPubblico(url: string, lookup = dns.promises.lookup): Promise<boolean> {
-  try {
-    const u = new URL(url);
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-    return !(await hostPrivato(u.hostname, lookup));
-  } catch {
-    return false;
-  }
+/**
+ * `true` se le regole proxy (formato PAC: `"PROXY h:p; DIRECT"`) mandano la richiesta solo
+ * attraverso proxy. Con un `DIRECT` fra le alternative Chromium può connettersi da sé.
+ */
+function soloViaProxy(regole: string): boolean {
+  const voci = String(regole || '').split(';').map(v => v.trim().toUpperCase()).filter(Boolean);
+  return voci.length > 0 && voci.every(v => !v.startsWith('DIRECT'));
 }
 
 /**
@@ -143,14 +205,23 @@ let sessione: any = null;
 function sessioneGuardata() {
   if (sessione) return sessione;
   const { session } = require('electron');
-  sessione = session.fromPartition('iiif-rete');
-  sessione.webRequest.onBeforeRequest((dettagli: any, callback: any) => {
+  const ses = session.fromPartition('iiif-rete');
+  // Resolver di Chromium per questa sessione: vedi la nota sul rebinding in testa al file.
+  const lookupChromium: Lookup = async (host) => {
+    const risolto = await ses.resolveHost(host);
+    return (risolto?.endpoints || []).map((e: any) => ({ address: e.address }));
+  };
+  ses.webRequest.onBeforeRequest((dettagli: any, callback: any) => {
     if (origineAutorizzata(dettagli.url)) { callback({ cancel: false }); return; }
-    urlPubblico(dettagli.url).then((ok) => {
-      if (!ok) console.warn(`[IIIF] Richiesta verso la rete locale bloccata: ${dettagli.url}`);
-      callback({ cancel: !ok });
-    }, () => callback({ cancel: true }));
+    ses.resolveProxy(dettagli.url)
+      .then((regole: string) => soloViaProxy(regole), () => false)
+      .then((viaProxy: boolean) => urlPubblico(dettagli.url, lookupChromium, { viaProxy }))
+      .then((ok: boolean) => {
+        if (!ok) console.warn(`[IIIF] Richiesta verso la rete locale bloccata: ${dettagli.url}`);
+        callback({ cancel: !ok });
+      }, () => callback({ cancel: true }));
   });
+  sessione = ses;
   return sessione;
 }
 
@@ -160,7 +231,7 @@ function fetchGuardata(url: string, init?: any): Promise<any> {
 }
 
 module.exports = {
-  ipPrivato, hostPrivato, urlPubblico, leggiCorpoLimitato,
+  ipPrivato, hostPrivato, urlPubblico, soloViaProxy, leggiCorpoLimitato,
   autorizzaOrigine, origineAutorizzata, fetchGuardata
 };
 export {};
