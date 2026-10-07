@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // le due cose invece di dedurle da un elemento visibile.
         // Nel finally: anche un avvio andato male è "finito", e restare in attesa per
         // sempre nasconderebbe l'errore vero dietro un timeout.
+        // Il mark dà il tempo dall'inizio della navigazione: lo legge scripts/misura-prestazioni.js.
+        performance.mark('archiview:pronta');
         window.__appPronta = true;
         document.dispatchEvent(new CustomEvent('archiview:pronta'));
     }
