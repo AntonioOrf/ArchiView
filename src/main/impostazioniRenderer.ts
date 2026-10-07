@@ -63,5 +63,16 @@ function filtraImpostazioniRenderer(grezze: unknown): { [chiave: string]: unknow
   return out;
 }
 
-module.exports = { filtraImpostazioniRenderer, CHIAVI_AMMESSE: Object.keys(AMMESSE) };
+// Preferenze che l'utente può svuotare per tornare al valore predefinito. Il renderer le
+// manda a `null`: `saveAllSettings` unisce e non può cancellare, quindi il valore vecchio
+// restava su disco.
+const CANCELLABILI = ['snapshotRecenti', 'snapshotGiorni', 'cestinoGiorni'];
+
+/** Chiavi di `grezze` da togliere da settings.json (preferenze cancellabili inviate a null). */
+function chiaviDaRimuovere(grezze: unknown): string[] {
+  if (!grezze || typeof grezze !== 'object' || Array.isArray(grezze)) return [];
+  return CANCELLABILI.filter((k) => Object.prototype.hasOwnProperty.call(grezze, k) && (grezze as any)[k] === null);
+}
+
+module.exports = { filtraImpostazioniRenderer, chiaviDaRimuovere, CHIAVI_AMMESSE: Object.keys(AMMESSE) };
 export {};

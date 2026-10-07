@@ -247,7 +247,8 @@ window.salvaImpostazioniSicurezza = async function() {
         if (!el) return;
         const n = parseInt(el.value, 10);
         if (!isFinite(n) || n < 0 || n > massimo) {
-            delete settings[chiave];
+            // null, non delete: il main unisce, e solo null gli dice di togliere la chiave.
+            settings[chiave] = null;
             return;
         }
         settings[chiave] = n;

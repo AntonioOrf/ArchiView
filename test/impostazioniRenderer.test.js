@@ -1,7 +1,7 @@
 // N2 (PIANO-SICUREZZA-OTTIMIZZAZIONE.md): dal renderer passano solo preferenze. Percorsi
 // (archivi recenti, cartella allegati, archivio aperto) e chiavi del vault li scrive il main.
 const assert = require('assert');
-const { filtraImpostazioniRenderer: filtra } = require('../out/main/impostazioniRenderer');
+const { filtraImpostazioniRenderer: filtra, chiaviDaRimuovere } = require('../out/main/impostazioniRenderer');
 
 console.log('Running impostazioniRenderer tests...');
 
@@ -45,5 +45,11 @@ assert.ok(esclusi.crossArchiveEsclusi.every((id) => typeof id === 'string' && id
 
 // 5. Input che non è un oggetto.
 for (const v of [null, undefined, 'stringa', 42, ['lang']]) assert.deepStrictEqual(filtra(v), {});
+
+// 6. Preferenze svuotate: solo quelle cancellabili, solo con null esplicito.
+assert.deepStrictEqual(chiaviDaRimuovere({ snapshotRecenti: null, cestinoGiorni: null, snapshotGiorni: 5 }), ['snapshotRecenti', 'cestinoGiorni']);
+assert.deepStrictEqual(chiaviDaRimuovere({ recentWorkspaces: null, customAttachmentsPath: null, workspacePath: null, lang: null }), []);
+assert.deepStrictEqual(filtra({ snapshotRecenti: null }), {});
+for (const v of [null, undefined, 'x', ['snapshotRecenti']]) assert.deepStrictEqual(chiaviDaRimuovere(v), []);
 
 console.log('impostazioniRenderer tests OK');

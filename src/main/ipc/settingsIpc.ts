@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { getAllSettings, saveAllSettings, rimuoviImpostazioni } = require('../workspaceManager');
 const { leggiPerfConfig, scriviPerfConfig } = require('../perfConfig');
-const { filtraImpostazioniRenderer } = require('../impostazioniRenderer');
+const { filtraImpostazioniRenderer, chiaviDaRimuovere } = require('../impostazioniRenderer');
 
 function setupSettingsIpc() {
   // get-settings ritorna SOLO le preferenze globali. I flag del vault
@@ -16,7 +16,9 @@ function setupSettingsIpc() {
   // li scrive il main, dai canali qui sotto o dai flussi di apertura/join.
   ipcMain.handle('save-settings', (event, newSettings) => {
     try {
-      return saveAllSettings(filtraImpostazioniRenderer(newSettings));
+      const salvate = saveAllSettings(filtraImpostazioniRenderer(newSettings));
+      const daRimuovere = chiaviDaRimuovere(newSettings);
+      return daRimuovere.length ? rimuoviImpostazioni(daRimuovere) : salvate;
     } catch (error) {
       console.error('Errore salvataggio impostazioni:', error);
       return getAllSettings();
