@@ -1,8 +1,5 @@
-const path = require('path');
-const fs = require('fs');
-const { state, getActiveVaultFlags } = require('../../workspaceManager');
+const { getActiveVaultFlags } = require('../../workspaceManager');
 const { driveState, loadSavedTokens, initGoogle } = require('./auth');
-const { uploadFile } = require('./fileOps');
 
 async function getDbFileId(): Promise<string> {
   let projectFolderId: string | null = null;
@@ -67,23 +64,7 @@ async function getDriveRevision(fileId: string, revisionId: string): Promise<any
   }
 }
 
-async function restoreRevision(fileId: string, revisionId: string): Promise<boolean> {
-  const revData = await getDriveRevision(fileId, revisionId);
-  if (!revData) throw new Error("Revisione non trovata.");
-  if (!state.workspacePath) throw new Error("Nessun workspace aperto.");
-
-  const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
-  fs.writeFileSync(dbPath, typeof revData === 'string' ? revData : JSON.stringify(revData, null, 2), 'utf8');
-
-  let projectFolderId: string | null = null;
-  try {
-    const s = getActiveVaultFlags();
-    if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
-  } catch (e) { console.error("Errore lettura settings:", e); }
-  if (projectFolderId) await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
-
-  return true;
-}
-
-module.exports = { getDbFileId, listDriveRevisions, getDriveRevision, restoreRevision };
+// Il ripristino non sta qui: lo fa il renderer (`ripristinaRevisioneCloud`) con le regole di
+// `ripristinaDatabase` e il caricamento normale con il controllo 409.
+module.exports = { getDbFileId, listDriveRevisions, getDriveRevision };
 export {};

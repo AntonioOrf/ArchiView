@@ -352,9 +352,7 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
 // ─── Ripristina con modale di conferma ──────────────────────────────────────
 
 async function ripristinaRevisioneConConferma(fileId, revisionId, label) {
-    apriConfermaRipristino(label, async () => {
-        await window.ripristinaRevisioneCloud(fileId, revisionId);
-    });
+    apriConfermaRipristino(label, () => window.ripristinaRevisioneCloud(fileId, revisionId));
 }
 
 // Modale di conferma generico: `onConfirm` esegue il ripristino vero e proprio

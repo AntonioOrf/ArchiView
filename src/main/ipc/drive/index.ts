@@ -2,7 +2,7 @@ const { ipcMain } = require('electron');
 const { driveState, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus } = require('./auth');
 const { listVaultsFromDrive, checkUpdatesFromDrive, pullFromDrive, syncToDrive, cleanOrphanedAttachments } = require('./vaultOps');
 const { syncAttachmentsBidirectional } = require('./attachments');
-const { getDbFileId, listDriveRevisions, getDriveRevision, restoreRevision } = require('./revisions');
+const { getDbFileId, listDriveRevisions, getDriveRevision } = require('./revisions');
 const { generateInviteCode, decodeInviteCode, joinByInviteCode, joinByFolderId, shareVault, listPermissions, removePermission, openExternalPicker } = require('./sharing');
 
 function setupDriveIpc() {
@@ -57,10 +57,6 @@ function setupDriveIpc() {
   ipcMain.handle('drive-get-revision', async (event: any, fileId: string, revisionId: string) => {
     initGoogle();
     return await getDriveRevision(fileId, revisionId);
-  });
-  ipcMain.handle('drive-restore-revision', async (event: any, fileId: string, revisionId: string) => {
-    initGoogle();
-    return await restoreRevision(fileId, revisionId);
   });
 
   // Sharing & Invites

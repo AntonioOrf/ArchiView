@@ -178,7 +178,6 @@ contextBridge.exposeInMainWorld('apiDrive', {
     getDbFileId: () => ipcRenderer.invoke('drive-get-db-file-id'),
     listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),
     getRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-get-revision', fileId, revisionId),
-    restoreRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-restore-revision', fileId, revisionId),
     openExternalPicker: () => ipcRenderer.invoke('drive-open-external-picker'),
     getFileMeta: (fileId) => ipcRenderer.invoke('drive-get-file-meta', fileId)
 });

@@ -1661,6 +1661,7 @@ const customEn = {
     "msg_caricamento_completato_in": "Upload completed safely!",
     "msg_conflitto_risolto_caricam": "Conflict resolved! Upload completed safely.",
     "msg_sync_annullata_nulla_caricato": "Sync cancelled: nothing was uploaded to the Cloud.",
+    "msg_revisione_illeggibile": "The downloaded revision is not a readable database.",
     "msg_errore_durante_il_caricam": "Error uploading: ",
     "msg_l_archivio_ora_scollegato": "The Archive is now unlinked and strictly local.",
     "msg_errore_durante_la_disconn": "Error disconnecting from cloud: ",

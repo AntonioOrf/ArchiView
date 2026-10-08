@@ -467,7 +467,11 @@ async function scaricaUnisciCarica(apiCloud, silent) {
         // l'archivio esiste già su un altro PC è il sintomo di una cartella Drive sbagliata.
         mostraMessaggio(window.t("msg_nessun_db_sul_cloud", "Nessun database trovato sul Cloud: viene caricata la copia locale. Se questo archivio esiste già su un altro PC, verifica dal menu Cloud di essere collegato alla stessa cartella Drive."), "warning");
     }
+    return caricaDopoMerge(apiCloud, driveData, silent);
+}
 
+// Carica il DB fuso con il parent dell'ultimo pull (409 se un collega ha scritto nel frattempo).
+async function caricaDopoMerge(apiCloud, driveData, silent) {
     // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
@@ -848,17 +852,27 @@ window.caricaRevisioneCloud = async function(fileId, revisionId) {
 };
 
 /**
- * Ripristina il vault locale e cloud a una revisione specifica.
- * Dopo il ripristino, ricarica i dati locali.
+ * Ripristina il vault locale e cloud a una revisione specifica, con le regole dell'Hub
+ * (`ripristinaVersioneHub`): prima ci si allinea al cloud, poi `ripristinaDatabase` rifirma le
+ * schede e mette i tombstone di quelle nate dopo, infine si carica col parent del pull.
+ * Senza, le schede create dopo la revisione tornavano al primo caricamento.
+ * Ritorna false se l'utente annulla la risoluzione dei conflitti del pull.
  */
 window.ripristinaRevisioneCloud = async function(fileId, revisionId) {
-    if (!window.apiDrive) throw new Error("Non sei connesso al Cloud.");
-    await window.apiDrive.restoreRevision(fileId, revisionId);
-    // Ricarica i dati dal file locale aggiornato
-    if (window.apiBrowser) {
-        const nuoviDati = await window.leggiDatiArchivio();
-        if (nuoviDati && typeof window.sincronizzaEUnisciDati === 'function') {
-            await window.sincronizzaEUnisciDati(nuoviDati);
-        }
+    const apiCloud = await window.getApiCloud();
+    if (!apiCloud) throw new Error("Non sei connesso al Cloud.");
+    const revisione = await window.caricaRevisioneCloud(fileId, revisionId);
+    if (!revisione || typeof revisione !== 'object' || !Array.isArray(revisione.manoscritti)) {
+        throw new Error(window.t("msg_revisione_illeggibile", "La revisione scaricata non è un database leggibile."));
     }
+    const driveData = await apiCloud.pull();
+    if (driveData && driveData.database) {
+        if (await window.sincronizzaEUnisciDati(driveData.database) === false) {
+            avvisaSyncDriveAnnullata(false);
+            return false;
+        }
+        window.lastDriveModifiedTime = driveData.driveModifiedTime;
+    }
+    await window.ripristinaDatabase(revisione);
+    return caricaDopoMerge(apiCloud, driveData, true);
 };
