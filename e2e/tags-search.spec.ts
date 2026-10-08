@@ -108,6 +108,32 @@ test.describe('Tag e Ricerca', () => {
     await expect(page.locator('[id^="card-"]')).toHaveCount(2);
   });
 
+  // Ottimizzazione O5: le trascrizioni sono HTML, e il markup non è testo da cercare.
+  test('la ricerca non trova i tag HTML della trascrizione', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Tags');
+    await page.evaluate(async () => {
+      // @ts-ignore -- `appData` e' una `let` globale (script classico).
+      appData.manoscritti.push(
+        { id: crypto.randomUUID(), cartella: '', tipoDocumento: 'manoscritto', segnatura: 'HTML-1', tags: '', allegati: [], lastModified: Date.now(),
+          trascrizione: '<p class="ocr-pagina"><strong>[p. 1]</strong></p><p>In&nbsp;nomine Domini</p>' },
+        { id: crypto.randomUUID(), cartella: '', tipoDocumento: 'manoscritto', segnatura: 'HTML-2', tags: '', allegati: [], lastModified: Date.now(),
+          trascrizione: '<p>La pagina strappata</p>' },
+      );
+      await (window as any).Store.commit();
+    });
+
+    await openSidebarPanel(page, 'search');
+    await page.locator('#search-input').fill('pagina');
+    await expect(page.locator('[id^="card-"]')).toHaveCount(1);
+    await page.locator('#search-input').fill('strong');
+    await expect(page.locator('[id^="card-"]')).toHaveCount(0);
+    await page.locator('#search-input').fill('nbsp');
+    await expect(page.locator('[id^="card-"]')).toHaveCount(0);
+    // Il testo vero si trova ancora, anche attraverso l'entità.
+    await page.locator('#search-input').fill('in nomine');
+    await expect(page.locator('[id^="card-"]')).toHaveCount(1);
+  });
+
   test('piu parole nella ricerca si combinano in AND anche su campi diversi', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Tags');
     await page.evaluate(async () => {

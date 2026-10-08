@@ -74,10 +74,12 @@ function getSearchIndex(m) {
     fields.sort((a, b) => priority(a.key) - priority(b.key));
 
     // Fieno per il filtro della griglia, normalizzato una volta sola per record.
+    // Il markup della trascrizione non è testo: senza togliere i tag, "pagina" trovava ogni PDF
+    // (marcatore `ocr-pagina`) e "strong"/"nbsp" mezzo archivio. Stessa regola di crossArchive/testo.ts.
     let hay = '';
     for (const k of getSearchFields()) {
         const t = testoIndicizzabile(m[k]);
-        if (t) hay += t + '\n';
+        if (t) hay += t.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ') + '\n';
     }
     // Testo OCR degli allegati (Fase 2.3). Va aggiunto esplicitamente e non basta metterlo
     // fra i SEARCH_FIELDS: vive dentro `m.allegati[].ocr.testo`, cioè in un array di oggetti
