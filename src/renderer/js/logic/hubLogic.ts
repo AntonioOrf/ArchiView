@@ -311,10 +311,9 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         }
 
         const snap = await window.caricaVersioneHub(versionNumber);
-        appData.manoscritti = snap.database.manoscritti || [];
-        appData.cartelle = snap.database.cartelle || [];
-        appData.tipiDocumento = snap.database.tipiDocumento || [];
-        await salvaTutto();
+        // Stesse regole del ripristino locale: schede rifirmate e tombstone per quelle nate dopo,
+        // o il merge dei colleghi riporterebbe tutto com'era (vedi `ripristinaDatabase`).
+        await window.ripristinaDatabase(snap.database);
 
         const resPush = await pushHub(window.hubConfig.version, appData);
 
@@ -329,10 +328,6 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
-
-        if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-        if (typeof renderSidebar === 'function') renderSidebar();
-        if (typeof renderMain === 'function') renderMain();
 
         return true; // messaggio di successo mostrato dal chiamante (apriConfermaRipristino)
     } catch (e) {

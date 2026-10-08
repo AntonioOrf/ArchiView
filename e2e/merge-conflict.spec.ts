@@ -369,6 +369,40 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(pushed.vocabolari['voc-x'].valori).toEqual(['pergamena']);
   });
 
+  // Audit A6: il ripristino di una versione Hub segue le regole del ripristino locale
+  // (`ripristinaDatabase`): schede rifirmate e tombstone per quelle nate dopo, o il merge dei
+  // colleghi le terrebbe com'erano.
+  test('Hub: ripristinare una versione rifirma le schede e mette i tombstone', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    await electronApp.evaluate(({ ipcMain }: any) => {
+      const g = globalThis as any;
+      const h: Record<string, (...a: any[]) => any> = {
+        'hub-pull': () => ({ ok: true, data: { version: 3, unchanged: true } }),
+        'hub-version': () => ({ ok: true, data: { version: 2, database: {
+          manoscritti: [{ id: 'v-1', segnatura: 'Vecchia', cartella: '', lastModified: 1000 }], cartelle: [] } } }),
+        'hub-push': (_e: any, _p: number, db: any) => { g.__e2eHubPushed = db; return { ok: true, data: { version: 4 } }; },
+        'save-hub-config': () => true
+      };
+      for (const [c, fn] of Object.entries(h)) { ipcMain.removeHandler(c); ipcMain.handle(c, fn); }
+    });
+
+    const ok = await page.evaluate(async () => {
+      const w = window as any;
+      w.appData.manoscritti = [
+        { id: 'v-1', segnatura: 'Nuova', cartella: '', lastModified: 3000 },
+        { id: 'v-2', segnatura: 'Creata dopo', cartella: '', lastModified: 3000 }
+      ];
+      w.hubConfig = { version: 3, lastLoadedAt: 0 };
+      return w.ripristinaVersioneHub(2);
+    });
+    const pushed: any = await electronApp.evaluate(() => (globalThis as any).__e2eHubPushed);
+
+    expect(ok).toBe(true);
+    expect(pushed.manoscritti.map((m: any) => [m.id, m.segnatura])).toEqual([['v-1', 'Vecchia']]);
+    expect(pushed.manoscritti[0].lastModified).toBeGreaterThan(3000);
+    expect(pushed.deletedIds).toContain('v-2');
+  });
+
   test('Hub: annullare il modale dei conflitti non tocca la versione né i dati', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await simulaHub(electronApp, { manoscritti: [{ id: 'hc-1', segnatura: 'Remoto', cartella: '', lastModified: 1000 }], cartelle: [] });
