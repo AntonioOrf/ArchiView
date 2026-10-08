@@ -1608,19 +1608,9 @@ window.incollaRecord = async function(targetFolderOverride) {
             }
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_duplicato_con_su", "Archivio duplicato con successo ({var0} record)!").replace("{var0}", String(res.count)), "success");
             window.copiedFolderPath = null;
-            // Ricarica DB
             if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-            await window.leggiDatiArchivio().then(async dati => {
-                appData = dati;
-                if (window.Store) {
-                    await window.Store.commit();
-                } else {
-                    if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-                    if (typeof renderSidebar === 'function') renderSidebar();
-                    if (typeof renderMain === 'function') renderMain();
-                }
-                if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-            });
+            await window.ricaricaDatiDaDisco();
+            if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
         } else {
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_duplicazione_ar", "Errore in duplicazione archivio: ") + res.error, "error");
         }
@@ -1679,18 +1669,9 @@ window.incollaRecord = async function(targetFolderOverride) {
     
     if (res.success) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", "{var0} record duplicati con successo!").replace("{var0}", String(res.count)), "success");
-        // Ricarica DB
         if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        await window.leggiDatiArchivio().then(async dati => {
-            appData = dati;
-            if (window.Store) {
-                await window.Store.commit();
-            } else {
-                if (typeof renderSidebar === 'function') renderSidebar();
-                if (typeof renderMain === 'function') renderMain();
-            }
-            if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-        });
+        await window.ricaricaDatiDaDisco();
+        if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
     } else {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_incolla", "Errore in incolla: ") + res.error, "error");
     }

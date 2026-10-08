@@ -365,6 +365,21 @@ window.ripristinaDatabase = async function(dbSnapshot) {
     return { schede: appData.manoscritti.length, eliminate: tombstone.size };
 };
 
+/**
+ * Rilegge il DB dal disco dopo che il main l'ha riscritto (duplicazione delle schede).
+ * Il file non contiene la base del merge (`databasePerDisco`): va conservata quella in memoria,
+ * o la sync seguente tratterebbe ogni modifica dei colleghi come un conflitto.
+ */
+window.ricaricaDatiDaDisco = async function() {
+    const dati = await window.leggiDatiArchivio();
+    if (!dati) throw new Error('Database illeggibile dopo la scrittura.');
+    const { baseObjects, baseHashes } = appData;
+    appData = window.Model.migraDatabase(dati).db;
+    appData.baseObjects = baseObjects;
+    appData.baseHashes = baseHashes;
+    await window.Store.commit();
+};
+
 window.sincronizzaEUnisciDati = async function(nuovoDati) {
     if (!nuovoDati) return;
 
