@@ -10,7 +10,7 @@ on:
 
 jobs:
   # Audit delle sole dipendenze che finiscono nell'installer (npm audit legge il lockfile,
-  # non serve installare). Quelle di sviluppo (lingui, shx, electron-builder) restano fuori:
+  # non serve installare). Quelle di sviluppo (shx, electron-builder) restano fuori:
   # i loro advisory aperti non hanno correzioni senza downgrade e non girano sulla macchina utente.
   security-check:
     runs-on: ubuntu-latest

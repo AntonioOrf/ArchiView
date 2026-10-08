@@ -25,7 +25,7 @@ function fileSorgente(dir) {
   for (const voce of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, voce.name);
     if (voce.isDirectory()) {
-      if (voce.name !== 'vendor' && voce.name !== 'locales') out.push(...fileSorgente(p));
+      if (voce.name !== 'vendor') out.push(...fileSorgente(p));
     } else if (/\.(ts|html|js)$/.test(voce.name) && !voce.name.endsWith('.d.ts')) {
       out.push(p);
     }

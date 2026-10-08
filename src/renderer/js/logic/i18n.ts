@@ -1,1276 +1,16 @@
-import { i18n } from "@lingui/core";
-import { messages as enMessages } from "../../locales/en/messages.js";
-import { messages as itMessages } from "../../locales/it/messages.js";
-
-i18n.load({
-  en: enMessages,
-  it: itMessages
-});
-
-// Attiva un locale di default subito per evitare errori Lingui
-// prima che initLang() venga chiamato dall'app
-i18n.activate('it');
+// Traduzioni: i due dizionari qui sotto sono l'UNICA fonte (PIANO-OTTIMIZZAZIONE, Fase 4).
+// Una stringa nuova si aggiunge in entrambi; il secondo argomento di `window.t` è il ripiego
+// in italiano mostrato se la chiave manca. Prima c'era anche un catalogo Lingui parallelo,
+// e le due fonti davano testi diversi per la stessa chiave.
 window.linguaAttuale = 'it';
 
 window.initLang = async function() {
     const settings = await window.apiSettings.get();
     window.linguaAttuale = settings.lang || 'it';
-    i18n.activate(window.linguaAttuale);
     document.documentElement.lang = window.linguaAttuale;
     window.applicaTraduzioniHtml();
 };
 
-function _linguiExtraction() {
-    i18n._({ id: "welcome_title", message: "Benvenuto in ArchiView" });
-    i18n._({ id: "welcome_desc", message: "Per iniziare, è necessario creare o selezionare un <strong>Archivio di lavoro</strong>.<br><br>In questo archivio verranno salvati in automatico tutti i dati (il database) e gli allegati (come i PDF e le foto). Ti consigliamo di creare un archivio dedicato (ad esempio in \"Documenti\") per tenere tutto in ordine e al sicuro." });
-    i18n._({ id: "btn_choose_folder", message: "Scegli o crea archivio" });
-    i18n._({ id: "modal_new_folder", message: "Nuova cartella" });
-    i18n._({ id: "label_folder_name", message: "Nome della cartella o percorso" });
-    i18n._({ id: "hint_folder_name", message: "Consiglio: usa la barra ( / ) per creare automaticamente delle sottocartelle." });
-    i18n._({ id: "btn_prev", message: "Precedente" });
-    i18n._({ id: "btn_next", message: "Successiva" });
-    i18n._({ id: "btn_cancel", message: "Annulla" });
-    i18n._({ id: "btn_create_folder", message: "Crea cartella" });
-    i18n._({ id: "btn_new_model", message: "Nuovo modello" });
-    i18n._({ id: "modal_create_type", message: "Crea Tipo Documento" });
-    i18n._({ id: "label_select_model", message: "Seleziona modello o creane uno nuovo" });
-    i18n._({ id: "model_custom", message: "Nuovo documento vuoto" });
-    i18n._({ id: "model_imbreviature", message: "Modello: Imbreviature notarili" });
-    i18n._({ id: "model_atti", message: "Modello: Atti giudiziari" });
-    i18n._({ id: "model_fiscali", message: "Modello: Documenti fiscali" });
-    i18n._({ id: "label_type_name", message: "Nome del nuovo tipo" });
-    i18n._({ id: "label_base_fields", message: "Campi di base" });
-    i18n._({ id: "field_data_cronica", message: "Data cronica" });
-    i18n._({ id: "field_data_topica", message: "Data topica" });
-    i18n._({ id: "field_autore", message: "Autore/i" });
-    i18n._({ id: "field_titolo", message: "Titolo / Cont." });
-    i18n._({ id: "field_note", message: "Note" });
-    i18n._({ id: "field_prezzo", message: "Prezzo" });
-    // Fase 1.1 — ordinamento e vista tabellare
-    i18n._({ id: "field_segnatura", message: "Segnatura" });
-    i18n._({ id: "label_sort_by", message: "Ordina per" });
-    i18n._({ id: "tooltip_sort_by", message: "Criterio di ordinamento dell'elenco" });
-    i18n._({ id: "tooltip_sort_dir", message: "Inverti la direzione dell'ordinamento" });
-    i18n._({ id: "tooltip_sort_asc", message: "Ordine crescente: clicca per invertire" });
-    i18n._({ id: "tooltip_sort_desc", message: "Ordine decrescente: clicca per invertire" });
-    i18n._({ id: "tooltip_toggle_view", message: "Cambia modalità di visualizzazione" });
-    i18n._({ id: "tooltip_view_grid", message: "Passa alla vista a schede" });
-    i18n._({ id: "tooltip_view_table", message: "Passa alla vista tabella" });
-    i18n._({ id: "th_tags", message: "Tag" });
-    i18n._({ id: "th_attachments", message: "Allegati" });
-    i18n._({ id: "th_modified", message: "Modificato" });
-    i18n._({ id: "tooltip_columns", message: "Scegli le colonne visibili" });
-    i18n._({ id: "menu_columns", message: "Colonne visibili" });
-    // Fase 1 — passi del tutorial su ordinamento, filtri, comandi rapidi e visualizzatore
-    i18n._({ id: "tut_sort_title", message: "Ordinamento e Vista Tabellare" });
-    i18n._({ id: "tut_sort_desc", message: "L’elenco può essere ordinato per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla vista tabellare, dove ogni intestazione di colonna è essa stessa un comando di ordinamento e le colonne visibili sono configurabili per tipo di documento." });
-    i18n._({ id: "tut_filters_title", message: "Filtri Avanzati e Ricerche Salvate" });
-    i18n._({ id: "tut_filters_desc", message: "Oltre alla ricerca testuale è possibile restringere l’elenco per tipo di documento, sottocartelle, intervallo di data di modifica, presenza di allegati o di trascrizione. Nel campo di ricerca è ammessa inoltre la sintassi campo:valore (per esempio notaio:rossi). Una combinazione di filtri può essere salvata con un nome e richiamata in seguito." });
-    i18n._({ id: "tut_palette_title", message: "Comandi Rapidi" });
-    i18n._({ id: "tut_palette_desc", message: "La combinazione Ctrl+K apre l’elenco dei comandi: da un unico campo si raggiunge una scheda, una cartella, una nuova scheda di un tipo specifico o qualsiasi altra azione dell’applicazione. Il tasto ? mostra l’elenco completo delle scorciatoie disponibili. Entrambi sono richiamabili anche da questo menu." });
-    i18n._({ id: "tut_viewer_title", message: "Analisi dell’Immagine" });
-    i18n._({ id: "tut_viewer_desc", message: "L’anteprima dell’allegato dispone di ingrandimento (rotella del mouse o tasti + e −), trascinamento, rotazione a 90° (tasto R) e adattamento alla pagina o alla larghezza. I comandi di luminosità, contrasto e negativo sono destinati alla lettura di scritture di difficile decifrazione. Con Alt+← e Alt+→ si scorrono gli allegati della scheda." });
-    // Fase 1.4 — command palette e scorciatoie
-    i18n._({ id: "cp_title", message: "Comandi" });
-    i18n._({ id: "cp_placeholder", message: "Cerca un comando, una scheda o una cartella…" });
-    i18n._({ id: "cp_empty", message: "Nessun comando corrisponde." });
-    i18n._({ id: "cp_error", message: "Comando non riuscito." });
-    i18n._({ id: "cp_group_actions", message: "Azioni" });
-    i18n._({ id: "cp_group_records", message: "Vai alla scheda" });
-    i18n._({ id: "cp_group_folders", message: "Vai alla cartella" });
-    i18n._({ id: "cp_search", message: "Cerca nell’archivio" });
-    i18n._({ id: "cp_view_grid", message: "Passa alla vista a schede" });
-    i18n._({ id: "cp_view_table", message: "Passa alla vista a tabella" });
-    i18n._({ id: "cp_changelog", message: "Novità di questa versione" });
-    i18n._({ id: "cp_shortcuts", message: "Scorciatoie da tastiera" });
-    i18n._({ id: "cp_hint_move", message: "scorri" });
-    i18n._({ id: "cp_hint_run", message: "esegui" });
-    i18n._({ id: "cp_hint_close", message: "chiudi" });
-    i18n._({ id: "untitled_record", message: "Senza titolo" });
-    i18n._({ id: "shortcut_group_general", message: "Generali" });
-    i18n._({ id: "shortcut_group_selection", message: "Selezione" });
-    i18n._({ id: "shortcut_group_transcription", message: "Trascrizione" });
-    i18n._({ id: "shortcut_group_viewer", message: "Visualizzatore immagini" });
-    i18n._({ id: "shortcut_palette", message: "Apri i comandi" });
-    i18n._({ id: "shortcut_help", message: "Mostra questo elenco" });
-    i18n._({ id: "shortcut_search", message: "Vai alla ricerca" });
-    i18n._({ id: "shortcut_new", message: "Nuova scheda" });
-    i18n._({ id: "shortcut_save", message: "Salva la scheda o la trascrizione aperta" });
-    i18n._({ id: "shortcut_undo", message: "Annulla l’ultima azione" });
-    i18n._({ id: "shortcut_esc", message: "Chiudi la finestra in primo piano, svuota la ricerca o azzera la selezione" });
-    i18n._({ id: "shortcut_multi", message: "Aggiungi o togli una scheda dalla selezione" });
-    i18n._({ id: "shortcut_range", message: "Seleziona l’intervallo fino alla scheda cliccata" });
-    i18n._({ id: "shortcut_menu", message: "Menu delle azioni sulla scheda o sulla cartella" });
-    i18n._({ id: "shortcut_prev_att", message: "Allegato precedente" });
-    i18n._({ id: "shortcut_next_att", message: "Allegato successivo" });
-    i18n._({ id: "shortcut_fullscreen", message: "Allegato a schermo intero" });
-    i18n._({ id: "shortcut_zoom", message: "Ingrandisci o riduci" });
-    i18n._({ id: "shortcut_fit", message: "Adatta alla pagina" });
-    i18n._({ id: "shortcut_real", message: "Dimensione reale (1:1)" });
-    i18n._({ id: "shortcut_rotate", message: "Ruota di 90° (con Maiusc: in senso opposto)" });
-    i18n._({ id: "shortcut_pan", message: "Sposta l’immagine" });
-    // Fase 1.5 — azioni in massa, selezione totale e relative scorciatoie
-    i18n._({ id: "tut_bulk_title", message: "Azioni su più schede" });
-    i18n._({ id: "tut_bulk_desc", message: "Con Ctrl+clic e Maiusc+clic si selezionano più schede, e Ctrl+A prende tutti i risultati del filtro corrente, comprese le pagine successive. Il menu del tasto destro applica allora l’azione all’intera selezione: spostamento in una cartella, cambio di tipo di documento, aggiunta o rimozione di tag e sostituzione di testo in un campo, con anteprima del numero di schede interessate e possibilità di annullare." });
-    i18n._({ id: "bulk_move_title", message: "Sposta in una cartella" });
-    i18n._({ id: "bulk_type_title", message: "Cambia tipo di documento" });
-    i18n._({ id: "bulk_type_hint", message: "I valori dei campi che il nuovo tipo non prevede restano salvati nella scheda, ma non saranno più visibili nel form finché non si torna al tipo precedente." });
-    i18n._({ id: "bulk_tag_title", message: "Aggiungi o rimuovi tag" });
-    i18n._({ id: "bulk_tag_add", message: "Aggiungi" });
-    i18n._({ id: "bulk_tag_remove", message: "Rimuovi" });
-    i18n._({ id: "bulk_tag_ph", message: "Es. pergamena, notarile" });
-    i18n._({ id: "bulk_tag_hint", message: "Più tag si separano con la virgola. La rimozione richiede la corrispondenza esatta del tag." });
-    i18n._({ id: "bulk_replace_title", message: "Trova e sostituisci" });
-    i18n._({ id: "bulk_label_folder", message: "Cartella di destinazione" });
-    i18n._({ id: "bulk_label_type", message: "Nuovo tipo" });
-    i18n._({ id: "bulk_label_action", message: "Operazione" });
-    i18n._({ id: "bulk_label_tags", message: "Tag" });
-    i18n._({ id: "bulk_label_field", message: "Campo" });
-    i18n._({ id: "bulk_label_find", message: "Trova" });
-    i18n._({ id: "bulk_label_replace", message: "Sostituisci con" });
-    i18n._({ id: "bulk_field_signature", message: "Segnatura" });
-    i18n._({ id: "bulk_field_tags", message: "Tag" });
-    i18n._({ id: "bulk_case", message: "Distingui maiuscole" });
-    i18n._({ id: "bulk_whole", message: "Solo parole intere" });
-    i18n._({ id: "bulk_preview", message: "{var0} schede, {var1} occorrenze." });
-    i18n._({ id: "bulk_preview_empty", message: "Scrivi il testo da cercare per vedere quante schede sarebbero modificate." });
-    i18n._({ id: "btn_apply", message: "Applica" });
-    i18n._({ id: "menu_select_all", message: "Seleziona tutti i risultati" });
-    i18n._({ id: "menu_bulk_on", message: "Su {var0} schede" });
-    i18n._({ id: "menu_bulk_on_one", message: "Su questa scheda" });
-    i18n._({ id: "cp_group_selection", message: "Selezione" });
-    i18n._({ id: "msg_bulk_no_selection", message: "Seleziona almeno una scheda." });
-    i18n._({ id: "msg_bulk_nothing", message: "Nessuna scheda è stata modificata." });
-    i18n._({ id: "msg_bulk_done", message: "{var0} schede modificate." });
-    i18n._({ id: "msg_bulk_error", message: "Azione non riuscita." });
-    i18n._({ id: "msg_bulk_moved", message: "{var0} schede spostate." });
-    i18n._({ id: "msg_bulk_type", message: "Tipo cambiato su {var0} schede." });
-    i18n._({ id: "msg_bulk_tag_add", message: "Tag aggiunti a {var0} schede." });
-    i18n._({ id: "msg_bulk_tag_del", message: "Tag rimossi da {var0} schede." });
-    i18n._({ id: "msg_bulk_replaced", message: "Sostituzione applicata a {var0} schede." });
-    i18n._({ id: "msg_selected_all", message: "{var0} schede selezionate." });
-    i18n._({ id: "undo_bulk_move", message: "Spostamento di schede" });
-    i18n._({ id: "undo_bulk_type", message: "Cambio di tipo documento" });
-    i18n._({ id: "undo_bulk_tag_add", message: "Aggiunta di tag" });
-    i18n._({ id: "undo_bulk_tag_del", message: "Rimozione di tag" });
-    i18n._({ id: "undo_bulk_replace", message: "Trova e sostituisci" });
-    i18n._({ id: "shortcut_group_bulk", message: "Schede selezionate" });
-    i18n._({ id: "shortcut_select_all", message: "Seleziona tutti i risultati, anche nelle pagine successive" });
-    i18n._({ id: "shortcut_deselect", message: "Azzera la selezione" });
-    i18n._({ id: "shortcut_edit", message: "Modifica la scheda selezionata" });
-    i18n._({ id: "shortcut_copy", message: "Copia le schede selezionate" });
-    i18n._({ id: "shortcut_cut", message: "Taglia le schede selezionate" });
-    i18n._({ id: "shortcut_paste", message: "Incolla nella cartella corrente" });
-    i18n._({ id: "shortcut_export_sel", message: "Esporta la selezione in ZIP" });
-    i18n._({ id: "shortcut_delete_sel", message: "Elimina le schede selezionate" });
-    i18n._({ id: "shortcut_bulk_move", message: "Sposta la selezione in una cartella" });
-    i18n._({ id: "shortcut_bulk_type", message: "Cambia il tipo di documento della selezione" });
-    i18n._({ id: "shortcut_bulk_tag", message: "Aggiungi o rimuovi tag sulla selezione" });
-    i18n._({ id: "shortcut_bulk_replace", message: "Trova e sostituisci in un campo della selezione" });
-    // Fase 2.1 — esportazione CSV/TSV
-    i18n._({ id: "btn_export_csv", message: "Esporta Cartella in CSV" });
-    i18n._({ id: "btn_export_tsv", message: "Esporta Cartella in TSV" });
-    i18n._({ id: "menu_export_folder_csv", message: "Esporta cartella in CSV" });
-    i18n._({ id: "bulk_export_csv", message: "Esporta selezione in CSV" });
-    i18n._({ id: "bulk_export_tsv", message: "Esporta selezione in TSV" });
-    i18n._({ id: "dialog_export_csv", message: "Esporta in CSV/TSV" });
-    i18n._({ id: "shortcut_export_sel_csv", message: "Esporta la selezione in CSV" });
-    i18n._({ id: "col_id", message: "ID" });
-    i18n._({ id: "col_type", message: "Tipo documento" });
-    i18n._({ id: "col_modified_by", message: "Modificato da" });
-    i18n._({ id: "col_created_by", message: "Creato da" });
-    // Fase 1.3 — filtri avanzati e ricerche salvate
-    i18n._({ id: "btn_filters", message: "Filtri" });
-    i18n._({ id: "tooltip_filters", message: "Filtri avanzati e ricerche salvate" });
-    i18n._({ id: "tooltip_filters_active", message: "Filtri avanzati ({var0} attivi)" });
-    i18n._({ id: "filter_type", message: "Tipo" });
-    i18n._({ id: "filter_subfolders", message: "Includi sottocartelle" });
-    i18n._({ id: "filter_from", message: "Dal" });
-    i18n._({ id: "filter_to", message: "Al" });
-    i18n._({ id: "filter_attachments", message: "Allegati" });
-    i18n._({ id: "filter_transcription", message: "Trascrizione" });
-    i18n._({ id: "filter_any", message: "Qualsiasi" });
-    i18n._({ id: "filter_yes", message: "Sì" });
-    i18n._({ id: "filter_no", message: "No" });
-    i18n._({ id: "filter_has_attachments", message: "Con allegati" });
-    i18n._({ id: "filter_no_attachments", message: "Senza allegati" });
-    i18n._({ id: "filter_has_transcription", message: "Con trascrizione" });
-    i18n._({ id: "filter_no_transcription", message: "Senza trascrizione" });
-    i18n._({ id: "filter_remove_advanced", message: "Rimuovi questo filtro" });
-    i18n._({ id: "filter_query_hint", message: "Nella ricerca puoi scrivere campo:valore — per esempio notaio:rossi, tag:pergamena, oppure \"frase esatta\"." });
-    i18n._({ id: "btn_clear_advanced", message: "Azzera i filtri" });
-    i18n._({ id: "label_saved_searches", message: "Ricerche salvate" });
-    i18n._({ id: "empty_saved_searches", message: "Nessuna ricerca salvata." });
-    i18n._({ id: "placeholder_saved_search", message: "Nome della ricerca" });
-    i18n._({ id: "btn_save_search", message: "Salva" });
-    i18n._({ id: "btn_delete_saved_search", message: "Elimina questa ricerca" });
-    i18n._({ id: "msg_saved_search", message: "Ricerca salvata." });
-    // Fase 1.2 — visualizzatore immagini
-    i18n._({ id: "tooltip_zoom_in", message: "Ingrandisci (+)" });
-    i18n._({ id: "tooltip_zoom_out", message: "Riduci (-)" });
-    i18n._({ id: "tooltip_rotate_left", message: "Ruota a sinistra (Maiusc+R)" });
-    i18n._({ id: "tooltip_rotate_right", message: "Ruota a destra (R)" });
-    i18n._({ id: "tooltip_fit_page", message: "Adatta alla pagina (0)" });
-    i18n._({ id: "tooltip_fit_width", message: "Adatta alla larghezza" });
-    i18n._({ id: "tooltip_zoom_real", message: "Dimensione reale, 1:1 (1)" });
-    i18n._({ id: "tooltip_image_filters", message: "Luminosità, contrasto e negativo" });
-    i18n._({ id: "tooltip_view_reset", message: "Ripristina la vista" });
-    i18n._({ id: "label_brightness", message: "Luminosità" });
-    i18n._({ id: "label_contrast", message: "Contrasto" });
-    i18n._({ id: "label_invert", message: "Inverti (negativo)" });
-    i18n._({ id: "tooltip_new_record_type", message: "Scegli il tipo della nuova scheda" });
-    i18n._({ id: "menu_new_record_type", message: "Nuova scheda di tipo" });
-    i18n._({ id: "label_custom_fields", message: "Campi aggiuntivi personalizzati" });
-    i18n._({ id: "label_selected_fields", message: "Campi selezionati (trascina per riordinare)" });
-    i18n._({ id: "placeholder_empty_fields", message: "Seleziona o aggiungi dei campi…" });
-    i18n._({ id: "btn_manage_models", message: "Gestisci Modelli" });
-    i18n._({ id: "btn_create", message: "Crea" });
-    i18n._({ id: "modal_manage_models", message: "Gestisci Modelli" });
-    i18n._({ id: "btn_close", message: "Chiudi" });
-    i18n._({ id: "modal_confirm_delete", message: "Conferma Eliminazione" });
-    i18n._({ id: "delete_item_prompt", message: "Sei sicuro di voler eliminare questa scheda?" });
-    i18n._({ id: "delete_item_hint", message: "L'eventuale allegato (immagine o PDF) non verrà rimosso dall'archivio." });
-    i18n._({ id: "btn_delete", message: "Elimina" });
-    i18n._({ id: "modal_unsaved_changes", message: "Modifiche non salvate" });
-    i18n._({ id: "unsaved_prompt", message: "Ci sono modifiche non salvate in questa trascrizione." });
-    i18n._({ id: "unsaved_hint", message: "Sei sicuro di voler uscire e perdere le modifiche?" });
-    i18n._({ id: "btn_continue_writing", message: "Continua a scrivere" });
-    i18n._({ id: "btn_exit_without_saving", message: "Esci senza salvare" });
-    i18n._({ id: "modal_rename", message: "Rinomina Allegato" });
-    i18n._({ id: "label_new_filename", message: "Nuovo nome del file" });
-    i18n._({ id: "btn_save", message: "Salva" });
-    i18n._({ id: "modal_settings", message: "Impostazioni" });
-    i18n._({ id: "settings_workspace", message: "Archivio di Lavoro" });
-    i18n._({ id: "settings_workspace_desc", message: "Questo archivio contiene il tuo database e tutti gli allegati copiati." });
-    i18n._({ id: "btn_change_folder", message: "Cambia Archivio…" });
-    i18n._({ id: "settings_workspace_restart", message: "L'app verrà riavviata se cambi l'archivio." });
-    i18n._({ id: "settings_backup", message: "Backup Dati" });
-    i18n._({ id: "settings_backup_desc", message: "Crea un file compresso contenente l'intero archivio e tutti gli allegati." });
-    i18n._({ id: "btn_export_zip", message: "Esporta Backup in ZIP" });
-    i18n._({ id: "settings_updates", message: "Aggiornamenti" });
-    i18n._({ id: "settings_updates_desc", message: "Controlla se è disponibile una nuova versione del programma su GitHub." });
-    i18n._({ id: "btn_check_updates", message: "Controlla Aggiornamenti" });
-    i18n._({ id: "update_available", message: "È disponibile un nuovo aggiornamento!" });
-    i18n._({ id: "btn_download_github", message: "Scarica da GitHub" });
-    i18n._({ id: "modal_confirm_action", message: "Conferma Azione" });
-    i18n._({ id: "confirm_prompt_default", message: "Sei sicuro?" });
-    i18n._({ id: "dont_ask_again", message: "Non chiederlo più" });
-    i18n._({ id: "btn_yes_proceed", message: "Sì, procedi" });
-    i18n._({ id: "title_structure", message: "Struttura" });
-    i18n._({ id: "title_source_control", message: "Controllo Modifiche" });
-    i18n._({ id: "title_search", message: "Ricerca Globale" });
-    i18n._({ id: "title_suggestions", message: "SUGGERIMENTI" });
-    i18n._({ id: "title_tags", message: "Filtro Tag" });
-    i18n._({ id: "btn_clear_tags", message: "Rimuovi filtri tag" });
-    i18n._({ id: "title_available_tags", message: "TAG DISPONIBILI" });
-    i18n._({ id: "folder_empty", message: "La cartella è vuota." });
-    i18n._({ id: "btn_delete_folder", message: "Elimina questa cartella" });
-    i18n._({ id: "title_new_record", message: "Compila Nuova Scheda" });
-    i18n._({ id: "btn_cancel_edit", message: "Annulla modifica" });
-    i18n._({ id: "label_folder", message: "Archivio:" });
-    i18n._({ id: "label_doc_type", message: "Tipo Documento:" });
-    i18n._({ id: "label_identifier", message: "Identificativo / Segnatura *" });
-    i18n._({ id: "label_attachments", message: "Allega Documenti (Foto o PDF)" });
-    i18n._({ id: "label_tags", message: "Tags (separati da virgola)" });
-    i18n._({ id: "btn_save_record", message: "Salva Scheda" });
-    i18n._({ id: "title_transcription", message: "Trascrizione" });
-    i18n._({ id: "btn_save_transcription", message: "Salva Trascrizione" });
-    i18n._({ id: "btn_add_image_pdf", message: "Aggiungi Immagine/PDF" });
-    i18n._({ id: "no_attachment", message: "Nessun allegato disponibile per questa scheda." });
-    i18n._({ id: "tooltip_sidebar", message: "Mostra/Nascondi Struttura" });
-    i18n._({ id: "tooltip_folders", message: "Apri Archivi" });
-    i18n._({ id: "tooltip_search_btn", message: "Ricerca" });
-    i18n._({ id: "tooltip_tags_btn", message: "Filtra per Tag" });
-    i18n._({ id: "tooltip_new_record", message: "Nuova Scheda" });
-    i18n._({ id: "tooltip_new_type", message: "Nuovo Tipo Documento" });
-    i18n._({ id: "tooltip_bold", message: "Grassetto" });
-    i18n._({ id: "tooltip_italic", message: "Corsivo" });
-    i18n._({ id: "tooltip_underline", message: "Sottolineato" });
-    i18n._({ id: "tooltip_ul", message: "Elenco puntato" });
-    i18n._({ id: "tooltip_ol", message: "Elenco numerato" });
-    i18n._({ id: "tooltip_collapse", message: "Collassa Editor" });
-    i18n._({ id: "tooltip_back", message: "Torna alla lista" });
-    i18n._({ id: "tooltip_prev", message: "Precedente (Alt + Freccia Sinistra)" });
-    i18n._({ id: "tooltip_next", message: "Successivo (Alt + Freccia Destra)" });
-    i18n._({ id: "placeholder_custom_field", message: "Es. Supporto, Filigrana..." });
-    i18n._({ id: "placeholder_search", message: "Cerca in tutte le schede..." });
-    i18n._({ id: "placeholder_tags", message: "Filtra tag..." });
-    i18n._({ id: "placeholder_identifier", message: "Es. Plut. 40.1 o Atto 12" });
-    i18n._({ id: "placeholder_tags_input", message: "es. miniatura, secolo XII, pergamenaceo" });
-    i18n._({ id: "settings_theme", message: "Tema / Aspetto" });
-    i18n._({ id: "settings_theme_desc", message: "Scegli il tema dell'applicazione." });
-    i18n._({ id: "theme_system", message: "Sistema (Predefinito)" });
-    i18n._({ id: "theme_light", message: "Chiaro" });
-    i18n._({ id: "theme_dark", message: "Scuro (Flat Obsidian)" });
-    i18n._({ id: "settings_lang", message: "Lingua / Language" });
-    i18n._({ id: "settings_lang_desc", message: "Scegli la lingua dell'applicazione." });
-
-
-    // IMPOSTAZIONI - TAB
-    i18n._({ id: "settings_tab_general", message: "Generali" });
-    i18n._({ id: "settings_tab_data", message: "Archivio Dati" });
-    i18n._({ id: "settings_tab_sync", message: "Sincronizzazione" });
-    i18n._({ id: "settings_tab_system", message: "Sistema & Info" });
-
-    // IMPOSTAZIONI - CONTENUTI
-    i18n._({ id: "settings_username_title", message: "Nome Collaboratore / Utente" });
-    i18n._({ id: "settings_username_desc", message: "Imposta il tuo nome per identificare chi inserisce o modifica le schede ed i testi." });
-    i18n._({ id: "settings_username_placeholder", message: "Es. Antonio" });
-    i18n._({ id: "theme_light_group", message: "Temi Chiari" });
-    i18n._({ id: "theme_dark_group", message: "Temi Scuri" });
-    
-    i18n._({ id: "settings_local_attachments_title", message: "Cartella Allegati Locale (Opzionale)" });
-    i18n._({ id: "settings_local_attachments_desc", message: "Consente di salvare le immagini localmente sul PC, escludendole dal cloud condiviso per risparmiare spazio." });
-    i18n._({ id: "btn_select_folder", message: "Seleziona Cartella..." });
-    i18n._({ id: "btn_restore_default", message: "Ripristina di default" });
-    
-    i18n._({ id: "settings_hub_title", message: "Stato Collegamento Hub" });
-    i18n._({ id: "settings_hub_desc", message: "Questo archivio locale è collegato ad un repository condiviso online." });
-    i18n._({ id: "settings_hub_url", message: "URL Server:" });
-    i18n._({ id: "settings_hub_repoid", message: "ID Repository:" });
-    i18n._({ id: "settings_hub_key", message: "Chiave di Scrittura:" });
-    i18n._({ id: "settings_not_defined", message: "Non definito" });
-    i18n._({ id: "settings_autofetch_title", message: "Sincronizzazione Automatica (Autofetch)" });
-    i18n._({ id: "settings_autofetch_interval", message: "Intervallo di controllo:" });
-    i18n._({ id: "settings_autofetch_1m", message: "1 minuto" });
-    i18n._({ id: "settings_autofetch_5m", message: "5 minuti" });
-    i18n._({ id: "settings_autofetch_10m", message: "10 minuti" });
-    i18n._({ id: "settings_autofetch_30m", message: "30 minuti" });
-    i18n._({ id: "settings_autofetch_desc", message: "Se attivato, l'app controllerà in background se ci sono nuove modifiche dal server e le scaricherà automaticamente." });
-    
-    i18n._({ id: "settings_drive_title", message: "Sincronizzazione Google Drive" });
-    i18n._({ id: "settings_drive_desc", message: "Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive." });
-    i18n._({ id: "settings_drive_status", message: "Stato:" });
-    i18n._({ id: "settings_drive_checking", message: "Controllo in corso…" });
-    i18n._({ id: "btn_drive_login", message: "Accedi a Drive" });
-    i18n._({ id: "btn_drive_logout", message: "Disconnetti" });
-    i18n._({ id: "btn_drive_sync", message: "Sincronizza Ora" });
-    i18n._({ id: "settings_drive_hint", message: "Per gestire la sincronizzazione, gli inviti o disconnetterti, utilizza il menu <b>Cloud</b> nella barra superiore dell'applicazione." });
-
-    // === CHIAVI DINAMICHE DA TYPESCRIPT ===
-
-    // === CHIAVI MODALI ===
-    i18n._({ id: "modal_cloud_manual_desc", message: "Usa questa opzione se invii l'invito via chat (WhatsApp/Slack). Ricorda che <strong>devi comunque aver autorizzato la sua email</strong> inserendola dal bottone qui sopra." });
-    i18n._({ id: "btn_disconnect_cloud", message: "Scollega dal Cloud" });
-
-    i18n._({ id: "modal_cloud_activate_title", message: "Attiva Sincronizzazione Cloud" });
-    i18n._({ id: "modal_cloud_activate_desc", message: "Scegli se caricare il tuo archivio online o se unirti a uno già esistente tramite codice invito." });
-    i18n._({ id: "modal_cloud_upload_title", message: "Carica nel Cloud" });
-    i18n._({ id: "modal_cloud_upload_desc", message: "Trasforma questo archivio locale in un archivio cloud per poterlo sincronizzare e condividere." });
-    i18n._({ id: "btn_backup_private", message: "Backup Personale" });
-    i18n._({ id: "btn_shared_archive", message: "Archivio Condiviso" });
-    i18n._({ id: "btn_use_different_account", message: "Usa un account diverso" });
-    i18n._({ id: "modal_cloud_join_title", message: "Partecipa" });
-    i18n._({ id: "modal_cloud_join_desc", message: "Hai ricevuto un invito? Abbandona l'archivio locale attuale per unirti a quello condiviso da un tuo collaboratore." });
-    i18n._({ id: "btn_join_archive", message: "Unisciti a un Archivio" });
-    i18n._({ id: "modal_cloud_active_title", message: "Cloud Attivo" });
-    i18n._({ id: "modal_cloud_active_desc", message: "Questo Archivio è sincronizzato." });
-    i18n._({ id: "btn_sync_now", message: "Sincronizza Ora" });
-    i18n._({ id: "label_sync_attachments", message: "Sincronizza allegati automaticamente (PDF/Immagini)" });
-    i18n._({ id: "label_advanced_options", message: "Opzioni avanzate" });
-    // Cloud: riepilogo di stato, stati di caricamento e annunci per screen reader
-    i18n._({ id: "modal_cloud_title_backup", message: "Backup personale su Google Drive" });
-    i18n._({ id: "modal_cloud_title_shared", message: "Archivio condiviso su Google Drive" });
-    i18n._({ id: "cloud_shared_hint", message: "I permessi Drive non sono revocabili singolarmente: chi ha il link mantiene l'accesso. Passa all'archivio condiviso per inviti revocabili." });
-    i18n._({ id: "cloud_status_type", message: "Tipo" });
-    i18n._({ id: "cloud_status_type_backup", message: "Backup personale" });
-    i18n._({ id: "cloud_status_type_shared", message: "Archivio condiviso (legacy)" });
-    i18n._({ id: "cloud_status_account", message: "Account" });
-    i18n._({ id: "cloud_status_last_sync", message: "Ultima sincronizzazione" });
-    i18n._({ id: "btn_syncing", message: "Sincronizzazione..." });
-    i18n._({ id: "btn_activating", message: "Attivazione in corso..." });
-    i18n._({ id: "a11y_sync_attachments_on", message: "Sincronizzazione allegati attivata" });
-    i18n._({ id: "a11y_sync_attachments_off", message: "Sincronizzazione allegati disattivata" });
-    i18n._({ id: "a11y_operation_done", message: "Operazione terminata" });
-    i18n._({ id: "btn_convert_backup_private", message: "Converti in Backup Personale" });
-    i18n._({ id: "btn_convert_shared", message: "Converti in Archivio Condiviso" });
-    i18n._({ id: "btn_use_another_account", message: "Usa un altro account Google" });
-    i18n._({ id: "btn_join_another", message: "Unisiti a un altro Archivio" });
-    i18n._({ id: "modal_cloud_shared_active", message: "Archivio Condiviso Attivo" });
-    i18n._({ id: "modal_cloud_shared_desc", message: "Questo Archivio è sincronizzato sul Cloud. Usa \"Invita tramite Email\" per autorizzare i collaboratori, poi condividi questo codice per configurarli." });
-    i18n._({ id: "modal_cloud_backup_active", message: "Backup Personale Attivo" });
-    i18n._({ id: "modal_cloud_backup_desc", message: "Questo Archivio è sincronizzato nel tuo Cloud privato. Nessun altro ha accesso." });
-    i18n._({ id: "tab_add", message: "Aggiungi" });
-    i18n._({ id: "tab_members", message: "Membri" });
-    i18n._({ id: "modal_cloud_direct_invite", message: "Invito Diretto" });
-    i18n._({ id: "modal_cloud_invite_desc", message: "Inserisci l'email Google del collaboratore. Riceverà un'email con l'autorizzazione di accesso e un \"link magico\" per aprire l'archivio nell'app automaticamente." });
-    i18n._({ id: "btn_invite_email", message: "Invita tramite Email" });
-    i18n._({ id: "btn_manual_invite_code", message: "Invia manualmente il codice d'invito" });
-    i18n._({ id: "modal_cloud_members_desc", message: "Elenco di chi ha accesso a questo Archivio." });
-    i18n._({ id: "modal_cloud_auth_desc", message: "Accedi con il tuo account per sincronizzare questo Archivio." });
-    
-    i18n._({ id: "sidebar_source_control_desc", message: "Modifiche locali non ancora inviate al Cloud" });
-    i18n._({ id: "sidebar_pending_changes", message: "MODIFICHE PENDENTI" });
-    i18n._({ id: "sidebar_cloud_history", message: "Storico Cloud" });
-    i18n._({ id: "sidebar_cloud_history_desc", message: "Versioni salvate su Google Drive" });
-    i18n._({ id: "sidebar_cloud_revisions", message: "REVISIONI CLOUD" });
-    i18n._({ id: "tooltip_refresh_list", message: "Aggiorna lista" });
-    i18n._({ id: "sidebar_history_empty", message: "Apri questa sezione per vedere lo storico." });
-    i18n._({ id: "sidebar_manage_archives", message: "Gestisci archivi…" });
-
-
-    i18n._({ id: "modal_docs_title", message: "Documentazione e Aiuto" });
-    i18n._({ id: "modal_media_title", message: "Visualizzatore Multimediale" });
-    i18n._({ id: "modal_unsaved_title", message: "Modifiche non salvate" });
-    i18n._({ id: "modal_unsaved_desc", message: "Hai delle modifiche non salvate" });
-    i18n._({ id: "btn_save_exit", message: "Salva ed esci" });
-    i18n._({ id: "btn_exit_nosave", message: "Esci senza salvare" });
-    i18n._({ id: "modal_conflict_title", message: "Conflitto di Sincronizzazione" });
-    i18n._({ id: "modal_conflict_desc", message: "La scheda è stata modificata sia da te che da un altro utente" });
-    i18n._({ id: "btn_keep_local", message: "Mantieni versione Locale" });
-    i18n._({ id: "btn_keep_remote", message: "Mantieni versione Remota" });
-    i18n._({ id: "modal_del_conflict_title", message: "Conflitto di Eliminazione" });
-    i18n._({ id: "modal_del_conflict_desc", message: "Questa scheda è stata modificata da un altro utente" });
-    i18n._({ id: "btn_force_delete", message: "Forza Eliminazione" });
-
-    i18n._({ id: "tooltip_source_control", message: "Controllo Modifiche (Source Control)" });
-    i18n._({ id: "tooltip_history", message: "Storico Versioni Cloud" });
-    i18n._({ id: "tooltip_cloud_updates", message: "Ci sono aggiornamenti dal Cloud. Clicca Sincronizza o Scarica." });
-    i18n._({ id: "indicator_incoming", message: "In Entrata" });
-    i18n._({ id: "tooltip_pending_changes", message: "Hai modifiche locali non ancora sincronizzate con il Cloud" });
-    i18n._({ id: "indicator_pending", message: "Modifiche Pendenti" });
-    i18n._({ id: "tooltip_fetch", message: "Controlla se ci sono aggiornamenti dal Cloud" });
-    i18n._({ id: "btn_fetch", message: "Fetch" });
-    i18n._({ id: "tooltip_pull", message: "Scarica le ultime modifiche dal Cloud" });
-    i18n._({ id: "tooltip_push", message: "Carica le modifiche locali sul Cloud" });
-    i18n._({ id: "tooltip_tutorial", message: "Avvia Tutorial" });
-
-    i18n._({ id: "modal_cloud_title", message: "Gestione Condivisione (Cloud)" });
-    i18n._({ id: "modal_cloud_connect", message: "Connetti questo Archivio" });
-    i18n._({ id: "modal_cloud_desc", message: "Se questo archivio locale non è ancora collegato al Cloud, puoi farlo ora." });
-    i18n._({ id: "modal_cloud_drive", message: "Condivisione Google Drive" });
-    i18n._({ id: "modal_cloud_drive_desc", message: "Crea o collega un Archivio Condiviso su Google Drive." });
-    i18n._({ id: "modal_cloud_drive_btn", message: "Crea / Connetti a Drive" });
-    i18n._({ id: "modal_cloud_control", message: "Pannello di Controllo" });
-    i18n._({ id: "btn_add_member", message: "Aggiungi Membro" });
-    i18n._({ id: "btn_clean_ghosts", message: "Pulizia File Fantasma" });
-    i18n._({ id: "modal_cloud_manual", message: "Condivisione Manuale" });
-    i18n._({ id: "btn_copy_code", message: "Copia Codice" });
-    i18n._({ id: "msg_operation_progress", message: "Operazione in corso" });
-    i18n._({ id: "msg_please_wait", message: "Attendere prego…" });
-    i18n._({ id: "modal_cloud_auth", message: "Autenticazione Cloud" });
-    i18n._({ id: "btn_login_google", message: "Accedi con Google" });
-    i18n._({ id: "label_email", message: "Indirizzo Email" });
-    i18n._({ id: "btn_send_invite", message: "Invia Invito" });
-
-    i18n._({ id: "modal_delete_title", message: "Conferma Eliminazione" });
-    i18n._({ id: "modal_delete_warning", message: "Attenzione: questa azione è irreversibile." });
-    i18n._({ id: "modal_delete_desc", message: "Sei sicuro di voler eliminare" });
-    i18n._({ id: "btn_delete", message: "Elimina" });
-
-    i18n._({ id: "modal_folder_title", message: "Gestione Archivi" });
-    i18n._({ id: "modal_folder_new", message: "Crea Nuovo Archivio" });
-    i18n._({ id: "modal_folder_recent", message: "Archivi Recenti" });
-
-    i18n._({ id: "modal_rename_title", message: "Rinomina" });
-    i18n._({ id: "modal_rename_desc", message: "Inserisci il nuovo nome:" });
-
-    i18n._({ id: "modal_manage_types_title", message: "Gestione Modelli Documento" });
-    i18n._({ id: "btn_create_model", message: "Crea Nuovo Modello" });
-    i18n._({ id: "modal_manage_types_default", message: "Modelli Predefiniti" });
-    i18n._({ id: "modal_manage_types_custom", message: "I tuoi Modelli" });
-
-    i18n._({ id: "modal_changelog_title", message: "Novità in ArchiView" });
-
-    i18n._({ id: "btn_edit", message: "Modifica" });
-    i18n._({ id: "btn_transcribe", message: "Trascrivi" });
-    i18n._({ id: "btn_add_dynamic", message: "Aggiungi" });
-    i18n._({ id: "drag_to_root", message: "Sposta alla radice" });
-    i18n._({ id: "no_search_match", message: "Nessun match trovato nel database." });
-    
-    // CONFIG_CAMPI
-    i18n._({ id: "field_dataCronica", message: "Data Cronica" });
-    i18n._({ id: "field_dataTopica", message: "Data Topica" });
-    i18n._({ id: "field_Marginalia", message: "Marginalia" });
-    i18n._({ id: "field_Notaio", message: "Notaio" });
-    i18n._({ id: "field_tipo_di_atto", message: "Tipo di Atto" });
-    i18n._({ id: "field_oggetto", message: "Oggetto" });
-    i18n._({ id: "field_elementi_economici", message: "Elementi Economici" });
-    i18n._({ id: "field_magistratura", message: "Magistratura" });
-    i18n._({ id: "field_tipo_di_atto_giur", message: "Tipo di Atto" });
-    i18n._({ id: "field_motivazione_processo", message: "Motivazione del Processo" });
-    i18n._({ id: "field_condanne", message: "Condanne" });
-    i18n._({ id: "field_attori_dinamici", message: "Persone / Attori" });
-    i18n._({ id: "field_dichiarante", message: "Dichiarante" });
-    i18n._({ id: "field_beni_dinamici", message: "Beni (Proprietà)" });
-    i18n._({ id: "field_debiti_dinamici", message: "Debiti" });
-    i18n._({ id: "field_crediti_dinamici", message: "Crediti" });
-    i18n._({ id: "field_famiglia_dinamici", message: "Familiari" });
-
-    // PLACEHOLDERS
-    i18n._({ id: "placeholder_dataCronica", message: "Es. 12 Maggio 1340" });
-    i18n._({ id: "placeholder_dataTopica", message: "Es. Firenze" });
-    i18n._({ id: "placeholder_autore", message: "Es. Anonimo / Notaio" });
-    i18n._({ id: "placeholder_titolo", message: "Titolo o descrizione sintetica" });
-    i18n._({ id: "placeholder_note", message: "Note testuali o codicologiche" });
-    i18n._({ id: "placeholder_prezzo", message: "Es. 12 fiorini" });
-    i18n._({ id: "placeholder_Marginalia", message: "Note marginali…" });
-    i18n._({ id: "placeholder_Notaio", message: "Nome del notaio" });
-    i18n._({ id: "placeholder_tipo_di_atto", message: "Es. matrimonio, vendita, testamento…" });
-    i18n._({ id: "placeholder_oggetto", message: "Oggetto del documento" });
-    i18n._({ id: "placeholder_elementi_economici", message: "Dettagli economici…" });
-    i18n._({ id: "placeholder_magistratura", message: "Es. Podestà, Capitano del Popolo…" });
-    i18n._({ id: "placeholder_tipo_di_atto_giur", message: "Es. accusa, inquisitione, testimoni, altro" });
-    i18n._({ id: "placeholder_motivazione_processo", message: "Causa e ragioni del processo…" });
-    i18n._({ id: "placeholder_condanne", message: "Eventuali condanne, assoluzioni o pene…" });
-    i18n._({ id: "placeholder_dichiarante", message: "Es. famiglia, istituzione…" });
-
-    i18n._({ id: "placeholder_key_attori_dinamici", message: "Ruolo (es. Venditore)" });
-    i18n._({ id: "placeholder_val_attori_dinamici", message: "Nome della persona" });
-    i18n._({ id: "placeholder_key_beni_dinamici", message: "Bene (es. Casa, Terreno)" });
-    i18n._({ id: "placeholder_val_beni_dinamici", message: "Valore (es. 10 fiorini)" });
-    i18n._({ id: "placeholder_key_debiti_dinamici", message: "Creditore / Motivo" });
-    i18n._({ id: "placeholder_val_debiti_dinamici", message: "Ammontare" });
-    i18n._({ id: "placeholder_key_crediti_dinamici", message: "Debitore / Motivo" });
-    i18n._({ id: "placeholder_val_crediti_dinamici", message: "Ammontare" });
-    i18n._({ id: "placeholder_key_famiglia_dinamici", message: "Parentela (es. Figlio, Moglie)" });
-    i18n._({ id: "placeholder_val_famiglia_dinamici", message: "Nome" });
-
-    // Messaggi di stato / Toast
-    i18n._({ id: "msg_insert_type_name", message: "Inserisci un nome per il tipo di documento." });
-    i18n._({ id: "msg_add_one_field", message: "Aggiungi almeno un campo base o personalizzato." });
-    i18n._({ id: "msg_type_updated", message: "Modello aggiornato con successo." });
-    i18n._({ id: "msg_type_created", message: "Nuovo modello creato." });
-    i18n._({ id: "msg_type_in_use", message: "Impossibile eliminare: ci sono schede che usano questo modello." });
-    i18n._({ id: "msg_type_deleted", message: "Modello eliminato." });
-
-    i18n._({ id: "msg_backup_init", message: "Preparazione del backup in corso…" });
-    i18n._({ id: "msg_backup_success", message: "Backup creato con successo!" });
-    i18n._({ id: "msg_backup_error", message: "Errore durante il backup: " });
-    i18n._({ id: "msg_check_updates", message: "Controllo aggiornamenti in corso…" });
-    i18n._({ id: "msg_update_error", message: "Errore controllo aggiornamenti: " });
-    i18n._({ id: "msg_update_release_incomplete", message: "È in corso la pubblicazione di una nuova versione: riprova tra qualche minuto." });
-    i18n._({ id: "btn_update_retry", message: "Riprova" });
-    i18n._({ id: "msg_up_to_date", message: "Il programma è già aggiornato" });
-
-    i18n._({ id: "msg_file_save_error", message: "Errore durante il salvataggio." });
-    i18n._({ id: "msg_record_deleted", message: "Scheda eliminata." });
-
-    i18n._({ id: "msg_folder_name_empty", message: "Il nome dell'archivio non può essere vuoto." });
-    i18n._({ id: "msg_folder_exists", message: "L'archivio esiste già." });
-    i18n._({ id: "msg_folder_exists_dest", message: "Esiste già un archivio con questo nome nella destinazione." });
-    i18n._({ id: "msg_cannot_delete_last_folder", message: "Impossibile eliminare l'unico archivio rimasto." });
-    i18n._({ id: "msg_cannot_delete_not_empty", message: "Impossibile eliminare l'archivio perché contiene dei documenti." });
-    i18n._({ id: "msg_folder_deleted", message: "Cartella eliminata." });
-    i18n._({ id: "msg_folder_invalid_name", message: "Nome archivio non valido." });
-    i18n._({ id: "msg_folder_renamed", message: "Archivio rinominato." });
-
-    i18n._({ id: "msg_transcription_saved", message: "Trascrizione salvata con successo." });
-    i18n._({ id: "msg_attachment_error", message: "Impossibile caricare l'allegato." });
-
-    i18n._({ id: "no_tags_found", message: "Nessun tag disponibile" });
-    i18n._({ id: "no_attached_docs", message: "Nessun documento allegato" });
-    i18n._({ id: "no_workspace_set", message: "Nessun archivio impostato" });
-    i18n._({ id: "btn_pull", message: "Scarica" });
-    i18n._({ id: "btn_push", message: "Invia" });
-
-    i18n._({ id: "msg_new_version_avail", message: "È disponibile la nuova versione" });
-    i18n._({ id: "msg_current_version", message: "attuale:" });
-    i18n._({ id: "btn_download_update", message: "Scarica Aggiornamento" });
-    i18n._({ id: "btn_download_starting", message: "Avvio download…" });
-    i18n._({ id: "btn_download_error", message: "Errore Download" });
-    i18n._({ id: "msg_downloading", message: "Scaricamento:" });
-    i18n._({ id: "btn_restart_install", message: "Riavvia e Installa" });
-    i18n._({ id: "btn_installing", message: "Installazione…" });
-    i18n._({ id: "btn_report_issue", message: "Segnala problema" });
-    i18n._({ id: "settings_support", message: "Supporto" });
-    i18n._({ id: "settings_support_desc", message: "Hai riscontrato dei problemi o hai dei suggerimenti? Segnalalo su GitHub." });
-    i18n._({ id: "modal_report_issue", message: "Segnala un problema" });
-    i18n._({ id: "issue_title", message: "Titolo della segnalazione *" });
-    i18n._({ id: "placeholder_issue_title", message: "Es. Errore durante il salvataggio o caricamento file…" });
-    i18n._({ id: "issue_type", message: "Tipo di segnalazione" });
-    i18n._({ id: "issue_type_bug", message: "Bug / Errore del programma" });
-    i18n._({ id: "issue_type_enhancement", message: "Suggerimento / Nuova funzionalità" });
-    i18n._({ id: "issue_type_feedback", message: "Feedback generico" });
-    i18n._({ id: "issue_description", message: "Descrizione dettagliata *" });
-    i18n._({ id: "placeholder_issue_desc", message: "Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada…" });
-    i18n._({ id: "btn_submit_issue", message: "Apri su GitHub" });
-    i18n._({ id: "sync_in_progress", message: "Sincronizzazione" });
-    i18n._({ id: "upload_in_progress", message: "Caricamento" });
-    i18n._({ id: "download_in_progress", message: "Scaricamento" });
-    i18n._({ id: "msg_sync_error", message: "Errore di connessione o sincronizzazione." });
-
-    // TUTORIAL
-    i18n._({ id: "tut_welcome_title", message: "Benvenuto in ArchiView" });
-    i18n._({ id: "tut_welcome_desc", message: "Questo tour guidato ti illustrerà le funzionalità principali del sistema. Clicca su \"Avanti\" per iniziare la presentazione." });
-    i18n._({ id: "tut_toolbar_title", message: "Barra degli Strumenti Globale" });
-    i18n._({ id: "tut_toolbar_desc", message: "Quest'area consente la navigazione rapida tra le sezioni principali e l'accesso alle funzioni di gestione dell'archivio." });
-    i18n._({ id: "tut_models_title", message: "Gestione Modelli" });
-    i18n._({ id: "tut_models_desc", message: "Clicca su questo pulsante per creare o personalizzare i modelli di documento. Un modello definisce quali campi (es. Data, Autore, Note) saranno disponibili per la compilazione della scheda." });
-    i18n._({ id: "tut_new_model_title", message: "Creazione Modello" });
-    i18n._({ id: "tut_new_model_desc", message: "In questa finestra puoi selezionare un modello predefinito o crearne uno completamente personalizzato aggiungendo i tuoi campi. Chiudi la finestra (con la X o Annulla) per procedere." });
-    i18n._({ id: "tut_search_title", message: "Ricerca Globale" });
-    i18n._({ id: "tut_search_desc", message: "Per esplorare gli strumenti di ricerca avanzata, clicca sull'icona della lente d'ingrandimento." });
-    i18n._({ id: "tut_search_engine_title", message: "Motore di Ricerca Avanzato" });
-    i18n._({ id: "tut_search_engine_desc", message: "Il sistema indicizza e ricerca le parole chiave all'interno dei metadati, dei titoli e del corpo delle trascrizioni in tempo reale." });
-    i18n._({ id: "tut_tags_title", message: "Sistema di Catalogazione" });
-    i18n._({ id: "tut_tags_desc", message: "Per accedere alle funzionalità di classificazione tramite tag, seleziona l'icona a forma di segnalibro." });
-    i18n._({ id: "tut_tags_filter_title", message: "Filtri Semantici e Tag" });
-    i18n._({ id: "tut_tags_filter_desc", message: "Questa sezione permette di organizzare il patrimonio documentario attraverso etichette personalizzabili. La selezione di un tag applica un filtro immediato all'intero archivio." });
-    i18n._({ id: "tut_cloud_sync_title", message: "Sincronizzazione Remota" });
-    i18n._({ id: "tut_cloud_sync_desc", message: "Strumenti per la gestione del repository Cloud: utilizza \"Fetch\" per verificare la presenza di aggiornamenti, \"Scarica\" per allineare il database locale e \"Carica\" per pubblicare le tue revisioni." });
-    i18n._({ id: "tut_source_control_title", message: "Gestione Versioni" });
-    i18n._({ id: "tut_source_control_desc", message: "Per analizzare lo stato delle revisioni non ancora sincronizzate, seleziona l'icona del Controllo Modifiche." });
-    i18n._({ id: "tut_source_status_title", message: "Stato delle Revisioni" });
-    i18n._({ id: "tut_source_status_desc", message: "Questa vista riepiloga le modifiche effettuate in locale. Prima della sincronizzazione, è possibile revisionare o annullare ciascuna operazione in modo selettivo." });
-    i18n._({ id: "tut_cloud_integration_title", message: "Integrazione Cloud" });
-    i18n._({ id: "tut_cloud_integration_desc", message: "L'archivio corrente è configurato in modalità locale. Seleziona l'icona Cloud nell'angolo in basso a sinistra per esplorare le opzioni di connettività." });
-    i18n._({ id: "tut_cloud_panel_title", message: "Pannello di Configurazione Remota" });
-    i18n._({ id: "tut_cloud_panel_desc", message: "Da questa interfaccia è possibile convertire l'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire." });
-    i18n._({ id: "tut_vaults_title", message: "Gestione Multi-Archivio" });
-    i18n._({ id: "tut_vaults_desc", message: "ArchiView ti permette di creare e gestire un numero illimitato di archivi (vault) separati. Cliccando su questo pulsante potrai passare rapidamente da un archivio all'altro, creare nuovi archivi locali, collegarne di Cloud o gestire Archivi Condivisi per collaborare col tuo team." });
-    i18n._({ id: "tut_nav_return_title", message: "Ritorno alla Navigazione" });
-    i18n._({ id: "tut_nav_return_desc", message: "Per ripristinare la vista principale e sfogliare i record, seleziona l'icona a forma di cartella." });
-    i18n._({ id: "tut_card_edit_title", message: "Accesso alla Schedatura" });
-    i18n._({ id: "tut_card_edit_desc", message: "Per consultare o aggiornare i metadati di un documento, seleziona il pulsante \"Modifica\" posizionato sulla relativa scheda." });
-    i18n._({ id: "tut_editor_title", message: "Editor della Schedatura" });
-    i18n._({ id: "tut_editor_desc", message: "Questo pannello consente la catalogazione estesa del documento e la gestione dei relativi allegati digitali. L'interfaccia mantiene i comandi di salvataggio sempre accessibili. Clicca sulla freccia in alto a sinistra per tornare all'archivio." });
-    i18n._({ id: "tut_transcribe_title", message: "Modulo di Trascrizione" });
-    i18n._({ id: "tut_transcribe_desc", message: "Seleziona ora il pulsante \"Trascrivi\" su una scheda per avviare l'ambiente dedicato all'analisi e alla trascrizione del documento originale." });
-    i18n._({ id: "tut_transcribe_env_title", message: "Ambiente di Trascrizione Integrato" });
-    i18n._({ id: "tut_transcribe_env_desc", message: "Quest'area presenta l'immagine del manoscritto affiancata all'editor testuale avanzato. Si consiglia l'utilizzo della combinazione Ctrl+S per il salvataggio rapido. Clicca sulla freccia in alto a sinistra per tornare all'archivio." });
-    i18n._({ id: "tut_context_menu_title", message: "Operazioni Contestuali" });
-    i18n._({ id: "tut_context_menu_desc", message: "La piattaforma supporta menù contestuali (tasto destro del mouse) sugli elementi dell'archivio per l'accesso rapido alle funzioni di esportazione, duplicazione e rimozione." });
-    i18n._({ id: "tut_done_title", message: "Configurazione Completata" });
-    i18n._({ id: "tut_done_desc", message: "Il sistema è ora pronto per l'utilizzo. È possibile rieseguire questa presentazione formativa in qualsiasi momento selezionando l'icona (?)." });
-    i18n._({ id: "tut_btn_next", message: "Avanti" });
-    i18n._({ id: "tut_btn_prev", message: "Indietro" });
-    i18n._({ id: "tut_btn_done", message: "Fine" });
-
-    // --- Fase 2.3: OCR degli allegati ---
-    i18n._({ id: "ocr_title", message: "Riconosci testo (OCR)" });
-    i18n._({ id: "ocr_button", message: "Riconosci testo" });
-    i18n._({ id: "ocr_menu_entry", message: "Riconosci testo (OCR)…" });
-    i18n._({ id: "ocr_start", message: "Riconosci" });
-    i18n._({ id: "ocr_source", message: "Allegato" });
-    i18n._({ id: "ocr_source_all", message: "Tutti gli allegati della scheda" });
-    i18n._({ id: "ocr_langs", message: "Lingue" });
-    i18n._({ id: "ocr_langs_title", message: "Lingue del riconoscimento" });
-    i18n._({ id: "ocr_langs_hint", message: "Più lingue insieme rallentano il riconoscimento: sceglile solo se il documento le mescola davvero." });
-    i18n._({ id: "ocr_langs_loading", message: "Lettura in corso…" });
-    i18n._({ id: "ocr_langs_offline_hint", message: "I dati si scaricano una sola volta e restano su questo computer: dopo l'installazione il riconoscimento funziona senza connessione." });
-    i18n._({ id: "ocr_no_langs", message: "Nessuna lingua installata: il riconoscimento ha bisogno almeno di una lingua." });
-    i18n._({ id: "ocr_manage_langs", message: "Gestisci lingue…" });
-    i18n._({ id: "ocr_lang_install", message: "Installa" });
-    i18n._({ id: "ocr_lang_remove", message: "Rimuovi" });
-    i18n._({ id: "ocr_lang_installing", message: "Download…" });
-    i18n._({ id: "ocr_lang_removing", message: "Rimozione…" });
-    i18n._({ id: "ocr_lang_name_ita", message: "Italiano" });
-    i18n._({ id: "ocr_lang_name_lat", message: "Latino" });
-    i18n._({ id: "ocr_lang_name_eng", message: "Inglese" });
-    i18n._({ id: "ocr_lang_name_fra", message: "Francese" });
-    i18n._({ id: "ocr_lang_name_deu", message: "Tedesco" });
-    i18n._({ id: "ocr_lang_name_spa", message: "Spagnolo" });
-    i18n._({ id: "ocr_lang_name_ita_old", message: "Italiano (ortografia antica)" });
-    i18n._({ id: "ocr_lang_name_osd", message: "Rilevamento orientamento" });
-    i18n._({ id: "ocr_lang_error", message: "Operazione non riuscita: serve una connessione per scaricare i dati di lingua." });
-    i18n._({ id: "ocr_destination", message: "Destinazione" });
-    i18n._({ id: "ocr_dest_draft", message: "Inserisci come bozza nella trascrizione" });
-    i18n._({ id: "ocr_dest_index", message: "Rendi il testo cercabile" });
-    i18n._({ id: "ocr_orientation", message: "Orientamento" });
-    i18n._({ id: "ocr_straighten", message: "Raddrizza le pagine scansionate di traverso" });
-    i18n._({ id: "ocr_straighten_hint", message: "Le pagine girate di 90° o capovolte si ruotano prima del riconoscimento; nel PDF ricercabile appaiono dritte. Se l'orientamento è incerto si legge nei due versi e si tiene la lettura migliore." });
-    i18n._({ id: "ocr_straighten_missing", message: "Per usarlo installa «Rilevamento orientamento» da Gestisci lingue." });
-    i18n._({ id: "ocr_phase_orientation", message: "Rilevamento orientamento" });
-    i18n._({ id: "ocr_straightened", message: "Pagine raddrizzate: {var0}." });
-    i18n._({ id: "ocr_orientation_unsure", message: "Pagine forse girate ma lasciate com'erano (orientamento incerto): {var0}." });
-    i18n._({ id: "ocr_dest_pdf", message: "Salva una copia come PDF ricercabile" });
-    i18n._({ id: "ocr_pdf_save_title", message: "Salva PDF ricercabile" });
-    i18n._({ id: "ocr_pdf_saved", message: "PDF ricercabile salvato: {var0}" });
-    i18n._({ id: "ocr_pdf_failed", message: "PDF ricercabile non salvato." });
-    i18n._({ id: "ocr_pdf_encrypted", message: "Alcuni PDF sono protetti e non sono stati inclusi nel PDF ricercabile." });
-    i18n._({ id: "ocr_pdf_partial", message: "Alcuni allegati non sono stati inclusi nel PDF ricercabile." });
-    i18n._({ id: "ocr_dest_hint", message: "Il testo cercabile resta legato all'allegato e non tocca la trascrizione: serve a ritrovare la scheda, non a sostituire il lavoro di lettura." });
-    i18n._({ id: "ocr_advanced", message: "Opzioni avanzate" });
-    i18n._({ id: "ocr_dpi", message: "Risoluzione di scansione dei PDF" });
-    i18n._({ id: "ocr_dpi_fast", message: "veloce" });
-    i18n._({ id: "ocr_dpi_default", message: "consigliata" });
-    i18n._({ id: "ocr_dpi_slow", message: "lenta, testo minuto" });
-    i18n._({ id: "ocr_max_pages", message: "Pagine massime per PDF" });
-    i18n._({ id: "ocr_max_pages_hint", message: "Il limite esiste perché un PDF di trecento carte occuperebbe il programma per ore senza che nessuno lo abbia chiesto." });
-    i18n._({ id: "ocr_phase_page", message: "Pagina" });
-    i18n._({ id: "ocr_phase_raster", message: "Preparazione immagine" });
-    i18n._({ id: "ocr_phase_recognize", message: "Riconoscimento" });
-    i18n._({ id: "ocr_phase_lang", message: "Caricamento lingua" });
-    i18n._({ id: "ocr_phase_init", message: "Avvio del motore" });
-    i18n._({ id: "ocr_page_of", message: "pagina {var0} di {var1}" });
-    i18n._({ id: "ocr_provenance", message: "Bozza generata da OCR ({var0}) il {var1} — da rivedere" });
-    i18n._({ id: "ocr_pick_lang", message: "Scegli almeno una lingua." });
-    i18n._({ id: "ocr_pick_dest", message: "Scegli almeno una destinazione per il testo." });
-    i18n._({ id: "ocr_no_attachments", message: "Questa scheda non ha allegati da riconoscere." });
-    i18n._({ id: "ocr_no_attachments_sel", message: "Nessuna delle schede selezionate ha allegati." });
-    i18n._({ id: "ocr_failed", message: "Nessun testo riconosciuto." });
-    i18n._({ id: "ocr_done", message: "Riconoscimento completato." });
-    i18n._({ id: "ocr_result_summary", message: "{var0} caratteri riconosciuti, confidenza media {var1}%" });
-    i18n._({ id: "ocr_low_confidence", message: "Confidenza bassa: probabilmente la scrittura è corsiva o la scansione è poco leggibile. Il testo va riletto parola per parola." });
-    i18n._({ id: "ocr_saved_index", message: "Testo reso cercabile." });
-    i18n._({ id: "ocr_saved_draft", message: "Bozza inserita nella trascrizione." });
-    i18n._({ id: "ocr_draft_skipped", message: "Trascrizione lasciata invariata." });
-    i18n._({ id: "ocr_overwrite_title", message: "Trascrizione già presente" });
-    i18n._({ id: "ocr_overwrite_desc", message: "Alcune carte hanno già una trascrizione. La bozza dell'OCR può sostituirla o essere aggiunta in fondo. Il testo sostituito non è recuperabile." });
-    i18n._({ id: "trasc_current_sheet", message: "Carta {var0} di {var1} — {var2}" });
-    i18n._({ id: "trasc_page_of", message: "p. {var0} di {var1}" });
-    i18n._({ id: "pdf_prev_page", message: "Pagina precedente" });
-    i18n._({ id: "pdf_next_page", message: "Pagina successiva" });
-    i18n._({ id: "pdf_page_number", message: "Numero di pagina" });
-    i18n._({ id: "pdf_search_placeholder", message: "Cerca nel PDF" });
-    i18n._({ id: "pdf_searching", message: "Ricerca… {var0}/{var1}" });
-    i18n._({ id: "pdf_no_results", message: "Nessun risultato" });
-    i18n._({ id: "pdf_results", message: "Trovato in {var0} pagine" });
-    i18n._({ id: "pdf_source_pdf", message: "Testo del PDF" });
-    i18n._({ id: "pdf_source_transcription", message: "Trascrizione" });
-    i18n._({ id: "pdf_open_failed_title", message: "PDF non leggibile" });
-    i18n._({ id: "pdf_open_failed_desc", message: "Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile." });
-    i18n._({ id: "ocr_overwrite_append", message: "Aggiungi in fondo" });
-    i18n._({ id: "ocr_overwrite_replace", message: "Sostituisci" });
-    i18n._({ id: "ocr_bulk_title", message: "OCR delle schede selezionate" });
-    i18n._({ id: "ocr_bulk_progress", message: "Scheda {var0} di {var1}: {var2}" });
-    i18n._({ id: "ocr_bulk_done", message: "OCR completato: {var0} allegati in {var1} schede." });
-    i18n._({ id: "filter_ocr", message: "Testo OCR" });
-    i18n._({ id: "filter_has_ocr", message: "Con testo OCR" });
-    i18n._({ id: "filter_no_ocr", message: "Senza testo OCR" });
-    i18n._({ id: "settings_ocr_desc", message: "Il riconoscimento del testo (OCR) funziona senza connessione, ma ogni lingua va installata una volta. I dati restano su questo computer e non vengono sincronizzati." });
-
-
-    // --- Menu contestuali: etichette corte (la dizione estesa sta nel title) ---
-    i18n._({ id: "menu_edit_short", message: "Modifica" });
-    i18n._({ id: "menu_ocr_short", message: "Riconosci testo" });
-    i18n._({ id: "menu_export_zip", message: "Esporta ZIP" });
-    i18n._({ id: "menu_export_csv", message: "Esporta CSV" });
-    i18n._({ id: "menu_export_tsv", message: "Esporta TSV" });
-    i18n._({ id: "menu_print_short", message: "Stampa" });
-    // --- Voci-gruppo dei sottomenu (MENU_GROUPING_TODO) ---
-    i18n._({ id: "menu_view_group", message: "Vedi" });
-    i18n._({ id: "menu_view_group_title", message: "Collegamenti, grafo, cronologia" });
-    i18n._({ id: "menu_export_group", message: "Esporta" });
-    i18n._({ id: "menu_export_group_title", message: "ZIP, CSV, testo, stampa" });
-    i18n._({ id: "menu_export_group_title_folder", message: "ZIP, CSV, TSV, testo, stampa" });
-    i18n._({ id: "menu_import_group", message: "Importa" });
-    i18n._({ id: "menu_import_group_title", message: "Backup ZIP o foglio di calcolo" });
-    i18n._({ id: "menu_import_zip", message: "Backup ZIP" });
-    i18n._({ id: "menu_bulk_group_title", message: "Modifica in massa" });
-    i18n._({ id: "menu_bulk_move", message: "Sposta" });
-    i18n._({ id: "menu_bulk_type", message: "Cambia tipo" });
-    i18n._({ id: "menu_bulk_tag", message: "Modifica tag" });
-    i18n._({ id: "menu_bulk_replace", message: "Sostituisci" });
-    i18n._({ id: "menu_bulk_ocr", message: "OCR" });
-    i18n._({ id: "menu_select_all_short", message: "Seleziona tutto" });
-    i18n._({ id: "menu_new_record_short", message: "Nuova scheda" });
-    i18n._({ id: "menu_new_folder_short", message: "Nuova cartella" });
-    i18n._({ id: "menu_rename_short", message: "Rinomina" });
-    i18n._({ id: "menu_explorer_short", message: "Esplora risorse" });
-    i18n._({ id: "bulk_export_zip_full", message: "Esporta la selezione in ZIP" });
-    // --- Fase 2.2: stampa e PDF ---
-    i18n._({ id: "print_title", message: "Stampa e PDF" });
-    i18n._({ id: "print_scope", message: "Cosa stampare" });
-    i18n._({ id: "print_scope_selection", message: "Schede selezionate" });
-    i18n._({ id: "print_scope_current", message: "Scheda aperta" });
-    i18n._({ id: "print_scope_results", message: "Risultati correnti" });
-    i18n._({ id: "print_scope_folder", message: "Cartella corrente" });
-    i18n._({ id: "print_scope_all", message: "Tutto l'archivio" });
-    i18n._({ id: "print_layout", message: "Formato" });
-    i18n._({ id: "print_layout_card", message: "Scheda singola" });
-    i18n._({ id: "print_layout_card_desc", message: "Una scheda per pagina, con tutti i campi, gli allegati come miniature e la trascrizione." });
-    i18n._({ id: "print_layout_regest", message: "Regesto / inventario" });
-    i18n._({ id: "print_layout_regest_desc", message: "Elenco ordinato: segnatura, data e sintesi del contenuto. È il formato di un inventario a stampa." });
-    i18n._({ id: "print_layout_table", message: "Elenco tabellare" });
-    i18n._({ id: "print_layout_table_desc", message: "Le colonne della vista tabella, una riga per scheda." });
-    i18n._({ id: "print_fund", message: "Fondo" });
-    i18n._({ id: "print_fund_ph", message: "Es. ASP, Notarile" });
-    i18n._({ id: "print_author", message: "Schedatura di" });
-    i18n._({ id: "print_author_ph", message: "Nome e cognome" });
-    i18n._({ id: "print_date", message: "Data" });
-    i18n._({ id: "print_date_ph", message: "Es. giugno 2026" });
-    i18n._({ id: "print_opt_cover", message: "Frontespizio" });
-    i18n._({ id: "print_opt_pages", message: "Numeri di pagina" });
-    i18n._({ id: "print_opt_thumbs", message: "Miniature degli allegati" });
-    i18n._({ id: "print_opt_transcription", message: "Includi la trascrizione" });
-    i18n._({ id: "print_opt_empty", message: "Mostra anche i campi vuoti" });
-    i18n._({ id: "print_orientation", message: "Orientamento" });
-    i18n._({ id: "print_portrait", message: "Verticale" });
-    i18n._({ id: "print_landscape", message: "Orizzontale" });
-    i18n._({ id: "print_count", message: "{var0} schede da stampare." });
-    i18n._({ id: "print_current_view", message: "Stampa la vista" });
-    i18n._({ id: "print_send", message: "Stampa" });
-    i18n._({ id: "print_save_pdf", message: "Salva PDF" });
-    i18n._({ id: "print_empty", message: "Non c'è nessuna scheda da stampare." });
-    i18n._({ id: "print_working", message: "Preparazione del documento…" });
-    i18n._({ id: "print_sent", message: "Documento inviato alla stampante." });
-    i18n._({ id: "print_saved", message: "PDF salvato." });
-    i18n._({ id: "print_failed", message: "Stampa non riuscita: " });
-    i18n._({ id: "print_cmd_regest", message: "Stampa il regesto della cartella" });
-    i18n._({ id: "print_cmd_selection", message: "Stampa la selezione" });
-    i18n._({ id: "menu_print_folder", message: "Stampa cartella" });
-    i18n._({ id: "dialog_print_pdf", message: "Salva in PDF" });
-    i18n._({ id: "shortcut_print", message: "Stampa o salva in PDF" });
-    i18n._({ id: "print_doc_title", message: "Schedatura" });
-    i18n._({ id: "print_cover_fund", message: "Fondo" });
-    i18n._({ id: "print_cover_author", message: "Schedatura a cura di" });
-    i18n._({ id: "print_cover_date", message: "Data" });
-    i18n._({ id: "print_cover_count", message: "Schede" });
-    i18n._({ id: "print_section_transcription", message: "Trascrizione" });
-    i18n._({ id: "print_section_attachments", message: "Allegati" });
-    i18n._({ id: "print_no_records", message: "Nessuna scheda da stampare." });
-    i18n._({ id: "print_untitled", message: "Senza segnatura" });
-    // --- Fasi 2.5 e 2.6: export della trascrizione e citazioni ---
-    i18n._({ id: "tx_title", message: "Esporta testo e citazioni" });
-    i18n._({ id: "tx_scope", message: "Cosa esportare" });
-    i18n._({ id: "tx_format", message: "Formato" });
-    i18n._({ id: "tx_group_text", message: "Il testo della trascrizione" });
-    i18n._({ id: "tx_group_citation", message: "La citazione bibliografica" });
-    i18n._({ id: "tx_fmt_html_desc", message: "Pagina autonoma, apribile in qualsiasi browser e allegabile a un messaggio." });
-    i18n._({ id: "tx_fmt_md_desc", message: "Testo semplice con la formattazione conservata: per Obsidian, Pandoc, GitHub." });
-    i18n._({ id: "tx_fmt_rtf_desc", message: "Si apre in Word e LibreOffice mantenendo corsivi, grassetti e note." });
-    i18n._({ id: "tx_fmt_bibtex_desc", message: "Voce @misc per LaTeX, Zotero e JabRef." });
-    i18n._({ id: "tx_fmt_ris_desc", message: "Formato di scambio di Zotero, EndNote e Mendeley." });
-    i18n._({ id: "tx_opt_header", message: "Intestazione con segnatura, date e archivio" });
-    i18n._({ id: "tx_count", message: "{var0} schede, di cui {var1} con trascrizione." });
-    i18n._({ id: "tx_count_citations", message: "{var0} citazioni da esportare." });
-    i18n._({ id: "tx_export", message: "Esporta" });
-    i18n._({ id: "tx_none", message: "Non c'è nessuna scheda da esportare." });
-    i18n._({ id: "tx_done", message: "Esportate {var0} schede." });
-    i18n._({ id: "tx_failed", message: "Esportazione non riuscita: " });
-    i18n._({ id: "tx_doc_title", message: "Trascrizioni" });
-    i18n._({ id: "tx_empty", message: "Nessuna trascrizione." });
-    i18n._({ id: "tx_ocr_notice", message: "Bozza generata da OCR: testo non riletto, i tratti incerti sono segnalati." });
-    i18n._({ id: "tx_cmd_transcription", message: "Esporta la trascrizione (HTML, Markdown, RTF)" });
-    i18n._({ id: "tx_cmd_citation", message: "Esporta la citazione (BibTeX, RIS)" });
-    i18n._({ id: "tx_cmd_selection", message: "Esporta la trascrizione o la citazione" });
-    i18n._({ id: "menu_export_text", message: "Esporta testo" });
-    i18n._({ id: "menu_export_text_folder", message: "Esporta il testo della cartella" });
-    i18n._({ id: "dialog_export_text", message: "Esporta testo e citazioni" });
-    i18n._({ id: "cit_type", message: "Manoscritto" });
-    i18n._({ id: "cit_untitled", message: "Senza titolo" });
-    // --- Fase 3.2: data storica fuzzy ---
-    i18n._({ id: "filter_period", message: "Periodo del documento" });
-    i18n._({ id: "filter_year_from", message: "Dall'anno" });
-    i18n._({ id: "filter_year_to", message: "All'anno" });
-    i18n._({ id: "filter_century", message: "Secolo" });
-    i18n._({ id: "filter_any_century", message: "Qualsiasi secolo" });
-    i18n._({ id: "placeholder_data_storica", message: "Es. 12 maggio 1340, c. 1340, sec. XIV in." });
-    i18n._({ id: "date_read", message: "Letta come: {var0} ({var1})" });
-    i18n._({ id: "date_not_read", message: "Datazione non interpretata: la scheda resterà in fondo agli ordinamenti cronologici." });
-    i18n._({ id: "date_none", message: "Senza data." });
-    i18n._({ id: "date_q_exact", message: "data esatta" });
-    i18n._({ id: "date_q_year", message: "anno" });
-    i18n._({ id: "date_q_circa", message: "circa" });
-    i18n._({ id: "date_q_ante", message: "prima del" });
-    i18n._({ id: "date_q_post", message: "dopo il" });
-    i18n._({ id: "date_q_range", message: "intervallo" });
-    i18n._({ id: "date_q_century", message: "secolo" });
-    // --- Fase 3.1: campi tipizzati ---
-    i18n._({ id: "value_yes", message: "Sì" });
-    i18n._({ id: "value_no", message: "No" });
-    i18n._({ id: "field_required", message: "Campo obbligatorio" });
-    i18n._({ id: "field_configure", message: "Configura il campo" });
-    i18n._({ id: "field_choose", message: "— scegli —" });
-    i18n._({ id: "field_value_removed", message: "valore non più previsto" });
-    i18n._({ id: "field_type_text", message: "Testo" });
-    i18n._({ id: "field_type_textarea", message: "Testo lungo" });
-    i18n._({ id: "field_type_number", message: "Numero" });
-    i18n._({ id: "field_type_boolean", message: "Sì / No" });
-    i18n._({ id: "field_type_enum", message: "Elenco a scelta" });
-    i18n._({ id: "field_type_url", message: "Indirizzo web" });
-    i18n._({ id: "field_type_date", message: "Data" });
-    i18n._({ id: "field_type_dynamic_list", message: "Elenco chiave-valore" });
-    i18n._({ id: "label_field_type", message: "Tipo di dato" });
-    i18n._({ id: "label_field_options", message: "Valori ammessi (uno per riga)" });
-    i18n._({ id: "placeholder_field_options", message: "pergamena\ncarta" });
-    i18n._({ id: "label_field_required", message: "Obbligatorio: la scheda non si salva se è vuoto" });
-    i18n._({ id: "label_field_unique", message: "Valore unico: avvisa se un'altra scheda ha lo stesso valore" });
-    i18n._({ id: "btn_apply", message: "Applica" });
-    i18n._({ id: "msg_enum_no_options", message: "Un elenco a scelta ha bisogno di almeno un valore." });
-    i18n._({ id: "msg_link_non_valido", message: "Indirizzo non valido." });
-    i18n._({ id: "err_field_required", message: "Il campo \"{var0}\" è obbligatorio." });
-    i18n._({ id: "err_field_number", message: "Il campo \"{var0}\" deve contenere un numero." });
-    i18n._({ id: "err_field_url", message: "Il campo \"{var0}\" deve essere un indirizzo web (https://…)." });
-    i18n._({ id: "err_field_option", message: "Il valore del campo \"{var0}\" non è fra quelli previsti." });
-    i18n._({ id: "warn_field_duplicate", message: "Attenzione: \"{var0}\" ha lo stesso valore di un'altra scheda ({var1})." });
-    // --- Fase 3.4: tag come entità ---
-    i18n._({ id: "tag_manager_title", message: "Gestione tag" });
-    // Fase 2.4 — import CSV con mappatura colonne e dry-run
-    i18n._({ id: "imp_title", message: "Importa da CSV" });
-    i18n._({ id: "folders_empty_with_records", message: "Nessuna cartella ancora. Le {var0} schede stanno nella radice e le vedi qui accanto nell'elenco." });
-    i18n._({ id: "folders_empty", message: "Nessuna cartella ancora. Le schede che crei restano nella radice finché non ne fai una." });
-    i18n._({ id: "imp_step_model", message: "Dove finiscono queste schede?" });
-    i18n._({ id: "imp_model_new", message: "Crea un modello nuovo" });
-    i18n._({ id: "imp_model_new_desc", message: "I campi li costruisci dalle colonne del file, al passo successivo." });
-    i18n._({ id: "imp_model_name", message: "Nome del modello" });
-    i18n._({ id: "imp_model_name_missing", message: "Dai un nome al modello prima di continuare." });
-    i18n._({ id: "field_locked", message: "Campo del modello predefinito: non si può togliere né cambiare." });
-    i18n._({ id: "type_locked_note", message: "Questo è un modello predefinito: nome e campi d'origine non si cambiano — tornerebbero da soli al prossimo avvio. Puoi però aggiungere campi tuoi, modificarli ed eliminarli." });
-    i18n._({ id: "type_name_locked", message: "Il nome di un modello predefinito non si cambia: è tradotto insieme all'applicazione." });
-    i18n._({ id: "imp_header_row", message: "Riga con i nomi delle colonne" });
-    i18n._({ id: "imp_mapped_count", message: "{var0} di {var1} colonne importate" });
-    i18n._({ id: "imp_sample", message: "es." });
-    i18n._({ id: "imp_dest_for", message: "Destinazione della colonna" });
-    i18n._({ id: "imp_group_base", message: "Dati della scheda" });
-    i18n._({ id: "imp_group_fields", message: "Campi dei modelli" });
-    i18n._({ id: "imp_group_new", message: "Campi da creare" });
-    i18n._({ id: "imp_new_field", message: "＋ Crea un campo nuovo…" });
-    i18n._({ id: "imp_new_field_name", message: "Nome del campo" });
-    i18n._({ id: "imp_new_field_type", message: "Tipo del campo" });
-    i18n._({ id: "imp_new_field_invalid", message: "Nome non utilizzabile: è vuoto o coincide con un campo che esiste già." });
-    i18n._({ id: "imp_new_fields", message: "Verranno aggiunti al modello {var0} i campi: " });
-    i18n._({ id: "imp_state_new_p", message: "nuove" });
-    i18n._({ id: "imp_state_updated_p", message: "aggiornate" });
-    i18n._({ id: "imp_state_skipped_p", message: "scartate" });
-    i18n._({ id: "imp_with_warnings", message: "con avvisi" });
-    i18n._({ id: "imp_and_more", message: "…e altre {var0} righe." });
-    i18n._({ id: "imp_menu", message: "Importa CSV" });
-    i18n._({ id: "dialog_import_csv", message: "Importa da CSV" });
-    // Import IIIF
-    i18n._({ id: "iiif_menu", message: "Importa da IIIF" });
-    i18n._({ id: "iiif_title", message: "Importa un manoscritto da un manifest IIIF" });
-    i18n._({ id: "iiif_title_add", message: "Aggiungi carte da un manifest IIIF" });
-    i18n._({ id: "iiif_add_button", message: "Aggiungi da IIIF" });
-    i18n._({ id: "iiif_range", message: "Carte da importare" });
-    i18n._({ id: "iiif_range_placeholder", message: "tutte — oppure 1-10, 25, 40-60" });
-    i18n._({ id: "iiif_select_all", message: "Tutte" });
-    i18n._({ id: "iiif_select_none", message: "Nessuna" });
-    i18n._({ id: "iiif_selected_count", message: "{var0} di {var1} carte selezionate" });
-    i18n._({ id: "iiif_added", message: "Aggiunte {var0} carte alla scheda." });
-    i18n._({ id: "undo_add_iiif", message: "Aggiunta di {var0} carte IIIF" });
-    i18n._({ id: "iiif_img_failed_title", message: "Carta non raggiungibile" });
-    i18n._({ id: "iiif_img_failed_desc", message: "Il server della biblioteca non ha restituito questa carta. Riprova, oppure scaricala nell'archivio per averla anche senza rete." });
-    i18n._({ id: "iiif_hint", message: "Incolla l'indirizzo del manifest pubblicato dalla biblioteca. Le carte restano sul server e non occupano spazio: si scaricano una per una, o tutte insieme, quando servono." });
-    i18n._({ id: "iiif_url_placeholder", message: "https://.../manifest.json" });
-    i18n._({ id: "iiif_read", message: "Leggi" });
-    i18n._({ id: "iiif_import", message: "Importa" });
-    i18n._({ id: "iiif_resolution", message: "Risoluzione dei download" });
-    i18n._({ id: "iiif_res_max", message: "Massima disponibile" });
-    i18n._({ id: "iiif_untitled", message: "Manoscritto senza titolo" });
-    i18n._({ id: "iiif_pages_count", message: "{var0} carte" });
-    i18n._({ id: "iiif_page_n", message: "Carta {var0}" });
-    i18n._({ id: "iiif_collection_count", message: "Manoscritti contenuti: {var0}." });
-    i18n._({ id: "iiif_done", message: "Manoscritto importato: {var0} carte." });
-    i18n._({ id: "undo_import_iiif", message: "Import IIIF di {var0} carte" });
-    i18n._({ id: "iiif_remote_page", message: "Carta remota (IIIF)" });
-    i18n._({ id: "iiif_download_page", message: "Scarica questa carta nell'archivio" });
-    i18n._({ id: "iiif_download_all", message: "Scarica tutte le carte nell'archivio" });
-    i18n._({ id: "iiif_downloading", message: "Scaricamento delle carte" });
-    i18n._({ id: "iiif_msg_downloaded", message: "Carte scaricate nell'archivio." });
-    i18n._({ id: "iiif_msg_partial", message: "Alcune carte non sono state scaricate." });
-    i18n._({ id: "iiif_err_url", message: "L'indirizzo non è valido: serve un URL http o https." });
-    i18n._({ id: "iiif_err_timeout", message: "Il server della biblioteca non ha risposto in tempo." });
-    i18n._({ id: "iiif_err_net", message: "Impossibile raggiungere il server della biblioteca." });
-    i18n._({ id: "iiif_err_http", message: "Il server ha risposto con un errore." });
-    i18n._({ id: "iiif_err_big", message: "Il file è troppo grande per essere un manifest." });
-    i18n._({ id: "iiif_err_json", message: "L'indirizzo non restituisce un manifest: forse è la pagina del manoscritto e non il suo manifest IIIF." });
-    i18n._({ id: "iiif_err_shape", message: "Il file scaricato non è un manifest IIIF." });
-    i18n._({ id: "iiif_err_collection", message: "Questo indirizzo è una collezione di manoscritti, non un manoscritto: aprila nel sito della biblioteca e copia il manifest di un singolo manoscritto." });
-    i18n._({ id: "iiif_err_empty", message: "Il manifest non contiene nessuna carta." });
-    i18n._({ id: "iiif_err_download", message: "Scaricamento delle carte non riuscito." });
-    i18n._({ id: "iiif_err_import", message: "Import non riuscito." });
-    i18n._({ id: "iiif_warn_static", message: "Questo manifest pubblica immagini a misura fissa: la risoluzione scelta verrà ignorata." });
-    i18n._({ id: "iiif_warn_version", message: "Il manifest non dichiara la sua versione: è stata dedotta dalla struttura." });
-    i18n._({ id: "btn_import_zip_full", message: "Importa un backup ZIP di ArchiView" });
-    i18n._({ id: "th_transcription", message: "Trascrizione" });
-    i18n._({ id: "imp_read_error", message: "File non leggibile: " });
-    i18n._({ id: "imp_empty", message: "Il file non contiene righe da importare." });
-    i18n._({ id: "imp_rows_found", message: "{var0} righe" });
-    i18n._({ id: "imp_delimiter", message: "separatore" });
-    i18n._({ id: "imp_default_type", message: "Tipo di documento" });
-    i18n._({ id: "imp_default_folder", message: "Cartella di destinazione" });
-    i18n._({ id: "imp_update_existing", message: "Aggiorna le schede già presenti invece di aggiungerne di nuove" });
-    i18n._({ id: "imp_mapping", message: "Colonne del file" });
-    i18n._({ id: "imp_preview", message: "Anteprima" });
-    i18n._({ id: "imp_skip", message: "— non importare —" });
-    i18n._({ id: "imp_row", message: "riga {var0}" });
-    i18n._({ id: "imp_state_new", message: "nuova" });
-    i18n._({ id: "imp_state_updated", message: "aggiornata" });
-    i18n._({ id: "imp_state_skipped", message: "scartata" });
-    i18n._({ id: "imp_summary", message: "{var0} nuove, {var1} aggiornate, {var2} scartate, {var3} con avvisi." });
-    i18n._({ id: "imp_new_folders", message: "Verranno creati {var0} archivi: " });
-    i18n._({ id: "imp_confirm", message: "Importa {var0} schede" });
-    i18n._({ id: "imp_nothing", message: "Niente da importare" });
-    i18n._({ id: "imp_done", message: "Importate {var0} schede ({var1} aggiornate)." });
-    i18n._({ id: "imp_hint", message: "Nulla viene scritto finché non premi Importa. Le righe scartate restano nel file: correggile e reimporta soltanto quelle. L'intero import si annulla con Ctrl+Z." });
-    i18n._({ id: "imp_err_required", message: "campo obbligatorio mancante" });
-    i18n._({ id: "imp_err_number", message: "non è un numero" });
-    i18n._({ id: "imp_err_url", message: "non è un indirizzo valido" });
-    i18n._({ id: "imp_err_option", message: "valore non fra quelli previsti" });
-    i18n._({ id: "imp_err_boolean", message: "non è un sì/no riconoscibile" });
-    i18n._({ id: "imp_err_type", message: "tipo di documento sconosciuto, si usa quello predefinito" });
-    i18n._({ id: "imp_err_short", message: "la riga ha meno celle dell'intestazione" });
-    i18n._({ id: "imp_err_dup", message: "segnatura già presente in archivio" });
-    i18n._({ id: "imp_err_dup_file", message: "segnatura ripetuta dentro il file" });
-    i18n._({ id: "undo_import_csv", message: "Import di {var0} schede" });
-    // Fase 4 — cestino, snapshot locali, cronologia per scheda, undo/redo
-    i18n._({ id: "trash_title", message: "Cestino" });
-    i18n._({ id: "trash_select", message: "Seleziona questa scheda" });
-    i18n._({ id: "trash_restore", message: "Ripristina" });
-    i18n._({ id: "trash_delete_forever", message: "Elimina definitivamente" });
-    i18n._({ id: "trash_empty", message: "Il cestino è vuoto." });
-    i18n._({ id: "trash_empty_now", message: "Svuota il cestino" });
-    i18n._({ id: "trash_read_error", message: "Il cestino non è leggibile." });
-    i18n._({ id: "trash_selected", message: "{var0} selezionate" });
-    i18n._({ id: "trash_restored", message: "{var0} schede ripristinate." });
-    i18n._({ id: "trash_restore_none", message: "Nessuna scheda da ripristinare." });
-    i18n._({ id: "trash_restore_error", message: "Ripristino non riuscito: " });
-    i18n._({ id: "trash_delete_error", message: "Eliminazione non riuscita: " });
-    i18n._({ id: "trash_confirm_delete_many", message: "Eliminare definitivamente {var0} schede? L'operazione non è annullabile." });
-    i18n._({ id: "trash_confirm_delete_one", message: "Eliminare definitivamente questa scheda? L'operazione non è annullabile." });
-    i18n._({ id: "trash_confirm_empty", message: "Svuotare il cestino? Tutte le schede eliminate andranno perse definitivamente." });
-    i18n._({ id: "trash_emptied", message: "Cestino svuotato ({var0} schede)." });
-    i18n._({ id: "trash_from_bulk", message: "Eliminazione multipla" });
-    i18n._({ id: "trash_from_single", message: "Eliminazione" });
-    i18n._({ id: "trash_hint", message: "Le schede eliminate restano qui per 30 giorni e poi spariscono da sole. Il cestino è locale a questo computer: non viene sincronizzato e non occupa spazio nell'archivio condiviso." });
-    i18n._({ id: "record_untitled", message: "scheda senza titolo" });
-    i18n._({ id: "btn_redo", message: "Ripeti" });
-    i18n._({ id: "msg_nothing_to_redo", message: "Nessuna azione da ripetere." });
-    i18n._({ id: "msg_ripetuto_var", message: "Ripetuto: {var0}" });
-    i18n._({ id: "msg_errore_ripetizione", message: "Errore durante la ripetizione dell'azione." });
-    i18n._({ id: "undo_edit_record", message: "Modifica di \"{var0}\"" });
-    i18n._({ id: "undo_rename_folder", message: "Rinomina di \"{var0}\"" });
-    i18n._({ id: "undo_restore_record", message: "Ripristino della scheda al {var0}" });
-    i18n._({ id: "undo_move_records", message: "Spostamento di {var0} schede" });
-    i18n._({ id: "undo_rename_attachment", message: "Rinomina di un allegato" });
-    i18n._({ id: "undo_reorder_attachments", message: "Riordino degli allegati" });
-    i18n._({ id: "shortcut_redo", message: "Ripeti l'azione annullata (anche Ctrl+Maiusc+Z)" });
-    i18n._({ id: "snap_section_title", message: "Snapshot locali" });
-    i18n._({ id: "snap_create_now", message: "Crea adesso" });
-    i18n._({ id: "snap_create_now_hint", message: "Fotografa subito lo stato dell'archivio" });
-    i18n._({ id: "snap_create_cmd", message: "Crea uno snapshot dell'archivio" });
-    i18n._({ id: "snap_empty", message: "Nessuno snapshot: il primo viene creato da solo mentre lavori." });
-    i18n._({ id: "snap_delete", message: "Elimina lo snapshot" });
-    i18n._({ id: "snap_confirm_delete", message: "Eliminare questo snapshot? La cronologia locale di quel momento andrà persa." });
-    i18n._({ id: "snap_created", message: "Snapshot creato." });
-    i18n._({ id: "snap_create_failed", message: "Snapshot non creato: " });
-    i18n._({ id: "snap_delete_failed", message: "Snapshot non eliminato: " });
-    i18n._({ id: "snap_restored", message: "Archivio riportato allo snapshot: {var0} schede." });
-    i18n._({ id: "snap_side_label", message: "NELLO SNAPSHOT" });
-    i18n._({ id: "snap_reason_auto", message: "automatico" });
-    i18n._({ id: "snap_reason_manual", message: "creato a mano" });
-    i18n._({ id: "snap_reason_restore", message: "prima di un ripristino" });
-    i18n._({ id: "snap_reason_import", message: "prima di un import" });
-    i18n._({ id: "menu_record_history", message: "Cronologia" });
-    i18n._({ id: "rec_history_title", message: "Cronologia della scheda" });
-    i18n._({ id: "rec_history_loading", message: "Ricostruzione della cronologia…" });
-    i18n._({ id: "rec_history_failed", message: "Cronologia non disponibile: " });
-    i18n._({ id: "rec_history_empty", message: "Nessuno snapshot contiene questa scheda: la cronologia comincia dal primo snapshot." });
-    i18n._({ id: "rec_history_absent", message: "scheda non presente" });
-    i18n._({ id: "rec_history_restore", message: "Riporta la scheda a questa versione" });
-    i18n._({ id: "rec_history_restored", message: "Scheda riportata alla versione del {var0}." });
-    i18n._({ id: "rec_history_gone", message: "La scheda non è più in archivio: ripristinala dal cestino." });
-    i18n._({ id: "rec_history_hint", message: "Le tappe sono ricavate dagli snapshot locali: compaiono solo i momenti in cui questa scheda è cambiata." });
-    i18n._({ id: "settings_safety_title", message: "Cestino e snapshot" });
-    i18n._({ id: "settings_safety_desc", message: "L'archivio viene fotografato periodicamente su questo computer, e le schede eliminate restano nel cestino prima di sparire. Nulla di tutto ciò viene sincronizzato." });
-    i18n._({ id: "settings_snapshot_auto", message: "Crea snapshot automatici mentre lavoro" });
-    i18n._({ id: "settings_snapshot_recenti", message: "Snapshot recenti" });
-    i18n._({ id: "settings_snapshot_giorni", message: "Giorni di cronologia" });
-    i18n._({ id: "settings_cestino_giorni", message: "Giorni nel cestino" });
-    i18n._({ id: "tag_manager_hint", message: "Rinomina, fusione ed eliminazione agiscono su tutte le schede dell'archivio, non solo su quelle selezionate. Ogni operazione è annullabile." });
-    i18n._({ id: "tag_rename", message: "Rinomina" });
-    i18n._({ id: "tag_delete", message: "Elimina il tag" });
-    i18n._({ id: "tag_select_for_merge", message: "Seleziona per la fusione" });
-    i18n._({ id: "tag_merge_into", message: "Fondi i tag scelti in:" });
-    i18n._({ id: "btn_tag_merge", message: "Fondi" });
-    i18n._({ id: "tag_color_label", message: "Colore del tag" });
-    i18n._({ id: "tag_color_none", message: "Nessuno" });
-    i18n._({ id: "tag_color_ambra", message: "Ambra" });
-    i18n._({ id: "tag_color_rosso", message: "Rosso" });
-    i18n._({ id: "tag_color_verde", message: "Verde" });
-    i18n._({ id: "tag_color_blu", message: "Blu" });
-    i18n._({ id: "tag_color_viola", message: "Viola" });
-    i18n._({ id: "tag_color_grigio", message: "Grigio" });
-    i18n._({ id: "tag_count_one", message: "1 scheda" });
-    i18n._({ id: "tag_count_many", message: "{var0} schede" });
-    i18n._({ id: "undo_tag_rename", message: "Rinomina di un tag" });
-    i18n._({ id: "undo_tag_merge", message: "Fusione di tag" });
-    i18n._({ id: "undo_tag_delete", message: "Eliminazione di un tag" });
-    i18n._({ id: "msg_tag_renamed", message: "Tag rinominato su {var0} schede." });
-    i18n._({ id: "msg_tag_merged", message: "Tag fusi su {var0} schede." });
-    i18n._({ id: "msg_tag_deleted", message: "Tag rimosso da {var0} schede." });
-    i18n._({ id: "msg_tag_nothing", message: "Nessuna scheda modificata." });
-    i18n._({ id: "msg_tag_rename_merges", message: "Un tag con questo nome esiste già: i due sono stati fusi." });
-    i18n._({ id: "menu_tag_manager", message: "Gestione tag…" });
-    // --- Fasi 3.3, 3.5 e 3.6: vocabolari, anagrafica, collegamenti, duplicati ---
-    i18n._({ id: "vocab_title", message: "Vocabolari controllati" });
-    i18n._({ id: "vocab_new", message: "Nuovo vocabolario" });
-    i18n._({ id: "vocab_new_value", message: "Nuovo valore…" });
-    i18n._({ id: "vocab_none", message: "Nessun vocabolario. Creane uno per condividere una lista di valori con tutto il gruppo." });
-    i18n._({ id: "vocab_delete", message: "Elimina il vocabolario" });
-    i18n._({ id: "vocab_remove_value", message: "Togli dall'elenco" });
-    i18n._({ id: "vocab_used_by", message: "Schede che usano questo valore" });
-    i18n._({ id: "vocab_own_values", message: "— valori scritti qui sotto —" });
-    i18n._({ id: "vocab_add_inline", message: "Aggiungi un valore al vocabolario" });
-    i18n._({ id: "vocab_hint", message: "Un vocabolario è condiviso da tutto l'archivio e viaggia con la sincronizzazione. Rinominare un valore lo aggiorna in tutte le schede; toglierlo dall'elenco non lo cancella dalle schede che lo contengono." });
-    i18n._({ id: "label_field_vocab", message: "Prendi i valori da un vocabolario d'archivio" });
-    i18n._({ id: "label_field_authority", message: "Alimenta l'anagrafica di" });
-    i18n._({ id: "msg_vocab_exists", message: "Esiste già un vocabolario con questo nome." });
-    i18n._({ id: "msg_vocab_renamed", message: "Valore rinominato su {var0} schede." });
-    i18n._({ id: "msg_vocab_value_removed", message: "Valore tolto dall'elenco. Le schede che lo contengono lo conservano." });
-    i18n._({ id: "msg_vocab_deleted", message: "Vocabolario eliminato. I campi che lo usavano conservano i valori come elenco proprio." });
-    i18n._({ id: "undo_vocab_rename", message: "Rinomina di un valore" });
-    i18n._({ id: "auth_title", message: "Persone e luoghi" });
-    i18n._({ id: "auth_people", message: "Persone" });
-    i18n._({ id: "auth_places", message: "Luoghi" });
-    i18n._({ id: "auth_filter", message: "Filtra…" });
-    i18n._({ id: "auth_type_none", message: "Nessuna" });
-    i18n._({ id: "auth_type_persona", message: "Persone" });
-    i18n._({ id: "auth_type_luogo", message: "Luoghi" });
-    i18n._({ id: "auth_none", message: "Nessuna voce. Le persone e i luoghi si raccolgono dai campi marcati come tali nell'editor del tipo documento." });
-    i18n._({ id: "auth_show_records", message: "Mostra le schede che la citano" });
-    i18n._({ id: "auth_hint", message: "L'elenco si ricava dalle schede: non è un archivio parallelo. Rinominare una voce riscrive il nome in tutte le schede che lo citano, ed è il modo di unificare due grafie della stessa persona." });
-    i18n._({ id: "undo_auth_rename", message: "Rinomina in anagrafica" });
-    i18n._({ id: "msg_auth_renamed", message: "Nome aggiornato su {var0} schede." });
-    i18n._({ id: "label_links", message: "Collegamenti ad altre schede" });
-    i18n._({ id: "link_none", message: "Nessun collegamento." });
-    i18n._({ id: "link_generic", message: "collegata a" });
-    i18n._({ id: "link_choose", message: "— scegli una scheda —" });
-    i18n._({ id: "link_add", message: "Aggiungi il collegamento" });
-    i18n._({ id: "link_remove", message: "Togli il collegamento" });
-    i18n._({ id: "link_missing", message: "scheda non presente in questa copia" });
-    i18n._({ id: "no_signature", message: "Senza segnatura" });
-    i18n._({ id: "undo_link_add", message: "Collegamento fra schede" });
-    i18n._({ id: "undo_link_del", message: "Rimozione di un collegamento" });
-    i18n._({ id: "msg_link_added", message: "Collegamento aggiunto." });
-    i18n._({ id: "msg_link_removed", message: "Collegamento rimosso." });
-    i18n._({ id: "dup_title", message: "Segnature ripetute" });
-    i18n._({ id: "dup_none", message: "Nessuna segnatura ripetuta." });
-    i18n._({ id: "dup_found", message: "{var0} segnature ripetute." });
-    i18n._({ id: "dup_hint", message: "Una segnatura ripetuta non è per forza un errore: un fondo può contenerne per inventariazioni precedenti alla schedatura. L'elenco le segnala, la decisione resta a chi guarda." });
-    i18n._({ id: "warn_signature_duplicate", message: "Attenzione: la segnatura \"{var0}\" è già usata da un'altra scheda ({var1} in tutto)." });
-    i18n._({ id: "btn_add", message: "Aggiungi" });
-    i18n._({ id: "link_panel_title", message: "Schede collegate" });
-    i18n._({ id: "link_outgoing", message: "Questa scheda rimanda a" });
-    i18n._({ id: "link_incoming", message: "È richiamata da" });
-    i18n._({ id: "menu_links", message: "Collegate" });
-    i18n._({ id: "filter_links", message: "Collegamenti" });
-    i18n._({ id: "filter_has_links", message: "Con collegamenti" });
-    i18n._({ id: "filter_no_links", message: "Senza collegamenti" });
-    i18n._({ id: "graph_title", message: "Grafo dei collegamenti" });
-    i18n._({ id: "menu_graph", message: "Grafo" });
-    i18n._({ id: "graph_show_isolated", message: "Mostra anche le schede senza collegamenti" });
-    i18n._({ id: "graph_relayout", message: "Ricalcola la disposizione" });
-    i18n._({ id: "graph_summary", message: "{var0} schede, {var1} collegamenti, {var2} gruppi" });
-    i18n._({ id: "graph_empty", message: "Nessuna scheda collegata. I collegamenti si aggiungono dal form della scheda, nel blocco \"Collegamenti ad altre schede\"." });
-    i18n._({ id: "graph_truncated", message: "Mostrate le {var0} schede più collegate su {var1}: oltre questa soglia il grafo non si legge più." });
-    i18n._({ id: "graph_hint", message: "Clic su un nodo per isolarlo con i suoi vicini, doppio clic per aprire la scheda. Trascina per spostare, rotella per lo zoom." });
-    i18n._({ id: "graph_open_record", message: "Apri la scheda" });
-    // Fase 3.7 — campi propri della scheda.
-    i18n._({ id: "own_field_add", message: "Aggiungi un campo a questa scheda" });
-    i18n._({ id: "own_field_title", message: "Aggiungi un campo a questa scheda" });
-    i18n._({ id: "own_field_hint", message: "Il campo resta su questa scheda: il modello e le altre schede non cambiano." });
-    i18n._({ id: "own_field_name", message: "Nome del campo" });
-    i18n._({ id: "own_field_name_ph", message: "Filigrana" });
-    i18n._({ id: "own_field_badge", message: "solo qui" });
-    i18n._({ id: "own_field_badge_hint", message: "Campo di questa scheda: il modello non cambia." });
-    i18n._({ id: "own_field_promote", message: "Aggiungi questo campo al modello" });
-    i18n._({ id: "own_field_promoted", message: "Campo \"{var0}\" aggiunto al modello." });
-    i18n._({ id: "own_field_remove", message: "Togli questo campo dalla scheda" });
-    i18n._({ id: "own_field_remove_confirm", message: "Togliere il campo \"{var0}\" da questa scheda? Anche il suo valore verrà cancellato." });
-    i18n._({ id: "own_field_bad_name", message: "Nome non valido o già usato in questa scheda." });
-    i18n._({ id: "own_field_conflict", message: "Campi propri della scheda" });
-    // Fase 3.8 — riordino dei campi della scheda.
-    i18n._({ id: "reorder_fields", message: "Riordina i campi" });
-    i18n._({ id: "reorder_done", message: "Fine riordino" });
-    i18n._({ id: "reorder_hint", message: "Trascina per cambiare l'ordine dei campi. Vale solo per questa scheda." });
-    i18n._({ id: "reorder_reset", message: "Ordine del modello" });
-    i18n._({ id: "reorder_up", message: "Sposta su" });
-    i18n._({ id: "reorder_down", message: "Sposta giù" });
-    // Etichetta secondaria delle schede nell'albero
-    i18n._({ id: "tree_label_title", message: "Etichetta secondaria delle schede" });
-    i18n._({ id: "tree_label_heading", message: "Mostra sotto la segnatura" });
-    i18n._({ id: "tree_label_none", message: "Nessuna" });
-    i18n._({ id: "tree_label_auto", message: "Automatica (nome principale)" });
-    i18n._({ id: "tree_sort_heading", message: "Ordina l’albero per" });
-    i18n._({ id: "tree_sort_secondary", message: "Etichetta secondaria" });
-    // Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 2)
-    i18n._({ id: "cross_toggle", message: "Cerca anche negli altri archivi" });
-    i18n._({ id: "cross_title", message: "Negli altri archivi" });
-    i18n._({ id: "cross_more", message: "Mostra altri risultati" });
-    i18n._({ id: "cross_searching", message: "Ricerca negli altri archivi…" });
-    i18n._({ id: "cross_error", message: "Ricerca negli altri archivi non riuscita: {var0}" });
-    i18n._({ id: "cross_no_archives", message: "Nessun altro archivio recente: gli archivi aperti almeno una volta in ArchiView compaiono qui." });
-    i18n._({ id: "cross_none", message: "Nessuna scheda negli altri archivi ({var0} consultati)." });
-    i18n._({ id: "cross_found_one", message: "1 scheda in un altro archivio" });
-    i18n._({ id: "cross_found_many", message: "{var0} schede in {var1} altri archivi" });
-    i18n._({ id: "cross_truncated", message: "troppi risultati, restringi la ricerca" });
-    i18n._({ id: "cross_unreachable", message: "Non raggiungibili (cartella spostata o disco scollegato): {var0}" });
-    i18n._({ id: "cross_shared", message: "condiviso" });
-    i18n._({ id: "cross_future", message: "Creato con una versione più recente di ArchiView: alcuni campi potrebbero mancare." });
-    i18n._({ id: "cross_no_shelfmark", message: "(senza segnatura)" });
-    i18n._({ id: "cross_open_preview", message: "Apri l'anteprima di {var0} ({var1})" });
-    i18n._({ id: "cross_loading", message: "Caricamento…" });
-    i18n._({ id: "cross_preview_error", message: "Anteprima non disponibile" });
-    i18n._({ id: "cross_read_only", message: "sola lettura" });
-    i18n._({ id: "cross_preview_empty", message: "Nessun campo compilato." });
-    i18n._({ id: "cross_attachments", message: "Allegati ({var0})" });
-    i18n._({ id: "cross_pdf_hint", message: "PDF: si apre dal suo archivio." });
-    i18n._({ id: "cross_field_transcription", message: "Trascrizione" });
-    i18n._({ id: "cross_field_ocr", message: "Testo riconosciuto (OCR)" });
-    i18n._({ id: "settings_cross_title", message: "Ricerca tra archivi" });
-    i18n._({ id: "settings_cross_desc", message: "Gli archivi aperti almeno una volta su questo computer in cui cercare con \"Cerca anche negli altri archivi\". Vengono soltanto letti, mai modificati." });
-    i18n._({ id: "settings_cross_hint_toggle", message: "Avvisami quando scrivo un nome che compare in altri archivi" });
-    i18n._({ id: "settings_cross_list_title", message: "Archivi in cui cercare" });
-    i18n._({ id: "settings_cross_none", message: "Nessun altro archivio aperto su questo computer." });
-    i18n._({ id: "settings_cross_unreachable", message: "cartella non trovata" });
-    i18n._({ id: "msg_cross_saved", message: "Preferenza salvata." });
-    i18n._({ id: "msg_cross_save_failed", message: "Preferenza non salvata: {var0}" });
-    i18n._({ id: "cross_hint_one", message: "Trovato in un altro archivio" });
-    i18n._({ id: "cross_hint_many_one", message: "Trovato in {var0} schede di un altro archivio" });
-    i18n._({ id: "cross_hint_many", message: "Trovato in {var0} schede di {var1} altri archivi" });
-    i18n._({ id: "cross_namesakes_title", message: "{var0} negli altri archivi" });
-    i18n._({ id: "cross_namesakes_hint", message: "Stesso nome, non per forza la stessa persona: aprile per decidere." });
-    i18n._({ id: "cross_namesakes_link", message: "Collega" });
-    i18n._({ id: "cross_namesakes_link_title", message: "Aggiungi un rimando a questa scheda" });
-    i18n._({ id: "cross_links_title", message: "Rimandi ad altri archivi" });
-    i18n._({ id: "cross_links_add", message: "Aggiungi un rimando a un altro archivio" });
-    i18n._({ id: "cross_links_none", message: "Nessun rimando." });
-    i18n._({ id: "cross_links_unavailable", message: "archivio non disponibile su questo computer" });
-    i18n._({ id: "cross_links_open", message: "Apri l'anteprima" });
-    i18n._({ id: "cross_links_remove", message: "Togli il rimando" });
-    i18n._({ id: "cross_links_picker_title", message: "Rimando a un altro archivio" });
-    i18n._({ id: "cross_links_type_label", message: "Tipo di rimando" });
-    i18n._({ id: "cross_links_search_label", message: "Scheda da collegare" });
-    i18n._({ id: "cross_links_search_placeholder", message: "Segnatura, persona, luogo…" });
-    i18n._({ id: "cross_links_picker_hint", message: "Scrivi per cercare negli altri archivi." });
-    i18n._({ id: "cross_links_picker_none", message: "Nessuna scheda trovata negli altri archivi." });
-    i18n._({ id: "cross_links_already", message: "già collegata" });
-    i18n._({ id: "cross_provenance", message: "Copiata da {var0} · {var1}, il {var2}." });
-    i18n._({ id: "cross_provenance_open", message: "Apri l'originale" });
-    i18n._({ id: "cross_copy_own_field_one", message: "Un campo diventa campo proprio della scheda: {var0}" });
-    i18n._({ id: "cross_copy_transcriptions_field", message: "Le trascrizioni delle carte non copiate vanno nel campo \"Trascrizioni delle carte non copiate\"." });
-    i18n._({ id: "field_trascrizioni_non_copiate", message: "Trascrizioni delle carte non copiate" });
-    i18n._({ id: "cross_copy_button", message: "Copia in questo archivio" });
-    i18n._({ id: "cross_copy_title", message: "Copia in questo archivio" });
-    i18n._({ id: "cross_copy_type_label", message: "Tipo di documento in questo archivio" });
-    i18n._({ id: "cross_copy_summary", message: "Che cosa succederà" });
-    i18n._({ id: "cross_copy_confirm", message: "Copia" });
-    i18n._({ id: "cross_copy_from", message: "Da: {var0} · {var1}" });
-    i18n._({ id: "cross_copy_attachments", message: "Copia anche gli allegati ({var0} file, {var1})" });
-    i18n._({ id: "cross_copy_no_attachments", message: "Nessun allegato da copiare su questo computer" });
-    i18n._({ id: "cross_copy_shared_warning", message: "Questo archivio è condiviso: la scheda copiata sarà visibile ai suoi membri." });
-    i18n._({ id: "cross_copy_type", message: "Tipo di documento: {var0}" });
-    i18n._({ id: "cross_copy_folder", message: "Cartella: {var0}" });
-    i18n._({ id: "cross_copy_root", message: "Cartella: radice dell'archivio" });
-    i18n._({ id: "cross_copy_own_fields", message: "{var0} campi diventano campi propri della scheda: {var1}" });
-    i18n._({ id: "cross_copy_people", message: "Persone e luoghi: {var0}" });
-    i18n._({ id: "cross_copy_known", message: "già in questo archivio" });
-    i18n._({ id: "cross_copy_new", message: "nuovo" });
-    i18n._({ id: "cross_copy_authority", message: "Grafia e note dall'anagrafica di origine: {var0}" });
-    i18n._({ id: "cross_copy_tags", message: "Tag nuovi: {var0}" });
-    i18n._({ id: "cross_copy_links", message: "{var0} rimandi a schede dell'archivio di origine" });
-    i18n._({ id: "cross_copy_att_summary", message: "Allegati: {var0} copiati, {var1} IIIF, {var2} non presenti su questo computer" });
-    i18n._({ id: "cross_copy_transcription", message: "Senza allegati la trascrizione resta sulla scheda, in un unico testo." });
-    i18n._({ id: "cross_copy_vocab", message: "I valori dei vocabolari di origine vengono scritti nei campi copiati: i vocabolari di questo archivio non cambiano." });
-    i18n._({ id: "cross_copy_provenance", message: "La copia ricorda da dove viene e non cambia se l'originale viene modificato." });
-    i18n._({ id: "cross_copy_progress", message: "Copia degli allegati: {var0} di {var1}…" });
-    i18n._({ id: "cross_copy_undo", message: "Copia di {var0} da {var1}" });
-    i18n._({ id: "cross_copy_done", message: "Scheda copiata in questo archivio." });
-    i18n._({ id: "cross_copy_some_failed", message: "{var0} allegati non copiati." });
-    i18n._({ id: "cross_copy_failed_all", message: "Copia non riuscita: {var0}" });
-    i18n._({ id: "cross_copy_value", message: "Copia il valore" });
-    i18n._({ id: "cross_value_copied", message: "Valore copiato: incollalo dove serve." });
-    i18n._({ id: "cross_copy_failed", message: "Copia negli appunti non riuscita." });
-    i18n._({ id: "cross_insert_value", message: "Inserisci nella scheda aperta" });
-    i18n._({ id: "cross_value_inserted", message: "Inserito in \"{var0}\"." });
-    i18n._({ id: "cross_insert_overwrite", message: "Il campo \"{var0}\" è già compilato: sostituirne il contenuto?" });
-}
-
-// Wrapper per compatibilità con il codice esistente
 const customEn = {
     // --- Ricerca tra archivi ---
     "cross_toggle": "Also search other archives",
@@ -1393,7 +133,6 @@ const customEn = {
     "th_tags": "Tags",
     "th_attachments": "Attachments",
     "th_modified": "Modified",
-    "tooltip_columns": "Choose visible columns",
     "menu_columns": "Visible columns",
     "btn_new_model": "New model",
     "tooltip_new_record_type": "Choose the type of the new record",
@@ -1570,13 +309,11 @@ const customEn = {
     "tooltip_delete_folder_not_empty": "You can only delete an empty folder",
     "tooltip_delete_folder_root": "The archive root cannot be deleted",
     "folder_root_label": "Root",
-    "empty_no_folders": "No folders yet. Records stay in the root until you create one.",
     "tooltip_sharing": "Sharing and collaborators",
     "nav_panels": "Panels",
     "tooltip_save_record": "Save the record",
     "tooltip_back_to_list": "Back to the list",
     "tooltip_resize": "Drag to resize",
-    "label_not_editable": "Not editable",
     "tutorial_invite_text": "Want a quick tour of the main features?",
     "btn_tutorial_start": "Yes, start",
     "btn_tutorial_dismiss": "No, thanks",
@@ -1585,28 +322,6 @@ const customEn = {
     "filter_remove_search": "Clear the search",
     "filter_remove_tag": "Remove this tag",
     "btn_clear_filters": "Clear all filters",
-    "msg_export_success_count": "Export of {var0} records completed successfully!",
-    "msg_import_success_count": "{var0} records imported successfully!",
-    "msg_delete_count": "{var0} records deleted.",
-    "msg_copied_count": "{var0} records copied to ArchiView clipboard. Right click to paste in another archive.",
-    "msg_cut_count": "{var0} records cut. Right click to move them to another archive.",
-    "msg_folder_copied": "Folder copied. Right click on another folder to paste it.",
-    "msg_impossible_open_folder": "Cannot open folder in File Explorer.",
-    "msg_folder_cut": "Folder cut. Right click to move it.",
-    "msg_record_copied": "Record copied. Right click to paste it into a folder.",
-    "msg_record_cut": "Record cut. Right click to move it to another archive.",
-    "msg_archive_moved_success": "Archive moved successfully!",
-    "msg_copied_archive_empty": "The copied archive is empty.",
-    "msg_archive_dup_success": "Archive duplicated successfully ({var0} records)!",
-    "msg_records_moved_success": "{var0} records moved successfully!",
-    "msg_records_dup_success": "{var0} records duplicated successfully!",
-    "msg_undone_action": "Undone: {var0}",
-    "msg_removing_in_progress": "Removing {var0}...",
-    "msg_removed_success": "{var0} was removed successfully.",
-    "msg_error_during_remove": "Error during removal: {var0}",
-    "msg_invite_sent_success": "Invite sent successfully to {var0}!",
-    "msg_cleanup_completed": "Cleanup completed! Files removed: {var0} local, {var1} on Drive.",
-    "msg_l_archivio_stato_sincro": "The archive has been synced in real-time.",
     "msg_benvenuto_nell_archivio_c": "Welcome to the Shared Archive! Sign in to Google Drive to download data.",
     "msg_esportazione_completata_c": "Export completed successfully!",
     "msg_errore_in_esportazione": "Error during export: ",
@@ -1628,7 +343,6 @@ const customEn = {
     "msg_errore_di_rete_durante_l_": "Network error during send.",
     "msg_funzionalit_non_disponibi": "Feature not available.",
     "msg_errore": "Error: ",
-    "msg_dlg_cambia_account_google": "Change Google Account",
     "msg_dlg_questo_forzer_l_uso_d": "This will force the use of a specific Google account ONLY for this Archive. Do you want to proceed?",
     "msg_codice_copiato_negli_appu": "Code copied to clipboard!",
     "msg_errore_durante_la_pulizia": "Error during cleanup: ",
@@ -1636,7 +350,6 @@ const customEn = {
     "msg_nessuna_modifica_rilevata": "No changes detected in main fields.",
     "msg_autenticazione_e_ricerca_": "Authenticating and searching for archives…",
     "msg_errore_cloud": "Cloud Error: ",
-    "msg_compila_tutti_i_campi": "Please fill all fields.",
     "msg_connessione_all_archivio_": "Connecting to Archive…",
     "msg_connesso_con_successo_ria": "Connected successfully! Restarting…",
     "msg_scaricamento_archivio": "Downloading archive…",
@@ -1673,20 +386,13 @@ const customEn = {
     "msg_attenzione_alcuni_file_so": "Warning: Some files were deleted on the server. Click 'Receive' to check.",
     "msg_dati_sincronizzati_automa": "Data automatically synced from server.",
     "msg_invio_modifiche_al_server": "Sending changes to server…",
-    "msg_il_server_contiene_modifi": "The server has more recent changes. Use 'Receive' to update your archive before sending.",
     "msg_modifiche_inviate_con_suc": "Changes sent successfully!",
     "msg_sincronizzazione": "Syncing…",
-    "msg_connessione_al_repository": "Connecting to repository…",
-    "msg_seleziona_il_percorso_in_": "Select the path to download the archive.",
-    "msg_archivio_clonato_con_succ": "Archive cloned successfully! Restarting…",
-    "msg_impostazioni_cloud_salvat": "Cloud settings saved.",
     "msg_nome_collaboratore_salvat": "Collaborator name saved.",
     "msg_directory_allegati_locale": "Local attachments directory configured successfully.",
     "msg_la_directory_degli_allega": "The attachments directory was reset to its default (inside the archive).",
     "dialog_select_folder": "Select the location for the new folder",
-    "dialog_export_zip": "Export Backup as ZIP",
     "dialog_import_zip": "Import JSON Archive",
-    "btn_procedi": "Proceed",
     "modal_folder_title": "Archives Management",
     "welcome_desc_gestione": "Choose a destination folder to create a new independent archive, or select an existing archive to load its data.",
     "btn_open_local": "Open Local Archive",
@@ -1694,7 +400,6 @@ const customEn = {
     "btn_create_cloud_private": "Create a Personal Backup",
     "btn_backup_private": "Personal Backup",
     "btn_convert_backup_private": "Convert to Personal Backup",
-    "btn_create_shared": "Create a Shared Archive",
     "btn_join_shared": "Join a Shared Archive",
     "btn_restore_drive": "Restore from Google Drive…",
     "label_archive_name": "Archive Name",
@@ -1703,10 +408,7 @@ const customEn = {
     "btn_browse": "Browse…",
     "btn_go_back": "Go Back",
     "btn_create_and_start": "Create and Start",
-    "welcome_desc_join": "By joining via code you will access a shared Cloud on the original creator's Google Drive. Any local changes will sync directly with the other members.",
-    "label_invite_code": "Invite Code",
     "placeholder_invite_code": "Paste the code here…",
-    "label_archive_name_colon": "Archive Name:",
     "label_local_archive_pos": "Local archive location",
     "btn_connect": "Connect",
     "title_select_cloud_archive": "Select an Archive from the Cloud",
@@ -1724,10 +426,7 @@ const customEn = {
     "prog_disc_title": "Disconnecting",
     "prog_disc_desc": "Disabling Cloud synchronization…",
     "prog_auth_title": "Authentication in progress",
-    "prog_auth_desc1": "Sign in with your desired Google account in the browser…",
     "prog_auth_desc2": "Sign in with the new account in the browser…",
-    "prog_invite_title": "Sending invite",
-    "prog_invite_desc": "Assigning permissions on Google Drive…",
     "prog_prep_cloud": "Starting cloud configuration…",
     "confirm_disc_cloud": "Do you really want to disconnect this Archive from the Cloud? The data will remain saved on your computer, but will no longer be synced online and the app will return to local-only mode.",
     "confirm_pull_no_fetch": "Warning: you are about to download changes from the Cloud without verifying what they are (Fetch) first. Proceed anyway?",
@@ -1740,31 +439,14 @@ const customEn = {
     "confirm_delete_archive_empty": "Are you sure you want to delete the folder \"{var0}\"? All empty subfolders will be removed.",
     "confirm_delete_archive_with_docs": "The folder \"{var0}\" contains {var1} documents. Deleting it will also delete every document inside it. Do you want to proceed?",
     "confirm_delete_model": "Are you sure you want to delete this model?",
-    "confirm_tutorial_demo": "You are about to load the Demo archive. The current archive will be closed. Do you want to proceed?",
     "label_invite_code_opt": "Invite Code",
-    "label_optional": "(optional)",
     "label_authorize_folder": "Authorize Folder Access",
-    "desc_picker_required": "Open Drive and select the shared folder. This grants access without giving full app permissions.",
     "btn_browse_drive": "Browse Google Drive…",
     "label_selected_archive": "Selected:",
     "msg_picker_required": "First open Google Drive with the Browse button to authorize access to the shared folder.",
     "msg_selezione_annullata": "Selection cancelled.",
     "msg_seleziona_percorso": "Select a local location for the archive.",
-    "cloud_step1_title": "Grant Access to Google Drive",
-    "cloud_step1_desc": "The collaborator will receive an email from Google authorizing access to the shared folder.",
-    "cloud_step2_title": "Share the ArchiView Link",
-    "cloud_step2_desc": "The collaborator pastes this link in ArchiView to complete setup and enable real-time sync.",
-    "cloud_step2_hint": "The recipient goes to <em>Join an Archive</em> and pastes this link in the Step 1 field.",
-    "confirm_use_another_account": "You will be redirected to the browser to sign in with another Google account. This account will be used ONLY for this shared Archive. Do you want to proceed?",
-    "cloud_no_members": "No members found.",
-    "cloud_role_owner": "Owner",
-    "cloud_role_collaborator": "Collaborator",
-    "btn_remove_access": "Remove Access",
-    "cloud_user_fallback": "User",
-    "confirm_remove_access": "Are you sure you want to remove access for {var0}?",
-    "cloud_invite_email_desc": "Enter the Google email address of the person to invite to the Archive:",
     "confirm_clean_orphans_desc": "This operation will permanently delete from your PC and Google Drive all attachments no longer associated with any record in the current database. This cannot be undone. Do you want to proceed?",
-    "btn_delete_orphans": "Delete orphan files",
     "cloud_cleaning_in_progress": "Cleaning in progress…",
     "modal_cloud_title_backup": "Personal backup on Google Drive",
     "modal_cloud_title_shared": "Shared archive on Google Drive",
@@ -1952,9 +634,6 @@ const customEn = {
     "msg_record_non_in_vista": "Document not visible in the current view.",
     "btn_sending": "Sending…",
     "settings_drive_not_connected": "Not Connected",
-    "settings_drive_status_error": "Status check error",
-    "tooltip_import": "Import Record Set (from ZIP)",
-    "tooltip_add_folder": "Create a new folder",
     "tooltip_cloud_sync": "Cloud & Sync",
     "tooltip_back": "Back to list",
     "placeholder_tags": "Filter tags…",
@@ -1964,7 +643,6 @@ const customEn = {
     "share_local_title": "Share this archive",
     "share_local_desc": "Create a free shared archive to work together with your colleagues, or join an existing one with an invite link.",
     "share_local_share_online": "Share online",
-    "share_local_create_hub": "Create shared Hub",
     "share_local_have_invite": "I received an invite",
     "share_local_backup_link": "Just want a private backup copy? Backup on Google Drive",
     "modal_cloud_activate_desc_short": "A private copy of the archive on your Google Drive, accessible only to you.",
@@ -2013,19 +691,13 @@ const customEn = {
     "share_invite_copied": "Link copied. Send it to {var0} by email or message.",
     "share_invite_copied_generic": "Link copied. Send it to your collaborator by email or message.",
     "share_invite_generated": "Invite created. Copy the link and share it.",
-    "share_sync_settings": "Synchronization settings",
-    "share_version": "v",
-    "share_widget_btn": "Share",
     "btn_copy": "Copy",
     "btn_revoke": "Revoke",
-    "btn_manage_share": "Manage sharing",
     "btn_open_share": "Open Sharing",
     "btn_create_hub_shared": "Create a Shared Hub",
     "cloud_backup_hint": "This is a personal backup on your private Cloud. To collaborate with others, use a shared archive instead.",
     "modal_cloud_shared_legacy_desc": "Shared archive on Google Drive (legacy). Switch to the shared archive for revocable invites and real-time sync.",
-    "hub_widget_label": "Hub:",
     "hub_widget_receive": "Receive",
-    "hub_widget_send": "Send",
     "hub_invite_default_label": "Invite",
     "msg_membro_revocato": "Access revoked.",
     "msg_errore_revoca": "Error during revocation.",
@@ -2035,8 +707,6 @@ const customEn = {
     "vault_type_hub": "Shared Hub",
     "share_local_name_label": "Archive name (all collaborators will see it)",
     "share_local_name_ph": "e.g. Datini Manuscripts",
-    "modal_cloud_hub_active": "Shared Hub Active",
-    "modal_cloud_hub_desc": "This Archive is synced on the shared Hub. Use \"Manage sharing\" for invites and collaborators.",
     "settings_hub_manage_hint": "Invites, collaborators, attachments and automatic sync are managed from the Sharing panel.",
     "settings_sync_none": "No cloud synchronization (Hub or Google Drive) configured for this workspace.",
     "btn_export_folder": "Export Folder",
@@ -2152,11 +822,6 @@ const customEn = {
     "tx_format": "Format",
     "tx_group_text": "The transcription text",
     "tx_group_citation": "The bibliographic citation",
-    "tx_fmt_html_desc": "Self-contained page, opens in any browser and can be attached to a message.",
-    "tx_fmt_md_desc": "Plain text with the formatting preserved: for Obsidian, Pandoc, GitHub.",
-    "tx_fmt_rtf_desc": "Opens in Word and LibreOffice keeping italics, bold and notes.",
-    "tx_fmt_bibtex_desc": "@misc entry for LaTeX, Zotero and JabRef.",
-    "tx_fmt_ris_desc": "Exchange format of Zotero, EndNote and Mendeley.",
     "tx_opt_header": "Header with shelfmark, dates and archive",
     "tx_count": "{var0} records, {var1} of them with a transcription.",
     "tx_count_citations": "{var0} citations to export.",
@@ -2245,8 +910,6 @@ const customEn = {
     "tag_manager_title": "Manage tags",
     // Fase 2.4 — import CSV
     "imp_title": "Import from CSV",
-    "folders_empty_with_records": "No folder yet. The {var0} records are in the root and you can see them in the list beside.",
-    "folders_empty": "No folder yet. The records you create stay in the root until you make one.",
     "imp_step_model": "Where do these records go?",
     "imp_model_new": "Create a new template",
     "imp_model_new_desc": "You build its fields from the columns of the file, in the next step.",
@@ -2334,7 +997,6 @@ const customEn = {
     "imp_state_new": "new",
     "imp_state_updated": "updated",
     "imp_state_skipped": "skipped",
-    "imp_summary": "{var0} new, {var1} updated, {var2} skipped, {var3} with warnings.",
     "imp_new_folders": "{var0} archives will be created: ",
     "imp_confirm": "Import {var0} records",
     "imp_nothing": "Nothing to import",
@@ -2438,7 +1100,6 @@ const customEn = {
     "msg_tag_deleted": "Tag removed from {var0} records.",
     "msg_tag_nothing": "No record was modified.",
     "msg_tag_rename_merges": "A tag with this name already exists: the two have been merged.",
-    "menu_tag_manager": "Manage tags…",
 
     // --- Fasi 3.3, 3.5 e 3.6: vocabolari, anagrafica, collegamenti, duplicati ---
     "vocab_title": "Controlled vocabularies",
@@ -2479,9 +1140,7 @@ const customEn = {
     "link_missing": "record not present in this copy",
     "no_signature": "No shelfmark",
     "undo_link_add": "Record link",
-    "undo_link_del": "Link removal",
     "msg_link_added": "Link added.",
-    "msg_link_removed": "Link removed.",
     "dup_title": "Repeated shelfmarks",
     "dup_none": "No repeated shelfmark.",
     "dup_found": "{var0} repeated shelfmarks.",
@@ -2596,7 +1255,316 @@ const customEn = {
     "pdf_source_pdf": "PDF text",
     "pdf_source_transcription": "Transcription",
     "pdf_open_failed_title": "Unreadable PDF",
-    "pdf_open_failed_desc": "The file cannot be opened: it may be damaged or password-protected. The transcription can still be edited."
+    "pdf_open_failed_desc": "The file cannot be opened: it may be damaged or password-protected. The transcription can still be edited.",
+    // --- Dal catalogo Lingui (rimosso nella Fase 4 di PIANO-OTTIMIZZAZIONE) ---
+    "btn_add_dynamic": "Add",
+    "btn_add_image_pdf": "Add Image/PDF",
+    "btn_cancel": "Cancel",
+    "btn_cancel_edit": "Cancel edit",
+    "btn_change_folder": "Change Folder…",
+    "btn_check_updates": "Check Updates",
+    "btn_clean_ghosts": "Clean Ghost Files",
+    "btn_clear_tags": "Clear tag filters",
+    "btn_close": "Close",
+    "btn_continue_writing": "Continue writing",
+    "btn_delete": "Delete",
+    "btn_disconnect_cloud": "Disconnect from Cloud",
+    "btn_download_github": "Download from GitHub",
+    "btn_download_starting": "Starting download…",
+    "btn_download_update": "Download Update",
+    "btn_drive_login": "Login to Drive",
+    "btn_drive_logout": "Disconnect",
+    "btn_drive_sync": "Sync Now",
+    "btn_edit": "Edit",
+    "btn_exit_nosave": "Exit without Saving",
+    "btn_exit_without_saving": "Exit without saving",
+    "btn_export_zip": "Export Backup to ZIP",
+    "btn_installing": "Installing…",
+    "btn_login_google": "Login with Google",
+    "btn_manage_models": "Manage Models",
+    "btn_next": "Next",
+    "btn_prev": "Previous",
+    "btn_report_issue": "Report issue",
+    "btn_restart_install": "Restart and Install",
+    "btn_restore_default": "Restore Default",
+    "btn_save": "Save",
+    "btn_save_record": "Save Record",
+    "btn_save_transcription": "Save Transcription",
+    "btn_select_folder": "Select Folder…",
+    "btn_sync_now": "Sync Now",
+    "btn_transcribe": "Transcribe",
+    "btn_use_another_account": "Use another Google account",
+    "btn_yes_proceed": "Yes, proceed",
+    "confirm_prompt_default": "Are you sure?",
+    "delete_item_hint": "Any attachments (image or PDF) will not be removed from the archive.",
+    "delete_item_prompt": "Are you sure you want to delete this record?",
+    "dont_ask_again": "Don't ask again",
+    "download_in_progress": "Downloading…",
+    "field_Marginalia": "Marginalia",
+    "field_Notaio": "Notary",
+    "field_attori_dinamici": "People / Actors",
+    "field_autore": "Author(s)",
+    "field_beni_dinamici": "Assets (Property)",
+    "field_condanne": "Sentences",
+    "field_crediti_dinamici": "Credits",
+    "field_dataCronica": "Chronic Date",
+    "field_dataTopica": "Topic Date",
+    "field_data_cronica": "Chronic Date",
+    "field_data_topica": "Topic Date",
+    "field_debiti_dinamici": "Debts",
+    "field_dichiarante": "Declarant",
+    "field_elementi_economici": "Economic Elements",
+    "field_famiglia_dinamici": "Family Members",
+    "field_magistratura": "Magistracy",
+    "field_motivazione_processo": "Reason for Trial",
+    "field_note": "Notes",
+    "field_oggetto": "Subject",
+    "field_prezzo": "Price",
+    "field_tipo_di_atto": "Type of Deed",
+    "field_tipo_di_atto_giur": "Type of Deed (Judicial)",
+    "field_titolo": "Title / Content",
+    "issue_description": "Detailed description *",
+    "issue_title": "Report title *",
+    "issue_type": "Report type",
+    "issue_type_bug": "Bug / Application error",
+    "issue_type_enhancement": "Suggestion / New feature",
+    "issue_type_feedback": "Generic feedback",
+    "label_advanced_options": "Advanced options",
+    "label_attachments": "Attach Documents (Photo or PDF)",
+    "label_base_fields": "Base fields",
+    "label_custom_fields": "Custom additional fields",
+    "label_doc_type": "Document Type:",
+    "label_folder": "Folder:",
+    "label_identifier": "Identifier / Signature *",
+    "label_new_filename": "New filename",
+    "label_select_model": "Select model or create new",
+    "label_selected_fields": "Selected fields (drag to reorder)",
+    "label_sync_attachments": "Automatically sync attachments (PDF/Images)",
+    "label_tags": "Tags (comma separated)",
+    "label_type_name": "New type name",
+    "modal_cloud_activate_title": "Activate Cloud Sync",
+    "modal_cloud_active_desc": "This Archive is synchronized.",
+    "modal_cloud_active_title": "Active Cloud",
+    "modal_cloud_backup_active": "Active Personal Backup",
+    "modal_cloud_backup_desc": "This Archive is synced in your private Cloud. Nobody else has access.",
+    "modal_cloud_shared_active": "Active Shared Archive",
+    "modal_cloud_title": "Sharing Management (Cloud)",
+    "modal_confirm_action": "Confirm Action",
+    "modal_confirm_delete": "Confirm Deletion",
+    "modal_create_type": "Create Document Type",
+    "modal_delete_desc": "Are you sure you want to delete",
+    "modal_delete_title": "Confirm Deletion",
+    "modal_manage_models": "Manage Models",
+    "modal_rename": "Rename Attachment",
+    "modal_report_issue": "Report an issue",
+    "modal_settings": "Settings",
+    "modal_unsaved_changes": "Unsaved changes",
+    "modal_unsaved_title": "Unsaved Changes",
+    "model_atti": "Model: Judicial Records",
+    "model_custom": "New empty document",
+    "model_fiscali": "Model: Tax Documents",
+    "model_imbreviature": "Model: Notarial Imbreviatures",
+    "msg_add_one_field": "Add at least one base or custom field.",
+    "msg_attachment_error": "Cannot load the attachment.",
+    "msg_backup_error": "Error during backup: ",
+    "msg_backup_init": "Preparing backup…",
+    "msg_backup_success": "Backup created successfully!",
+    "msg_check_updates": "Checking for updates…",
+    "msg_current_version": "current:",
+    "msg_downloading": "Downloading:",
+    "msg_file_save_error": "Error during saving.",
+    "msg_folder_exists": "The folder already exists.",
+    "msg_folder_exists_dest": "A folder with this name already exists in the destination.",
+    "msg_folder_invalid_name": "Invalid folder name.",
+    "msg_folder_name_empty": "The folder name cannot be empty.",
+    "msg_folder_renamed": "Folder renamed.",
+    "msg_insert_type_name": "Please enter a name for the document type.",
+    "msg_new_version_avail": "A new version is available",
+    "msg_operation_progress": "Operation in progress",
+    "msg_please_wait": "Please wait…",
+    "msg_record_deleted": "Record deleted.",
+    "msg_transcription_saved": "Transcription saved successfully.",
+    "msg_type_created": "New model created.",
+    "msg_type_deleted": "Model deleted.",
+    "msg_type_in_use": "Cannot delete: there are records using this model.",
+    "msg_type_updated": "Model updated successfully.",
+    "msg_up_to_date": "The application is up to date",
+    "no_attached_docs": "No attached documents",
+    "no_attachment": "No attachments available for this record.",
+    "no_search_match": "No match found in the database.",
+    "no_tags_found": "No tags found",
+    "no_workspace_set": "No workspace set",
+    "placeholder_Marginalia": "Marginal notes…",
+    "placeholder_Notaio": "Name of the notary",
+    "placeholder_autore": "E.g. Anonymous / Notary",
+    "placeholder_condanne": "Any sentences, acquittals or penalties…",
+    "placeholder_custom_field": "E.g. Support, Watermark…",
+    "placeholder_dataCronica": "E.g. 12 May 1340",
+    "placeholder_dataTopica": "E.g. Florence",
+    "placeholder_dichiarante": "E.g. family, institution…",
+    "placeholder_elementi_economici": "Economic details…",
+    "placeholder_empty_fields": "Select or add fields…",
+    "placeholder_identifier": "E.g. Plut. 40.1 or Deed 12",
+    "placeholder_issue_desc": "Describe the problem, how to reproduce it, or what you expect to happen…",
+    "placeholder_issue_title": "E.g. Error saving or loading files…",
+    "placeholder_key_attori_dinamici": "Role (e.g. Seller)",
+    "placeholder_key_beni_dinamici": "Asset (e.g. House, Land)",
+    "placeholder_key_crediti_dinamici": "Debtor / Reason",
+    "placeholder_key_debiti_dinamici": "Creditor / Reason",
+    "placeholder_key_famiglia_dinamici": "Relationship (e.g. Son, Wife)",
+    "placeholder_magistratura": "E.g. Podestà, Captain of the People…",
+    "placeholder_motivazione_processo": "Cause and reasons for the trial…",
+    "placeholder_note": "Textual or codicological notes",
+    "placeholder_oggetto": "Subject of the document",
+    "placeholder_prezzo": "E.g. 12 florins",
+    "placeholder_search": "Search in all records…",
+    "placeholder_tags_input": "e.g. miniature, 12th century, parchment",
+    "placeholder_tipo_di_atto": "E.g. marriage, sale, testament…",
+    "placeholder_tipo_di_atto_giur": "E.g. accusation, inquisition, witnesses, other",
+    "placeholder_titolo": "Title or short description",
+    "placeholder_val_attori_dinamici": "Name of the person",
+    "placeholder_val_beni_dinamici": "Value (e.g. 10 florins)",
+    "placeholder_val_crediti_dinamici": "Amount",
+    "placeholder_val_debiti_dinamici": "Amount",
+    "placeholder_val_famiglia_dinamici": "Name",
+    "settings_autofetch_10m": "10 minutes",
+    "settings_autofetch_1m": "1 minute",
+    "settings_autofetch_30m": "30 minutes",
+    "settings_autofetch_5m": "5 minutes",
+    "settings_autofetch_interval": "Check interval:",
+    "settings_autofetch_title": "Automatic Synchronization (Autofetch)",
+    "settings_backup": "Data Backup",
+    "settings_backup_desc": "Create a compressed file containing the entire archive and all attachments.",
+    "settings_drive_desc": "This local archive is configured as a Shared Archive via Google Drive.",
+    "settings_drive_hint": "To manage synchronization, invitations, or disconnect, use the <b>Cloud</b> menu in the top application bar.",
+    "settings_drive_status": "Status:",
+    "settings_drive_title": "Google Drive Synchronization",
+    "settings_hub_desc": "This local archive is connected to a shared online repository.",
+    "settings_hub_key": "Write Key:",
+    "settings_hub_repoid": "Repository ID:",
+    "settings_hub_title": "Hub Connection Status",
+    "settings_hub_url": "Server URL:",
+    "settings_lang": "Language",
+    "settings_lang_desc": "Choose the application language.",
+    "settings_local_attachments_desc": "Allows you to save images locally on your PC, excluding them from the shared cloud to save space.",
+    "settings_local_attachments_title": "Local Attachments Folder (Optional)",
+    "settings_not_defined": "Not defined",
+    "settings_support": "Support",
+    "settings_support_desc": "Did you encounter any problems or have suggestions? Report it on GitHub.",
+    "settings_tab_data": "Data Archive",
+    "settings_tab_general": "General",
+    "settings_tab_sync": "Synchronization",
+    "settings_tab_system": "System & Info",
+    "settings_theme": "Theme / Appearance",
+    "settings_theme_desc": "Choose the application theme.",
+    "settings_updates": "Updates",
+    "settings_updates_desc": "Check if a new version of the program is available on GitHub.",
+    "settings_username_desc": "Set your name to identify who inputs or modifies records and texts.",
+    "settings_username_placeholder": "E.g. Anthony",
+    "settings_username_title": "Collaborator / User Name",
+    "settings_workspace": "Working Folder (Archive)",
+    "settings_workspace_desc": "This folder contains your database and all copied attachments.",
+    "settings_workspace_restart": "The app will restart if you change the folder.",
+    "sidebar_cloud_history": "Cloud History",
+    "sidebar_cloud_history_desc": "Versions saved on Google Drive",
+    "sidebar_cloud_revisions": "CLOUD REVISIONS",
+    "sidebar_history_empty": "Open this section to see the history.",
+    "sidebar_manage_archives": "Manage archives…",
+    "sidebar_pending_changes": "PENDING CHANGES",
+    "sidebar_source_control_desc": "Local changes not yet pushed to the Cloud",
+    "sync_in_progress": "Syncing…",
+    "title_available_tags": "AVAILABLE TAGS",
+    "title_new_record": "Fill New Record",
+    "title_search": "Global Search",
+    "title_source_control": "Version Control",
+    "title_structure": "Structure",
+    "title_suggestions": "SUGGESTIONS",
+    "title_tags": "Tag Filter",
+    "title_transcription": "Transcription",
+    "tooltip_bold": "Bold",
+    "tooltip_collapse": "Collapse Editor",
+    "tooltip_folders": "Open Folders",
+    "tooltip_history": "Cloud Version History",
+    "tooltip_italic": "Italic",
+    "tooltip_new_record": "New Record",
+    "tooltip_next": "Next (Alt + Right Arrow)",
+    "tooltip_ol": "Ordered List",
+    "tooltip_prev": "Previous (Alt + Left Arrow)",
+    "tooltip_refresh_list": "Refresh list",
+    "tooltip_search_btn": "Search",
+    "tooltip_source_control": "Version Control (Source Control)",
+    "tooltip_tags_btn": "Filter by Tag",
+    "tooltip_tutorial": "Start Tutorial",
+    "tooltip_ul": "Unordered List",
+    "tooltip_underline": "Underline",
+    "tut_btn_done": "Done",
+    "tut_btn_next": "Next",
+    "tut_btn_prev": "Previous",
+    "tut_card_edit_desc": "To consult or update a document's metadata, select the \"Edit\" button located on its card.",
+    "tut_card_edit_title": "Accessing the Record",
+    "tut_cloud_integration_desc": "The current archive is configured in local mode. Select the Cloud icon in the bottom left corner to explore connectivity options.",
+    "tut_cloud_integration_title": "Cloud Integration",
+    "tut_cloud_panel_desc": "From this interface, you can convert the local archive into a Shared database (optimized for teamwork) or a Personal one (with integrated automatic backup). Close the window to continue.",
+    "tut_cloud_panel_title": "Remote Configuration Panel",
+    "tut_cloud_sync_title": "Remote Synchronization",
+    "tut_context_menu_desc": "The platform supports contextual menus (right-click) on archive items for quick access to export, duplication, and removal functions.",
+    "tut_context_menu_title": "Contextual Operations",
+    "tut_done_desc": "The system is now ready for use. You can replay this training presentation at any time by selecting the (?) icon.",
+    "tut_done_title": "Configuration Complete",
+    "tut_editor_desc": "This panel allows extended cataloging of the document and management of its digital attachments. The interface keeps save commands always accessible. Click the arrow in the top left to return to the archive.",
+    "tut_editor_title": "Record Editor",
+    "tut_models_desc": "Click this button to create or customize document models. A model defines which fields (e.g. Date, Author, Notes) will be available when filling a record.",
+    "tut_models_title": "Models Management",
+    "tut_nav_return_desc": "To restore the main view and browse records, select the folder icon.",
+    "tut_nav_return_title": "Return to Navigation",
+    "tut_new_model_desc": "In this window you can select a predefined model or create a fully customized one by adding your fields. Close the window (with the X or Cancel) to proceed.",
+    "tut_new_model_title": "Model Creation",
+    "tut_search_desc": "To explore advanced search tools, click on the magnifying glass icon.",
+    "tut_search_engine_desc": "The system indexes and searches keywords within metadata, titles, and transcription bodies in real-time.",
+    "tut_search_engine_title": "Advanced Search Engine",
+    "tut_search_title": "Global Search",
+    "tut_source_control_desc": "To analyze the status of unsynchronized revisions, select the Source Control icon.",
+    "tut_source_control_title": "Version Control",
+    "tut_source_status_desc": "This view summarizes locally made changes. Before syncing, you can review or selectively cancel each operation.",
+    "tut_source_status_title": "Revision Status",
+    "tut_tags_desc": "To access tag-based classification features, select the bookmark icon.",
+    "tut_tags_filter_desc": "This section allows organizing the documentary heritage through customizable labels. Selecting a tag applies an immediate filter to the entire archive.",
+    "tut_tags_filter_title": "Semantic Filters and Tags",
+    "tut_tags_title": "Cataloging System",
+    "tut_toolbar_desc": "This area allows quick navigation between main sections and access to archive management functions.",
+    "tut_toolbar_title": "Global Toolbar",
+    "tut_transcribe_desc": "Now select the \"Transcribe\" button on a card to launch the environment dedicated to the analysis and transcription of the original document.",
+    "tut_transcribe_env_desc": "This area presents the manuscript image alongside the advanced text editor. It is recommended to use the Ctrl+S shortcut for quick saving. Click the arrow in the top left to return to the archive.",
+    "tut_transcribe_env_title": "Integrated Transcription Environment",
+    "tut_transcribe_title": "Transcription Module",
+    "tut_vaults_desc": "ArchiView allows you to create and manage an unlimited number of separate archives (vaults). Clicking this button lets you quickly switch between archives, create new local ones, link Cloud ones, or manage Shared Archives to collaborate with your team.",
+    "tut_vaults_title": "Multi-Archive Management",
+    "tut_welcome_desc": "This guided tour will show you the main features of the system. Click \"Next\" to start the presentation.",
+    "tut_welcome_title": "Welcome to ArchiView",
+    "unsaved_hint": "Are you sure you want to exit and lose your changes?",
+    "unsaved_prompt": "There are unsaved changes in this transcription.",
+    "update_available": "A new update is available!",
+    "upload_in_progress": "Uploading…",
+    // --- Traduzioni del vecchio catalogo per testo (mai raggiunte da window.t) ---
+    "msg_l_archivio_stato_sincroni": "The archive has been synchronized in real time.",
+    "msg_esportazione_di_var_recor": "Export of {var0} records completed successfully!",
+    "msg_importati_var_record_con_": "{var0} records imported successfully!",
+    "msg_var_record_eliminati": "{var0} record deleted.",
+    "msg_var_record_copiati_negli_": "{var0} records copied to ArchiView clipboard. Right-click to paste them into another archive.",
+    "msg_var_record_tagliati_tasto": "{var0} records cut. Right-click to move them to another archive.",
+    "msg_cartella_copiata_tasto_de": "Folder copied. Right-click on another folder to paste it.",
+    "msg_impossibile_aprire_la_car": "Cannot open folder in File Explorer.",
+    "msg_cartella_tagliata_tasto_d": "Folder cut. Right-click to move it.",
+    "msg_archivio_spostato_con_suc": "Archive moved successfully!",
+    "msg_archivio_duplicato_con_su": "Archive duplicated successfully ({var0} records)!",
+    "msg_var_record_spostati_con_s": "{var0} records moved successfully!",
+    "msg_var_record_duplicati_con_": "{var0} records duplicated successfully!",
+    "msg_pulizia_completata_file_r": "Cleanup completed! Files removed: {var0} locally, {var1} on Drive.",
+    "tut_history_title": "Cloud Version History",
+    "tut_history_desc": "Click here to view the history of revisions saved on the Cloud.",
+    "tut_history_panel_title": "History Panel",
+    "tut_history_panel_desc": "From this panel you can browse old versions of the database, open them in read-only mode, and restore your archive to a previous version.",
+    "msg_annullato_var": "Undone: {var0}"
 };
 
 const customIt = {
@@ -2725,7 +1693,6 @@ const customIt = {
     "th_tags": "Tag",
     "th_attachments": "Allegati",
     "th_modified": "Modificato",
-    "tooltip_columns": "Scegli le colonne visibili",
     "menu_columns": "Colonne visibili",
     "btn_new_model": "Nuovo modello",
     "tooltip_new_record_type": "Scegli il tipo della nuova scheda",
@@ -2902,13 +1869,11 @@ const customIt = {
     "tooltip_delete_folder_not_empty": "Puoi eliminare solo una cartella vuota",
     "tooltip_delete_folder_root": "La radice dell'archivio non può essere eliminata",
     "folder_root_label": "Radice",
-    "empty_no_folders": "Nessuna cartella. Le schede restano nella radice finché non ne crei una.",
     "tooltip_sharing": "Condivisione e collaboratori",
     "nav_panels": "Pannelli",
     "tooltip_save_record": "Salva la scheda",
     "tooltip_back_to_list": "Torna alla lista",
     "tooltip_resize": "Trascina per ridimensionare",
-    "label_not_editable": "Non modificabile",
     "tutorial_invite_text": "Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?",
     "btn_tutorial_start": "Sì, avvia",
     "btn_tutorial_dismiss": "No, grazie",
@@ -2918,9 +1883,7 @@ const customIt = {
     "filter_remove_tag": "Rimuovi questo tag",
     "btn_clear_filters": "Azzera tutti i filtri",
     "dialog_select_folder": "Seleziona la posizione per il nuovo archivio",
-    "dialog_export_zip": "Esporta Backup in ZIP",
     "dialog_import_zip": "Importa Archivio JSON",
-    "btn_procedi": "Procedi",
     "modal_folder_title": "Gestione Archivi",
     "welcome_desc_gestione": "Scegli una cartella di destinazione per creare un nuovo archivio indipendente, oppure seleziona un archivio esistente per caricarne i dati.",
     "btn_open_local": "Apri Archivio Locale",
@@ -2928,7 +1891,6 @@ const customIt = {
     "btn_create_cloud_private": "Crea un Backup Personale",
     "btn_backup_private": "Backup Personale",
     "btn_convert_backup_private": "Converti in Backup Personale",
-    "btn_create_shared": "Crea Archivio Condiviso",
     "btn_join_shared": "Unisciti a un Archivio Condiviso",
     "btn_restore_drive": "Ripristina da Google Drive…",
     "label_archive_name": "Nome Archivio",
@@ -2937,10 +1899,7 @@ const customIt = {
     "btn_browse": "Sfoglia…",
     "btn_go_back": "Torna Indietro",
     "btn_create_and_start": "Crea e Avvia",
-    "welcome_desc_join": "Unendoti tramite codice accederai a un Cloud condiviso sul Google Drive del creatore. Qualsiasi modifica locale si sincronizzerà direttamente con gli altri membri.",
-    "label_invite_code": "Codice Invito",
     "placeholder_invite_code": "Incolla il codice qui…",
-    "label_archive_name_colon": "Nome Archivio:",
     "label_local_archive_pos": "Posizione dell'archivio locale",
     "btn_connect": "Connetti",
     "title_select_cloud_archive": "Seleziona un Archivio dal Cloud",
@@ -2958,10 +1917,7 @@ const customIt = {
     "prog_disc_title": "Disconnessione",
     "prog_disc_desc": "Disattivazione della sincronizzazione Cloud…",
     "prog_auth_title": "Autenticazione in corso",
-    "prog_auth_desc1": "Accedi con l'account Google desiderato nel browser…",
     "prog_auth_desc2": "Accedi con il nuovo account nel browser…",
-    "prog_invite_title": "Invio invito",
-    "prog_invite_desc": "Assegnazione dei permessi su Google Drive…",
     "prog_prep_cloud": "Avvio della configurazione cloud…",
     "confirm_disc_cloud": "Vuoi davvero disconnettere questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non saranno più sincronizzati online e l'app tornerà in modalità solo locale.",
     "confirm_pull_no_fetch": "Attenzione: stai per scaricare le modifiche dal Cloud senza prima verificare quali siano (Fetch). Procedere comunque?",
@@ -2974,31 +1930,14 @@ const customIt = {
     "confirm_delete_archive_empty": "Sei sicuro di voler eliminare la cartella \"{var0}\"? Tutte le sottocartelle vuote verranno rimosse.",
     "confirm_delete_archive_with_docs": "La cartella \"{var0}\" contiene {var1} documenti. Eliminandola verranno eliminati anche tutti i documenti al suo interno. Vuoi procedere?",
     "confirm_delete_model": "Sei sicuro di voler eliminare questo modello?",
-    "confirm_tutorial_demo": "Stai per caricare l'archivio Demo. L'archivio attuale verrà chiuso. Vuoi procedere?",
     "label_invite_code_opt": "Codice d'Invito",
-    "label_optional": "(opzionale)",
     "label_authorize_folder": "Autorizza l'accesso alla cartella",
-    "desc_picker_required": "Apri il Drive e seleziona la cartella condivisa. Questo autorizza l'accesso senza concedere permessi completi all'app.",
     "btn_browse_drive": "Sfoglia Google Drive…",
     "label_selected_archive": "Selezionato:",
     "msg_picker_required": "Prima apri Google Drive con il pulsante Sfoglia per autorizzare l'accesso alla cartella condivisa.",
     "msg_selezione_annullata": "Selezione annullata.",
     "msg_seleziona_percorso": "Seleziona una posizione locale per l'archivio.",
-    "cloud_step1_title": "Concedi l'accesso a Google Drive",
-    "cloud_step1_desc": "Il collaboratore riceverà un'email da Google che lo autorizza ad accedere alla cartella condivisa.",
-    "cloud_step2_title": "Condividi il link ArchiView",
-    "cloud_step2_desc": "Il collaboratore incolla questo link in ArchiView per completare la configurazione e abilitare il sync in tempo reale.",
-    "cloud_step2_hint": "Il destinatario va su <em>Unisciti a un Archivio</em> e incolla questo link nel campo Step 1.",
-    "confirm_use_another_account": "Verrai reindirizzato al browser per accedere con un altro account Google. Questo account verrà usato SOLO per questo Archivio condiviso. Vuoi procedere?",
-    "cloud_no_members": "Nessun membro trovato.",
-    "cloud_role_owner": "Proprietario",
-    "cloud_role_collaborator": "Collaboratore",
-    "btn_remove_access": "Rimuovi Accesso",
-    "cloud_user_fallback": "Utente",
-    "confirm_remove_access": "Sei sicuro di voler rimuovere l'accesso a {var0}?",
-    "cloud_invite_email_desc": "Inserisci l'indirizzo email (Google) della persona da invitare all'Archivio:",
     "confirm_clean_orphans_desc": "Questa operazione eliminerà definitivamente dal PC e da Google Drive tutti gli allegati che non sono più associati a nessuna scheda nel database corrente. L'operazione è irreversibile. Vuoi procedere?",
-    "btn_delete_orphans": "Elimina file orfani",
     "cloud_cleaning_in_progress": "Pulizia in corso…",
     "modal_cloud_title_backup": "Backup personale su Google Drive",
     "modal_cloud_title_shared": "Archivio condiviso su Google Drive",
@@ -3186,9 +2125,6 @@ const customIt = {
     "msg_record_non_in_vista": "Documento non visibile nella vista corrente.",
     "btn_sending": "Invio in corso…",
     "settings_drive_not_connected": "Non Connesso",
-    "settings_drive_status_error": "Errore di controllo stato",
-    "tooltip_import": "Importa Schedatura (da ZIP)",
-    "tooltip_add_folder": "Crea una nuova cartella",
     "tooltip_cloud_sync": "Cloud & Sincronizzazione",
 
     // === CONDIVISIONE (redesign) ===
@@ -3196,7 +2132,6 @@ const customIt = {
     "share_local_title": "Condividi questo archivio",
     "share_local_desc": "Crea un archivio condiviso gratuito per lavorare insieme ai tuoi colleghi, oppure unisciti a un archivio con un link di invito.",
     "share_local_share_online": "Condividi online",
-    "share_local_create_hub": "Crea Hub condiviso",
     "share_local_have_invite": "Ho ricevuto un invito",
     "share_local_backup_link": "Vuoi solo una copia di sicurezza privata? Backup su Google Drive",
     "modal_cloud_activate_desc_short": "Una copia privata dell'archivio sul tuo Google Drive, accessibile solo a te.",
@@ -3245,19 +2180,13 @@ const customIt = {
     "share_invite_copied": "Link copiato. Invialo a {var0} per email o messaggio.",
     "share_invite_copied_generic": "Link copiato. Invialo al collaboratore per email o messaggio.",
     "share_invite_generated": "Invito creato. Copia il link e condividilo.",
-    "share_sync_settings": "Impostazioni di sincronizzazione",
-    "share_version": "v",
-    "share_widget_btn": "Condividi",
     "btn_copy": "Copia",
     "btn_revoke": "Revoca",
-    "btn_manage_share": "Gestisci condivisione",
     "btn_open_share": "Apri Condivisione",
     "btn_create_hub_shared": "Crea un Hub Condiviso",
     "cloud_backup_hint": "Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.",
     "modal_cloud_shared_legacy_desc": "Archivio condiviso su Google Drive (legacy). Passa all'archivio condiviso per inviti revocabili e sincronizzazione in tempo reale.",
-    "hub_widget_label": "Hub:",
     "hub_widget_receive": "Ricevi",
-    "hub_widget_send": "Invia",
     "hub_invite_default_label": "Invito",
     "msg_membro_revocato": "Accesso revocato.",
     "msg_errore_revoca": "Errore durante la revoca.",
@@ -3267,8 +2196,6 @@ const customIt = {
     "vault_type_hub": "Hub Condiviso",
     "share_local_name_label": "Nome dell'archivio (lo vedranno tutti i collaboratori)",
     "share_local_name_ph": "Es. Manoscritti Datini",
-    "modal_cloud_hub_active": "Hub Condiviso Attivo",
-    "modal_cloud_hub_desc": "Questo Archivio è sincronizzato sull'Hub condiviso. Usa \"Gestisci condivisione\" per inviti e collaboratori.",
     "settings_hub_manage_hint": "Inviti, collaboratori, allegati e sincronizzazione automatica si gestiscono dal pannello Condivisione.",
     "settings_sync_none": "Nessuna sincronizzazione cloud (Hub o Google Drive) configurata per questa cartella di lavoro.",
     "btn_export_folder": "Esporta Cartella",
@@ -3376,11 +2303,6 @@ const customIt = {
     "tx_format": "Formato",
     "tx_group_text": "Il testo della trascrizione",
     "tx_group_citation": "La citazione bibliografica",
-    "tx_fmt_html_desc": "Pagina autonoma, apribile in qualsiasi browser e allegabile a un messaggio.",
-    "tx_fmt_md_desc": "Testo semplice con la formattazione conservata: per Obsidian, Pandoc, GitHub.",
-    "tx_fmt_rtf_desc": "Si apre in Word e LibreOffice mantenendo corsivi, grassetti e note.",
-    "tx_fmt_bibtex_desc": "Voce @misc per LaTeX, Zotero e JabRef.",
-    "tx_fmt_ris_desc": "Formato di scambio di Zotero, EndNote e Mendeley.",
     "tx_opt_header": "Intestazione con segnatura, date e archivio",
     "tx_count": "{var0} schede, di cui {var1} con trascrizione.",
     "tx_count_citations": "{var0} citazioni da esportare.",
@@ -3450,8 +2372,6 @@ const customIt = {
     "tag_manager_title": "Gestione tag",
     // Fase 2.4 — import CSV
     "imp_title": "Importa da CSV",
-    "folders_empty_with_records": "Nessuna cartella ancora. Le {var0} schede stanno nella radice e le vedi qui accanto nell'elenco.",
-    "folders_empty": "Nessuna cartella ancora. Le schede che crei restano nella radice finché non ne fai una.",
     "imp_step_model": "Dove finiscono queste schede?",
     "imp_model_new": "Crea un modello nuovo",
     "imp_model_new_desc": "I campi li costruisci dalle colonne del file, al passo successivo.",
@@ -3538,7 +2458,6 @@ const customIt = {
     "imp_state_new": "nuova",
     "imp_state_updated": "aggiornata",
     "imp_state_skipped": "scartata",
-    "imp_summary": "{var0} nuove, {var1} aggiornate, {var2} scartate, {var3} con avvisi.",
     "imp_new_folders": "Verranno creati {var0} archivi: ",
     "imp_confirm": "Importa {var0} schede",
     "imp_nothing": "Niente da importare",
@@ -3642,7 +2561,6 @@ const customIt = {
     "msg_tag_deleted": "Tag rimosso da {var0} schede.",
     "msg_tag_nothing": "Nessuna scheda modificata.",
     "msg_tag_rename_merges": "Un tag con questo nome esiste già: i due sono stati fusi.",
-    "menu_tag_manager": "Gestione tag…",
 
     // --- Fasi 3.3, 3.5 e 3.6: vocabolari, anagrafica, collegamenti, duplicati ---
     "vocab_title": "Vocabolari controllati",
@@ -3683,9 +2601,7 @@ const customIt = {
     "link_missing": "scheda non presente in questa copia",
     "no_signature": "Senza segnatura",
     "undo_link_add": "Collegamento fra schede",
-    "undo_link_del": "Rimozione di un collegamento",
     "msg_link_added": "Collegamento aggiunto.",
-    "msg_link_removed": "Collegamento rimosso.",
     "dup_title": "Segnature ripetute",
     "dup_none": "Nessuna segnatura ripetuta.",
     "dup_found": "{var0} segnature ripetute.",
@@ -3800,15 +2716,304 @@ const customIt = {
     "pdf_source_pdf": "Testo del PDF",
     "pdf_source_transcription": "Trascrizione",
     "pdf_open_failed_title": "PDF non leggibile",
-    "pdf_open_failed_desc": "Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile."
+    "pdf_open_failed_desc": "Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile.",
+    // --- Dal catalogo Lingui (rimosso nella Fase 4 di PIANO-OTTIMIZZAZIONE) ---
+    "btn_add_dynamic": "Aggiungi",
+    "btn_add_image_pdf": "Aggiungi Immagine/PDF",
+    "btn_cancel": "Annulla",
+    "btn_cancel_edit": "Annulla modifica",
+    "btn_change_folder": "Cambia Cartella…",
+    "btn_check_updates": "Controlla Aggiornamenti",
+    "btn_clean_ghosts": "Pulizia File Fantasma",
+    "btn_clear_tags": "Rimuovi filtri tag",
+    "btn_close": "Chiudi",
+    "btn_continue_writing": "Continua a scrivere",
+    "btn_create": "Crea",
+    "btn_delete": "Elimina",
+    "btn_disconnect_cloud": "Scollega dal Cloud",
+    "btn_download_github": "Scarica da GitHub",
+    "btn_download_starting": "Avvio download…",
+    "btn_download_update": "Scarica Aggiornamento",
+    "btn_drive_login": "Accedi a Drive",
+    "btn_drive_logout": "Disconnetti",
+    "btn_drive_sync": "Sincronizza Ora",
+    "btn_edit": "Modifica",
+    "btn_exit_nosave": "Esci senza salvare",
+    "btn_exit_without_saving": "Esci senza salvare",
+    "btn_export_zip": "Esporta Backup in ZIP",
+    "btn_installing": "Installazione…",
+    "btn_login_google": "Accedi con Google",
+    "btn_manage_models": "Gestisci Modelli",
+    "btn_next": "Successiva",
+    "btn_prev": "Precedente",
+    "btn_report_issue": "Segnala problema",
+    "btn_restart_install": "Riavvia e Installa",
+    "btn_restore_default": "Ripristina di default",
+    "btn_save": "Salva",
+    "btn_save_record": "Salva Scheda",
+    "btn_save_transcription": "Salva Trascrizione",
+    "btn_select_folder": "Seleziona Cartella…",
+    "btn_sync_now": "Sincronizza Ora",
+    "btn_transcribe": "Trascrivi",
+    "btn_use_another_account": "Usa un altro account Google",
+    "btn_yes_proceed": "Sì, procedi",
+    "confirm_prompt_default": "Sei sicuro?",
+    "delete_item_hint": "L'eventuale allegato (immagine o PDF) non verrà rimosso dall'archivio.",
+    "delete_item_prompt": "Sei sicuro di voler eliminare questa scheda?",
+    "dont_ask_again": "Non chiederlo più",
+    "download_in_progress": "Scaricamento",
+    "field_Marginalia": "Marginalia",
+    "field_Notaio": "Notaio",
+    "field_attori_dinamici": "Persone / Attori",
+    "field_autore": "Autore/i",
+    "field_beni_dinamici": "Beni (Proprietà)",
+    "field_condanne": "Condanne",
+    "field_crediti_dinamici": "Crediti",
+    "field_dataCronica": "Data Cronica",
+    "field_dataTopica": "Data Topica",
+    "field_data_cronica": "Data cronica",
+    "field_data_topica": "Data topica",
+    "field_debiti_dinamici": "Debiti",
+    "field_dichiarante": "Dichiarante",
+    "field_elementi_economici": "Elementi Economici",
+    "field_famiglia_dinamici": "Familiari",
+    "field_magistratura": "Magistratura",
+    "field_motivazione_processo": "Motivazione del Processo",
+    "field_note": "Note",
+    "field_oggetto": "Oggetto",
+    "field_prezzo": "Prezzo",
+    "field_tipo_di_atto": "Tipo di Atto",
+    "field_tipo_di_atto_giur": "Tipo di Atto (Giur.)",
+    "field_titolo": "Titolo / Cont.",
+    "issue_description": "Descrizione dettagliata *",
+    "issue_title": "Titolo della segnalazione *",
+    "issue_type": "Tipo di segnalazione",
+    "issue_type_bug": "Bug / Errore del programma",
+    "issue_type_enhancement": "Suggerimento / Nuova funzionalità",
+    "issue_type_feedback": "Feedback generico",
+    "label_advanced_options": "Opzioni avanzate",
+    "label_attachments": "Allega Documenti (Foto o PDF)",
+    "label_base_fields": "Campi di base",
+    "label_custom_fields": "Campi aggiuntivi personalizzati",
+    "label_doc_type": "Tipo Documento:",
+    "label_folder": "Archivio:",
+    "label_identifier": "Identificativo / Segnatura *",
+    "label_new_filename": "Nuovo nome del file",
+    "label_select_model": "Seleziona modello o creane uno nuovo",
+    "label_selected_fields": "Campi selezionati (trascina per riordinare)",
+    "label_sync_attachments": "Sincronizza allegati automaticamente (PDF/Immagini)",
+    "label_tags": "Tags (separati da virgola)",
+    "label_type_name": "Nome del nuovo tipo",
+    "modal_cloud_activate_title": "Attiva Sincronizzazione Cloud",
+    "modal_cloud_active_desc": "Questo Archivio è sincronizzato.",
+    "modal_cloud_active_title": "Cloud Attivo",
+    "modal_cloud_backup_active": "Backup Personale Attivo",
+    "modal_cloud_backup_desc": "Questo Archivio è sincronizzato nel tuo Cloud privato. Nessun altro ha accesso.",
+    "modal_cloud_shared_active": "Archivio Condiviso Attivo",
+    "modal_cloud_title": "Gestione Condivisione (Cloud)",
+    "modal_confirm_action": "Conferma Azione",
+    "modal_confirm_delete": "Conferma Eliminazione",
+    "modal_create_type": "Crea Tipo Documento",
+    "modal_delete_desc": "Sei sicuro di voler eliminare",
+    "modal_delete_title": "Conferma Eliminazione",
+    "modal_manage_models": "Gestisci Modelli",
+    "modal_rename": "Rinomina Allegato",
+    "modal_report_issue": "Segnala un problema",
+    "modal_settings": "Impostazioni",
+    "modal_unsaved_changes": "Modifiche non salvate",
+    "modal_unsaved_title": "Modifiche non salvate",
+    "model_atti": "Modello: Atti giudiziari",
+    "model_custom": "Nuovo documento vuoto",
+    "model_fiscali": "Modello: Documenti fiscali",
+    "model_imbreviature": "Modello: Imbreviature notarili",
+    "msg_add_one_field": "Aggiungi almeno un campo base o personalizzato.",
+    "msg_attachment_error": "Impossibile caricare l'allegato.",
+    "msg_backup_error": "Errore durante il backup: ",
+    "msg_backup_init": "Preparazione del backup in corso…",
+    "msg_backup_success": "Backup creato con successo!",
+    "msg_check_updates": "Controllo aggiornamenti in corso…",
+    "msg_current_version": "attuale:",
+    "msg_downloading": "Scaricamento:",
+    "msg_file_save_error": "Errore durante il salvataggio.",
+    "msg_folder_exists": "La cartella esiste già.",
+    "msg_folder_exists_dest": "Esiste già una cartella con questo nome nella destinazione.",
+    "msg_folder_invalid_name": "Nome cartella non valido.",
+    "msg_folder_name_empty": "Il nome della cartella non può essere vuoto.",
+    "msg_folder_renamed": "Cartella rinominata.",
+    "msg_insert_type_name": "Inserisci un nome per il tipo di documento.",
+    "msg_new_version_avail": "È disponibile la nuova versione",
+    "msg_operation_progress": "Operazione in corso",
+    "msg_please_wait": "Attendere prego…",
+    "msg_record_deleted": "Scheda eliminata.",
+    "msg_transcription_saved": "Trascrizione salvata con successo.",
+    "msg_type_created": "Nuovo modello creato.",
+    "msg_type_deleted": "Modello eliminato.",
+    "msg_type_in_use": "Impossibile eliminare: ci sono schede che usano questo modello.",
+    "msg_type_updated": "Modello aggiornato con successo.",
+    "msg_up_to_date": "Il programma è già aggiornato",
+    "no_attached_docs": "Nessun documento allegato",
+    "no_attachment": "Nessun allegato disponibile per questa scheda.",
+    "no_search_match": "Nessun match trovato nel database.",
+    "no_tags_found": "Nessun tag disponibile",
+    "no_workspace_set": "Nessun archivio impostato",
+    "placeholder_Marginalia": "Note marginali…",
+    "placeholder_Notaio": "Nome del notaio",
+    "placeholder_autore": "Es. Anonimo / Notaio",
+    "placeholder_condanne": "Eventuali condanne, assoluzioni o pene…",
+    "placeholder_custom_field": "Es. Supporto, Filigrana…",
+    "placeholder_dataCronica": "Es. 12 Maggio 1340",
+    "placeholder_dataTopica": "Es. Firenze",
+    "placeholder_dichiarante": "Es. famiglia, istituzione…",
+    "placeholder_elementi_economici": "Dettagli economici…",
+    "placeholder_empty_fields": "Seleziona o aggiungi dei campi…",
+    "placeholder_identifier": "Es. Plut. 40.1 o Atto 12",
+    "placeholder_issue_desc": "Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada…",
+    "placeholder_issue_title": "Es. Errore durante il salvataggio o caricamento file…",
+    "placeholder_key_attori_dinamici": "Ruolo (es. Venditore)",
+    "placeholder_key_beni_dinamici": "Bene (es. Casa, Terreno)",
+    "placeholder_key_crediti_dinamici": "Debitore / Motivo",
+    "placeholder_key_debiti_dinamici": "Creditore / Motivo",
+    "placeholder_key_famiglia_dinamici": "Parentela (es. Figlio, Moglie)",
+    "placeholder_magistratura": "Es. Podestà, Capitano del Popolo…",
+    "placeholder_motivazione_processo": "Causa e ragioni del processo…",
+    "placeholder_note": "Note testuali o codicologiche",
+    "placeholder_oggetto": "Oggetto del documento",
+    "placeholder_prezzo": "Es. 12 fiorini",
+    "placeholder_search": "Cerca in tutte le schede…",
+    "placeholder_tags": "Seleziona tag…",
+    "placeholder_tags_input": "es. miniatura, secolo XII, pergamenaceo",
+    "placeholder_tipo_di_atto": "Es. matrimonio, vendita, testamento…",
+    "placeholder_tipo_di_atto_giur": "Es. accusa, inquisitione, testimoni, altro",
+    "placeholder_titolo": "Titolo o descrizione sintetica",
+    "placeholder_val_attori_dinamici": "Nome della persona",
+    "placeholder_val_beni_dinamici": "Valore (es. 10 fiorini)",
+    "placeholder_val_crediti_dinamici": "Ammontare",
+    "placeholder_val_debiti_dinamici": "Ammontare",
+    "placeholder_val_famiglia_dinamici": "Nome",
+    "settings_autofetch_10m": "10 minuti",
+    "settings_autofetch_1m": "1 minuto",
+    "settings_autofetch_30m": "30 minuti",
+    "settings_autofetch_5m": "5 minuti",
+    "settings_autofetch_interval": "Intervallo di controllo:",
+    "settings_autofetch_title": "Sincronizzazione Automatica (Autofetch)",
+    "settings_backup": "Backup Dati",
+    "settings_backup_desc": "Crea un file compresso contenente l'intero archivio e tutti gli allegati.",
+    "settings_drive_desc": "Questo archivio locale è configurato come Archivio Condiviso tramite Google Drive.",
+    "settings_drive_hint": "Per gestire la sincronizzazione, gli inviti o disconnetterti, utilizza il menu <b>Cloud</b> nella barra superiore dell'applicazione.",
+    "settings_drive_status": "Stato:",
+    "settings_drive_title": "Sincronizzazione Google Drive",
+    "settings_hub_desc": "Questo archivio locale è collegato ad un repository condiviso online.",
+    "settings_hub_key": "Chiave di Scrittura:",
+    "settings_hub_repoid": "ID Repository:",
+    "settings_hub_title": "Stato Collegamento Hub",
+    "settings_hub_url": "URL Server:",
+    "settings_lang": "Lingua / Language",
+    "settings_lang_desc": "Scegli la lingua dell'applicazione.",
+    "settings_local_attachments_desc": "Consente di salvare le immagini localmente sul PC, escludendole dal cloud condiviso per risparmiare spazio.",
+    "settings_local_attachments_title": "Cartella Allegati Locale (Opzionale)",
+    "settings_not_defined": "Non definito",
+    "settings_support": "Supporto",
+    "settings_support_desc": "Hai riscontrato dei problemi o hai dei suggerimenti? Segnalalo su GitHub.",
+    "settings_tab_data": "Archivio Dati",
+    "settings_tab_general": "Generali",
+    "settings_tab_sync": "Sincronizzazione",
+    "settings_tab_system": "Sistema & Info",
+    "settings_theme": "Tema / Aspetto",
+    "settings_theme_desc": "Scegli il tema dell'applicazione.",
+    "settings_updates": "Aggiornamenti",
+    "settings_updates_desc": "Controlla se è disponibile una nuova versione del programma su GitHub.",
+    "settings_username_desc": "Imposta il tuo nome per identificare chi inserisce o modifica le schede ed i testi.",
+    "settings_username_placeholder": "Es. Antonio",
+    "settings_username_title": "Nome Collaboratore / Utente",
+    "settings_workspace": "Archivio di Lavoro (Archivio)",
+    "settings_workspace_desc": "Questa cartella contiene il tuo database e tutti gli allegati copiati.",
+    "settings_workspace_restart": "L'app verrà riavviata se cambi la cartella.",
+    "sidebar_cloud_history": "Storico Cloud",
+    "sidebar_cloud_history_desc": "Versioni salvate su Google Drive",
+    "sidebar_cloud_revisions": "REVISIONI CLOUD",
+    "sidebar_history_empty": "Apri questa sezione per vedere lo storico.",
+    "sidebar_manage_archives": "Gestisci archivi…",
+    "sidebar_pending_changes": "MODIFICHE PENDENTI",
+    "sidebar_source_control_desc": "Modifiche locali non ancora inviate al Cloud",
+    "sync_in_progress": "Sincronizzazione",
+    "title_available_tags": "TAG DISPONIBILI",
+    "title_new_record": "Compila Nuova Scheda",
+    "title_search": "Ricerca Globale",
+    "title_source_control": "Controllo Modifiche",
+    "title_structure": "Struttura",
+    "title_suggestions": "SUGGERIMENTI",
+    "title_tags": "Filtro Tag",
+    "title_transcription": "Trascrizione",
+    "tooltip_back": "Torna alla lista",
+    "tooltip_bold": "Grassetto",
+    "tooltip_collapse": "Collassa Editor",
+    "tooltip_folders": "Apri Archivi",
+    "tooltip_history": "Storico Versioni Cloud",
+    "tooltip_italic": "Corsivo",
+    "tooltip_new_record": "Nuova Scheda",
+    "tooltip_next": "Successivo (Alt + Freccia Destra)",
+    "tooltip_ol": "Elenco numerato",
+    "tooltip_prev": "Precedente (Alt + Freccia Sinistra)",
+    "tooltip_refresh_list": "Aggiorna lista",
+    "tooltip_search_btn": "Ricerca",
+    "tooltip_source_control": "Controllo Modifiche (Source Control)",
+    "tooltip_tags_btn": "Filtra per Tag",
+    "tooltip_tutorial": "Avvia Tutorial",
+    "tooltip_ul": "Elenco puntato",
+    "tooltip_underline": "Sottolineato",
+    "tut_btn_done": "Fine",
+    "tut_btn_next": "Avanti",
+    "tut_btn_prev": "Indietro",
+    "tut_card_edit_desc": "Per consultare o aggiornare i metadati di un documento, seleziona il pulsante \"Modifica\" posizionato sulla relativa scheda.",
+    "tut_card_edit_title": "Accesso alla Schedatura",
+    "tut_cloud_integration_desc": "L'archivio corrente è configurato in modalità locale. Seleziona l'icona Cloud nell'angolo in basso a sinistra per esplorare le opzioni di connettività.",
+    "tut_cloud_integration_title": "Integrazione Cloud",
+    "tut_cloud_panel_desc": "Da questa interfaccia è possibile convertire l'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire.",
+    "tut_cloud_panel_title": "Pannello di Configurazione Remota",
+    "tut_cloud_sync_title": "Sincronizzazione Remota",
+    "tut_context_menu_desc": "La piattaforma supporta menù contestuali (tasto destro del mouse) sugli elementi dell'archivio per l'accesso rapido alle funzioni di esportazione, duplicazione e rimozione.",
+    "tut_context_menu_title": "Operazioni Contestuali",
+    "tut_done_desc": "Il sistema è ora pronto per l'utilizzo. È possibile rieseguire questa presentazione formativa in qualsiasi momento selezionando l'icona (?).",
+    "tut_done_title": "Configurazione Completata",
+    "tut_editor_desc": "Questo pannello consente la catalogazione estesa del documento e la gestione dei relativi allegati digitali. L'interfaccia mantiene i comandi di salvataggio sempre accessibili. Clicca sulla freccia in alto a sinistra per tornare all'archivio.",
+    "tut_editor_title": "Editor della Schedatura",
+    "tut_models_desc": "Clicca su questo pulsante per creare o personalizzare i modelli di documento. Un modello definisce quali campi (es. Data, Autore, Note) saranno disponibili per la compilazione della scheda.",
+    "tut_models_title": "Gestione Modelli",
+    "tut_nav_return_desc": "Per ripristinare la vista principale e sfogliare i record, seleziona l'icona a forma di cartella.",
+    "tut_nav_return_title": "Ritorno alla Navigazione",
+    "tut_new_model_desc": "In questa finestra puoi selezionare un modello predefinito o crearne uno completamente personalizzato aggiungendo i tuoi campi. Chiudi la finestra (con la X o Annulla) per procedere.",
+    "tut_new_model_title": "Creazione Modello",
+    "tut_search_desc": "Per esplorare gli strumenti di ricerca avanzata, clicca sull'icona della lente d'ingrandimento.",
+    "tut_search_engine_desc": "Il sistema indicizza e ricerca le parole chiave all'interno dei metadati, dei titoli e del corpo delle trascrizioni in tempo reale.",
+    "tut_search_engine_title": "Motore di Ricerca Avanzato",
+    "tut_search_title": "Ricerca Globale",
+    "tut_source_control_desc": "Per analizzare lo stato delle revisioni non ancora sincronizzate, seleziona l'icona del Controllo Modifiche.",
+    "tut_source_control_title": "Gestione Versioni",
+    "tut_source_status_desc": "Questa vista riepiloga le modifiche effettuate in locale. Prima della sincronizzazione, è possibile revisionare o annullare ciascuna operazione in modo selettivo.",
+    "tut_source_status_title": "Stato delle Revisioni",
+    "tut_tags_desc": "Per accedere alle funzionalità di classificazione tramite tag, seleziona l'icona a forma di segnalibro.",
+    "tut_tags_filter_desc": "Questa sezione permette di organizzare il patrimonio documentario attraverso etichette personalizzabili. La selezione di un tag applica un filtro immediato all'intero archivio.",
+    "tut_tags_filter_title": "Filtri Semantici e Tag",
+    "tut_tags_title": "Sistema di Catalogazione",
+    "tut_toolbar_desc": "Quest'area consente la navigazione rapida tra le sezioni principali e l'accesso alle funzioni di gestione dell'archivio.",
+    "tut_toolbar_title": "Barra degli Strumenti Globale",
+    "tut_transcribe_desc": "Seleziona ora il pulsante \"Trascrivi\" su una scheda per avviare l'ambiente dedicato all'analisi e alla trascrizione del documento originale.",
+    "tut_transcribe_env_desc": "Quest'area presenta l'immagine del manoscritto affiancata all'editor testuale avanzato. Si consiglia l'utilizzo della combinazione Ctrl+S per il salvataggio rapido. Clicca sulla freccia in alto a sinistra per tornare all'archivio.",
+    "tut_transcribe_env_title": "Ambiente di Trascrizione Integrato",
+    "tut_transcribe_title": "Modulo di Trascrizione",
+    "tut_vaults_desc": "ArchiView ti permette di creare e gestire un numero illimitato di archivi (vault) separati. Cliccando su questo pulsante potrai passare rapidamente da un archivio all'altro, creare nuovi archivi locali, collegarne di Cloud o gestire Archivi Condivisi per collaborare col tuo team.",
+    "tut_vaults_title": "Gestione Multi-Archivio",
+    "tut_welcome_desc": "Questo tour guidato ti illustrerà le funzionalità principali del sistema. Clicca su \"Avanti\" per iniziare la presentazione.",
+    "tut_welcome_title": "Benvenuto in ArchiView",
+    "unsaved_hint": "Sei sicuro di voler uscire e perdere le modifiche?",
+    "unsaved_prompt": "Ci sono modifiche non salvate in questa trascrizione.",
+    "update_available": "È disponibile un nuovo aggiornamento!",
+    "upload_in_progress": "Caricamento"
 };
 
 window.t = function(key, fallback) {
-    if (window.linguaAttuale === 'en' && customEn[key]) return customEn[key];
-    if (window.linguaAttuale === 'it' && customIt[key]) return customIt[key];
-    const res = i18n._({ id: key });
-    if (res === key && fallback) return fallback;
-    return res;
+    const dizionario = window.linguaAttuale === 'en' ? customEn : customIt;
+    return dizionario[key] || fallback || key;
 }
 
 // Funzione globale per cambiare lingua
@@ -3817,7 +3022,6 @@ window.cambiaLingua = async function(lang) {
     const settings = await window.apiSettings.get();
     settings.lang = lang;
     await window.apiSettings.save(settings);
-    i18n.activate(lang);
     document.documentElement.lang = lang;
     window.applicaTraduzioniHtml();
     

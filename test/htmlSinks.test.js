@@ -5,7 +5,7 @@
 //   - letterali stringa o template senza interpolazioni;
 //   - `escapeHTML(…)`, `sanitizeHTML(…)`, `DOMPurify.sanitize(…)` (con o senza `window.`);
 //   - `t('chiave')` / `window.t('chiave')` (cataloghi del repo) se gli eventuali parametri
-//     sono a loro volta sicuri: Lingui li sostituisce senza escape;
+//     sono a loro volta sicuri: i segnaposto si sostituiscono senza escape;
 //   - numeri, `String(numero)`, `.length`, `toLocaleString()`;
 //   - composizioni dei casi sopra: `+`, template, ternari, `a || b`, `.map(x => …).join(…)`,
 //     e costanti locali (`const html = …`, anche costruite con `+=`) il cui valore è sicuro.

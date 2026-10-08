@@ -24,7 +24,7 @@ function sorgenti(dir, out = []) {
   for (const voce of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, voce.name);
     if (voce.isDirectory()) {
-      if (voce.name !== 'vendor' && voce.name !== 'locales') sorgenti(p, out);
+      if (voce.name !== 'vendor') sorgenti(p, out);
     } else if (/\.(ts|html)$/.test(voce.name) && p !== FILE_REGISTRO) {
       out.push(p);
     }
