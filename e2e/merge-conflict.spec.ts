@@ -329,6 +329,69 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     });
   }
 
+  // Audit sync S2/S10: il merge proprio dell'Hub scartava le schede remote più vecchie
+  // dell'ultimo pull e ignorava vocabolari e authority; il push successivo li cancellava dal server.
+  // contextBridge congela apiBrowser: l'Hub si simula sugli handler IPC del main.
+  const simulaHub = (electronApp: any, database: any) => electronApp.evaluate(({ ipcMain }: any, database: any) => {
+    const g = globalThis as any;
+    const h: Record<string, (...a: any[]) => any> = {
+      'hub-pull': () => ({ ok: true, data: { version: 4, database } }),
+      'hub-push': (_e: any, _p: number, db: any) => { g.__e2eHubPushed = db; return { ok: true, data: { version: 5 } }; },
+      'save-hub-config': () => true,
+      'hub-sync-attachments': () => ({ ok: true })
+    };
+    for (const [c, fn] of Object.entries(h)) { ipcMain.removeHandler(c); ipcMain.handle(c, fn); }
+  }, database);
+
+  test('Hub: ricevere conserva schede vecchie e vocabolari dei colleghi, e l\'invio li rimanda', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    await simulaHub(electronApp, {
+      manoscritti: [{ id: 'hub-2', segnatura: 'Collega', cartella: '', lastModified: 2000 }],
+      cartelle: [],
+      vocabolari: { 'voc-x': { id: 'voc-x', nome: 'Materiali', valori: ['pergamena'], modificato: 2000 } }
+    });
+
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      w.appData.manoscritti = [{ id: 'hub-1', segnatura: 'Mia', cartella: '', lastModified: 1000 }];
+      w.appData.baseObjects = {};
+      w.appData.baseHashes = {};
+      w.hubConfig = { version: 3, lastLoadedAt: 9000 };
+      await w.riceviModificheHub(false);
+      const dopo = { ids: w.appData.manoscritti.map((m: any) => m.id).sort(), voc: !!w.appData.vocabolari?.['voc-x'], version: w.hubConfig.version };
+      await w.inviaModificheHub();
+      return dopo;
+    });
+    const pushed: any = await electronApp.evaluate(() => (globalThis as any).__e2eHubPushed);
+
+    expect(esito).toEqual({ ids: ['hub-1', 'hub-2'], voc: true, version: 4 });
+    expect(pushed.manoscritti.map((m: any) => m.id).sort()).toEqual(['hub-1', 'hub-2']);
+    expect(pushed.vocabolari['voc-x'].valori).toEqual(['pergamena']);
+  });
+
+  test('Hub: annullare il modale dei conflitti non tocca la versione né i dati', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    await simulaHub(electronApp, { manoscritti: [{ id: 'hc-1', segnatura: 'Remoto', cartella: '', lastModified: 1000 }], cartelle: [] });
+
+    await page.evaluate(() => {
+      const w = window as any;
+      w.appData.manoscritti = [{ id: 'hc-1', segnatura: 'Locale', cartella: '', lastModified: 1000 }];
+      w.appData.baseObjects = {};
+      w.appData.baseHashes = {};
+      w.hubConfig = { version: 3, lastLoadedAt: 0 };
+      w.__e2eFine = w.riceviModificheHub(false);
+    });
+
+    await expect(page.locator('#merge-conflict-modal')).toBeVisible();
+    await page.locator('#merge-conflict-modal button[data-on-click="annullaSincronizzazioneConflitto"]').click();
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      await w.__e2eFine;
+      return { version: w.hubConfig.version, segnatura: w.appData.manoscritti[0].segnatura };
+    });
+    expect(esito).toEqual({ version: 3, segnatura: 'Locale' });
+  });
+
   test('caricamento fallito dopo la sync: alla sync successiva con remoto invariato le modifiche locali restano', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
 

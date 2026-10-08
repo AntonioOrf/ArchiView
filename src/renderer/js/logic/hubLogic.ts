@@ -83,7 +83,6 @@ window.riceviModificheHub = async function(isSilent = false) {
     // if (!isSilent) mostraMessaggio(window.t("msg_ricezione_modifiche_dall_", "Ricezione modifiche dall'Hub in corso…"), "info");
     
     try {
-        const lastLoadedAt = window.hubConfig.lastLoadedAt || 0;
         const localVersion = window.hubConfig.version;
 
         // Fast-path autofetch: `ifVersionNot` costa 1 sola lettura D1 se nulla è cambiato.
@@ -121,85 +120,34 @@ window.riceviModificheHub = async function(isSilent = false) {
             return;
         }
 
-        // RILEVAMENTO CONFLITTI E CANCELLAZIONI
-        const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, lastLoadedAt,
-            appData.baseHashes || {}, appData.baseObjects || {});
-        const { mergedManoscritti, deletions } = rilevaCancellazioniEMergeParziale(esterniDati, lastLoadedAt);
-
-        const applyMergeAndSave = async (finalCards) => {
-            appData.manoscritti = finalCards;
-            
-            // Unisci cartelle
-            const cartelleSet = new Set([...(appData.cartelle || []), ...(esterniDati.cartelle || [])]);
-            appData.cartelle = Array.from(cartelleSet).sort();
-
-            // Unisci tipiDocumento
-            const tipiMap = new Map();
-            (esterniDati.tipiDocumento || []).forEach(t => tipiMap.set(t.id, t));
-            (appData.tipiDocumento || []).forEach(t => {
-                if (!tipiMap.has(t.id)) tipiMap.set(t.id, t);
-            });
-            appData.tipiDocumento = Array.from(tipiMap.values());
-
-            await salvaTutto();
-
-            window.hubConfig.version = serverVersion;
-            window.hubConfig.lastLoadedAt = Date.now();
-            await window.apiBrowser.saveHubConfig(window.hubConfig);
-            window.pulisciModificheInEntrataHub();
-
-            window.sincronizzaAllegatiHub(isSilent); // fire-and-forget: scarica gli allegati nuovi via link
-
-            if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-            if (typeof renderSidebar === 'function') renderSidebar();
-            if (typeof renderMain === 'function') renderMain();
-
-            if (!isSilent) mostraMessaggio(window.t("msg_dati_scaricati_e_fusi_con", "Dati scaricati e fusi con successo in locale."), "success");
-        };
-
-        if (conflitti.length > 0) {
-            if (isSilent) {
+        // In silenzio non si apre nessun modale: se il merge dovesse chiedere qualcosa, solo avviso.
+        if (isSilent) {
+            const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, window.ultimoCaricamento || 0,
+                appData.baseHashes || {}, appData.baseObjects || {});
+            if (conflitti.length > 0) {
                 mostraMessaggio(window.t("msg_attenzione_rilevati_confl", "Attenzione: rilevati conflitti di sincronizzazione dal server. Clicca 'Ricevi' per risolverli."), "warning");
                 return;
             }
-            window.apriMergeConflictModal(conflitti, (resolvedConflicts) => {
-                if (!resolvedConflicts) return; // Annullato
-                
-                // Aggiorna mergedManoscritti con i conflitti risolti
-                resolvedConflicts.forEach(rc => {
-                    const idx = mergedManoscritti.findIndex(m => m.id === rc.id);
-                    if (idx !== -1) mergedManoscritti[idx] = rc;
-                    else mergedManoscritti.push(rc);
-                });
-
-                // Dopo i conflitti, controlliamo le cancellazioni
-                if (deletions.length > 0) {
-                    window.apriDeletionConflictModal(deletions, (deletionResolutions) => {
-                        if (!deletionResolutions) return; // Annullato
-                        applicaRisoluzioneCancellazioni(mergedManoscritti, deletions, deletionResolutions);
-                        applyMergeAndSave(mergedManoscritti);
-                    });
-                } else {
-                    applyMergeAndSave(mergedManoscritti);
-                }
-            });
-        } else if (deletions.length > 0) {
-            if (isSilent) {
+            const locali = new Set((appData.manoscritti || []).map(m => m.id));
+            const remoti = new Set((esterniDati.manoscritti || []).map(m => m.id));
+            if ((esterniDati.deletedIds || []).some(id => locali.has(id)) || (appData.deletedIds || []).some(id => remoti.has(id))) {
                 mostraMessaggio(window.t("msg_attenzione_alcuni_file_so", "Attenzione: alcuni file sono stati eliminati sul server. Clicca 'Ricevi' per verificare."), "warning");
                 return;
             }
-            window.apriDeletionConflictModal(deletions, (deletionResolutions) => {
-                if (!deletionResolutions) return; // Annullato
-                applicaRisoluzioneCancellazioni(mergedManoscritti, deletions, deletionResolutions);
-                applyMergeAndSave(mergedManoscritti);
-            });
-        } else {
-            // Nessun conflitto, nessuna cancellazione dubbia, merge liscio
-            if (!isSilent || serverVersion !== window.hubConfig.version) {
-                await applyMergeAndSave(mergedManoscritti);
-                if (isSilent) mostraMessaggio(window.t("msg_dati_sincronizzati_automa", "Dati sincronizzati automaticamente dal server."), "info");
-            }
         }
+
+        // Stesso merge a tre vie di Drive (base, tombstone, vocabolari, migrazione): annullato → versione invariata.
+        if (await window.sincronizzaEUnisciDati(esterniDati) === false) return;
+
+        window.hubConfig.version = serverVersion;
+        window.hubConfig.lastLoadedAt = Date.now();
+        await window.apiBrowser.saveHubConfig(window.hubConfig);
+        window.pulisciModificheInEntrataHub();
+        window.sincronizzaAllegatiHub(isSilent); // fire-and-forget: scarica gli allegati nuovi via link
+
+        mostraMessaggio(isSilent
+            ? window.t("msg_dati_sincronizzati_automa", "Dati sincronizzati automaticamente dal server.")
+            : window.t("msg_dati_scaricati_e_fusi_con", "Dati scaricati e fusi con successo in locale."), isSilent ? "info" : "success");
 
     } catch (error) {
         window.impostaErroreCloud(error.message);
@@ -276,63 +224,6 @@ window.controllaModificheHub = async function(manual = false) {
         if (manual) { console.error("Errore controllo Hub:", e); mostraMessaggio(window.t("msg_errore_durante_il_fetch", "Errore durante il fetch: ") + (e.message || ''), "error"); }
     }
 };
-
-function rilevaCancellazioniEMergeParziale(esterniDati, lastLoadedAt) {
-    const localMap = new Map<string, any>((appData.manoscritti || []).map(m => [m.id, m]));
-    const externalMap = new Map<string, any>((esterniDati.manoscritti || []).map(m => [m.id, m]));
-    
-    const mergedManoscritti = [];
-    const deletions = [];
-    const tuttiIds = new Set([...localMap.keys(), ...externalMap.keys()]);
-
-    for (const id of tuttiIds) {
-        const local = localMap.get(id);
-        const external = externalMap.get(id);
-
-        if (local && external) {
-            // Fase 4.4 — con l'oggetto di base la fusione è per campo; il confronto a
-            // timestamp resta solo per le schede che una base non ce l'hanno (mai
-            // sincronizzate da questa installazione), dove non c'è modo di sapere chi ha
-            // cambiato cosa e l'unico criterio disponibile è "l'ultima scrittura vince".
-            const baseObj = (appData.baseObjects || {})[id];
-            if (baseObj && window.Model && typeof window.Model.fondiRecord === 'function') {
-                mergedManoscritti.push(window.Model.fondiRecord(baseObj, local, external).fuso);
-            } else {
-                const tLocal = local.lastModified || 0;
-                const tExternal = external.lastModified || 0;
-                if (tLocal >= tExternal) mergedManoscritti.push(local);
-                else mergedManoscritti.push(external);
-            }
-        } else if (local) {
-            const tLocal = local.lastModified || 0;
-            if (tLocal > lastLoadedAt) {
-                // Modificato localmente dopo l'ultimo sync, lo teniamo
-                mergedManoscritti.push(local);
-            } else {
-                // Cancellato sul server
-                deletions.push(local);
-            }
-        } else if (external) {
-            const tExternal = external.lastModified || 0;
-            if (tExternal > lastLoadedAt || lastLoadedAt === 0) {
-                // Creato/modificato all'esterno
-                mergedManoscritti.push(external);
-            }
-        }
-    }
-    
-    return { mergedManoscritti, deletions };
-}
-
-function applicaRisoluzioneCancellazioni(merged, deletions, resolutions) {
-    deletions.forEach(card => {
-        if (resolutions[card.id] === 'keep') {
-            card.lastModified = Date.now(); // Marca come modificato per poterlo inviare
-            merged.push(card);
-        }
-        // Se 'delete', non lo inseriamo nell'array merged, quindi viene effettivamente cancellato
-    });
-}
 
 window.inviaModificheHub = async function() {
     if (!window.hubConfig) {
