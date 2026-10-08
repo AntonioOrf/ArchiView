@@ -10,6 +10,14 @@ const { pullFromDrive } = require('./vaultOps');
 const { pickerGetSecretOk } = require('./pickerSecurity');
 const { safeChildDir, nomeCartellaSicuro } = require('../pathSafety');
 
+// Un nuovo membro parte senza base del merge: quella dentro un DB scritto da versioni vecchie
+// è di chi l'ha caricato, e farebbe passare per modifiche proprie le differenze dei colleghi.
+function dbPerNuovoMembro(database: any): string {
+  if (typeof database === 'string') return database;
+  const { baseObjects, baseHashes, ...db } = database;
+  return JSON.stringify(db, null, 2);
+}
+
 async function generateInviteCode(): Promise<string> {
   try {
     await authenticateDrive();
@@ -90,7 +98,7 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
       await authenticateDrive();
       const driveData = await pullFromDrive(vaultId);
       if (driveData && driveData.database) {
-        const dbContent = typeof driveData.database !== 'string' ? JSON.stringify(driveData.database, null, 2) : driveData.database;
+        const dbContent = dbPerNuovoMembro(driveData.database);
         fs.writeFileSync(path.join(newPath, 'database_manoscritti.json'), dbContent, 'utf8');
       }
     } catch (syncErr: any) {
@@ -126,7 +134,7 @@ async function joinByFolderId(vaultId: string, vaultName: string, basePath: stri
     try {
       const driveData = await pullFromDrive(vaultId);
       if (driveData && driveData.database) {
-        const dbContent = typeof driveData.database !== 'string' ? JSON.stringify(driveData.database, null, 2) : driveData.database;
+        const dbContent = dbPerNuovoMembro(driveData.database);
         fs.writeFileSync(path.join(newPath, 'database_manoscritti.json'), dbContent, 'utf8');
       }
     } catch (syncErr) { /* Sincronizzazione manuale richiesta dall'utente */ }

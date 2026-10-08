@@ -47,9 +47,10 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
         }, null, 2), 'utf8');
     }
 
-    // Scrivi database JSON
+    // Scrivi database JSON, senza la base del merge di chi l'ha caricato (DB di versioni vecchie).
+    const { baseObjects, baseHashes, ...dbSenzaBase } = database || {};
     const dbPath = path.join(newPath, 'database_manoscritti.json');
-    fs.writeFileSync(dbPath, JSON.stringify(database, null, 2), 'utf8');
+    fs.writeFileSync(dbPath, JSON.stringify(dbSenzaBase, null, 2), 'utf8');
 
     // Crea cartella allegati vuota
     const attPath = path.join(newPath, 'allegati_manoscritti');

@@ -49,6 +49,15 @@ async function initData() {
             }
             const esito = window.Model.migraDatabase(grezzo);
             appData = esito.db;
+            // DB scritto prima che la base uscisse dal file: la si sposta nel suo file prima
+            // che il primo salvataggio la tolga dal DB.
+            if (!datiBaseSalvati && appData.baseObjects && Object.keys(appData.baseObjects).length) {
+                try {
+                    await window.apiBrowser.salvaDatiBase(appData.baseObjects);
+                } catch (err) {
+                    console.error('[Dati] Spostamento della base del merge non riuscito:', err);
+                }
+            }
             if (esito.futuro) {
                 // File scritto da una versione più recente: si apre com'è. Migrarlo
                 // all'indietro distruggerebbe dati che questa versione non sa di avere.
@@ -224,6 +233,13 @@ let saveTimer = null;
 let saveDirty = false;
 let saveChain = Promise.resolve();
 
+// La base del merge sta in .archiview-base.json: nel DB lo raddoppierebbe e viaggerebbe verso
+// Drive e Hub, e chi entra in un archivio erediterebbe la base di un altro.
+window.databasePerDisco = function(db) {
+    const { baseObjects, baseHashes, ...resto } = db;
+    return resto;
+};
+
 async function eseguiSalvataggio(pendenti = true) {
     // Rete di sicurezza per le mutazioni che non passano da Store.commit().
     if (typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
@@ -236,7 +252,7 @@ async function eseguiSalvataggio(pendenti = true) {
     if (motivo) throw new Error("Stato in memoria non valido: " + motivo + ". Salvataggio annullato.");
 
     // Serializzazione unica: evita structured-clone dell'intero DB via IPC + stringify nel main.
-    const payload = JSON.stringify(appData);
+    const payload = JSON.stringify(window.databasePerDisco(appData));
     const res = await window.apiBrowser.salvaDati(payload);
     if (res && res.success === false) throw new Error(res.error || "Salvataggio fallito");
 

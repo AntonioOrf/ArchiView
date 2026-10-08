@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', inizializzaHubConfig);
 // notifica del proprio push (che può arrivare prima della risposta) sembrerebbe una novità.
 window.hubPushInCorso = null;
 function pushHub(parentVersion, database) {
-    const p = window.apiBrowser.hubPush(parentVersion, database);
+    const p = window.apiBrowser.hubPush(parentVersion, window.databasePerDisco(database));
     window.hubPushInCorso = p;
     p.finally(() => { if (window.hubPushInCorso === p) window.hubPushInCorso = null; }).catch(() => {});
     return p;
@@ -459,7 +459,7 @@ window.creaRepositoryHub = async function(name) {
 
         // Il main crea il repo, genera la encKey, fa il push iniziale (v0 → v1) e salva la config:
         // qui torna solo la parte pubblica.
-        const r = await window.apiBrowser.hubCreateRepo(finalName, window.appData);
+        const r = await window.apiBrowser.hubCreateRepo(finalName, window.databasePerDisco(window.appData));
         if (!r || !r.ok) {
             if (typeof window.nascondiProgressoCloud === 'function') window.nascondiProgressoCloud();
             mostraMessaggio(r?.error || window.t("msg_errore_creazione_repo", "Errore creazione repository."), "error");

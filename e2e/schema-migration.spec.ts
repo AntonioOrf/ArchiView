@@ -113,6 +113,45 @@ test.describe('Schema versionato e migrazioni', () => {
     await closeAppSafe(app2);
   });
 
+  // Audit sync S5: la base del merge raddoppiava il DB e viaggiava verso Drive e Hub.
+  test('la base del merge sta solo in .archiview-base.json, anche partendo da un DB che la conteneva', async ({ page, electronApp, userDataDir }) => {
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schema');
+    const versione = await page.evaluate(() => (window as any).Model.SCHEMA_VERSION);
+    const scheda = { id: 'b-1', segnatura: 'ASP 5', cartella: '', tipoDocumento: 'atti', lastModified: 222 };
+    fs.writeFileSync(path.join(ws, 'database_manoscritti.json'), JSON.stringify({
+      schemaVersion: versione, cartelle: [], tipiDocumento: [], manoscritti: [scheda],
+      baseObjects: { 'b-1': scheda }, baseHashes: { 'b-1': 'x' }
+    }), 'utf8');
+    const fileBase = path.join(ws, '.archiview-base.json');
+    if (fs.existsSync(fileBase)) fs.rmSync(fileBase);
+
+    const { app: app2, page: page2 } = await riavvia(electronApp, userDataDir);
+    await app2.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('hub-push');
+      ipcMain.handle('hub-push', (_e, _p, db) => { (globalThis as any).__e2eHubPushed = db; return { ok: true, data: { version: 2 } }; });
+    });
+    await page2.evaluate(async () => {
+      const w = window as any;
+      w.appData.manoscritti[0].segnatura = 'ASP 5 bis';
+      await w.salvaTutto();
+      w.hubConfig = { version: 1 };
+      await w.inviaModificheHub();
+    });
+
+    const suDisco = leggiDb(ws);
+    expect(suDisco.manoscritti[0].segnatura).toBe('ASP 5 bis');
+    expect(suDisco.baseObjects).toBeUndefined();
+    expect(suDisco.baseHashes).toBeUndefined();
+    // La base del DB vecchio non va persa: passa nel suo file.
+    expect(JSON.parse(fs.readFileSync(fileBase, 'utf8'))['b-1'].segnatura).toBe('ASP 5');
+    const pushed: any = await app2.evaluate(() => (globalThis as any).__e2eHubPushed);
+    expect(pushed.manoscritti).toHaveLength(1);
+    expect(pushed.baseObjects).toBeUndefined();
+    expect(pushed.baseHashes).toBeUndefined();
+
+    await closeAppSafe(app2);
+  });
+
   test('3.0.3 — un database da una versione futura non viene degradato', async ({ page, electronApp, userDataDir }) => {
     const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schema');
     const versione = await page.evaluate(() => (window as any).Model.SCHEMA_VERSION);
