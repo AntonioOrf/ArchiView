@@ -5,6 +5,7 @@ const { state } = require('../workspaceManager');
 const { extractZipStreaming } = require('./zipStreaming');
 const { generaCsv } = require('./csvExport');
 const { leggiDb, recordsRichiesti, nomeFileSicuro } = require('./recordSelection');
+const { scriviAtomico } = require('../scritturaAtomica');
 
 function setupExportImportIpc() {
   ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
@@ -23,18 +24,12 @@ function setupExportImportIpc() {
     if (toExport.length === 0) return { success: false, error: 'Nessun manoscritto trovato per l\'esportazione' };
     
     // Trova gli allegati necessari
-    const allegatiDir = path.join(state.workspacePath, 'allegati_manoscritti');
+    const allegatiDir = state.attachmentsDirPath;
     const requiredAttachments = new Set();
     
     for (const m of toExport) {
-        if (m.allegati) {
-            let files = [];
-            if (typeof m.allegati === 'string') {
-                files = [m.allegati];
-            } else if (Array.isArray(m.allegati)) {
-                files = m.allegati;
-            }
-            files.forEach(f => requiredAttachments.add(typeof f === 'string' ? f : f.name || f.path));
+        for (const a of Array.isArray(m.allegati) ? m.allegati : []) {
+            if (a && typeof a.nome === 'string' && a.nome) requiredAttachments.add(a.nome);
         }
     }
     
@@ -56,6 +51,8 @@ function setupExportImportIpc() {
         const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
         
         output.on('close', () => resolve({ success: true, count: toExport.length }));
+        // Destinazione non scrivibile o bloccata (EBUSY): senza listener è un'eccezione nel main.
+        output.on('error', (err) => { archive.abort(); resolve({ success: false, error: err.message }); });
         archive.on('error', (err) => resolve({ success: false, error: err.message }));
         
         archive.pipe(output);
@@ -172,7 +169,7 @@ function setupExportImportIpc() {
     try {
         // Estrazione in streaming (yauzl, lazyEntries): l'archivio non viene mai caricato
         // interamente in RAM, requisito su macchine con 4GB dove AdmZip mandava in swap.
-        const estratto = await extractZipStreaming(zipPath, path.join(state.workspacePath, 'allegati_manoscritti'));
+        const estratto = await extractZipStreaming(zipPath, state.attachmentsDirPath);
         if (!estratto.json) return { success: false, error: 'File non valido: manca schedatura.json' };
 
         let data;
@@ -206,7 +203,7 @@ function setupExportImportIpc() {
       const toDuplicate = db.manoscritti.filter(m => ids.includes(m.id));
       if (toDuplicate.length === 0) return { success: false, error: 'Nessun record da duplicare' };
       
-      const allegatiDir = path.join(state.workspacePath, 'allegati_manoscritti');
+      const allegatiDir = state.attachmentsDirPath;
       let duplicatedCount = 0;
       
       for (const original of toDuplicate) {
@@ -216,32 +213,27 @@ function setupExportImportIpc() {
           if (clone.segnatura) clone.segnatura += ' (Copia)';
           if (targetFolder) clone.cartella = targetFolder;
           
-          // Duplica gli allegati
-          if (clone.allegati) {
-              let allegatiArr = Array.isArray(clone.allegati) ? clone.allegati : [clone.allegati];
-              let nuoviAllegati = [];
-              for (const att of allegatiArr) {
-                  const origName = typeof att === 'string' ? att : att.name || att.path;
-                  if (!origName) continue;
-                  
-                  const origPath = path.join(allegatiDir, path.basename(origName));
-                  if (fs.existsSync(origPath)) {
-                      const ext = path.extname(origName);
-                      const base = path.basename(origName, ext);
-                      const newName = `${base}_copia_${Date.now()}${ext}`;
-                      const newPath = path.join(allegatiDir, newName);
-                      fs.copyFileSync(origPath, newPath);
-                      nuoviAllegati.push(newName);
-                  }
+          // Ogni allegato con un file ne riceve una copia propria; l'oggetto (tipo, trascrizione,
+          // pagine) resta. Senza file (carta IIIF remota, allegato mancante) si copia così com'è.
+          if (Array.isArray(clone.allegati)) {
+              for (const att of clone.allegati) {
+                  if (!att || typeof att.nome !== 'string' || !att.nome) continue;
+                  const origName = path.basename(att.nome);
+                  const origPath = path.join(allegatiDir, origName);
+                  if (!fs.existsSync(origPath)) continue;
+                  const ext = path.extname(origName);
+                  const newName = `${path.basename(origName, ext)}_copia_${Date.now()}${ext}`;
+                  fs.copyFileSync(origPath, path.join(allegatiDir, newName));
+                  att.nome = newName;
               }
-              clone.allegati = nuoviAllegati;
           }
           
           db.manoscritti.push(clone);
           duplicatedCount++;
       }
       
-      fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+      // Lo stesso file che va sul cloud: mai troncato (invariante 4 del CODEMAP).
+      await scriviAtomico(dbPath, JSON.stringify(db));
       return { success: true, count: duplicatedCount };
   });
 }
