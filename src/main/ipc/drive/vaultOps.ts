@@ -227,10 +227,10 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
   if (!fs.existsSync(dbPath)) return { deletedLocal: 0, deletedDrive: 0 };
 
   const db = JSON.parse(await fs.promises.readFile(dbPath, 'utf8'));
-  const usedAttachments = new Set<string>();
+  const usedLocal = new Set<string>();
   if (db.manoscritti) {
     for (const m of db.manoscritti) {
-      if (m.allegati) { for (const a of m.allegati) { if (a.nome) usedAttachments.add(a.nome); } }
+      if (m.allegati) { for (const a of m.allegati) { if (a.nome) usedLocal.add(a.nome); } }
     }
   }
 
@@ -240,13 +240,21 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
   const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
   if (fs.existsSync(allegatiLocalDir)) {
     for (const file of fs.readdirSync(allegatiLocalDir)) {
-      if (!usedAttachments.has(file)) {
+      if (!usedLocal.has(file)) {
         try { fs.unlinkSync(path.join(allegatiLocalDir, file)); deletedLocal++; } catch (e) { console.error("Errore eliminazione locale:", e); }
       }
     }
   }
 
   try {
+    // Su Drive è "in uso" anche ciò che usano i colleghi: senza un DB remoto leggibile non si tocca nulla.
+    const remoto = await pullFromDrive(projectFolderId);
+    if (!remoto || !Array.isArray(remoto.database?.manoscritti)) return { deletedLocal, deletedDrive };
+    const usedAttachments = new Set<string>(usedLocal);
+    for (const m of remoto.database.manoscritti) {
+      for (const a of m.allegati || []) { if (a.nome) usedAttachments.add(a.nome); }
+    }
+
     // La struttura su Drive usa index.json + data/ (chunk content-addressable), non allegati_manoscritti
     const indexRes = await driveState.drive.files.list({
       q: `name='index.json' and '${projectFolderId}' in parents and trashed=false`,
