@@ -113,15 +113,14 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
 
-    const cardLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]').first();
-    const cardCloud = page.locator('div[data-resolve-card="true"][data-resolve-scelta="external"]').first();
-    await expect(cardLocale).toHaveAttribute('aria-pressed', 'false');
-    await expect(cardCloud).toHaveAttribute('aria-pressed', 'false');
+    const btnLocale = page.locator('button[data-resolve-scelta="local"]').first();
+    const btnCloud = page.locator('button[data-resolve-scelta="external"]').first();
+    await expect(btnLocale).toHaveAttribute('aria-pressed', 'false');
+    await expect(btnCloud).toHaveAttribute('aria-pressed', 'false');
 
-    await page.locator('button[data-resolve-scelta="local"]').first().click();
-    await expect(cardLocale).toHaveAttribute('aria-pressed', 'true');
-    await expect(cardCloud).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.locator('button[data-resolve-scelta="local"]').first()).toHaveAttribute('aria-pressed', 'true');
+    await btnLocale.click();
+    await expect(btnLocale).toHaveAttribute('aria-pressed', 'true');
+    await expect(btnCloud).toHaveAttribute('aria-pressed', 'false');
 
     for (const tema of ['light', 'dark', 'amber-light', 'blue-dark']) {
       // Il cambio di tema avvia transizioni di colore: anche a 0,01 ms (reduced motion) il primo
@@ -152,15 +151,24 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     }
   });
 
-  test('accessibilità da tastiera: Enter o Spazio sulla scheda attiva la selezione', async ({ page, userDataDir }) => {
+  // Audit front-end P1-2: la card era role="button" con un <button> dentro (controllo annidato,
+  // due pulsanti annunciati per la stessa scelta). Ora il controllo è solo il pulsante, e dopo
+  // la scelta il fuoco resta lì invece di cadere sul body col re-render.
+  test('accessibilità da tastiera: la scelta si fa col pulsante, senza controlli annidati, e il fuoco resta', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
 
-    const cardLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]').first();
-    await cardLocale.focus();
+    const annidati = await page.evaluate(() => Array.from(
+      document.querySelectorAll('#merge-conflict-modal [role="button"], #merge-conflict-modal [tabindex]'))
+      .filter(el => el.querySelector('button, a[href], input, select, textarea, [tabindex]')).length);
+    expect(annidati).toBe(0);
+
+    await page.locator('button[data-resolve-scelta="local"]').first().focus();
     await page.keyboard.press('Enter');
 
     await expect(page.locator('#btn-resolve-all')).toBeEnabled();
+    await expect.poll(() => page.evaluate(() =>
+      (document.activeElement as HTMLElement)?.getAttribute('data-resolve-scelta'))).toBe('local');
 
     await page.locator('#btn-resolve-all').click();
     const resolved = await page.evaluate(() => (window as any).__e2eResolved);
