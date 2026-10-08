@@ -8,6 +8,7 @@ const { getOrCreateFolder, uploadFileReturningId, makeFilePublic, asyncPool } = 
 const { GOOGLE_API_KEY } = require('./cloudCredentials');
 const { safeAttachmentPathOrNull } = require('./pathSafety');
 const { fetchChunkGuardata, leggiConTetto } = require('./hubUrlChunk');
+const { chiamataHub } = require('./hubClient');
 
 // Sincronizzazione allegati per vault Hub.
 // Modello: i chunk (5MB, content-addressable) vivono sul Drive PERSONALE di ogni utente con
@@ -104,17 +105,11 @@ function collectUsedAttachments(dbPath: string, dir: string): Map<string, number
   return used;
 }
 
+// Passa da chiamataHub (HTTPS, niente redirect, timeout); qui un esito non ok diventa un'eccezione.
 async function hubApi(cfg: any, method: string, pathSuffix: string, body?: any): Promise<any> {
-  const res = await fetch(`${cfg.hubUrl}/api/repos/${cfg.repoId}${pathSuffix}`, {
-    method,
-    headers: {
-      'Authorization': `Bearer ${cfg.repoKey}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {})
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (!res.ok) throw new Error(`Hub ${method} ${pathSuffix} → ${res.status}`);
-  return res.json();
+  const r = await chiamataHub(cfg, method, pathSuffix, { body });
+  if (!r.ok) throw new Error(`Hub ${method} ${pathSuffix} → ${r.status}${r.error ? ` (${r.error})` : ''}`);
+  return r.data;
 }
 
 type SyncAttachmentsResult = {
@@ -182,7 +177,7 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
 
         // last-writer-wins: ripubblica il file solo se cambiato o più recente del remoto
         const existing = remoteFiles.get(fileName);
-        const changed = !existing || JSON.stringify(existing.hashes) !== JSON.stringify(ctHashes);
+        const changed = !existing || existing.deleted || JSON.stringify(existing.hashes) !== JSON.stringify(ctHashes);
         if (changed && (!existing || mtime >= (existing.lastModified || 0))) {
           newFiles.push({ fileName, hashes: ctHashes, lastModified: mtime });
         }
