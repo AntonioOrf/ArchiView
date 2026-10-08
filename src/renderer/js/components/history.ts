@@ -245,54 +245,59 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
     const esistente = document.getElementById('history-diff-modal');
     if (esistente) esistente.remove();
 
+    const t = window.t;
     let idx = 0;
 
-    function renderModal() {
-        const { revM, curM } = diffs[idx];
-        const titolo = curM.titolo || revM.titolo || curM.segnatura || revM.segnatura || 'Senza Titolo';
-
-        const prev = document.getElementById('history-diff-modal');
-        if (prev) prev.remove();
-
-        const isDark = document.documentElement.classList.contains('dark-theme');
-        const bg = isDark ? '#1c1917' : '#fafaf9';
-        const borderColor = isDark ? '#44403c' : '#e7e5e4';
-        const textMuted = isDark ? '#a8a29e' : '#78716c';
-        const footerBg = isDark ? '#171412' : '#fff';
-
-        const overlay = document.createElement('div');
-        overlay.id = 'history-diff-modal';
-        // Fase 5.3 — classe modal-overlay: focus trap, Esc e ripristino del fuoco
-        // arrivano dal gestore centralizzato invece di mancare del tutto.
-        overlay.className = 'modal-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;';
-
-        overlay.innerHTML = `
-            <div style="background:${bg};border-radius:10px;border:1px solid ${borderColor};box-shadow:0 24px 64px rgba(0,0,0,0.4);max-width:700px;width:calc(100% - 2rem);max-height:90vh;display:flex;flex-direction:column;">
-                <div style="padding:1rem 1.25rem;border-bottom:1px solid ${borderColor};display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
-                    <div>
-                        <h3 style="font-size:0.95rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;color:${isDark?'#e7e5e4':'#1c1917'};">
-                            <span>🕐</span> Storico: <span style="color:#d97706;">${escapeHTML(label)}</span>
-                        </h3>
-                        <p style="font-size:0.7rem;color:${textMuted};margin-top:3px;">${diffs.length} scheda${diffs.length !== 1 ? 'e' : ''} con differenze · Visualizzando ${idx + 1} di ${diffs.length}: <strong style="color:${isDark?'#d6d3d1':'#44403c'};">${escapeHTML(titolo)}</strong></p>
-                    </div>
-                    <button id="hist-close-btn" style="color:${textMuted};cursor:pointer;font-size:1.3rem;line-height:1;border:none;background:none;padding:2px;flex-shrink:0;">✕</button>
+    // Struttura e colori dei modali comuni (token del tema): prima era dipinto a mano con una
+    // palette che conosceva solo dark-theme, e blue-dark riceveva quella chiara (audit P2-1).
+    // Il modale si costruisce UNA volta: ricrearlo a ogni ←/→ faceva cadere il fuoco sul body.
+    const overlay = document.createElement('div');
+    overlay.id = 'history-diff-modal';
+    // Fase 5.3 — classe modal-overlay: focus trap, Esc e ripristino del fuoco
+    // arrivano dal gestore centralizzato invece di mancare del tutto.
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = window.sanitizeHTML(`
+        <div class="modal-window max-w-2xl">
+            <div class="modal-header gap-4">
+                <div class="min-w-0">
+                    <h3 class="modal-title">
+                        <span>${escapeHTML(t('history_diff_title', 'Storico'))}:</span>
+                        <span class="font-normal truncate" translate="no">${escapeHTML(label)}</span>
+                    </h3>
+                    <p id="hist-diff-sottotitolo" class="text-xs text-stone-500 mt-1"></p>
                 </div>
-                <div id="hist-diff-body" style="flex:1;overflow-y:auto;padding:1rem;"></div>
-                <div style="padding:0.75rem 1.25rem;border-top:1px solid ${borderColor};display:flex;justify-content:space-between;align-items:center;background:${footerBg};border-radius:0 0 10px 10px;">
-                    <div style="display:flex;gap:0.5rem;">
-                        <button id="hist-prev-btn" ${idx === 0 ? 'disabled' : ''} style="padding:0.35rem 0.75rem;font-size:0.75rem;background:${idx === 0 ? (isDark?'#292524':'#f5f5f4') : '#fef3c7'};color:${idx === 0 ? (isDark?'#57534e':'#a8a29e') : '#92400e'};border:1px solid ${idx === 0 ? borderColor : '#fde68a'};border-radius:4px;cursor:${idx === 0 ? 'not-allowed' : 'pointer'};transition:all 0.1s;">← Prec.</button>
-                        <button id="hist-next-btn" ${idx >= diffs.length - 1 ? 'disabled' : ''} style="padding:0.35rem 0.75rem;font-size:0.75rem;background:${idx >= diffs.length - 1 ? (isDark?'#292524':'#f5f5f4') : '#fef3c7'};color:${idx >= diffs.length - 1 ? (isDark?'#57534e':'#a8a29e') : '#92400e'};border:1px solid ${idx >= diffs.length - 1 ? borderColor : '#fde68a'};border-radius:4px;cursor:${idx >= diffs.length - 1 ? 'not-allowed' : 'pointer'};transition:all 0.1s;">Succ. →</button>
-                    </div>
-                    <button id="hist-close-btn2" style="padding:0.35rem 1.25rem;font-size:0.75rem;background:#d97706;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Chiudi</button>
-                </div>
+                <button id="hist-close-btn" type="button" class="btn btn-ghost btn-icon shrink-0" aria-label="${escapeHTML(t('btn_close', 'Chiudi'))}"><span aria-hidden="true">✕</span></button>
             </div>
-        `;
+            <div id="hist-diff-body" class="modal-body"></div>
+            <div class="modal-footer modal-footer-bar">
+                <div class="flex gap-2">
+                    <button id="hist-prev-btn" type="button" class="btn btn-secondary disabled:opacity-40"><span aria-hidden="true">←</span> ${escapeHTML(t('btn_prev', 'Precedente'))}</button>
+                    <button id="hist-next-btn" type="button" class="btn btn-secondary disabled:opacity-40">${escapeHTML(t('btn_next', 'Successiva'))} <span aria-hidden="true">→</span></button>
+                </div>
+                <button id="hist-close-btn2" type="button" class="btn btn-primary ml-auto">${escapeHTML(t('btn_close', 'Chiudi'))}</button>
+            </div>
+        </div>
+    `);
+    document.body.appendChild(overlay);
 
-        document.body.appendChild(overlay);
+    const sottotitolo = overlay.querySelector<HTMLElement>('#hist-diff-sottotitolo');
+    const body = overlay.querySelector<HTMLElement>('#hist-diff-body');
+    const btnPrev = overlay.querySelector<HTMLButtonElement>('#hist-prev-btn');
+    const btnNext = overlay.querySelector<HTMLButtonElement>('#hist-next-btn');
+    const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'id', 'allegato', 'allegatoTipo'];
+    const vuoto = t('diff_empty', '(Vuoto)');
 
-        const body = overlay.querySelector<HTMLElement>('#hist-diff-body');
-        const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'id', 'allegato', 'allegatoTipo'];
+    function renderDiff() {
+        const { revM, curM } = diffs[idx];
+        const titolo = curM.titolo || revM.titolo || curM.segnatura || revM.segnatura || t('history_diff_untitled', 'Senza titolo');
+
+        const conteggio = t(diffs.length === 1 ? 'history_diff_count_one' : 'history_diff_count_other',
+            diffs.length === 1 ? '{n} scheda con differenze' : '{n} schede con differenze').replace('{n}', String(diffs.length));
+        const posizione = t('history_diff_position', 'Visualizzando {i} di {n}:')
+            .replace('{i}', String(idx + 1)).replace('{n}', String(diffs.length));
+        sottotitolo.innerHTML = window.sanitizeHTML(
+            `${escapeHTML(conteggio)} · ${escapeHTML(posizione)} <strong class="text-stone-700" translate="no">${escapeHTML(titolo)}</strong>`);
+
         const allKeys = new Set([...Object.keys(revM), ...Object.keys(curM)]);
         let htmlDiff = '';
         for (const key of allKeys) {
@@ -300,42 +305,48 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
             const v = JSON.stringify(revM[key] ?? '');
             const a = JSON.stringify(curM[key] ?? '');
             if (v === a) continue;
-            const prima = typeof revM[key] === 'object' ? JSON.stringify(revM[key], null, 2) : String(revM[key] ?? '(Vuoto)');
-            const dopo = typeof curM[key] === 'object' ? JSON.stringify(curM[key], null, 2) : String(curM[key] ?? '(Vuoto)');
-            const rowBg = isDark ? '#292524' : '#f5f5f4';
-            const redBg = isDark ? '#3b0d0c' : '#fff1f2';
-            const greenBg = isDark ? '#0d2e1a' : '#f0fdf4';
+            const prima = typeof revM[key] === 'object' ? JSON.stringify(revM[key], null, 2) : String(revM[key] ?? vuoto);
+            const dopo = typeof curM[key] === 'object' ? JSON.stringify(curM[key], null, 2) : String(curM[key] ?? vuoto);
             htmlDiff += `
-                <div style="margin-bottom:1rem;border:1px solid ${borderColor};border-radius:6px;overflow:hidden;">
-                    <div style="background:${rowBg};padding:0.4rem 0.75rem;font-size:0.75rem;font-weight:700;border-bottom:1px solid ${borderColor};color:${isDark?'#d6d3d1':'#44403c'};">
-                        Campo: <span style="color:#d97706;">${escapeHTML(key)}</span>
+                <div class="storico-campo">
+                    <div class="storico-campo-nome">
+                        ${escapeHTML(t('diff_field', 'Campo:'))} <span class="testo-accento" translate="no">${escapeHTML(key)}</span>
                     </div>
-                    <div style="display:flex;">
-                        <div style="flex:1;padding:0.6rem;background:${redBg};border-right:1px solid ${borderColor};">
-                            <div style="font-size:0.6rem;font-weight:700;color:#f87171;margin-bottom:4px;">${escapeHTML(leftLabel || window.t("diff_in_revision", "IN REVISION"))}</div>
-                            <div style="font-size:0.8rem;color:${isDark?'#a8a29e':'#57534e'};white-space:pre-wrap;word-break:break-word;">${escapeHTML(prima)}</div>
+                    <div class="flex">
+                        <div class="storico-prima">
+                            <div class="text-[10px] font-bold testo-pericolo mb-1">${escapeHTML(leftLabel || t("diff_in_revision", "IN REVISION"))}</div>
+                            <div class="storico-valore">${escapeHTML(prima)}</div>
                         </div>
-                        <div style="flex:1;padding:0.6rem;background:${greenBg};">
-                            <div style="font-size:0.6rem;font-weight:700;color:#4ade80;margin-bottom:4px;">${escapeHTML(rightLabel || window.t("diff_current_version", "CURRENT VERSION"))}</div>
-                            <div style="font-size:0.8rem;color:${isDark?'#a8a29e':'#57534e'};white-space:pre-wrap;word-break:break-word;">${escapeHTML(dopo)}</div>
+                        <div class="storico-dopo">
+                            <div class="text-[10px] font-bold testo-successo mb-1">${escapeHTML(rightLabel || t("diff_current_version", "CURRENT VERSION"))}</div>
+                            <div class="storico-valore">${escapeHTML(dopo)}</div>
                         </div>
                     </div>
                 </div>
             `;
         }
-        if (!htmlDiff) htmlDiff = `<p style="font-size:0.8rem;color:${textMuted};text-align:center;padding:2rem;">Nessuna differenza nei campi visibili.</p>`;
-        body.innerHTML = htmlDiff;
+        if (!htmlDiff) htmlDiff = `<p class="text-sm text-stone-500 text-center py-8">${escapeHTML(t('history_diff_no_visible', 'Nessuna differenza nei campi visibili.'))}</p>`;
+        body.innerHTML = window.sanitizeHTML(htmlDiff);
+        body.scrollTop = 0;
 
-        const close = () => overlay.remove();
-        window.chiudiHistoryDiffModal = close;
-        overlay.querySelector<HTMLElement>('#hist-close-btn').onclick = close;
-        overlay.querySelector<HTMLElement>('#hist-close-btn2').onclick = close;
-        overlay.querySelector<HTMLElement>('#hist-prev-btn').onclick = () => { if (idx > 0) { idx--; renderModal(); } };
-        overlay.querySelector<HTMLElement>('#hist-next-btn').onclick = () => { if (idx < diffs.length - 1) { idx++; renderModal(); } };
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        btnPrev.disabled = idx === 0;
+        btnNext.disabled = idx >= diffs.length - 1;
+        // Arrivati in fondo (o in cima) il pulsante appena premuto si disabilita e perderebbe
+        // il fuoco: passa all'altro, che è l'unica direzione ancora possibile.
+        const attivo = document.activeElement;
+        if (attivo === btnNext && btnNext.disabled) btnPrev.focus();
+        else if (attivo === btnPrev && btnPrev.disabled) btnNext.focus();
     }
 
-    renderModal();
+    const close = () => overlay.remove();
+    window.chiudiHistoryDiffModal = close;
+    overlay.querySelector<HTMLElement>('#hist-close-btn').onclick = close;
+    overlay.querySelector<HTMLElement>('#hist-close-btn2').onclick = close;
+    btnPrev.onclick = () => { if (idx > 0) { idx--; renderDiff(); } };
+    btnNext.onclick = () => { if (idx < diffs.length - 1) { idx++; renderDiff(); } };
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+    renderDiff();
 }
 
 // ─── Ripristina con modale di conferma ──────────────────────────────────────
@@ -354,45 +365,31 @@ async function apriConfermaRipristino(label, onConfirm) {
     const esistente = document.getElementById('history-restore-confirm');
     if (esistente) esistente.remove();
 
-    const isDark = document.documentElement.classList.contains('dark-theme');
-    const bg = isDark ? '#1c1917' : '#fff';
-    const borderColor = isDark ? '#44403c' : '#e7e5e4';
-    const textColor = isDark ? '#e7e5e4' : '#1c1917';
-    const textMuted = isDark ? '#a8a29e' : '#57534e';
-    const cancelBg = isDark ? '#292524' : '#f5f5f4';
-    const cancelBorder = isDark ? '#44403c' : '#e7e5e4';
-    const cancelColor = isDark ? '#d6d3d1' : '#44403c';
-
+    const t = window.t;
     const overlay = document.createElement('div');
     overlay.id = 'history-restore-confirm';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:400;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = `
-        <div style="background:${bg};border:1px solid ${borderColor};border-radius:10px;padding:1.5rem;max-width:430px;width:calc(100%-2rem);box-shadow:0 24px 64px rgba(0,0,0,0.4);">
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;color:${textColor};">
-                ⚠️ Ripristina revisione
-            </h3>
-            <p style="font-size:0.82rem;color:${textMuted};margin-bottom:0.5rem;line-height:1.6;">
-                Stai per ripristinare il vault alla versione del:
-            </p>
-            <p style="font-size:0.85rem;font-weight:700;color:#d97706;margin-bottom:1rem;padding:0.5rem 0.75rem;background:${isDark?'#1c1107':'#fffbeb'};border:1px solid ${isDark?'#78350f':'#fde68a'};border-radius:6px;">
-                ${escapeHTML(label)}
-            </p>
-            <p style="font-size:0.8rem;color:${textMuted};margin-bottom:1.25rem;line-height:1.5;">
-                Questa operazione <strong style="color:${textColor};">sovrascriverà il database locale</strong> e caricherà la versione ripristinata sul Cloud. Verrà salvata come nuova revisione nello storico.
-            </p>
-            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-                <button id="hist-cancel-restore" style="padding:0.5rem 1.1rem;font-size:0.82rem;background:${cancelBg};color:${cancelColor};border:1px solid ${cancelBorder};border-radius:6px;cursor:pointer;font-weight:500;transition:all 0.1s;">Annulla</button>
-                <button id="hist-confirm-restore" style="padding:0.5rem 1.1rem;font-size:0.82rem;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:all 0.1s;">Ripristina</button>
+    // .modal-overlay: ruolo dialog, fuoco e focus-trap da a11yModal; Esc clicca il
+    // [data-modal-cancel]. Livello di conferma distruttiva (prima z-index 400, quello dei menu).
+    overlay.className = 'modal-overlay z-modal-alert';
+    overlay.innerHTML = window.sanitizeHTML(`
+        <div class="modal-window max-w-md">
+            <div class="modal-header">
+                <h3 class="modal-title">${escapeHTML(t('history_restore_title', 'Ripristina revisione'))}</h3>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-stone-600 mb-2">${escapeHTML(t('history_restore_intro', 'Stai per ripristinare il vault alla versione del:'))}</p>
+                <p class="storico-versione text-sm mb-4" translate="no">${escapeHTML(label)}</p>
+                <p class="text-sm text-stone-600 leading-relaxed">${t('history_restore_warning', 'Questa operazione <strong>sovrascriverà il database locale</strong> e caricherà la versione ripristinata sul cloud. Verrà salvata come nuova revisione nello storico.')}</p>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button id="hist-cancel-restore" type="button" class="btn btn-secondary" data-modal-cancel>${escapeHTML(t('btn_cancel', 'Annulla'))}</button>
+                <button id="hist-confirm-restore" type="button" class="btn btn-danger">${escapeHTML(t('btn_restore', 'Ripristina'))}</button>
             </div>
         </div>
-    `;
+    `);
     document.body.appendChild(overlay);
 
-    const cancelBtn = overlay.querySelector<HTMLElement>('#hist-cancel-restore');
-    cancelBtn.onmouseenter = () => { cancelBtn.style.background = isDark ? '#44403c' : '#e7e5e4'; };
-    cancelBtn.onmouseleave = () => { cancelBtn.style.background = cancelBg; };
-
-    cancelBtn.onclick = () => overlay.remove();
+    overlay.querySelector<HTMLElement>('#hist-cancel-restore').onclick = () => overlay.remove();
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
     overlay.querySelector<HTMLElement>('#hist-confirm-restore').onclick = async () => {
