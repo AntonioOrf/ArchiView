@@ -185,10 +185,20 @@ async function forseCreaSnapshotAutomatico(payload: string): Promise<void> {
       // Prima scrittura della sessione: l'intervallo si conta dall'ULTIMO snapshot su
       // disco, non dall'avvio, o riaprire l'app dieci volte di fila ne creerebbe dieci.
       const voci = await elencaSnapshot();
-      ultimoAuto = voci.length ? voci[0].creatoIl : 0;
+      // Solo se nessun salvataggio concorrente ha già prenotato nel frattempo.
+      if (ultimoAuto === 0) ultimoAuto = voci.length ? voci[0].creatoIl : 0;
     }
-    if (Date.now() - ultimoAuto < INTERVALLO_AUTO_MS) return;
-    await creaSnapshot(payload, 'auto');
+    const adesso = Date.now();
+    if (adesso - ultimoAuto < INTERVALLO_AUTO_MS) return;
+    // Si prenota PRIMA della gzip: i salvataggi che arrivano mentre comprime non ne creano altri.
+    const precedente = ultimoAuto;
+    ultimoAuto = adesso;
+    try {
+      await creaSnapshot(payload, 'auto');
+    } catch (e) {
+      ultimoAuto = precedente; // fallito: il prossimo salvataggio riprova
+      throw e;
+    }
   } catch (e: any) {
     console.error('[Snapshot] Creazione automatica fallita:', e && e.message);
   }
