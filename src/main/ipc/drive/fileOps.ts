@@ -6,20 +6,30 @@ const { driveState } = require('./auth');
 
 const escapeDriveQuery = (str: string) => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3): Promise<any> {
-  let delay = 1000;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+const STATI_TRANSITORI = new Set([429, 500, 502, 503, 504, 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN']);
+// Drive segnala il throttling anche con 403: solo questi motivi, gli altri 403 sono permessi veri.
+const MOTIVI_RATE_LIMIT = new Set(['rateLimitExceeded', 'userRateLimitExceeded']);
+
+function riprovabile(e: any): boolean {
+  const status = e?.response?.status ?? e?.code;
+  if (STATI_TRANSITORI.has(status)) return true;
+  const motivi = e?.response?.data?.error?.errors || [];
+  return status === 403 && motivi.some((m: any) => MOTIVI_RATE_LIMIT.has(m?.reason));
+}
+
+// `attesaBaseMs` è un parametro solo per i test.
+async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3, attesaBaseMs = 1000): Promise<any> {
+  for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (e: any) {
-      const status = e?.response?.status ?? e?.code;
-      const retryable = status === 429 || status === 500 || status === 503 || status === 'ECONNRESET' || status === 'ETIMEDOUT';
-      if (!retryable || attempt === maxRetries) throw e;
-      await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
+      if (!riprovabile(e) || attempt >= maxRetries) throw e;
+      // Backoff esponenziale con jitter; se il server dice quanto aspettare, si aspetta almeno quello.
+      const retryAfter = Number(e?.response?.headers?.['retry-after']) * 1000;
+      const backoff = attesaBaseMs * 2 ** attempt * (0.5 + Math.random());
+      await new Promise(r => setTimeout(r, Number.isFinite(retryAfter) ? Math.max(retryAfter, backoff) : backoff));
     }
   }
-  throw new Error('unreachable');
 }
 
 async function getOrCreateFolder(folderName: string, parentId: string | null = null): Promise<string> {
@@ -145,5 +155,16 @@ async function downloadFile(fileId: string, destPath: string): Promise<void> {
   await pipeline(res.data, dest);
 }
 
-module.exports = { escapeDriveQuery, withDriveRetry, getOrCreateFolder, uploadFile, uploadFileReturningId, makeFilePublic, asyncPool, downloadFile };
+// Upload, download e pubblicazione riprovano da sé: i chiamanti (sync allegati, DB, Hub) non
+// devono ricordarsi di avvolgerli. Tutti idempotenti: un upload ripetuto aggiorna il file per
+// nome, un chunk ricreato è un doppione innocuo (nome = hash), un download riscrive la destinazione.
+module.exports = {
+  escapeDriveQuery, withDriveRetry, getOrCreateFolder, asyncPool,
+  uploadFile: (localPath: string, nome: string, parentId: string, skipIfExist = false) =>
+    withDriveRetry(() => uploadFile(localPath, nome, parentId, skipIfExist)),
+  uploadFileReturningId: (localPath: string, nome: string, parentId: string) =>
+    withDriveRetry(() => uploadFileReturningId(localPath, nome, parentId)),
+  makeFilePublic: (fileId: string) => withDriveRetry(() => makeFilePublic(fileId)),
+  downloadFile: (fileId: string, destPath: string) => withDriveRetry(() => downloadFile(fileId, destPath))
+};
 export {};

@@ -95,7 +95,7 @@ async function creaSorgenteDrive() {
       const candidati = (await fileDel(id)).filter(f => f.name === pagina.file);
       const scelto = candidati.find(f => Number(f.size) === pagina.byte) || candidati[0];
       if (!scelto) throw new Error('pagina_assente');
-      await withDriveRetry(() => downloadFile(scelto.id, destinazione));
+      await downloadFile(scelto.id, destinazione); // riprova da sé (fileOps)
     },
 
     async rimuovi(id: string): Promise<void> {
