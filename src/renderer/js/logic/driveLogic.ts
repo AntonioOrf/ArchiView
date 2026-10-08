@@ -437,146 +437,133 @@ window.chiudiCollegaArchivioDrive = function() {
     if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
 };
 
-window.sincronizzaGoogleDrive = async function(silent = false) {
-    if (window.hubConfig) { if (window.sincronizzaConHub) await window.sincronizzaConHub(); return; }
+// "Sincronizza" e "Invia" fanno la stessa cosa (pull, merge, upload, allegati): cambiano solo
+// i pulsanti in attesa e i messaggi. Una sola funzione, così le guardie valgono per entrambi.
+const TESTI_SYNC_DRIVE = {
+    sync: {
+        progresso: 'sync_in_progress',
+        ok: ["msg_sincronizzazione_completa", "Sincronizzazione completata con successo!"],
+        okDopoConflitto: ["msg_conflitto_risolto_sincron", "Conflitto risolto! Sincronizzazione completata in sicurezza."],
+        errore: ["msg_errore_durante_la_sincron", "Errore durante la sincronizzazione: "]
+    },
+    upload: {
+        progresso: 'upload_in_progress',
+        ok: ["msg_caricamento_completato_in", "Caricamento completato in sicurezza!"],
+        okDopoConflitto: ["msg_conflitto_risolto_caricam", "Conflitto risolto! Caricamento completato in sicurezza."],
+        errore: ["msg_errore_durante_il_caricam", "Errore durante il caricamento: "]
+    }
+};
+
+// Pull + merge + upload. Ritorna false se l'utente ha annullato la risoluzione dei conflitti:
+// in quel caso il merge non è avvenuto e caricare il DB locale sovrascriverebbe su Drive le
+// modifiche dei colleghi, perché il parent appena scaricato fa passare il controllo del 409.
+async function scaricaUnisciCarica(apiCloud, silent) {
+    const driveData = await apiCloud.pull();
+    if (driveData && driveData.database) {
+        if (await window.sincronizzaEUnisciDati(driveData.database) === false) return false;
+        window.lastDriveModifiedTime = driveData.driveModifiedTime;
+    } else if (!silent && typeof mostraMessaggio === 'function') {
+        // Il download non ha trovato nulla: legittimo alla prima pubblicazione, ma se
+        // l'archivio esiste già su un altro PC è il sintomo di una cartella Drive sbagliata.
+        mostraMessaggio(window.t("msg_nessun_db_sul_cloud", "Nessun database trovato sul Cloud: viene caricata la copia locale. Se questo archivio esiste già su un altro PC, verifica dal menu Cloud di essere collegato alla stessa cartella Drive."), "warning");
+    }
+
+    // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
+    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
+    const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
+
+    try {
+        if (apiCloud.syncAttachments) await apiCloud.syncAttachments();
+    } catch (attErr) {
+        console.error("Errore sync allegati:", attErr);
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione DB completata, ma errore negli allegati: " + attErr.message, "warning");
+    }
+
+    window.ultimoCaricamento = typeof newSyncTime === 'number'
+        ? newSyncTime
+        : (driveData && driveData.driveModifiedTime) || Date.now();
+    if (window.apiSettings) {
+        const settings = await window.apiSettings.get();
+        settings.lastSyncTime = window.ultimoCaricamento;
+        await window.apiSettings.save(settings);
+    }
+    if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
+    window.incomingChanges = [];
+    window.incomingStructuralChanges = [];
+    if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
+    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
+    window.azzeraErroreCloud();
+    // Dopo una sync riuscita lo stato auth è certo (all'avvio un token drive.file può averlo
+    // lasciato a false).
+    if (window.driveStatus) window.driveStatus.isAuthenticated = true;
+    return true;
+}
+
+function avvisaSyncDriveAnnullata(silent) {
+    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_sync_annullata_nulla_caricato", "Sincronizzazione annullata: sul Cloud non è stato caricato nulla."), "info");
+}
+
+async function sincronizzaDrive(silent, modo) {
+    const testi = TESTI_SYNC_DRIVE[modo];
     if (window.driveStatus?.unauthorizedVault) {
         if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
         return;
     }
     const apiCloud = await window.getApiCloud();
-    if (apiCloud) {
-        const btn = document.getElementById('btn-drive-sync') as HTMLButtonElement;
-        if (btn) btn.disabled = true;
-        // Anche il gemello nel modal Cloud: senza stato di attesa lì il click sembra non fare nulla
-        // e nulla impedisce di lanciare due sync sovrapposte.
-        const btnModal = document.getElementById('btn-cloud-drive-sync');
-        if (window.impostaStatoCaricamentoCloud) {
-            window.impostaStatoCaricamentoCloud(btnModal, true, window.t('btn_syncing', 'Sincronizzazione…'));
-        }
-        window.toggleSyncProgress(true, 'sync_in_progress');
-        
-        try {
-            // 1. Scarica da Drive (se esiste)
-            const driveData = await apiCloud.pull();
-            if (driveData && driveData.database) {
-                if (typeof window.sincronizzaEUnisciDati === 'function') {
-                    await window.sincronizzaEUnisciDati(driveData.database);
-                }
-                window.lastDriveModifiedTime = driveData.driveModifiedTime;
-            } else if (!silent && typeof mostraMessaggio === 'function') {
-                // Il download non ha trovato nulla: legittimo alla prima pubblicazione, ma se
-                // l'archivio esiste già su un altro PC è il sintomo di una cartella Drive sbagliata.
-                // Prima si proseguiva in silenzio fino a "Sincronizzazione completata con successo".
-                mostraMessaggio(window.t("msg_nessun_db_sul_cloud", "Nessun database trovato sul Cloud: viene caricata la copia locale. Se questo archivio esiste già su un altro PC, verifica dal menu Cloud di essere collegato alla stessa cartella Drive."), "warning");
-            }
+    if (!apiCloud) return;
 
-            // 2. Carica le modifiche locali unite (upload)
-            // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
-            if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-            const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
-            
-            try {
-                if (apiCloud.syncAttachments) {
-                    await apiCloud.syncAttachments();
-                }
-            } catch (attErr) {
-                console.error("Errore sync allegati:", attErr);
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione DB completata, ma errore negli allegati: " + attErr.message, "warning");
-            }
-            
-            if (typeof newSyncTime === 'number') {
-                window.ultimoCaricamento = newSyncTime;
-            } else if (driveData && driveData.driveModifiedTime) {
-                window.ultimoCaricamento = driveData.driveModifiedTime;
-            } else {
-                window.ultimoCaricamento = Date.now();
-            }
-
-            if (window.apiSettings) {
-                const settings = await window.apiSettings.get();
-                settings.lastSyncTime = window.ultimoCaricamento;
-                await window.apiSettings.save(settings);
-            }
-            if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-            window.incomingChanges = [];
-            window.incomingStructuralChanges = [];
-            if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-            
-            if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-            
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_sincronizzazione_completa", "Sincronizzazione completata con successo!"), "success");
-
-            // Dopo una sync riuscita, aggiorna lo stato auth (potrebbe essere rimasto false
-            // se all'avvio il token era drive.file e il check scope l'aveva marcato non auth)
-            if (window.driveStatus) window.driveStatus.isAuthenticated = true;
-        } catch (e) {
-            console.error(e);
-            if (e.message && e.message.includes("409_CONFLICT")) {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso…"), "warning");
-                console.warn("409_CONFLICT: auto-healing in progress…");
-                try {
-                    const retryData = await apiCloud.pull();
-                    if (retryData && retryData.database) {
-                        if (typeof window.sincronizzaEUnisciDati === 'function') {
-                            await window.sincronizzaEUnisciDati(retryData.database);
-                        }
-                        window.lastDriveModifiedTime = retryData.driveModifiedTime;
-                    }
-                    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-                    const newRetryTime = await apiCloud.sync(window.lastDriveModifiedTime);
-                    try {
-                        if (apiCloud.syncAttachments) {
-                            await apiCloud.syncAttachments();
-                        }
-                    } catch (attErr) {
-                        console.error("Errore sync allegati:", attErr);
-                    }
-                    
-                    if (typeof newRetryTime === 'number') {
-                        window.ultimoCaricamento = newRetryTime;
-                    } else if (retryData && retryData.driveModifiedTime) {
-                        window.ultimoCaricamento = retryData.driveModifiedTime;
-                    } else {
-                        window.ultimoCaricamento = Date.now();
-                    }
-
-                    if (window.apiSettings) {
-                        const settings = await window.apiSettings.get();
-                        settings.lastSyncTime = window.ultimoCaricamento;
-                        await window.apiSettings.save(settings);
-                    }
-                    if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-                    window.incomingChanges = [];
-                    window.incomingStructuralChanges = [];
-                    if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-                    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_sincron", "Conflitto risolto! Sincronizzazione completata in sicurezza."), "success");
-                } catch(retryErr) {
-                    window.impostaErroreCloud(retryErr.message);
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
-                }
-            } else if (e.message && e.message.includes('ACCESSO_NEGATO_VAULT')) {
-                window.driveStatus.isAuthenticated = false;
-                window.driveStatus.unauthorizedVault = true;
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.', 'error');
-                if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
-            } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
-                // Errore di autenticazione: apri il cloud modal per guidare l'utente al login
-                // (es. primo avvio dopo upgrade scope drive.file → drive per vault condivisi)
-                if (typeof window.apriCloudModal === 'function') {
-                    window.apriCloudModal();
-                } else if (!silent && typeof mostraMessaggio === 'function') {
-                    mostraMessaggio("Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.", "warning");
-                }
-            } else {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_sincron", "Errore durante la sincronizzazione: ") + e.message, "error");
-            }
-        } finally {
-            if (btn) btn.disabled = false;
-            if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btnModal, false);
-            window.toggleSyncProgress(false);
-        }
+    const btn = modo === 'sync' ? document.getElementById('btn-drive-sync') as HTMLButtonElement : null;
+    // Anche il gemello nel modal Cloud: senza stato di attesa lì il click sembra non fare nulla
+    // e nulla impedisce di lanciare due sync sovrapposte.
+    const btnModal = modo === 'sync' ? document.getElementById('btn-cloud-drive-sync') : null;
+    if (btn) btn.disabled = true;
+    if (btnModal && window.impostaStatoCaricamentoCloud) {
+        window.impostaStatoCaricamentoCloud(btnModal, true, window.t('btn_syncing', 'Sincronizzazione…'));
     }
+    window.toggleSyncProgress(true, testi.progresso);
+
+    try {
+        if (!(await scaricaUnisciCarica(apiCloud, silent))) return avvisaSyncDriveAnnullata(silent);
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.ok[0], testi.ok[1]), "success");
+    } catch (e) {
+        console.error(e);
+        if (e.message && e.message.includes("409_CONFLICT")) {
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso…"), "warning");
+            console.warn("409_CONFLICT: auto-healing in progress…");
+            try {
+                if (!(await scaricaUnisciCarica(apiCloud, silent))) return avvisaSyncDriveAnnullata(silent);
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.okDopoConflitto[0], testi.okDopoConflitto[1]), "success");
+            } catch (retryErr) {
+                window.impostaErroreCloud(retryErr.message);
+                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
+            }
+        } else if (e.message && e.message.includes('ACCESSO_NEGATO_VAULT')) {
+            window.driveStatus.isAuthenticated = false;
+            window.driveStatus.unauthorizedVault = true;
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.', 'error');
+            if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
+        } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
+            // Errore di autenticazione: apri il cloud modal per guidare l'utente al login
+            // (es. primo avvio dopo upgrade scope drive.file → drive per vault condivisi)
+            if (typeof window.apriCloudModal === 'function') {
+                window.apriCloudModal();
+            } else if (!silent && typeof mostraMessaggio === 'function') {
+                mostraMessaggio("Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.", "warning");
+            }
+        } else {
+            window.impostaErroreCloud(e.message);
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.errore[0], testi.errore[1]) + e.message, "error");
+        }
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btnModal && window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btnModal, false);
+        window.toggleSyncProgress(false);
+    }
+}
+
+window.sincronizzaGoogleDrive = async function(silent = false) {
+    if (window.hubConfig) { if (window.sincronizzaConHub) await window.sincronizzaConHub(); return; }
+    await sincronizzaDrive(silent, 'sync');
 };
 
 window.scaricaDalCloud = async function(silent = false) {
@@ -602,9 +589,8 @@ async function eseguiScaricamentoDalCloud(silent = false) {
         try {
             const driveData = await apiCloud.pull();
             if (driveData && driveData.database) {
-                if (typeof window.sincronizzaEUnisciDati === 'function') {
-                    await window.sincronizzaEUnisciDati(driveData.database);
-                }
+                // Annullato: niente merge, quindi le modifiche in entrata restano da ricevere.
+                if (await window.sincronizzaEUnisciDati(driveData.database) === false) return avvisaSyncDriveAnnullata(silent);
                 window.lastDriveModifiedTime = driveData.driveModifiedTime;
                 window.ultimoCaricamento = driveData.driveModifiedTime || Date.now();
                 if (window.apiSettings) {
@@ -640,113 +626,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
 
 window.caricaSulCloud = async function(silent = false) {
     if (window.hubConfig) { if (window.inviaModificheHub) await window.inviaModificheHub(); return; }
-    if (window.driveStatus?.unauthorizedVault) {
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
-        return;
-    }
-    const apiCloud = await window.getApiCloud();
-    if (apiCloud) {
-        window.toggleSyncProgress(true, 'upload_in_progress');
-        try {
-            // Per evitare sovrascritture cieche, prima scarichiamo e uniamo eventuali modifiche remote!
-            const driveData = await apiCloud.pull();
-            if (driveData && driveData.database) {
-                if (typeof window.sincronizzaEUnisciDati === 'function') {
-                    await window.sincronizzaEUnisciDati(driveData.database);
-                }
-                window.lastDriveModifiedTime = driveData.driveModifiedTime;
-            }
-
-            // Ora carichiamo il risultato del merge
-            // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
-            if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-            const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
-            
-            try {
-                if (apiCloud.syncAttachments) {
-                    await apiCloud.syncAttachments();
-                }
-            } catch (attErr) {
-                console.error("Errore sync allegati:", attErr);
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione DB completata, ma errore negli allegati: " + attErr.message, "warning");
-            }
-            
-            if (typeof newSyncTime === 'number') {
-                window.ultimoCaricamento = newSyncTime;
-            } else if (driveData && driveData.driveModifiedTime) {
-                window.ultimoCaricamento = driveData.driveModifiedTime;
-            } else {
-                window.ultimoCaricamento = Date.now();
-            }
-
-            if (window.apiSettings) {
-                const settings = await window.apiSettings.get();
-                settings.lastSyncTime = window.ultimoCaricamento;
-                await window.apiSettings.save(settings);
-            }
-            if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-            window.incomingChanges = [];
-            window.incomingStructuralChanges = [];
-            if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-
-            if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-            
-            window.azzeraErroreCloud();
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_completato_in", "Caricamento completato in sicurezza!"), "success");
-        } catch (e) {
-            console.error(e);
-            if (e.message && e.message.includes("409_CONFLICT")) {
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso…"), "warning");
-                console.warn("409_CONFLICT in caricaSulCloud: auto-healing in progress…");
-                try {
-                    const retryData = await apiCloud.pull();
-                    if (retryData && retryData.database) {
-                        if (typeof window.sincronizzaEUnisciDati === 'function') {
-                            await window.sincronizzaEUnisciDati(retryData.database);
-                        }
-                        window.lastDriveModifiedTime = retryData.driveModifiedTime;
-                    }
-                    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-                    const newRetryTime = await apiCloud.sync(window.lastDriveModifiedTime);
-                    try {
-                        if (apiCloud.syncAttachments) {
-                            await apiCloud.syncAttachments();
-                        }
-                    } catch (attErr) {
-                        console.error("Errore sync allegati:", attErr);
-                    }
-                    
-                    if (typeof newRetryTime === 'number') {
-                        window.ultimoCaricamento = newRetryTime;
-                    } else if (retryData && retryData.driveModifiedTime) {
-                        window.ultimoCaricamento = retryData.driveModifiedTime;
-                    } else {
-                        window.ultimoCaricamento = Date.now();
-                    }
-
-                    if (window.apiSettings) {
-                        const settings = await window.apiSettings.get();
-                        settings.lastSyncTime = window.ultimoCaricamento;
-                        await window.apiSettings.save(settings);
-                    }
-                    if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-                    window.incomingChanges = [];
-                    window.incomingStructuralChanges = [];
-                    if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-                    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-                    window.azzeraErroreCloud();
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_risolto_caricam", "Conflitto risolto! Caricamento completato in sicurezza."), "success");
-                } catch(retryErr) {
-                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
-                }
-            } else {
-                window.impostaErroreCloud(e.message);
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_caricam", "Errore durante il caricamento: ") + e.message, "error");
-            }
-        } finally {
-            window.toggleSyncProgress(false);
-        }
-    }
+    await sincronizzaDrive(silent, 'upload');
 };
 
 window.trasformaInCondiviso = async function() {

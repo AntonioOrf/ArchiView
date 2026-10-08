@@ -261,6 +261,74 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(merged.trascrizione).toContain('Trascrizione preziosa');
   });
 
+  // Audit sync S1: chiudere un modale di risoluzione lasciava partire l'upload del DB locale non
+  // fuso, che sovrascriveva su Drive tutte le modifiche dei colleghi.
+  for (const avvio of ['sincronizzaGoogleDrive', 'caricaSulCloud']) {
+    for (const caso of ['conflitti', 'cancellazioni']) {
+      test(`${avvio}: annullare il modale delle ${caso} non carica nulla su Drive`, async ({ page, userDataDir }) => {
+        await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+
+        await page.evaluate(({ avvio, caso }) => {
+          const w = window as any;
+          const locale = { id: 'ann-1', segnatura: 'Locale', cartella: '', lastModified: 1000 };
+          const remoto = caso === 'conflitti'
+            ? { manoscritti: [{ ...locale, segnatura: 'Remoto' }], cartelle: [] }
+            : { manoscritti: [], cartelle: [], deletedIds: ['ann-1'] };
+          w.appData.manoscritti = [locale];
+          w.appData.baseObjects = {};
+          w.appData.baseHashes = {};
+          w.hubConfig = null;
+          w.hasFetchedBeforeDownload = true;
+          w.__e2eSync = 0;
+          w.getApiCloud = async () => ({
+            pull: async () => ({ database: remoto, driveModifiedTime: 5000 }),
+            sync: async () => { w.__e2eSync++; return 6000; },
+            syncAttachments: async () => {}
+          });
+          w.__e2eFine = w[avvio](false);
+        }, { avvio, caso });
+
+        const modale = caso === 'conflitti' ? '#merge-conflict-modal' : '#deletion-conflict-modal';
+        const annulla = caso === 'conflitti' ? 'annullaSincronizzazioneConflitto' : 'annullaSincronizzazioneDeletions';
+        await expect(page.locator(modale)).toBeVisible();
+        await page.locator(`${modale} button[data-on-click="${annulla}"]`).click();
+        await expect(page.locator(modale)).toBeHidden();
+
+        const esito = await page.evaluate(async () => {
+          const w = window as any;
+          await w.__e2eFine;
+          return { sync: w.__e2eSync, segnatura: w.appData.manoscritti.find((m: any) => m.id === 'ann-1')?.segnatura };
+        });
+        expect(esito.sync).toBe(0);
+        expect(esito.segnatura).toBe('Locale');
+      });
+    }
+  }
+
+  for (const avvio of ['sincronizzaGoogleDrive', 'caricaSulCloud']) {
+    test(`${avvio}: senza conflitti fonde, carica una volta e prende l'ora del server`, async ({ page, userDataDir }) => {
+      await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+
+      const esito = await page.evaluate(async (avvio) => {
+        const w = window as any;
+        w.appData.manoscritti = [{ id: 'ok-1', segnatura: 'Locale', cartella: '', lastModified: 1000 }];
+        w.appData.baseObjects = {};
+        w.appData.baseHashes = {};
+        w.hubConfig = null;
+        let sync = 0, parent: any = null;
+        w.getApiCloud = async () => ({
+          pull: async () => ({ database: { manoscritti: [{ id: 'ok-2', segnatura: 'Collega', cartella: '', lastModified: 2000 }], cartelle: [] }, driveModifiedTime: 5000 }),
+          sync: async (p: number) => { sync++; parent = p; return 6000; },
+          syncAttachments: async () => {}
+        });
+        await w[avvio](true);
+        return { sync, parent, ultimo: w.ultimoCaricamento, ids: w.appData.manoscritti.map((m: any) => m.id).sort() };
+      }, avvio);
+
+      expect(esito).toEqual({ sync: 1, parent: 5000, ultimo: 6000, ids: ['ok-1', 'ok-2'] });
+    });
+  }
+
   test('caricamento fallito dopo la sync: alla sync successiva con remoto invariato le modifiche locali restano', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
 
