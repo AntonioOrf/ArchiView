@@ -1,7 +1,8 @@
 const path = require('path');
 const fs = require('fs');
 const { state, finestraPrincipale, getAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
-const { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChunkPath, hashFile } = require('../../chunkingLogic');
+const { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChunkPath, hashFile,
+  leggiMappaChunk, scriviMappaChunk, conMappaChunk } = require('../../chunkingLogic');
 const { driveState, loadSavedTokens } = require('./auth');
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
 const { safeAttachmentPath, safeAttachmentPathOrNull } = require('../pathSafety');
@@ -68,11 +69,15 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   const filesToUpload = fs.readdirSync(allegatiLocalDir).filter((f: string) => usedAttachments.has(f));
   const allRequiredHashes = new Set<string>();
   let indexChanged = false;
+  const mappa = leggiMappaChunk(state.workspacePath);
+  const daMappa = new Map<string, string[]>(); // file non riletti: i loro chunk non sono in cache
 
   for (const file of filesToUpload) {
     const filePath = path.join(allegatiLocalDir, file);
     if (fs.statSync(filePath).isFile()) {
-      const hashes = await splitFileIntoChunks(filePath, cacheDir);
+      const { valore: hashes, ricalcolato } = await conMappaChunk(mappa, 'drive:' + file, filePath,
+        () => splitFileIntoChunks(filePath, cacheDir));
+      if (!ricalcolato) daMappa.set(filePath, hashes);
       const currentHashes = remoteIndex[file];
       if (!currentHashes || JSON.stringify(currentHashes) !== JSON.stringify(hashes)) {
         remoteIndex[file] = hashes;
@@ -149,6 +154,10 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   }
 
   const chunksToUpload = Array.from(allRequiredHashes).filter((h: string) => !existingDriveChunks.has(h));
+  const daCaricare = new Set(chunksToUpload);
+  for (const [filePath, hashes] of daMappa) {
+    if (hashes.some(h => daCaricare.has(h) && !fs.existsSync(path.join(cacheDir, h)))) await splitFileIntoChunks(filePath, cacheDir);
+  }
   let iUp = 0;
   const totalUp = chunksToUpload.length;
   await asyncPool(5, chunksToUpload, async (hash: string) => {
@@ -174,6 +183,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     fs.writeFileSync(localIndexPath, JSON.stringify(remoteIndex, null, 2));
     await uploadFile(localIndexPath, 'index.json', projectFolderId, false);
   }
+  await scriviMappaChunk(state.workspacePath, mappa);
 
   } finally {
     if (fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true, force: true });

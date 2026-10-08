@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { state, finestraPrincipale, loadHubConfig } = require('../workspaceManager');
-const { splitFileIntoChunks } = require('../chunkingLogic');
+const { splitFileIntoChunks, leggiMappaChunk, scriviMappaChunk, conMappaChunk } = require('../chunkingLogic');
 const { loadSavedTokens } = require('./drive/auth');
 const { getOrCreateFolder, uploadFileReturningId, makeFilePublic, asyncPool } = require('./drive/fileOps');
 const { GOOGLE_API_KEY } = require('./cloudCredentials');
@@ -157,6 +157,7 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
     console.log(`[hub-att] index remoteFiles=${remoteFiles.size} remoteChunks=${remoteChunks.size} selfMemberId=${selfMemberId} hasGoogle=${!!hasGoogle}`);
     if (hasGoogle) {
       const chunkFolderId = await getHubChunkFolder(cfg.repoId);
+      const mappa = leggiMappaChunk(state.workspacePath);
       const newChunks: any[] = [];
       const newFiles: any[] = [];
 
@@ -164,16 +165,21 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
         const localPath = safeAttachmentPathOrNull(attDir, fileName);
         if (!localPath || !fs.existsSync(localPath) || !fs.statSync(localPath).isFile()) continue;
 
-        // 1. split plaintext → 2. cifra ogni chunk → ctHash
-        const plainHashes: string[] = await splitFileIntoChunks(localPath, plainCache);
-        const ctHashes: string[] = [];
-        for (const ph of plainHashes) {
-          const blob = encryptChunk(key, fs.readFileSync(path.join(plainCache, ph)), ph);
-          const ctHash = sha256hex(blob);
-          ctHashes.push(ctHash);
-          const encPath = path.join(encCache, ctHash);
-          if (!fs.existsSync(encPath)) fs.writeFileSync(encPath, blob);
-        }
+        // 1. split plaintext → 2. cifra ogni chunk → ctHash (nonce deterministico: stabile per
+        // file invariato, quindi si tiene nella mappa dei chunk insieme a mtime e dimensione).
+        const cifra = async (): Promise<string[]> => {
+          const plainHashes: string[] = await splitFileIntoChunks(localPath, plainCache);
+          const out: string[] = [];
+          for (const ph of plainHashes) {
+            const blob = encryptChunk(key, fs.readFileSync(path.join(plainCache, ph)), ph);
+            const ctHash = sha256hex(blob);
+            out.push(ctHash);
+            const encPath = path.join(encCache, ctHash);
+            if (!fs.existsSync(encPath)) fs.writeFileSync(encPath, blob);
+          }
+          return out;
+        };
+        const { valore: ctHashes, ricalcolato } = await conMappaChunk(mappa, `hub:${cfg.repoId}:${fileName}`, localPath, cifra);
 
         // last-writer-wins: ripubblica il file solo se cambiato o più recente del remoto
         const existing = remoteFiles.get(fileName);
@@ -183,7 +189,8 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
         }
 
         // upload dei soli blob mancanti sull'hub
-        const missing = ctHashes.filter(h => !remoteChunks.has(h) && !newChunks.find(c => c.hash === h));
+        const missing: string[] = ctHashes.filter((h: string) => !remoteChunks.has(h) && !newChunks.find(c => c.hash === h));
+        if (missing.length && !ricalcolato) await cifra(); // i blob cifrati non sono in cache
         console.log(`[hub-att] upload file="${fileName}" chunks=${ctHashes.length} changed=${changed} missing=${missing.length}`);
         // Un errore su un chunk (es. makeFilePublic bloccato da policy account) NON deve abortire
         // l'intera sync: lo registriamo e proseguiamo con gli altri file.
@@ -212,6 +219,8 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
           console.warn(`[hub-att] file="${fileName}" non pubblicato: chunk mancanti dopo upload`);
         }
       }
+
+      await scriviMappaChunk(state.workspacePath, mappa);
 
       // Propagazione cancellazioni: file pubblicati da NOI (ogni hash risale a un nostro chunk)
       // che non compaiono più tra gli allegati referenziati dal DB locale → segnati deleted

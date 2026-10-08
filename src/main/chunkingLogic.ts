@@ -1,8 +1,54 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+const { scriviAtomico } = require('./scritturaAtomica');
 
 const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+
+// --- Mappa dei chunk ---------------------------------------------------------
+// `<workspace>/.archiview-chunkmap.json`: chiave → { mtimeMs, size, valore }. Una sync senza
+// modifiche non rilegge né rihasha gli allegati invariati. Sta fuori dalle cartelle di cache,
+// che si cancellano a fine sync.
+// ponytail: le voci di allegati cancellati restano nella mappa (pochi byte l'una); potarle se cresce.
+type MappaChunk = Record<string, { mtimeMs: number; size: number; valore: any }>;
+
+export function percorsoMappaChunk(workspacePath: string): string {
+    return path.join(workspacePath, '.archiview-chunkmap.json');
+}
+
+export function leggiMappaChunk(workspacePath: string): MappaChunk {
+    try {
+        const m = JSON.parse(fs.readFileSync(percorsoMappaChunk(workspacePath), 'utf8'));
+        if (!m || typeof m !== 'object' || Array.isArray(m)) return {};
+        // Gli hash diventano percorsi in cache da caricare: solo hash validi, come per index.json.
+        for (const k of Object.keys(m)) {
+            const v = m[k] && m[k].valore;
+            if (!Array.isArray(v) || !v.every(isChunkHash)) delete m[k];
+        }
+        return m;
+    } catch {
+        return {}; // assente o corrotta: si ricalcola tutto
+    }
+}
+
+export async function scriviMappaChunk(workspacePath: string, mappa: MappaChunk): Promise<void> {
+    try {
+        await scriviAtomico(percorsoMappaChunk(workspacePath), JSON.stringify(mappa));
+    } catch (e) {
+        console.warn('[chunkmap] scrittura non riuscita, la prossima sync ricalcola:', e);
+    }
+}
+
+/** `calcola()` solo se il file è cambiato (mtime o dimensione) rispetto alla voce `chiave`. */
+export async function conMappaChunk<T>(mappa: MappaChunk, chiave: string, filePath: string,
+                                       calcola: () => Promise<T>): Promise<{ valore: T; ricalcolato: boolean }> {
+    const st = await fs.promises.stat(filePath);
+    const voce = mappa[chiave];
+    if (voce && voce.mtimeMs === st.mtimeMs && voce.size === st.size) return { valore: voce.valore, ricalcolato: false };
+    const valore = await calcola();
+    mappa[chiave] = { mtimeMs: st.mtimeMs, size: st.size, valore };
+    return { valore, ricalcolato: true };
+}
 
 /**
  * Splits a file into chunks of a specified size, computes the SHA-256 hash for each chunk,
