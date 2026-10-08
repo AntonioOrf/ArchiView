@@ -239,9 +239,10 @@ window.databasePerDisco = function(db) {
     return resto;
 };
 
-async function eseguiSalvataggio(pendenti = true) {
-    // Rete di sicurezza per le mutazioni che non passano da Store.commit().
-    if (typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
+async function eseguiSalvataggio(pendenti = true, dopoCommit = false) {
+    // Rete di sicurezza per le mutazioni che non passano da Store.commit(). Il differito segue
+    // sempre un commit, che l'ha già invalidata: rifarlo costava un secondo reindex completo.
+    if (!dopoCommit && typeof window.invalidaCacheRicerca === 'function') window.invalidaCacheRicerca();
     if (!window.apiBrowser) return;
 
     // Validazione lato renderer: il main riceve la stringa già serializzata e non la ri-parsa.
@@ -267,13 +268,13 @@ async function eseguiSalvataggio(pendenti = true) {
 // risultato di una sync appena scaricata): non vanno segnalate come da caricare.
 // N5: ogni scrittura del DB passa da qui, anche quelle: una chiamata diretta a `salvaDati`
 // scavalcava la catena e poteva sovrapporsi a un salvataggio differito.
-function salvaTutto({ pendenti = true } = {}) {
+function salvaTutto({ pendenti = true, dopoCommit = false } = {}) {
     // Un salvataggio differito ancora in attesa è una modifica dell'utente: assorbirlo qui
     // non deve togliergli il segnale "da caricare".
     const segnala = pendenti || saveDirty || !!saveTimer;
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
     saveDirty = false;
-    const esegui = () => eseguiSalvataggio(segnala);
+    const esegui = () => eseguiSalvataggio(segnala, dopoCommit);
     const p = saveChain.then(esegui, esegui);
     saveChain = p.catch(() => {});
     return p;
@@ -286,7 +287,7 @@ window.salvaTuttoDifferito = function(delay = SAVE_DEBOUNCE_MS) {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
         saveTimer = null;
-        salvaTutto().catch(err => {
+        salvaTutto({ dopoCommit: true }).catch(err => {
             console.error("Errore nel salvataggio differito:", err);
             if (typeof mostraMessaggio === 'function') {
                 mostraMessaggio(window.t("msg_errore_salvataggio", "Errore nel salvataggio dei dati: ") + (err.message || err), "error");
