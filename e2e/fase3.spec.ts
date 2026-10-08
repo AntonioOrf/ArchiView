@@ -433,6 +433,42 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     expect(esito.restanti).toEqual(['stessa mano']);
   });
 
+  // Ottimizzazione O4: l'eliminazione multipla e quella di una cartella seguono la stessa
+  // regola di quella singola (`Store.eliminaSchede`).
+  for (const via of ['selezione', 'cartella']) {
+    test(`3.5 — eliminare per ${via} toglie i rimandi che puntavano alle schede eliminate`, async ({ page, userDataDir }) => {
+      await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
+      await semina(page, [{ segnatura: 'A' }, { segnatura: 'BERSAGLIO' }, { segnatura: 'ESCA' }]);
+
+      await page.evaluate(async (via) => {
+        const w = window as any;
+        const a = appData.manoscritti.find((m: any) => m.segnatura === 'A');
+        const bersaglio = appData.manoscritti.find((m: any) => m.segnatura === 'BERSAGLIO');
+        const esca = appData.manoscritti.find((m: any) => m.segnatura === 'ESCA');
+        await w.collegaSchede(a.id, bersaglio.id, 'copia di');
+        await w.collegaSchede(a.id, esca.id, 'stessa mano');
+        if (via === 'selezione') {
+          w.selectedRecords = [bersaglio.id];
+          w.eliminaSelezionati();
+        } else {
+          await w.Store.updateManoscritto(bersaglio.id, { cartella: 'Fondo' });
+          await w.Store.addCartella('Fondo');
+          w.eliminaCartellaDaSidebar('Fondo');
+        }
+      }, via);
+      await page.locator('#btn-bottom-confirm-yes').click();
+
+      await expect.poll(() => page.evaluate(() =>
+        appData.manoscritti.some((m: any) => m.segnatura === 'BERSAGLIO'))).toBe(false);
+      const esito = await page.evaluate(() => {
+        const w = window as any;
+        const a = appData.manoscritti.find((m: any) => m.segnatura === 'A');
+        return w.Model.relazioni(a).map((r: any) => r.tipo);
+      });
+      expect(esito).toEqual(['stessa mano']);
+    });
+  }
+
   test('3.5 — il grafo disegna nodi e archi, e il clic isola il nodo coi suoi vicini', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     await semina(page, [{ segnatura: 'PERNO' }, { segnatura: 'A' }, { segnatura: 'B' }, { segnatura: 'ISOLATA' }]);

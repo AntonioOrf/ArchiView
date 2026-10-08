@@ -46,26 +46,39 @@ window.Store = {
     },
 
     async deleteManoscritto(id) {
-        const index = appData.manoscritti.findIndex(x => String(x.id) === String(id));
-        if (index !== -1) {
-            appData.manoscritti.splice(index, 1);
-            if (!appData.deletedIds) appData.deletedIds = [];
-            if (!appData.deletedIds.includes(String(id))) appData.deletedIds.push(String(id));
-            // Fase 3.5 — i rimandi VERSO la scheda eliminata si tolgono dalle altre.
-            // ⚠️ Non contraddice la regola "un id sconosciuto non si ripulisce": quella vale
-            // per un id che NON si sa che fine abbia fatto (su un archivio condiviso la
-            // scheda può esistere sulla copia di un collega). Qui invece l'eliminazione è
-            // esplicita e produce un tombstone in `deletedIds`: la scheda è morta per tutti,
-            // e lasciare i rimandi vorrebbe dire un elenco di collegamenti che non portano
-            // da nessuna parte, con lo stesso aspetto di quelli buoni.
-            if (window.Model) {
-                for (const m of appData.manoscritti) {
-                    const restanti = window.Model.relazioni(m).filter(r => r.id !== String(id));
-                    if (window.Model.scriviRelazioni(m, restanti)) m.lastModified = Date.now();
-                }
-            }
-            await this.commit();
+        await this.eliminaSchede([id]);
+    },
+
+    /**
+     * Unico punto che elimina schede (singola, selezione, cartella, ripetizione): toglie i
+     * record, mette i tombstone e toglie dalle altre schede i rimandi verso quelle eliminate.
+     * ⚠️ Non contraddice la regola "un id sconosciuto non si ripulisce": quella vale per un id
+     * che NON si sa che fine abbia fatto (su un archivio condiviso la scheda può esistere sulla
+     * copia di un collega). Qui l'eliminazione è esplicita e produce un tombstone: la scheda è
+     * morta per tutti, e lasciare i rimandi vorrebbe dire collegamenti che non portano da
+     * nessuna parte, con lo stesso aspetto di quelli buoni (Fase 3.5).
+     */
+    async eliminaSchede(ids) {
+        const morti = new Set((ids || []).map(String));
+        const prima = appData.manoscritti.length;
+        appData.manoscritti = appData.manoscritti.filter(m => !morti.has(String(m.id)));
+        if (appData.manoscritti.length === prima) return;
+        const tombstone = new Set((appData.deletedIds || []).map(String));
+        for (const id of morti) tombstone.add(id);
+        appData.deletedIds = Array.from(tombstone);
+        const adesso = Date.now();
+        for (const m of appData.manoscritti) {
+            const restanti = window.Model.relazioni(m).filter(r => !morti.has(r.id));
+            if (window.Model.scriviRelazioni(m, restanti)) m.lastModified = adesso;
         }
+        await this.commit();
+    },
+
+    /** Gli id tornano vivi (ripristino, reimport): via dai tombstone, o la sync li ricancella. Non salva. */
+    togliTombstone(ids) {
+        if (!Array.isArray(appData.deletedIds)) return;
+        const vivi = new Set((ids || []).map(String));
+        appData.deletedIds = appData.deletedIds.filter(x => !vivi.has(String(x)));
     },
 
     async addCartella(nome) {

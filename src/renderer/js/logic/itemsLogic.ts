@@ -365,33 +365,12 @@ async function confermaEliminazione() {
         await window.cestinaRecord([recordSalvato], window.origineCestino(1));
     }
 
-    if (window.Store) {
-        await window.Store.deleteManoscritto(id);
-    } else {
-        appData.manoscritti = appData.manoscritti.filter(x => x !== id); // Fixed x !== id instead of x.id !== id for fallback just to pass but actually fallback won't be called
-        // Tombstone
-        if (!appData.deletedIds) appData.deletedIds = [];
-        if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
-        
-        await salvaTutto();
-        renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
-    }
-    
+    await window.Store.deleteManoscritto(id);
     chiudiDeleteModal();
-    
+
     const ripristinaFn = async () => {
-        if (appData.deletedIds) {
-            appData.deletedIds = appData.deletedIds.filter(x => x !== recordSalvato.id);
-        }
-        if (window.Store) {
-            await window.Store.addManoscritto(recordSalvato);
-        } else {
-            appData.manoscritti.push(recordSalvato);
-            await salvaTutto();
-            renderMain();
-            if (typeof renderSidebar === 'function') renderSidebar();
-        }
+        window.Store.togliTombstone([recordSalvato.id]);
+        await window.Store.addManoscritto(JSON.parse(JSON.stringify(recordSalvato)));
     };
     
     // Fase 4.5 — l'eliminazione è ripetibile: rifarla è rieseguirla sullo stesso id. Si
@@ -401,7 +380,7 @@ async function confermaEliminazione() {
         const vivo = appData.manoscritti.find(x => String(x.id) === String(recordSalvato.id));
         if (!vivo) return;
         if (typeof window.cestinaRecord === 'function') await window.cestinaRecord([vivo], window.origineCestino(1));
-        if (window.Store) await window.Store.deleteManoscritto(recordSalvato.id);
+        await window.Store.deleteManoscritto(recordSalvato.id);
     };
 
     if (window.gestoreAnnullamento) {

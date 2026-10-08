@@ -103,10 +103,7 @@ window.ripristinaDalCestino = async function(ids) {
         rientrati.push(scheda);
     }
 
-    if (Array.isArray(appData.deletedIds)) {
-        const set = new Set(record.map(r => String(r.id)));
-        appData.deletedIds = appData.deletedIds.filter(x => !set.has(String(x)));
-    }
+    window.Store.togliTombstone(record.map(r => r.id));
     if (window.Model) window.Model.registraTag(appData, rientrati.flatMap(r => window.Model.tags(r)));
 
     if (window.Store) await window.Store.commit();

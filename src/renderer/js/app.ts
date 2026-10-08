@@ -1016,9 +1016,7 @@ window.importaManoscritto = async function() {
             // l'unica non migrata (la migrazione gira all'apertura, non all'import).
             window.Model.normalizzaScheda(m);
             // Essenziale: se l'utente aveva cancellato l'ID, lo stiamo importando esplicitamente, quindi va rimosso dai tombstone!
-            if (appData.deletedIds) {
-                appData.deletedIds = appData.deletedIds.filter(id => id !== m.id);
-            }
+            window.Store.togliTombstone([m.id]);
             appData.manoscritti.push(m);
             
             // Assicuriamoci che la cartella esista
@@ -1164,50 +1162,25 @@ window.eliminaSelezionati = async function() {
             await window.cestinaRecord(recordSalvati, window.origineCestino(count));
         }
 
-        appData.manoscritti = appData.manoscritti.filter(m => !window.selectedRecords.includes(m.id));
-        
-        // Gestione tombstones
-        if (!appData.deletedIds) appData.deletedIds = [];
-        window.selectedRecords.forEach(id => {
-            if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
-        });
-        
-        if (window.Store) {
-            await window.Store.commit();
-        } else {
-            await window.salvaTutto();
-            if (typeof renderMain === 'function') renderMain();
-            if (typeof renderSidebar === 'function') renderSidebar();
-        }
+        const idsEliminati = recordSalvati.map(r => String(r.id));
+        await window.Store.eliminaSchede(idsEliminati);
         window.selectedRecords = [];
         window.aggiornaStatoSelezione();
-        
+
         const ripristinaFn = async () => {
-            const idsRipristinati = recordSalvati.map(r => r.id);
-            if (appData.deletedIds) {
-                appData.deletedIds = appData.deletedIds.filter(x => !idsRipristinati.includes(x));
-            }
-            appData.manoscritti.push(...recordSalvati);
-            if (window.Store) {
-                await window.Store.commit();
-            } else {
-                await window.salvaTutto();
-                if (typeof renderMain === 'function') renderMain();
-            }
+            window.Store.togliTombstone(idsEliminati);
+            appData.manoscritti.push(...JSON.parse(JSON.stringify(recordSalvati)));
+            await window.Store.commit();
         };
-        
+
         // Fase 4.5 — ripetizione: rielimina gli id ancora presenti, ricopiandoli nel cestino.
-        const idsEliminati = recordSalvati.map(r => String(r.id));
         const rifaiFn = async () => {
             const vivi = appData.manoscritti.filter(m => idsEliminati.includes(String(m.id)));
             if (vivi.length === 0) return;
             if (typeof window.cestinaRecord === 'function') {
                 await window.cestinaRecord(vivi, window.origineCestino(vivi.length));
             }
-            appData.manoscritti = appData.manoscritti.filter(m => !idsEliminati.includes(String(m.id)));
-            if (!appData.deletedIds) appData.deletedIds = [];
-            for (const id of idsEliminati) if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
-            if (window.Store) await window.Store.commit();
+            await window.Store.eliminaSchede(idsEliminati);
         };
 
         if (window.gestoreAnnullamento) {

@@ -752,12 +752,10 @@ window.confermaImportCsv = async function() {
             appData.tipiDocumento.push({ id: modelloNuovo.id, nome: modelloNuovo.nome, campi: [] });
         }
         applicaCampi();
-        for (const m of nuove) {
-            appData.manoscritti.push(JSON.parse(JSON.stringify(m)));
-            // La scheda importata è esplicitamente voluta: se il suo id era fra i tombstone
-            // (reimport di qualcosa eliminato), toglierlo o il primo sync la ricancellerebbe.
-            if (appData.deletedIds) appData.deletedIds = appData.deletedIds.filter(x => String(x) !== String(m.id));
-        }
+        for (const m of nuove) appData.manoscritti.push(JSON.parse(JSON.stringify(m)));
+        // La scheda importata è esplicitamente voluta: se il suo id era fra i tombstone
+        // (reimport di qualcosa eliminato), toglierlo o il primo sync la ricancellerebbe.
+        window.Store.togliTombstone(nuove.map(m => m.id));
         for (const p of patch) {
             const vivo = appData.manoscritti.find(m => String(m.id) === String(p.id));
             if (!vivo) continue;

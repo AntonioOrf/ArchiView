@@ -379,7 +379,7 @@ window.confermaImportIiif = async function() {
 
         const applica = async () => {
             appData.manoscritti.push(JSON.parse(JSON.stringify(scheda)));
-            if (appData.deletedIds) appData.deletedIds = appData.deletedIds.filter(x => String(x) !== String(id));
+            window.Store.togliTombstone([id]);
             await window.Store.commit();
         };
         const annulla = async () => {

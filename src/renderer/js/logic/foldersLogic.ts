@@ -149,49 +149,28 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
              if (!appData.deletedCartelle.includes(fd)) appData.deletedCartelle.push(fd);
         }
         
-        // Se c'erano manoscritti, eliminali e metti l'ID nei tombstone per la sync
-        if (haManoscritti) {
-            if (!appData.deletedIds) appData.deletedIds = [];
-            const idsToRemove = manoscrittiDaEliminare.map(m => m.id);
-            for (let id of idsToRemove) {
-                if (!appData.deletedIds.includes(id)) appData.deletedIds.push(id);
-            }
-            appData.manoscritti = appData.manoscritti.filter(m => !idsToRemove.includes(m.id));
-        }
-
         if (window.cartellaAttuale === pathDaEliminare || window.cartellaAttuale.startsWith(prefix)) {
             window.cartellaAttuale = '';
             if (typeof switchTab === 'function') switchTab('list');
         }
-        if (window.Store) await window.Store.commit();
-        else {
-            await salvaTutto();
-            renderSidebar();
-            renderMain();
-        }
+        // Le schede dentro escono come nell'eliminazione singola: tombstone e rimandi tolti.
+        if (haManoscritti) await window.Store.eliminaSchede(manoscrittiDaEliminare.map(m => m.id));
+        else await window.Store.commit();
         aggiornaSelectCartelle();
-        
+
         const ripristinaFn = async () => {
             const cartelleSet = new Set([...appData.cartelle, ...cartelleDaEliminare]);
             appData.cartelle = Array.from(cartelleSet).sort();
-            
+
             if (appData.deletedCartelle) {
                 appData.deletedCartelle = appData.deletedCartelle.filter(c => !cartelleDaEliminare.includes(c));
             }
-            
+
             if (haManoscritti) {
-                const idsRipristinati = recordSalvati.map(r => r.id);
-                if (appData.deletedIds) {
-                    appData.deletedIds = appData.deletedIds.filter(x => !idsRipristinati.includes(x));
-                }
+                window.Store.togliTombstone(recordSalvati.map(r => r.id));
                 appData.manoscritti.push(...recordSalvati);
             }
-            if (window.Store) await window.Store.commit();
-            else {
-                await salvaTutto();
-                renderSidebar();
-                renderMain();
-            }
+            await window.Store.commit();
             aggiornaSelectCartelle();
         };
 
