@@ -1701,26 +1701,41 @@ function mostraErroreAccessoNegato(account: string) {
     overlay.id = 'accesso-negato-overlay';
     // .modal-overlay/.modal-window: a11yModal lo aggancia dal MutationObserver sul body
     // (ruolo dialog, focus iniziale, focus-trap). Senza, il Tab arrivava all'app sotto.
-    overlay.className = 'modal-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(12,10,9,0.6);backdrop-filter:blur(6px)';
-    overlay.innerHTML = `
-        <div class="modal-window" aria-describedby="_an_desc" style="display:block;background:#fff;border-radius:16px;padding:44px 40px 36px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.25);border:1px solid #e7e5e4">
-            <div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
-                <svg width="32" height="32" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    // Struttura e colori dei modali comuni (token del tema) e livello della scala z-index:
+    // prima era dipinto a mano in bianco, in italiano fisso e a z-index 9999 (audit P1-4).
+    overlay.className = 'modal-overlay z-modal-critical';
+    const t = window.t;
+    overlay.innerHTML = window.sanitizeHTML(`
+        <div class="modal-window max-w-md" aria-describedby="_an_desc">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <svg class="w-5 h-5 testo-pericolo shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    <span>${escapeHTML(t('access_denied_title', 'Accesso negato'))}</span>
+                </h2>
             </div>
-            <h2 style="font-size:1.25rem;font-weight:700;color:#1c1917;margin:0 0 10px">Accesso Negato</h2>
-            <p id="_an_desc" style="color:#57534e;line-height:1.6;margin:0 0 6px">L'account <strong id="_an_account"></strong> non è autorizzato ad accedere a questo Archivio Condiviso.</p>
-            <p style="color:#78716c;font-size:0.875rem;margin:0 0 28px">Accedi con l'account Google invitato dal proprietario, oppure scegli un altro archivio.</p>
-            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-                <button id="_an_btn_login" style="background:#1c1917;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">Cambia Account Google</button>
-                <button id="_an_btn_back" style="background:#fff;color:#1c1917;border:1px solid #d6d3d1;padding:10px 22px;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">Scegli Altro Archivio</button>
+            <div class="modal-body">
+                <p id="_an_desc" class="text-stone-700 leading-relaxed mb-2"></p>
+                <p class="text-sm text-stone-500">${escapeHTML(t('access_denied_hint', "Accedi con l'account Google invitato dal proprietario, oppure scegli un altro archivio."))}</p>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button id="_an_btn_back" type="button" class="btn btn-secondary">${escapeHTML(t('btn_choose_other_archive', 'Scegli un altro archivio'))}</button>
+                <button id="_an_btn_login" type="button" class="btn btn-primary">${escapeHTML(t('btn_switch_google_account', 'Cambia account Google'))}</button>
             </div>
         </div>
-    `;
+    `);
     document.body.appendChild(overlay);
 
-    const accountEl = overlay.querySelector('#_an_account') as HTMLElement;
-    if (accountEl) accountEl.textContent = account || 'corrente';
+    // L'account arriva da Google: entra solo come testo, mai nel markup.
+    const desc = overlay.querySelector('#_an_desc') as HTMLElement;
+    if (account) {
+        const [prima, dopo = ''] = t('access_denied_desc', "L'account {account} non è autorizzato ad accedere a questo archivio condiviso.").split('{account}');
+        const strong = document.createElement('strong');
+        strong.id = '_an_account';
+        strong.textContent = account;
+        desc.append(prima, strong, dopo);
+    } else {
+        desc.textContent = t('access_denied_desc_no_account', "L'account in uso non è autorizzato ad accedere a questo archivio condiviso.");
+    }
 
     (overlay.querySelector('#_an_btn_login') as HTMLButtonElement).addEventListener('click', async () => {
         try {
