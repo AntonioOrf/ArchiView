@@ -1032,16 +1032,8 @@ window.importaManoscritto = async function() {
         
         // Salvataggio scatena l'update chokidar ma avendo già appData aggiornato in memoria,
         // sincronizzaEUnisciDati non avrà problemi o sovrascritture.
-        if (window.Store) {
-            await window.Store.commit();
-            if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
-        } else {
-            await window.salvaTutto();
-            if (typeof normalizzaCartelle === 'function') normalizzaCartelle();
-            if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
-            if (typeof renderSidebar === 'function') renderSidebar();
-            if (typeof renderMain === 'function') renderMain();
-        }
+        await window.Store.commit();
+        if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
         if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_importazione", "Errore in importazione: ") + res.error, "error");
@@ -1610,7 +1602,7 @@ window.incollaRecord = async function(targetFolderOverride) {
                     const m = appData.manoscritti.find(x => String(x.id) === String(id));
                     if (m) m.cartella = cartella;
                 }
-                if (window.Store) await window.Store.commit();
+                await window.Store.commit();
             };
             if (window.gestoreAnnullamento) {
                 window.gestoreAnnullamento.registraAzione(
@@ -1619,13 +1611,7 @@ window.incollaRecord = async function(targetFolderOverride) {
                     () => spostaIn(provenienza.map(p => [p.id, targetFolder]))
                 );
             }
-            if (window.Store) {
-                await window.Store.commit();
-            } else {
-                await window.salvaTutto();
-                if (typeof renderSidebar === 'function') renderSidebar();
-                if (typeof renderMain === 'function') renderMain();
-            }
+            await window.Store.commit();
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_spostati_con_s", "{var0} record spostati con successo!").replace("{var0}", String(movedCount)), "success");
             window.cutRecordIds = []; // Reset dopo lo spostamento
         }

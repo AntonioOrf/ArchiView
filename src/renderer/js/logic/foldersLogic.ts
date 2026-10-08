@@ -37,12 +37,7 @@ async function confermaAggiungiCartella() {
             window.espandiAntenati(percorsoPulito);
             window.azzeraFiltriRicerca();
 
-            if (window.Store) await window.Store.commit();
-            else {
-                await salvaTutto();
-                renderSidebar();
-                renderMain();
-            }
+            await window.Store.commit();
             aggiornaSelectCartelle();
             chiudiFolderModal();
         } else {
@@ -98,12 +93,7 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
         }
     });
 
-    if (window.Store) await window.Store.commit();
-    else {
-        await salvaTutto();
-        renderSidebar();
-        renderMain();
-    }
+    await window.Store.commit();
     aggiornaSelectCartelle();
 }
 
@@ -269,12 +259,7 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
         window.cartelleEspanse.add(nuovoPath);
     }
 
-    if (window.Store) await window.Store.commit();
-    else {
-        await salvaTutto();
-        renderSidebar();
-        renderMain();
-    }
+    await window.Store.commit();
     aggiornaSelectCartelle();
 };
 

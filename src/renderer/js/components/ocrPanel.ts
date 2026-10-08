@@ -61,12 +61,7 @@ function _oAllegati(m) {
 }
 
 async function _oSalva() {
-    if (window.Store) {
-        await window.Store.commit();
-    } else {
-        await window.salvaTutto();
-        if (typeof renderMain === 'function') renderMain();
-    }
+    await window.Store.commit();
 }
 
 /** Lingue installate, in ordine, con l'italiano davanti: è la lingua di chi usa il programma. */
@@ -616,11 +611,6 @@ async function _oApplicaEsiti(m, esiti, lingue, opzioni, pdf?) {
     m.modificatoDa = username;
     await _oSalva();
 
-    // La cache della ricerca è indicizzata per record e invalidata dal commit dello Store:
-    // se il salvataggio è passato dalla via alternativa va invalidata a mano, altrimenti il
-    // testo appena riconosciuto non si troverebbe fino al riavvio.
-    if (!window.Store && window.invalidaCacheRicerca) window.invalidaCacheRicerca();
-
     _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf);
 }
 
@@ -892,7 +882,6 @@ window.ocrSelezionati = async function() {
     // minuti di CPU e buttarlo perché l'utente ha premuto Annulla sarebbe una punizione.
     if (schede > 0) {
         await _oSalva();
-        if (!window.Store && window.invalidaCacheRicerca) window.invalidaCacheRicerca();
     }
 
     if (typeof mostraMessaggio === 'function') {

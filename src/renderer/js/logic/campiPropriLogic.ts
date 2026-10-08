@@ -199,8 +199,7 @@ window.promuoviCampoProprio = async function(id) {
     scriviCampiPropriForm(campiPropriForm().filter(d => d.id !== id));
 
     try {
-        if (window.Store) await window.Store.commit();
-        else if (typeof salvaTutto === 'function') await salvaTutto();
+        await window.Store.commit();
     } catch (err) {
         console.error('Promozione del campo al modello non salvata:', err);
     }

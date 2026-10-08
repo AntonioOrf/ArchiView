@@ -1002,7 +1002,7 @@ window.ripristinaVersioneRecord = async function(id, versione, quando) {
             nuovo.modificatoDa = username;
         }
         appData.manoscritti[i] = nuovo;
-        if (window.Store) await window.Store.commit();
+        await window.Store.commit();
     };
 
     await applica(versione, true);

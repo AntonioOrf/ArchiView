@@ -1,14 +1,7 @@
 async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
     const m = appData.manoscritti.find(x => x.id === idManoscritto);
     if (m && m.cartella !== nuovoPathCartella) {
-        if (window.Store) {
-            await window.Store.updateManoscritto(idManoscritto, { cartella: nuovoPathCartella });
-        } else {
-            m.cartella = nuovoPathCartella;
-            await salvaTutto();
-            renderMain();
-            if (typeof renderSidebar === 'function') renderSidebar();
-        }
+        await window.Store.updateManoscritto(idManoscritto, { cartella: nuovoPathCartella });
     }
 }
 
@@ -240,26 +233,13 @@ async function handleFormSubmit(e) {
     if(!newData.autore && dynamicData.autore) newData.autore = dynamicData.autore;
     if(!newData.note && dynamicData.note) newData.note = dynamicData.note;
 
-    if (window.Store) {
-        if (idCorrente) {
-            await window.Store.updateManoscritto(idCorrente, newData);
-        } else {
-            await window.Store.addManoscritto(newData);
-        }
-        window.cartellaAttuale = cartellaScelta;
-        await window.Store.commit();
+    if (idCorrente) {
+        await window.Store.updateManoscritto(idCorrente, newData);
     } else {
-        if (idCorrente) {
-            const index = appData.manoscritti.findIndex(m => m.id === idCorrente);
-            if (index !== -1) appData.manoscritti[index] = {...appData.manoscritti[index], ...newData}; 
-        } else {
-            appData.manoscritti.push(newData);
-        }
-        window.cartellaAttuale = cartellaScelta;
-        await salvaTutto();
-        renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
+        await window.Store.addManoscritto(newData);
     }
+    window.cartellaAttuale = cartellaScelta;
+    await window.Store.commit();
 
     // Fase 4.5 — la modifica di una scheda esistente entra nella cronologia di annullamento.
     // Solo la modifica: una scheda NUOVA non si annulla da qui, perché "annullare" una
@@ -276,7 +256,7 @@ async function handleFormSubmit(e) {
             // l'eliminazione dell'ultimo collegamento lo rimetterebbe in piedi.
             for (const k of Object.keys(vivo)) if (!(k in stato)) delete vivo[k];
             Object.assign(vivo, JSON.parse(JSON.stringify(stato)));
-            if (window.Store) await window.Store.commit();
+            await window.Store.commit();
         };
         const etichetta = newData.segnatura || newData.titolo || window.t('record_untitled', 'scheda senza titolo');
         window.gestoreAnnullamento.registraAzione(

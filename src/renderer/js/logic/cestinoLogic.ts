@@ -106,7 +106,7 @@ window.ripristinaDalCestino = async function(ids) {
     window.Store.togliTombstone(record.map(r => r.id));
     if (window.Model) window.Model.registraTag(appData, rientrati.flatMap(r => window.Model.tags(r)));
 
-    if (window.Store) await window.Store.commit();
+    await window.Store.commit();
     return rientrati;
 };
 
