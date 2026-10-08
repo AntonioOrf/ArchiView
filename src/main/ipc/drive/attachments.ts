@@ -27,7 +27,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   if (!projectFolderId) return;
 
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
-  const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
+  const allegatiLocalDir = state.attachmentsDirPath;
   const cacheDir = path.join(state.workspacePath, '.archiview-chunks');
   // cacheDir viene sempre pulita in finally, anche in caso di errore
 

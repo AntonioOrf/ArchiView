@@ -19,6 +19,14 @@ function preparaWorkspace() {
   const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'av-orfani-'));
   fs.writeFileSync(path.join(ws, 'database_manoscritti.json'),
     JSON.stringify({ manoscritti: [{ id: 'm1', allegati: [{ nome: 'mio.jpg' }] }] }));
+  // Audit A1: una scheda nel cestino (fuori dal DB) conserva i suoi allegati.
+  const allegati = path.join(ws, 'allegati_manoscritti');
+  fs.mkdirSync(allegati);
+  for (const f of ['mio.jpg', 'cestinato.jpg', 'vecchio.jpg']) fs.writeFileSync(path.join(allegati, f), f);
+  fs.mkdirSync(path.join(ws, '.archiview'));
+  fs.writeFileSync(path.join(ws, '.archiview', 'cestino.json'), JSON.stringify([
+    { deletedAt: Date.now(), record: { id: 'm9', allegati: [{ nome: 'cestinato.jpg' }] }, cartella: '', da: '' }
+  ]));
   return ws;
 }
 
@@ -64,8 +72,9 @@ async function pulisci(remoto) {
   });
   const { cleanOrphanedAttachments } = require(path.join(OUT, 'ipc', 'drive', 'vaultOps.js'));
   const esito = await cleanOrphanedAttachments();
+  const locali = fs.readdirSync(path.join(ws, 'allegati_manoscritti')).sort();
   fs.rmSync(ws, { recursive: true, force: true });
-  return { esito, cestinati: finto.cestinati.sort() };
+  return { esito, cestinati: finto.cestinati.sort(), locali };
 }
 
 (async () => {
@@ -83,6 +92,9 @@ async function pulisci(remoto) {
     const r3 = await pulisci('{non è json');
     assert.deepStrictEqual(r3.cestinati, [], 'DB remoto corrotto: nessuna cestinazione');
     console.log('✅ Test 2: DB remoto illeggibile o corrotto → nessuna pulizia su Drive.');
+
+    assert.deepStrictEqual(r1.locali, ['cestinato.jpg', 'mio.jpg'], 'gli allegati delle schede nel cestino non sono orfani');
+    console.log('✅ Test 3: la pulizia locale conserva gli allegati del cestino.');
   } finally {
     console.error = origErr;
   }

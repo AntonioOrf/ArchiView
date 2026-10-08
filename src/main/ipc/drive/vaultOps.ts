@@ -31,125 +31,55 @@ async function listVaultsFromDrive(): Promise<any[]> {
   return res.data.files || [];
 }
 
+// Cartella Drive del vault aperto (cloud), o null.
+function cartellaVaultAttivo(): string | null {
+  try {
+    const s = getActiveVaultFlags();
+    return (s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId ? s.sharedVaultId : null;
+  } catch (e) { console.error("Errore lettura settings:", e); return null; }
+}
+
+/**
+ * Il database_manoscritti.json più recente (Drive ammette omonimi): nella cartella data, e
+ * SOLO senza archivio aperto (primo ingresso) fra tutti i propri e poi i condivisi. Con un
+ * archivio aperto, il database di un altro vault non è mai una risposta valida.
+ */
+async function trovaDbDrive(cartella: string | null): Promise<any | null> {
+  const cerca = (q: string) => withDriveRetry(() => driveState.drive.files.list({
+    q, spaces: 'drive', orderBy: 'modifiedTime desc',
+    fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
+    includeItemsFromAllDrives: true, supportsAllDrives: true
+  })).then((r: any) => (r.data.files || [])[0] || null);
+  const nome = `name='database_manoscritti.json' and trashed=false`;
+  const trovato = cartella ? await cerca(`${nome} and '${cartella}' in parents`) : null;
+  if (trovato || state.workspacePath) return trovato;
+  return (await cerca(nome)) || cerca(`${nome} and sharedWithMe=true`);
+}
+
 async function checkUpdatesFromDrive(vaultFolderId: string | null = null): Promise<number | null> {
   if (!loadSavedTokens()) return null;
-  let driveModifiedTime: number | null = null;
-  let actualVaultFolderId = vaultFolderId;
-
-  if (!actualVaultFolderId && state.workspacePath) {
-    try {
-      const s = getActiveVaultFlags();
-      if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
-    } catch (e) { console.error("Errore lettura settings:", e); }
-  }
-
-  if (actualVaultFolderId) {
-    const res = await driveState.drive.files.list({
-      q: `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`,
-      fields: 'files(id, modifiedTime)',
-      orderBy: 'modifiedTime desc',
-      includeItemsFromAllDrives: true,
-      supportsAllDrives: true
-    });
-    if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
-  } else if (state.workspacePath) {
-    return null;
-  }
-
-  if (!driveModifiedTime) {
-    let res = await driveState.drive.files.list({
-      q: `name='database_manoscritti.json' and trashed=false`,
-      spaces: 'drive',
-      orderBy: 'modifiedTime desc',
-      fields: 'files(id, modifiedTime)',
-      includeItemsFromAllDrives: true,
-      supportsAllDrives: true
-    });
-    if (res.data.files.length === 0) {
-      res = await driveState.drive.files.list({
-        q: `name='database_manoscritti.json' and trashed=false and sharedWithMe=true`,
-        spaces: 'drive',
-        orderBy: 'modifiedTime desc',
-        fields: 'files(id, modifiedTime)',
-        includeItemsFromAllDrives: true,
-        supportsAllDrives: true
-      });
-    }
-    if (res.data.files.length > 0) driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
-  }
-
-  return driveModifiedTime;
+  const cartella = vaultFolderId || (state.workspacePath ? cartellaVaultAttivo() : null);
+  if (!cartella && state.workspacePath) return null;
+  const file = await trovaDbDrive(cartella);
+  return file ? new Date(file.modifiedTime).getTime() : null;
 }
 
 async function pullFromDrive(vaultFolderId: string | null = null): Promise<any | null> {
   if (!loadSavedTokens()) {
     throw new Error("Autenticazione Google Drive non effettuata. Apri il menu Cloud ed effettua l'accesso.");
   }
-  let fileId: string | null = null;
-  let driveModifiedTime: number | null = null;
-  let actualVaultFolderId = vaultFolderId;
+  const cartella = vaultFolderId || (state.workspacePath ? cartellaVaultAttivo() : null);
+  // Archivio aperto senza cartella Drive: legittimo solo alla prima pubblicazione del vault.
+  // Il renderer avvisa (pull vuoto) invece di annunciare una sincronizzazione riuscita.
+  if (!cartella && state.workspacePath) return null;
+  if (cartella) await assertVaultFolderAccessible(cartella);
 
-  if (!actualVaultFolderId && state.workspacePath) {
-    try {
-      const s = getActiveVaultFlags();
-      if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) actualVaultFolderId = s.sharedVaultId;
-    } catch (e) { console.error("Errore lettura settings:", e); }
-  }
+  const file = await trovaDbDrive(cartella);
+  if (!file) return null;
+  const driveModifiedTime = new Date(file.modifiedTime).getTime();
+  const lastModifyingUser = file.lastModifyingUser || null;
 
-  let lastModifyingUser: any = null;
-
-  if (actualVaultFolderId) {
-    await assertVaultFolderAccessible(actualVaultFolderId);
-    const res = await withDriveRetry(() => driveState.drive.files.list({
-      q: `name='database_manoscritti.json' and '${actualVaultFolderId}' in parents and trashed=false`,
-      spaces: 'drive',
-      fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
-      orderBy: 'modifiedTime desc',
-      includeItemsFromAllDrives: true,
-      supportsAllDrives: true
-    }));
-    if (res.data.files.length > 0) {
-      fileId = res.data.files[0].id;
-      driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
-      lastModifyingUser = res.data.files[0].lastModifyingUser;
-      if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
-    }
-  } else if (state.workspacePath) {
-    // Nessuna cartella Drive associata: legittimo solo alla prima pubblicazione del vault.
-    // Il renderer avvisa (pull vuoto) invece di annunciare una sincronizzazione riuscita.
-    return null;
-  }
-
-  if (!fileId && !state.workspacePath) {
-    let res = await withDriveRetry(() => driveState.drive.files.list({
-      q: `name='database_manoscritti.json' and trashed=false`,
-      spaces: 'drive',
-      orderBy: 'modifiedTime desc',
-      fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
-      includeItemsFromAllDrives: true,
-      supportsAllDrives: true
-    }));
-    if (res.data.files.length === 0) {
-      res = await withDriveRetry(() => driveState.drive.files.list({
-        q: `name='database_manoscritti.json' and trashed=false and sharedWithMe=true`,
-        spaces: 'drive',
-        orderBy: 'modifiedTime desc',
-        fields: 'files(id, modifiedTime, parents, lastModifyingUser)',
-        includeItemsFromAllDrives: true,
-        supportsAllDrives: true
-      }));
-    }
-    if (res.data.files.length > 0) {
-      fileId = res.data.files[0].id;
-      driveModifiedTime = new Date(res.data.files[0].modifiedTime).getTime();
-      lastModifyingUser = res.data.files[0].lastModifyingUser;
-      if (!actualVaultFolderId && res.data.files[0].parents) actualVaultFolderId = res.data.files[0].parents[0];
-    }
-  }
-
-  if (!fileId) return null;
-
-  const driveRes = await driveState.drive.files.get({ fileId, alt: 'media', supportsAllDrives: true });
+  const driveRes = await withDriveRetry(() => driveState.drive.files.get({ fileId: file.id, alt: 'media', supportsAllDrives: true }));
 
   let parsedDb = driveRes.data;
   if (typeof parsedDb === 'string') {
@@ -228,15 +158,18 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
   const db = JSON.parse(await fs.promises.readFile(dbPath, 'utf8'));
   const usedLocal = new Set<string>();
-  if (db.manoscritti) {
-    for (const m of db.manoscritti) {
-      if (m.allegati) { for (const a of m.allegati) { if (a.nome) usedLocal.add(a.nome); } }
-    }
+  // Il cestino non sta nel DB: senza le sue schede, ripristinarne una la riporterebbe senza file.
+  const { elencaCestino } = require('../../trash');
+  const cestinate = (await elencaCestino()).map((v: any) => v.record);
+  for (const m of [...(db.manoscritti || []), ...cestinate]) {
+    for (const a of m.allegati || []) { if (a.nome) usedLocal.add(a.nome); }
   }
 
   let deletedLocal = 0;
   let deletedDrive = 0;
 
+  // Di proposito la cartella predefinita e non `state.attachmentsDirPath`: quella personalizzata
+  // è un'impostazione globale, condivisa da tutti gli archivi, e qui si cancellerebbero i loro file.
   const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
   if (fs.existsSync(allegatiLocalDir)) {
     for (const file of fs.readdirSync(allegatiLocalDir)) {
