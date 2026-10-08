@@ -32,28 +32,22 @@ export async function handlePush(req: Request, env: Env, repoId: string, ctx?: E
     return err(400, 'database mancante o non valido.');
   }
 
-  // Guardia di concorrenza atomica: solo un push con parentVersion corretto vince.
-  const upd = await env.DB.prepare(
-    'UPDATE repos SET current_version = current_version + 1, updated_at = ? WHERE repo_id = ? AND current_version = ?'
-  ).bind(Date.now(), repoId, parentVersion).run();
-
-  if (upd.meta.changes === 0) {
-    // O repo inesistente, o versione superata da un altro client.
-    const exists = await env.DB.prepare('SELECT 1 FROM repos WHERE repo_id = ?').bind(repoId).first();
-    if (!exists) return err(404, 'Repository inesistente.');
-    return err(409, 'Il server contiene una versione più recente. Esegui prima il pull.');
-  }
-
-  const newVersion = parentVersion + 1;
+  // Guardia di concorrenza atomica: solo un push con parentVersion corretto vince. Dati e
+  // avanzamento di current_version vanno nello stesso batch (vedi writeVersion).
+  const conflitto = () => err(409, 'Il server contiene una versione più recente. Esegui prima il pull.');
+  let vinto: boolean;
   try {
-    await writeVersion(env, repoId, newVersion, body.database, auth.memberId);
+    vinto = await writeVersion(env, repoId, parentVersion, body.database, auth.memberId);
   } catch (e: any) {
-    // Compensazione: annulla l'incremento per non lasciare current_version orfana.
-    await env.DB.prepare(
-      'UPDATE repos SET current_version = current_version - 1 WHERE repo_id = ? AND current_version = ?'
-    ).bind(repoId, newVersion).run();
+    // Chiave duplicata: un altro push ha già scritto parentVersion+1.
+    if (/UNIQUE|constraint/i.test(String(e?.message))) return conflitto();
     return err(500, 'Errore nel salvataggio della versione: ' + (e?.message || 'sconosciuto'));
   }
+  if (!vinto) {
+    const exists = await env.DB.prepare('SELECT 1 FROM repos WHERE repo_id = ?').bind(repoId).first();
+    return exists ? conflitto() : err(404, 'Repository inesistente.');
+  }
+  const newVersion = parentVersion + 1;
 
   // Retention: prune best-effort, non deve far fallire il push.
   try {

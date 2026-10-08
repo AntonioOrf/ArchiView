@@ -19,7 +19,13 @@ export async function handlePull(req: Request, env: Env, repoId: string): Promis
     if (v === Number(ifNot)) return json({ version: v, unchanged: true });
   }
 
-  const latest = await readLatest(env, repoId);
+  let latest;
+  try {
+    latest = await readLatest(env, repoId);
+  } catch (e: any) {
+    if (e?.message === 'VERSIONE_SENZA_DATI') return err(503, 'Versione non ancora disponibile, riprova.');
+    throw e;
+  }
   if (!latest) return err(404, 'Repository inesistente.');
   return json({ version: latest.version, database: latest.database });
 }

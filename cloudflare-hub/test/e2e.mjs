@@ -124,6 +124,19 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.version === 2 && d.database?.manoscritti?.length === 2, 'A ri-pull → v2 con entrambi i record');
 
+  // Due push contemporanei dallo stesso parent: uno vince, l'altro 409; il pull vede i dati del vincitore.
+  const pushDa2 = (key, id) => fetch(`${BASE}/api/repos/${repoId}/push`, {
+    method: 'POST', headers: auth(key),
+    body: JSON.stringify({ parentVersion: 2, database: { manoscritti: [{ id, lastModified: 400 }] } }),
+  });
+  const [ra, rb] = await Promise.all([pushDa2(ownerKey, 'conc-A'), pushDa2(memberKey, 'conc-B')]);
+  const stati = [ra.status, rb.status].sort();
+  ok(stati[0] === 200 && stati[1] === 409, `push concorrenti da v2 → un 200 e un 409 (${stati})`);
+  const vincitore = ra.status === 200 ? 'conc-A' : 'conc-B';
+  r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(ownerKey) });
+  d = await j(r);
+  ok(r.status === 200 && d.version === 3 && d.database?.manoscritti?.[0]?.id === vincitore, 'pull dopo i push concorrenti → v3 con i dati del vincitore');
+
   // ── Scenario 6: revoca membro → 401 ──────────────────────────────────────────
   section('Scenario 6 — Revoca membro B');
   r = await fetch(`${BASE}/api/repos/${repoId}/members/${memberId}`, { method: 'DELETE', headers: auth(ownerKey) });

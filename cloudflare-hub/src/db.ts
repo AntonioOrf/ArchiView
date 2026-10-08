@@ -75,8 +75,9 @@ export async function readLatest(
     .bind(repoId).first<{ current_version: number }>();
   if (!repo) return null;
   const result = await readVersion(env, repoId, repo.current_version);
-  // Difensivo: se per qualche motivo la versione corrente non ha blob (race), non rompere il pull.
-  return result ?? { version: repo.current_version, database: EMPTY_DB };
+  // Versione corrente senza righe: mai `{}`, che il client fonderebbe come archivio vuoto.
+  if (!result) throw new Error('VERSIONE_SENZA_DATI');
+  return result;
 }
 
 /** Elenco versioni (metadata-only, nessuna lettura di blob) con autore risolto da members.label. */
@@ -117,16 +118,19 @@ export async function currentVersion(env: Env, repoId: string): Promise<number |
 }
 
 /**
- * Scrive una nuova versione (versions + blob gzippati) in un unico batch atomico.
- * L'incremento condizionale di current_version è responsabilità del chiamante (push).
+ * Scrive la versione parentVersion+1 (versions + blob gzippati) e avanza current_version, in
+ * un unico batch atomico: nessun pull vede la versione nuova senza i suoi dati.
+ * Ritorna false se current_version non era più parentVersion (righe già annullate);
+ * lancia se la versione esiste già (un altro push l'ha presa): vincolo di chiave.
  */
 export async function writeVersion(
   env: Env,
   repoId: string,
-  newVersion: number,
+  parentVersion: number,
   database: unknown,
   authorMemberId: string | null
-): Promise<void> {
+): Promise<boolean> {
+  const newVersion = parentVersion + 1;
   const jsonBytes = new TextEncoder().encode(JSON.stringify(database));
   const gz = await gzip(jsonBytes);
 
@@ -148,7 +152,19 @@ export async function writeVersion(
     );
   });
 
-  await env.DB.batch(stmts);
+  stmts.push(env.DB.prepare(
+    'UPDATE repos SET current_version = ?, updated_at = ? WHERE repo_id = ? AND current_version = ?'
+  ).bind(newVersion, Date.now(), repoId, parentVersion));
+
+  const esiti = await env.DB.batch(stmts);
+  if (esiti[esiti.length - 1].meta.changes > 0) return true;
+
+  // Versione corrente già oltre (o repo inesistente): via le righe appena scritte.
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM version_blobs WHERE repo_id = ? AND version = ?').bind(repoId, newVersion),
+    env.DB.prepare('DELETE FROM versions WHERE repo_id = ? AND version = ?').bind(repoId, newVersion),
+  ]);
+  return false;
 }
 
 /** Conserva solo le ultime MAX_VERSIONS versioni; elimina le più vecchie + blob. */
