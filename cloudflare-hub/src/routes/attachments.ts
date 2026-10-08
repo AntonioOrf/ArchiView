@@ -83,7 +83,9 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
     if (!Array.isArray(f.hashes) || !f.hashes.every((h: unknown) => typeof h === 'string' && HASH_RE.test(h))) {
       return err(400, 'Lista hashes non valida per ' + f.fileName);
     }
-    const lastModified = typeof f.lastModified === 'number' ? f.lastModified : now;
+    // Mai nel futuro: un orologio avanti (o un membro malevolo) bloccherebbe per sempre la voce,
+    // perché vince solo chi ha un timestamp ≥ di quello registrato.
+    const lastModified = typeof f.lastModified === 'number' ? Math.min(f.lastModified, now) : now;
     const deleted = f.deleted ? 1 : 0;
     // Last-writer-wins per fileName (solo se il timestamp in arrivo è più recente).
     stmts.push(
