@@ -505,10 +505,6 @@ async function avviaApp() {
             const btnCancel = top.querySelector('.btn-ghost');
             if (btnCancel) btnCancel.click();
             else if (window.chiudiBottomConfirm) window.chiudiBottomConfirm();
-        } else if (top.id === 'info-confirm-banner') {
-            const btnNo = document.getElementById('btn-info-confirm-no');
-            if (btnNo) btnNo.click();
-            else if (window.chiudiInfoConfirm) window.chiudiInfoConfirm();
         } else {
             const fnName = modalClosers[top.id];
             // I modali costruiti al volo (es. vault-delete-modal) espongono il proprio
@@ -1516,18 +1512,6 @@ window.tagliaCartella = function(folderPath) {
     window.copiedRecordIds = [];
     if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_cartella_tagliata_tasto_d", "Cartella tagliata. Tasto destro per spostarla."), "info");
 };
-window.copiaRecordSingolo = function(id) {
-    window.copiedRecordIds = [id];
-    window.cutRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_record_copiato_tasto_dest", "Record copiato. Tasto destro per incollarlo in una cartella."), "info");
-};
-
-window.tagliaRecordSingolo = function(id) {
-    window.cutRecordIds = [id];
-    window.copiedRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_record_tagliato_tasto_des", "Record tagliato. Tasto destro per spostarlo in un altro archivio."), "info");
-};
-
 window.incollaRecord = async function(targetFolderOverride) {
     // ?? e non ||: '' è la radice, una destinazione valida, non un valore "assente".
     const targetFolder = targetFolderOverride ?? window.cartellaAttuale ?? '';

@@ -30,12 +30,6 @@ window.testoOcrRecord = function(m) {
     return out;
 };
 
-/** Quanti allegati della scheda hanno già un testo riconosciuto. */
-window.contaAllegatiConOcr = function(m) {
-    if (!m || !Array.isArray(m.allegati)) return 0;
-    return m.allegati.filter(a => a && a.ocr && a.ocr.testo).length;
-};
-
 // --- Stato del pannello -------------------------------------------------------
 
 const _oStato = {

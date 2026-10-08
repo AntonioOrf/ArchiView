@@ -135,7 +135,6 @@ function etichettaSecondaria(m) {
     _cacheSecondario.set(chiave, val);
     return val;
 }
-window.etichettaSecondariaAlbero = etichettaSecondaria;
 
 function calcolaFirmaSidebar() {
     const parti = [
@@ -613,11 +612,6 @@ function aggiornaSelectCartelle() {
 }
 
 let _currentSidebarTab = 'folders';
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('hidden-tab');
-}
 
 /** Apre il pannello richiesto senza mai chiuderlo (switchSidebarTab e' un toggle). */
 // --- Fase 5.2: i 5 pulsanti dell'header sono un tablist vero ---

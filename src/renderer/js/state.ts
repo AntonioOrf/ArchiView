@@ -126,7 +126,6 @@ async function initData() {
 }
 
 window.impostaModifichePendenti = function(stato) {
-    window.modificheLocaliPendenti = stato;
     if (window.statoCloud) window.statoCloud.pendenti = !!stato;
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 };

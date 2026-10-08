@@ -133,7 +133,6 @@ async function renderCronologiaCloud(list) {
 
     try {
         const { fileId, revisions } = await window.elencaRevisioniCloud();
-        window._historyFileId = fileId;
 
         if (!revisions || revisions.length === 0) {
             list.innerHTML = `<li class="p-4 text-xs text-stone-400 italic text-center">${window.t("history_no_revisions", "No revisions found. Upload to Cloud at least once.")}</li>`;

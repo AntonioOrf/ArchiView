@@ -96,12 +96,10 @@ export async function dismissOverlays(page: Page, { attendiChangelog = true } = 
 
   await page.evaluate(() => {
     (window as any).chiudiChangelogModal?.();
-    (window as any).chiudiInfoConfirm?.();
     (window as any).nascondiMessaggi?.();
   }).catch(() => { /* noop */ });
 
   await expect(changelog).toBeHidden();
-  await expect(page.locator('#info-confirm-banner')).toBeHidden();
 }
 
 /**

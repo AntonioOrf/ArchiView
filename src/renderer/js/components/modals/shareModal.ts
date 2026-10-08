@@ -474,12 +474,8 @@
         if (checked && typeof window.sincronizzaAllegatiHub === 'function') window.sincronizzaAllegatiHub(false);
     };
 
-    // Pannello di migrazione Drive legacy -> archivio condiviso: spiega le conseguenze prima
-    // di procedere, al posto della lunga stringa di confirm() precedente.
-    window.apriPannelloMigrazioneShare = function() {
-        mostraStatoShare('share-state-migrate');
-    };
-
+    // Pannello di migrazione Drive legacy -> archivio condiviso (lo apre cloudModal con
+    // `mostraStatoShare('share-state-migrate')`): spiega le conseguenze prima di procedere.
     window.confermaMigrazioneShare = async function() {
         window.chiudiShareModal();
         if (typeof window.migraVaultSuHub === 'function') await window.migraVaultSuHub(true);

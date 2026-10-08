@@ -260,39 +260,6 @@ window.salvaImpostazioniSicurezza = async function() {
     await window.apiSettings.save(settings);
 };
 
-window.salvaImpostazioniHub = async function() {
-    if (window.apiSettings) {
-        const settings = await window.apiSettings.get();
-        const cbAutofetch = document.getElementById('settings-hub-autofetch');
-        const selInterval = document.getElementById('settings-hub-autofetch-interval');
-        
-        if (cbAutofetch) settings.autofetchEnabled = cbAutofetch.checked;
-        if (selInterval) settings.autofetchInterval = parseInt(selInterval.value, 10);
-        
-        await window.apiSettings.save(settings);
-        
-        // Riavvia il timer di autofetch se la funzione esiste
-        if (typeof window.avviaAutofetchHub === 'function') {
-            window.avviaAutofetchHub();
-        }
-    }
-}
-
-window.salvaAllegatiModeHub = async function() {
-    if (!window.hubConfig) return;
-    const cb = document.getElementById('settings-hub-attachments');
-    const checked = !!(cb && cb.checked);
-    // Vedi shareModal.toggleAllegatiShare: senza Drive collegato l'upload non può funzionare.
-    if (checked && !window.driveStatus?.isAuthenticated) {
-        mostraMessaggio(window.t("msg_hub_attachments_need_drive", "Per condividere gli allegati devi prima collegare Google Drive dalle Impostazioni (sezione Sincronizzazione)."), "error");
-        if (cb) cb.checked = false;
-        return;
-    }
-    window.hubConfig.attachmentsMode = checked ? 'drive-links' : 'off';
-    await window.apiBrowser.saveHubConfig(window.hubConfig);
-    if (window.hubConfig.attachmentsMode === 'drive-links') window.sincronizzaAllegatiHub(false);
-};
-
 window.cambiaCartellaAllegati = async function() {
     if (window.apiSettings && window.apiSettings.scegliCartellaAllegati) {
         // Dialogo e salvataggio nel main: il renderer non scrive percorsi nelle impostazioni.

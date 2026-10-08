@@ -108,7 +108,6 @@ window.ricaricaEditorTrascrizione = function(m, indice) {
 
 window.salvaEditorTrascrizioneInMemoria = _taSalvaEditorInMemoria;
 window.indiceCartaCorrente = function() { return _taIndiceCorrente; };
-window.paginaPdfCorrente = function() { return _taPaginaCorrente; };
 
 async function apriTrascrizione(id) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));

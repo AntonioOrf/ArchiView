@@ -643,16 +643,6 @@ window.vociColonneTabella = function() {
     });
 };
 
-/** Apertura autonoma (palette, scorciatoie): stesso elenco, menu di primo livello. */
-window.apriSelettoreColonne = function(ancora) {
-    const colonne = window.vociColonneTabella();
-    if (colonne.length === 0) return;
-    window.apriMenuContestuale(
-        ancora || document.querySelector('#context-overflow-slot button'),
-        [{ heading: true, label: window.t('menu_columns', 'Colonne visibili') }, ...colonne]
-    );
-};
-
 function etichettaCampo(campo) {
     const conf = CONFIG_CAMPI[campo] || {};
     const tradotta = window.t('field_' + campo);
@@ -1380,12 +1370,6 @@ function buildSnippet(clean, lower, norm, token) {
     if (start > 0) html = '...' + html;
     if (end < clean.length) html = html + '...';
     return html;
-}
-
-function extractSnippet(val, token) {
-    if (!val) return null;
-    const clean = val.toString().replace(/<[^>]*>/g, '');
-    return buildSnippet(clean, clean.toLowerCase(), window.normalizzaTesto(clean), token);
 }
 
 function renderSearchSuggestions() {

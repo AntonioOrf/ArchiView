@@ -198,19 +198,6 @@ window.collegaSchede = async function(idA, idB, tipo) {
     return true;
 };
 
-window.scollegaSchede = async function(idA, idB) {
-    const foto = _vcFotografia([idA]);
-    if (!window.Model.rimuoviRelazione(appData, idA, idB)) return false;
-    const a = appData.manoscritti.find(m => String(m.id) === String(idA));
-    if (a) { a.lastModified = Date.now(); a.modificatoDa = await _vcAutore(); }
-    await _vcApplica(
-        _vcT('undo_link_del', 'Rimozione di un collegamento'),
-        _vcT('msg_link_removed', 'Collegamento rimosso.'),
-        1, foto
-    );
-    return true;
-};
-
 // --- Authority record: persone e luoghi (3.5) ---------------------------------
 
 /**
@@ -222,7 +209,6 @@ function _vcCampiDi(tipoId) {
     const tipo = (appData.tipiDocumento || []).find(t => t && t.id === tipoId);
     return window.Model.campiDelTipo(tipo, window.CONFIG_CAMPI, appData);
 }
-window.campiDelTipoId = _vcCampiDi;
 
 /** Persone e luoghi ricavati dalle schede, con quante schede li citano. */
 window.elencoAuthority = function(tipo) {
@@ -250,8 +236,3 @@ window.rinominaAuthorityArchivio = async function(tipo, da, a) {
     return esito.schede;
 };
 
-window.salvaNotaAuthority = async function(tipo, nome, note) {
-    if (!window.Model.salvaVoceAuthority(appData, tipo, nome, { nome, note })) return false;
-    await window.Store.commit();
-    return true;
-};
