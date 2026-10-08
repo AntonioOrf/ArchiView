@@ -512,10 +512,13 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 // remoto cancellando in silenzio le modifiche locali.
                 appData.baseHashes = {};
                 appData.baseObjects = {};
+                // Copia PROFONDA: le schede fuse riusano gli oggetti remoti (allegati, pagine), e
+                // l'editor scrive la trascrizione di una carta sul posto. Con una copia superficiale
+                // la base cambiava insieme alla scheda e la sync dopo dava ragione al remoto.
                 if (typeof window.getRecordHash === 'function') {
                     (nuovoDati.manoscritti || []).forEach(m => {
                         appData.baseHashes[m.id] = window.getRecordHash(m);
-                        appData.baseObjects[m.id] = { ...m };
+                        appData.baseObjects[m.id] = structuredClone(m);
                     });
                 }
                 
