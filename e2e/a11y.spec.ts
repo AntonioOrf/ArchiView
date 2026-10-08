@@ -99,7 +99,7 @@ test.describe('Accessibilità e scala z-index', () => {
     await expect(finestra).toHaveAttribute('aria-modal', 'true');
     const titolo = await finestra.evaluate((el) =>
       document.getElementById(el.getAttribute('aria-labelledby') || '')?.textContent);
-    expect(titolo).toContain('Accesso Negato');
+    expect(titolo).toContain('Accesso negato');
     await expect.poll(() => page.evaluate(() =>
       document.getElementById('accesso-negato-overlay')!.contains(document.activeElement))).toBe(true);
 
