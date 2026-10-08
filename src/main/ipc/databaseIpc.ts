@@ -4,7 +4,6 @@ const fsp = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
 const { state } = require('../workspaceManager');
-const Model = require('../../shared/model');
 const { forseCreaSnapshotAutomatico } = require('../snapshots');
 const { scriviAtomico } = require('../scritturaAtomica');
 
@@ -83,13 +82,6 @@ function isValidSerializedDatabase(json) {
   return /"manoscritti"\s*:\s*\[/.test(json) && /"cartelle"\s*:\s*\[/.test(json);
 }
 
-// Fase 3.0: il criterio di validita' e' quello condiviso (`src/shared/model.ts`). Prima
-// erano due elenchi di controlli — uno qui, uno in `eseguiSalvataggio` nel renderer — che
-// dovevano restare d'accordo senza che nulla lo garantisse.
-function isValidDatabase(dati) {
-  return Model.databaseValido(dati);
-}
-
 function setupDatabaseIpc() {
   ipcMain.handle('leggi-dati', async () => {
     try {
@@ -112,21 +104,12 @@ function setupDatabaseIpc() {
     try {
       if (!state.dataFilePath) throw new Error("Percorso file dati non impostato");
 
-      // Il renderer invia il DB già serializzato: una sola serializzazione invece di
-      // structured-clone dell'intero oggetto via IPC + JSON.stringify qui.
-      // Il ramo oggetto resta per retro-compatibilità con eventuali chiamanti legacy.
-      let payload;
-      if (typeof dati === 'string') {
-        if (!isValidSerializedDatabase(dati)) {
-          throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
-        }
-        payload = dati;
-      } else {
-        if (!isValidDatabase(dati)) {
-          throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
-        }
-        payload = JSON.stringify(dati);
+      // Il renderer invia il DB già serializzato (`eseguiSalvataggio`, unico chiamante): una sola
+      // serializzazione invece di structured-clone dell'intero oggetto via IPC + JSON.stringify qui.
+      if (!isValidSerializedDatabase(dati)) {
+        throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
       }
+      const payload = dati;
 
       // Il contenuto si registra PRIMA del rename: l'evento del watcher può arrivare subito.
       const percorso = state.dataFilePath;
