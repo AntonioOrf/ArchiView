@@ -35,6 +35,7 @@ const fs = require('fs');
 const fsp = require('fs').promises;
 const { state, getAllSettings } = require('./workspaceManager');
 const Model = require('../shared/model');
+const { scriviAtomico } = require('./scritturaAtomica');
 
 /** Tetto di sicurezza: un'operazione in massa su un archivio grosso non deve gonfiare il file. */
 const MAX_VOCI = 2000;
@@ -68,9 +69,16 @@ async function scrivi(voci: any[]): Promise<void> {
   const file = percorsoCestino();
   if (!file) throw new Error('Workspace non impostato');
   await fsp.mkdir(path.dirname(file), { recursive: true });
-  const tmp = file + '.tmp';
-  await fsp.writeFile(tmp, JSON.stringify(voci));
-  await fsp.rename(tmp, file);
+  await scriviAtomico(file, JSON.stringify(voci));
+}
+
+// Ogni mutazione legge, modifica e riscrive il file: in coda, o due eliminazioni sovrapposte
+// leggerebbero lo stesso cestino e la seconda cancellerebbe la voce della prima.
+let coda: Promise<unknown> = Promise.resolve();
+function inCoda<T>(fn: () => Promise<T>): Promise<T> {
+  const p = coda.then(fn, fn);
+  coda = p.catch(() => {});
+  return p;
 }
 
 /**
@@ -142,10 +150,10 @@ module.exports = {
   MAX_VOCI,
   percorsoCestino,
   elencaCestino,
-  potaCestino,
-  aggiungiAlCestino,
-  prendiDalCestino,
-  eliminaDalCestino,
-  svuotaCestino
+  potaCestino: () => inCoda(potaCestino),
+  aggiungiAlCestino: (records: any[], da?: string) => inCoda(() => aggiungiAlCestino(records, da)),
+  prendiDalCestino: (ids: string[]) => inCoda(() => prendiDalCestino(ids)),
+  eliminaDalCestino: (ids: string[]) => inCoda(() => eliminaDalCestino(ids)),
+  svuotaCestino: () => inCoda(svuotaCestino)
 };
 export {};
