@@ -1011,7 +1011,9 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
         document.getElementById('btn-delete-files').onclick = async () => {
             modal.remove();
             if (window.apiBrowser && window.apiBrowser.deleteVaultLocal) {
-                await window.apiBrowser.deleteVaultLocal(pathToRemove);
+                const esito = await window.apiBrowser.deleteVaultLocal(pathToRemove);
+                // Annullato nella conferma del main: l'archivio resta, anche nell'elenco.
+                if (esito && esito.canceled) { resolve(); return; }
             }
             await finishRemoval();
             resolve();

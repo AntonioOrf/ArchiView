@@ -16,6 +16,10 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
     try {
       // folderName è digitato o viene dall'invito: un nome con separatori è rifiutato, non riscritto.
       newPath = safeChildDir(basePath, folderName);
+      // Una cartella che contiene già un archivio non si sovrascrive: si prende "Nome (2)", "Nome (3)"…
+      for (let n = 2; fs.existsSync(path.join(newPath, 'database_manoscritti.json')); n++) {
+        newPath = safeChildDir(basePath, `${folderName} (${n})`);
+      }
     } catch (e: any) {
       console.error("[SECURITY] clone workspace bloccato:", e.message);
       return false;
@@ -116,6 +120,10 @@ function setupWorkspaceIpc() {
   });
 
   ipcMain.handle('open-recent-workspace', (event, folderPath) => {
+    // Solo un archivio già fra i recenti (N2): un percorso qualsiasi dal renderer diventerebbe
+    // un recente, e delete-vault-local cestina i recenti.
+    const recenti: string[] = getAllSettings().recentWorkspaces || [];
+    if (typeof folderPath !== 'string' || !recenti.some(w => path.resolve(w) === path.resolve(folderPath))) return false;
     if (fs.existsSync(folderPath)) {
       initWorkspace(folderPath);
       if (state.mainWindow) {
@@ -207,6 +215,17 @@ function setupWorkspaceIpc() {
         }
 
         if (fs.existsSync(pathToRemove)) {
+            // Conferma nel main con il percorso per esteso: la finestra del renderer non basta
+            // se il renderer è compromesso.
+            const { response } = await dialog.showMessageBox({
+                type: 'warning',
+                title: 'Elimina archivio',
+                message: `Spostare nel cestino la cartella dell'archivio?\n\n${path.resolve(pathToRemove)}`,
+                buttons: ['Sposta nel cestino', 'Annulla'],
+                defaultId: 1,
+                cancelId: 1
+            });
+            if (response !== 0) return { success: false, canceled: true };
             const { shell } = require('electron');
             await shell.trashItem(pathToRemove);
             return { success: true };
@@ -249,6 +268,11 @@ function setupWorkspaceIpc() {
 
       output.on('close', function() {
         resolve({ success: true, path: destPath });
+      });
+      // Destinazione non scrivibile o bloccata (EBUSY): senza listener è un'eccezione nel main.
+      output.on('error', function(err) {
+        archive.abort();
+        resolve({ success: false, error: err.message });
       });
       
       archive.on('error', function(err) {

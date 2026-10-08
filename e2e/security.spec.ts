@@ -522,6 +522,10 @@ test.describe('Security Regression Tests', () => {
 
     expect((await page.evaluate((v) => (window as any).apiBrowser.deleteVaultLocal(v), vittima)).success).toBe(false);
     expect(fs.existsSync(vittima)).toBe(true);
+    // Audit A5: "apri recente" con un percorso che non è fra i recenti l'avrebbe aggiunto ai
+    // recenti, e da lì delete-vault-local l'avrebbe cestinato.
+    expect(await page.evaluate((v) => (window as any).apiBrowser.openRecentWorkspace(v), vittima)).toBe(false);
+    expect((await page.evaluate(() => (window as any).apiSettings.get())).recentWorkspaces).toEqual(prima.recentWorkspaces);
     const archivi = await page.evaluate(() => (window as any).apiBrowser.crossArchiveArchivi());
     expect(archivi.archivi.map((a: any) => a.nome)).not.toContain('vittima');
     const allegati = await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'));

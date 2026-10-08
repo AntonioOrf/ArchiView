@@ -112,7 +112,10 @@ test.describe('Pannelli sidebar', () => {
     expect(fs.existsSync(path.join(userDataDir, 'wsA', 'ArchivioRimuovi'))).toBe(true);
   });
 
-  test('elimina anche i file rimuove l\'archivio dal disco e chiude il modal', async ({ page, userDataDir }) => {
+  test('elimina anche i file rimuove l\'archivio dal disco e chiude il modal', async ({ page, electronApp, userDataDir }) => {
+    // Il main chiede conferma con un dialogo nativo (A5): qui risponde "Sposta nel cestino".
+    const { stubDialog } = await import('./fixtures');
+    await stubDialog(electronApp, { canceled: true });
     await createLocalWorkspace(page, path.join(userDataDir, 'wsA'), 'ArchivioDaCancellare');
     await page.evaluate((basePath) =>
       (window as any).apiBrowser.createWorkspaceInPath(basePath, 'ArchivioB3', null),
@@ -134,6 +137,7 @@ test.describe('Pannelli sidebar', () => {
     // (non resti a coprire lo schermo) e che la voce sparisca dall'elenco.
     await expect(page.locator('#vault-delete-modal')).toBeHidden();
     await expect(page.locator('#vault-switcher-list')).not.toContainText('ArchivioDaCancellare');
+    await expect.poll(() => fs.existsSync(percorso)).toBe(false);
   });
 
   // --- Etichetta secondaria delle schede nell'albero -------------------------
