@@ -258,6 +258,9 @@
             const d = dimensioni();
             const percento = d.nw && d.cw ? Math.round(stato.scala * (d.cw / d.nw) * 100) : Math.round(stato.scala * 100);
             if (etichettaPercento) etichettaPercento.textContent = percento + '%';
+            // P5 — chi affianca due visualizzatori sincronizza la vista da qui.
+            const ctrl = viewport._imageViewer;
+            if (ctrl && typeof ctrl.onVista === 'function') ctrl.onVista();
         }
 
         /**

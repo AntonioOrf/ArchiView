@@ -22,6 +22,10 @@
                      vista in cui la trascrizione esiste, ed e' finendo di trascrivere che
                      si vuole portarla in Word o in un articolo. Ambito "corrente": la
                      scheda aperta, non la selezione della lista dietro al modale. -->
+                <!-- P5 — confronto con un'altra carta, di questa scheda o di un'altra. -->
+                <button id="btn-confronta-carte" data-on-click="apriConfrontoCarte" class="btn btn-secondary border" data-i18n-title="cmp_title" data-i18n-aria-label="cmp_title">
+                    <i data-lucide="columns-2" class="w-4 h-4"></i> <span data-i18n="cmp_button">Confronta</span>
+                </button>
                 <button data-on-mousedown="nonRubareFuoco" data-on-click="apriEsportaTesto" data-args-click="[&quot;corrente&quot;]" id="btn-export-trasc" class="btn btn-secondary border" data-i18n-title="tx_title" data-i18n-aria-label="tx_title">
                     <i data-lucide="file-output" class="w-4 h-4"></i> <span data-i18n="tx_export">Esporta</span>
                 </button>

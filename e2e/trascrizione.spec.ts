@@ -1,6 +1,7 @@
 import { test, expect } from './fixtures';
 import { createLocalWorkspace, createItemWithAttachment, getAppData } from './helpers';
 import * as path from 'path';
+import * as fs from 'fs';
 
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 const FIXTURE_PDF = path.join(__dirname, 'fixtures', 'sample.pdf');
@@ -402,6 +403,73 @@ test.describe('Vista Trascrizione', () => {
     await expect.poll(() => page.evaluate(() => String(window.getSelection()))).toBe('uita');
   });
 
+  test('P5 — confronto: la carta aperta a sinistra, a destra una carta di un altra scheda, zoom sincronizzabile', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    await createItemWithAttachment(page, 'MS-CMP-B', FIXTURE_PNG);
+    const id = await createItemWithAttachment(page, 'MS-CMP-A', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+
+    await page.locator('#btn-confronta-carte').click();
+    const modal = page.locator('#confronto-modal');
+    await expect(modal).toBeVisible();
+    await expect(page.locator('#confronto-etichetta-sx')).toContainText('MS-CMP-A');
+    await expect(page.locator('#confronto-img-sx')).toHaveAttribute('src', /^local-asset:/);
+    await expect(page.locator('#confronto-cerca-dx')).toBeFocused();
+
+    // Da tastiera: si scrive, freccia giù sul risultato, Invio.
+    await page.keyboard.type('cmp-b');
+    await expect(page.locator('#confronto-risultati-dx button')).toHaveCount(1);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#confronto-etichetta-dx')).toContainText('MS-CMP-B');
+    await expect(page.locator('#confronto-viewport-dx .iv-barra')).toBeVisible();
+
+    const scala = (lato: string) => page.locator(`#confronto-img-${lato}`).evaluate((el: HTMLElement) => el.style.transform);
+    await page.locator('#confronto-sincronizza').check();
+    await page.locator('#confronto-viewport-sx [data-iv="zoom-in"]').click();
+    expect(await scala('dx')).toContain('scale(1.2)');
+    await page.locator('#confronto-sincronizza').uncheck();
+    await page.locator('#confronto-viewport-sx [data-iv="zoom-in"]').click();
+    expect(await scala('sx')).toContain('scale(1.44)');
+    expect(await scala('dx')).toContain('scale(1.2)');
+
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+  });
+
+  test('P5 — confronto: si sceglie la scheda e poi la carta; clic fuori chiude l elenco', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    // Due carte immagine: creaConDueAllegati ne mette una sola (l'altra è un PDF).
+    const secondaPng = test.info().outputPath('seconda.png');
+    fs.mkdirSync(path.dirname(secondaPng), { recursive: true });
+    // Byte in coda dopo IEND: stessa immagine, hash diverso (lo stesso file verrebbe deduplicato).
+    fs.writeFileSync(secondaPng, Buffer.concat([fs.readFileSync(FIXTURE_PNG), Buffer.from('bis')]));
+    await page.locator('#btn-tab-add').click();
+    await page.locator('#form-segnatura').fill('MS-CMP-DUE');
+    await page.locator('#form-allegato').setInputFiles([FIXTURE_PNG, secondaPng]);
+    await page.locator('#btn-submit-form').click();
+    await expect(page.locator('main')).toContainText('MS-CMP-DUE', { timeout: 10_000 });
+    await page.evaluate(() => (window as any).apriConfrontoCarte());
+    const risultati = page.locator('#confronto-risultati-dx');
+
+    // A campo vuoto, col mouse: tutte le schede, non il nome di un file da ricordare.
+    await page.locator('#confronto-cerca-dx').click();
+    const scheda = risultati.locator('button', { hasText: 'MS-CMP-DUE' });
+    await expect(scheda).toContainText(/2 carte|2 sheets/);
+    await scheda.click();
+    await expect(risultati.locator('button', { hasText: /^c\. \d/ })).toHaveCount(2);
+    await risultati.locator('button', { hasText: /^c\. 2/ }).click();
+    await expect(page.locator('#confronto-etichetta-dx')).toContainText('MS-CMP-DUE');
+    await expect(risultati).toBeHidden();
+
+    // Nessun risultato: il messaggio sparisce cliccando altrove.
+    await page.locator('#confronto-cerca-sx').fill('zzzz-nulla');
+    await expect(page.locator('#confronto-risultati-sx')).toBeVisible();
+    await page.locator('#confronto-modal .modal-title').click();
+    await expect(page.locator('#confronto-risultati-sx')).toBeHidden();
+  });
+
   test('il salvataggio conserva il testo di TUTTE le carte, non solo di quella a schermo', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await creaConDueAllegati(page, 'MS-CARTE-2');
@@ -489,6 +557,34 @@ test.describe('Trascrizione per pagina nei PDF', () => {
 
   const editor = (page) => page.locator('#trascrizione-editor');
   const paginaAperta = (page) => page.locator('#trasc-pdf-pagina');
+
+  test('P5 — confronto coi PDF: a sinistra la pagina che si trascrive, a destra si sfoglia senza toccarla', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Pagine');
+    const id = await createItemWithAttachment(page, 'MS-CMP-PDF', FIXTURE_PDF3);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await page.locator('#btn-pdf-pagina-succ').click();
+    await expect(paginaAperta(page)).toHaveValue('2');
+
+    await page.locator('#btn-confronta-carte').click();
+    await expect(page.locator('#confronto-pagina-sx')).toHaveValue('2');
+    await expect(page.locator('#confronto-totale-sx')).toHaveText('/ 3');
+    await expect(page.locator('#confronto-img-sx')).toHaveAttribute('src', /^blob:/);
+
+    await page.locator('#confronto-cerca-dx').fill('cmp-pdf');
+    await page.locator('#confronto-risultati-dx button', { hasText: 'MS-CMP-PDF' }).click();
+    await expect(page.locator('#confronto-pagina-dx')).toHaveValue('1');
+    await page.locator('#confronto-succ-dx').click();
+    await page.locator('#confronto-succ-dx').click();
+    await expect(page.locator('#confronto-pagina-dx')).toHaveValue('3');
+    await expect(page.locator('#confronto-succ-dx')).toBeDisabled();
+    await expect(page.locator('#confronto-img-dx')).toHaveAttribute('alt', /3 di 3|3 of 3/);
+
+    // Il PDF della trascrizione è un altro visualizzatore: resta aperto, sulla sua pagina.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#confronto-modal')).toBeHidden();
+    expect(await page.evaluate(() => (window as any).PdfViewer.numeroPagine())).toBe(3);
+    await expect(paginaAperta(page)).toHaveValue('2');
+  });
 
   test('il testo segue la pagina, e sopravvive al salvataggio e alla riapertura', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Pagine');

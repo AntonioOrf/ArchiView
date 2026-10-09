@@ -92,6 +92,8 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
     modale('grafo', '#grafo-modal', () => w('apriGrafo')),
     modale('anagrafiche', '#authority-modal', () => w('apriAnagrafica')),
     modale('esporta-testo', '#export-text-modal', () => w('apriEsportaTesto', 'tutto')),
+    // P5: senza trascrizione aperta i due lati restano vuoti, con la sola ricerca.
+    modale('confronto-carte', '#confronto-modal', () => w('apriConfrontoCarte')),
     trascrizione('trascrizione', id),
     trascrizione('trascrizione-senza-allegati', vuota),
   ];

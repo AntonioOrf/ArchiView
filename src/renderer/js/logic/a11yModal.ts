@@ -65,6 +65,8 @@
 
     function focusFirst(modal) {
         const win = getWindow(modal);
+        // Chi apre il modale ha già scelto dove mettere il fuoco (es. il campo di ricerca): si rispetta.
+        if (win.contains(document.activeElement)) return;
         const f = getFocusable(win);
         if (f.length) {
             f[0].focus();

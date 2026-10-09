@@ -567,7 +567,9 @@ async function avviaApp() {
                 const aperto = pannello && !pannello.classList.contains('hidden-tab');
                 window.toggleCaratteriSpeciali(!aperto || !pannello.contains(document.activeElement), true);
             }
-            return; // Interrompe qui se siamo in modalità trascrizione
+            // Interrompe qui se siamo in modalità trascrizione, tranne Esc su un modale aperto
+            // sopra la vista (confronto carte, esporta): va al ramo Esc più sotto.
+            if (!(e.key === 'Escape' && document.querySelector('.modal-overlay:not(.hidden-tab)'))) return;
         }
 
         // --- SCORCIATOIE GLOBALI ---
