@@ -323,7 +323,7 @@ window.renderRelazioniForm = function() {
 
         const via = document.createElement('button');
         via.type = 'button';
-        via.className = 'btn btn-ghost btn-icon shrink-0 text-red-600 ml-auto';
+        via.className = 'btn btn-danger-ghost btn-icon shrink-0 ml-auto';
         via.title = _apT('link_remove', 'Togli il collegamento');
         via.setAttribute('aria-label', _apT('link_remove', 'Togli il collegamento'));
         via.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i>';

@@ -58,7 +58,7 @@
                                  nulla, restringe ciò che si guarda. Il badge dice quanti
                                  filtri sono attivi anche a pannello chiuso. -->
                             <button id="btn-filtri" data-on-click="apriPannelloFiltri" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]"
-                                    class="btn btn-ghost border border-stone-200 dark:border-stone-700 relative"
+                                    class="btn btn-ghost border border-stone-200 relative"
                                     aria-haspopup="dialog" aria-expanded="false"
                                     data-i18n-title="tooltip_filters" data-i18n-aria-label="tooltip_filters">
                                 <i data-lucide="filter" class="w-4 h-4"></i>
@@ -75,10 +75,10 @@
                                      piu' lunga, e un campo custom dal nome chilometrico
                                      spingeva da solo la barra a capo. -->
                                 <select id="select-ordinamento" data-on-change="impostaOrdinamento" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]"
-                                        class="btn btn-ghost border border-stone-200 dark:border-stone-700 py-1 max-w-[8rem] truncate"
+                                        class="btn btn-ghost border border-stone-200 py-1 max-w-[8rem] truncate"
                                         data-i18n-title="tooltip_sort_by" data-i18n-aria-label="label_sort_by"></select>
                                 <button id="btn-ordinamento-dir" data-on-click="invertiDirezioneOrdinamento"
-                                        class="btn btn-ghost border border-stone-200 dark:border-stone-700"
+                                        class="btn btn-ghost border border-stone-200"
                                         data-i18n-title="tooltip_sort_dir">
                                     <i data-lucide="arrow-down-a-z" class="w-4 h-4"></i>
                                 </button>
@@ -88,12 +88,12 @@
                                  vista e' attiva, invece di nasconderlo dietro un'icona sola. -->
                             <div class="flex items-stretch" role="group" data-i18n-aria-label="tooltip_toggle_view">
                                 <button id="btn-vista-tabella" data-on-click="cambiaVistaLista" data-args-click="[&quot;tabella&quot;]"
-                                        class="btn btn-ghost border border-stone-200 dark:border-stone-700 rounded-r-none"
+                                        class="btn btn-ghost border border-stone-200 rounded-r-none"
                                         data-i18n-title="tooltip_view_table">
                                     <i data-lucide="rows-3" class="w-4 h-4"></i>
                                 </button>
                                 <button id="btn-vista-griglia" data-on-click="cambiaVistaLista" data-args-click="[&quot;griglia&quot;]"
-                                        class="btn btn-ghost border border-l-0 border-stone-200 dark:border-stone-700 rounded-l-none"
+                                        class="btn btn-ghost border border-l-0 border-stone-200 rounded-l-none"
                                         data-i18n-title="tooltip_view_grid">
                                     <i data-lucide="layout-grid" class="w-4 h-4"></i>
                                 </button>

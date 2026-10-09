@@ -86,7 +86,7 @@ function _cpRiga(voce) {
 
     const elimina = document.createElement('button');
     elimina.type = 'button';
-    elimina.className = 'btn btn-ghost btn-icon shrink-0 text-red-600';
+    elimina.className = 'btn btn-danger-ghost btn-icon shrink-0';
     elimina.title = _cpT('trash_delete_forever', 'Elimina definitivamente');
     elimina.setAttribute('aria-label', _cpT('trash_delete_forever', 'Elimina definitivamente') + ': ' + titolo.textContent);
     elimina.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
@@ -236,13 +236,13 @@ window.eliminaSelezionateCestino = function() {
                     <button type="button" data-on-click="ripristinaSelezionateCestino" class="btn btn-primary shrink-0">
                         <span data-i18n="trash_restore">Ripristina</span>
                     </button>
-                    <button type="button" data-on-click="eliminaSelezionateCestino" class="btn btn-ghost text-red-600 shrink-0">
+                    <button type="button" data-on-click="eliminaSelezionateCestino" class="btn btn-danger-ghost shrink-0">
                         <span data-i18n="trash_delete_forever">Elimina definitivamente</span>
                     </button>
                 </div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="trash_hint">Le schede eliminate restano qui per 30 giorni e poi spariscono da sole. Il cestino è locale a questo computer: non viene sincronizzato e non occupa spazio nell'archivio condiviso.</p>
                 <div class="modal-footer">
-                    <button type="button" data-on-click="svuotaCestinoDaPannello" class="btn btn-ghost text-red-600 mr-auto">
+                    <button type="button" data-on-click="svuotaCestinoDaPannello" class="btn btn-danger-ghost mr-auto">
                         <span data-i18n="trash_empty_now">Svuota il cestino</span>
                     </button>
                     <button type="button" data-on-click="chiudiCestino" data-modal-cancel class="btn btn-ghost">

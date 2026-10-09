@@ -594,7 +594,7 @@ window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderV
     
     const btnRemove = document.createElement('button');
     btnRemove.type = 'button';
-    btnRemove.className = 'btn btn-ghost btn-icon text-red-500 hover:bg-red-50 hover:text-red-700';
+    btnRemove.className = 'btn btn-danger-ghost btn-icon';
     btnRemove.setAttribute('aria-label', window.t('tooltip_remove', 'Rimuovi'));
     btnRemove.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
     btnRemove.onclick = () => row.remove();

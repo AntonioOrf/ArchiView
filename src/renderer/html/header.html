@@ -4,7 +4,7 @@
       Le azioni sui dati vivono nell'header della vista (Zona 3, viewList.ts).
       Vedi UI_UX_TODO.md — "Legge delle Zone".
     -->
-    <header class="panel-glass shrink-0 mb-6 flex items-center justify-between gap-3 p-2">
+    <header class="panel-glass shrink-0 flex items-center justify-between gap-3 p-2">
 
         <!-- ZONA 1 — Navigazione pannelli sidebar -->
         <nav id="sidebar-tablist" role="tablist" aria-orientation="horizontal" class="flex items-center gap-0.5 shrink-0" data-i18n-aria-label="nav_panels" aria-label="Pannelli">
@@ -36,7 +36,7 @@
                  il dettaglio sta nel popover, non in indicatori paralleli.
                  Nessun md: qui — il controllo non sparisce a finestra stretta (3.3). -->
             <button id="cloud-status-btn" type="button" data-on-click="apriPopoverCloud" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" aria-haspopup="menu" aria-expanded="false"
-                    class="btn btn-ghost flex items-center gap-2 min-w-0 max-w-[240px] border border-stone-300 dark:border-stone-600">
+                    class="btn btn-ghost flex items-center gap-2 min-w-0 max-w-[240px] border border-stone-300">
                 <i id="cloud-status-icon" data-lucide="cloud" class="w-4 h-4 shrink-0"></i>
                 <span id="cloud-status-label" class="text-xs font-medium truncate"></span>
                 <!-- Il chevron è l'unico segnale che qui si apre qualcosa: senza, il

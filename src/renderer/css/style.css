@@ -212,12 +212,6 @@
 body {
     padding: 0 !important;
 }
-.gap-6 {
-    gap: 0 !important;
-}
-.mb-6 {
-    margin-bottom: 0 !important;
-}
 .panel-glass, .panel-solid, .modal-window, .card-scheda {
     border-radius: 0 !important;
     box-shadow: none !important;
@@ -303,8 +297,9 @@ body {
     font-family: 'Georgia', serif;
 }
 
-/* Transizione fluida globale per il tema */
-body, .panel-glass, .panel-solid, .card-scheda, button, input, select, textarea, div, span, p, h1, h2, h3, h4, i {
+/* Dissolvenza del tema solo durante il cambio (applicaTema mette .cambio-tema per 300 ms):
+   sempre attiva annullava le utility transition-* di Tailwind e animava ogni hover. */
+:root.cambio-tema :is(body, .panel-glass, .panel-solid, .card-scheda, button, input, select, textarea, div, span, p, h1, h2, h3, h4, i) {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, opacity 0.2s;
 }
 
@@ -392,6 +387,15 @@ button, .btn {
 .btn-ghost:hover {
     background-color: var(--color-bg-hover);
     color: var(--color-text-main);
+}
+/* Azione distruttiva senza fondo. Le utility text-red-* accanto a .btn-ghost non si vedono:
+   style.css è fuori da @layer (guardia: test/btnUtility.test.js). */
+.btn-danger-ghost {
+    background-color: transparent;
+    color: var(--color-danger-text);
+}
+.btn-danger-ghost:hover {
+    background-color: var(--color-danger-light);
 }
 .btn-icon {
     padding: 0.375rem;
@@ -1333,8 +1337,6 @@ button, .btn {
     justify-content: flex-start;
     text-align: left; /* etichette su due righe restavano centrate rispetto all'icona */
 }
-.cloud-danger { color: var(--color-danger); }
-.cloud-danger:hover { background-color: var(--color-danger-light); color: var(--color-danger-hover); }
 
 /* Focus accessibilità tastiera */
 .btn:focus-visible {

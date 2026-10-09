@@ -134,7 +134,7 @@
                         <i data-lucide="shield-check" class="w-7 h-7" aria-hidden="true"></i>
                     </div>
                     <h3 class="text-xl font-serif font-semibold mb-2 text-stone-800 dark:text-stone-100"><span data-i18n="modal_cloud_activate_title">Backup personale su Google Drive</span></h3>
-                    <p class="text-sm text-stone-600 dark:text-stone-400 max-w-sm mx-auto mb-6">
+                    <p class="text-sm text-stone-600 dark:text-stone-400 max-w-sm mx-auto">
                         <span data-i18n="modal_cloud_activate_desc_short">Una copia privata dell'archivio sul tuo Google Drive, accessibile solo a te.</span>
                     </p>
                     <div class="flex flex-col gap-3 max-w-xs mx-auto">
@@ -192,7 +192,7 @@
                             <button type="button" data-on-click="cambiaAccountGoogleVault" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm">
                                 <i data-lucide="user-plus" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_use_another_account">Usa un altro account Google</span>
                             </button>
-                            <button type="button" data-on-click="apriMigrazioneDaCloudModal" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                            <button type="button" data-on-click="apriMigrazioneDaCloudModal" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm">
                                 <i data-lucide="server" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_migrate_hub">Passa all'archivio condiviso</span>
                             </button>
                             <button type="button" data-on-click="trasformaInPersonale" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm">
@@ -201,10 +201,10 @@
 
                             <!-- Azioni irreversibili: separate e già rosse a riposo, non solo in hover -->
                             <hr class="my-1 border-stone-200">
-                            <button type="button" data-on-click="pulisciAllegatiOrfani" id="btn-cloud-clean-orphans" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
+                            <button type="button" data-on-click="pulisciAllegatiOrfani" id="btn-cloud-clean-orphans" class="btn btn-danger-ghost justify-start py-2 text-sm">
                                 <i data-lucide="trash-2" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_clean_ghosts">Pulisci file inutilizzati</span>
                             </button>
-                            <button type="button" data-on-click="scollegaCloud" id="btn-disconnect-cloud" class="btn btn-ghost cloud-danger justify-start py-2 text-sm">
+                            <button type="button" data-on-click="scollegaCloud" id="btn-disconnect-cloud" class="btn btn-danger-ghost justify-start py-2 text-sm">
                                 <i data-lucide="unlink" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_disconnect_cloud">Scollega dal Cloud</span>
                             </button>
                         </div>

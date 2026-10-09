@@ -111,7 +111,7 @@ function _vpRigaValore(voc, valore, usi) {
 
     const elimina = document.createElement('button');
     elimina.type = 'button';
-    elimina.className = 'btn btn-ghost btn-icon shrink-0 text-red-600';
+    elimina.className = 'btn btn-danger-ghost btn-icon shrink-0';
     elimina.title = _vpT('vocab_remove_value', 'Togli dall\'elenco');
     elimina.setAttribute('aria-label', _vpT('vocab_remove_value', 'Togli dall\'elenco') + ': ' + valore);
     elimina.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
@@ -277,7 +277,7 @@ window.disegnaDuplicati = function() {
                         <div class="flex items-center gap-2">
                             <strong id="vocab-current-name" class="truncate"></strong>
                             <div id="vocab-actions" class="ml-auto hidden">
-                                <button type="button" data-on-click="eliminaVocabolarioDalPannello" class="btn btn-ghost btn-icon text-red-600" data-i18n-title="vocab_delete" title="Elimina il vocabolario">
+                                <button type="button" data-on-click="eliminaVocabolarioDalPannello" class="btn btn-danger-ghost btn-icon" data-i18n-title="vocab_delete" title="Elimina il vocabolario">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>

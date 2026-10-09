@@ -13,7 +13,7 @@
                 <p class="text-sm text-stone-500 mb-4" data-i18n="unsaved_hint">Sei sicuro di voler uscire e perdere le modifiche?</p>
                 <div class="modal-footer">
                     <button data-on-click="chiudiUnsavedModal" class="btn btn-primary" data-i18n="btn_continue_writing">Continua a scrivere</button>
-                    <button data-on-click="confermaUscitaTrascrizione" class="btn btn-ghost text-red-600 hover:bg-red-50" data-i18n="btn_exit_without_saving"><span data-i18n="btn_exit_nosave">Esci senza salvare</span></button>
+                    <button data-on-click="confermaUscitaTrascrizione" class="btn btn-danger-ghost" data-i18n="btn_exit_without_saving"><span data-i18n="btn_exit_nosave">Esci senza salvare</span></button>
                 </div>
             </div>
         </div>

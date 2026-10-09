@@ -782,7 +782,7 @@ window.applicaTema = function(theme) {
     }
     
     document.documentElement.classList.remove('dark-theme', 'amber-light-theme', 'blue-dark-theme');
-    
+
     if (activeTheme === 'dark') {
         document.documentElement.classList.add('dark-theme');
     } else if (activeTheme === 'amber-light') {
@@ -797,6 +797,10 @@ window.cambiaTemaSelezionato = async function(theme) {
     settings.theme = theme;
     await window.apiSettings.save(settings);
     localStorage.setItem('theme', theme);
+    // Dissolvenza solo per il cambio scelto dall'utente (regola :root.cambio-tema in style.css).
+    document.documentElement.classList.add('cambio-tema');
+    clearTimeout(window._timerCambioTema);
+    window._timerCambioTema = setTimeout(() => document.documentElement.classList.remove('cambio-tema'), 300);
     window.applicaTema(theme);
 };
 

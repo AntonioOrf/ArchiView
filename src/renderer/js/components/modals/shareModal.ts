@@ -36,7 +36,7 @@
                         <button data-on-click="creaHubDaShareModal" class="btn btn-block justify-center py-3 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800">
                             <i data-lucide="server" class="w-4 h-4 mr-2"></i> <span data-i18n="share_local_share_online">Condividi online</span>
                         </button>
-                        <button data-on-click="uniscitiDaShareModal" class="btn btn-secondary btn-block justify-center py-3 text-sm border-stone-300 dark:border-stone-600">
+                        <button data-on-click="uniscitiDaShareModal" class="btn btn-secondary btn-block justify-center py-3 text-sm border-stone-300">
                             <i data-lucide="log-in" class="w-4 h-4 mr-2"></i> <span data-i18n="share_local_have_invite">Ho ricevuto un invito</span>
                         </button>
                         <button data-on-click="inSequenza" data-args-click="[&quot;chiudiShareModal&quot;,&quot;apriCloudModal&quot;]" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 mt-1">
@@ -61,8 +61,8 @@
                         <li><span data-i18n="share_migrate_bullet3">I collaboratori attuali dovranno ricevere un nuovo link di invito.</span></li>
                     </ul>
                     <div class="flex gap-2.5 justify-center max-w-xs mx-auto w-full pt-2">
-                        <button data-on-click="inSequenza" data-args-click="[&quot;chiudiShareModal&quot;,&quot;apriCloudModal&quot;]" class="btn btn-secondary flex-1 justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span data-i18n="btn_cancel">Annulla</span></button>
-                        <button data-on-click="confermaMigrazioneShare" class="btn flex-1 justify-center py-2.5 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800"><span data-i18n="btn_continue">Continua</span></button>
+                        <button data-on-click="inSequenza" data-args-click="[&quot;chiudiShareModal&quot;,&quot;apriCloudModal&quot;]" class="btn btn-secondary flex-1 justify-center py-2.5 text-sm border-stone-300"><span data-i18n="btn_cancel">Annulla</span></button>
+                        <button data-on-click="confermaMigrazioneShare" class="btn btn-primary flex-1 justify-center py-2.5 text-sm"><span data-i18n="btn_continue">Continua</span></button>
                     </div>
                 </div>
 
@@ -86,8 +86,8 @@
                         <h4 class="text-sm font-bold mb-1 text-stone-800 dark:text-stone-200"><span data-i18n="share_sync_title">Sincronizzazione</span></h4>
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_sync_desc">Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.</span></p>
                         <div class="flex gap-2.5">
-                            <button data-on-click="riceviModificheHub" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
-                            <button data-on-click="inviaModificheHub" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
+                            <button data-on-click="riceviModificheHub" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
+                            <button data-on-click="inviaModificheHub" class="btn btn-primary flex-1 flex-col items-center justify-center py-2.5 text-sm"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
                         </div>
                     </div>
                     <div id="share-member-attachments-box"></div>
@@ -129,8 +129,8 @@
                         <h4 class="text-sm font-bold mb-1 text-stone-800 dark:text-stone-200"><span data-i18n="share_sync_title">Sincronizzazione</span></h4>
                         <p class="text-xs text-stone-500 dark:text-stone-400 mb-3"><span data-i18n="share_sync_desc">Scarica le modifiche dei colleghi o invia le tue all'archivio condiviso.</span></p>
                         <div class="flex gap-2.5">
-                            <button data-on-click="riceviModificheHub" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300 dark:border-stone-600"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
-                            <button data-on-click="inviaModificheHub" class="btn flex-1 flex-col items-center justify-center py-2.5 text-sm text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
+                            <button data-on-click="riceviModificheHub" class="btn btn-secondary flex-1 flex-col items-center justify-center py-2.5 text-sm border-stone-300"><span class="flex items-center"><i data-lucide="cloud-download" class="w-4 h-4 mr-2"></i> <span data-i18n="share_receive">Ricevi modifiche</span></span><span class="text-[11px] font-normal opacity-70 mt-0.5" data-i18n="share_sync_receive_desc">Scarica le novità dei colleghi</span></button>
+                            <button data-on-click="inviaModificheHub" class="btn btn-primary flex-1 flex-col items-center justify-center py-2.5 text-sm"><span class="flex items-center"><i data-lucide="cloud-upload" class="w-4 h-4 mr-2"></i> <span data-i18n="share_send">Invia modifiche</span></span><span class="text-[11px] font-normal opacity-80 mt-0.5" data-i18n="share_sync_send_desc">Pubblica le tue modifiche</span></button>
                         </div>
                     </div>
 
@@ -387,7 +387,7 @@
             `);
             if (!m.revoked) {
                 const btn = document.createElement('button');
-                btn.className = 'btn btn-ghost text-stone-400 hover:text-red-600 dark:hover:text-red-400 text-xs py-1 px-2.5 shrink-0';
+                btn.className = 'btn btn-danger-ghost text-xs py-1 px-2.5 shrink-0';
                 btn.textContent = window.t("btn_revoke", "Revoca");
                 btn.onclick = () => window.revocaMembroShare(m.memberId, rawLabel);
                 row.appendChild(btn);
@@ -425,10 +425,10 @@
                 <div class="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50">
                     <i data-lucide="image-plus" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"></i>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-stone-800 dark:text-stone-200">${window.escapeHTML(window.t("share_attachments_connect_title", "Per condividere immagini e PDF serve collegare Google Drive"))}</p>
-                        <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5 mb-2">${window.escapeHTML(window.t("share_attachments_connect_desc", "Spazio gratuito del tuo account Google, usato solo per i tuoi allegati."))}</p>
-                        <button id="${prefix}-attachments-connect-btn" class="btn btn-secondary text-xs py-1.5 px-3 border-amber-300 dark:border-amber-600">${window.escapeHTML(window.t("share_attachments_connect_btn", "Collega Google Drive"))}</button>
-                        ${isMember ? `<p class="text-xs text-stone-400 dark:text-stone-500 mt-2">${window.escapeHTML(window.t("share_attachments_member_off_note", "Il proprietario non ha ancora attivato la condivisione degli allegati."))}</p>` : ''}
+                        <p class="text-sm font-medium text-stone-800">${window.escapeHTML(window.t("share_attachments_connect_title", "Per condividere immagini e PDF serve collegare Google Drive"))}</p>
+                        <p class="text-xs text-stone-500 mt-0.5 mb-2">${window.escapeHTML(window.t("share_attachments_connect_desc", "Spazio gratuito del tuo account Google, usato solo per i tuoi allegati."))}</p>
+                        <button id="${prefix}-attachments-connect-btn" class="btn btn-secondary text-xs py-1.5 px-3">${window.escapeHTML(window.t("share_attachments_connect_btn", "Collega Google Drive"))}</button>
+                        ${isMember ? `<p class="text-xs text-stone-400 mt-2">${window.escapeHTML(window.t("share_attachments_member_off_note", "Il proprietario non ha ancora attivato la condivisione degli allegati."))}</p>` : ''}
                     </div>
                 </div>
             `);

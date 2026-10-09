@@ -7,7 +7,7 @@
             <button id="welcome-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 hidden transition-colors" data-on-click="chiudiWelcomeModal" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <div class="flex justify-center mb-6">
+            <div class="flex justify-center">
                 <div class="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center text-stone-600 shadow-inner">
                     <i data-lucide="library" class="w-8 h-8"></i>
                 </div>
@@ -22,7 +22,7 @@
                     <i data-lucide="folder-open" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_open_local">Apri Archivio Locale</span>
                 </button>
-                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;locale&quot;]" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;locale&quot;]" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 border border-stone-300 text-stone-700">
                     <i data-lucide="folder-plus" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_local">Crea Nuova Cartella Locale</span>
                 </button>
@@ -39,7 +39,7 @@
                     <i data-lucide="users" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                 </button>
-                <button data-on-click="mostraCloudExplorer" class="btn btn-ghost text-sm text-stone-500 mt-1 hover:text-stone-700 w-full justify-center">
+                <button data-on-click="mostraCloudExplorer" class="btn btn-ghost text-sm text-stone-500 mt-1 w-full justify-center">
                     <span data-i18n="btn_restore_drive">Ripristina da Google Drive…</span>
                 </button>
             </div>
@@ -54,11 +54,11 @@
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_position">Posizione</label>
                     <div class="flex gap-2">
                         <input type="text" id="welcome-new-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                        <button data-on-click="selezionaPercorsoBase" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300 hover:bg-stone-200" data-i18n="btn_browse">Sfoglia…</button>
+                        <button data-on-click="selezionaPercorsoBase" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300" data-i18n="btn_browse">Sfoglia…</button>
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
-                    <button data-on-click="nascondiInputNuovaCartella" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
+                    <button data-on-click="nascondiInputNuovaCartella" class="btn btn-ghost text-sm text-stone-500 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
                     <button data-on-click="creaCartellaIniziale" class="btn btn-primary text-sm shadow-sm px-6"><span data-i18n="btn_create_and_start">Crea e Avvia</span></button>
@@ -112,7 +112,7 @@
                                 <span data-i18n="join_step2_hint">First <strong>accept the sharing email from Google Drive</strong>. The folder will appear in <em>"Shared with me"</em>.</span>
                             </div>
                             <button type="button" data-on-click="apriGooglePicker" id="btn-open-picker"
-                                class="btn btn-secondary w-full justify-center py-3 text-sm font-medium shadow-sm bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 transition-colors">
+                                class="btn btn-secondary w-full justify-center py-3 text-sm font-medium shadow-sm bg-white border border-stone-300 text-stone-700 transition-colors">
                                 <i data-lucide="folder-search" class="w-5 h-5 mr-2 text-blue-600"></i>
                                 <span data-i18n="btn_browse_drive">Sfoglia Google Drive…</span>
                             </button>
@@ -144,7 +144,7 @@
 
                         <!-- AZIONI -->
                         <div class="mt-auto pt-4 border-t border-stone-200 flex justify-between items-center">
-                            <button data-on-click="nascondiJoinForm" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
+                            <button data-on-click="nascondiJoinForm" class="btn btn-ghost text-sm text-stone-500 flex items-center gap-1">
                                 <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                             </button>
                             <button data-on-click="eseguiJoinVault" id="btn-join-connect" class="btn btn-primary text-sm shadow-sm px-6">
@@ -164,7 +164,7 @@
                     <!-- Lista popolata via JS -->
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
-                    <button data-on-click="nascondiCloudExplorer" class="btn btn-ghost text-sm text-stone-500 hover:text-stone-800 flex items-center gap-1">
+                    <button data-on-click="nascondiCloudExplorer" class="btn btn-ghost text-sm text-stone-500 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
                     <button data-on-click="eseguiRipristinoCloudGlobale" class="btn btn-secondary text-sm shadow-sm" data-i18n-title="title_search_everywhere" title="Se non vedi il tuo archivio, cerca in tutto il Drive"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>

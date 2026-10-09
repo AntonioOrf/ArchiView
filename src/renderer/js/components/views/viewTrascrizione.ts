@@ -22,7 +22,7 @@
                      vista in cui la trascrizione esiste, ed e' finendo di trascrivere che
                      si vuole portarla in Word o in un articolo. Ambito "corrente": la
                      scheda aperta, non la selezione della lista dietro al modale. -->
-                <button data-on-mousedown="nonRubareFuoco" data-on-click="apriEsportaTesto" data-args-click="[&quot;corrente&quot;]" id="btn-export-trasc" class="btn btn-secondary border border-amber-300/50" data-i18n-title="tx_title" data-i18n-aria-label="tx_title">
+                <button data-on-mousedown="nonRubareFuoco" data-on-click="apriEsportaTesto" data-args-click="[&quot;corrente&quot;]" id="btn-export-trasc" class="btn btn-secondary border" data-i18n-title="tx_title" data-i18n-aria-label="tx_title">
                     <i data-lucide="file-output" class="w-4 h-4"></i> <span data-i18n="tx_export">Esporta</span>
                 </button>
                 <button data-on-mousedown="nonRubareFuoco" data-on-click="salvaTrascrizione" data-i18n-title="btn_save" class="btn btn-primary px-6 py-2 shadow-md text-lg">
@@ -48,10 +48,10 @@
                          dell'allegato: il suo risultato finisce QUI dentro, ed è accanto al
                          testo che l'utente lo cerca. Resta un pulsante secondario, perché la
                          bozza generata non è la trascrizione. -->
-                    <button id="btn-ocr-trasc" data-on-click="apriOcrModal" class="btn btn-secondary border border-amber-300/50" data-i18n-title="ocr_title" data-i18n-aria-label="ocr_title">
+                    <button id="btn-ocr-trasc" data-on-click="apriOcrModal" class="btn btn-secondary border" data-i18n-title="ocr_title" data-i18n-aria-label="ocr_title">
                         <i data-lucide="scan-text" class="w-4 h-4"></i> <span data-i18n="ocr_button">Riconosci testo</span></button>
 
-                    <button id="btn-carica-allegato-trasc" data-on-click="cliccaElemento" data-args-click="[&quot;trasc-file-input&quot;]" class="btn hidden btn-secondary border border-amber-300/50">
+                    <button id="btn-carica-allegato-trasc" data-on-click="cliccaElemento" data-args-click="[&quot;trasc-file-input&quot;]" class="btn hidden btn-secondary border" data-i18n-title="btn_add_image_pdf" data-i18n-aria-label="btn_add_image_pdf">
                         <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
 
                     <!-- Import IIIF dalla trascrizione: e' qui che ci si accorge che manca
@@ -59,7 +59,7 @@
                          sarebbe creare una seconda scheda dello stesso codice. Sempre
                          visibile, a differenza di "Aggiungi Immagine/PDF": aggiungere carte
                          ha senso tanto su una scheda vuota quanto su una gia' popolata. -->
-                    <button id="btn-iiif-trasc" data-on-click="aggiungiCarteIiifATrascrizione" class="btn btn-secondary border border-amber-300/50" data-i18n-title="iiif_title_add" data-i18n-aria-label="iiif_title_add">
+                    <button id="btn-iiif-trasc" data-on-click="aggiungiCarteIiifATrascrizione" class="btn btn-secondary border" data-i18n-title="iiif_title_add" data-i18n-aria-label="iiif_title_add">
                         <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="iiif_add_button">Aggiungi da IIIF</span></button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" data-on-change="caricaAllegatoTrascrizione" data-args-change="[{&quot;$&quot;:&quot;event&quot;}]">
                 </div>

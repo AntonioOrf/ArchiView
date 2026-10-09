@@ -108,7 +108,7 @@
                                 <button data-on-click="cambiaCartellaAllegati" class="btn btn-secondary">
                                     <i data-lucide="folder-search" class="w-4 h-4 text-stone-500"></i> <span data-i18n="btn_select_folder">Seleziona Cartella…</span>
                                 </button>
-                                <button data-on-click="ripristinaCartellaAllegatiPredefinita" id="btn-restore-attachments" class="btn btn-ghost text-red-500 hover:bg-red-50 hover:text-red-700 flex items-center gap-1 hidden-tab">
+                                <button data-on-click="ripristinaCartellaAllegatiPredefinita" id="btn-restore-attachments" class="btn btn-danger-ghost flex items-center gap-1 hidden-tab">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span data-i18n="btn_restore_default">Ripristina di default</span>
                                 </button>
                             </div>

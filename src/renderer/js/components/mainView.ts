@@ -992,7 +992,7 @@ function aggiornaControlliLista(records) {
     const slot = document.getElementById('context-overflow-slot');
     if (slot && !slot.firstChild && typeof window.creaBottoneOverflow === 'function') {
         slot.appendChild(window.creaBottoneOverflow(vociMenuContesto, {
-            className: 'btn btn-ghost border border-stone-200 dark:border-stone-700',
+            className: 'btn btn-ghost border border-stone-200',
             label: window.t('tooltip_more_actions', 'Altre azioni')
         }));
     }

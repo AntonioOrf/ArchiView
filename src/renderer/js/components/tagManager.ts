@@ -97,7 +97,7 @@ function _tmRiga(voce) {
 
     const elimina = document.createElement('button');
     elimina.type = 'button';
-    elimina.className = 'btn btn-ghost btn-icon shrink-0 text-red-600';
+    elimina.className = 'btn btn-danger-ghost btn-icon shrink-0';
     elimina.title = _tmT('tag_delete', 'Elimina il tag');
     elimina.setAttribute('aria-label', _tmT('tag_delete', 'Elimina il tag') + ': ' + voce.nome);
     elimina.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';

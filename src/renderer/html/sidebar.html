@@ -86,7 +86,7 @@
 
             <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5 relative" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
                 
-                <button data-on-click="toggleVaultSwitcher" data-args-click="[{&quot;$&quot;:&quot;event&quot;}]" class="btn btn-ghost w-full justify-between hover:bg-stone-200">
+                <button data-on-click="toggleVaultSwitcher" data-args-click="[{&quot;$&quot;:&quot;event&quot;}]" class="btn btn-ghost w-full justify-between">
                     <div class="flex items-center gap-2 truncate text-sm">
                         <i data-lucide="archive" class="w-4 h-4 text-amber-700 shrink-0"></i>
                         <span id="current-vault-name" class="font-bold truncate text-stone-800">...</span>
@@ -102,13 +102,13 @@
                     </button>
                     <!-- Icona coerente con l'azione: apre la CONDIVISIONE, non la sincronizzazione
                          (la nuvola resta riservata al cloud, in Zona 2). -->
-                    <button id="sidebar-cloud-btn" data-on-click="seEsiste" data-args-click="[&quot;apriShareModal&quot;]" class="btn btn-ghost flex-1 justify-center text-blue-600 dark:text-blue-400" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
+                    <button id="sidebar-cloud-btn" data-on-click="seEsiste" data-args-click="[&quot;apriShareModal&quot;]" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
                         <i data-lucide="users" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
                     </button>
                     <button data-on-click="seEsiste" data-args-click="[&quot;avviaTutorial&quot;]" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial">
                         <i data-lucide="help-circle" class="w-5 h-5"></i>
                     </button>
-                    <button data-on-click="apriIssueModal" class="btn btn-ghost flex-1 justify-center text-red-600 dark:text-red-400" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
+                    <button data-on-click="apriIssueModal" class="btn btn-ghost flex-1 justify-center" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
                         <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
                     </button>
                 </div>

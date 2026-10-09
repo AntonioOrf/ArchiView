@@ -978,7 +978,7 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
             <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl">
                 <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
                 <h3 class="text-xl font-bold mb-2">${escapeHTML(window.t('modal_vault_remove_title', 'Rimuovi Archivio'))}</h3>
-                <p class="text-sm text-stone-600 mb-6">
+                <p class="text-sm text-stone-600">
                     ${window.t('modal_vault_remove_desc', "Vuoi solo rimuovere l'Archivio {var0} dall'elenco o eliminare definitivamente tutti i suoi file dal computer?")
                         .replace('{var0}', '<strong>' + escapeHTML(vaultName) + '</strong>')}
                 </p>

@@ -804,7 +804,7 @@ function _caRigaRimando(rif, archivio) {
         apri.onclick = () => window.apriAnteprimaAltroArchivio(archivio.id, rif.schedaId);
         azioni.appendChild(apri);
     }
-    const via = _caEl('button', 'btn btn-ghost btn-icon text-red-600') as HTMLButtonElement;
+    const via = _caEl('button', 'btn btn-danger-ghost btn-icon') as HTMLButtonElement;
     via.type = 'button';
     via.dataset.togliRimando = '1';
     via.title = _caT('cross_links_remove', 'Togli il rimando');
