@@ -47,4 +47,4 @@ the original files.
 
 ArchiView works offline: if you do not enable synchronisation, nothing leaves your computer. What is
 processed when you enable it is detailed in the
-[Privacy Policy](https://archiview.web.app/privacy.html).
+[Privacy Policy](https://archiview.orfhist.com/privacy.html).

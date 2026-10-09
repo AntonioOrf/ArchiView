@@ -48,4 +48,4 @@ su disco raddoppia rispetto ai file di partenza.
 
 ArchiView funziona offline: se non attivi la sincronizzazione, nulla lascia il tuo computer.
 Il dettaglio di cosa viene trattato quando la attivi è nella
-[Privacy Policy](https://archiview.web.app/privacy.html).
+[Privacy Policy](https://archiview.orfhist.com/privacy.html).

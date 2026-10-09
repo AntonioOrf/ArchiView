@@ -80,5 +80,5 @@ cancellati. Per sincronizzarlo di nuovo, convertilo in archivio condiviso sull'H
 ::: tip Privacy
 In modalità locale nessun dato lascia il computer. Il dettaglio di che cosa viene trattato quando
 attivi la sincronizzazione è nella
-[Privacy Policy](https://archiview.web.app/privacy.html).
+[Privacy Policy](https://archiview.orfhist.com/privacy.html).
 :::

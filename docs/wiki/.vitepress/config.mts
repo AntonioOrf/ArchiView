@@ -74,7 +74,7 @@ export default defineConfig({
           { text: 'Guida', link: '/guida/schede' },
           { text: 'Esportare', link: '/esporta/stampa' },
           { text: 'FAQ', link: '/faq' },
-          { text: 'Sito', link: 'https://archiview.web.app/' },
+          { text: 'Sito', link: 'https://archiview.orfhist.com/' },
           { text: 'Scarica', link: 'https://github.com/AntonioOrf/ArchiView/releases' }
         ],
 
@@ -175,7 +175,7 @@ export default defineConfig({
           { text: 'Guide', link: '/en/guide/records' },
           { text: 'Export', link: '/en/export/print' },
           { text: 'FAQ', link: '/en/faq' },
-          { text: 'Website', link: 'https://archiview.web.app/' },
+          { text: 'Website', link: 'https://archiview.orfhist.com/' },
           { text: 'Download', link: 'https://github.com/AntonioOrf/ArchiView/releases' }
         ],
 

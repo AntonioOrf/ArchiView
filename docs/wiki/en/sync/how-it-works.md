@@ -76,5 +76,5 @@ it again, convert it into a shared archive on the Hub.
 
 ::: tip Privacy
 In local mode no data leaves the computer. What is processed when you enable synchronisation is
-detailed in the [Privacy Policy](https://archiview.web.app/privacy.html).
+detailed in the [Privacy Policy](https://archiview.orfhist.com/privacy.html).
 :::
