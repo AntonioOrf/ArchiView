@@ -1353,13 +1353,21 @@ function switchTab(tab) {
  */
 function buildSnippet(clean, lower, norm, token) {
     let idx = -1;
-    if (norm && norm.length === clean.length) idx = norm.indexOf(token);
+    let len = token.length;
+    const j = norm ? norm.indexOf(token) : -1;
+    if (j !== -1 && norm.length === clean.length) {
+        idx = j;
+    } else if (j !== -1) {
+        // P3: æ/œ allungano il normalizzato, l'evidenziazione va sul testo originale.
+        idx = window.posizioneOriginale(clean, j);
+        len = window.posizioneOriginale(clean, j + token.length) - idx;
+    }
     if (idx === -1) idx = lower.indexOf(token);
     if (idx === -1) return null;
 
     // Estrai una frase più lunga
     const start = Math.max(0, idx - 60);
-    const end = Math.min(clean.length, idx + token.length + 80);
+    const end = Math.min(clean.length, idx + len + 80);
     let snippet = clean.substring(start, end).trim();
 
     // Offset del match dentro lo snippet, tenendo conto del taglio e del trim iniziale.
@@ -1368,12 +1376,12 @@ function buildSnippet(clean, lower, norm, token) {
     const rel = idx - start - scartoTrim;
 
     let html;
-    if (rel >= 0 && rel + token.length <= snippet.length) {
+    if (rel >= 0 && rel + len <= snippet.length) {
         html = escapeHTML(snippet.substring(0, rel))
             + '<span class="bg-amber-200 text-amber-900 font-bold px-0.5 rounded">'
-            + escapeHTML(snippet.substring(rel, rel + token.length))
+            + escapeHTML(snippet.substring(rel, rel + len))
             + '</span>'
-            + escapeHTML(snippet.substring(rel + token.length));
+            + escapeHTML(snippet.substring(rel + len));
     } else {
         html = escapeHTML(snippet);
     }
@@ -1381,6 +1389,44 @@ function buildSnippet(clean, lower, norm, token) {
     if (start > 0) html = '...' + html;
     if (end < clean.length) html = html + '...';
     return html;
+}
+
+/**
+ * P3 — prima carta (e pagina, se PDF) la cui trascrizione contiene `tok`, con lo snippet e la
+ * parola nella forma ORIGINALE ("uita" per la ricerca "vita"), da evidenziare nell'editor.
+ * Testo dal DOM come nella ricerca della vista trascrizione: entità decodificate, cioè lo
+ * stesso testo che l'editor mostrerà.
+ */
+function _cercaNelleCarte(m, tok) {
+    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+    const contenitore = document.createElement('template');
+    const testoDi = (html) => {
+        contenitore.innerHTML = window.sanitizeHTML(String(html || ''));
+        return contenitore.content.textContent || '';
+    };
+    for (let i = 0; i < allegati.length; i++) {
+        const a = allegati[i];
+        if (!a || !window.trascrizioneHaTesto(a.trascrizione)) continue;
+        const pezzi = Array.isArray(a.pagine) && a.pagine.length ? a.pagine : [a.trascrizione];
+        for (let p = 0; p < pezzi.length; p++) {
+            const clean = testoDi(pezzi[p]);
+            const norm = window.normalizzaTesto(clean);
+            const j = norm.indexOf(tok);
+            if (j === -1) continue;
+            const da = window.posizioneOriginale(clean, j);
+            const pagina = pezzi === a.pagine ? p + 1 : undefined;
+            let key = window.t('search_hit_sheet', 'Trascrizione, c. {var0}').replace('{var0}', String(i + 1));
+            if (pagina) key += ', ' + window.t('search_hit_page', 'p. {var0}').replace('{var0}', String(pagina));
+            return {
+                key,
+                snippet: buildSnippet(clean, clean.toLowerCase(), norm, tok),
+                carta: i,
+                pagina,
+                parola: clean.slice(da, window.posizioneOriginale(clean, j + tok.length))
+            };
+        }
+    }
+    return null;
 }
 
 function renderSearchSuggestions() {
@@ -1404,6 +1450,13 @@ function renderSearchSuggestions() {
         for (const f of index.fields) {
             // Confronto su stringhe già ripulite e normalizzate: nessuna regex per record.
             for (const tok of tokens) {
+                // P3: nella trascrizione si dice QUALE carta, e il clic porta lì.
+                const inCarta = f.key === 'trascrizione' ? _cercaNelleCarte(m, tok) : null;
+                if (inCarta) {
+                    matches.push(Object.assign({ item: m }, inCarta));
+                    aggiunto = true;
+                    break;
+                }
                 const snippet = buildSnippet(f.clean, f.lower, f.norm, tok);
                 if (snippet) {
                     matches.push({ item: m, key: f.readable, snippet });
@@ -1425,7 +1478,9 @@ function renderSearchSuggestions() {
     matches.forEach(match => {
         const div = document.createElement('div');
         div.className = "p-2 border-b border-stone-200 hover:bg-amber-50 cursor-pointer transition-colors";
-        div.onclick = () => window.rivelaRecordNellaGriglia(match.item.id);
+        div.onclick = () => match.carta !== undefined
+            ? window.apriTrascrizioneSuCarta(match.item.id, match.carta, match.pagina, match.parola)
+            : window.rivelaRecordNellaGriglia(match.item.id);
         div.innerHTML = `
             <div class="text-xs font-bold text-stone-800 truncate mb-1" translate="no">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
             <div class="text-[11px] text-stone-600 leading-tight">

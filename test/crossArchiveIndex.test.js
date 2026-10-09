@@ -46,7 +46,8 @@ function funzioniRenderer() {
 function testCoerenzaRenderer() {
   const r = funzioniRenderer();
   const campioni = ["Luca d'Abete", 'Luca d’Àbete', 'LUCA DʼABETE', 'Perùgia', 'São Miniato', 'ſanto', '  spazi  multipli ',
-    'Ἀθῆναι', 'İstanbul', 'ﬁorini', '', null, undefined, 1340];
+    'Ἀθῆναι', 'İstanbul', 'ﬁorini', '', null, undefined, 1340,
+    'Vita Iesu', 'ſanctuſ maꝛtiꝛ', 'Ǽternæ uitæ', 'Œconomia', 'ꝺomini'];
   for (const c of campioni) {
     assert.strictEqual(testo.normalizza(c), r.normalizzaTesto(c), `normalizza diverge dal renderer su ${JSON.stringify(c)}`);
   }

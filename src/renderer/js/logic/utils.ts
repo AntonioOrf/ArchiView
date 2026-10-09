@@ -65,17 +65,35 @@ window.annunciaA11y = function(testo, priorita = 'polite') {
  * che l'utente digita: senza questa normalizzazione la ricerca manca sistematicamente
  * i record trascritti da un'altra fonte.
  *
- * Nota: preserva la lunghezza sul testo precomposto (NFD scompone il carattere accentato
- * in base + segno, la strip lo ricompatta a 1 carattere), proprietà su cui si appoggiano
- * gli offset degli snippet dei suggerimenti di ricerca.
+ * P3 — e le varianti grafiche del testo medievale: u/v, i/j, ſ→s, ꝛ→r, ꝺ→d, æ→ae, œ→oe.
+ * "vita" trova "uita". Solo per la ricerca: l'ordinamento non passa di qui (v→u metterebbe
+ * "Venezia" fra le U).
+ *
+ * ⚠️ æ e œ ALLUNGANO il testo: un indice trovato sul normalizzato va riportato sull'originale
+ * con `posizioneOriginale`. Stesse regole di `normalizza` in main/crossArchive/testo.ts
+ * (guardia: test/crossArchiveIndex.test.js).
  */
 window.normalizzaTesto = function(s) {
     if (s === null || s === undefined) return '';
+    const varianti = { v: 'u', j: 'i', 'ſ': 's', 'ꝛ': 'r', 'ꝺ': 'd', 'æ': 'ae', 'œ': 'oe' };
     return String(s)
         .toLowerCase()
         .normalize('NFD')
+        .replace(/[vjſꝛꝺæœ]/g, c => varianti[c])
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[\u2018\u2019\u02bc\u02b9\u2032]/g, "'");
+};
+
+/** Indice del testo normalizzato riportato sull'originale, carattere per carattere. */
+window.posizioneOriginale = function(originale, indiceNorm) {
+    let n = 0;
+    let i = 0;
+    for (const ch of originale) {
+        if (n >= indiceNorm) return i;
+        n += window.normalizzaTesto(ch).length;
+        i += ch.length;
+    }
+    return originale.length;
 };
 
 /**
@@ -157,7 +175,8 @@ window.analizzaQuery = function(str) {
 const ALIAS_CAMPI_QUERY = {
     tag: 'tags',
     tipo: 'tipodocumento',
-    archivio: 'cartella',
+    // Chiavi nella forma di normalizzaTesto, che è quella di `f.campo`: v→u (P3).
+    archiuio: 'cartella',
     modificato: 'lastmodified'
 };
 
@@ -347,8 +366,10 @@ window.avanzamentoCarte = function(m) {
 // Per specifica `a.localeCompare(b, loc, opz)` equivale a `new Intl.Collator(loc, opz).compare(a, b)`.
 // Il collator sta sulla funzione stessa: test/naturalSort.test.js ne estrae solo il corpo.
 window.confrontaNaturale = function(a, b) {
-    const sa = window.normalizzaTesto(a).trim();
-    const sb = window.normalizzaTesto(b).trim();
+    // Non normalizzaTesto: le sue varianti paleografiche (v→u) sono per la ricerca. Case e
+    // accenti li ignora già il collator (`sensitivity: 'base'`); restano gli apostrofi.
+    const sa = String(a ?? '').replace(/[‘’ʼʹ′]/g, "'").trim();
+    const sb = String(b ?? '').replace(/[‘’ʼʹ′]/g, "'").trim();
     if (!sa && !sb) return 0;
     if (!sa) return 1;
     if (!sb) return -1;

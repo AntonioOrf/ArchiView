@@ -30,7 +30,8 @@ function estraiFunzione(sorgente, nome) {
 
 function caricaFunzioni() {
   const src = fs.readFileSync(UTILS, 'utf8');
-  const codice = estraiFunzione(src, 'normalizzaTesto') + '\n' + estraiFunzione(src, 'tokenizzaRicerca');
+  const codice = estraiFunzione(src, 'normalizzaTesto') + '\n' + estraiFunzione(src, 'tokenizzaRicerca')
+    + '\n' + estraiFunzione(src, 'posizioneOriginale');
   const window = {};
   // eslint-disable-next-line no-new-func
   new Function('window', codice)(window);
@@ -101,6 +102,25 @@ function runTests() {
   assert.ok(!tokenizzaRicerca('notaio 1350').every(t => hay.includes(t)),
     'Un token assente deve escludere il record (AND, non OR)');
   console.log('✅ Test 7: match AND sui token, accenti indifferenti.');
+
+  // 8) P3 — varianti grafiche del testo medievale, nei due versi.
+  const S_LUNGA = String.fromCharCode(0x017f);
+  const R_ROTONDA = String.fromCharCode(0xa75b);
+  const AE = String.fromCharCode(0x00e6);
+  assert.strictEqual(normalizzaTesto('uita'), normalizzaTesto('Vita'));
+  assert.strictEqual(normalizzaTesto('Iesus'), normalizzaTesto('Jesus'));
+  assert.strictEqual(normalizzaTesto(S_LUNGA + 'anctu' + S_LUNGA), 'sanctus');
+  assert.strictEqual(normalizzaTesto('ma' + R_ROTONDA + 'tiri'), 'martiri');
+  assert.strictEqual(normalizzaTesto('Vit' + AE + ' ' + AE + 'terna'), 'uitae aeterna');
+  console.log('✅ Test 8: u/v, i/j, s lunga, r rotonda, ae legata.');
+
+  // 9) æ allunga il normalizzato: posizioneOriginale riporta il match sul testo originale.
+  const { posizioneOriginale } = caricaFunzioni();
+  const orig = 'in uit' + AE + ' ' + AE + 'ternae';
+  const norm = normalizzaTesto(orig);
+  const j = norm.indexOf('aeternae');
+  assert.strictEqual(orig.slice(posizioneOriginale(orig, j), posizioneOriginale(orig, j + 8)), AE + 'ternae');
+  console.log('✅ Test 9: posizione del match riportata sull\'originale.');
 
   console.log('Tutti i test searchNormalize passati con successo!\n');
 }

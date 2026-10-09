@@ -74,7 +74,8 @@ function runTests() {
   assert.deepStrictEqual(q.testo, ['1340']);
   assert.deepStrictEqual(q.campi, [
     { campo: 'notaio', valore: 'rossi' },
-    { campo: 'titolo', valore: 'vendita di terreno' }
+    // P3: il valore è normalizzato come il fieno, varianti u/v comprese.
+    { campo: 'titolo', valore: 'uendita di terreno' }
   ]);
   console.log('OK Test 2: vincoli campo:valore, con e senza virgolette.');
 
@@ -114,8 +115,10 @@ function runTests() {
 
   // 8) Alias: `tag:` e `tipo:` sono quello che si digita, non `tags`/`tipodocumento`.
   assert.strictEqual(W.recordPassaCampi(scheda, [{ campo: 'tag', valore: 'pergamena' }]), true);
-  assert.strictEqual(W.recordPassaCampi(scheda, [{ campo: 'tipo', valore: 'imbreviature' }]), true);
-  console.log('OK Test 8: alias tag: e tipo: risolti.');
+  // Il valore arriva sempre da analizzaQuery, cioè già normalizzato.
+  assert.strictEqual(W.recordPassaCampi(scheda, W.analizzaQuery('tipo:imbreviature').campi), true);
+  assert.strictEqual(W.recordPassaCampi(scheda, W.analizzaQuery('archivio:notarile').campi), true);
+  console.log('OK Test 8: alias tag:, tipo: e archivio: risolti.');
 
   // 9) Vincoli multipli in AND.
   assert.strictEqual(W.recordPassaCampi(scheda, [

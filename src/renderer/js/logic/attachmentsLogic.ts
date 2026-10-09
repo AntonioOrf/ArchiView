@@ -194,6 +194,42 @@ async function apriTrascrizione(id) {
     if (window.lucide) lucide.createIcons();
 }
 
+/**
+ * P3 — dal risultato di ricerca alla carta (e pagina) che contiene la parola, con la parola
+ * selezionata nell'editor. `parola` è nella forma originale del testo, non normalizzata.
+ */
+window.apriTrascrizioneSuCarta = async function(id, carta, pagina, parola) {
+    await apriTrascrizione(id);
+    const m = appData.manoscritti.find(x => String(x.id) === String(id));
+    const a = m && m.allegati ? m.allegati[carta] : null;
+    // Si aspetta SEMPRE il proprio cambio di carta: supera quello lanciato da apriTrascrizione,
+    // che altrimenti ricaricherebbe l'editor dopo e toglierebbe la selezione.
+    if (a) await window.cambiaAllegatoTrascrizione(a.nome, a.tipo, carta, pagina);
+    const editor = document.getElementById('trascrizione-editor');
+    if (!editor || !parola) return;
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+    const nodi = [];
+    let testo = '';
+    while (walker.nextNode()) {
+        nodi.push({ nodo: walker.currentNode, da: testo.length });
+        testo += (walker.currentNode as Text).data;
+    }
+    const i = testo.indexOf(parola);
+    if (i === -1) return;
+    const punto = (k) => {
+        const n = nodi.filter(x => x.da <= k).pop();
+        return [n.nodo, k - n.da];
+    };
+    const range = document.createRange();
+    range.setStart(...(punto(i) as [Node, number]));
+    range.setEnd(...(punto(i + parola.length) as [Node, number]));
+    editor.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    (range.startContainer.parentElement || editor).scrollIntoView({ block: 'center', behavior: window.comportamentoScroll() });
+};
+
 /** Barra delle carte (più di un allegato): numero, totale e nome della carta in vista. */
 function _taAggiornaBarraCarte(m, index) {
     const barra = document.getElementById('trasc-carte-bar');

@@ -379,6 +379,29 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('main')).not.toContainText('MS-STATO-ALTRA');
   });
 
+  test('P3 — "vita" trova "uita" nella carta 2 e il clic porta lì con la parola selezionata', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await creaConDueAllegati(page, 'MS-PALEO');
+    await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), id);
+    await scriviNellEditor(page, 'Incipit prologus');
+    await vaiAllaCarta(page, 'MS-PALEO', 1);
+    await scriviNellEditor(page, 'de ſancta uita beati');
+    await page.evaluate(() => (window as any).salvaTrascrizione());
+    await page.evaluate(() => (window as any).chiudiTrascrizione());
+
+    await page.locator('header button[data-tab="search"]').click();
+    await page.locator('#search-input').fill('Vita');
+    const risultato = page.locator('#search-suggestions > div', { hasText: 'MS-PALEO' });
+    await expect(risultato).toContainText(/c\. 2|sheet 2/);
+    await expect(risultato.locator('span.bg-amber-200')).toHaveText('uita');
+
+    await risultato.click();
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    await expect(page.locator('#trasc-carta-numero')).toHaveValue('2');
+    await expect(page.locator('#trascrizione-editor')).toBeFocused();
+    await expect.poll(() => page.evaluate(() => String(window.getSelection()))).toBe('uita');
+  });
+
   test('il salvataggio conserva il testo di TUTTE le carte, non solo di quella a schermo', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await creaConDueAllegati(page, 'MS-CARTE-2');

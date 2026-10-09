@@ -16,10 +16,13 @@
  * un indice costruito con regole vecchie (in memoria oggi, su disco domani) va ricostruito,
  * altrimenti una parola risulta introvabile senza che nulla fallisca.
  */
-const NORMALIZZAZIONE_VERSIONE = 1;
+const NORMALIZZAZIONE_VERSIONE = 2;
 
 const RE_DIACRITICI = /[̀-ͯ]/g;
 const RE_APOSTROFI = /[‘’ʼʹ′]/g;
+// v2 (P3): varianti grafiche del testo medievale, "vita" trova "uita".
+const RE_VARIANTI = /[vjſꝛꝺæœ]/g;
+const VARIANTI: Record<string, string> = { v: 'u', j: 'i', 'ſ': 's', 'ꝛ': 'r', 'ꝺ': 'd', 'æ': 'ae', 'œ': 'oe' };
 
 function normalizza(s: any): string {
   if (s === null || s === undefined) return '';
@@ -27,7 +30,8 @@ function normalizza(s: any): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(RE_DIACRITICI, '')
-    .replace(RE_APOSTROFI, "'");
+    .replace(RE_APOSTROFI, "'")
+    .replace(RE_VARIANTI, c => VARIANTI[c]);
 }
 
 /**
