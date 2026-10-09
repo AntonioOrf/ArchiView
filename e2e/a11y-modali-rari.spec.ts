@@ -91,6 +91,43 @@ function schermate(page: Page): Schermata[] {
       },
       chiudi: () => rimuovi('history-restore-confirm'),
     },
+    {
+      // Elenco delle versioni Hub (riga attuale, badge, snapshot locali): il pannello vive nella
+      // sidebar nascosta, quindi l'elenco si sposta per la misura in un contenitore visibile.
+      nome: 'storico-elenco', radice: '#storico-prova',
+      apri: async () => {
+        await page.evaluate(async () => {
+          const w = window as any;
+          const prova = document.createElement('div');
+          prova.id = 'storico-prova';
+          prova.className = 'panel-solid';
+          prova.style.cssText = 'position:fixed;top:0;left:0;width:320px;z-index:500';
+          const lista = document.getElementById('history-list')!;
+          w.__storicoGenitore = lista.parentElement;
+          prova.appendChild(lista);
+          document.body.appendChild(prova);
+          w.__elencaVersioniHub = w.elencaVersioniHub;
+          w.hubConfig = { prova: true };
+          const ora = Date.now();
+          w.elencaVersioniHub = async () => ({ currentVersion: 3, versions: [
+            { version: 3, authorMemberId: null, createdAt: ora - 60_000, sizeBytes: 2048 },
+            { version: 2, authorMemberId: 7, authorLabel: 'Collega', createdAt: ora - 3_600_000, sizeBytes: 2000 },
+          ] });
+          await w.renderHistoryList();
+        });
+        await expect(page.locator('#storico-prova .storico-riga.is-attuale')).toBeVisible();
+      },
+      chiudi: async () => {
+        await page.evaluate(() => {
+          const w = window as any;
+          w.hubConfig = null;
+          w.elencaVersioniHub = w.__elencaVersioniHub;
+          w.__storicoGenitore.appendChild(document.getElementById('history-list')!);
+          document.getElementById('storico-prova')!.remove();
+        });
+      },
+    },
+    condivisioneHub('member'),
     ...['ok', 'entrata', 'pendenti', 'errore', 'disconnesso', 'occupato'].map(statoCloud),
   ];
 }
@@ -164,6 +201,25 @@ test.describe('Modali rari: contrasto, temi e lingua', () => {
       document.getElementById('history-diff-modal')?.contains(document.activeElement))).toBe(true);
     await page.keyboard.press('Escape');
     await expect(modale).toHaveCount(0);
+  });
+
+  test('il menu di una versione nello storico è il menu comune: tastiera, Esc e voci giuste', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Rari');
+    const elenco = schermate(page).find(s => s.nome === 'storico-elenco')!;
+    await elenco.apri();
+    // Prima era un <div> disegnato a mano (fondo #1c1917 in ogni tema), senza ruoli né Esc.
+    await page.locator('#storico-prova .storico-riga.is-attuale').click();
+    const menu = page.locator('#custom-context-menu[role="menu"]');
+    await expect(menu).toBeVisible();
+    // Versione attuale: confronta con l'attuale e con la precedente, niente ripristino.
+    await expect(menu.locator('[role="menuitem"]')).toHaveCount(2);
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+
+    await page.locator('#storico-prova .storico-riga:not(.is-attuale)').click();
+    await expect(menu.locator('[role="menuitem"]')).toHaveCount(2); // confronta + ripristina (v1 non c'è)
+    await page.keyboard.press('Escape');
+    await elenco.chiudi();
   });
 
   test('in inglese i modali rari non mostrano testo italiano cablato', async ({ page, userDataDir }) => {

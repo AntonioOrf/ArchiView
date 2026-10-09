@@ -240,7 +240,7 @@
                                     <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span data-i18n="btn_check_updates">Controlla Aggiornamenti</span>
                                 </button>
                                 <button data-on-click="inSequenza" data-args-click="[&quot;chiudiImpostazioni&quot;,&quot;apriChangelogModal&quot;]" class="btn btn-ghost">
-                                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Scopri novità
+                                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-800"></i> <span data-i18n="btn_whats_new">Scopri novità</span>
                                 </button>
                             </div>
                         </div>
@@ -257,7 +257,7 @@
             </div>
             
             <div class="modal-header shrink-0 p-4 px-6 justify-end border-t border-stone-200">
-                <button data-on-click="chiudiImpostazioni" class="btn" style="background-color: var(--color-text-main); color: var(--color-bg-base);">Chiudi</button>
+                <button data-on-click="chiudiImpostazioni" class="btn btn-primary" data-i18n="btn_close">Chiudi</button>
             </div>
         </div>
     </div>

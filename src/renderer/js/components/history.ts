@@ -1,92 +1,18 @@
 // ─── STORICO VERSIONI CLOUD ─────────────────────────────────────────────────
 
-// Context menu personalizzato per lo storico
-let _historyContextMenu = null;
-
-function chiudiHistoryContextMenu() {
-    if (_historyContextMenu) {
-        _historyContextMenu.remove();
-        _historyContextMenu = null;
-    }
-}
-
+// Menu delle versioni sul componente comune (contextMenu.ts): tastiera, Esc e colori del
+// tema. Prima era disegnato a mano con un fondo #1c1917 fisso anche nei temi chiari (P2-10).
 function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurrent) {
-    chiudiHistoryContextMenu();
-    e.preventDefault();
     e.stopPropagation();
-
     const label = `${dataStr} ${oraStr} – ${autore}`;
-
-    const menu = document.createElement('div');
-    menu.id = 'history-ctx-menu';
-    menu.style.cssText = `
-        position: fixed;
-        top: ${Math.min(e.clientY, window.innerHeight - 120)}px;
-        left: ${Math.min(e.clientX, window.innerWidth - 200)}px;
-        z-index: 500;
-        background: #1c1917;
-        border: 1px solid #44403c;
-        border-radius: 6px;
-        padding: 4px;
-        min-width: 190px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-        font-size: 0.78rem;
-        color: #e7e5e4;
-    `;
-
-    const menuItem = (icon, text, color, onclick) => {
-        const btn = document.createElement('button');
-        btn.style.cssText = `
-            width: 100%; display: flex; align-items: center; gap: 8px;
-            padding: 7px 10px; border: none; background: transparent;
-            color: ${color}; cursor: pointer; border-radius: 4px;
-            font-size: 0.78rem; text-align: left;
-            transition: background 0.1s;
-        `;
-        btn.innerHTML = `<i data-lucide="${escapeHTML(icon)}" style="width:13px;height:13px;flex-shrink:0;"></i> ${escapeHTML(text)}`;
-        btn.onmouseenter = () => btn.style.background = '#292524';
-        btn.onmouseleave = () => btn.style.background = 'transparent';
-        btn.onclick = (ev) => { ev.stopPropagation(); chiudiHistoryContextMenu(); onclick(); };
-        return btn;
-    };
-
-    // Header: data/autore
-    const header = document.createElement('div');
-    header.style.cssText = 'padding: 6px 10px 5px; font-size: 0.68rem; color: #78716c; border-bottom: 1px solid #292524; margin-bottom: 4px; line-height: 1.4;';
-    header.innerHTML = `<strong style="color:#a8a29e;">${dataStr} ${oraStr}</strong><br>${escapeHTML(autore)}`;
-    menu.appendChild(header);
-
-    // Confronta con ora (sempre disponibile)
-    menu.appendChild(menuItem('git-compare', window.t("history_compare_now", "Compare with current"), '#93c5fd',
-        () => apriDiffRevisioneCloud(fileId, rev.id, label)));
-
-    // Separatore
-    if (!isCurrent) {
-        const sep = document.createElement('div');
-        sep.style.cssText = 'height: 1px; background: #292524; margin: 4px 0;';
-        menu.appendChild(sep);
-
-        menu.appendChild(menuItem('rotate-ccw', window.t("history_restore_version", "Restore to this version"), '#fca5a5',
-            () => ripristinaRevisioneConConferma(fileId, rev.id, label)));
-    }
-
-    // Separatore + Annulla
-    const sep2 = document.createElement('div');
-    sep2.style.cssText = 'height: 1px; background: #292524; margin: 4px 0;';
-    menu.appendChild(sep2);
-
-    menu.appendChild(menuItem('x', window.t("btn_cancel", "Cancel"), '#78716c', () => {}));
-
-    document.body.appendChild(menu);
-    _historyContextMenu = menu;
-
-    if (window.lucide) lucide.createIcons({ nodes: [menu] });
-
-    // Chiudi cliccando altrove
-    setTimeout(() => {
-        document.addEventListener('click', chiudiHistoryContextMenu, { once: true });
-        document.addEventListener('contextmenu', chiudiHistoryContextMenu, { once: true });
-    }, 0);
+    window.apriMenuContestuale(e, [
+        { heading: true, label: `${dataStr} ${oraStr} · ${autore}` },
+        { label: window.t("history_compare_now", "Confronta con l'attuale"), icon: 'git-compare',
+          onSelect: () => apriDiffRevisioneCloud(fileId, rev.id, label) },
+        !isCurrent && { separator: true },
+        !isCurrent && { label: window.t("history_restore_version", "Ripristina questa versione"), icon: 'rotate-ccw', danger: true,
+          onSelect: () => ripristinaRevisioneConConferma(fileId, rev.id, label) }
+    ]);
 }
 
 // ─── Rendering lista revisioni ───────────────────────────────────────────────
@@ -144,7 +70,7 @@ async function renderCronologiaCloud(list) {
 
         // Istruzione contestuale
         const hint = document.createElement('li');
-        hint.className = 'px-3 py-2 text-[10px] text-stone-400 italic bg-stone-50 dark:bg-stone-800/30 border-b border-stone-100 dark:border-stone-800/50';
+        hint.className = 'storico-intestazione px-3 py-2 text-[11px] italic';
         hint.textContent = window.t("history_click_hint", "Click a version to compare or restore.");
         fragment.appendChild(hint);
 
@@ -153,23 +79,23 @@ async function renderCronologiaCloud(list) {
             const dataStr = data.toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
             const oraStr = data.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
             const autore = rev.lastModifyingUser
-                ? (rev.lastModifyingUser.displayName || rev.lastModifyingUser.emailAddress || 'Sconosciuto')
-                : 'Sconosciuto';
+                ? (rev.lastModifyingUser.displayName || rev.lastModifyingUser.emailAddress || window.t('history_unknown_author', 'Sconosciuto'))
+                : window.t('history_unknown_author', 'Sconosciuto');
             const dimensioneKb = rev.size ? Math.round(parseInt(rev.size) / 1024) : '?';
             const isCurrent = index === 0;
 
             const li = document.createElement('li');
-            li.className = `flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 ${isCurrent ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-stone-50 dark:hover:bg-stone-800/30'} cursor-context-menu select-none transition-colors`;
+            li.className = `storico-riga${isCurrent ? ' is-attuale' : ''} flex items-center gap-3 py-2.5 px-3 cursor-context-menu select-none transition-colors`;
             li.dataset.revisionId = rev.id;
             li.title = window.t('tooltip_click_for_actions', 'Clicca per le azioni disponibili');
 
             li.innerHTML = `
-                <i data-lucide="${isCurrent ? 'git-commit-horizontal' : 'clock'}" class="w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-amber-500' : 'text-stone-400'}"></i>
+                <i data-lucide="${isCurrent ? 'git-commit-horizontal' : 'clock'}" class="storico-riga-icona w-3.5 h-3.5 shrink-0 text-stone-400"></i>
                 <div class="flex flex-col min-w-0 flex-1">
-                    <span class="text-xs font-semibold ${isCurrent ? 'text-amber-700 dark:text-amber-400' : 'text-stone-700 dark:text-stone-300'} truncate">${escapeHTML(dataStr)} ${escapeHTML(oraStr)}</span>
-                    <span class="text-[10px] text-stone-400 truncate">${escapeHTML(autore)} · ${dimensioneKb} KB</span>
+                    <span class="storico-riga-titolo text-xs font-semibold text-stone-700 truncate">${escapeHTML(dataStr)} ${escapeHTML(oraStr)}</span>
+                    <span class="text-[11px] text-stone-500 truncate">${escapeHTML(autore)} · ${dimensioneKb} KB</span>
                 </div>
-                ${isCurrent ? '<span class="text-[9px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded shrink-0">ATTUALE</span>' : ''}
+                ${isCurrent ? `<span class="storico-badge shrink-0">${escapeHTML(window.t('history_current', 'ATTUALE'))}</span>` : ''}
             `;
 
             // Tasto sinistro o destro → menu contestuale
@@ -188,8 +114,8 @@ async function renderCronologiaCloud(list) {
     } catch (err) {
         console.error("Errore storico cloud:", err);
         list.innerHTML = `
-            <li class="p-4 text-xs text-red-500 italic text-center">
-                Errore: ${escapeHTML(err.message)}
+            <li class="p-4 text-xs testo-pericolo italic text-center">
+                ${escapeHTML(window.t('history_error', 'Errore: '))}${escapeHTML(err.message)}
             </li>`;
     }
 }
@@ -313,11 +239,11 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
                     </div>
                     <div class="flex">
                         <div class="storico-prima">
-                            <div class="text-[10px] font-bold testo-pericolo mb-1">${escapeHTML(leftLabel || t("diff_in_revision", "IN REVISION"))}</div>
+                            <div class="text-[11px] font-bold testo-pericolo mb-1">${escapeHTML(leftLabel || t("diff_in_revision", "IN REVISION"))}</div>
                             <div class="storico-valore">${escapeHTML(prima)}</div>
                         </div>
                         <div class="storico-dopo">
-                            <div class="text-[10px] font-bold testo-successo mb-1">${escapeHTML(rightLabel || t("diff_current_version", "CURRENT VERSION"))}</div>
+                            <div class="text-[11px] font-bold testo-successo mb-1">${escapeHTML(rightLabel || t("diff_current_version", "CURRENT VERSION"))}</div>
                             <div class="storico-valore">${escapeHTML(dopo)}</div>
                         </div>
                     </div>
@@ -447,7 +373,7 @@ async function renderHubHistoryList(list) {
         const fragment = document.createDocumentFragment();
 
         const hint = document.createElement('li');
-        hint.className = 'px-3 py-2 text-[10px] text-stone-400 italic bg-stone-50 dark:bg-stone-800/30 border-b border-stone-100 dark:border-stone-800/50';
+        hint.className = 'storico-intestazione px-3 py-2 text-[11px] italic';
         hint.textContent = window.t("history_click_hint", "Click a version to compare or restore.");
         fragment.appendChild(hint);
 
@@ -461,22 +387,22 @@ async function renderHubHistoryList(list) {
             const dimensioneKb = entry.sizeBytes ? Math.round(entry.sizeBytes / 1024) : 0;
 
             const li = document.createElement('li');
-            li.className = `flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 ${isCurrent ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-stone-50 dark:hover:bg-stone-800/30'} cursor-context-menu select-none transition-colors`;
+            li.className = `storico-riga${isCurrent ? ' is-attuale' : ''} flex items-center gap-3 py-2.5 px-3 cursor-context-menu select-none transition-colors`;
             li.title = window.t('tooltip_click_for_actions', 'Clicca per le azioni disponibili');
 
             const icon = document.createElement('i');
             icon.dataset.lucide = isCurrent ? 'git-commit-horizontal' : 'git-commit-vertical';
-            icon.className = `w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-amber-500' : 'text-stone-400'}`;
+            icon.className = 'storico-riga-icona w-3.5 h-3.5 shrink-0 text-stone-400';
             li.appendChild(icon);
 
             const col = document.createElement('div');
             col.className = 'flex flex-col min-w-0 flex-1';
             const line1 = document.createElement('span');
-            line1.className = `text-xs font-semibold ${isCurrent ? 'text-amber-700 dark:text-amber-400' : 'text-stone-700 dark:text-stone-300'} truncate`;
+            line1.className = 'storico-riga-titolo text-xs font-semibold text-stone-700 truncate';
             // entry.version arriva dall'Hub: un server di terzi può restituire qualsiasi cosa.
             line1.innerHTML = `<span style="font-family:monospace;">v${escapeHTML(String(entry.version))}</span> · ${escapeHTML(autore)}`;
             const line2 = document.createElement('span');
-            line2.className = 'text-[10px] text-stone-400 truncate';
+            line2.className = 'text-[11px] text-stone-500 truncate';
             line2.textContent = `${formatRelativeDate(entry.createdAt)} · ${dimensioneKb} KB`;
             col.appendChild(line1);
             col.appendChild(line2);
@@ -484,7 +410,7 @@ async function renderHubHistoryList(list) {
 
             if (isCurrent) {
                 const badge = document.createElement('span');
-                badge.className = 'text-[9px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded shrink-0';
+                badge.className = 'storico-badge shrink-0';
                 badge.textContent = window.t("history_current", "ATTUALE");
                 li.appendChild(badge);
             }
@@ -504,15 +430,13 @@ async function renderHubHistoryList(list) {
     } catch (err) {
         console.error("Errore storico Hub:", err);
         list.innerHTML = `
-            <li class="p-4 text-xs text-red-500 italic text-center">
-                Errore: ${escapeHTML(err.message)}
+            <li class="p-4 text-xs testo-pericolo italic text-center">
+                ${escapeHTML(window.t('history_error', 'Errore: '))}${escapeHTML(err.message)}
             </li>`;
     }
 }
 
 function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
-    chiudiHistoryContextMenu();
-    e.preventDefault();
     e.stopPropagation();
 
     const isCurrent = entry.version === currentVersion;
@@ -525,76 +449,16 @@ function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
     const label = `v${entry.version} – ${dataStr} ${oraStr} – ${autore}`;
     const hasPrevious = versionSet.has(entry.version - 1);
 
-    const menu = document.createElement('div');
-    menu.id = 'history-ctx-menu';
-    menu.style.cssText = `
-        position: fixed;
-        top: ${Math.min(e.clientY, window.innerHeight - 160)}px;
-        left: ${Math.min(e.clientX, window.innerWidth - 220)}px;
-        z-index: 500;
-        background: #1c1917;
-        border: 1px solid #44403c;
-        border-radius: 6px;
-        padding: 4px;
-        min-width: 190px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-        font-size: 0.78rem;
-        color: #e7e5e4;
-    `;
-
-    const menuItem = (icon, text, color, onclick) => {
-        const btn = document.createElement('button');
-        btn.style.cssText = `
-            width: 100%; display: flex; align-items: center; gap: 8px;
-            padding: 7px 10px; border: none; background: transparent;
-            color: ${color}; cursor: pointer; border-radius: 4px;
-            font-size: 0.78rem; text-align: left;
-            transition: background 0.1s;
-        `;
-        btn.innerHTML = `<i data-lucide="${escapeHTML(icon)}" style="width:13px;height:13px;flex-shrink:0;"></i> ${escapeHTML(text)}`;
-        btn.onmouseenter = () => btn.style.background = '#292524';
-        btn.onmouseleave = () => btn.style.background = 'transparent';
-        btn.onclick = (ev) => { ev.stopPropagation(); chiudiHistoryContextMenu(); onclick(); };
-        return btn;
-    };
-
-    const header = document.createElement('div');
-    header.style.cssText = 'padding: 6px 10px 5px; font-size: 0.68rem; color: #78716c; border-bottom: 1px solid #292524; margin-bottom: 4px; line-height: 1.4;';
-    header.innerHTML = `<strong style="color:#a8a29e;">v${escapeHTML(String(entry.version))} –${escapeHTML(dataStr)} ${escapeHTML(oraStr)}</strong><br>${escapeHTML(autore)}`;
-    menu.appendChild(header);
-
-    menu.appendChild(menuItem('git-compare', window.t("history_compare_now", "Compare with current"), '#93c5fd',
-        () => apriDiffVersioneHub(entry.version, null, label)));
-
-    if (hasPrevious) {
-        menu.appendChild(menuItem('file-diff', window.t("history_compare_previous", "Confronta con precedente"), '#93c5fd',
-            () => apriDiffVersioneHub(entry.version - 1, entry.version, label)));
-    }
-
-    if (!isCurrent) {
-        const sep = document.createElement('div');
-        sep.style.cssText = 'height: 1px; background: #292524; margin: 4px 0;';
-        menu.appendChild(sep);
-
-        menu.appendChild(menuItem('rotate-ccw', window.t("history_restore_version", "Restore to this version"), '#fca5a5',
-            () => ripristinaVersioneHubConConferma(entry.version, label)));
-    }
-
-    const sep2 = document.createElement('div');
-    sep2.style.cssText = 'height: 1px; background: #292524; margin: 4px 0;';
-    menu.appendChild(sep2);
-
-    menu.appendChild(menuItem('x', window.t("btn_cancel", "Cancel"), '#78716c', () => {}));
-
-    document.body.appendChild(menu);
-    _historyContextMenu = menu;
-
-    if (window.lucide) lucide.createIcons({ nodes: [menu] });
-
-    setTimeout(() => {
-        document.addEventListener('click', chiudiHistoryContextMenu, { once: true });
-        document.addEventListener('contextmenu', chiudiHistoryContextMenu, { once: true });
-    }, 0);
+    window.apriMenuContestuale(e, [
+        { heading: true, label: `v${entry.version} · ${dataStr} ${oraStr} · ${autore}` },
+        { label: window.t("history_compare_now", "Confronta con l'attuale"), icon: 'git-compare',
+          onSelect: () => apriDiffVersioneHub(entry.version, null, label) },
+        hasPrevious && { label: window.t("history_compare_previous", "Confronta con precedente"), icon: 'file-diff',
+          onSelect: () => apriDiffVersioneHub(entry.version - 1, entry.version, label) },
+        !isCurrent && { separator: true },
+        !isCurrent && { label: window.t("history_restore_version", "Ripristina questa versione"), icon: 'rotate-ccw', danger: true,
+          onSelect: () => ripristinaVersioneHubConConferma(entry.version, label) }
+    ]);
 }
 
 // Confronta due snapshot Hub: `newVersionOrNull === null` → confronto con appData corrente.
@@ -657,15 +521,15 @@ window.renderSnapshotLocali = async function(list) {
     if (!list || !window.apiSicurezza) return;
 
     const intestazione = document.createElement('li');
-    intestazione.className = 'px-3 py-2 flex items-center justify-between gap-2 bg-stone-50 dark:bg-stone-800/30 border-y border-stone-100 dark:border-stone-800/50 sticky top-0';
+    intestazione.className = 'storico-intestazione px-3 py-2 flex items-center justify-between gap-2 sticky top-0';
     const titolo = document.createElement('span');
-    titolo.className = 'text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400';
+    titolo.className = 'text-[11px] font-bold uppercase tracking-wider';
     titolo.textContent = window.t('snap_section_title', 'Snapshot locali');
     intestazione.appendChild(titolo);
     const crea = document.createElement('button');
     crea.type = 'button';
     crea.id = 'btn-snapshot-now';
-    crea.className = 'text-[10px] font-semibold text-amber-800 hover:underline transition-colors';
+    crea.className = 'text-[11px] font-semibold text-amber-800 hover:underline transition-colors';
     crea.textContent = window.t('snap_create_now', 'Crea adesso');
     crea.title = window.t('snap_create_now_hint', 'Fotografa subito lo stato dell\'archivio');
     crea.onclick = () => window.creaSnapshotOra();
@@ -680,8 +544,8 @@ window.renderSnapshotLocali = async function(list) {
     } catch (err) {
         console.error('Errore elenco snapshot:', err);
         const errore = document.createElement('li');
-        errore.className = 'p-3 text-xs text-red-500 italic text-center';
-        errore.textContent = 'Errore: ' + (err.message || err);
+        errore.className = 'p-3 text-xs testo-pericolo italic text-center';
+        errore.textContent = window.t('history_error', 'Errore: ') + (err.message || err);
         list.appendChild(errore);
         return;
     }
@@ -697,7 +561,7 @@ window.renderSnapshotLocali = async function(list) {
     const frammento = document.createDocumentFragment();
     for (const v of voci) {
         const li = document.createElement('li');
-        li.className = 'flex items-center gap-3 py-2.5 px-3 border-b border-stone-100 dark:border-stone-800/50 last:border-0 hover:bg-stone-50 dark:hover:bg-stone-800/30 cursor-context-menu select-none transition-colors';
+        li.className = 'storico-riga flex items-center gap-3 py-2.5 px-3 cursor-context-menu select-none transition-colors';
         li.dataset.snapshot = v.nome;
         li.title = window.t('tooltip_click_for_actions', 'Clicca per le azioni disponibili');
 
@@ -709,10 +573,10 @@ window.renderSnapshotLocali = async function(list) {
         const col = document.createElement('div');
         col.className = 'flex flex-col min-w-0 flex-1';
         const r1 = document.createElement('span');
-        r1.className = 'text-xs font-semibold text-stone-700 dark:text-stone-300 truncate';
+        r1.className = 'text-xs font-semibold text-stone-700 truncate';
         r1.textContent = formatRelativeDate(v.creatoIl);
         const r2 = document.createElement('span');
-        r2.className = 'text-[10px] text-stone-400 truncate';
+        r2.className = 'text-[11px] text-stone-500 truncate';
         r2.textContent = _snEtichettaMotivo(v.motivo) + ' · ' + _snKb(v.sizeBytes) + ' KB';
         col.appendChild(r1);
         col.appendChild(r2);
@@ -728,8 +592,6 @@ window.renderSnapshotLocali = async function(list) {
 };
 
 function _snApriMenu(e, voce) {
-    chiudiHistoryContextMenu();
-    e.preventDefault();
     e.stopPropagation();
 
     const data = new Date(voce.creatoIl);
@@ -737,10 +599,6 @@ function _snApriMenu(e, voce) {
     const oraStr = data.toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
     const label = `${dataStr} ${oraStr} – ${_snEtichettaMotivo(voce.motivo)}`;
 
-    // Il menu contestuale unificato (`apriMenuContestuale`) invece di quello disegnato a mano
-    // qui sopra per il cloud: quello è codice del 2.x che nessuno ha ancora convertito, non
-    // un modello da imitare. Le voci nuove nascono già sul componente comune, che ha la
-    // navigazione da tastiera e la chiusura con Esc.
     window.apriMenuContestuale(e, [
         { heading: true, label },
         {
@@ -912,7 +770,7 @@ function _srApriModal(id, etichetta, tappe, corrente) {
         const quando = document.createElement('span');
         quando.textContent = formatRelativeDate(t.creatoIl);
         const stato = document.createElement('span');
-        stato.className = 'text-xs text-stone-500 dark:text-stone-400';
+        stato.className = 'text-xs text-stone-500';
         // Una tappa senza record è il momento in cui la scheda ANCORA non esisteva (o non
         // esisteva più): è un'informazione, non un buco da nascondere.
         stato.textContent = '  ·  ' + (t.record
@@ -954,7 +812,7 @@ function _srApriModal(id, etichetta, tappe, corrente) {
     }
 
     const nota = document.createElement('p');
-    nota.className = 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3';
+    nota.className = 'text-xs text-stone-500 leading-relaxed mt-3';
     nota.textContent = window.t('rec_history_hint', 'Le tappe sono ricavate dagli snapshot locali: compaiono solo i momenti in cui questa scheda è cambiata.');
     body.appendChild(nota);
 

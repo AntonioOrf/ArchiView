@@ -458,6 +458,7 @@ function _grAggiornaDettaglio() {
     if (!id) {
         const p = document.createElement('p');
         p.className = 'text-xs text-stone-400 italic';
+        p.dataset.i18n = 'graph_hint';
         p.textContent = _grT('graph_hint', 'Clic su un nodo per isolarlo con i suoi vicini, doppio clic per aprire la scheda. Trascina per spostare, rotella per lo zoom.');
         box.appendChild(p);
         return;

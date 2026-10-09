@@ -298,6 +298,31 @@ test.describe('Accessibilità: effetti globali', () => {
     }
   });
 
+  test('6.10b — in inglese i modali statici non hanno testo italiano senza data-i18n', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
+    await page.evaluate(() => (window as any).cambiaLingua('en'));
+
+    // Modali iniettati al caricamento (anche nascosti): ogni testo fisso deve stare sotto un
+    // data-i18n, altrimenti resta nella lingua del sorgente (audit front-end P2-7).
+    const cablati = await page.evaluate(() => {
+      const out: string[] = [];
+      for (const finestra of document.querySelectorAll('.modal-window')) {
+        const w = document.createTreeWalker(finestra, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          const testo = (n.textContent || '').trim();
+          if (!/[a-zà-ù]{3,}/i.test(testo)) continue;
+          const el = n.parentElement!;
+          // Le note di rilascio (titolo e corpo) arrivano da RELEASE_NOTES.md, solo in italiano.
+          if (el.closest('[data-i18n], [translate="no"], script, style, option, #changelog-content, .changelog-titolo')) continue;
+          const modale = finestra.closest('[id]');
+          out.push(`${modale ? modale.id : '?'}: ${testo.slice(0, 60)}`);
+        }
+      }
+      return out;
+    });
+    expect(cablati).toEqual([]);
+  });
+
   test('6.11 — il variant dark è agganciato ai temi scuri e solo a quelli', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 

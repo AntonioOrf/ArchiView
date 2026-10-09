@@ -26,4 +26,21 @@ for (const nome of ['customEn', 'customIt']) {
   assert.deepStrictEqual(sporche, [], nome + ': valori con avanzi di .po');
   console.log(`✅ ${nome}: ${elenco.length} voci, nessuna doppia né sporca.`);
 }
+// Audit front-end P2-7: una chiave usata senza voce in customEn mostra in inglese il ripiego
+// italiano scritto nel codice. Si cercano t('chiave', …) e data-i18n*="chiave" nel renderer.
+const inglese = new Set(voci('customEn').map(([k]) => k));
+const senzaInglese = [];
+const scorri = (dir) => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) { scorri(p); continue; }
+    if (!/\.(ts|html)$/.test(e.name) || e.name === 'i18n.ts') continue;
+    const testo = fs.readFileSync(p, 'utf8');
+    const usate = [...testo.matchAll(/\bt\(\s*["']([a-zA-Z0-9_.]+)["']\s*,/g), ...testo.matchAll(/data-i18n(?:-[a-z-]+)?="([a-zA-Z0-9_.]+)"/g)];
+    for (const [, k] of usate) if (!inglese.has(k)) senzaInglese.push(path.relative(path.join(__dirname, '..'), p) + ': ' + k);
+  }
+};
+scorri(path.join(__dirname, '..', 'src/renderer'));
+assert.deepStrictEqual([...new Set(senzaInglese)], [], 'chiavi usate senza voce in customEn');
+console.log('✅ ogni chiave usata nel renderer ha la voce inglese.');
 console.log('Tutti i test i18nDizionari passati con successo!');

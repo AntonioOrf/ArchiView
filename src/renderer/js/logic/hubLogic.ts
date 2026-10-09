@@ -390,12 +390,12 @@ window.sincronizzaAllegatiHub = async function(isSilent = true) {
         }
         if (r.decryptFailed > 0) {
             mostraMessaggio(window.t("msg_hub_attachments_decrypt_failed",
-                `${r.decryptFailed} allegato/i non decifrabile/i: la tua chiave di cifratura non corrisponde a quella usata da chi li ha caricati. Chiedi al proprietario un nuovo invito.`), "error");
+                "{var0} allegato/i non decifrabile/i: la tua chiave di cifratura non corrisponde a quella usata da chi li ha caricati. Chiedi al proprietario un nuovo invito.").replace('{var0}', String(r.decryptFailed)), "error");
         }
         const unavailableGenerico = r.unavailable - (r.decryptFailed || 0);
         if (unavailableGenerico > 0) {
             mostraMessaggio(window.t("msg_allegati_non_disponibili",
-                `${unavailableGenerico} allegato/i non disponibile/i (il proprietario non li ha ancora caricati o il link è scaduto).`), "warning");
+                "{var0} allegato/i non disponibile/i (il proprietario non li ha ancora caricati o il link è scaduto).").replace('{var0}', String(unavailableGenerico)), "warning");
         }
         // I propri allegati non vengono condivisi finché non si collega Google Drive: avviso
         // one-time per non ripeterlo ad ogni autofetch/pull/push silenzioso.

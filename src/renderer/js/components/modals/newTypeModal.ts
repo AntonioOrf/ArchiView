@@ -125,7 +125,7 @@
                 <div class="modal-footer flex justify-between">
                     <button type="button" data-on-click="apriManageTypesModal" class="btn btn-secondary text-sm" data-i18n="btn_manage_models">Gestisci Modelli</button>
                     <div class="flex gap-2">
-                        <button type="button" data-on-click="chiudiNewTypeModal" class="btn btn-ghost">Annulla</button>
+                        <button type="button" data-on-click="chiudiNewTypeModal" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
                         <button type="button" data-on-click="confermaCreaTipo" class="btn btn-primary" id="btn-salva-tipo" data-i18n="btn_create">Crea</button>
                     </div>
                 </div>

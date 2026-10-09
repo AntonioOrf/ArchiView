@@ -34,7 +34,7 @@
                                 </div>
                                 <div class="modal-footer mt-4">
                                     <button type="button" data-on-click="chiudiIssueModal" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
-                                    <button type="submit" class="btn btn-primary">Invia via Email</button>
+                                    <button type="submit" class="btn btn-primary" data-i18n="btn_send_email">Invia via Email</button>
                                 </div>
                             </form>
                         </div>

@@ -492,8 +492,8 @@ function apriManageTypesModal() {
         const div = document.createElement('div');
         div.className = 'flex justify-between items-center p-3 bg-stone-50 border border-stone-200 rounded-sm';
         
-        let inUsoBadge = inUso ? '<span class="text-[10px] uppercase font-bold tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full ml-2">In uso</span>' : '';
-        let defaultBadge = isDefault ? '<span class="text-[10px] uppercase font-bold tracking-wider text-stone-500 bg-stone-200 px-2 py-0.5 rounded-full ml-2">Predefinito</span>' : '';
+        let inUsoBadge = inUso ? '<span class="text-[11px] uppercase font-bold tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 ml-2">' + escapeHTML(window.t('type_badge_in_use', 'In uso')) + '</span>' : '';
+        let defaultBadge = isDefault ? '<span class="text-[11px] uppercase font-bold tracking-wider text-stone-500 bg-stone-200 px-2 py-0.5 ml-2">' + escapeHTML(window.t('type_badge_default', 'Predefinito')) + '</span>' : '';
         
         // Un modello predefinito si APRE come gli altri: ciò che è bloccato sono i suoi campi
         // d'origine (nome del modello compreso), non l'aggiunta di campi propri. Prima il

@@ -251,13 +251,12 @@ async function aggiornaStatoDrive() {
         const syncBtn = document.getElementById('btn-drive-sync');
 
         if (section) {
+            statusText.innerHTML = window.sanitizeHTML(_statoDriveHtml());
             if (window.driveStatus.isAuthenticated) {
-                statusText.innerHTML = window.sanitizeHTML(`<span class="text-green-600 font-semibold">Connesso come: ${escapeHTML(window.driveStatus.user || '')}</span>`);
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
                 syncBtn.classList.remove('hidden');
             } else {
-                statusText.innerHTML = window.sanitizeHTML(`<span class="text-stone-500">Non connesso</span>`);
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
                 syncBtn.classList.add('hidden');
@@ -265,6 +264,15 @@ async function aggiornaStatoDrive() {
         }
         window.aggiornaStatoDriveHub();
     }
+}
+
+// Stato dell'account nelle Impostazioni: data-i18n perché il modale resta nel DOM e va
+// ritradotto al cambio di lingua (audit front-end P2-7).
+function _statoDriveHtml() {
+    if (window.driveStatus && window.driveStatus.isAuthenticated) {
+        return `<span class="testo-successo font-semibold"><span data-i18n="settings_drive_connected_as">${escapeHTML(window.t('settings_drive_connected_as', 'Connesso come:'))}</span> ${escapeHTML(window.driveStatus.user || '')}</span>`;
+    }
+    return `<span class="text-stone-500" data-i18n="settings_drive_not_connected">${escapeHTML(window.t('settings_drive_not_connected', 'Non connesso'))}</span>`;
 }
 
 // Aggiorna il blocco "Google Drive personale (per gli allegati)" nella sezione Hub delle
@@ -275,12 +283,11 @@ window.aggiornaStatoDriveHub = function() {
     const logoutBtn = document.getElementById('btn-hub-drive-logout');
     if (!statusText) return;
 
+    statusText.innerHTML = window.sanitizeHTML(_statoDriveHtml());
     if (window.driveStatus && window.driveStatus.isAuthenticated) {
-        statusText.innerHTML = window.sanitizeHTML(`<span class="text-green-600 font-semibold">Connesso come: ${escapeHTML(window.driveStatus.user || '')}</span>`);
         if (loginBtn) loginBtn.classList.add('hidden');
         if (logoutBtn) logoutBtn.classList.remove('hidden');
     } else {
-        statusText.innerHTML = window.sanitizeHTML(`<span class="text-stone-500">${escapeHTML(window.t('settings_drive_not_connected', 'Non Connesso'))}</span>`);
         if (loginBtn) loginBtn.classList.remove('hidden');
         if (logoutBtn) logoutBtn.classList.add('hidden');
     }

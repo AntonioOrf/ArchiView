@@ -6,7 +6,7 @@
         <div class="modal-window max-w-4xl max-h-[90vh]">
             <div class="modal-header shrink-0">
                 <h3 class="modal-title">
-                    <i data-lucide="layers" class="w-5 h-5 text-amber-700"></i> Documenti: <span id="docs-modal-title"></span>
+                    <i data-lucide="layers" class="w-5 h-5 text-amber-700"></i> <span data-i18n="docs_modal_title">Documenti:</span> <span id="docs-modal-title"></span>
                 </h3>
                 <button type="button" data-on-click="chiudiModalDocumenti" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
