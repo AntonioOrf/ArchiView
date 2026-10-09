@@ -45,7 +45,7 @@
 
     <div id="bottom-confirm-banner" class="modal-overlay hidden-tab z-modal-alert">
         <div class="modal-window max-w-sm">
-            <div class="modal-header" style="background-color: var(--color-danger-light); border-color: #fca5a5;">
+            <div class="modal-header" style="background-color: var(--color-danger-light); border-color: var(--color-danger-border);">
                 <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
                 <h3 class="modal-title" style="color: var(--color-danger-hover); width: 100%;" data-i18n="modal_confirm_action">Conferma Azione</h3>
             </div>

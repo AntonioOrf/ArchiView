@@ -1117,7 +1117,7 @@ window.aggiornaListaVault = async function() {
                         divContainer.appendChild(checkIcon.firstChild);
                     } else {
                         const delBtn = document.createElement('button');
-                        delBtn.className = 'p-1 rounded hover:bg-red-100 text-stone-400 hover:text-red-600 transition-colors shrink-0 opacity-50 hover:opacity-100';
+                        delBtn.className = 'p-1 hover:bg-red-100 text-stone-400 hover:text-red-600 transition-colors shrink-0';
                         delBtn.innerHTML = window.sanitizeHTML('<i data-lucide="x" class="w-3.5 h-3.5"></i>');
                         delBtn.onclick = (e) => window.rimuoviVaultDallaLista(e, path);
                         delBtn.title = window.t('tooltip_remove_from_list', 'Rimuovi dalla lista');

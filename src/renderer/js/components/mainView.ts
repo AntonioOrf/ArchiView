@@ -1454,15 +1454,8 @@ window.rivelaRecordNellaGriglia = function(id) {
 
     targetCard.scrollIntoView({ behavior: window.comportamentoScroll(), block: 'center' });
     // Evidenziazione temporanea per indicare quale scheda è stata raggiunta
-    targetCard.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
-    const oldShadow = targetCard.style.boxShadow;
-    const oldBorder = targetCard.style.borderColor;
-    targetCard.style.boxShadow = "0 0 0 4px rgba(251, 191, 36, 0.4)";
-    targetCard.style.borderColor = "#f59e0b";
-    setTimeout(() => {
-        targetCard.style.boxShadow = oldShadow;
-        targetCard.style.borderColor = oldBorder;
-    }, 1500);
+    targetCard.classList.add('scheda-raggiunta');
+    setTimeout(() => targetCard.classList.remove('scheda-raggiunta'), 1500);
 };
 
 window.cambiaPagina = function(dir) {

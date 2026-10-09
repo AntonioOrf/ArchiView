@@ -601,6 +601,11 @@ button, .btn {
     border-color: var(--color-primary-border);
     background-color: var(--color-bg-hover);
 }
+/* Scheda appena raggiunta da un suggerimento di ricerca (1,5 s, rivelaRecordNellaGriglia). */
+.scheda-raggiunta {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
+}
 .card-title {
     font-size: 1.125rem;
     font-weight: bold;
@@ -918,14 +923,14 @@ button, .btn {
     color: var(--color-text-muted);
 }
 .import-chip strong { font-size: 0.95rem; color: var(--color-text-main); }
-.import-chip.is-new strong { color: #15803d; }
-.import-chip.is-upd strong { color: #1d4ed8; }
-.import-chip.is-skip strong { color: #b91c1c; }
-.import-chip.is-warn strong { color: #b45309; }
+.import-chip.is-new strong, .import-state.is-nuova { color: var(--color-success); }
+.import-chip.is-upd strong, .import-state.is-aggiornata { color: var(--color-info); }
+.import-chip.is-skip strong, .import-state.is-scartata { color: var(--color-danger-text); }
+.import-chip.is-warn strong, .import-preview-warn { color: var(--color-warning); }
 
 .import-note {
     font-size: 0.72rem;
-    color: #b45309;
+    color: var(--color-warning);
     margin-bottom: 0.5rem;
 }
 
@@ -944,7 +949,7 @@ button, .btn {
 .import-preview-row:last-child { border-bottom: none; }
 .import-preview-body { min-width: 0; }
 .import-preview-row-n { font-size: 0.7rem; color: var(--color-text-muted); }
-.import-preview-warn { font-size: 0.72rem; color: #b45309; }
+.import-preview-warn { font-size: 0.72rem; }
 .import-state {
     font-size: 0.6rem;
     font-weight: 700;
@@ -952,9 +957,6 @@ button, .btn {
     letter-spacing: 0.06em;
     padding-top: 0.2rem;
 }
-.import-state.is-nuova { color: #15803d; }
-.import-state.is-aggiornata { color: #1d4ed8; }
-.import-state.is-scartata { color: #b91c1c; }
 
 .import-hint {
     font-size: 0.72rem;
@@ -962,20 +964,6 @@ button, .btn {
     line-height: 1.6;
     margin-top: 0.75rem;
 }
-
-/* I colori di stato sono scritti in chiaro perché sono semantici (verde = entra, rosso =
-   non entra) e non appartengono alla palette dei temi; in scuro vanno però schiariti, o su
-   fondo #1c1917 il rosso 700 è illeggibile. */
-.dark-theme .import-chip.is-new strong, .dark-theme .import-state.is-nuova { color: #4ade80; }
-.dark-theme .import-chip.is-upd strong, .dark-theme .import-state.is-aggiornata { color: #93c5fd; }
-.dark-theme .import-chip.is-skip strong, .dark-theme .import-state.is-scartata { color: #fca5a5; }
-.dark-theme .import-chip.is-warn strong { color: #fcd34d; }
-.dark-theme .import-note, .dark-theme .import-preview-warn { color: #fcd34d; }
-.blue-dark-theme .import-chip.is-new strong, .blue-dark-theme .import-state.is-nuova { color: #4ade80; }
-.blue-dark-theme .import-chip.is-upd strong, .blue-dark-theme .import-state.is-aggiornata { color: #93c5fd; }
-.blue-dark-theme .import-chip.is-skip strong, .blue-dark-theme .import-state.is-scartata { color: #fca5a5; }
-.blue-dark-theme .import-chip.is-warn strong { color: #fcd34d; }
-.blue-dark-theme .import-note, .blue-dark-theme .import-preview-warn { color: #fcd34d; }
 
 /* --- Vocabolari controllati, anagrafica e collegamenti (Fasi 3.3, 3.5, 3.6) ------
    Riusano deliberatamente `.tag-manager-list`/`.tag-manager-row` della 3.4: sono lo stesso
@@ -1474,12 +1462,6 @@ summary:focus:not(:focus-visible) { outline: none; }
 }
 #cloud-status-btn[data-stato="entrata"] {
     animation: pulse-indicator 2s ease-in-out 3;
-}
-
-/* Sidebar panel-header: accento sinistro per gerarchia visiva */
-#sidebar .panel-header {
-    border-left: 3px solid var(--color-primary);
-    padding-left: 0.875rem;
 }
 
 .activity-bar-btn {
@@ -1990,10 +1972,10 @@ label:has(> input[type="radio"]) {
    segnale (c'è anche il tratteggio), così resta distinguibile a chi non percepisce
    le differenze cromatiche. */
 .ocr-incerto {
-    text-decoration: underline wavy var(--color-accent, #b45309);
+    text-decoration: underline wavy var(--color-primary-hover);
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
-    background-color: rgba(180, 83, 9, 0.06);
+    background-color: color-mix(in srgb, var(--color-primary) 6%, transparent);
     cursor: help;
 }
 
@@ -2002,7 +1984,7 @@ label:has(> input[type="radio"]) {
 .ocr-origine {
     font-size: 0.85em;
     color: var(--color-text-muted, #78716c);
-    border-left: 3px solid var(--color-accent, #b45309);
+    border-left: 3px solid var(--color-primary);
     padding-left: 0.6em;
     margin-bottom: 0.8em;
 }
