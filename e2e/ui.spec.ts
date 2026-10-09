@@ -31,7 +31,7 @@ test.describe('UI: impostazioni, lingua, tema', () => {
   test('il cambio tema applica la classe dark', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');
 
-    await page.evaluate(() => (window as any).apriImpostazioni());
+    await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
     await page.locator('#settings-theme').selectOption('dark');
 
     await expect(page.locator('html')).toHaveClass(/dark-theme/, { timeout: 8_000 });
@@ -40,7 +40,7 @@ test.describe('UI: impostazioni, lingua, tema', () => {
   test('il tema scelto persiste dopo il riavvio', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');
 
-    await page.evaluate(() => (window as any).apriImpostazioni());
+    await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
     await page.locator('#settings-theme').selectOption('dark');
     await expect(page.locator('html')).toHaveClass(/dark-theme/, { timeout: 8_000 });
 

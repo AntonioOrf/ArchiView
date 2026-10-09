@@ -75,7 +75,7 @@
                      un allegato: con uno solo sarebbe una riga che ripete l'ovvio. -->
                 <div id="trascrizione-carta" class="hidden-tab shrink-0 px-3 py-1.5 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-900 truncate"></div>
                 <div class="trasc-editor-area flex-1 overflow-y-auto cursor-text p-6 bg-white" data-on-click="fuocoEditorDaSfondo">
-                    <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none text-lg leading-relaxed text-stone-800 select-text" style="font-family: 'Georgia', serif; outline: none;"></div>
+                    <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none leading-relaxed text-stone-800 select-text"></div>
                 </div>
             </div>
 

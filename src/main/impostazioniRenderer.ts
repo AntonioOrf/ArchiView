@@ -6,8 +6,8 @@
 // (archivio aperto all'avvio) e le chiavi del vault (dove sincronizza). Quelle le scrive solo il
 // main, da flussi suoi (dialoghi, apertura di un archivio, join). Qui passano solo preferenze.
 //
-// Il renderer salva sempre l'oggetto intero letto con get-settings: le chiavi fuori elenco
-// si scartano in silenzio, non è un errore.
+// Il renderer manda solo le chiavi che cambia (`apiSettings.patch`): quelle fuori elenco o
+// con valore non valido tornano in `rifiutate`, e chi chiama lo segnala.
 //
 // Puro (niente electron): testato in Node da test/impostazioniRenderer.test.js.
 
@@ -45,7 +45,17 @@ const AMMESSE: { [chiave: string]: Validatore } = {
   cestinoGiorni: intero(0, 3650),
   suggerimentiAltriArchivi: booleano,
   // Esclusioni della ricerca tra archivi: solo id, e possono solo restringere.
-  crossArchiveEsclusi: Array.isArray
+  crossArchiveEsclusi: Array.isArray,
+  // Lingue OCR preselezionate (codici Tesseract): dipendono da cosa è installato su questo
+  // computer, per questo non stanno in appData.
+  ocrLingue: (v) => Array.isArray(v) && v.length <= 32 && v.every((c) => typeof c === 'string' && /^[a-z_]{3,24}$/.test(c)),
+  // Aspetto e documenti (predefiniti in PREDEFINITI_IMPOSTAZIONI, settingsLogic.ts).
+  zoomInterfaccia: (v) => intero(80, 150)(v) && (v as number) % 10 === 0,
+  fontTrascrizione: (v) => v === 'serif' || v === 'sans' || v === 'mono' || v === 'junicode',
+  dimensioneTrascrizione: intero(12, 32),
+  pdfRisoluzione: intero(1600, 3200),
+  pdfZoomIniziale: (v) => v === 'pagina' || v === 'larghezza',
+  aggiornamentiAutomatici: booleano
 };
 
 const MAX_ESCLUSI = 200;
@@ -63,16 +73,26 @@ function filtraImpostazioniRenderer(grezze: unknown): { [chiave: string]: unknow
   return out;
 }
 
-// Preferenze che l'utente può svuotare per tornare al valore predefinito. Il renderer le
-// manda a `null`: `saveAllSettings` unisce e non può cancellare, quindi il valore vecchio
-// restava su disco.
-const CANCELLABILI = ['snapshotRecenti', 'snapshotGiorni', 'cestinoGiorni'];
-
-/** Chiavi di `grezze` da togliere da settings.json (preferenze cancellabili inviate a null). */
+/**
+ * Chiavi di `grezze` da togliere da settings.json per tornare al predefinito: una preferenza
+ * ammessa inviata a `null`. Non vale per le chiavi dove `null` è un valore (appState,
+ * lastSyncTime): `saveAllSettings` unisce e non può cancellare.
+ */
 function chiaviDaRimuovere(grezze: unknown): string[] {
   if (!grezze || typeof grezze !== 'object' || Array.isArray(grezze)) return [];
-  return CANCELLABILI.filter((k) => Object.prototype.hasOwnProperty.call(grezze, k) && (grezze as any)[k] === null);
+  return Object.keys(AMMESSE).filter((k) =>
+    Object.prototype.hasOwnProperty.call(grezze, k) && (grezze as any)[k] === null && !AMMESSE[k](null));
 }
 
-module.exports = { filtraImpostazioniRenderer, chiaviDaRimuovere, CHIAVI_AMMESSE: Object.keys(AMMESSE) };
+/** Una patch del renderer divisa in valori da scrivere, chiavi da togliere e chiavi rifiutate. */
+function esaminaPatch(grezze: unknown): { valori: { [chiave: string]: unknown }; daRimuovere: string[]; rifiutate: string[] } {
+  const valori = filtraImpostazioniRenderer(grezze);
+  const daRimuovere = chiaviDaRimuovere(grezze);
+  const rifiutate = grezze && typeof grezze === 'object' && !Array.isArray(grezze)
+    ? Object.keys(grezze).filter((k) => !Object.prototype.hasOwnProperty.call(valori, k) &&!daRimuovere.includes(k))
+    : [];
+  return { valori, daRimuovere, rifiutate };
+}
+
+module.exports = { filtraImpostazioniRenderer, chiaviDaRimuovere, esaminaPatch, CHIAVI_AMMESSE: Object.keys(AMMESSE) };
 export {};

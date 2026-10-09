@@ -544,9 +544,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 window.ultimoCaricamento = Date.now();
                 
                 if (window.apiSettings) {
-                    const settings = await window.apiSettings.get();
-                    settings.lastSyncTime = window.ultimoCaricamento;
-                    await window.apiSettings.save(settings);
+                    await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
                 }
                 if (window.apiBrowser) {
                     // La base si scrive solo se il DB è stato scritto: una base nuova accanto

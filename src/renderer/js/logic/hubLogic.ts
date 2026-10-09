@@ -470,9 +470,7 @@ window.creaRepositoryHub = async function(name) {
         // Dopo il reload apri automaticamente il pannello Condivisione (l'owner deve invitare).
         try {
             if (window.apiSettings) {
-                const s = await window.apiSettings.get();
-                s.hubJustCreated = true;
-                await window.apiSettings.save(s);
+                await window.apiSettings.patch({ hubJustCreated: true });
             }
         } catch { /* flag best-effort: il reload avviene comunque */ }
         // Overlay già visibile dall'inizio dell'operazione: il reload resta necessario per

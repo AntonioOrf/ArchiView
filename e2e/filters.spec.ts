@@ -385,7 +385,7 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await page.locator('#btn-salva-ricerca').click();
     await page.keyboard.press('Escape');
 
-    // Store.commit() non scrive subito su disco, e appState passa da apiSettings.save:
+    // Store.commit() non scrive subito su disco, e appState passa da apiSettings.patch:
     // senza flush il riavvio rileggerebbe lo stato precedente.
     await page.evaluate(async () => {
       const w = window as any;

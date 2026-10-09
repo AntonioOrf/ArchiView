@@ -86,7 +86,7 @@ test('ricerca, anteprima ed esclusione di un altro archivio dal main', async ({ 
     for (const o of ostili) expect(o.ok).toBe(false);
 
     // Esclusione dalle impostazioni: l'archivio sparisce da ricerca e anteprima.
-    await page.evaluate((id) => (window as any).apiSettings.save({ crossArchiveEsclusi: [id] }), g.id);
+    await page.evaluate((id) => (window as any).apiSettings.patch({ crossArchiveEsclusi: [id] }), g.id);
     const dopo: any = await page.evaluate(() => (window as any).apiBrowser.crossArchiveSearch({ testo: "luca d'abete" }));
     expect(dopo.risultati).toHaveLength(0);
     expect(dopo.archivi.map((a: any) => a.nome)).toEqual(['Sparito']);
@@ -441,7 +441,7 @@ test('suggerimento nel form: lo stesso nome negli altri archivi', async ({ userD
     await expect(page.locator('[data-suggerimento="attori_dinamici"]')).toHaveCount(0);
 
     // Disattivato dalle impostazioni: nessun suggerimento.
-    await page.evaluate(() => (window as any).apiSettings.save({ suggerimentiAltriArchivi: false }));
+    await page.evaluate(() => (window as any).apiSettings.patch({ suggerimentiAltriArchivi: false }));
     // Anche a form aperto: l'impostazione si rilegge dopo pochi secondi.
     await page.waitForTimeout(2100);
     await page.locator('#dyn-dataTopica').fill('San Miniato');
@@ -482,7 +482,7 @@ test('impostazioni: archivi in cui cercare e suggerimento nel form', async ({ us
     expect(r.risultati).toHaveLength(0);
     await expect(page.locator('#altri-archivi-stato')).toContainText('Nessuna scheda negli altri archivi');
 
-    // Riammesso: l'elenco si svuota davvero (save-settings fonde, quindi serve un valore esplicito).
+    // Riammesso: l'elenco si svuota davvero.
     await giudiziario.check();
     await expect.poll(async () => (await page.evaluate(() => (window as any).apiSettings.get())).crossArchiveEsclusi).toEqual([]);
     await expect(page.locator('#altri-archivi-stato')).toHaveText('1 scheda in un altro archivio');

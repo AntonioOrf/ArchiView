@@ -1711,7 +1711,42 @@ const customEn = {
     "btn_whats_new": "What's new",
     "docs_modal_title": "Documents:",
     "type_badge_in_use": "In use",
-    "type_badge_default": "Default"
+    "type_badge_default": "Default",
+    "settings_tab_appearance": "Appearance",
+    "settings_tab_documents": "Documents",
+    "settings_theme_system": "System (default)",
+    "settings_theme_group_light": "Light themes",
+    "settings_theme_group_dark": "Dark themes",
+    "settings_theme_light": "Clear Blue",
+    "settings_theme_amber_light": "Vanilla Amber",
+    "settings_theme_dark": "Obsidian Orange",
+    "settings_theme_blue_dark": "Midnight Blue",
+    "settings_zoom_title": "Interface zoom",
+    "settings_zoom_desc": "Enlarges or shrinks the whole program. Also with Ctrl + and Ctrl − (Ctrl 0 goes back to 100%).",
+    "settings_font_title": "Transcription text",
+    "settings_font_desc": "Typeface and size of the transcription editor. Junicode covers medieval abbreviations and signs (MUFI).",
+    "settings_font_family": "Typeface",
+    "settings_font_serif": "Serif (Georgia)",
+    "settings_font_sans": "Sans serif",
+    "settings_font_mono": "Monospaced",
+    "settings_font_size": "Size (px)",
+    "settings_ocr_default": "Preselected languages",
+    "settings_ocr_none": "No language installed.",
+    "settings_pdf_title": "PDF",
+    "settings_pdf_desc": "How PDF pages open in the transcription. A higher resolution is sharper when zoomed but slower.",
+    "settings_pdf_resolution": "Maximum resolution",
+    "settings_pdf_zoom": "Initial zoom",
+    "settings_pdf_zoom_page": "Whole page",
+    "settings_pdf_zoom_width": "Width",
+    "settings_updates_auto": "Check automatically at startup and every 4 hours",
+    "settings_version": "Installed version:",
+    "settings_hub_key_masked": "•••••••• (share it through an invite)",
+    "settings_not_defined_f": "Not defined",
+    "settings_invalid_number": "Invalid value: a whole number from {var0} to {var1} is required. The previous value was restored.",
+    "export_in_progress": "Export in progress…",
+    "export_calculating": "Calculating…",
+    "export_progress_files": "{var0} of {var1} files processed ({var2}%)",
+    "msg_perf_save_failed": "Could not save the preference: "
 };
 
 const customIt = {
@@ -3302,7 +3337,45 @@ const customIt = {
     "btn_whats_new": "Scopri novità",
     "docs_modal_title": "Documenti:",
     "type_badge_in_use": "In uso",
-    "type_badge_default": "Predefinito"
+    "type_badge_default": "Predefinito",
+    "settings_tab_appearance": "Aspetto",
+    "settings_tab_documents": "Documenti",
+    "settings_theme_system": "Sistema (Predefinito)",
+    "settings_theme_group_light": "Temi chiari",
+    "settings_theme_group_dark": "Temi scuri",
+    "settings_theme_light": "Clear Blue",
+    "settings_theme_amber_light": "Vanilla Amber",
+    "settings_theme_dark": "Obsidian Orange",
+    "settings_theme_blue_dark": "Midnight Blue",
+    "settings_zoom_title": "Zoom dell'interfaccia",
+    "settings_zoom_desc": "Ingrandisce o riduce tutto il programma. Anche con Ctrl + e Ctrl − (Ctrl 0 torna al 100%).",
+    "settings_font_title": "Testo della trascrizione",
+    "settings_font_desc": "Carattere e dimensione dell'editor di trascrizione. Junicode copre le abbreviazioni e i segni medievali (MUFI).",
+    "settings_font_family": "Carattere",
+    "settings_font_serif": "Con grazie (Georgia)",
+    "settings_font_sans": "Senza grazie",
+    "settings_font_mono": "Monospaziato",
+    "settings_font_size": "Dimensione (px)",
+    "settings_ocr_default": "Lingue preselezionate",
+    "settings_ocr_none": "Nessuna lingua installata.",
+    "settings_pdf_title": "PDF",
+    "settings_pdf_desc": "Come si aprono le pagine dei PDF nella trascrizione. Una risoluzione più alta è più nitida allo zoom ma più lenta.",
+    "settings_pdf_resolution": "Risoluzione massima",
+    "settings_pdf_zoom": "Zoom iniziale",
+    "settings_pdf_zoom_page": "Pagina intera",
+    "settings_pdf_zoom_width": "Larghezza",
+    "settings_updates_auto": "Controlla da solo all'avvio e ogni 4 ore",
+    "settings_version": "Versione installata:",
+    "settings_hub_key_masked": "•••••••• (condividi tramite invito)",
+    "settings_not_defined_f": "Non definita",
+    "settings_invalid_number": "Valore non valido: serve un numero intero da {var0} a {var1}. Ripristinato il precedente.",
+    "export_in_progress": "Esportazione in corso…",
+    "export_calculating": "Calcolo…",
+    "export_progress_files": "{var0} di {var1} file elaborati ({var2}%)",
+    "msg_perf_save_failed": "Impossibile salvare la preferenza: ",
+    "msg_codice_copiato_negli_appu": "Codice copiato negli appunti!",
+    "msg_directory_allegati_locale": "Cartella allegati locale configurata.",
+    "msg_la_directory_degli_allega": "La cartella degli allegati è tornata a quella predefinita (dentro l'archivio)."
 };
 
 window.t = function(key, fallback) {
@@ -3313,9 +3386,7 @@ window.t = function(key, fallback) {
 // Funzione globale per cambiare lingua
 window.cambiaLingua = async function(lang) {
     window.linguaAttuale = lang;
-    const settings = await window.apiSettings.get();
-    settings.lang = lang;
-    await window.apiSettings.save(settings);
+    await window.apiSettings.patch({ lang });
     document.documentElement.lang = lang;
     window.applicaTraduzioniHtml();
     
@@ -3380,6 +3451,11 @@ window.applicaTraduzioniHtml = function() {
     document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
         const key = el.getAttribute('data-i18n-aria-label');
         el.setAttribute('aria-label', window.t(key, el.getAttribute('aria-label') || key));
+    });
+
+    // Etichetta degli <optgroup> (attributo, non testo)
+    document.querySelectorAll<HTMLOptGroupElement>('[data-i18n-label]').forEach(el => {
+        el.label = window.t(el.getAttribute('data-i18n-label'), el.label);
     });
 
     // Le scorciatoie vanno riapplicate qui: le righe sopra hanno appena riscritto

@@ -315,10 +315,10 @@
         if (!window.apiSettings) return;
         const cb = document.getElementById(prefix + '-autofetch');
         const sel = document.getElementById(prefix + '-autofetch-interval');
-        const settings = await window.apiSettings.get();
-        if (cb) settings.autofetchEnabled = cb.checked;
-        if (sel) settings.autofetchInterval = parseInt(sel.value, 10);
-        await window.apiSettings.save(settings);
+        const parziale: any = {};
+        if (cb) parziale.autofetchEnabled = cb.checked;
+        if (sel) parziale.autofetchInterval = parseInt(sel.value, 10);
+        await window.apiSettings.patch(parziale);
         if (typeof window.avviaAutofetchHub === 'function') window.avviaAutofetchHub();
     };
 
@@ -464,12 +464,10 @@
         if (!window.hubConfig) return;
         window.hubConfig.attachmentsMode = checked ? 'drive-links' : 'off';
         if (window.apiBrowser?.saveHubConfig) await window.apiBrowser.saveHubConfig(window.hubConfig);
-        // Mantieni allineata la checkbox gemella (owner/member) + quella in Impostazioni.
+        // Mantieni allineata la checkbox gemella (owner/member).
         ['share-owner', 'share-member'].forEach(p => {
             if (p !== prefix) window.renderAttachmentsBoxShare(p, checked, p === 'share-member');
         });
-        const settingsCb = document.getElementById('settings-hub-attachments');
-        if (settingsCb) settingsCb.checked = checked;
         if (prefix) window.renderAttachmentsBoxShare(prefix, checked, !!isMember);
         if (checked && typeof window.sincronizzaAllegatiHub === 'function') window.sincronizzaAllegatiHub(false);
     };

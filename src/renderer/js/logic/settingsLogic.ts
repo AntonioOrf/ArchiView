@@ -1,152 +1,339 @@
-window.apriImpostazioni = async function() {
-    document.getElementById('settings-modal').classList.remove('hidden-tab');
-    if (window.apiBrowser && window.apiBrowser.getWorkspacePath && window.apiSettings) {
-        const p = await window.apiBrowser.getWorkspacePath();
-        document.getElementById('settings-workspace-path').textContent = p || window.t('no_workspace_set');
-        
-        const settings = await window.apiSettings.get();
-        const vaultConfig = window.apiBrowser.getVaultConfig ? await window.apiBrowser.getVaultConfig() : { vaultType: 'local' };
+// Pannello Impostazioni: popolamento (apriImpostazioni) e salvataggio di ogni preferenza.
+// Il markup sta in components/modals/settingsModal.ts. Ogni salvataggio scrive SOLO la sua
+// chiave con apiSettings.patch e passa da notificaSalvataggio per il riscontro.
 
-        // Popola Nome Collaboratore
-        const usernameInput = document.getElementById('settings-username');
-        if (usernameInput) {
-            usernameInput.value = settings.username || '';
-            if (!usernameInput.dataset.listenerSetup) {
-                usernameInput.addEventListener('change', async (e) => {
-                    if (window.apiSettings) {
-                        const currentSettings = await window.apiSettings.get();
-                        currentSettings.username = (e.target as HTMLInputElement).value.trim();
-                        await window.apiSettings.save(currentSettings);
-                        mostraMessaggio(window.t("msg_nome_collaboratore_salvat", "Nome collaboratore salvato."), "success");
-                    }
-                });
-                usernameInput.dataset.listenerSetup = 'true';
-            }
-        }
-        
-        // Ricerca tra archivi: interruttore del suggerimento ed elenco degli archivi.
-        const sugg = document.getElementById('settings-cross-suggerimenti') as HTMLInputElement;
-        if (sugg) sugg.checked = settings.suggerimentiAltriArchivi !== false;
-        if (window.popolaArchiviRicerca) window.popolaArchiviRicerca();
+// Predefiniti delle preferenze nuove: un solo posto nel renderer (il main valida i limiti).
+const PREDEFINITI_IMPOSTAZIONI = Object.freeze({
+    zoomInterfaccia: 100,
+    fontTrascrizione: 'serif',
+    dimensioneTrascrizione: 18,
+    pdfRisoluzione: 3200,
+    pdfZoomIniziale: 'pagina'
+});
+window.PREDEFINITI_IMPOSTAZIONI = PREDEFINITI_IMPOSTAZIONI;
 
-        // Modalità prestazioni ridotte (preferenza globale, file in userData)
-        const perfToggle = document.getElementById('settings-low-perf');
-        if (perfToggle) perfToggle.checked = !!window.modalitaPrestazioniRidotte;
+const _FAMIGLIE_TRASCRIZIONE = {
+    serif: "Georgia, 'Segoe UI Historic', serif",
+    sans: "'Segoe UI', 'Segoe UI Historic', system-ui, sans-serif",
+    mono: "ui-monospace, 'Cascadia Mono', Consolas, monospace",
+    junicode: "'Junicode', 'Segoe UI Historic', Georgia, serif"
+};
 
-        // Fase 4 — conservazione di snapshot e cestino. I valori predefiniti vengono dal
-        // modello condiviso e non da letterali qui: il main applica quelli stessi quando la
-        // chiave manca, e due elenchi di predefiniti darebbero all'utente un numero diverso
-        // da quello che l'app usa davvero.
-        const M = window.Model || {};
-        const auto = document.getElementById('settings-snapshot-auto');
-        if (auto) auto.checked = settings.snapshotAutomatici !== false;
-        const recenti = document.getElementById('settings-snapshot-recenti');
-        if (recenti) recenti.value = String(settings.snapshotRecenti ?? M.SNAPSHOT_RECENTI ?? 10);
-        const giorni = document.getElementById('settings-snapshot-giorni');
-        if (giorni) giorni.value = String(settings.snapshotGiorni ?? M.SNAPSHOT_GIORNI ?? 30);
-        const cestino = document.getElementById('settings-cestino-giorni');
-        if (cestino) cestino.value = String(settings.cestinoGiorni ?? M.CESTINO_GIORNI ?? 30);
+/**
+ * Esito unico di ogni salvataggio: toast breve (il contenitore dei toast è già aria-live).
+ * `esito` è la risposta di apiSettings.patch, o un errore.
+ */
+window.notificaSalvataggio = function(esito?: any) {
+    if (esito instanceof Error || (esito && esito.ok === false)) {
+        const dettaglio = esito instanceof Error ? esito.message : (esito.rifiutate || []).join(', ');
+        mostraMessaggio(window.t('msg_cross_save_failed', 'Preferenza non salvata: {var0}').replace('{var0}', dettaglio), 'error');
+        return false;
+    }
+    mostraMessaggio(window.t('msg_cross_saved', 'Preferenza salvata.'), 'success');
+    return true;
+};
 
-        // Aggiorna percorso allegati
-        const attachmentsPathDiv = document.getElementById('settings-attachments-path');
-        const btnRestore = document.getElementById('btn-restore-attachments');
-        if (attachmentsPathDiv) {
-            if (settings.customAttachmentsPath) {
-                attachmentsPathDiv.textContent = settings.customAttachmentsPath;
-                if (btnRestore) btnRestore.classList.remove('hidden-tab');
-            } else {
-                attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
-                if (btnRestore) btnRestore.classList.add('hidden-tab');
-            }
-        }
-        
-        // Aggiorna sezione Hub & Drive
-        const hubSection = document.getElementById('settings-hub-section');
-        const driveSection = document.getElementById('settings-drive-section');
-        const disabledText = document.getElementById('settings-hub-disabled');
-
-        let isAnySyncActive = false;
-
-        if (hubSection) {
-            if (window.hubConfig) {
-                document.getElementById('settings-hub-url').textContent = window.hubConfig.hubUrl;
-                document.getElementById('settings-hub-repoid').textContent = window.hubConfig.repoId;
-                // La chiave non va mostrata in chiaro: mascherata, si condivide solo via invito.
-                document.getElementById('settings-hub-key').textContent = '•••••••• (condividi tramite invito)';
-                const cbAtt = document.getElementById('settings-hub-attachments');
-                if (cbAtt) cbAtt.checked = window.hubConfig.attachmentsMode !== 'off';
-                
-                const cbAutofetch = document.getElementById('settings-hub-autofetch');
-                const selInterval = document.getElementById('settings-hub-autofetch-interval');
-                if (cbAutofetch) {
-                    cbAutofetch.checked = settings.autofetchEnabled !== false; // Abilitato di default
-                }
-                if (selInterval) {
-                    selInterval.value = settings.autofetchInterval || "5"; // 5 min default
-                }
-
-                // Google Drive personale per gli allegati: indipendente dal Drive del vault
-                // condiviso (che per un vault Hub non esiste), serve solo a caricare/scaricare
-                // i chunk cifrati degli allegati sul proprio Drive.
-                if (typeof window.aggiornaStatoDriveHub === 'function') window.aggiornaStatoDriveHub();
-
-                hubSection.classList.remove('hidden');
-                isAnySyncActive = true;
-            } else {
-                hubSection.classList.add('hidden');
-            }
-        }
-        
-        if (driveSection) {
-            // Un vault Hub ha vaultType='shared' ma NON è Drive: la sezione Drive non va mostrata.
-            const isHubVault = !!window.hubConfig || vaultConfig.provider === 'hub';
-            if (vaultConfig.vaultType !== 'local' && !isHubVault) {
-                driveSection.classList.remove('hidden');
-                isAnySyncActive = true;
-
-                const driveTitle = document.getElementById('settings-drive-title');
-                const driveDesc = document.getElementById('settings-drive-desc');
-
-                if (vaultConfig.vaultType === 'backup') {
-                    if (driveTitle) driveTitle.textContent = window.t("settings_personal_backup_title", "Personal Cloud Backup");
-                    if (driveDesc) driveDesc.textContent = window.t("settings_personal_backup_desc", "This local archive is synced privately as a backup on your Google Drive.");
-                } else {
-                    if (driveTitle) driveTitle.textContent = window.t("settings_drive_title");
-                    if (driveDesc) driveDesc.textContent = window.t("settings_drive_desc");
-                }
-            } else {
-                driveSection.classList.add('hidden');
-            }
-        }
-
-        if (disabledText) {
-            if (isAnySyncActive) {
-                disabledText.classList.add('hidden');
-            } else {
-                disabledText.classList.remove('hidden');
-            }
-        }
+/** patch + riscontro; mai lancia. true se salvata. */
+async function _salvaPreferenze(parziale: any) {
+    if (!window.apiSettings) return false;
+    try {
+        return window.notificaSalvataggio(await window.apiSettings.patch(parziale));
+    } catch (e) {
+        console.error('Salvataggio preferenze non riuscito:', parziale, e);
+        return window.notificaSalvataggio(e instanceof Error ? e : new Error(String(e)));
     }
 }
 
-/**
- * Fase 4 — conservazione di snapshot e cestino.
- *
- * Un numero non valido (vuoto, negativo, testo) NON viene salvato: la chiave resta assente e
- * il main applica il predefinito del modello. Salvare `NaN` significherebbe un cestino che
- * non conserva nulla e una rotazione che cancella tutto, cioè disattivare le due reti di
- * sicurezza per un carattere digitato male.
- */
-// --- Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 6) -------------------------------
+/** Applica le preferenze di aspetto e documenti (all'avvio e a ogni cambio). */
+window.applicaPreferenzeTesto = function(s: any) {
+    const P = PREDEFINITI_IMPOSTAZIONI;
+    const radice = document.documentElement.style;
+    radice.setProperty('--font-trascrizione', _FAMIGLIE_TRASCRIZIONE[s.fontTrascrizione] || _FAMIGLIE_TRASCRIZIONE[P.fontTrascrizione]);
+    radice.setProperty('--dim-trascrizione', (s.dimensioneTrascrizione || P.dimensioneTrascrizione) + 'px');
+    window.pdfRisoluzioneMassima = s.pdfRisoluzione || P.pdfRisoluzione;
+    window.pdfZoomIniziale = s.pdfZoomIniziale || P.pdfZoomIniziale;
+};
+
+window.initPreferenzeTesto = async function() {
+    try {
+        window.applicaPreferenzeTesto(window.apiSettings ? await window.apiSettings.get() : {});
+    } catch (e) {
+        console.error('Preferenze di testo non lette, restano i predefiniti:', e);
+        window.applicaPreferenzeTesto({});
+    }
+};
+
+function _campo<T extends HTMLElement = HTMLInputElement>(id: string): T | null {
+    return document.getElementById(id) as T | null;
+}
+
+window.apriImpostazioni = async function(tab?: string) {
+    const modale = document.getElementById('settings-modal');
+    modale.classList.remove('hidden-tab');
+    window.cambiaTabImpostazioni(typeof tab === 'string' ? tab : window.ultimaTabImpostazioni());
+    if (!window.apiBrowser || !window.apiBrowser.getWorkspacePath || !window.apiSettings) return;
+
+    const p = await window.apiBrowser.getWorkspacePath();
+    _campo('settings-workspace-path').textContent = p || window.t('no_workspace_set');
+
+    const settings = await window.apiSettings.get();
+    const vaultConfig = window.apiBrowser.getVaultConfig ? await window.apiBrowser.getVaultConfig() : { vaultType: 'local' };
+    const P = PREDEFINITI_IMPOSTAZIONI;
+
+    const username = _campo('settings-username');
+    if (username) username.value = settings.username || '';
+
+    // Aspetto
+    const zoom = _campo<HTMLSelectElement>('settings-zoom-select');
+    if (zoom) zoom.value = String(settings.zoomInterfaccia || P.zoomInterfaccia);
+    const font = _campo<HTMLSelectElement>('settings-font-trascrizione');
+    if (font) font.value = settings.fontTrascrizione || P.fontTrascrizione;
+    const dim = _campo('settings-dim-trascrizione');
+    if (dim) { dim.value = String(settings.dimensioneTrascrizione || P.dimensioneTrascrizione); _validoCampo(dim); }
+
+    // Documenti
+    const pdfRis = _campo<HTMLSelectElement>('settings-pdf-risoluzione');
+    if (pdfRis) pdfRis.value = String(settings.pdfRisoluzione || P.pdfRisoluzione);
+    const pdfZoom = _campo<HTMLSelectElement>('settings-pdf-zoom');
+    if (pdfZoom) pdfZoom.value = settings.pdfZoomIniziale || P.pdfZoomIniziale;
+    window.popolaLingueOcrPredefinite(settings.ocrLingue);
+
+    // Ricerca tra archivi: interruttore del suggerimento ed elenco degli archivi.
+    const sugg = _campo('settings-cross-suggerimenti');
+    if (sugg) sugg.checked = settings.suggerimentiAltriArchivi !== false;
+    if (window.popolaArchiviRicerca) window.popolaArchiviRicerca();
+
+    // Sistema
+    const perfToggle = _campo('settings-low-perf');
+    if (perfToggle) perfToggle.checked = !!window.modalitaPrestazioniRidotte;
+    const aggAuto = _campo('settings-aggiornamenti-auto');
+    if (aggAuto) aggAuto.checked = settings.aggiornamentiAutomatici !== false;
+    const versione = _campo('settings-versione');
+    if (versione && window.apiBrowser.getVersion) versione.textContent = await window.apiBrowser.getVersion();
+
+    // Conservazione di snapshot e cestino. I predefiniti vengono dal modello condiviso e non
+    // da letterali qui: il main applica quelli stessi quando la chiave manca.
+    const M = window.Model || {};
+    const auto = _campo('settings-snapshot-auto');
+    if (auto) auto.checked = settings.snapshotAutomatici !== false;
+    for (const [id, valore] of [
+        ['settings-snapshot-recenti', settings.snapshotRecenti ?? M.SNAPSHOT_RECENTI ?? 10],
+        ['settings-snapshot-giorni', settings.snapshotGiorni ?? M.SNAPSHOT_GIORNI ?? 30],
+        ['settings-cestino-giorni', settings.cestinoGiorni ?? M.CESTINO_GIORNI ?? 30]
+    ]) {
+        const el = _campo(id as string);
+        if (el) { el.value = String(valore); _validoCampo(el); }
+    }
+
+    await _mostraCartellaAllegati(settings);
+
+    // Sezione Hub & Drive
+    const hubSection = _campo('settings-hub-section');
+    const driveSection = _campo('settings-drive-section');
+    const disabledText = _campo('settings-hub-disabled');
+    let isAnySyncActive = false;
+
+    if (hubSection) {
+        if (window.hubConfig) {
+            _campo('settings-hub-url').textContent = window.hubConfig.hubUrl;
+            _campo('settings-hub-repoid').textContent = window.hubConfig.repoId;
+            // Google Drive personale per gli allegati: indipendente dal Drive del vault
+            // condiviso (che per un vault Hub non esiste).
+            if (typeof window.aggiornaStatoDriveHub === 'function') window.aggiornaStatoDriveHub();
+            hubSection.classList.remove('hidden');
+            isAnySyncActive = true;
+        } else {
+            hubSection.classList.add('hidden');
+        }
+    }
+
+    if (driveSection) {
+        // Un vault Hub ha vaultType='shared' ma NON è Drive: la sezione Drive non va mostrata.
+        const isHubVault = !!window.hubConfig || vaultConfig.provider === 'hub';
+        if (vaultConfig.vaultType !== 'local' && !isHubVault) {
+            driveSection.classList.remove('hidden');
+            isAnySyncActive = true;
+            const driveTitle = _campo('settings-drive-title');
+            const driveDesc = _campo('settings-drive-desc');
+            if (vaultConfig.vaultType === 'backup') {
+                if (driveTitle) driveTitle.textContent = window.t("settings_personal_backup_title", "Personal Cloud Backup");
+                if (driveDesc) driveDesc.textContent = window.t("settings_personal_backup_desc", "This local archive is synced privately as a backup on your Google Drive.");
+            } else {
+                if (driveTitle) driveTitle.textContent = window.t("settings_drive_title");
+                if (driveDesc) driveDesc.textContent = window.t("settings_drive_desc");
+            }
+        } else {
+            driveSection.classList.add('hidden');
+        }
+    }
+
+    if (disabledText) disabledText.classList.toggle('hidden', isAnySyncActive);
+}
+
+/** Percorso allegati come lo usa il main: nessun percorso composto nel renderer. */
+async function _mostraCartellaAllegati(settings?: any) {
+    const div = _campo('settings-attachments-path');
+    const btnRestore = _campo('btn-restore-attachments');
+    if (!div) return;
+    if (!settings) settings = await window.apiSettings.get();
+    let percorso = null;
+    try {
+        percorso = window.apiSettings.percorsoAllegati ? await window.apiSettings.percorsoAllegati() : null;
+    } catch (e) {
+        console.error('Percorso degli allegati non disponibile:', e);
+    }
+    div.textContent = percorso || window.t('settings_not_defined_f', 'Non definita');
+    if (btnRestore) btnRestore.classList.toggle('hidden-tab', !settings.customAttachmentsPath);
+}
+
+// --- Campi numerici --------------------------------------------------------------------------
+// Un numero non valido NON si salva e non si scarta in silenzio: il campo resta segnato
+// (aria-invalid + messaggio sotto) e torna all'ultimo valore valido. Salvare `NaN` per il
+// cestino vorrebbe dire un cestino che non conserva nulla.
+
+function _validoCampo(el: HTMLInputElement) {
+    el.dataset.ultimoValido = el.value;
+    el.removeAttribute('aria-invalid');
+    const errore = document.getElementById(el.id + '-errore');
+    if (errore) { errore.textContent = ''; errore.classList.add('hidden'); }
+}
+
+/** Intero in [min, max] o null; il campo vuoto vale `vuoto` (undefined = non ammesso). */
+function _leggiIntero(el: HTMLInputElement, vuoto?: null): number | null | undefined {
+    if (el.value.trim() === '') {
+        if (vuoto === null) { _validoCampo(el); return null; }
+    } else {
+        const n = Number(el.value);
+        if (Number.isInteger(n) && n >= Number(el.min) && n <= Number(el.max)) { _validoCampo(el); return n; }
+    }
+    el.setAttribute('aria-invalid', 'true');
+    const errore = document.getElementById(el.id + '-errore');
+    if (errore) {
+        errore.textContent = window.t('settings_invalid_number', 'Valore non valido: serve un numero intero da {var0} a {var1}. Ripristinato il precedente.')
+            .replace('{var0}', el.min).replace('{var1}', el.max);
+        errore.classList.remove('hidden');
+    }
+    el.value = el.dataset.ultimoValido ?? '';
+    return undefined;
+}
+
+window.salvaImpostazioniSicurezza = async function() {
+    const parziale: any = {};
+    const auto = _campo('settings-snapshot-auto');
+    if (auto) parziale.snapshotAutomatici = !!auto.checked;
+    for (const [id, chiave] of [['settings-snapshot-recenti', 'snapshotRecenti'], ['settings-snapshot-giorni', 'snapshotGiorni'], ['settings-cestino-giorni', 'cestinoGiorni']]) {
+        const el = _campo(id);
+        if (!el) continue;
+        // Vuoto = null: il main toglie la chiave e torna al predefinito del modello.
+        const v = _leggiIntero(el, null);
+        if (v !== undefined) parziale[chiave] = v;
+    }
+    await _salvaPreferenze(parziale);
+};
+
+// --- Generali --------------------------------------------------------------------------------
+
+window.salvaNomeCollaboratore = async function(valore: string) {
+    await _salvaPreferenze({ username: String(valore || '').trim() });
+};
+
+// --- Aspetto ---------------------------------------------------------------------------------
+
+// Lo zoom lo applica il main (webContents.setZoomFactor) quando la chiave cambia.
+window.cambiaZoomInterfaccia = async function(valore: string) {
+    await _salvaPreferenze({ zoomInterfaccia: parseInt(valore, 10) });
+};
+
+window.salvaTestoTrascrizione = async function() {
+    const parziale: any = {};
+    const font = _campo<HTMLSelectElement>('settings-font-trascrizione');
+    if (font) parziale.fontTrascrizione = font.value;
+    const dim = _campo('settings-dim-trascrizione');
+    if (dim) {
+        const v = _leggiIntero(dim);
+        if (v !== undefined) parziale.dimensioneTrascrizione = v;
+    }
+    if (await _salvaPreferenze(parziale)) window.applicaPreferenzeTesto(await window.apiSettings.get());
+};
+
+// --- Documenti -------------------------------------------------------------------------------
+
+/** Caselle delle lingue OCR installate; spuntate quelle preselezionate. */
+window.popolaLingueOcrPredefinite = async function(preferite?: string[]) {
+    const lista = _campo('settings-ocr-lingue');
+    if (!lista) return;
+    let lingue = [];
+    try {
+        const r = window.apiOcr && window.apiOcr.lingue ? await window.apiOcr.lingue() : null;
+        lingue = ((r && r.lingue) || []).filter(l => l.installata && l.codice !== 'osd');
+    } catch (e) {
+        console.error('Elenco delle lingue OCR non disponibile:', e);
+    }
+    const scelte = new Set(Array.isArray(preferite) ? preferite : []);
+    lista.replaceChildren();
+    if (lingue.length === 0) {
+        const vuoto = document.createElement('li');
+        vuoto.className = 'text-xs text-stone-500 italic';
+        vuoto.textContent = window.t('settings_ocr_none', 'Nessuna lingua installata.');
+        lista.appendChild(vuoto);
+        return;
+    }
+    for (const l of lingue) {
+        const li = document.createElement('li');
+        const label = document.createElement('label');
+        label.className = 'flex items-center gap-2 text-sm';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = scelte.has(l.codice);
+        box.dataset.lingua = l.codice;
+        label.appendChild(box);
+        const nome = document.createElement('span');
+        nome.textContent = window.t('ocr_lang_name_' + l.codice, l.nome);
+        label.appendChild(nome);
+        li.appendChild(label);
+        lista.appendChild(li);
+    }
+};
+
+window.salvaLingueOcrPredefinite = async function() {
+    const lista = _campo('settings-ocr-lingue');
+    if (!lista) return;
+    const scelte = Array.from(lista.querySelectorAll<HTMLInputElement>('input[data-lingua]'))
+        .filter(c => c.checked).map(c => c.dataset.lingua);
+    await _salvaPreferenze({ ocrLingue: scelte });
+};
+
+window.salvaPreferenzePdf = async function() {
+    const ris = _campo<HTMLSelectElement>('settings-pdf-risoluzione');
+    const zoom = _campo<HTMLSelectElement>('settings-pdf-zoom');
+    const parziale: any = {};
+    if (ris) parziale.pdfRisoluzione = parseInt(ris.value, 10);
+    if (zoom) parziale.pdfZoomIniziale = zoom.value;
+    if (await _salvaPreferenze(parziale)) window.applicaPreferenzeTesto(await window.apiSettings.get());
+};
+
+// --- Sistema ---------------------------------------------------------------------------------
+
+window.cambiaAggiornamentiAutomatici = async function(attivo: boolean) {
+    await _salvaPreferenze({ aggiornamentiAutomatici: !!attivo });
+};
+
+/** Il main avvisa quando cambia una preferenza fuori dal pannello (zoom da tastiera). */
+if (window.apiSettings && window.apiSettings.onCambiate) {
+    window.apiSettings.onCambiate((chiavi: string[]) => {
+        if (!Array.isArray(chiavi) || !chiavi.includes('zoomInterfaccia')) return;
+        window.apiSettings.get().then((s) => {
+            const zoom = _campo<HTMLSelectElement>('settings-zoom-select');
+            if (zoom) zoom.value = String(s.zoomInterfaccia || PREDEFINITI_IMPOSTAZIONI.zoomInterfaccia);
+        }).catch((e) => console.error('Zoom non riletto:', e));
+    });
+}
+
+// --- Ricerca tra archivi ---------------------------------------------------------------------
 //
 // Due chiavi in settings.json, entrambe di QUESTO computer:
 //   crossArchiveEsclusi       — id degli archivi da non interrogare (assente o [] = nessuno)
 //   suggerimentiAltriArchivi  — false spegne l'avviso nel form (assente o true = attivo)
-// Si legge e si scrive solo la propria chiave, subito prima del salvataggio (regola della
-// skill impostazioni-ui finché settingsStore non esiste).
-// ⚠️ Valori ESPLICITI, mai `delete`: save-settings fonde l'oggetto con quello su disco
-// ({ ...attuali, ...nuove }), quindi una chiave cancellata qui resterebbe nel file col valore
-// vecchio — riammettere un archivio non avrebbe effetto.
 
 window.popolaArchiviRicerca = async function() {
     const lista = document.getElementById('settings-cross-archivi');
@@ -210,83 +397,47 @@ window.salvaArchiviRicerca = async function() {
         const prima = Array.isArray(settings.crossArchiveEsclusi) ? settings.crossArchiveEsclusi.map(String) : [];
         const esclusi = prima.filter(id => !mostrati.has(id))
             .concat(caselle.filter(c => !c.checked).map(c => c.dataset.archivio));
-        settings.crossArchiveEsclusi = esclusi;
-        await window.apiSettings.save(settings);
-        if (typeof window.invalidaCacheAltriArchivi === 'function') window.invalidaCacheAltriArchivi();
-        mostraMessaggio(window.t('msg_cross_saved', 'Preferenza salvata.'), 'success');
+        if (await _salvaPreferenze({ crossArchiveEsclusi: esclusi }) && typeof window.invalidaCacheAltriArchivi === 'function') {
+            window.invalidaCacheAltriArchivi();
+        }
     } catch (e) {
         console.error('Salvataggio degli archivi in cui cercare non riuscito:', e);
-        mostraMessaggio(window.t('msg_cross_save_failed', 'Preferenza non salvata: {var0}').replace('{var0}', e && e.message ? e.message : String(e)), 'error');
+        window.notificaSalvataggio(e instanceof Error ? e : new Error(String(e)));
     }
 };
 
 window.salvaSuggerimentiAltriArchivi = async function() {
-    if (!window.apiSettings) return;
-    try {
-        const box = document.getElementById('settings-cross-suggerimenti') as HTMLInputElement;
-        const settings = await window.apiSettings.get();
-        settings.suggerimentiAltriArchivi = !(box && !box.checked);
-        await window.apiSettings.save(settings);
-        if (typeof window.invalidaCacheAltriArchivi === 'function') window.invalidaCacheAltriArchivi();
-        mostraMessaggio(window.t('msg_cross_saved', 'Preferenza salvata.'), 'success');
-    } catch (e) {
-        console.error('Salvataggio del suggerimento non riuscito:', e);
-        mostraMessaggio(window.t('msg_cross_save_failed', 'Preferenza non salvata: {var0}').replace('{var0}', e && e.message ? e.message : String(e)), 'error');
+    const box = _campo('settings-cross-suggerimenti');
+    if (await _salvaPreferenze({ suggerimentiAltriArchivi: !(box && !box.checked) }) && typeof window.invalidaCacheAltriArchivi === 'function') {
+        window.invalidaCacheAltriArchivi();
     }
 };
 
-window.salvaImpostazioniSicurezza = async function() {
-    if (!window.apiSettings) return;
-    const settings = await window.apiSettings.get();
-
-    const auto = document.getElementById('settings-snapshot-auto');
-    if (auto) settings.snapshotAutomatici = !!auto.checked;
-
-    const leggi = (id, chiave, massimo) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const n = parseInt(el.value, 10);
-        if (!isFinite(n) || n < 0 || n > massimo) {
-            // null, non delete: il main unisce, e solo null gli dice di togliere la chiave.
-            settings[chiave] = null;
-            return;
-        }
-        settings[chiave] = n;
-    };
-    leggi('settings-snapshot-recenti', 'snapshotRecenti', 100);
-    leggi('settings-snapshot-giorni', 'snapshotGiorni', 3650);
-    leggi('settings-cestino-giorni', 'cestinoGiorni', 3650);
-
-    await window.apiSettings.save(settings);
-};
+// --- Archivio dati ---------------------------------------------------------------------------
 
 window.cambiaCartellaAllegati = async function() {
-    if (window.apiSettings && window.apiSettings.scegliCartellaAllegati) {
+    if (!window.apiSettings || !window.apiSettings.scegliCartellaAllegati) return;
+    try {
         // Dialogo e salvataggio nel main: il renderer non scrive percorsi nelle impostazioni.
-        const path = await window.apiSettings.scegliCartellaAllegati(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
-        if (path) {
-            // Aggiorna la visualizzazione
-            const attachmentsPathDiv = document.getElementById('settings-attachments-path');
-            const btnRestore = document.getElementById('btn-restore-attachments');
-            if (attachmentsPathDiv) attachmentsPathDiv.textContent = path;
-            if (btnRestore) btnRestore.classList.remove('hidden-tab');
-            
-            mostraMessaggio(window.t("msg_directory_allegati_locale", "Directory allegati locale configurata con successo."), "success");
-        }
+        const scelta = await window.apiSettings.scegliCartellaAllegati(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
+        if (!scelta) return;
+        await _mostraCartellaAllegati();
+        mostraMessaggio(window.t("msg_directory_allegati_locale", "Directory allegati locale configurata con successo."), "success");
+    } catch (e) {
+        console.error('Scelta della cartella allegati non riuscita:', e);
+        window.notificaSalvataggio(e instanceof Error ? e : new Error(String(e)));
     }
 };
 
 window.ripristinaCartellaAllegatiPredefinita = async function() {
-    if (window.apiSettings && window.apiBrowser) {
-        await window.apiSettings.ripristinaCartellaAllegati();
-
-        const p = await window.apiBrowser.getWorkspacePath();
-        const attachmentsPathDiv = document.getElementById('settings-attachments-path');
-        const btnRestore = document.getElementById('btn-restore-attachments');
-        if (attachmentsPathDiv) attachmentsPathDiv.textContent = p ? (p + '\\allegati_manoscritti') : 'Non definita';
-        if (btnRestore) btnRestore.classList.add('hidden-tab');
-        
+    if (!window.apiSettings) return;
+    try {
+        if (!await window.apiSettings.ripristinaCartellaAllegati()) throw new Error(window.t('settings_not_defined_f', 'Non definita'));
+        await _mostraCartellaAllegati();
         mostraMessaggio(window.t("msg_la_directory_degli_allega", "La directory degli allegati è stata ripristinata al percorso di default (interna all'archivio)."), "success");
+    } catch (e) {
+        console.error('Ripristino della cartella allegati non riuscito:', e);
+        window.notificaSalvataggio(e instanceof Error ? e : new Error(String(e)));
     }
 };
 
@@ -296,12 +447,13 @@ window.esportaBackupZip = async function() {
         
         const progDiv = document.createElement('div');
         progDiv.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-4 rounded-sm shadow-2xl z-toast min-w-[300px] border border-stone-700 text-center flex flex-col gap-2';
+        progDiv.setAttribute('role', 'status');
         progDiv.innerHTML = window.sanitizeHTML(`
-            <div class="font-bold text-sm">Esportazione in corso…</div>
+            <div class="font-bold text-sm">${window.escapeHTML(window.t('export_in_progress', 'Esportazione in corso…'))}</div>
             <div class="w-full bg-stone-700 h-2 rounded-full overflow-hidden">
                 <div id="export-progress-bar" class="barra-avanzamento h-full w-0 transizione-larghezza"></div>
             </div>
-            <div id="export-progress-text" class="text-xs text-stone-300">Calcolo…</div>
+            <div id="export-progress-text" class="text-xs text-stone-300">${window.escapeHTML(window.t('export_calculating', 'Calcolo…'))}</div>
         `);
         document.body.appendChild(progDiv);
 
@@ -314,7 +466,8 @@ window.esportaBackupZip = async function() {
                     const total = progress.entries.total;
                     const perc = total > 0 ? Math.round((proc / total) * 100) : 0;
                     bar.style.width = perc + '%';
-                    text.textContent = `${proc} di ${total} file elaborati (${perc}%)`;
+                    text.textContent = window.t('export_progress_files', '{var0} di {var1} file elaborati ({var2}%)')
+                        .replace('{var0}', String(proc)).replace('{var1}', String(total)).replace('{var2}', String(perc));
                 }
             });
             window._exportProgressListener = true;

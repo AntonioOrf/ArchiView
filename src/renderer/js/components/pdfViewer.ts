@@ -173,7 +173,9 @@
         function calcolaLato(viewport) {
             const dpr = window.devicePixelRatio || 1;
             const misura = viewport ? Math.max(viewport.clientWidth, viewport.clientHeight) : 0;
-            return Math.round(Math.min(LATO_MAX, Math.max(LATO_MIN, misura * dpr * 1.5)));
+            // Tetto scelto in Impostazioni → Documenti (pdfRisoluzione), mai oltre LATO_MAX.
+            const massimo = Math.min(LATO_MAX, Math.max(LATO_MIN, Number(window.pdfRisoluzioneMassima) || LATO_MAX));
+            return Math.round(Math.min(massimo, Math.max(LATO_MIN, misura * dpr * 1.5)));
         }
 
         function immaginePagina(pagina) {

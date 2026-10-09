@@ -550,7 +550,12 @@ async function _taMostraPaginaPdf(m, index, n) {
         window.t('trasc_page_of', 'p. {var0} di {var1}').replace('{var0}', String(n)).replace('{var1}', String(totale));
     window.mostraAnteprimaImmagine();
     try {
-        await window.PdfViewer.mostraPagina(n, img, viewport);
+        const mostrata = await window.PdfViewer.mostraPagina(n, img, viewport);
+        // Zoom iniziale da Impostazioni → Documenti; "pagina" è già la vista di reimposta().
+        if (mostrata && window.pdfZoomIniziale === 'larghezza' && (viewport as any)._imageViewer) {
+            await img.decode().catch(() => { /* immagine non decodificabile: resta la pagina intera */ });
+            (viewport as any)._imageViewer.adatta('larghezza');
+        }
     } catch (e) {
         console.error('[PDF] Resa della pagina fallita:', e);
         _taMostraErrorePdf();

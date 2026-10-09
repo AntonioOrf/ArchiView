@@ -299,10 +299,9 @@ test.describe('OCR degli allegati', () => {
     expect(chiamate[0].tipo).toBe('immagine');
     expect(chiamate[0].dpi).toBe(300);
 
-    // La preferenza sta in localStorage, NON in appData: finirebbe nel database e quindi
+    // La preferenza sta in settings.json, NON in appData: finirebbe nel database e quindi
     // nel sync, imponendo ai colleghi lingue che sulla loro macchina possono non esistere.
-    const salvata = await page.evaluate(() => localStorage.getItem('archiview.ocr.lingue'));
-    expect(salvata).toBe('ita');
+    await expect.poll(async () => (await page.evaluate(() => (window as any).apiSettings.get())).ocrLingue).toEqual(['ita']);
     const dati = await getAppData(page);
     expect(dati.ocrLingue).toBeUndefined();
   });

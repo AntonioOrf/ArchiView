@@ -494,7 +494,7 @@ test.describe('Security Regression Tests', () => {
   // N2: le chiavi che decidono quali cartelle il main legge, copia o cestina non arrivano
   // dal renderer. Prima un renderer compromesso le scriveva con save-settings e poi mandava
   // nel cestino una cartella qualsiasi passando da delete-vault-local.
-  test('save-settings: percorsi e chiavi del vault non scrivibili dal renderer', async ({ page, electronApp, userDataDir }) => {
+  test('patch-settings: percorsi e chiavi del vault non scrivibili dal renderer', async ({ page, electronApp, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const { stubDialog } = await import('./fixtures');
     const path = await import('path');
@@ -505,13 +505,12 @@ test.describe('Security Regression Tests', () => {
     fs.writeFileSync(path.join(vittima, 'database_manoscritti.json'), JSON.stringify({ manoscritti: [], cartelle: [] }));
 
     const prima = await page.evaluate(() => (window as any).apiSettings.get());
-    await page.evaluate(async (v) => {
-      const s = await (window as any).apiSettings.get();
-      await (window as any).apiSettings.save({
-        ...s, lang: 'en', recentWorkspaces: [v], customAttachmentsPath: v, workspacePath: v,
-        isSharedVault: true, sharedVaultId: 'cartella-altrui', crossArchiveEsclusi: ['a', 7, 'b']
-      });
-    }, vittima);
+    const esito = await page.evaluate((v) => (window as any).apiSettings.patch({
+      lang: 'en', recentWorkspaces: [v], customAttachmentsPath: v, workspacePath: v,
+      isSharedVault: true, sharedVaultId: 'cartella-altrui', crossArchiveEsclusi: ['a', 7, 'b']
+    }), vittima);
+    expect(esito.ok).toBe(false);
+    expect(esito.rifiutate.sort()).toEqual(['customAttachmentsPath', 'isSharedVault', 'recentWorkspaces', 'sharedVaultId', 'workspacePath']);
     const dopo = await page.evaluate(() => (window as any).apiSettings.get());
     expect(dopo.lang).toBe('en');
     expect(dopo.recentWorkspaces).toEqual(prima.recentWorkspaces);
@@ -544,8 +543,8 @@ test.describe('Security Regression Tests', () => {
     // Una preferenza svuotata si toglie davvero dal file (prima il valore vecchio restava).
     await page.evaluate(async () => {
       const api = (window as any).apiSettings;
-      await api.save({ ...(await api.get()), snapshotRecenti: 10 });
-      await api.save({ ...(await api.get()), snapshotRecenti: null });
+      await api.patch({ snapshotRecenti: 10 });
+      await api.patch({ snapshotRecenti: null });
     });
     expect((await page.evaluate(() => (window as any).apiSettings.get())).snapshotRecenti).toBeUndefined();
   });

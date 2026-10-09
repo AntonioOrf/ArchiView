@@ -3,9 +3,11 @@ const fs = require('fs');
 const { app } = require('electron');
 const { syncUnifiedFromLegacy, readVaultConfig } = require('./vaultConfig');
 const { scriviAtomicoSync } = require('./scritturaAtomica');
+const { configuraStore, leggiStore, scriviStore } = require('./settingsStore');
+const { esaminaPatch } = require('./impostazioniRenderer');
 
 const userDataPath = app.getPath('userData');
-const settingsPath = path.join(userDataPath, 'settings.json');
+configuraStore(path.join(userDataPath, 'settings.json'));
 
 // Chiavi che descrivono lo stato del vault: NON devono più stare nel settings.json globale.
 // Coincidono con l'oggetto driveSettings scritto in .archiview-drive.json.
@@ -54,33 +56,14 @@ function finestraPrincipale() {
   return w && !w.isDestroyed() ? w : null;
 }
 
-// O6: copia in memoria di settings.json. Lo scrive solo questo processo (istanza singola) e
-// solo da `scriviImpostazioni`, quindi la cache resta allineata al disco; prima ogni lettura
-// (anche una per ricerca tra archivi) era readFileSync + JSON.parse.
-// Si restituisce sempre una copia: i chiamanti modificano l'oggetto prima di salvarlo.
-let cacheImpostazioni: any = null;
-
+// Cache, .bak e scrittura atomica stanno in settingsStore. Sempre una copia: i chiamanti
+// modificano l'oggetto prima di salvarlo.
 function getAllSettings() {
-  if (cacheImpostazioni === null) {
-    if (!fs.existsSync(settingsPath)) {
-      cacheImpostazioni = {};
-    } else {
-      try {
-        cacheImpostazioni = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      } catch (error) {
-        // Non in cache: un errore transitorio (file bloccato dall'antivirus) memorizzato come
-        // {} farebbe sì che il salvataggio successivo riscriva il file senza le altre chiavi.
-        console.error("Errore lettura settings:", error);
-        return {};
-      }
-    }
-  }
-  return structuredClone(cacheImpostazioni);
+  return leggiStore();
 }
 
 function scriviImpostazioni(impostazioni) {
-  scriviAtomicoSync(settingsPath, JSON.stringify(impostazioni, null, 2));
-  cacheImpostazioni = structuredClone(impostazioni);
+  scriviStore(impostazioni);
 }
 
 function saveAllSettings(newSettings) {
@@ -142,6 +125,18 @@ function rimuoviImpostazioni(chiavi: string[]) {
   scriviImpostazioni(stripVaultKeys(current));
   applicaCartellaAllegati(current);
   return current;
+}
+
+/**
+ * Patch del renderer: scrive solo le chiavi ammesse e valide, toglie quelle inviate a `null`.
+ * Ogni patch tocca solo le sue chiavi, quindi due salvataggi vicini (lastSyncTime dal sync,
+ * username dal pannello) non si sovrascrivono più a vicenda.
+ */
+function patchSettings(grezze) {
+  const { valori, daRimuovere, rifiutate } = esaminaPatch(grezze);
+  if (Object.keys(valori).length) saveAllSettings(valori);
+  if (daRimuovere.length) rimuoviImpostazioni(daRimuovere);
+  return { ok: rifiutate.length === 0, rifiutate };
 }
 
 function loadWorkspace() {
@@ -330,6 +325,7 @@ module.exports = {
   initWorkspace,
   getAllSettings,
   saveAllSettings,
+  patchSettings,
   rimuoviImpostazioni,
   getActiveVaultFlags,
   saveHubConfig,

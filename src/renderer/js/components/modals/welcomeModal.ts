@@ -420,9 +420,7 @@
             if (basePath) {
                 (document.getElementById('welcome-join-folder-path') as HTMLInputElement).value = basePath;
                 if (window.apiSettings) {
-                    const settings = await window.apiSettings.get();
-                    settings.lastVaultBasePath = basePath;
-                    await window.apiSettings.save(settings);
+                    await window.apiSettings.patch({ lastVaultBasePath: basePath });
                 }
             }
         }
@@ -546,9 +544,7 @@
                 const basePath = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
                 if (basePath) {
                     if (window.apiSettings) {
-                        const settings = await window.apiSettings.get();
-                        settings.lastVaultBasePath = basePath;
-                        await window.apiSettings.save(settings);
+                        await window.apiSettings.patch({ lastVaultBasePath: basePath });
                     }
                     const driveConfig = vaultId ? { isSharedVault: true, sharedVaultId: vaultId } : null;
                     const success = await window.apiBrowser.cloneWorkspaceHub(basePath, defaultName, driveConfig, driveData.database);
@@ -572,9 +568,7 @@
             if (basePath) {
                 document.getElementById('welcome-new-folder-path').value = basePath;
                 if (window.apiSettings) {
-                    const settings = await window.apiSettings.get();
-                    settings.lastVaultBasePath = basePath;
-                    await window.apiSettings.save(settings);
+                    await window.apiSettings.patch({ lastVaultBasePath: basePath });
                 }
             }
         }

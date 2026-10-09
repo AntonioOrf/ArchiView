@@ -494,9 +494,7 @@ async function caricaDopoMerge(apiCloud, driveData, silent) {
         ? newSyncTime
         : (driveData && driveData.driveModifiedTime) || Date.now();
     if (window.apiSettings) {
-        const settings = await window.apiSettings.get();
-        settings.lastSyncTime = window.ultimoCaricamento;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
     }
     if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
     window.incomingChanges = [];
@@ -605,9 +603,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 window.lastDriveModifiedTime = driveData.driveModifiedTime;
                 window.ultimoCaricamento = driveData.driveModifiedTime || Date.now();
                 if (window.apiSettings) {
-                    const settings = await window.apiSettings.get();
-                    settings.lastSyncTime = window.ultimoCaricamento;
-                    await window.apiSettings.save(settings);
+                    await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
                 }
                 if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
                 window.incomingChanges = [];
@@ -757,9 +753,7 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
             // Flag per mostrare il promemoria "re-invita i collaboratori" dopo il reload.
             if (window.apiSettings) {
                 try {
-                    const s = await window.apiSettings.get();
-                    s.hubJustMigrated = true;
-                    await window.apiSettings.save(s);
+                    await window.apiSettings.patch({ hubJustMigrated: true });
                 } catch (e) { /* best-effort */ }
             }
 

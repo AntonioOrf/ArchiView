@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (window.initTheme) await window.initTheme();
+        if (window.initPreferenzeTesto) await window.initPreferenzeTesto();
         if (window.initLang) await window.initLang();
 
         await avviaApp();
@@ -53,8 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (window.apriChangelogModal) {
                     window.apriChangelogModal();
                 }
-                settings.lastSeenVersion = currentVersion;
-                await window.apiSettings.save(settings);
+                await window.apiSettings.patch({ lastSeenVersion: currentVersion });
             }
         }
     } catch (error) {
@@ -172,8 +172,7 @@ async function avviaApp() {
 
     // Creazione Hub da welcome: il workspace locale è appena stato creato, ora lo si pubblica.
     if (settings && settings.autoStartCreaHub) {
-        settings.autoStartCreaHub = false;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ autoStartCreaHub: false });
         setTimeout(async () => {
             if (typeof window.creaRepositoryHub === 'function') {
                 // null → creaRepositoryHub usa il basename della cartella come nome vault.
@@ -187,9 +186,7 @@ async function avviaApp() {
         const isCondiviso = settings.autoStartTrasformaCondiviso;
         const isPersonale = settings.autoStartTrasformaPersonale;
 
-        settings.autoStartTrasformaCondiviso = false;
-        settings.autoStartTrasformaPersonale = false;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ autoStartTrasformaCondiviso: false, autoStartTrasformaPersonale: false });
 
         if (typeof mostraProgressoCloud === 'function') {
             mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_cloud", "Avvio configurazione cloud…"));
@@ -209,16 +206,14 @@ async function avviaApp() {
     }
 
     if (settings && settings.hubJustCreated) {
-        settings.hubJustCreated = false;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ hubJustCreated: false });
         setTimeout(() => {
             if (typeof window.apriShareModal === 'function') window.apriShareModal();
         }, 800);
     }
 
     if (settings && settings.hubJustMigrated) {
-        settings.hubJustMigrated = false;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ hubJustMigrated: false });
         setTimeout(() => {
             if (typeof mostraMessaggio === 'function') {
                 mostraMessaggio(window.t("msg_hub_migrato_reinvita", "Migrazione su Hub completata! Ricorda di re-invitare i collaboratori: genera un nuovo invito dal pannello Condivisione (i permessi di Google Drive non sono trasferibili)."), "info");
@@ -228,8 +223,7 @@ async function avviaApp() {
     }
 
     if (settings && settings.promptCloudAuth) {
-        settings.promptCloudAuth = false;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ promptCloudAuth: false });
         
         setTimeout(() => {
             if (typeof apriCloudModal === 'function') {
@@ -329,10 +323,16 @@ async function avviaApp() {
     // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato.
     // Salta il check se offline (l'utente potrebbe aprire l'app in aereo/senza rete): evita una
     // chiamata di rete destinata a fallire e un log 'error' inutile.
-    const controllaAggiornamentiSeOnline = () => {
-        if (typeof window.controllaAggiornamenti === 'function' && navigator.onLine !== false) {
-            window.controllaAggiornamenti(false);
+    // Spento da Impostazioni → Sistema: resta solo il controllo manuale. Si rilegge a ogni giro,
+    // così il cambio vale subito senza riavvio.
+    const controllaAggiornamentiSeOnline = async () => {
+        if (typeof window.controllaAggiornamenti !== 'function' || navigator.onLine === false) return;
+        try {
+            if ((await window.apiSettings.get()).aggiornamentiAutomatici === false) return;
+        } catch (e) {
+            console.warn('Preferenza aggiornamenti non letta, controllo comunque:', e);
         }
+        window.controllaAggiornamenti(false);
     };
     setTimeout(controllaAggiornamentiSeOnline, 2000);
     // Re-check periodico ogni 4h: le sessioni lunghe (app mai riavviata) altrimenti non vedrebbero
@@ -346,7 +346,7 @@ async function avviaApp() {
      * iniziato a fare e ne mangia i click; per lo stesso motivo l'invito non compare se
      * l'utente e' gia' dentro una scheda o nella trascrizione.
      */
-    function mostraInvitoTutorial(settings) {
+    function mostraInvitoTutorial() {
         const banner = document.getElementById('tutorial-banner');
         const vList = document.getElementById('view-list');
         if (!banner || !vList || vList.classList.contains('hidden-tab')) return;
@@ -354,8 +354,7 @@ async function avviaApp() {
         const chiudiEDimentica = async () => {
             banner.classList.add('hidden-tab');
             try {
-                settings.tutorialCompleted = true;
-                await window.apiSettings.save(settings);
+                await window.apiSettings.patch({ tutorialCompleted: true });
             } catch (err) {
                 console.error('Salvataggio stato tutorial fallito:', err);
             }
@@ -376,7 +375,7 @@ async function avviaApp() {
             localStorage.removeItem('startTutorialOnBoot');
             if (window.avviaTutorial) window.avviaTutorial();
         } else if (settings && settings.tutorialCompleted !== true) {
-            mostraInvitoTutorial(settings);
+            mostraInvitoTutorial();
         }
     }, 1500);
 
@@ -790,21 +789,13 @@ window.applicaTema = function(theme) {
         activeTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     
-    document.documentElement.classList.remove('dark-theme', 'amber-light-theme', 'blue-dark-theme');
-
-    if (activeTheme === 'dark') {
-        document.documentElement.classList.add('dark-theme');
-    } else if (activeTheme === 'amber-light') {
-        document.documentElement.classList.add('amber-light-theme');
-    } else if (activeTheme === 'blue-dark') {
-        document.documentElement.classList.add('blue-dark-theme');
-    }
+    const classi = window.CLASSI_TEMA; // temaIniziale.ts
+    document.documentElement.classList.remove(...Object.values(classi).filter(Boolean) as string[]);
+    if (classi[activeTheme]) document.documentElement.classList.add(classi[activeTheme]);
 };
 
 window.cambiaTemaSelezionato = async function(theme) {
-    const settings = await window.apiSettings.get();
-    settings.theme = theme;
-    await window.apiSettings.save(settings);
+    await window.apiSettings.patch({ theme });
     localStorage.setItem('theme', theme);
     // Dissolvenza solo per il cambio scelto dall'utente (regola :root.cambio-tema in style.css).
     document.documentElement.classList.add('cambio-tema');

@@ -1,9 +1,9 @@
 const { ipcMain, dialog, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { getAllSettings, saveAllSettings, rimuoviImpostazioni } = require('../workspaceManager');
+const { state, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni } = require('../workspaceManager');
+const { applicaZoom } = require('../zoomInterfaccia');
 const { leggiPerfConfig, scriviPerfConfig } = require('../perfConfig');
-const { filtraImpostazioniRenderer, chiaviDaRimuovere } = require('../impostazioniRenderer');
 
 function setupSettingsIpc() {
   // get-settings ritorna SOLO le preferenze globali. I flag del vault
@@ -12,18 +12,18 @@ function setupSettingsIpc() {
     return getAllSettings();
   });
 
-  // Solo preferenze: percorsi e chiavi del vault
-  // li scrive il main, dai canali qui sotto o dai flussi di apertura/join.
-  ipcMain.handle('save-settings', (event, newSettings) => {
-    try {
-      const salvate = saveAllSettings(filtraImpostazioniRenderer(newSettings));
-      const daRimuovere = chiaviDaRimuovere(newSettings);
-      return daRimuovere.length ? rimuoviImpostazioni(daRimuovere) : salvate;
-    } catch (error) {
-      console.error('Errore salvataggio impostazioni:', error);
-      return getAllSettings();
-    }
+  // Solo le chiavi che cambiano, solo preferenze: percorsi e chiavi del vault li scrive il
+  // main, dai canali qui sotto o dai flussi di apertura/join. `null` riporta al predefinito.
+  // Un errore di scrittura arriva al renderer come rifiuto dell'invoke.
+  ipcMain.handle('patch-settings', (event, parziale) => {
+    const esito = patchSettings(parziale);
+    if (parziale && typeof parziale === 'object' && 'zoomInterfaccia' in parziale) applicaZoom();
+    return esito;
   });
+
+  // Cartella allegati in uso (personalizzata o predefinita), come la usa il main: il
+  // renderer la mostra e non la compone.
+  ipcMain.handle('percorso-allegati-effettivo', () => state.attachmentsDirPath || null);
 
   // Cartella allegati personalizzata: la sceglie l'utente in un dialogo del main, mai un
   // percorso passato dal renderer (che farebbe servire a local-asset una cartella qualsiasi).

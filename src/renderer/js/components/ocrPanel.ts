@@ -37,7 +37,8 @@ const _oStato = {
     indice: 0,
     inCorso: false,
     risultato: null,
-    lingue: []
+    lingue: [],
+    preferite: []
 };
 
 function _oT(k, d) { return window.t(k, d); }
@@ -67,7 +68,30 @@ async function _oCaricaLingue() {
         console.error('[OCR] Elenco lingue non leggibile:', errore);
         _oStato.lingue = [];
     }
+    await _oCaricaLinguePreferite();
     return _oStato.lingue;
+}
+
+/**
+ * Lingue preferite da settings.json (`ocrLingue`). Una tantum porta lì il vecchio valore di
+ * localStorage, che poi si cancella.
+ */
+async function _oCaricaLinguePreferite() {
+    try {
+        const s = await window.apiSettings.get();
+        if (Array.isArray(s.ocrLingue)) {
+            _oStato.preferite = s.ocrLingue;
+            return;
+        }
+        const vecchie = String(localStorage.getItem('archiview.ocr.lingue') || '').split('+').filter(Boolean);
+        _oStato.preferite = vecchie;
+        if (vecchie.length) {
+            const r = await window.apiSettings.patch({ ocrLingue: vecchie });
+            if (r && r.ok) localStorage.removeItem('archiview.ocr.lingue');
+        }
+    } catch (errore) {
+        console.error('[OCR] Lingue preferite non leggibili:', errore);
+    }
 }
 
 function _oLingueInstallate() {
@@ -81,16 +105,10 @@ function _oLingueInstallate() {
  */
 function _oLinguePredefinite() {
     const installate = _oLingueInstallate().map(l => l.codice);
-    // La preferenza sta in localStorage e NON in `appData`: finirebbe nel database, quindi
+    // La preferenza sta in settings.json e NON in `appData`: finirebbe nel database, quindi
     // nel sync, e imporrebbe ai colleghi una scelta che dipende dalle lingue installate
     // sulla LORO macchina — cioè un valore che da loro può non esistere affatto.
-    let salvate = [];
-    try {
-        salvate = String(localStorage.getItem('archiview.ocr.lingue') || '').split('+').filter(Boolean);
-    } catch (errore) {
-        console.error('[OCR] localStorage non leggibile:', errore);
-    }
-    const valide = salvate.filter(c => installate.includes(c));
+    const valide = _oStato.preferite.filter(c => installate.includes(c));
     if (valide.length) return valide;
     if (installate.includes('ita')) return ['ita'];
     return installate.slice(0, 1);
@@ -124,11 +142,9 @@ function _oRicordaRaddrizza(attivo) {
 }
 
 function _oRicordaLingue(lingue) {
-    try {
-        localStorage.setItem('archiview.ocr.lingue', lingue.join('+'));
-    } catch (errore) {
-        console.error('[OCR] localStorage non scrivibile:', errore);
-    }
+    _oStato.preferite = lingue;
+    window.apiSettings.patch({ ocrLingue: lingue })
+        .catch(errore => console.error('[OCR] Lingue preferite non salvate:', errore));
 }
 
 // --- Costruzione del corpo del modale -----------------------------------------

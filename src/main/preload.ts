@@ -153,7 +153,11 @@ contextBridge.exposeInMainWorld('apiScanner', {
 
 contextBridge.exposeInMainWorld('apiSettings', {
     get: () => ipcRenderer.invoke('get-settings'),
-    save: (settings) => ipcRenderer.invoke('save-settings', settings),
+    // Solo le chiavi che cambiano; `null` torna al predefinito. → { ok, rifiutate[] }
+    patch: (parziale) => ipcRenderer.invoke('patch-settings', parziale),
+    // Chiavi cambiate dal main fuori dal pannello (zoom da tastiera).
+    onCambiate: (callback) => ipcRenderer.on('impostazioni-cambiate', (event, chiavi) => callback(chiavi)),
+    percorsoAllegati: () => ipcRenderer.invoke('percorso-allegati-effettivo'),
     // Percorsi: li sceglie o li toglie il main, il renderer non li scrive (N2).
     scegliCartellaAllegati: (titolo) => ipcRenderer.invoke('scegli-cartella-allegati', titolo),
     ripristinaCartellaAllegati: () => ipcRenderer.invoke('ripristina-cartella-allegati'),

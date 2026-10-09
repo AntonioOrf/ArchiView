@@ -627,8 +627,7 @@ window.avviaTutorial = async function () {
         try {
             const settings = await window.apiSettings.get();
             if (!settings.tutorialCompleted) {
-                settings.tutorialCompleted = true;
-                await window.apiSettings.save(settings);
+                await window.apiSettings.patch({ tutorialCompleted: true });
             }
         } catch (e) {
             console.error("Errore persistenza tutorialCompleted:", e);

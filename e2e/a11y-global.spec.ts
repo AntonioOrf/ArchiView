@@ -248,8 +248,8 @@ test.describe('Accessibilità: effetti globali', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 
     await electronApp.evaluate(({ ipcMain }) => {
-      ipcMain.removeHandler('save-settings');
-      ipcMain.handle('save-settings', () => { throw new Error('disco pieno'); });
+      ipcMain.removeHandler('patch-settings');
+      ipcMain.handle('patch-settings',() => { throw new Error('disco pieno'); });
     });
 
     await page.evaluate(() => (window as any).apriCloudModal());
@@ -384,7 +384,7 @@ test.describe('Accessibilità: effetti globali', () => {
       }, tipo);
 
       for (const tema of ['light', 'amber-light', 'dark', 'blue-dark']) {
-        await page.evaluate(() => (window as any).apriImpostazioni());
+        await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
         await page.locator('#settings-theme').selectOption(tema);
         await page.evaluate(() => (window as any).chiudiImpostazioni());
         // cambiaTemaSelezionato applica la classe solo dopo due round-trip IPC: senza

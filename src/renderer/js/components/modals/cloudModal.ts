@@ -356,9 +356,7 @@
         if (!window.apiSettings) return;
         const cb = document.getElementById('cloud-sync-attachments');
         try {
-            const settings = await window.apiSettings.get();
-            settings.syncAttachments = checked;
-            await window.apiSettings.save(settings);
+            await window.apiSettings.patch({ syncAttachments: checked });
             if (window.annunciaA11y) {
                 window.annunciaA11y(checked
                     ? window.t('a11y_sync_attachments_on', 'Sincronizzazione allegati attivata')

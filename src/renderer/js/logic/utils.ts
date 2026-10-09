@@ -418,9 +418,7 @@ window.salvaStatoPosizione = async function() {
     };
     
     if (window.apiSettings) {
-        const settings = await window.apiSettings.get();
-        settings.appState = stato;
-        await window.apiSettings.save(settings);
+        await window.apiSettings.patch({ appState: stato });
     }
 };
 
@@ -850,7 +848,7 @@ window.cambiaModalitaPrestazioni = async function(attiva) {
     if (window.apiBrowser && window.apiBrowser.setPerfMode) {
         const res = await window.apiBrowser.setPerfMode(!!attiva);
         if (res && res.success === false) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio("Impossibile salvare la preferenza: " + res.error, "error");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_perf_save_failed", "Impossibile salvare la preferenza: ") + res.error, "error");
             return;
         }
     }

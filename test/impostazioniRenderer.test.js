@@ -1,7 +1,7 @@
 // Dal renderer passano solo preferenze. Percorsi
 // (archivi recenti, cartella allegati, archivio aperto) e chiavi del vault li scrive il main.
 const assert = require('assert');
-const { filtraImpostazioniRenderer: filtra, chiaviDaRimuovere } = require('../out/main/impostazioniRenderer');
+const { filtraImpostazioniRenderer: filtra, chiaviDaRimuovere, esaminaPatch } = require('../out/main/impostazioniRenderer');
 
 console.log('Running impostazioniRenderer tests...');
 
@@ -46,10 +46,21 @@ assert.ok(esclusi.crossArchiveEsclusi.every((id) => typeof id === 'string' && id
 // 5. Input che non è un oggetto.
 for (const v of [null, undefined, 'stringa', 42, ['lang']]) assert.deepStrictEqual(filtra(v), {});
 
-// 6. Preferenze svuotate: solo quelle cancellabili, solo con null esplicito.
-assert.deepStrictEqual(chiaviDaRimuovere({ snapshotRecenti: null, cestinoGiorni: null, snapshotGiorni: 5 }), ['snapshotRecenti', 'cestinoGiorni']);
-assert.deepStrictEqual(chiaviDaRimuovere({ recentWorkspaces: null, customAttachmentsPath: null, workspacePath: null, lang: null }), []);
+// 6. Preferenze svuotate: solo quelle ammesse, solo con null esplicito, mai dove null è un valore.
+assert.deepStrictEqual(chiaviDaRimuovere({ snapshotRecenti: null, cestinoGiorni: null, snapshotGiorni: 5 }).sort(), ['cestinoGiorni', 'snapshotRecenti']);
+assert.deepStrictEqual(chiaviDaRimuovere({ recentWorkspaces: null, customAttachmentsPath: null, workspacePath: null }), []);
+assert.deepStrictEqual(chiaviDaRimuovere({ lang: null, ocrLingue: null, appState: null, lastSyncTime: null }).sort(), ['lang', 'ocrLingue']);
 assert.deepStrictEqual(filtra({ snapshotRecenti: null }), {});
 for (const v of [null, undefined, 'x', ['snapshotRecenti']]) assert.deepStrictEqual(chiaviDaRimuovere(v), []);
+
+// 7. Patch: valori, chiavi da togliere e rifiutate (fuori elenco o non valide).
+assert.deepStrictEqual(esaminaPatch({ lang: 'en', cestinoGiorni: null, workspacePath: 'C:\\x', theme: 5, constructor: 1 }), {
+  valori: { lang: 'en' }, daRimuovere: ['cestinoGiorni'], rifiutate: ['workspacePath', 'theme', 'constructor']
+});
+assert.deepStrictEqual(esaminaPatch('x'), { valori: {}, daRimuovere: [], rifiutate: [] });
+
+// 8. Lingue OCR: codici Tesseract, niente percorsi né separatori.
+assert.deepStrictEqual(filtra({ ocrLingue: ['ita', 'lat', 'chi_sim'] }), { ocrLingue: ['ita', 'lat', 'chi_sim'] });
+for (const v of [['../x'], ['ita+lat'], 'ita', [1], Array(33).fill('ita')]) assert.deepStrictEqual(filtra({ ocrLingue: v }), {});
 
 console.log('impostazioniRenderer tests OK');

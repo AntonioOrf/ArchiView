@@ -2876,3 +2876,60 @@ label:has(> input[type="radio"]) {
     font-weight: 700;
     padding: 0.5rem 0.75rem;
 }
+
+/* ============================================================
+   Pannello Impostazioni (settingsModal.ts)
+   ============================================================ */
+/* Tab: lo stato viene da aria-selected, così aspetto e semantica non possono divergere. */
+.settings-tab-btn {
+    color: var(--color-text-secondary);
+}
+.settings-tab-btn:hover {
+    background-color: var(--color-bg-hover);
+}
+.settings-tab-btn[aria-selected="true"] {
+    background-color: var(--color-bg-hover);
+    color: var(--color-primary-hover);
+}
+/* Sezioni: filetto fra una e l'altra, non sopra la prima. */
+.sezione-impostazioni + .sezione-impostazioni {
+    border-top: 1px solid var(--color-border);
+    padding-top: 1.5rem;
+}
+.campo-errore {
+    color: var(--color-danger);
+    font-size: 0.75rem;
+}
+input[aria-invalid="true"] {
+    border-color: var(--color-danger) !important;
+}
+/* Era uno style="" inline (bloccato dalla CSP senza 'unsafe-inline' sugli stili). */
+.btn-backup {
+    background-color: var(--color-text-main);
+    color: var(--color-bg-base);
+}
+
+/* Testo della trascrizione: carattere e dimensione da Impostazioni → Aspetto
+   (applicaPreferenzeTesto mette le due custom property su :root). */
+#trascrizione-editor,
+.anteprima-trascrizione {
+    font-family: var(--font-trascrizione, Georgia, 'Segoe UI Historic', serif);
+    font-size: var(--dim-trascrizione, 1.125rem);
+}
+
+/* Junicode 2 (Peter S. Baker, SIL OFL 1.1, licenza in fonts/Junicode-OFL.txt): copertura MUFI
+   per abbreviazioni e segni medievali. File variabili: un file copre tutti i pesi. */
+@font-face {
+    font-family: 'Junicode';
+    src: url('fonts/JunicodeVF-Roman.woff2') format('woff2');
+    font-weight: 300 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Junicode';
+    src: url('fonts/JunicodeVF-Italic.woff2') format('woff2');
+    font-weight: 300 700;
+    font-style: italic;
+    font-display: swap;
+}

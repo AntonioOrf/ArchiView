@@ -24,6 +24,7 @@ const { setupAttachmentsIpc, setupAttachmentsProtocol } = require('./ipc/attachm
 const { setupWorkspaceIpc } = require('./ipc/workspaceIpc');
 const { setupUpdaterIpc } = require('./ipc/updaterIpc');
 const { setupSettingsIpc } = require('./ipc/settingsIpc');
+const { collegaZoom } = require('./zoomInterfaccia');
 const { setupVaultIpc } = require('./ipc/vaultIpc');
 const { setupHubIpc } = require('./ipc/hubIpc');
 const { setupDriveIpc } = require('./ipc/drive');
@@ -104,6 +105,7 @@ function createWindow() {
   }
 
   state.mainWindow.setMenuBarVisibility(false);
+  collegaZoom(state.mainWindow);
   const indexUrl = schemaApp.URL_INDEX;
   state.mainWindow.loadURL(indexUrl);
 

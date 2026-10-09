@@ -283,6 +283,15 @@ function comandiAzione() {
         chiavi: ['opzioni', 'preferenze', 'lingua'],
         esegui: () => window.apriImpostazioni()
     });
+    // Una voce per tab: "Impostazioni: Aspetto", ... (elenco da settingsModal.ts).
+    for (const s of (window.SCHEDE_IMPOSTAZIONI || [])) {
+        agg(_disponibile('apriImpostazioni'), {
+            id: 'impostazioni-' + s.id, icon: s.icona,
+            label: _T('modal_settings', 'Impostazioni') + ': ' + _T(s.chiave, s.testo),
+            chiavi: ['impostazioni', 'preferenze'],
+            esegui: () => window.apriImpostazioni(s.id)
+        });
+    }
     agg(_disponibile('apriShareModal'), {
         id: 'condivisione', icon: 'users',
         label: _T('tooltip_sharing', 'Condivisione'),

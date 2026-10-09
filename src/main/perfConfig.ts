@@ -1,32 +1,22 @@
 const { app } = require('electron');
-const fs = require('fs');
 const path = require('path');
+const { getAllSettings, saveAllSettings } = require('./workspaceManager');
+const { migraPerfConfig } = require('./settingsStore');
 
-// Il flag "prestazioni ridotte" NON può stare nelle impostazioni del workspace:
-// `app.disableHardwareAcceleration()` va invocato prima di app.ready, quando nessun
-// workspace è ancora aperto. Sta quindi in un file dedicato in userData.
-function perfConfigPath() {
-  return path.join(app.getPath('userData'), 'perf-config.json');
-}
-
+// "Prestazioni ridotte" è letto prima di app.ready (`app.disableHardwareAcceleration()`):
+// è l'unica lettura di settings.json fatta al boot, sincrona. Prima stava in perf-config.json,
+// migrato qui alla prima lettura.
 function leggiPerfConfig() {
-  try {
-    const p = perfConfigPath();
-    if (!fs.existsSync(p)) return { lowPerf: false };
-    const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
-    return { lowPerf: !!(raw && raw.lowPerf) };
-  } catch (error) {
-    console.warn("perf-config.json illeggibile, uso i valori predefiniti:", error.message);
-    return { lowPerf: false };
-  }
+  migraPerfConfig(path.join(app.getPath('userData'), 'perf-config.json'));
+  return { lowPerf: !!getAllSettings().lowPerf };
 }
 
 function scriviPerfConfig(config) {
   try {
-    fs.writeFileSync(perfConfigPath(), JSON.stringify({ lowPerf: !!config.lowPerf }));
+    saveAllSettings({ lowPerf: !!(config && config.lowPerf) });
     return { success: true };
   } catch (error) {
-    console.error("Errore scrittura perf-config.json:", error);
+    console.error("Errore scrittura di lowPerf in settings.json:", error);
     return { success: false, error: error.message };
   }
 }
