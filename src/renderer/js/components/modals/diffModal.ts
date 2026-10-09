@@ -56,11 +56,11 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
                 </div>
                 <div class="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-stone-200">
                     <div class="flex-1 p-3 bg-red-50/30">
-                        <div class="text-[10px] font-bold text-red-600 mb-1">${escapeHTML(window.t("diff_before", "BEFORE"))}</div>
+                        <div class="text-[11px] font-bold text-red-600 mb-1">${escapeHTML(window.t("diff_before", "BEFORE"))}</div>
                         <div class="text-sm text-stone-600 whitespace-pre-wrap break-words">${textPrima === emptyLabel ? textPrima : escapeHTML(textPrima)}</div>
                     </div>
                     <div class="flex-1 p-3 bg-green-50/30">
-                        <div class="text-[10px] font-bold text-green-600 mb-1">${escapeHTML(window.t("diff_after", "AFTER"))}</div>
+                        <div class="text-[11px] font-bold text-green-600 mb-1">${escapeHTML(window.t("diff_after", "AFTER"))}</div>
                         <div class="text-sm text-stone-800 whitespace-pre-wrap break-words">${textDopo === emptyLabel ? textDopo : escapeHTML(textDopo)}</div>
                     </div>
                 </div>

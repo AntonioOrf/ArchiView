@@ -2,15 +2,15 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('update-banner')) {
             const html = `
-    <div id="update-banner" class="hidden-tab w-full bg-sky-600 text-white px-4 py-3 flex items-center justify-between shadow-md z-sticky shrink-0 mb-6 rounded-sm border border-sky-700">
+    <div id="update-banner" class="hidden-tab banner-info w-full px-4 py-3 flex items-center justify-between shadow-md z-sticky shrink-0">
         <div class="flex items-center gap-2 text-sm font-medium">
             <i data-lucide="download" class="w-5 h-5"></i>
             <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
         </div>
         <div class="flex gap-2 shrink-0 items-center">
-            <button id="btn-note-rilascio" data-on-click="mostraNoteRilascio" class="hidden-tab text-sky-100 hover:text-white underline text-xs font-medium px-1" data-i18n="btn_release_notes">Novità di questa versione</button>
-            <button id="btn-scarica-aggiornamento" class="bg-white text-sky-700 hover:bg-sky-50 px-3 py-1.5 rounded-sm text-xs font-bold transition-colors shadow-sm" data-i18n="btn_download_github">Scarica da GitHub</button>
-            <button data-on-click="nascondiBannerAggiornamento" class="text-sky-100 hover:text-white px-2 py-1.5 transition-colors rounded-sm hover:bg-sky-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button id="btn-note-rilascio" data-on-click="mostraNoteRilascio" class="hidden-tab banner-info-link underline text-xs font-medium px-1" data-i18n="btn_release_notes">Novità di questa versione</button>
+            <button id="btn-scarica-aggiornamento" class="banner-info-azione px-3 py-1.5 text-xs font-bold transition-colors shadow-sm" data-i18n="btn_download_github">Scarica da GitHub</button>
+            <button data-on-click="nascondiBannerAggiornamento" class="banner-info-link px-2 py-1.5 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
     </div>
 

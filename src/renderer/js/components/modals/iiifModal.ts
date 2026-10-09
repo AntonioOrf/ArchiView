@@ -224,7 +224,7 @@ function _iiDisegnaAnteprima() {
                            class="absolute top-1 left-1 w-4 h-4 accent-amber-600"
                            aria-label="${escapeHTML(etichetta)}">
                 </span>
-                <span class="mt-1 block text-[10px] text-stone-500 truncate text-center">${escapeHTML(String(i + 1))}. ${escapeHTML(etichetta)}</span>
+                <span class="mt-1 block text-[11px] text-stone-500 truncate text-center">${escapeHTML(String(i + 1))}. ${escapeHTML(etichetta)}</span>
             </label>`;
     }).join(''));
 

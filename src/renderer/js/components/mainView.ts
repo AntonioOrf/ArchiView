@@ -1097,7 +1097,7 @@ function renderMain(resetPage = true) {
             const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
             const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
             const div = document.createElement('div');
-            div.className = `card-scheda bg-white p-4 relative flex flex-col justify-between cursor-pointer group ${isSelected ? 'ring-2 ring-amber-500 bg-amber-50/20' : ''}`;
+            div.className = `card-scheda bg-white p-4 relative flex flex-col justify-between cursor-pointer group ${isSelected ? 'ring-2 ring-amber-500' : ''}`;
             div.id = 'card-' + m.id;
             
             div.onclick = (e) => {
@@ -1215,7 +1215,7 @@ function renderMain(resetPage = true) {
                     ? `Creato da ${escapeHTML(m.creatoDa)} - Modificato da ${escapeHTML(m.modificatoDa)}` 
                     : `Autore: ${escapeHTML(autore)}`;
 
-                authorBadgeHTML = `<span title="${titoloMeta}" class="flex items-center gap-1 text-[10px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
+                authorBadgeHTML = `<span title="${titoloMeta}" class="flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
                     <i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(autore)}
                 </span>`;
             }
@@ -1226,7 +1226,7 @@ function renderMain(resetPage = true) {
                     day: '2-digit', month: '2-digit', year: 'numeric', 
                     hour: '2-digit', minute: '2-digit' 
                 });
-                dateHTML = `<div class="text-[9px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
+                dateHTML = `<div class="text-[11px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
             }
 
             // Checkbox di selezione (visibile quando c'è almeno un record selezionato)
@@ -1417,7 +1417,7 @@ function renderSearchSuggestions() {
         div.onclick = () => window.rivelaRecordNellaGriglia(match.item.id);
         div.innerHTML = `
             <div class="text-xs font-bold text-stone-800 truncate mb-1" translate="no">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
-            <div class="text-[10px] text-stone-600 leading-tight">
+            <div class="text-[11px] text-stone-600 leading-tight">
                 <span class="font-semibold text-amber-700 capitalize">${escapeHTML(match.key)}:</span> ${match.snippet}
             </div>
         `;

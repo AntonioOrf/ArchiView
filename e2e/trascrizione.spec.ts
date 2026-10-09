@@ -25,6 +25,27 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trascrizione-editor')).toContainText('Nota di trascrizione');
   });
 
+  test('senza allegati l\'editor prende tutta la larghezza e invita ad aggiungere carte', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    await page.locator('#btn-tab-add').click();
+    await page.locator('#form-segnatura').fill('MS-TRASC-VUOTA');
+    await page.locator('#btn-submit-form').click();
+    await expect(page.locator('main')).toContainText('MS-TRASC-VUOTA');
+    const id = (await getAppData(page)).manoscritti.find((m: any) => m.segnatura === 'MS-TRASC-VUOTA').id;
+
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    // Audit front-end P2-9: niente metà schermo vuota e muta accanto all'editor.
+    await expect(page.locator('#trascrizione-allegato-panel')).toBeHidden();
+    const [editor, vista] = await Promise.all([
+      page.locator('#trascrizione-editor-panel').boundingBox(),
+      page.locator('#view-trascrizione').boundingBox(),
+    ]);
+    expect(editor!.width).toBeGreaterThan(vista!.width * 0.9);
+    await expect(page.locator('#btn-carica-allegato-trasc')).toBeVisible();
+    await expect(page.locator('#btn-iiif-trasc')).toBeVisible();
+  });
+
   test('O4 — aperta, la vista tiene il fuoco: l app coperta non si raggiunge col Tab', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-FOCUS', FIXTURE_PNG);

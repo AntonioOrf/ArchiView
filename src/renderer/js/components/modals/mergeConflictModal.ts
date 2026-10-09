@@ -101,8 +101,8 @@
             };
 
             let badgeHtml = isResolved
-                ? `<span class="stato-badge is-successo text-[9px]">${window.t("merge_badge_resolved", "Resolved")}</span>`
-                : `<span class="stato-badge is-pericolo text-[9px]">${c.campiConflitto.length - resolvedFields[c.id].size} ${window.t("merge_badge_pending", "pending")}</span>`;
+                ? `<span class="stato-badge is-successo text-[11px]">${window.t("merge_badge_resolved", "Resolved")}</span>`
+                : `<span class="stato-badge is-pericolo text-[11px]">${c.campiConflitto.length - resolvedFields[c.id].size} ${window.t("merge_badge_pending", "pending")}</span>`;
 
             div.innerHTML = window.sanitizeHTML(`
                 <div class="font-semibold text-sm text-stone-800 truncate" translate="no" title="${escapeHTML(c.segnatura)}">${escapeHTML(c.segnatura)}</div>
@@ -154,12 +154,12 @@
             fieldDiv.innerHTML = window.sanitizeHTML(`
                 <div class="font-bold text-xs uppercase tracking-wider testo-accento mb-3 flex items-center justify-between">
                     <span>${escapeHTML(conf.label || campo)}</span>
-                    ${isResolved ? `<span class="testo-successo text-[10px] flex items-center gap-0.5"><i data-lucide="check-circle" class="w-3 h-3"></i> ${window.t("merge_choice_registered", "Choice registered")}</span>` : ''}
+                    ${isResolved ? `<span class="testo-successo text-[11px] flex items-center gap-0.5"><i data-lucide="check-circle" class="w-3 h-3"></i> ${window.t("merge_choice_registered", "Choice registered")}</span>` : ''}
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
                         class="conflitto-opzione flex flex-col gap-2 p-3 relative cursor-pointer${localChosen ? ' is-scelta' : ''}">
-                        <span class="conflitto-etichetta is-locale text-[9px] uppercase font-bold absolute -top-2 left-2 px-1">${window.t("merge_local_label", "Your Change (Local)")}</span>
+                        <span class="conflitto-etichetta is-locale text-[11px] uppercase font-bold absolute -top-2 left-2 px-1">${window.t("merge_local_label", "Your Change (Local)")}</span>
                         <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(localVal, campo)}</div>
                         <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
                             aria-pressed="${localChosen ? 'true' : 'false'}"
@@ -170,7 +170,7 @@
                     </div>
                     <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
                         class="conflitto-opzione flex flex-col gap-2 p-3 relative cursor-pointer${externalChosen ? ' is-scelta' : ''}">
-                        <span class="conflitto-etichetta text-[9px] uppercase font-bold absolute -top-2 left-2 px-1">${window.t("merge_cloud_label", "Cloud Change (Server)")}</span>
+                        <span class="conflitto-etichetta text-[11px] uppercase font-bold absolute -top-2 left-2 px-1">${window.t("merge_cloud_label", "Cloud Change (Server)")}</span>
                         <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(externalVal, campo)}</div>
                         <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
                             aria-pressed="${externalChosen ? 'true' : 'false'}"

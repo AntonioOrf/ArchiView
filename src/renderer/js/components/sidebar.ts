@@ -287,7 +287,7 @@ function renderSidebar() {
             const colonna = document.createElement('span');
             colonna.className = 'flex flex-col min-w-0 flex-1 leading-tight';
             const sub = document.createElement('span');
-            sub.className = 'truncate text-[10px] opacity-70 sidebar-file-sub';
+            sub.className = 'truncate text-[11px] opacity-70 sidebar-file-sub';
             sub.textContent = secondaria;
             colonna.append(titolo, sub);
             fileRow.append(icona, colonna);
@@ -754,7 +754,7 @@ window.renderSourceControl = function() {
                 <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
                 <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">${window.t("sidebar_structural_updates", "Structural updates")}</span>
             </div>
-            <div class="text-[10px] text-blue-500 font-bold shrink-0">CLOUD</div>
+            <div class="text-[11px] text-blue-500 font-bold shrink-0">CLOUD</div>
         `);
         fragment.appendChild(li);
     } else if (hasIncomingUpdates && structural.length > 0) {
@@ -774,7 +774,7 @@ window.renderSourceControl = function() {
                         <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
                         <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">${window.t("sidebar_structural_updates", "Structural updates")}</span>
                     </div>
-                    <div class="text-[10px] text-blue-500 font-bold shrink-0 flex items-center gap-1">CLOUD <i data-lucide="chevron-down" class="w-3 h-3 transition-transform group-open/details:rotate-180"></i></div>
+                    <div class="text-[11px] text-blue-500 font-bold shrink-0 flex items-center gap-1">CLOUD <i data-lucide="chevron-down" class="w-3 h-3 transition-transform group-open/details:rotate-180"></i></div>
                 </summary>
                 <div class="mt-1 pb-1">
                     ${detailsHtml}
@@ -821,7 +821,7 @@ window.renderSourceControl = function() {
         leftDiv.className = "flex items-center gap-2 overflow-hidden";
         
         const badge = document.createElement('span');
-        badge.className = `shrink-0 flex items-center justify-center w-4 h-4 rounded-sm text-[9px] font-bold ${colorClass}`;
+        badge.className = `shrink-0 flex items-center justify-center w-4 h-4 rounded-sm text-[10px] font-bold ${colorClass}`;
         badge.textContent = iconLetter;
         
         const textContainer = document.createElement('div');
@@ -837,7 +837,7 @@ window.renderSourceControl = function() {
         titleRowContainer.appendChild(titleSpan);
 
         const actionHint = document.createElement('span');
-        actionHint.className = "text-[9px] text-amber-600 uppercase font-bold tracking-wider";
+        actionHint.className = "text-[11px] text-amber-600 uppercase font-bold tracking-wider";
         actionHint.textContent = window.t("sidebar_click_to_show", "Click to show changes");
         titleRowContainer.appendChild(actionHint);
         
@@ -845,7 +845,7 @@ window.renderSourceControl = function() {
         
         if (isIncoming && window.incomingAuthor) {
             const authorSpan = document.createElement('span');
-            authorSpan.className = "text-[10px] text-stone-400 truncate";
+            authorSpan.className = "text-[11px] text-stone-400 truncate";
             authorSpan.textContent = window.t("sidebar_from", "from ") + window.incomingAuthor;
             textContainer.appendChild(authorSpan);
             li.title = window.t("sidebar_from_cloud_title", "Cloud change sent by {var0}. Do a Fetch/Download to see it.").replace("{var0}", window.incomingAuthor);
@@ -854,7 +854,7 @@ window.renderSourceControl = function() {
         const autore = m.modificatoDa || m.creatoDa;
         if (autore) {
             const authorSpan = document.createElement('span');
-            authorSpan.className = "text-[10px] text-stone-500 truncate leading-tight";
+            authorSpan.className = "text-[11px] text-stone-500 truncate leading-tight";
             authorSpan.textContent = window.t("sidebar_from_colon", "from: ") + autore;
             textContainer.appendChild(authorSpan);
         }
@@ -868,7 +868,7 @@ window.renderSourceControl = function() {
 
     if (incoming.length > 0) {
         const header = document.createElement('div');
-        header.className = "px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 text-[10px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800";
+        header.className = "px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 text-[11px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800";
         header.textContent = window.t("sidebar_incoming_cloud", "INCOMING (CLOUD)");
         fragment.appendChild(header);
         
@@ -879,7 +879,7 @@ window.renderSourceControl = function() {
     if (modificati.length > 0) {
         if (incoming.length > 0) {
             const header = document.createElement('div');
-            header.className = "px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 text-[10px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-700 mt-2";
+            header.className = "px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 text-[11px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-700 mt-2";
             header.textContent = window.t("sidebar_local_label", "LOCAL");
             fragment.appendChild(header);
         }

@@ -299,7 +299,7 @@ window.esportaBackupZip = async function() {
         progDiv.innerHTML = window.sanitizeHTML(`
             <div class="font-bold text-sm">Esportazione in corso…</div>
             <div class="w-full bg-stone-700 h-2 rounded-full overflow-hidden">
-                <div id="export-progress-bar" class="bg-amber-500 h-full w-0 transizione-larghezza"></div>
+                <div id="export-progress-bar" class="barra-avanzamento h-full w-0 transizione-larghezza"></div>
             </div>
             <div id="export-progress-text" class="text-xs text-stone-300">Calcolo…</div>
         `);

@@ -216,6 +216,12 @@ body {
     border-radius: 0 !important;
     box-shadow: none !important;
 }
+/* Raggio 0 anche nel markup (audit P3-1, DESIGN.md): restano tondi solo i rounded-full di
+   pallini, avatar, interruttori e spinner. */
+.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-b-lg,
+.file\:rounded-sm::file-selector-button {
+    border-radius: 0 !important;
+}
 #sidebar {
     border-right: 1px solid var(--color-border) !important;
     background-color: var(--color-bg-sidebar) !important;
@@ -274,6 +280,40 @@ header {
 .border-amber-200 {
     border-color: var(--color-border) !important;
 }
+
+/* Utility cromatiche ricorrenti sui token (audit front-end P2-3, DESIGN.md). L'accento è il
+   primario del tema: ambra in amber-light, blu in Clear Blue e blue-dark, arancio in dark.
+   Testi su --color-primary-hover (≥4.5:1 sui pannelli in ogni tema, vedi i commenti dei token);
+   rosso, verde e blu restano significati (pericolo, esito, informazione), non decorazione.
+   !important come il remap qui sopra: vince sulle varianti dark: scritte accanto. */
+.text-amber-400, .text-amber-500, .text-amber-600, .text-amber-700, .text-orange-500, .text-orange-600,
+.hover\:text-amber-300:hover, .hover\:text-amber-600:hover, .hover\:text-amber-700:hover,
+.hover\:text-amber-800:hover, .group:hover .group-hover\:text-amber-700 {
+    color: var(--color-primary-hover) !important;
+}
+.hover\:bg-amber-50:hover { background-color: var(--color-bg-hover) !important; }
+.hover\:bg-amber-100:hover, .hover\:bg-amber-200:hover { background-color: var(--color-primary-light) !important; }
+.bg-amber-500, .bg-amber-600, .hover\:bg-amber-400:hover, .active\:bg-amber-500:active {
+    background-color: var(--color-primary) !important;
+}
+.border-amber-300, .border-amber-400, .hover\:border-amber-400:hover { border-color: var(--color-primary-border) !important; }
+.border-amber-500, .focus\:border-amber-500:focus { border-color: var(--color-primary) !important; }
+.ring-amber-500, .focus\:ring-amber-500:focus { --tw-ring-color: var(--color-primary) !important; }
+.accent-amber-600, .accent-amber-700 { accent-color: var(--color-primary) !important; }
+
+.text-red-500, .text-red-600, .text-red-700, .hover\:text-red-600:hover, .hover\:text-red-700:hover {
+    color: var(--color-danger-text) !important;
+}
+.bg-red-50, .hover\:bg-red-50:hover, .hover\:bg-red-100:hover { background-color: var(--color-danger-light) !important; }
+.border-red-200 { border-color: var(--color-danger-border) !important; }
+
+.text-emerald-600, .text-emerald-700, .text-green-500, .text-green-600 { color: var(--color-success) !important; }
+.bg-emerald-50 { background-color: var(--color-success-light) !important; }
+.border-emerald-200 { border-color: var(--color-success-border) !important; }
+
+.text-blue-500, .text-blue-600, .text-blue-700, .text-blue-800, .text-sky-700 { color: var(--color-info) !important; }
+.bg-blue-50 { background-color: var(--color-info-light) !important; }
+.border-blue-200, .border-blue-400, .hover\:border-blue-400:hover { border-color: var(--color-info-border) !important; }
 
 input[type="file"]::file-selector-button {
     background-color: var(--color-primary-light) !important;
@@ -531,12 +571,13 @@ button, .btn {
 }
 
 /* Cards (Schede) */
+/* Niente banda laterale d'accento (audit P3-2: motivo generico) né crema cablato (P3-5: il
+   fondo #fefcf8 lo annullava già .bg-white, il bordo #e4d9c8 restava anche in blue-dark). */
 .card-scheda {
-    background-color: #fefcf8;
+    background-color: var(--color-bg-panel);
     border-radius: var(--radius-sm);
     padding: 1rem;
-    border: 1px solid #e4d9c8;
-    border-left: 3px solid var(--color-primary-border);
+    border: 1px solid var(--color-border-light);
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.07);
     display: flex;
     flex-direction: column;
@@ -548,17 +589,16 @@ button, .btn {
     cursor: grabbing;
 }
 .card-scheda:hover {
-    border-left-color: var(--color-primary);
+    border-color: var(--color-primary-border);
     box-shadow: 0 4px 8px -2px rgba(0,0,0,0.12);
     transform: translateY(-2px);
 }
+/* In dark il bordo leggero (#18181b) su #0a0a0a non si vede. */
 :root.dark-theme .card-scheda {
-    background-color: var(--color-bg-panel);
-    border: 1px solid var(--color-border);
-    border-left: 3px solid var(--color-primary-border);
+    border-color: var(--color-border);
 }
 :root.dark-theme .card-scheda:hover {
-    border-left-color: var(--color-primary);
+    border-color: var(--color-primary-border);
     background-color: var(--color-bg-hover);
 }
 .card-title {
@@ -574,7 +614,7 @@ button, .btn {
     display: inline-block;
     background-color: var(--color-primary-light);
     color: var(--color-primary-hover);
-    font-size: 0.625rem;
+    font-size: 0.6875rem; /* 11px: minimo per il testo informativo (audit P2-8) */
     text-transform: uppercase;
     font-weight: bold;
     padding: 0.125rem 0.5rem;
@@ -588,7 +628,7 @@ button, .btn {
     background-color: var(--color-bg-hover);
     /* secondary e non muted: il tag è contenuto, e muted su bg-hover restava sotto 4.5:1 */
     color: var(--color-text-secondary);
-    font-size: 0.625rem;
+    font-size: 0.6875rem; /* 11px: minimo per il testo informativo (audit P2-8) */
     text-transform: uppercase;
     font-weight: bold;
     letter-spacing: 0.05em;
@@ -2161,7 +2201,7 @@ label:has(> input[type="radio"]) {
     padding-left: 0.625rem;
 }
 .campo-proprio-segno {
-    font-size: 0.625rem;
+    font-size: 0.6875rem; /* 11px: minimo per il testo informativo (audit P2-8) */
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-left: 0.4rem;
@@ -2596,6 +2636,20 @@ label:has(> input[type="radio"]) {
     background-color: var(--color-info);
     color: var(--color-bg-panel);
 }
+/* Barre di avanzamento (sync, OCR, impostazioni): prima blu/ambra cablati, ora l'accento. */
+.barra-avanzamento { background-color: var(--color-primary); }
+/* Banner di aggiornamento: prima sky-600 con testo bianco a 4.1:1. */
+.banner-info {
+    background-color: var(--color-info);
+    color: var(--color-bg-panel);
+}
+.banner-info-link { color: inherit; opacity: 0.9; }
+.banner-info-link:hover { opacity: 1; }
+.banner-info-azione {
+    background-color: var(--color-bg-panel);
+    color: var(--color-info);
+}
+.banner-info-azione:hover { background-color: var(--color-info-light); }
 .tessera-successo {
     background-color: var(--color-success);
     color: var(--color-bg-panel);

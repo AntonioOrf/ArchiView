@@ -122,7 +122,7 @@
         <div class="modal-window w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-700">
                 <h3 class="modal-title text-stone-800 dark:text-stone-100 flex items-center gap-2">
-                    <i data-lucide="shield-check" class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" aria-hidden="true"></i> <span id="cloud-modal-title" data-i18n="modal_cloud_title">Backup su Google Drive</span>
+                    <i data-lucide="shield-check" class="w-5 h-5 testo-info shrink-0" aria-hidden="true"></i> <span id="cloud-modal-title" data-i18n="modal_cloud_title">Backup su Google Drive</span>
                 </h3>
                 <button type="button" data-on-click="chiudiCloudModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i></button>
             </div>
@@ -130,7 +130,7 @@
 
                 <!-- SEZIONE VAULT LOCALE (Non Condiviso) -->
                 <div id="cloud-local-section" class="text-center py-4">
-                    <div class="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
+                    <div class="w-14 h-14 riquadro-info testo-info flex items-center justify-center mx-auto mb-4">
                         <i data-lucide="shield-check" class="w-7 h-7" aria-hidden="true"></i>
                     </div>
                     <h3 class="text-xl font-serif font-semibold mb-2 text-stone-800 dark:text-stone-100"><span data-i18n="modal_cloud_activate_title">Backup personale su Google Drive</span></h3>
@@ -138,14 +138,14 @@
                         <span data-i18n="modal_cloud_activate_desc_short">Una copia privata dell'archivio sul tuo Google Drive, accessibile solo a te.</span>
                     </p>
                     <div class="flex flex-col gap-3 max-w-xs mx-auto">
-                        <button type="button" data-on-click="trasformaInPersonale" id="btn-trasforma-personale" class="btn btn-block justify-center py-3 text-sm text-white bg-blue-600 hover:bg-blue-700 border border-blue-700">
+                        <button type="button" data-on-click="trasformaInPersonale" id="btn-trasforma-personale" class="btn btn-primary btn-block justify-center py-3 text-sm">
                             <i data-lucide="shield-check" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_backup_private">Backup Personale (Google Drive)</span>
                         </button>
                         <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCloudModal&quot;,&quot;apriShareModal&quot;]" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 mt-1">
                             <span data-i18n="cloud_local_share_link">Vuoi invece lavorarci insieme ai colleghi? Condividi l'archivio</span>
                         </button>
                     </div>
-                    <div id="cloud-transform-status" class="text-blue-600 dark:text-blue-400 mt-4 text-sm font-medium hidden-tab flex items-center justify-center gap-2">
+                    <div id="cloud-transform-status" class="testo-info mt-4 text-sm font-medium hidden-tab flex items-center justify-center gap-2">
                         <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0" aria-hidden="true"></i> <span data-i18n="msg_operation_progress">Operazione in corso</span>...
                     </div>
                 </div>
@@ -156,8 +156,8 @@
                     <!-- INTESTAZIONE: identità dell'archivio + account Google collegato.
                          L'email sta qui e non solo nel riepilogo: è il dato che dice QUALE Drive
                          si sta usando, la prima cosa da controllare quando due PC divergono. -->
-                    <div class="flex items-center gap-3.5 p-4 rounded-lg border border-blue-200 dark:border-blue-700/50 bg-blue-50/60 dark:bg-blue-900/20">
-                        <div class="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                    <div class="flex items-center gap-3.5 p-4 rounded-lg riquadro-info">
+                        <div class="w-11 h-11 tessera-info flex items-center justify-center shrink-0">
                             <i id="cloud-active-icon" data-lucide="cloud" class="w-6 h-6" aria-hidden="true"></i>
                         </div>
                         <div class="flex-1 min-w-0 text-left">
