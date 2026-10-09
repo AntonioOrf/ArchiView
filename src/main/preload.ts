@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     getRecentWorkspaces: () => ipcRenderer.invoke('get-recent-workspaces'),
     loadTutorialWorkspace: () => ipcRenderer.invoke('load-tutorial-workspace'),
     openRecentWorkspace: (folderPath) => ipcRenderer.invoke('open-recent-workspace', folderPath),
+    ricollegaArchivioRecente: (vecchioPercorso, titolo) => ipcRenderer.invoke('ricollega-archivio-recente', vecchioPercorso, titolo),
     changeWorkspace: (title) => ipcRenderer.invoke('change-workspace', title),
     getDocumentsPath: () => ipcRenderer.invoke('get-documents-path'),
     apriCartellaWorkspace: () => ipcRenderer.invoke('apri-cartella-workspace'),

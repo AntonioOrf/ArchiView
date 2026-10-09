@@ -1026,6 +1026,48 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     });
 };
 
+// Archivio recente la cui cartella non esiste più (spostata o rinominata su disco).
+window.archivioRecenteNonTrovato = function(percorso) {
+    const nome = percorso.split(/[\\/]/).pop();
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="vault-missing-modal" class="modal-overlay z-modal-alert flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+            <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl" role="alertdialog" aria-labelledby="vault-missing-title">
+                <i data-lucide="folder-search" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
+                <h3 id="vault-missing-title" class="text-xl font-bold mb-2">${escapeHTML(window.t('modal_vault_missing_title', 'Archivio non trovato'))}</h3>
+                <p class="text-sm text-stone-600 mb-2">${escapeHTML(window.t('msg_archivio_recente_non_trovato', 'La cartella dell\'archivio non esiste più: forse è stata spostata o rinominata.'))}</p>
+                <p class="text-xs text-stone-500 break-all mb-4" title="${escapeHTML(percorso)}"><strong>${escapeHTML(nome)}</strong><br>${escapeHTML(percorso)}</p>
+                <p id="vault-missing-error" class="text-sm text-red-700 mb-3 hidden-tab" role="alert"></p>
+                <div class="flex flex-col gap-2">
+                    <button id="btn-vault-locate" class="btn btn-primary w-full justify-center">${escapeHTML(window.t('btn_cerca_cartella_archivio', 'Cerca cartella…'))}</button>
+                    <button id="btn-vault-missing-remove" class="btn btn-secondary w-full justify-center">${escapeHTML(window.t('btn_vault_remove_list', "Rimuovi solo dall'elenco"))}</button>
+                    <button id="btn-vault-missing-cancel" data-modal-cancel class="btn btn-ghost w-full justify-center mt-2">${escapeHTML(window.t('btn_cancel', 'Annulla'))}</button>
+                </div>
+            </div>
+        </div>
+    `);
+    const modal = document.getElementById('vault-missing-modal');
+    if (window.lucide) lucide.createIcons({ nodes: [modal] });
+    const errore = document.getElementById('vault-missing-error');
+    const mostraErrore = (testo) => { errore.textContent = testo; errore.classList.remove('hidden-tab'); };
+
+    document.getElementById('btn-vault-locate').onclick = async () => {
+        try {
+            const esito = await window.apiBrowser.ricollegaArchivioRecente(percorso, window.t('dialog_cerca_cartella_archivio', 'Seleziona la nuova cartella dell\'archivio'));
+            if (esito?.ok) modal.remove(); // la finestra si ricarica sull'archivio ritrovato
+            else if (esito?.motivo === 'non-archivio') mostraErrore(window.t('msg_cartella_non_archivio', 'La cartella scelta non contiene un archivio ArchiView.'));
+            else if (esito?.motivo) mostraErrore(window.t('msg_errore', 'Errore: ') + esito.motivo);
+        } catch (e) {
+            mostraErrore(window.t('msg_errore', 'Errore: ') + e.message);
+        }
+    };
+    document.getElementById('btn-vault-missing-remove').onclick = async () => {
+        modal.remove();
+        if (await window.apiSettings.rimuoviArchivioRecente(percorso)) window.aggiornaListaVault();
+    };
+    document.getElementById('btn-vault-missing-cancel').onclick = () => modal.remove();
+    document.getElementById('btn-vault-locate').focus();
+};
+
 window.aggiornaListaVault = async function() {
     if (window.apiBrowser && window.apiBrowser.getRecentWorkspaces) {
         const recents = await window.apiBrowser.getRecentWorkspaces();
@@ -1045,8 +1087,9 @@ window.aggiornaListaVault = async function() {
                     divContainer.className = `w-full text-left px-2 py-1.5 text-sm rounded flex items-center justify-between transition-colors ${isCurrent ? 'bg-amber-50 text-amber-900 font-semibold cursor-default' : 'text-stone-700 hover:bg-stone-100 hover:text-stone-900 cursor-pointer'}`;
                     
                     if (!isCurrent) {
-                        divContainer.onclick = () => {
-                            window.apiBrowser.openRecentWorkspace(path);
+                        divContainer.onclick = async () => {
+                            // false = cartella spostata/rinominata su disco: senza toast il clic non fa nulla.
+                            if (!(await window.apiBrowser.openRecentWorkspace(path))) window.archivioRecenteNonTrovato(path);
                         };
                     } else {
                         divContainer.onclick = (e) => { e.stopPropagation(); }; // Non fa nulla

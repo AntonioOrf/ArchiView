@@ -1,7 +1,7 @@
 const { ipcMain, dialog, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { state, initWorkspace, getAllSettings, aggiornaHubConfigDalRenderer, loadHubConfigPubblica, disconnectHub } = require('../workspaceManager');
+const { state, initWorkspace, getAllSettings, saveAllSettings, aggiornaHubConfigDalRenderer, loadHubConfigPubblica, disconnectHub } = require('../workspaceManager');
 const { readVaultConfig, syncUnifiedFromLegacy } = require('../vaultConfig');
 const { safeChildDir } = require('./pathSafety');
 
@@ -132,6 +132,32 @@ function setupWorkspaceIpc() {
       return true;
     }
     return false;
+  });
+
+  // Archivio recente spostato su disco: l'utente indica la nuova cartella, che prende il posto
+  // del vecchio percorso nei recenti. Il percorso nuovo nasce dal dialogo nel main, mai dal renderer.
+  ipcMain.handle('ricollega-archivio-recente', async (event, vecchioPercorso, titoloDialogo) => {
+    try {
+      const recenti: string[] = getAllSettings().recentWorkspaces || [];
+      if (typeof vecchioPercorso !== 'string' || !recenti.includes(vecchioPercorso)) return { ok: false };
+      const result = await dialog.showOpenDialog({
+        title: typeof titoloDialogo === 'string' ? titoloDialogo : "Seleziona la cartella dell'archivio",
+        properties: ['openDirectory']
+      });
+      if (result.canceled || result.filePaths.length === 0) return { ok: false, annullato: true };
+      const nuovo = result.filePaths[0];
+      // Il database nasce al primo salvataggio: un archivio vuoto ha solo il file di vault.
+      if (!['database_manoscritti.json', '.archiview-vault.json'].some(f => fs.existsSync(path.join(nuovo, f)))) {
+        return { ok: false, motivo: 'non-archivio' };
+      }
+      saveAllSettings({ recentWorkspaces: recenti.filter(p => p !== vecchioPercorso) });
+      initWorkspace(nuovo);
+      if (state.mainWindow) state.mainWindow.reload();
+      return { ok: true };
+    } catch (error) {
+      console.error('Errore ricollegamento archivio recente:', error);
+      return { ok: false, motivo: error.message };
+    }
   });
 
   ipcMain.handle('change-workspace', async (event, titleDialog) => {

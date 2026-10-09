@@ -93,6 +93,43 @@ test.describe('Pannelli sidebar', () => {
     await expect(page.locator('#current-vault-name')).toContainText('ArchivioA');
   });
 
+  test('un archivio recente spostato su disco si ritrova con "Cerca cartella"', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'wsA'), 'ArchivioSpostato');
+    await page.evaluate((basePath) =>
+      (window as any).apiBrowser.createWorkspaceInPath(basePath, 'ArchivioB4', null),
+    path.join(userDataDir, 'wsB4'));
+    await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });
+    await dismissOverlays(page);
+
+    fs.renameSync(path.join(userDataDir, 'wsA'), path.join(userDataDir, 'wsA-spostata'));
+    const nuovo = path.join(userDataDir, 'wsA-spostata', 'ArchivioSpostato');
+
+    await page.evaluate(() => (window as any).toggleVaultSwitcher());
+    await page.locator('#vault-switcher-list div', { hasText: 'ArchivioSpostato' }).first().click();
+
+    const modale = page.locator('#vault-missing-modal');
+    await expect(modale).toBeVisible();
+    await expect(modale).toContainText(path.join(userDataDir, 'wsA', 'ArchivioSpostato'));
+    await expect(page.locator('#current-vault-name')).toContainText('ArchivioB4');
+
+    // Una cartella che non è un archivio viene rifiutata dentro il modale, che resta aperto.
+    const { stubDialog } = await import('./fixtures');
+    const cerca = modale.getByRole('button', { name: /cerca cartella|locate folder/i });
+    await stubDialog(electronApp, { canceled: false, filePaths: [userDataDir] });
+    await cerca.click();
+    await expect(modale.getByRole('alert')).toContainText(/non contiene un archivio|not an ArchiView archive/i);
+
+    await stubDialog(electronApp, { canceled: false, filePaths: [nuovo] });
+    await cerca.click();
+
+    await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });
+    await dismissOverlays(page);
+    await expect(page.locator('#current-vault-name')).toContainText('ArchivioSpostato');
+    const recenti = (await page.evaluate(() => (window as any).apiSettings.get())).recentWorkspaces;
+    expect(recenti[0]).toBe(nuovo);
+    expect(recenti).not.toContain(path.join(userDataDir, 'wsA', 'ArchivioSpostato'));
+  });
+
   test('rimuovi un archivio dalla lista senza eliminarne i file', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'wsA'), 'ArchivioRimuovi');
     await page.evaluate((basePath) =>
