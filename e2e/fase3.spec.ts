@@ -576,4 +576,47 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await expect(modal).toBeHidden();
   });
 
+  test('P10 — una voce d\'anagrafica si collega a Wikidata (e VIAF) e si scollega', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
+    await semina(page, [{ segnatura: 'A', attori_dinamici: [{ k: 'Teste', v: 'Bartolo' }] }]);
+    // Niente rete nei test: il main risponde con dati finti.
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('authority-cerca');
+      ipcMain.removeHandler('authority-dettagli');
+      ipcMain.handle('authority-cerca', () => ({ ok: true, candidati: [
+        { id: 'Q312599', etichetta: 'Bartolo da Sassoferrato', descrizione: 'giurista (1313-1357)' },
+        { id: 'Q999', etichetta: 'Bartolo', descrizione: '<img src=x onerror=alert(1)>' }
+      ] }));
+      ipcMain.handle('authority-dettagli', (_e: any, id: string) => ({ ok: true, wikidata: id, viaf: '100185495', varianti: ['Bartolus de Saxoferrato'] }));
+    });
+
+    // Dalla sidebar, accanto a "Gestione tag": non solo dalla command palette.
+    await page.locator('#btn-tab-tags').click();
+    await page.locator('#btn-anagrafica').click();
+    await page.locator('#authority-list .tag-manager-row button[aria-label^="Collega a Wikidata"]').click();
+    const candidati = page.locator('#authority-collega-risultati button');
+    await expect(candidati).toHaveCount(2);
+    // La descrizione è testo, non HTML.
+    await expect(candidati.nth(1)).toContainText('<img');
+    await candidati.nth(0).click();
+
+    await expect(page.locator('#authority-elenco')).toBeVisible();
+    const riga = page.locator('#authority-list .tag-manager-row').first();
+    await expect(riga.locator('a.auth-id')).toHaveText(['Q312599', 'VIAF 100185495']);
+    await expect(riga.locator('a.auth-id').first()).toHaveAttribute('href', 'https://www.wikidata.org/wiki/Q312599');
+    await expect(riga.locator('.auth-nome')).toHaveAttribute('title', /Bartolus de Saxoferrato/);
+    const voce = await page.evaluate(() => (window as any).Model.voceAuthority(appData, 'persona', 'Bartolo'));
+    expect([voce.wikidata, voce.viaf]).toEqual(['Q312599', '100185495']);
+
+    // Rete giù: il messaggio lo dice, la voce resta com'era.
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('authority-cerca');
+      ipcMain.handle('authority-cerca', () => ({ ok: false, codice: 'rete' }));
+    });
+    await riga.locator('button[aria-label^="Collega a Wikidata"]').click();
+    await expect(page.locator('#authority-collega-esito')).toContainText('non raggiungibile');
+    await page.locator('#authority-scollega').click();
+    await expect(page.locator('#authority-list .tag-manager-row a.auth-id')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).Model.voceAuthority(appData, 'persona', 'Bartolo').wikidata)).toBeUndefined();
+  });
 });

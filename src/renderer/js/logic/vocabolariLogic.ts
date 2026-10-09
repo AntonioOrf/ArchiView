@@ -236,3 +236,19 @@ window.rinominaAuthorityArchivio = async function(tipo, da, a) {
     return esito.schede;
 };
 
+/**
+ * P10 — scrive (o toglie, con valori vuoti) Wikidata, VIAF e varianti sulla voce. Tocca solo
+ * l'anagrafica, nessuna scheda: l'undo ripristina la fotografia dell'anagrafica.
+ */
+window.collegaAuthorityArchivio = async function(tipo, nome, dati) {
+    const foto = _vcFotografia([]);
+    if (!window.Model.salvaVoceAuthority(appData, tipo, nome, dati)) return false;
+    const tolto = !dati.wikidata;
+    await _vcApplica(
+        _vcT('undo_auth_link', 'Collegamento in anagrafica'),
+        tolto ? _vcT('auth_link_removed', 'Collegamento rimosso.') : _vcT('auth_link_saved', 'Voce collegata a Wikidata.'),
+        0, foto
+    );
+    return true;
+};
+

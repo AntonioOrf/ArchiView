@@ -1463,8 +1463,31 @@ type AVAuthority = {
   nome: string;
   tipo: string;          // 'persona' | 'luogo'
   note?: string;
+  /** P10 — identificativi esterni, solo per distinguere gli omonimi: `Q…` e il numero VIAF. */
+  wikidata?: string;
+  viaf?: string;
+  /** P10 — etichette e alias dell'entità Wikidata: le grafie con cui cercarla nelle schede. */
+  varianti?: string[];
   modificato?: number;
 };
+
+const AV_ID_ESTERNI = { wikidata: /^Q[1-9]\d{0,11}$/, viaf: /^[1-9]\d{0,21}$/ };
+const AV_MAX_VARIANTI = 30;
+
+/** Le varianti ripulite: stringhe brevi, senza doppioni. Vuoto = nessuna. */
+function avVariantiAuthority(v: any): string[] {
+  const out: string[] = [];
+  const viste = new Set<string>();
+  for (const s of Array.isArray(v) ? v : []) {
+    const t = String(s === null || s === undefined ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 200);
+    const k = t.toLowerCase();
+    if (!t || viste.has(k)) continue;
+    viste.add(k);
+    out.push(t);
+    if (out.length >= AV_MAX_VARIANTI) break;
+  }
+  return out;
+}
 
 const AV_TIPI_AUTHORITY = ['persona', 'luogo'];
 
@@ -1561,10 +1584,18 @@ function avSalvaVoceAuthority(db: any, tipo: any, nome: any, dati?: any): boolea
     nome: String(d.nome !== undefined ? d.nome : nome).replace(/\s+/g, ' ').trim(),
     tipo: String(tipo)
   };
-  const note = d.note !== undefined ? String(d.note).trim() : (db.authority[chiave] && db.authority[chiave].note) || '';
-  if (note) voce.note = note;
   const prima = db.authority[chiave];
-  if (prima && prima.nome === voce.nome && (prima.note || '') === (voce.note || '')) return false;
+  const note = d.note !== undefined ? String(d.note).trim() : (prima && prima.note) || '';
+  if (note) voce.note = note;
+  // P10 — un campo non passato resta com'era; passato vuoto (o non valido) si toglie.
+  for (const k of Object.keys(AV_ID_ESTERNI) as Array<'wikidata' | 'viaf'>) {
+    const id = String((d[k] !== undefined ? d[k] : prima && prima[k]) || '').trim();
+    if (AV_ID_ESTERNI[k].test(id)) voce[k] = id;
+  }
+  const varianti = avVariantiAuthority(d.varianti !== undefined ? d.varianti : prima && prima.varianti);
+  if (varianti.length) voce.varianti = varianti;
+  const uguali = (k: string) => avUgualiJson((prima as any)[k], (voce as any)[k]);
+  if (prima && ['nome', 'note', 'wikidata', 'viaf', 'varianti'].every(uguali)) return false;
   voce.modificato = Date.now();
   db.authority[chiave] = voce;
   return true;
@@ -1614,10 +1645,17 @@ function avRinominaAuthority(db: any, tipo: any, da: any, a: any, campiDi: any, 
   const ana = avAuthority(db);
   let anagraficaCambiata = false;
   if (chiaveVecchia !== chiaveNuova && ana[chiaveVecchia]) {
-    const note = (ana[chiaveNuova] && ana[chiaveNuova].note) || ana[chiaveVecchia].note;
+    const vecchiaVoce = ana[chiaveVecchia];
+    const nuovaVoce: any = ana[chiaveNuova] || {};
+    const note = nuovaVoce.note || vecchiaVoce.note;
     delete db.authority[chiaveVecchia];
     anagraficaCambiata = true;
-    avSalvaVoceAuthority(db, tipo, nuovo, { nome: nuovo, note: note || '' });
+    // P10 — gli identificativi esterni seguono il nome, salvo che la voce di arrivo abbia i suoi.
+    const esterni: any = {};
+    if (!nuovaVoce.wikidata && !nuovaVoce.viaf) {
+      for (const k of ['wikidata', 'viaf', 'varianti']) if ((vecchiaVoce as any)[k]) esterni[k] = (vecchiaVoce as any)[k];
+    }
+    avSalvaVoceAuthority(db, tipo, nuovo, { nome: nuovo, note: note || '', ...esterni });
   } else if (schede > 0 || ana[chiaveVecchia]) {
     anagraficaCambiata = avSalvaVoceAuthority(db, tipo, nuovo, { nome: nuovo }) || anagraficaCambiata;
   }

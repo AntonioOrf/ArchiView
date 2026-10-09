@@ -30,6 +30,7 @@ const { setupDriveIpc } = require('./ipc/drive');
 const { setupExportImportIpc } = require('./ipc/exportImportIpc');
 const { setupOcrIpc } = require('./ipc/ocrIpc');
 const { setupIiifIpc } = require('./ipc/iiifIpc');
+const { setupAuthorityIpc } = require('./ipc/authorityIpc');
 const { setupPrintIpc } = require('./ipc/printIpc');
 const { setupTextExportIpc } = require('./ipc/textExportIpc');
 // Fase 4 — cestino, snapshot locali e cronologia per scheda.
@@ -209,6 +210,7 @@ if (!gotTheLock) {
   setupExportImportIpc();
   setupOcrIpc();
   setupIiifIpc();
+  setupAuthorityIpc();
   setupPrintIpc();
   setupTextExportIpc();
   setupSafetyIpc();

@@ -138,6 +138,12 @@ contextBridge.exposeInMainWorld('apiIiif', {
     onProgress: (callback) => ipcRenderer.on('iiif-progress', (event, dati) => callback(dati))
 });
 
+// P10 — anagrafica e Wikidata: il renderer passa un nome o un id `Q…`, il main costruisce l'URL.
+contextBridge.exposeInMainWorld('apiAuthority', {
+    cerca: (nome, lingua) => ipcRenderer.invoke('authority-cerca', nome, lingua),
+    dettagli: (id) => ipcRenderer.invoke('authority-dettagli', id)
+});
+
 // ArchiView Scanner. Il renderer chiede "ricevi" e ottiene l'esito: niente percorsi né id
 // Drive. Fase 0: nessuna UI, si prova dalla console (`await apiScanner.riceviDaDrive()`).
 contextBridge.exposeInMainWorld('apiScanner', {

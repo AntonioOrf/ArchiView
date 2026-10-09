@@ -757,6 +757,21 @@ button, .btn {
 .tag-manager-input { flex: 1 1 auto; min-width: 0; }
 .tag-manager-count { font-size: 0.75rem; color: var(--color-text-muted); }
 
+/* P10 — id Wikidata/VIAF sull'anagrafica e candidati della ricerca (authorityPanel.ts). */
+.auth-id { font-size: 0.6875rem; font-family: ui-monospace, monospace; color: var(--color-text-secondary); }
+a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-decoration: underline; }
+.auth-candidati { max-height: 18rem; overflow-y: auto; }
+.auth-candidato {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-main);
+    border-bottom: 1px solid var(--color-border-light);
+}
+.auth-candidato:hover, .auth-candidato:focus-visible { background-color: var(--color-bg-hover); }
+
 .tag-color-select {
     flex: 0 0 auto;
     width: 6.5rem;

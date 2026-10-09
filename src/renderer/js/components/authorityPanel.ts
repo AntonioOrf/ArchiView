@@ -79,6 +79,29 @@ function _apRiga(voce) {
     nome.textContent = voce.nome;   // textContent: è dato utente
     riga.appendChild(nome);
 
+    // P10 — gli id esterni come link (si aprono nel browser: setWindowOpenHandler del main).
+    const ana = window.Model.voceAuthority(appData, voce.tipo, voce.nome);
+    if (ana && ana.varianti) nome.title = _apT('auth_variants', 'Varianti: {var0}').replace('{var0}', ana.varianti.join(', '));
+    for (const [k, url, etichetta] of [['wikidata', 'https://www.wikidata.org/wiki/', ''], ['viaf', 'https://viaf.org/viaf/', 'VIAF ']]) {
+        if (!ana || !ana[k]) continue;
+        const a = document.createElement('a');
+        a.className = 'auth-id shrink-0';
+        a.href = url + encodeURIComponent(ana[k]);
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = etichetta + ana[k];
+        riga.appendChild(a);
+    }
+
+    const collega = document.createElement('button');
+    collega.type = 'button';
+    collega.className = 'btn btn-ghost btn-icon shrink-0';
+    collega.title = _apT('auth_link_btn', 'Collega a Wikidata');
+    collega.setAttribute('aria-label', _apT('auth_link_btn', 'Collega a Wikidata') + ': ' + voce.nome);
+    collega.innerHTML = '<i data-lucide="globe" class="w-4 h-4"></i>';
+    collega.onclick = () => window.apriCollegaAuthority(voce);
+    riga.appendChild(collega);
+
     const conteggio = document.createElement('span');
     conteggio.className = 'tag-manager-count tabular-nums';
     conteggio.textContent = String(voce.conteggio);
@@ -148,6 +171,102 @@ function _apRinominaInLoco(riga, voce) {
     };
     input.onblur = () => fine(true);
 }
+
+// --- P10: collegamento a Wikidata e VIAF ---------------------------------------
+//
+// Dentro lo stesso modale, al posto dell'elenco: cerca, mostra i candidati con la descrizione
+// (è lì che si distinguono gli omonimi), salva l'id scelto. La rete è del main (apiAuthority).
+
+let _apVoceCollega = null;
+
+function _apMostraCollega(aperto) {
+    document.getElementById('authority-elenco')?.classList.toggle('hidden-tab', aperto);
+    document.getElementById('authority-collega')?.classList.toggle('hidden-tab', !aperto);
+}
+
+window.apriCollegaAuthority = function(voce) {
+    _apVoceCollega = voce;
+    const ana = window.Model.voceAuthority(appData, voce.tipo, voce.nome);
+    document.getElementById('authority-collega-nome').textContent = voce.nome;
+    document.getElementById('authority-scollega').classList.toggle('hidden-tab', !(ana && ana.wikidata));
+    const campo = document.getElementById('authority-collega-q') as HTMLInputElement;
+    campo.value = voce.nome;
+    document.getElementById('authority-collega-risultati').replaceChildren();
+    document.getElementById('authority-collega-esito').textContent = '';
+    _apMostraCollega(true);
+    campo.focus();
+    window.cercaAuthorityWikidata();
+};
+
+window.chiudiCollegaAuthority = function() {
+    _apVoceCollega = null;
+    _apMostraCollega(false);
+    window.disegnaAnagrafica();
+    document.getElementById('authority-filter')?.focus();
+};
+
+const _apErroreRete = () => _apT('auth_link_error', 'Wikidata non raggiungibile. L\'archivio resta usabile senza rete.');
+
+window.cercaAuthorityWikidata = async function() {
+    const q = (document.getElementById('authority-collega-q') as HTMLInputElement).value.trim();
+    const lista = document.getElementById('authority-collega-risultati');
+    const esito = document.getElementById('authority-collega-esito');
+    if (!q) return;
+    lista.replaceChildren();
+    esito.textContent = _apT('auth_link_searching', 'Ricerca in corso…');
+    let r;
+    try {
+        r = await window.apiAuthority.cerca(q, window.linguaAttuale);
+    } catch (err) {
+        console.error('Ricerca su Wikidata fallita:', err);
+        r = { ok: false };
+    }
+    if (!r || !r.ok) { esito.textContent = _apErroreRete(); return; }
+    esito.textContent = r.candidati.length ? '' : _apT('auth_link_none', 'Nessun candidato trovato.');
+    for (const c of r.candidati) {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'auth-candidato';
+        const nome = document.createElement('span');
+        nome.className = 'font-semibold';
+        nome.textContent = c.etichetta || c.id;   // testo da Wikidata: solo textContent
+        const id = document.createElement('code');
+        id.className = 'auth-id';
+        id.textContent = c.id;
+        const descr = document.createElement('span');
+        descr.className = 'block text-xs text-stone-500 dark:text-stone-400';
+        descr.textContent = c.descrizione;
+        b.append(nome, ' ', id, descr);
+        b.onclick = () => _apScegliCandidato(c.id);
+        li.appendChild(b);
+        lista.appendChild(li);
+    }
+};
+
+async function _apScegliCandidato(qid) {
+    const voce = _apVoceCollega;
+    if (!voce) return;
+    const esito = document.getElementById('authority-collega-esito');
+    esito.textContent = _apT('auth_link_searching', 'Ricerca in corso…');
+    let r;
+    try {
+        r = await window.apiAuthority.dettagli(qid);
+    } catch (err) {
+        console.error('Dettagli Wikidata non letti:', err);
+        r = { ok: false };
+    }
+    if (!r || !r.ok) { esito.textContent = _apErroreRete(); return; }
+    await window.collegaAuthorityArchivio(voce.tipo, voce.nome, { wikidata: r.wikidata, viaf: r.viaf || '', varianti: r.varianti || [] });
+    window.chiudiCollegaAuthority();
+}
+
+window.scollegaAuthority = async function() {
+    const voce = _apVoceCollega;
+    if (!voce) return;
+    await window.collegaAuthorityArchivio(voce.tipo, voce.nome, { wikidata: '', viaf: '', varianti: [] });
+    window.chiudiCollegaAuthority();
+};
 
 // --- Il pannello "Schede collegate" -------------------------------------------
 //
@@ -457,6 +576,7 @@ window.caricaRelazioniForm = function(m) {
                 </h3>
             </div>
             <div class="modal-body">
+                <div id="authority-elenco">
                 <div class="auth-tabs" role="tablist">
                     <button type="button" id="authority-tab-persona" role="tab" aria-selected="true" class="auth-tab attiva" data-on-click="cambiaTipoAnagrafica" data-args-click="[&quot;persona&quot;]">
                         <span data-i18n="auth_people">Persone</span>
@@ -468,6 +588,25 @@ window.caricaRelazioniForm = function(m) {
                 <input id="authority-filter" type="text" class="form-input my-3" data-i18n-placeholder="auth_filter" placeholder="Filtra…">
                 <div id="authority-list" class="tag-manager-list"></div>
                 <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="auth_hint">L'elenco si ricava dalle schede: non è un archivio parallelo. Rinominare una voce riscrive il nome in tutte le schede che lo citano, ed è il modo di unificare due grafie della stessa persona.</p>
+                </div>
+                <div id="authority-collega" class="hidden-tab">
+                    <p class="text-sm mb-2"><span data-i18n="auth_link_btn">Collega a Wikidata</span>: <strong id="authority-collega-nome" translate="no"></strong></p>
+                    <div class="flex gap-2">
+                        <input id="authority-collega-q" type="search" class="form-input flex-1" data-i18n-aria-label="auth_link_query" aria-label="Nome da cercare">
+                        <button type="button" data-on-click="cercaAuthorityWikidata" class="btn btn-secondary"><span data-i18n="auth_link_search">Cerca</span></button>
+                    </div>
+                    <p id="authority-collega-esito" class="text-xs text-stone-500 dark:text-stone-400 my-2" aria-live="polite"></p>
+                    <ul id="authority-collega-risultati" class="auth-candidati" role="list"></ul>
+                    <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="auth_link_hint">L'identificativo serve a distinguere gli omonimi; il numero VIAF si ricava da Wikidata. Senza rete l'archivio funziona come prima.</p>
+                    <div class="flex justify-end gap-2 mt-3">
+                        <button type="button" id="authority-scollega" data-on-click="scollegaAuthority" class="btn btn-danger-ghost hidden-tab">
+                            <span data-i18n="auth_link_remove">Scollega</span>
+                        </button>
+                        <button type="button" data-on-click="chiudiCollegaAuthority" class="btn btn-ghost">
+                            <span data-i18n="auth_link_back">Indietro</span>
+                        </button>
+                    </div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" data-on-click="chiudiAnagrafica" data-modal-cancel class="btn btn-ghost">
                         <span data-i18n="btn_close">Chiudi</span>
@@ -480,6 +619,9 @@ window.caricaRelazioniForm = function(m) {
         document.body.insertAdjacentHTML('beforeend', html);
         const filtro = document.getElementById('authority-filter');
         if (filtro) filtro.oninput = () => window.disegnaAnagrafica();
+        document.getElementById('authority-collega-q')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); window.cercaAuthorityWikidata(); }
+        });
         if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
         if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('authority-modal'), document.getElementById('relazioni-modal')] });
     });

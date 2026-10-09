@@ -295,6 +295,26 @@ test('3.5.9: l\'anagrafica registra la grafia scelta e le note, e le fonde nel s
   assert.strictEqual(fusa['luogo:b'].nome, 'B');
 });
 
+test('P10: Wikidata e VIAF sull\'anagrafica, validati, conservati e trasferiti dalla rinomina', () => {
+  const d = db([{ attori_dinamici: [{ k: 'Teste', v: 'Bartolo' }] }]);
+  assert.strictEqual(M.salvaVoceAuthority(d, 'persona', 'Bartolo', { wikidata: 'Q312599', viaf: '100185495', varianti: ['Bartolus', 'bartolus', ' ', 'Bartolo da Sassoferrato'] }), true);
+  let v = M.voceAuthority(d, 'persona', 'Bartolo');
+  assert.deepStrictEqual([v.wikidata, v.viaf, v.varianti], ['Q312599', '100185495', ['Bartolus', 'Bartolo da Sassoferrato']]);
+  // Le note non toccano gli id; uno stesso salvataggio non cambia nulla.
+  assert.strictEqual(M.salvaVoceAuthority(d, 'persona', 'Bartolo', { note: 'giurista' }), true);
+  assert.strictEqual(M.voceAuthority(d, 'persona', 'Bartolo').wikidata, 'Q312599');
+  assert.strictEqual(M.salvaVoceAuthority(d, 'persona', 'Bartolo', { wikidata: 'Q312599' }), false);
+  // Non valido = tolto, mai salvato com'è: l'id finisce in un link.
+  M.salvaVoceAuthority(d, 'persona', 'Bartolo', { wikidata: 'javascript:alert(1)', viaf: '', varianti: [] });
+  v = M.voceAuthority(d, 'persona', 'Bartolo');
+  assert.ok(!('wikidata' in v) && !('viaf' in v) && !('varianti' in v));
+  assert.strictEqual(v.note, 'giurista');
+
+  M.salvaVoceAuthority(d, 'persona', 'Bartolo', { wikidata: 'Q312599' });
+  M.rinominaAuthority(d, 'persona', 'Bartolo', 'Bartolus de Saxoferrato', campiDi(d));
+  assert.strictEqual(M.voceAuthority(d, 'persona', 'Bartolus de Saxoferrato').wikidata, 'Q312599');
+});
+
 test('3.5.10: `relazioni` è una chiave di servizio, non una colonna dell\'export', () => {
   // Se non lo fosse, comparirebbe come campo del tipo documento nel CSV e nella stampa.
   assert.ok(M.CHIAVI_SERVIZIO.indexOf('relazioni') !== -1);
