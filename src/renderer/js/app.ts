@@ -560,6 +560,13 @@ async function avviaApp() {
                 e.preventDefault();
                 if (typeof toggleFullscreenAllegato === 'function') toggleFullscreenAllegato();
             }
+            // Alt+K apre i caratteri speciali col fuoco sul primo; senza Ctrl, che con Alt è AltGr.
+            if (e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                const pannello = document.getElementById('trasc-caratteri');
+                const aperto = pannello && !pannello.classList.contains('hidden-tab');
+                window.toggleCaratteriSpeciali(!aperto || !pannello.contains(document.activeElement), true);
+            }
             return; // Interrompe qui se siamo in modalità trascrizione
         }
 

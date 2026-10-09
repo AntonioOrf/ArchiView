@@ -46,6 +46,40 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#btn-iiif-trasc')).toBeVisible();
   });
 
+  test('P1 — caratteri speciali: col mouse e da tastiera entrano al cursore', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-MUFI', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    const editor = page.locator('#trascrizione-editor');
+    const pannello = page.locator('#trasc-caratteri');
+    await editor.click();
+    await page.keyboard.type('ab');
+    await page.keyboard.press('ArrowLeft');
+
+    // Mouse: il carattere entra fra a e b, l'editor tiene il fuoco e si continua a scrivere.
+    await page.locator('#btn-caratteri-speciali').click();
+    await expect(page.locator('#btn-caratteri-speciali')).toHaveAttribute('aria-expanded', 'true');
+    await pannello.getByRole('button', { name: /per$/ }).click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.type('x');
+    await expect(editor).toHaveText('aꝑxb');
+    expect(await page.evaluate(() => (window as any).trascrizioneNonSalvata)).toBe(true);
+    await expect(pannello.getByRole('group', { name: /recenti|recent/i }).getByRole('button')).toHaveCount(1);
+
+    // Tastiera: Alt+K porta il fuoco sul pannello, Invio inserisce e il fuoco resta lì, Esc torna al testo.
+    await page.keyboard.press('Alt+k');
+    await expect(pannello.locator('.car-speciale').first()).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    const scelto = await page.evaluate(() => (document.activeElement as HTMLElement).dataset.c);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+    await expect(pannello.locator(`[data-c="${scelto}"]:focus`)).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(editor).toBeFocused();
+    await expect(editor).toHaveText(`aꝑx${scelto}${scelto}b`);
+  });
+
   test('O4 — aperta, la vista tiene il fuoco: l app coperta non si raggiunge col Tab', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-FOCUS', FIXTURE_PNG);

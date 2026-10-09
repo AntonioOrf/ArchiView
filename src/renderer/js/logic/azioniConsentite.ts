@@ -187,6 +187,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'switchSidebarTab',
     'switchTab',
     'toggleCampoBase',
+    'toggleCaratteriSpeciali',
     'toggleFullscreenAllegato',
     'toggleSyncAttachments',
     'toggleVaultSwitcher',

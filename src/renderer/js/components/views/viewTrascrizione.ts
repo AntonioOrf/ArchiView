@@ -41,7 +41,9 @@
                     <div class="w-px h-6 bg-stone-300 mx-1"></div>
                     <button data-on-mousedown="nonRubareFuoco" data-cmd="insertUnorderedList" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;insertUnorderedList&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ul" data-i18n-aria-label="tooltip_ul"><i data-lucide="list" class="w-4 h-4"></i></button>
                     <button data-on-mousedown="nonRubareFuoco" data-cmd="insertOrderedList" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;insertOrderedList&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ol" data-i18n-aria-label="tooltip_ol"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
-                    
+                    <div class="w-px h-6 bg-stone-300 mx-1"></div>
+                    <button id="btn-caratteri-speciali" data-on-mousedown="nonRubareFuoco" data-on-click="toggleCaratteriSpeciali" aria-expanded="false" aria-controls="trasc-caratteri" aria-keyshortcuts="Alt+K" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_special_chars" data-i18n-aria-label="tooltip_special_chars"><i data-lucide="omega" class="w-4 h-4"></i></button>
+
                     <div class="flex-1"></div>
 
                     <!-- Fase 2.3 — l'OCR sta nella barra dell'editor e non in quella
@@ -63,6 +65,8 @@
                         <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="iiif_add_button">Aggiungi da IIIF</span></button>
                     <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" data-on-change="caricaAllegatoTrascrizione" data-args-change="[{&quot;$&quot;:&quot;event&quot;}]">
                 </div>
+                <!-- P1 — caratteri speciali (MUFI), riempito da specialCharsPanel.ts. -->
+                <div id="trasc-caratteri" class="hidden-tab shrink-0" data-i18n-aria-label="tooltip_special_chars" role="region"></div>
                 <!-- Fase 2.3-bis — quale carta si sta trascrivendo. Compare solo con più di
                      un allegato: con uno solo sarebbe una riga che ripete l'ovvio. -->
                 <div id="trascrizione-carta" class="hidden-tab shrink-0 px-3 py-1.5 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-900 truncate"></div>
