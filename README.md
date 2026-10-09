@@ -94,7 +94,7 @@ The easiest way to use **ArchiView** is to download the latest release:
 
 ## User Guide (Wiki)
 
-The complete user guide — installation, interface, records, transcription, search, sync and sharing, export and print, FAQ — is available in the **[ArchiView Wiki](https://archiview.web.app/wiki/en/)** (also in [Italian](https://archiview.web.app/wiki/)).
+The complete user guide — installation, interface, records, transcription, search, sync and sharing, export and print, FAQ — is available in the **[ArchiView Wiki](https://archiview.orfhist.com/wiki/en/)** (also in [Italian](https://archiview.orfhist.com/wiki/)).
 
 ---
 
