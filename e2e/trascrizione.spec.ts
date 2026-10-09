@@ -128,6 +128,55 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trasc-img-preview')).toBeVisible();
   });
 
+  test('a finestra non massimizzata la barra resta su una riga e l editor ha spazio', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-STRETTA', FIXTURE_PNG);
+    const finestra = (w: number) => electronApp.evaluate(({ BrowserWindow }, w) => {
+      const b = BrowserWindow.getAllWindows()[0]; b.unmaximize(); b.setSize(w, 760);
+    }, w);
+
+    // Affiancati (≥1024 px): a metà larghezza i tre pulsanti con testo andavano a capo.
+    await finestra(1100);
+    await expect.poll(() => page.evaluate(() => innerWidth)).toBe(1100);
+    await page.evaluate((r) => (window as any).apriTrascrizione(r), id);
+    const barra = page.locator('#trascrizione-toolbar');
+    await expect.poll(async () => (await barra.boundingBox())!.height).toBeLessThan(60);
+    for (const sel of ['#btn-ocr-trasc', '#btn-carica-allegato-trasc', '#btn-iiif-trasc']) {
+      await expect(page.locator(sel)).toHaveAccessibleName(/\S/);
+    }
+
+    // In colonna (<1024 px): l'editor restava al 50% di larghezza e alto quanto la barra.
+    await finestra(900);
+    await expect.poll(() => page.evaluate(() => innerWidth)).toBe(900);
+    // Poll: la larghezza ha una transizione di 0,3 s (.transizione-larghezza).
+    const quota = () => page.evaluate(() => {
+      const e = document.getElementById('trascrizione-editor-panel')!.getBoundingClientRect();
+      const c = document.getElementById('trascrizione-container')!.getBoundingClientRect();
+      return Math.min(e.width / c.width / 0.95, e.height / c.height / 0.4);
+    });
+    await expect.poll(quota).toBeGreaterThan(1);
+    await expect(page.locator('#trascrizione-resizer')).toBeHidden();
+  });
+
+  test('la freccia dell allegato raggiunta col Tab è visibile anche senza mouse', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-TAB', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PDF);
+    await expect(page.locator('#trasc-carte-totale')).toHaveText('/ 2');
+    await page.mouse.move(0, 0);
+
+    // Audit Impeccable 09/10: le frecce erano opacity-0 fuori dall'hover, quindi il fuoco
+    // da tastiera finiva su un pulsante invisibile (anello compreso).
+    let raggiunta = false;
+    for (let i = 0; i < 60 && !raggiunta; i++) {
+      await page.keyboard.press('Tab');
+      raggiunta = await page.evaluate(() => document.activeElement?.id === 'btn-next-allegato');
+    }
+    expect(raggiunta).toBe(true);
+    await expect(page.locator('#btn-next-allegato')).toHaveCSS('opacity', '1');
+  });
+
   test('Alt+ArrowRight cambia allegato da tastiera', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-KEY', FIXTURE_PNG);

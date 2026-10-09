@@ -1660,6 +1660,21 @@ summary:focus:not(:focus-visible) { outline: none; }
 }
 .iv-viewport:hover .iv-barra,
 .iv-viewport:focus-within .iv-barra { opacity: 1; }
+/* Editor stretto (metà di una finestra non massimizzata): le azioni della barra restano
+   solo icona, nome e tooltip vengono da aria-label/title, così la barra non va a capo. */
+#trascrizione-editor-panel { container-type: inline-size; }
+@container (max-width: 860px) {
+    #trascrizione-toolbar .btn-secondary > span { display: none; }
+}
+/* In colonna (<1024 px) la larghezza salvata dal divisore non vale: editor pieno, metà
+   altezza, e il divisore, che trascina solo in orizzontale, sparisce. */
+@media (width < 64rem) {
+    #trascrizione-editor-panel { width: 100% !important; flex: 1 1 0; }
+    #trascrizione-resizer { display: none !important; }
+}
+/* Frecce tra gli allegati: compaiono in hover, ma raggiunte col Tab devono vedersi. */
+#btn-prev-allegato:focus-visible,
+#btn-next-allegato:focus-visible { opacity: 1; }
 
 .iv-btn {
     display: inline-flex;
