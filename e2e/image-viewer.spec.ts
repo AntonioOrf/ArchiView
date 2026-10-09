@@ -88,11 +88,26 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await page.locator('#modal-img-viewport [data-iv="filtri"]').click();
     await expect(pannello).toBeVisible();
 
-    await page.locator('#modal-img-viewport [data-iv="contrasto"]').fill('180');
+    // Cursori da -100 a 100 col numero accanto; 0 è neutro.
+    await page.locator('#modal-img-viewport [data-iv="contrasto"]').fill('60');
+    await expect(page.locator('#modal-img-viewport [data-iv="val-contrasto"]')).toHaveText('60');
+    await page.locator('#modal-img-viewport [data-iv="luminosita"]').fill('-40');
     await page.locator('#modal-img-viewport [data-iv="inverti"]').check();
     const filtro = await page.locator('#modal-img').evaluate((el: HTMLElement) => el.style.filter);
-    expect(filtro).toContain('contrast(180%)');
+    expect(filtro).toContain('contrast(190%)');
+    expect(filtro).toContain('brightness(80%)');
     expect(filtro).toContain('invert(1)');
+
+    // "Reimposta" nel pannello azzera solo i filtri: il pannello resta aperto, lo zoom resta.
+    await page.locator('#modal-img-viewport [data-iv="zoom-in"]').click();
+    await page.locator('#modal-img-viewport [data-iv="reset-filtri"]').click();
+    await expect(pannello).toBeVisible();
+    await expect(page.locator('#modal-img-viewport [data-iv="val-contrasto"]')).toHaveText('0');
+    const azzerato = await page.locator('#modal-img').evaluate((el: HTMLElement) => ({ filter: el.style.filter, transform: el.style.transform }));
+    expect(azzerato.filter).toContain('contrast(100%)');
+    expect(azzerato.filter).toContain('invert(0)');
+    expect(azzerato.transform).toContain('scale(1.2)');
+    await page.locator('#modal-img-viewport [data-iv="contrasto"]').fill('60');
 
     // Il ripristino chiude il pannello e riporta i filtri a neutro: una carta lasciata in
     // negativo che riapre in negativo è il difetto classico di questi visualizzatori.
@@ -101,6 +116,39 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     const dopo = await page.locator('#modal-img').evaluate((el: HTMLElement) => el.style.filter);
     expect(dopo).toContain('contrast(100%)');
     expect(dopo).toContain('invert(0)');
+  });
+
+  test('P4 — le elaborazioni passano dal worker, tengono lo zoom e il ripristino torna all originale', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Viewer');
+    await createItemWithAttachment(page, 'MS-IV-P4', FIXTURE_PNG);
+    await apriImmagineNelModal(page, 'MS-IV-P4');
+    const img = page.locator('#modal-img');
+    const originale = await img.getAttribute('src');
+
+    await page.locator('#modal-img-viewport [data-iv="zoom-in"]').click();
+    await page.locator('#modal-img-viewport [data-iv="filtri"]').click();
+    await page.locator('#modal-img-viewport [data-iv="elaborazione"]').selectOption('dstretch');
+    // Copia elaborata come blob: senza CORS su local-asset il worker non potrebbe leggere i pixel.
+    await expect(img).toHaveAttribute('src', /^blob:/);
+    await expect(page.locator('#modal-img-viewport')).not.toHaveAttribute('aria-busy', 'true');
+    expect(await trasformazione(page, '#modal-img')).toContain('scale(1.2)');
+    expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+
+    // Soglia: compare il suo cursore e l'immagine si rielabora.
+    const primo = await img.getAttribute('src');
+    await page.locator('#modal-img-viewport [data-iv="elaborazione"]').selectOption('soglia');
+    await expect(page.locator('#modal-img-viewport [data-iv="riga-soglia"]')).toBeVisible();
+    await expect(img).not.toHaveAttribute('src', primo!);
+
+    await page.locator('#modal-img-viewport [data-iv="elaborazione"]').selectOption('');
+    await expect(img).toHaveAttribute('src', originale!);
+    expect(await trasformazione(page, '#modal-img')).toContain('scale(1.2)');
+
+    await page.locator('#modal-img-viewport [data-iv="elaborazione"]').selectOption('r');
+    await expect(img).toHaveAttribute('src', /^blob:/);
+    await page.locator('#modal-img-viewport [data-iv="reset"]').click();
+    await expect(img).toHaveAttribute('src', originale!);
+    await expect(page.locator('#modal-img-viewport [data-iv="elaborazione"]')).toHaveValue('');
   });
 
   test('lo stato non sopravvive alla chiusura del modal', async ({ page, userDataDir }) => {

@@ -6,6 +6,7 @@ const fsp = require('fs').promises;
 const { state } = require('../workspaceManager');
 const { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale } = require('./pathSafety');
 const { hashFile } = require('../chunkingLogic');
+const schemaApp = require('../schemaApp');
 
 /**
  * Il percorso sorgente arriva dal renderer (file scelto o trascinato). Non si può legare a un
@@ -210,7 +211,11 @@ async function rispostaLocalAsset(url: string): Promise<Response> {
     const r = await net.fetch(pathToFileURL(percorso).href);
     if (!r.ok) return new Response(null, { status: r.status });
     const headers: { [k: string]: string } = { 'Content-Type': tipo, 'X-Content-Type-Options': 'nosniff' };
-    if (tipo !== 'application/pdf') headers['Content-Security-Policy'] = CSP_LOCAL_ASSET;
+    if (tipo !== 'application/pdf') {
+      headers['Content-Security-Policy'] = CSP_LOCAL_ASSET;
+      // P4: pixel leggibili dal solo visualizzatore dell'app (filtri su canvas).
+      headers['Access-Control-Allow-Origin'] = schemaApp.ORIGINE;
+    }
     const lunghezza = r.headers.get('content-length');
     if (lunghezza) headers['Content-Length'] = lunghezza;
     return new Response(r.body, { status: 200, headers });

@@ -14,6 +14,7 @@
 const { protocol } = require('electron');
 const cache = require('./imageCache');
 const Iiif = require('../../shared/iiifManifest');
+const schemaApp = require('../schemaApp');
 
 const SCHEMA = 'iiif-img';
 
@@ -58,7 +59,9 @@ function registraProtocollo() {
           'Content-Length': String(immagine.dati.length),
           // La cache vera è quella su disco, gestita qui: quella del renderer aggiungerebbe
           // solo una seconda copia in memoria della stessa carta.
-          'Cache-Control': 'no-store'
+          'Cache-Control': 'no-store',
+          // P4: pixel leggibili dal solo visualizzatore dell'app (filtri su canvas).
+          'Access-Control-Allow-Origin': schemaApp.ORIGINE
         }
       });
     } catch (errore) {

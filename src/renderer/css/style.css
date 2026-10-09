@@ -1775,6 +1775,18 @@ summary:focus:not(:focus-visible) { outline: none; }
 }
 .iv-filtro input[type="range"] { width: 8.5rem; accent-color: var(--color-primary); }
 .iv-filtro-check { justify-content: flex-start; cursor: pointer; }
+/* P4 — elaborazioni su canvas: sul pannello scuro, come i cursori. */
+.iv-filtro select {
+    width: 8.5rem;
+    padding: 0.125rem 0.25rem;
+    color: inherit;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.iv-filtro select option { color: #1c1917; background-color: #fafaf9; }
+/* Su hardware lento restano i soli filtri CSS: l'elaborazione per pixel sarebbe troppo pesante. */
+.perf-low .iv-solo-perf-ok { display: none; }
+.iv-viewport[aria-busy="true"] .iv-img { opacity: 0.6; transition: opacity 0.2s; }
 
 /* Il viewport della trascrizione deve riempire il riquadro dell'anteprima, non stringersi
    sull'immagine: se resta grande quanto la carta, `overflow: hidden` ritaglia la barra dei

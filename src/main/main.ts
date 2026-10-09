@@ -47,7 +47,10 @@ const schemaApp = require('./schemaApp');
 protocol.registerSchemesAsPrivileged([
   // O3: la finestra principale. `codeCache` vale solo con `standard`.
   { scheme: schemaApp.SCHEMA, privileges: schemaApp.PRIVILEGI },
-  { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true } },
+  // corsEnabled (P4): le immagini rispondono con Access-Control-Allow-Origin per la sola
+  // origine dell'app, così il visualizzatore ne legge i pixel per i filtri (canvas non
+  // "tainted"). Il PDF no, e un <img> senza crossorigin si carica come prima.
+  { scheme: 'local-asset', privileges: { secure: true, supportFetchAPI: true, corsEnabled: true } },
   // Host PDF dell'OCR (Fase 2.3). Serve `standard: true` — e non solo `secure` come per
   // local-asset — perché la pagina host carica pdf.js come modulo ES e ne avvia il worker:
   // entrambi vogliono un'origine vera, che uno schema non standard non ha.
@@ -60,7 +63,8 @@ protocol.registerSchemesAsPrivileged([
   // Carte IIIF remote. Stessi privilegi di local-asset e non di piu': le immagini sono
   // caricate con un <img> dentro la pagina principale, non da una pagina a se stante, quindi
   // non serve `standard: true` — che significherebbe dare a questo schema un'origine vera.
-  { scheme: iiifImageHost.SCHEMA, privileges: { secure: true, supportFetchAPI: true } }
+  // corsEnabled come local-asset (P4).
+  { scheme: iiifImageHost.SCHEMA, privileges: { secure: true, supportFetchAPI: true, corsEnabled: true } }
 ]);
 
 function createWindow() {

@@ -67,18 +67,81 @@
         <div class="iv-pannello-filtri hidden-tab" data-iv="pannello-filtri">
             <label class="iv-filtro">
                 <span data-i18n="label_brightness">Luminosità</span>
-                <input type="range" data-iv="luminosita" min="50" max="200" step="5" value="100">
+                <input type="range" data-iv="luminosita" min="-100" max="100" step="1" value="0">
+                <output data-iv="val-luminosita" class="iv-filtro-valore">0</output>
             </label>
             <label class="iv-filtro">
                 <span data-i18n="label_contrast">Contrasto</span>
-                <input type="range" data-iv="contrasto" min="50" max="250" step="5" value="100">
+                <input type="range" data-iv="contrasto" min="-100" max="100" step="1" value="0">
+                <output data-iv="val-contrasto" class="iv-filtro-valore">0</output>
             </label>
             <label class="iv-filtro iv-filtro-check">
                 <input type="checkbox" data-iv="inverti">
                 <span data-i18n="label_invert">Inverti (negativo)</span>
             </label>
+            <label class="iv-filtro iv-solo-perf-ok">
+                <span data-i18n="label_enhance">Elaborazione</span>
+                <select data-iv="elaborazione">
+                    <option value="" data-i18n="enhance_none">Nessuna</option>
+                    <option value="r" data-i18n="enhance_red">Canale rosso</option>
+                    <option value="g" data-i18n="enhance_green">Canale verde</option>
+                    <option value="b" data-i18n="enhance_blue">Canale blu</option>
+                    <option value="livelli" data-i18n="enhance_levels">Livelli automatici</option>
+                    <option value="soglia" data-i18n="enhance_threshold">Soglia</option>
+                    <option value="dstretch" data-i18n="enhance_dstretch">Pseudo-colore (DStretch)</option>
+                </select>
+            </label>
+            <label class="iv-filtro hidden-tab" data-iv="riga-soglia">
+                <span data-i18n="label_threshold">Soglia</span>
+                <input type="range" data-iv="soglia" min="0" max="255" step="1" value="128">
+            </label>
+            <button type="button" data-iv="reset-filtri" class="iv-filtri-reset" data-i18n="btn_reset_filters">Reimposta</button>
         </div>
     `;
+
+    // P4 — un solo worker per tutti i visualizzatori, creato al primo uso. Lato massimo della
+    // copia elaborata: oltre, la memoria del worker cresce più del dettaglio che si guadagna.
+    // ponytail: niente elaborazione "a piena risoluzione su richiesta"; alzare LATO_MAX se serve.
+    const LATO_MAX = 3000;
+    let _worker = null;
+    let _richiesta = 0;
+    const _inAttesa = new Map();
+
+    /** Copia elaborata di `sorgente` come Blob JPEG. */
+    window.elaboraImmagine = async function (sorgente, modo, soglia) {
+        // crossOrigin: local-asset e iiif-img rispondono con Access-Control-Allow-Origin per
+        // l'app, e solo così la bitmap non è "tainted" e il worker può leggerne i pixel.
+        const im = new Image();
+        im.crossOrigin = 'anonymous';
+        im.src = sorgente;
+        await im.decode();
+        const k = Math.min(1, LATO_MAX / Math.max(im.naturalWidth, im.naturalHeight));
+        // Riduzione su un canvas e non con createImageBitmap(img): in Electron quella fallisce
+        // ("could not be allocated") anche su immagini leggibili.
+        const tela = new OffscreenCanvas(Math.max(1, Math.round(im.naturalWidth * k)), Math.max(1, Math.round(im.naturalHeight * k)));
+        const ctx = tela.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(im, 0, 0, tela.width, tela.height);
+        const bitmap = tela.transferToImageBitmap();
+        if (!_worker) {
+            _worker = new Worker('js/workers/elaboraImmagine.js');
+            _worker.onmessage = (e) => {
+                const r = _inAttesa.get(e.data.id);
+                if (!r) return;
+                _inAttesa.delete(e.data.id);
+                if (e.data.errore) r.reject(new Error(e.data.errore)); else r.resolve(e.data.blob);
+            };
+            _worker.onerror = (e) => {
+                for (const r of _inAttesa.values()) r.reject(new Error(e.message || 'Worker non disponibile'));
+                _inAttesa.clear();
+            };
+        }
+        const id = ++_richiesta;
+        return new Promise((resolve, reject) => {
+            _inAttesa.set(id, { resolve, reject });
+            _worker.postMessage({ id, bitmap, modo, soglia }, [bitmap]);
+        });
+    };
 
     /**
      * Attiva il visualizzatore su un viewport. Idempotente: due chiamate sullo stesso
@@ -99,7 +162,64 @@
         const pannelloFiltri = q('pannello-filtri');
         const etichettaPercento = q('percento');
 
-        const stato = { scala: 1, tx: 0, ty: 0, rot: 0, luminosita: 100, contrasto: 100, inverti: false };
+        // luminosita/contrasto: valore del cursore, -100..100, 0 = neutro (vedi percentuale()).
+        const stato = { scala: 1, tx: 0, ty: 0, rot: 0, luminosita: 0, contrasto: 0, inverti: false, elaborazione: '', soglia: 128 };
+
+        // P4 — la copia elaborata prende il posto dell'immagine (stesso <img>: zoom, pan,
+        // rotazione e filtri CSS restano com'erano). `srcOriginale` è ciò che l'host aveva
+        // messo; un `load` di un src diverso da questi due è una carta nuova.
+        let srcOriginale = null;
+        let urlElaborato = null;
+        let generazioneElab = 0;
+        let timerSoglia = null;
+        let ripristino = false;   // il prossimo load è il ritorno all'originale, non una carta nuova
+
+        function tornaAllOriginale() {
+            if (!urlElaborato) return;
+            const u = urlElaborato;
+            urlElaborato = null;
+            ripristino = true;
+            img.src = srcOriginale;
+            srcOriginale = null;
+            URL.revokeObjectURL(u);
+        }
+
+        function dimenticaElaborazione() {
+            generazioneElab++;
+            if (urlElaborato) URL.revokeObjectURL(urlElaborato);
+            urlElaborato = null;
+            srcOriginale = null;
+            viewport.removeAttribute('aria-busy');
+        }
+
+        async function elabora() {
+            const gen = ++generazioneElab;
+            if (!stato.elaborazione) {
+                tornaAllOriginale();
+                viewport.removeAttribute('aria-busy');
+                return;
+            }
+            if (!srcOriginale) srcOriginale = img.src;
+            viewport.setAttribute('aria-busy', 'true');
+            try {
+                const blob = await window.elaboraImmagine(srcOriginale, stato.elaborazione, stato.soglia);
+                if (gen !== generazioneElab) return;
+                const vecchio = urlElaborato;
+                urlElaborato = URL.createObjectURL(blob);
+                img.src = urlElaborato;
+                if (vecchio) URL.revokeObjectURL(vecchio);
+            } catch (err) {
+                if (gen !== generazioneElab) return;
+                console.error('[Visualizzatore] Elaborazione non riuscita:', err);
+                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t('enhance_failed', 'Elaborazione dell\'immagine non riuscita.'), 'error');
+                stato.elaborazione = '';
+                const sel = q('elaborazione');
+                if (sel) sel.value = '';
+                q('riga-soglia')?.classList.add('hidden-tab');
+            } finally {
+                if (gen === generazioneElab) viewport.removeAttribute('aria-busy');
+            }
+        }
 
         function dimensioni() {
             return {
@@ -132,7 +252,7 @@
             limitaTraslazione();
             img.style.transformOrigin = 'center center';
             img.style.transform = `translate(${stato.tx}px, ${stato.ty}px) rotate(${stato.rot}deg) scale(${stato.scala})`;
-            img.style.filter = `brightness(${stato.luminosita}%) contrast(${stato.contrasto}%) invert(${stato.inverti ? 1 : 0})`;
+            img.style.filter = `brightness(${percentuale(stato.luminosita, 100)}%) contrast(${percentuale(stato.contrasto, 150)}%) invert(${stato.inverti ? 1 : 0})`;
             viewport.classList.add('iv-trascinabile');
 
             const d = dimensioni();
@@ -181,18 +301,39 @@
             applica();
         }
 
+        /** Cursore -100..100 → percentuale CSS: sotto lo zero fino a 50%, sopra fino a 100+`su`%. */
+        function percentuale(v, su) {
+            return v < 0 ? 100 + v / 2 : 100 + v * su / 100;
+        }
+
+        /** Solo i filtri, la vista resta dov'è: è il "Reimposta" dentro il pannello. */
+        function reimpostaFiltri() {
+            stato.luminosita = 0;
+            stato.contrasto = 0;
+            stato.inverti = false;
+            for (const nome of ['luminosita', 'contrasto']) {
+                const el = q(nome);
+                if (el) el.value = '0';
+                const val = q('val-' + nome);
+                if (val) val.textContent = '0';
+            }
+            const inv = q('inverti');
+            if (inv) inv.checked = false;
+            generazioneElab++;
+            stato.elaborazione = '';
+            const sel = q('elaborazione');
+            if (sel) sel.value = '';
+            q('riga-soglia')?.classList.add('hidden-tab');
+            tornaAllOriginale();
+            viewport.removeAttribute('aria-busy');
+        }
+
         function reimposta() {
             stato.scala = 1;
             stato.tx = 0;
             stato.ty = 0;
             stato.rot = 0;
-            stato.luminosita = 100;
-            stato.contrasto = 100;
-            stato.inverti = false;
-            const sl = q('luminosita'), sc = q('contrasto'), inv = q('inverti');
-            if (sl) sl.value = '100';
-            if (sc) sc.value = '100';
-            if (inv) inv.checked = false;
+            reimpostaFiltri();
             if (pannelloFiltri) pannelloFiltri.classList.add('hidden-tab');
             const btnFiltri = q('filtri');
             if (btnFiltri) btnFiltri.setAttribute('aria-expanded', 'false');
@@ -231,12 +372,30 @@
         }
 
         if (pannelloFiltri) {
-            pannelloFiltri.addEventListener('click', (e) => e.stopPropagation());
+            pannelloFiltri.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (e.target.closest('[data-iv="reset-filtri"]')) { reimpostaFiltri(); applica(); }
+            });
             pannelloFiltri.addEventListener('input', (e) => {
                 const nome = e.target.getAttribute('data-iv');
-                if (nome === 'luminosita') stato.luminosita = Number(e.target.value);
-                else if (nome === 'contrasto') stato.contrasto = Number(e.target.value);
+                if (nome === 'luminosita' || nome === 'contrasto') {
+                    stato[nome] = Number(e.target.value);
+                    const val = q('val-' + nome);
+                    if (val) val.textContent = e.target.value;
+                }
                 else if (nome === 'inverti') stato.inverti = !!e.target.checked;
+                else if (nome === 'elaborazione') {
+                    stato.elaborazione = e.target.value;
+                    q('riga-soglia')?.classList.toggle('hidden-tab', stato.elaborazione !== 'soglia');
+                    elabora();
+                    return;
+                } else if (nome === 'soglia') {
+                    // Il cursore manda decine di eventi al secondo: si elabora quando si ferma.
+                    stato.soglia = Number(e.target.value);
+                    clearTimeout(timerSoglia);
+                    timerSoglia = setTimeout(elabora, 200);
+                    return;
+                }
                 else return;
                 applica();
             });
@@ -301,7 +460,14 @@
 
         // Ogni nuova immagine riparte pulita: filtri e rotazione della carta precedente
         // applicati a quella dopo sarebbero incomprensibili.
-        img.addEventListener('load', reimposta);
+        // P4: i load provocati dall'elaborazione (copia elaborata, ritorno all'originale) no.
+        img.addEventListener('load', () => {
+            if (urlElaborato && img.src === urlElaborato) return;
+            if (ripristino) { ripristino = false; return; }
+            dimenticaElaborazione();
+            reimposta();
+        });
+        img.addEventListener('error', () => { ripristino = false; });
 
         // Il pannello della trascrizione è ridimensionabile: al restringersi del viewport
         // la traslazione va ri-limitata, o l'immagine resta ferma fuori campo.
