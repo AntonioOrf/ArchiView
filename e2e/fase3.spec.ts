@@ -523,4 +523,57 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await expect(page.locator('#grafo-avviso')).toBeVisible();
     await expect(page.locator('#grafo-svg .grafo-nodo')).toHaveCount(0);
   });
+
+  // --- P9 / P10 --------------------------------------------------------------
+
+  test('P9 — collazione dalle schede collegate: luoghi varianti, apparato e varianti grafiche', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
+    await semina(page, [
+      { segnatura: 'TEST-A', trascrizione: '<p>In principio erat</p><p>uerbum et uerbum</p>' },
+      { segnatura: 'TEST-B', trascrizione: '<p>In principio fuit</p><p>verbum et verbum dei</p>' },
+      // Esca: collegata ma senza testo, non è un testimone.
+      { segnatura: 'ESCA' }
+    ]);
+    await page.evaluate(async () => {
+      const w = window as any;
+      const per = (s: string) => appData.manoscritti.find((m: any) => m.segnatura === s).id;
+      await w.collegaSchede(per('TEST-B'), per('TEST-A'), 'copia di');
+      await w.collegaSchede(per('ESCA'), per('TEST-A'));
+      w.apriCollegamenti(per('TEST-A'));
+    });
+
+    await page.locator('#btn-collaziona').click();
+    const modal = page.locator('#collazione-modal');
+    await expect(modal).toBeVisible();
+    await page.keyboard.press('Escape');
+    // Anche dal menu della scheda, sottomenu "Vedi".
+    await expect(modal).toBeHidden();
+    await page.locator('.card-scheda', { hasText: 'TEST-A' }).locator('.card-overflow-btn').click();
+    await page.locator('#custom-context-menu button', { hasText: /^Vedi$/ }).click();
+    await page.locator('#custom-context-menu-1 button', { hasText: /Collazione/ }).click();
+    await expect(modal).toBeVisible();
+    await expect(page.locator('#coll-testimoni input')).toHaveCount(2);
+    // erat/fuit e l'aggiunta "dei"; uerbum/verbum è grafica e non conta.
+    const voci = page.locator('#coll-apparato li');
+    await expect(voci).toHaveCount(2);
+    await expect(voci.nth(0)).toHaveText('erat ] fuit TEST-B');
+    await expect(voci.nth(1)).toHaveText('add. ] dei TEST-B');
+    await expect(page.locator('#coll-testi .collazione-colonna')).toHaveCount(2);
+    // Il confine fra paragrafi resta uno spazio: "erat uerbum", non "eratuerbum".
+    await expect(page.locator('#coll-testi .collazione-colonna').first()).toContainText('erat');
+    await expect(page.locator('#coll-testi .collazione-var').first()).toHaveText('erat');
+
+    // Senza normalizzazione uerbum/verbum è una differenza, e si salda ai luoghi vicini.
+    await page.locator('#coll-grafiche').uncheck();
+    await expect(voci.nth(0)).toHaveText('erat uerbum ] fuit verbum TEST-B');
+
+    // Base TEST-B: la stessa aggiunta diventa un'omissione.
+    await page.locator('#coll-grafiche').check();
+    await page.locator('#coll-base').selectOption({ label: 'TEST-B' });
+    await expect(voci.nth(1)).toHaveText('dei ] om. TEST-A');
+
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+  });
+
 });

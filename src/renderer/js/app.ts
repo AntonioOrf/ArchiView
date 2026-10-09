@@ -1281,6 +1281,10 @@ window.vociMenuRecord = function(id) {
         if (typeof window.apriCollegamenti === 'function') {
             vociVedi.push({ label: window.t('menu_links', 'Collegate'), title: window.t('link_panel_title', 'Schede collegate'), icon: 'link', onSelect: () => window.apriCollegamenti(id) });
         }
+        // P9 — sempre presente come "Collegate": senza testimoni il messaggio dice cosa manca.
+        if (typeof window.apriCollazione === 'function') {
+            vociVedi.push({ label: window.t('coll_title', 'Collazione'), title: window.t('coll_title', 'Collazione'), icon: 'git-compare', onSelect: () => window.apriCollazione(id) });
+        }
         if (typeof window.apriGrafo === 'function') {
             vociVedi.push({ label: window.t('menu_graph', 'Grafo'), title: window.t('graph_title', 'Grafo dei collegamenti'), icon: 'git-fork', onSelect: () => window.apriGrafo() });
         }

@@ -173,6 +173,12 @@ window.chiudiCollegamenti = function() {
     if (modal) modal.classList.add('hidden-tab');
 };
 
+/** P9 — i testimoni sono la scheda del pannello e le sue collegate. */
+window.collazionaCollegate = function() {
+    window.chiudiCollegamenti();
+    window.apriCollazione(_apSchedaCollegamenti);
+};
+
 function _apRigaCollegamento(voce) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -432,6 +438,10 @@ window.caricaRelazioniForm = function(m) {
                     <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCollegamenti&quot;,&quot;apriGrafo&quot;]" class="btn btn-secondary">
                         <i data-lucide="git-fork" class="w-4 h-4"></i>
                         <span data-i18n="graph_title">Grafo dei collegamenti</span>
+                    </button>
+                    <button type="button" id="btn-collaziona" data-on-click="collazionaCollegate" class="btn btn-secondary">
+                        <i data-lucide="git-compare" class="w-4 h-4"></i>
+                        <span data-i18n="coll_open">Collaziona</span>
                     </button>
                 </div>
             </div>
