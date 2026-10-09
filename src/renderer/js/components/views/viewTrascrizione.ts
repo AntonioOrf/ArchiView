@@ -76,7 +76,17 @@
             </div>
 
             <div id="trascrizione-allegato-panel" class="flex-1 bg-stone-200/50 shadow-inner border border-stone-300/50 rounded-sm overflow-hidden relative flex flex-col transizione-larghezza hidden-tab min-w-[250px]">
-                <div id="trascrizione-thumbnails" class="flex gap-2 p-2 bg-stone-100 border-b border-stone-300 overflow-x-auto hidden-tab shrink-0"></div>
+                <!-- Barra delle carte: con più allegati, quale carta è in vista e come cambiarla.
+                     Stessa forma della barra del PDF, che le sta sotto quando la carta è un PDF.
+                     Il riordino sta nel form e nel modale degli allegati. -->
+                <div id="trasc-carte-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
+                    <button id="btn-carta-prec" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[-1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_prev_sheet" data-i18n-aria-label="trasc_prev_sheet"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <input id="trasc-carta-numero" type="number" min="1" inputmode="numeric" class="w-14 px-1 py-0.5 text-center border border-stone-300 bg-white tabular-nums" data-i18n-aria-label="trasc_sheet_number" data-on-change="vaiACartaDaCampo">
+                    <span id="trasc-carte-totale" class="tabular-nums whitespace-nowrap"></span>
+                    <button id="btn-carta-succ" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_next_sheet" data-i18n-aria-label="trasc_next_sheet"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    <span id="trasc-carta-nome" class="ml-2 font-medium truncate min-w-0" translate="no"></span>
+                    <button id="btn-rinomina-carta" data-on-click="rinominaCartaCorrente" class="btn btn-ghost btn-icon shrink-0" data-i18n-title="btn_rename_short" data-i18n-aria-label="btn_rename_short"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                </div>
                 <!-- Barra del PDF: quale pagina, e la ricerca. Sta sopra la pagina e non
                      nell'editor perché riguarda il documento; la pagina scelta qui porta con
                      sé il testo di sinistra. Solo su un allegato PDF. -->

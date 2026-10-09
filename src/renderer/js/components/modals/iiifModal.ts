@@ -342,7 +342,7 @@ window.confermaImportIiif = async function() {
             window.chiudiImportIiif();
             // La vista trascrizione sta mostrando la scheda: va ridisegnata, o le carte
             // nuove esisterebbero nel dato e non a video.
-            if (typeof window.renderThumbnailsTrascrizione === 'function') window.renderThumbnailsTrascrizione(m.id);
+            if (typeof window.renderBarraCarte === 'function') window.renderBarraCarte(m.id);
             if (typeof renderMain === 'function') renderMain();
             mostraMessaggio(
                 _iiT('iiif_added', 'Aggiunte {var0} carte alla scheda.').replace('{var0}', String(nuovi.length)),

@@ -50,6 +50,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'azzeraTagAttivi',
     'cambiaAccountGoogleVault',
     'cambiaAllegatoRelativo',
+    'cambiaCartaRelativa',
     'cambiaCartellaAllegati',
     'cambiaCartellaLavoro',
     'cambiaLingua',
@@ -161,6 +162,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'rimuoviPendingFile',
     'rinominaAllegatoDaModal',
     'rinominaAllegatoForm',
+    'rinominaCartaCorrente',
     'ripristinaCartellaAllegatiPredefinita',
     'ripristinaSelezionateCestino',
     'salvaArchiviRicerca',
@@ -190,5 +192,6 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'toggleVaultSwitcher',
     'trasformaInPersonale',
     'uniscitiDaShareModal',
+    'vaiACartaDaCampo',
     'vaiAPaginaPdfDaCampo',
 ]);

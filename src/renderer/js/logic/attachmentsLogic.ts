@@ -150,8 +150,7 @@ async function apriTrascrizione(id) {
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
 
-    const thumbContainer = document.getElementById('trascrizione-thumbnails');
-    if (thumbContainer) thumbContainer.innerHTML = window.sanitizeHTML('');
+    document.getElementById('trasc-carte-bar').classList.add('hidden-tab');
     
     // Usa helper condiviso per normalizzare la lista allegati
     const allegatiM = normalizzaAllegati(m);
@@ -171,7 +170,7 @@ async function apriTrascrizione(id) {
             btnCollapse.title = window.t("tooltip_collapse", "Collapse Editor");
         }
 
-        window.renderThumbnailsTrascrizione(m.id);
+        window.renderBarraCarte(m.id);
         
         if (window.cambiaAllegatoTrascrizione) {
             window.cambiaAllegatoTrascrizione(m.allegati[0].nome, m.allegati[0].tipo, 0);
@@ -195,114 +194,68 @@ async function apriTrascrizione(id) {
     if (window.lucide) lucide.createIcons();
 }
 
-window.renderThumbnailsTrascrizione = function(id) {
-    const m = appData.manoscritti.find(x => x.id === id);
-    if (!m) return;
-    const thumbContainer = document.getElementById('trascrizione-thumbnails');
-    if (!thumbContainer) return;
-    
-    thumbContainer.innerHTML = window.sanitizeHTML('');
-    // Usa helper condiviso per normalizzare la lista allegati
-    normalizzaAllegati(m);
-    
-    if (m.allegati.length > 1) {
-        thumbContainer.classList.remove('hidden-tab');
-        for (let i = 0; i < m.allegati.length; i++) {
-            const al = m.allegati[i];
-            
-            const wrapper = document.createElement('div');
-          wrapper.className = "flex items-center bg-white border border-stone-300 rounded-sm shadow-sm overflow-hidden shrink-0 cursor-grab active:cursor-grabbing transition-transform";
-            
-            const btn = document.createElement('button');
-            btn.className = "btn btn-ghost rounded-none allegato-btn px-3 py-1 text-xs whitespace-nowrap truncate max-w-[150px] border-r border-stone-200";
-            btn.title = al.originalName || `Allegato ${i+1}`;
-            btn.innerHTML = al.tipo === 'pdf' ? `<i data-lucide="file-text" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || 'PDF ' + (i+1))}` : `<i data-lucide="image" class="w-3 h-3 inline-block mr-1"></i> ${escapeHTML(al.originalName || window.t("attachment_image", "Image") + ' ' + (i+1))}`;
-            btn.onclick = () => window.cambiaAllegatoTrascrizione(al.nome, al.tipo, i);
-            
-            const btnEdit = document.createElement('button');
-            btnEdit.className = "btn btn-ghost btn-icon rounded-none px-2 py-1";
-            btnEdit.title = window.t("btn_rename_short", "Rename");
-            btnEdit.innerHTML = window.sanitizeHTML('<i data-lucide="pencil" class="w-3 h-3"></i>');
-            btnEdit.onclick = (e) => {
-                e.stopPropagation();
-                window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
-                    m.allegati[i].originalName = nuovoNome;
-                    await salvaTutto();
-                    if(typeof renderMain === 'function') renderMain();
-                    window.renderThumbnailsTrascrizione(id);
-                    const ic = window.currentAllegatoIndex || 0;
-                    // Rinominare non è voltare pagina: si resta dove si era.
-                    window.cambiaAllegatoTrascrizione(m.allegati[ic].nome, m.allegati[ic].tipo, ic, _taPaginaCorrente || undefined);
-                });
-            };
-
-            // Drag and Drop
-            wrapper.draggable = true;
-            wrapper.ondragstart = (e) => {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', i.toString());
-                setTimeout(() => wrapper.classList.add('opacity-40'), 0);
-                window._draggedTrascThumbIndex = i;
-            };
-            wrapper.ondragend = (e) => {
-                wrapper.classList.remove('opacity-40');
-                window._draggedTrascThumbIndex = null;
-                document.querySelectorAll('#trascrizione-thumbnails > div').forEach(p => p.style.transform = '');
-            };
-            wrapper.ondragover = (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                const rect = wrapper.getBoundingClientRect();
-                const mid = rect.left + rect.width / 2;
-                document.querySelectorAll('#trascrizione-thumbnails > div').forEach(p => {
-                    if (p !== wrapper && window._draggedTrascThumbIndex !== i) p.style.transform = '';
-                });
-                if (window._draggedTrascThumbIndex !== null && window._draggedTrascThumbIndex !== i) {
-                    wrapper.style.transform = e.clientX < mid ? 'translateX(10px)' : 'translateX(-10px)';
-                }
-            };
-            wrapper.ondragleave = (e) => wrapper.style.transform = '';
-            wrapper.ondrop = async (e) => {
-                e.preventDefault();
-                wrapper.style.transform = '';
-                const dragIndex = window._draggedTrascThumbIndex;
-                if (dragIndex !== null && dragIndex !== i) {
-                    // Fase 2.3-bis: il testo viaggia con l'oggetto allegato, quindi il
-                    // riordino non lo perde. L'INDICE però sì: dopo lo spostamento
-                    // `_taIndiceCorrente` punterebbe a un'altra carta e il primo travaso
-                    // successivo ci scriverebbe sopra. Si travasa prima e si ritrova la
-                    // carta per identità dopo.
-                    _taSalvaEditorInMemoria();
-                    const cartaAperta = m.allegati[window.indiceCartaCorrente()];
-
-                    const item = m.allegati.splice(dragIndex, 1)[0];
-                    let targetIndex = i;
-                    const rect = wrapper.getBoundingClientRect();
-                    const mid = rect.left + rect.width / 2;
-                    if (e.clientX > mid) targetIndex++;
-                    if (dragIndex < targetIndex) targetIndex--;
-                    m.allegati.splice(targetIndex, 0, item);
-
-                    const nuovoIndice = m.allegati.indexOf(cartaAperta);
-                    if (nuovoIndice !== -1) {
-                        window.currentAllegatoIndex = nuovoIndice;
-                        window.ricaricaEditorTrascrizione(m, nuovoIndice);
-                    }
-                    await salvaTutto();
-                    if(typeof renderMain === 'function') renderMain();
-                    window.renderThumbnailsTrascrizione(id);
-                }
-            };
-
-            wrapper.appendChild(btn);
-            wrapper.appendChild(btnEdit);
-            thumbContainer.appendChild(wrapper);
-        }
-    // Aggiorna le icone Lucide solo nel thumbnail container
-    if (window.lucide) lucide.createIcons({ nodes: [thumbContainer] });
-    } else {
-        thumbContainer.classList.add('hidden-tab');
+/** Barra delle carte (più di un allegato): numero, totale e nome della carta in vista. */
+function _taAggiornaBarraCarte(m, index) {
+    const barra = document.getElementById('trasc-carte-bar');
+    if (!barra) return;
+    const allegati = (m && Array.isArray(m.allegati)) ? m.allegati : [];
+    if (allegati.length < 2) {
+        barra.classList.add('hidden-tab');
+        return;
     }
+    const i = Math.min(Math.max(0, index || 0), allegati.length - 1);
+    const a = allegati[i];
+    const campo = document.getElementById('trasc-carta-numero') as HTMLInputElement;
+    campo.value = String(i + 1);
+    campo.max = String(allegati.length);
+    document.getElementById('trasc-carte-totale').textContent = '/ ' + allegati.length;
+    (document.getElementById('btn-carta-prec') as HTMLButtonElement).disabled = i === 0;
+    (document.getElementById('btn-carta-succ') as HTMLButtonElement).disabled = i === allegati.length - 1;
+    const nome = document.getElementById('trasc-carta-nome');
+    nome.textContent = a.originalName || (a.tipo === 'pdf' ? 'PDF ' : window.t('attachment_image', 'Immagine') + ' ') + (i + 1);
+    nome.title = nome.textContent;
+    barra.classList.remove('hidden-tab');
+}
+
+/** Dopo un'aggiunta o una rimozione di allegati: il totale cambia, la carta in vista no. */
+window.renderBarraCarte = function(id) {
+    const m = appData.manoscritti.find(x => x.id === id);
+    if (m) _taAggiornaBarraCarte(m, window.currentAllegatoIndex || 0);
+};
+
+/** Carta `n` (1-based) dalla barra: a differenza delle frecce sull'immagine, salta le pagine. */
+function _taVaiACarta(n) {
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    const allegati = (m && m.allegati) || [];
+    const i = Math.floor(Number(n)) - 1;
+    if (!Number.isFinite(i) || i < 0 || i >= allegati.length) {
+        _taAggiornaBarraCarte(m, window.currentAllegatoIndex || 0);
+        return;
+    }
+    if (i === (window.currentAllegatoIndex || 0)) return;
+    window.cambiaAllegatoTrascrizione(allegati[i].nome, allegati[i].tipo, i);
+}
+
+window.cambiaCartaRelativa = function(dir) { _taVaiACarta((window.currentAllegatoIndex || 0) + 1 + dir); };
+
+window.vaiACartaDaCampo = function() {
+    _taVaiACarta((document.getElementById('trasc-carta-numero') as HTMLInputElement).value);
+};
+
+window.rinominaCartaCorrente = function() {
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    const i = window.currentAllegatoIndex || 0;
+    const al = m && m.allegati ? m.allegati[i] : null;
+    if (!al) return;
+    window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
+        al.originalName = nuovoNome;
+        await salvaTutto();
+        if (typeof renderMain === 'function') renderMain();
+        _taAggiornaBarraCarte(m, i);
+        _taAggiornaEtichetta(m, i);
+    });
 };
 
 /**
@@ -350,16 +303,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
         else _taCaricaEditor(m, index);
         _taAggiornaNavigazione(m, index);
 
-        const thumbBtns = document.querySelectorAll('#trascrizione-thumbnails .allegato-btn');
-        thumbBtns.forEach((btn, i) => {
-            if (i === index) {
-                btn.classList.add('bg-amber-100', 'text-amber-900', 'border-amber-300');
-                btn.classList.remove('hover:bg-stone-50', 'bg-white');
-            } else {
-                btn.classList.remove('bg-amber-100', 'text-amber-900', 'border-amber-300');
-                btn.classList.add('hover:bg-stone-50', 'bg-white');
-            }
-        });
+        _taAggiornaBarraCarte(m, index);
     }
 
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
@@ -391,7 +335,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
         if (result.status === 'missing' || result.status === 'corrupted') agganciaSenzaPagine();
         if (result.status === 'missing') {
             const hubBtn = window.hubConfig ? `
-                <button id="btn-scarica-allegato-hub" class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-sm transition-colors">
+                <button id="btn-scarica-allegato-hub" class="btn btn-primary mt-4 text-xs">
                     <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i>
                     ${window.t("attachment_download_hub_btn", "Scarica dall'Hub")}
                 </button>` : '';
@@ -407,7 +351,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
                 </div>
                 <p class="text-xs text-stone-500 mt-3">
                     ${window.t("attachment_copy_hint", "Copy the file to your attachments folder:")}<br>
-                    <span class="font-mono text-[10px] break-all select-all text-amber-600">${result.path}</span>
+                    <span class="font-mono text-[11px] break-all select-all text-amber-600">${result.path}</span>
                 </p>
                 ${hubBtn}
             `);
@@ -839,7 +783,7 @@ window.materializzaCarteIiif = async function(idScheda, indici) {
             m.lastModified = Date.now();
             await salvaTutto();
             if (typeof renderMain === 'function') renderMain();
-            window.renderThumbnailsTrascrizione(m.id);
+            window.renderBarraCarte(m.id);
             const i = window.currentAllegatoIndex || 0;
             if (allegati[i]) window.cambiaAllegatoTrascrizione(allegati[i].nome, allegati[i].tipo, i);
         }

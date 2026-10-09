@@ -88,15 +88,36 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trasc-pdf-totale')).toHaveText('/ 1');
   });
 
-  test('thumbnails e navigazione tra due allegati', async ({ page, userDataDir }) => {
+  test('barra delle carte: numero, nome sopra l immagine e navigazione tra due allegati', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-MULTI', FIXTURE_PNG);
 
     // Aggiunge un secondo allegato tramite l'editor di trascrizione.
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
     await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PDF);
-    await expect(page.locator('#trascrizione-thumbnails')).toBeVisible();
-    await expect(page.locator('#trascrizione-thumbnails .allegato-btn')).toHaveCount(2);
+    // Come la barra del PDF: niente più linguette, una riga con numero e nome della carta.
+    const barra = page.locator('#trasc-carte-bar');
+    await expect(barra).toBeVisible();
+    await expect(page.locator('#trasc-carte-totale')).toHaveText('/ 2');
+    await expect(page.locator('#trasc-carta-numero')).toHaveValue('1');
+    await expect(page.locator('#trasc-carta-nome')).toContainText('sample.png');
+
+    await page.locator('#trasc-carta-numero').fill('2');
+    await page.locator('#trasc-carta-numero').press('Enter');
+    await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
+    await expect(page.locator('#trasc-carta-nome')).toContainText('sample.pdf');
+    await expect(page.locator('#btn-carta-succ')).toBeDisabled();
+
+    await page.locator('#btn-carta-prec').click();
+    await expect(page.locator('#trasc-pdf-bar')).toBeHidden();
+    await expect(page.locator('#trasc-carta-numero')).toHaveValue('1');
+
+    // La matita della barra rinomina la carta in vista (prima: matita per ogni linguetta).
+    await page.locator('#btn-rinomina-carta').click();
+    await page.locator('#rename-input').fill('c. 1r');
+    await page.locator('#rename-input').press('Enter');
+    await expect(page.locator('#trasc-carta-nome')).toHaveText('c. 1r');
+    expect((await getAppData(page)).manoscritti.find((x: any) => x.id === id).allegati[0].originalName).toBe('c. 1r');
 
     await expect(page.locator('#btn-next-allegato')).toBeVisible();
     await page.locator('#btn-next-allegato').click();
@@ -112,7 +133,7 @@ test.describe('Vista Trascrizione', () => {
     const id = await createItemWithAttachment(page, 'MS-TRASC-KEY', FIXTURE_PNG);
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
     await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PDF);
-    await expect(page.locator('#trascrizione-thumbnails .allegato-btn')).toHaveCount(2);
+    await expect(page.locator('#trasc-carte-totale')).toHaveText('/ 2');
 
     await page.locator('#view-trascrizione').click();
     await page.keyboard.press('Alt+ArrowRight');
@@ -375,7 +396,7 @@ test.describe('Trascrizione per pagina nei PDF', () => {
     const id = await createItemWithAttachment(page, 'MS-PDF-NAV', FIXTURE_PDF3);
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
     await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PNG);
-    await expect(page.locator('#trascrizione-thumbnails .allegato-btn')).toHaveCount(2);
+    await expect(page.locator('#trasc-carte-totale')).toHaveText('/ 2');
     await expect(paginaAperta(page)).toHaveValue('1');
 
     await page.locator('#btn-next-allegato').click();

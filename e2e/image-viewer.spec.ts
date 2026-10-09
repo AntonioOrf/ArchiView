@@ -167,7 +167,7 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     // Un PDF usa lo STESSO viewport (pdfViewer.ts vi disegna la pagina): passando al
     // secondo allegato la barra resta, ma la rotazione della carta precedente no.
     await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PDF);
-    await expect(page.locator('#trascrizione-thumbnails .allegato-btn')).toHaveCount(2);
+    await expect(page.locator('#trasc-carte-totale')).toHaveText('/ 2');
     await page.locator('#btn-next-allegato').click();
     await expect(page.locator('#trasc-pdf-bar')).toBeVisible();
     await expect(page.locator('#trasc-img-preview')).toHaveAttribute('src', /^blob:/);
