@@ -1783,17 +1783,105 @@ function avFondiCampiPropri(base: any, locale: any, esterno: any): { definizioni
   return { definizioni, conflitto };
 }
 
+/**
+ * Merge a tre vie chiave per chiave di due oggetti piatti: la regola di `avFondiRecord`,
+ * applicata anche dentro la singola carta.
+ */
+function avFondiChiavi(b: any, l: any, e: any): { fuso: any; conflitti: string[] } {
+  const fuso: any = { ...l };
+  const conflitti: string[] = [];
+  for (const k of new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(e)])) {
+    if (avUgualiJson(e[k], b[k])) continue;            // l'esterno non l'ha toccata
+    if (avUgualiJson(l[k], b[k])) {                    // solo l'esterno: prende l'esterno
+      if (Object.prototype.hasOwnProperty.call(e, k)) fuso[k] = e[k]; else delete fuso[k];
+    } else if (!avUgualiJson(l[k], e[k])) {
+      conflitti.push(k);                               // conflitto vero: resta il locale
+    }
+  }
+  return { fuso, conflitti };
+}
+
+/**
+ * `allegati` CARTA PER CARTA, per `nome` (il file, unico nella scheda), e dentro la carta campo
+ * per campo. Come valore unico, due colleghi su carte diverse della stessa scheda — lo stato
+ * di una, la trascrizione dell'altra — erano un conflitto sull'elenco intero.
+ *
+ * Una carta tolta da un lato sparisce, SALVO che l'altro lato l'abbia modificata: allora è un
+ * conflitto e nel fuso resta la versione locale, perché toglierla in silenzio butterebbe via il
+ * lavoro. L'ordine è quello del lato che l'ha cambiato (il locale, se entrambi); le carte che
+ * arrivano solo dall'altro lato vanno in coda.
+ */
+function avFondiAllegati(base: any, locale: any, esterno: any): { allegati: any[]; conflitto: boolean } {
+  const perNome = (x: any) => {
+    const m = new Map<string, any>();
+    for (const a of Array.isArray(x) ? x : []) if (a && typeof a.nome === 'string') m.set(a.nome, a);
+    return m;
+  };
+  const b = perNome(base), l = perNome(locale), e = perNome(esterno);
+  const ordineLocaleInvariato = avUgualiJson([...l.keys()], [...b.keys()]);
+  const ordine = ordineLocaleInvariato ? [...e.keys(), ...l.keys()] : [...l.keys(), ...e.keys()];
+  const allegati: any[] = [];
+  const visti = new Set<string>();
+  let conflitto = false;
+  for (const nome of ordine) {
+    if (visti.has(nome)) continue;
+    visti.add(nome);
+    const inB = b.has(nome), inL = l.has(nome), inE = e.has(nome);
+    if (inB && (!inL || !inE)) {
+      const rimasta = inL ? l.get(nome) : (inE ? e.get(nome) : null);
+      if (rimasta && !avUgualiJson(rimasta, b.get(nome))) {
+        conflitto = true;
+        if (inL) allegati.push(rimasta);
+      }
+      continue;
+    }
+    if (inL && inE) {
+      const esito = avFondiChiavi(b.get(nome) || {}, l.get(nome), e.get(nome));
+      if (esito.conflitti.length) conflitto = true;
+      allegati.push(esito.fuso);
+    } else {
+      allegati.push(inL ? l.get(nome) : e.get(nome));
+    }
+  }
+  return { allegati, conflitto };
+}
+
+/**
+ * La trascrizione della scheda è la forma DERIVATA delle carte (`componiTrascrizioneRecord`
+ * nel renderer) quando almeno una carta ha la sua. Dopo un merge va ricomposta da chi chiama:
+ * qui non si conoscono l'escape e le intestazioni del renderer.
+ */
+function avTrascrizioneDerivata(m: any): boolean {
+  return !!m && Array.isArray(m.allegati) && m.allegati.some((a: any) => a && typeof a.trascrizione === 'string');
+}
+
 function avFondiRecord(base: any, locale: any, esterno: any): { fuso: any; conflitti: string[] } {
   const b = base || {};
   const l = locale || {};
   const e = esterno || {};
   const fuso: any = { ...l };
   const conflitti: string[] = [];
+  const derivata = avTrascrizioneDerivata(l) || avTrascrizioneDerivata(e);
 
   const chiavi = new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(e)]);
   let daEsterno = false;
   for (const k of chiavi) {
     if (AV_CHIAVI_NON_FUSE.indexOf(k) !== -1) continue;
+
+    // Le carte si fondono una per una (vedi avFondiAllegati); la trascrizione derivata da
+    // loro non è un dato a sé e non può confliggere: la ricompone il chiamante.
+    if (k === 'allegati') {
+      const { allegati, conflitto } = avFondiAllegati(b[k], l[k], e[k]);
+      if (conflitto) conflitti.push(k);
+      if (allegati.length || Object.prototype.hasOwnProperty.call(l, k) || Object.prototype.hasOwnProperty.call(e, k)) fuso[k] = allegati;
+      else delete fuso[k];
+      if (!avUgualiJson(e[k], b[k])) daEsterno = true;
+      continue;
+    }
+    if (k === 'trascrizione' && derivata) {
+      if (!avUgualiJson(e[k], b[k])) daEsterno = true;
+      continue;
+    }
 
     // Fase 3.7 — `campiPropri` è un ELENCO, e il confronto per chiave lo tratterebbe come
     // un valore solo: due colleghi che aggiungono due campi DIVERSI alla stessa scheda
@@ -2151,6 +2239,7 @@ const ArchiViewModel = {
   // Merge campo per campo, snapshot e cestino (Fase 4)
   CHIAVI_NON_FUSE: AV_CHIAVI_NON_FUSE,
   fondiRecord: avFondiRecord,
+  trascrizioneDerivata: avTrascrizioneDerivata,
   fondiCampiPropri: avFondiCampiPropri,
   SNAPSHOT_RECENTI: AV_SNAPSHOT_RECENTI,
   SNAPSHOT_GIORNI: AV_SNAPSHOT_GIORNI,

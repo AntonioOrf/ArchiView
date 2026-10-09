@@ -290,6 +290,8 @@ window.rinominaCartaCorrente = function() {
     if (!al) return;
     window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
         al.originalName = nuovoNome;
+        // Senza `lastModified` il merge a tre vie non vede la modifica (vedi materializzazione IIIF).
+        m.lastModified = Date.now();
         await salvaTutto();
         if (typeof renderMain === 'function') renderMain();
         _taAggiornaBarraCarte(m, i);

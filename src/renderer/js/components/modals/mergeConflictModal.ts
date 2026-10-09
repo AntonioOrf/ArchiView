@@ -286,7 +286,7 @@
         
         activeConflicts.forEach(c => {
             // Impostiamo il timestamp ad adesso e segnamo che è stato modificato da noi
-            const resolvedCard = resolutions[c.id];
+            const resolvedCard = window.ricomponiTrascrizioneFusa(resolutions[c.id]);
             resolvedCard.lastModified = Date.now();
             resolvedCards.push(resolvedCard);
         });

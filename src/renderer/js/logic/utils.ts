@@ -691,6 +691,16 @@ window.migraTrascrizioneSuAllegati = function(m) {
  * dell'allegato quando ce n'è più di una. L'intestazione non è decorazione — è ciò che
  * rende leggibile il testo a chi lo riceve da una versione vecchia dell'app o lo esporta.
  */
+/**
+ * Dopo un merge (sync o modale dei conflitti): `Model.fondiRecord` fonde le carte una per una
+ * e non tocca la trascrizione derivata, che qui si ricompone dalle carte fuse. Senza, ricerca
+ * ed export leggerebbero il testo di uno solo dei due lati fino al salvataggio successivo.
+ */
+window.ricomponiTrascrizioneFusa = function(m) {
+    if (m && window.Model && window.Model.trascrizioneDerivata(m)) m.trascrizione = window.componiTrascrizioneRecord(m);
+    return m;
+};
+
 window.componiTrascrizioneRecord = function(m) {
     if (!m) return '';
     const allegati = Array.isArray(m.allegati) ? m.allegati : [];

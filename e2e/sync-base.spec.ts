@@ -32,6 +32,38 @@ test.describe('Base del merge e ripristini', () => {
     expect(testo).toBe('nuova');
   });
 
+  test('carte diverse della stessa scheda modificate dai due lati: fuse senza conflitto, trascrizione ricomposta', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
+
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      const scheda = (t1: string, t2: string, stato2?: string) => {
+        const m: any = { id: 'b-2', segnatura: 'B', cartella: '', lastModified: 1000,
+          allegati: [{ nome: 'c1.jpg', tipo: 'image', trascrizione: t1 }, { nome: 'c2.jpg', tipo: 'image', trascrizione: t2 }] };
+        if (stato2) m.allegati[1].stato = stato2;
+        m.trascrizione = w.componiTrascrizioneRecord(m);
+        return m;
+      };
+      w.appData.manoscritti = [scheda('<p>mia</p>', '<p>due</p>')];          // io: carta 1
+      w.appData.baseObjects = { 'b-2': scheda('<p>uno</p>', '<p>due</p>') };
+      w.appData.baseHashes = { 'b-2': w.getRecordHash(scheda('<p>uno</p>', '<p>due</p>')) };
+      let modale = false;
+      const apri = w.apriMergeConflictModal;
+      w.apriMergeConflictModal = (...a: any[]) => { modale = true; return apri(...a); };
+      // Il collega: carta 2, testo e stato.
+      await w.sincronizzaEUnisciDati({ manoscritti: [scheda('<p>uno</p>', '<p>sua</p>', 'rivista')], cartelle: [] });
+      w.apriMergeConflictModal = apri;
+      const m = w.appData.manoscritti.find((x: any) => x.id === 'b-2');
+      return { modale, testi: m.allegati.map((a: any) => a.trascrizione), stato: m.allegati[1].stato, derivata: m.trascrizione };
+    });
+
+    expect(esito.modale).toBe(false);
+    expect(esito.testi).toEqual(['<p>mia</p>', '<p>sua</p>']);
+    expect(esito.stato).toBe('rivista');
+    expect(esito.derivata).toContain('mia');
+    expect(esito.derivata).toContain('sua');
+  });
+
   test('O2: ripristinare una revisione Drive rifirma le schede, mette i tombstone e carica col parent', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
     await electronApp.evaluate(({ ipcMain }: any) => {

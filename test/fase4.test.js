@@ -91,6 +91,64 @@ test('allegatoTipo segue allegati e non si fonde da solo', () => {
   assert.strictEqual(fuso.allegatoTipo, 'pdf');
 });
 
+// --- Allegati carta per carta (verifica preliminare di P6/P7) ---------------------------
+// `allegati` è un elenco: fuso come valore unico, due colleghi che lavorano su carte DIVERSE
+// della stessa scheda finivano in conflitto sull'elenco intero.
+const carta = (nome, extra) => Object.assign({ nome, tipo: 'immagine' }, extra || {});
+
+test('carte diverse toccate dalle due parti: nessun conflitto, entrambe le modifiche restano', () => {
+  const base = scheda({ allegati: [carta('a'), carta('b')] });
+  const locale = scheda({ allegati: [carta('a', { stato: 'rivista' }), carta('b')] });
+  const esterno = scheda({ allegati: [carta('a'), carta('b', { stato: 'dubbio' })] });
+  const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
+  assert.deepStrictEqual(conflitti, []);
+  assert.deepStrictEqual(fuso.allegati.map(a => a.stato), ['rivista', 'dubbio']);
+});
+
+test('stessa carta, stesso campo, valori diversi: conflitto su allegati, nel fuso il locale', () => {
+  const base = scheda({ allegati: [carta('a')] });
+  const { fuso, conflitti } = M.fondiRecord(base,
+    scheda({ allegati: [carta('a', { stato: 'rivista' })] }),
+    scheda({ allegati: [carta('a', { stato: 'dubbio' })] }));
+  assert.deepStrictEqual(conflitti, ['allegati']);
+  assert.strictEqual(fuso.allegati[0].stato, 'rivista');
+});
+
+test('carte aggiunte dalle due parti entrano entrambe; una tolta da un lato sparisce', () => {
+  const base = scheda({ allegati: [carta('a'), carta('b')] });
+  const locale = scheda({ allegati: [carta('a'), carta('b'), carta('mia')] });
+  const esterno = scheda({ allegati: [carta('a'), carta('sua')] });   // ha tolto b
+  const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
+  assert.deepStrictEqual(conflitti, []);
+  assert.deepStrictEqual(fuso.allegati.map(a => a.nome), ['a', 'mia', 'sua']);
+});
+
+test('carta tolta da un lato e modificata dall\'altro: conflitto, non una perdita muta', () => {
+  const base = scheda({ allegati: [carta('a'), carta('b')] });
+  const locale = scheda({ allegati: [carta('a'), carta('b', { trascrizione: '<p>testo</p>' })] });
+  const esterno = scheda({ allegati: [carta('a')] });
+  const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
+  assert.deepStrictEqual(conflitti, ['allegati']);
+  assert.strictEqual(fuso.allegati[1].trascrizione, '<p>testo</p>');
+});
+
+test('la trascrizione della scheda derivata dalle carte non genera un conflitto suo', () => {
+  const base = scheda({ trascrizione: '<p>A</p>\n<p>B</p>', allegati: [carta('a', { trascrizione: '<p>A</p>' }), carta('b', { trascrizione: '<p>B</p>' })] });
+  const locale = scheda({ trascrizione: '<p>A2</p>\n<p>B</p>', allegati: [carta('a', { trascrizione: '<p>A2</p>' }), carta('b', { trascrizione: '<p>B</p>' })] });
+  const esterno = scheda({ trascrizione: '<p>A</p>\n<p>B2</p>', allegati: [carta('a', { trascrizione: '<p>A</p>' }), carta('b', { trascrizione: '<p>B2</p>' })] });
+  const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
+  assert.deepStrictEqual(conflitti, []);
+  assert.deepStrictEqual(fuso.allegati.map(a => a.trascrizione), ['<p>A2</p>', '<p>B2</p>']);
+  // La forma derivata la ricompone il renderer (componiTrascrizioneRecord): il modello lo segnala.
+  assert.strictEqual(M.trascrizioneDerivata(fuso), true);
+});
+
+test('una scheda vecchia, con la trascrizione solo sulla scheda, la fonde ancora come campo', () => {
+  const base = scheda({ allegati: [carta('a')] });
+  const { conflitti } = M.fondiRecord(base, scheda({ allegati: [carta('a')], trascrizione: '<p>x</p>' }), scheda({ allegati: [carta('a')], trascrizione: '<p>y</p>' }));
+  assert.deepStrictEqual(conflitti, ['trascrizione']);
+});
+
 // =============================================================================
 // 4.2 — Rotazione degli snapshot
 // =============================================================================

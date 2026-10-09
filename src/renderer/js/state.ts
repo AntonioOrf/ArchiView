@@ -466,7 +466,11 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     // l'utente abbia annullato: in quel caso vince il locale, che è ciò
                     // che `fondiRecord` lascia nei campi contesi.
                     if (baseObj && window.Model && typeof window.Model.fondiRecord === 'function') {
-                        mergedManoscritti.push(window.Model.fondiRecord(baseObj, local, external).fuso);
+                        const fuso = window.Model.fondiRecord(baseObj, local, external).fuso;
+                        // Carte fuse diverse dalle locali: la trascrizione derivata va ricomposta.
+                        // Solo allora, così una scheda intatta resta identica byte per byte.
+                        if (JSON.stringify(fuso.allegati) !== JSON.stringify(local.allegati)) window.ricomponiTrascrizioneFusa(fuso);
+                        mergedManoscritti.push(fuso);
                         continue;
                     }
 
