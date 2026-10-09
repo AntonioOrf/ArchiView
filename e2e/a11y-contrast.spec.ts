@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 import { createLocalWorkspace, seedItems, openView, openSidebarPanel } from './helpers';
 import { preparaSchermateSecondarie } from './a11ySchermate';
-import { scansiona, TEMI, type Violazione } from './contrasto';
+import { scansiona, TEMI, TEMI_SCURI, type Violazione } from './contrasto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -95,10 +95,30 @@ test.describe('Accessibilità: contrasto del testo', () => {
         chiudi: async () => { await page.keyboard.press('Escape'); },
       },
       ...await preparaSchermateSecondarie(page, electronApp, userDataDir),
+      // I due pulsanti di eliminazione con hover:bg-red-50 (fondo rosa anche nei temi scuri).
+      {
+        nome: 'allegato-rimuovi-hover', radice: '[data-sonda-hover]',
+        apri: async () => {
+          // @ts-ignore -- `appData` è una `let` globale (script classico).
+          await page.evaluate(() => (window as any).editItem(appData.manoscritti.find((m: any) => m.segnatura === 'A11Y-ALLEGATO').id));
+          await sonda(page.locator('[data-on-click="rimuoviAllegatoForm"]').first());
+        },
+        chiudi: async () => { await fineSonda(); await openView(page, 'list'); },
+      },
+      {
+        nome: 'ricerca-salvata-elimina-hover', radice: '[data-sonda-hover]',
+        apri: async () => {
+          await openView(page, 'list');
+          await page.evaluate(() => { (window as any).salvaRicercaCorrente('Prova a11y'); (window as any).apriPannelloFiltri(); });
+          await sonda(page.locator('[data-elimina-ricerca-id]').first());
+        },
+        chiudi: async () => { await fineSonda(); await page.keyboard.press('Escape'); },
+      },
     ];
 
     const risultati: Record<string, Violazione[]> = {};
     const bordi: (Violazione & { tema: string })[] = [];
+    const sfondi: string[] = [];
     const anelli: string[] = [];
     for (const tema of TEMI) {
       await page.evaluate((t) => (window as any).applicaTema(t), tema);
@@ -124,6 +144,11 @@ test.describe('Accessibilità: contrasto del testo', () => {
         lista.push(...v.map(x => ({ schermata: s.nome, ...x })));
         const b = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'bordi' as const });
         bordi.push(...b.map(x => ({ schermata: s.nome, tema, ...x })));
+        // Fondi del tema chiaro rimasti nei temi scuri (sistemico 2 dell'audit front-end).
+        if (TEMI_SCURI.includes(tema)) {
+          const f = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'sfondi' as const });
+          sfondi.push(...f.map(v => `${tema} · ${s.nome} · ${v.elemento} «${v.testo}» su fondo chiaro ${v.bg}`));
+        }
         if (s.chiudi) await s.chiudi();
         // Sotto carico il modale appena chiuso poteva essere ancora a schermo alla schermata
         // successiva: si aspetta che non ce ne sia più nessuno.
@@ -148,5 +173,6 @@ test.describe('Accessibilità: contrasto del testo', () => {
       `${v.tema} · ${v.schermata} · ${v.elemento} «${v.testo}» ${v.fg} su ${v.bg} = ${v.ratio}:1 (min 3)`);
     expect.soft([...new Set(righeBordi)], 'campi il cui contorno non si distingue (1.4.11)').toEqual([]);
     expect.soft(anelli, 'anelli di focus poco visibili (1.4.11)').toEqual([]);
+    expect.soft([...new Set(sfondi)], 'fondi del tema chiaro nei temi scuri').toEqual([]);
   });
 });

@@ -29,6 +29,35 @@ function schermate(page: Page): Schermata[] {
     chiudi: async () => { await w(page, 'aggiornaCloudStatus'); },
   });
 
+  // Condivisione con un hub attivo (audit front-end, Fase 5): ruolo, membri e stato di Drive
+  // sono finti nel renderer. Il proprietario senza Drive vede la card "collega Drive" e i
+  // membri (uno revocato); il membro con Drive collegato vede il toggle degli allegati.
+  const condivisioneHub = (ruolo: 'owner' | 'member'): Schermata => ({
+    nome: `condivisione-hub-${ruolo}`, radice: '#share-modal',
+    apri: async () => {
+      await page.evaluate(async (r) => {
+        const w = window as any;
+        w.__finto = { hubConfig: w.hubConfig, getHubRole: w.getHubRole, listaMembriHub: w.listaMembriHub, driveStatus: w.driveStatus };
+        w.hubConfig = { name: 'Vault ABC', attachmentsMode: r === 'owner' ? 'off' : 'drive-links', lastLoadedAt: Date.now() };
+        w.getHubRole = async () => r;
+        w.listaMembriHub = async () => [
+          { memberId: 'm1', label: 'Collega attiva', role: 'member' },
+          { memberId: 'm2', label: 'Collega revocato', role: 'member', revoked: true },
+        ];
+        w.driveStatus = { ...(w.driveStatus || {}), isAuthenticated: r === 'member', user: 'prova@esempio.it' };
+        await w.apriShareModal();
+      }, ruolo);
+      await expect(page.locator(ruolo === 'owner' ? '#share-state-owner' : '#share-state-member')).toBeVisible();
+    },
+    chiudi: async () => {
+      await page.evaluate(() => {
+        const w = window as any;
+        w.chiudiShareModal();
+        Object.assign(w, w.__finto);
+      });
+    },
+  });
+
   return [
     {
       // Due schede in conflitto (lista: attiva e non attiva), due campi sulla prima: uno
@@ -127,6 +156,7 @@ function schermate(page: Page): Schermata[] {
         });
       },
     },
+    condivisioneHub('owner'),
     condivisioneHub('member'),
     ...['ok', 'entrata', 'pendenti', 'errore', 'disconnesso', 'occupato'].map(statoCloud),
   ];

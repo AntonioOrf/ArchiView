@@ -27,11 +27,11 @@
                     <span data-i18n="btn_create_local">Crea Nuova Cartella Locale</span>
                 </button>
                 <div class="h-px bg-stone-200 my-1 w-full"></div>
-                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;personale&quot;]" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-sky-900 border border-sky-300 hover:bg-sky-50" style="background-color: #f0f9ff;">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;personale&quot;]" class="btn scelta-backup w-full justify-center py-3 text-lg font-medium shadow-sm">
                     <i data-lucide="cloud" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_cloud_private">Crea un Backup Personale</span>
                 </button>
-                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;hub&quot;]" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-emerald-900 border border-emerald-300 hover:bg-emerald-50" style="background-color: #ecfdf5;">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;hub&quot;]" class="btn scelta-hub w-full justify-center py-3 text-lg font-medium shadow-sm">
                     <i data-lucide="server" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_hub_shared">Crea un Hub Condiviso</span>
                 </button>

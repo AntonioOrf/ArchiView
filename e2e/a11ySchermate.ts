@@ -22,6 +22,13 @@ export const modaliAperti = (page: Page) => page.evaluate(() =>
 
 export async function preparaSchermateSecondarie(page: Page, app: ElectronApplication, dir: string): Promise<Schermata[]> {
   const id = await createItemWithAttachment(page, 'A11Y-ALLEGATO', path.join(__dirname, 'fixtures', 'sample.png'));
+  // Scheda senza allegati: la trascrizione mostra lo stato vuoto del pannello immagini.
+  await page.locator('#btn-tab-add').click();
+  await page.locator('#form-segnatura').fill('A11Y-VUOTA');
+  await page.locator('#btn-submit-form').click();
+  await expect(page.locator('main')).toContainText('A11Y-VUOTA');
+  // @ts-ignore -- `appData` è una `let` globale (script classico).
+  const vuota: string = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'A11Y-VUOTA').id);
 
   const csv = path.join(dir, 'a11y-import.csv');
   fs.writeFileSync(csv, 'Segnatura,Archivio,Tag,Notaio\r\nASP 100,Notarile,pergamena,Rossi\r\n', 'utf8');
@@ -51,6 +58,18 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
     },
   });
   const w = (f: string, ...args: unknown[]) => page.evaluate(([f, args]) => (window as any)[f as string](...(args as unknown[])), [f, args] as const);
+  // La trascrizione è una vista a tutto schermo, non un .modal-overlay.
+  const trascrizione = (nome: string, rid: string): Schermata => ({
+    nome, radice: '#view-trascrizione',
+    apri: async () => {
+      await w('apriTrascrizione', rid);
+      await expect(page.locator('#view-trascrizione')).toBeVisible();
+    },
+    chiudi: async () => {
+      await w('confermaUscitaTrascrizione');
+      await expect(page.locator('#view-trascrizione')).toBeHidden();
+    },
+  });
 
   return [
     modale('welcome', '#welcome-modal', () => w('mostraWelcomeModal')),
@@ -69,5 +88,11 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
       (window as any).apriStampa('selezione');
     }, id)),
     modale('condivisione', '#share-modal', () => w('apriShareModal')),
+    // Audit front-end, Fase 5: superfici che lo scanner non apriva.
+    modale('grafo', '#grafo-modal', () => w('apriGrafo')),
+    modale('anagrafiche', '#authority-modal', () => w('apriAnagrafica')),
+    modale('esporta-testo', '#export-text-modal', () => w('apriEsportaTesto', 'tutto')),
+    trascrizione('trascrizione', id),
+    trascrizione('trascrizione-senza-allegati', vuota),
   ];
 }

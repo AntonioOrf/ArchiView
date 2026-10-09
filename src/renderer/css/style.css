@@ -2459,6 +2459,11 @@ label:has(> input[type="radio"]) {
     background-color: var(--color-success-light);
     border-color: var(--color-success-border);
 }
+.stato-badge.is-info {
+    color: var(--color-info);
+    background-color: var(--color-info-light);
+    border-color: var(--color-info-border);
+}
 .stato-badge.is-pericolo {
     color: var(--color-danger-text);
     background-color: var(--color-danger-light);
@@ -2556,6 +2561,46 @@ label:has(> input[type="radio"]) {
     white-space: pre-wrap;
     word-break: break-word;
 }
+/* Scelte del welcome (backup personale / hub condiviso): prima fondi #f0f9ff e #ecfdf5 inline,
+   pastello anche nei temi scuri (audit front-end, Fase 5, modo "sfondi" in 7.1). */
+.scelta-backup,
+.scelta-hub {
+    border: 1px solid;
+    transition: border-color 0.15s ease;
+}
+.scelta-backup {
+    background-color: var(--color-info-light);
+    border-color: var(--color-info-border);
+    color: var(--color-info);
+}
+.scelta-hub {
+    background-color: var(--color-success-light);
+    border-color: var(--color-success-border);
+    color: var(--color-success);
+}
+.scelta-backup:hover { border-color: var(--color-info); }
+.scelta-hub:hover { border-color: var(--color-success); }
+
+/* Identità "archivio condiviso" nel modale di condivisione: prima emerald-* cablati, con
+   testo bianco all'80% su emerald-700 a 2.75–4.0:1. */
+.riquadro-successo {
+    background-color: var(--color-success-light);
+    border: 1px solid var(--color-success-border);
+}
+.riquadro-info {
+    background-color: var(--color-info-light);
+    border: 1px solid var(--color-info-border);
+}
+.testo-info { color: var(--color-info); }
+.tessera-info {
+    background-color: var(--color-info);
+    color: var(--color-bg-panel);
+}
+.tessera-successo {
+    background-color: var(--color-success);
+    color: var(--color-bg-panel);
+}
+
 /* Riquadro del titolo nelle novità di versione: prima blu-50 cablato anche nei temi scuri. */
 .changelog-titolo {
     background-color: var(--color-info-light);
