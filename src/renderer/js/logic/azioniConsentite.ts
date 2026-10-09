@@ -137,6 +137,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'importCsvContinua',
     'importCsvIndietro',
     'impostaOrdinamento',
+    'impostaStatoCarta',
     'invertiDirezioneOrdinamento',
     'inviaIssueForm',
     'inviaModificheHub',

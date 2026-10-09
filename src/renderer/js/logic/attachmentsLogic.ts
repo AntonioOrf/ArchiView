@@ -214,6 +214,9 @@ function _taAggiornaBarraCarte(m, index) {
     const nome = document.getElementById('trasc-carta-nome');
     nome.textContent = a.originalName || (a.tipo === 'pdf' ? 'PDF ' : window.t('attachment_image', 'Immagine') + ' ') + (i + 1);
     nome.title = nome.textContent;
+    const stato = document.getElementById('trasc-carta-stato') as HTMLSelectElement;
+    stato.replaceChildren(...[''].concat(window.STATI_CARTA).map(s => new Option(s ? window.t('stato_carta_' + s, s) : window.t('sheet_status_none', 'Nessuno stato'), s)));
+    stato.value = a.stato || '';
     barra.classList.remove('hidden-tab');
 }
 
@@ -256,6 +259,24 @@ window.rinominaCartaCorrente = function() {
         _taAggiornaBarraCarte(m, i);
         _taAggiornaEtichetta(m, i);
     });
+};
+
+/** P2 — stato della carta in vista; '' toglie la chiave, che resta assente e non vuota. */
+window.impostaStatoCarta = async function(valore) {
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    const al = m && m.allegati ? m.allegati[window.currentAllegatoIndex || 0] : null;
+    if (!al) return;
+    if (window.STATI_CARTA.includes(valore)) al.stato = valore;
+    else delete al.stato;
+    m.lastModified = Date.now();
+    try {
+        await salvaTutto();
+    } catch (e) {
+        console.error('Stato della carta non salvato:', e);
+        mostraMessaggio(window.t('msg_errore_salvataggio', 'Errore nel salvataggio dei dati: ') + (e.message || e), 'error');
+    }
+    if (typeof renderMain === 'function') renderMain();
 };
 
 /**

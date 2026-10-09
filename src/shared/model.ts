@@ -36,6 +36,11 @@ type AVAllegato = {
   /** Solo PDF: trascrizione per pagina, indice 0 = p. 1. Pagine vuote = ''. */
   pagine?: string[];
   /**
+   * P2 — a che punto è la carta. Assente = nessuno stato, e NON "da trascrivere": gli archivi
+   * esistenti non devono riempirsi di carte "da fare" solo perché la funzione è nuova.
+   */
+  stato?: 'daTrascrivere' | 'trascritta' | 'rivista' | 'dubbio';
+  /**
    * Import IIIF: la carta è un RIFERIMENTO, il file in `allegati_manoscritti/` non esiste
    * ancora. `nome` è comunque già deciso e riservato, così materializzare la carta fa
    * comparire il file al posto giusto senza toccare il record.

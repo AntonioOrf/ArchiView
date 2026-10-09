@@ -236,6 +236,9 @@ window.recordPassaFiltri = function(m, filtri) {
         if (filtri.collegamenti === 'no' && collegata) return false;
     }
 
+    // P2 — almeno una carta in quello stato: "da trascrivere" è la lista di lavoro.
+    if (filtri.statoCarte && !(Array.isArray(m.allegati) && m.allegati.some(a => a && a.stato === filtri.statoCarte))) return false;
+
     if (filtri.ocr === 'si' || filtri.ocr === 'no') {
         // Fase 2.3. Serve a due domande opposte e ugualmente frequenti: "quali carte ho già
         // fatto riconoscere" e — più utile — "quali mi restano", che è la lista di lavoro
@@ -308,7 +311,22 @@ window.contaFiltriAvanzati = function(filtri) {
     if (filtri.trascrizione) n++;
     if (filtri.ocr) n++;
     if (filtri.collegamenti) n++;
+    if (filtri.statoCarte) n++;
     return n;
+};
+
+/** P2 — stati di lavorazione di una carta, nell'ordine in cui si mostrano. */
+window.STATI_CARTA = ['daTrascrivere', 'trascritta', 'rivista', 'dubbio'];
+
+/**
+ * Carte trascritte o riviste sul totale. `null` se nessuna carta ha uno stato: la barra di
+ * avanzamento compare solo dove la si sta usando.
+ */
+window.avanzamentoCarte = function(m) {
+    const allegati = Array.isArray(m && m.allegati) ? m.allegati : [];
+    if (!allegati.some(a => a && a.stato)) return null;
+    const fatte = allegati.filter(a => a && (a.stato === 'trascritta' || a.stato === 'rivista')).length;
+    return { fatte, totale: allegati.length };
 };
 
 /**

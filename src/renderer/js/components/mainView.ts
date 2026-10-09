@@ -428,6 +428,13 @@ function descriviFiltriAvanzati(filtri) {
             testo: filtri.collegamenti === 'si' ? T('filter_has_links', 'Con collegamenti') : T('filter_no_links', 'Senza collegamenti')
         });
     }
+    if (filtri.statoCarte) {
+        out.push({
+            chiave: 'statoCarte',
+            icona: 'list-checks',
+            testo: T('filter_sheet_status', 'Carte') + ': ' + T('stato_carta_' + filtri.statoCarte, filtri.statoCarte)
+        });
+    }
     return out;
 }
 
@@ -1145,7 +1152,11 @@ function renderMain(resetPage = true) {
                 const textAllegati = allegatiRender.length === 1
                     ? window.t('attachment_count_one', '1 documento allegato')
                     : window.t('attachment_count_many', '{var0} documenti allegati').replace('{var0}', String(allegatiRender.length));
-                btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}</span>`;
+                // P2 — quante carte sono fatte, solo se se ne sta segnando lo stato.
+                const av = window.avanzamentoCarte(m);
+                const avTesto = av ? window.t('sheet_progress', '{var0} di {var1} carte trascritte').replace('{var0}', String(av.fatte)).replace('{var1}', String(av.totale)) : '';
+                const avHTML = av ? `<progress class="card-avanzamento" max="${Number(av.totale)}" value="${Number(av.fatte)}" aria-label="${escapeHTML(avTesto)}" title="${escapeHTML(avTesto)}"></progress><span class="tabular-nums" aria-hidden="true">${Number(av.fatte)}/${Number(av.totale)}</span>` : '';
+                btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}${avHTML}</span>`;
                 allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
             } else {
                 allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;

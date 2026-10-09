@@ -21,7 +21,8 @@ window.filtriAvanzati = window.filtriAvanzati || {
     allegati: '',       // '' | 'si' | 'no'
     trascrizione: '',   // '' | 'si' | 'no'
     ocr: '',            // '' | 'si' | 'no' — Fase 2.3
-    collegamenti: ''    // '' | 'si' | 'no' — Fase 3.5
+    collegamenti: '',   // '' | 'si' | 'no' — Fase 3.5
+    statoCarte: ''      // '' | uno di STATI_CARTA — P2
 };
 
 window.ricercheSalvate = window.ricercheSalvate || [];
@@ -99,7 +100,7 @@ window.applicaFiltriAvanzati = function(patch) {
 };
 
 window.azzeraFiltriAvanzati = function(ridisegna = true) {
-    window.filtriAvanzati = { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '' };
+    window.filtriAvanzati = { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '', statoCarte: '' };
     if (ridisegna) {
         if (typeof renderMain === 'function') renderMain();
         if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
@@ -154,7 +155,7 @@ window.applicaRicercaSalvata = function(id) {
     if (input) input.value = voce.ricerca || '';
     window.activeTags = new Set(Array.isArray(voce.tag) ? voce.tag : []);
     window.filtriAvanzati = Object.assign(
-        { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '' },
+        { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '', statoCarte: '' },
         voce.filtri || {}
     );
 
@@ -349,6 +350,13 @@ function _riempiPannello() {
     const selColl = _select(f.collegamenti, treStati, v => window.applicaFiltriAvanzati({ collegamenti: v }));
     selColl.id = 'filtro-collegamenti';
     corpo.appendChild(_riga(T('filter_links', 'Collegamenti'), selColl));
+
+    // P2 — "carte da trascrivere" è la lista di lavoro su un fondo lungo.
+    const stati = [{ value: '', label: T('filter_any', 'Qualsiasi') }]
+        .concat(window.STATI_CARTA.map(s => ({ value: s, label: T('stato_carta_' + s, s) })));
+    const selStato = _select(f.statoCarte, stati, v => window.applicaFiltriAvanzati({ statoCarte: v }));
+    selStato.id = 'filtro-stato-carte';
+    corpo.appendChild(_riga(T('filter_sheet_status', 'Carte'), selStato));
 
     // Promemoria della sintassi campo:valore, che nessuno indovinerebbe da solo.
     const hint = document.createElement('p');

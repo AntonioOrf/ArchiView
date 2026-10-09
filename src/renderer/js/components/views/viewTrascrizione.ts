@@ -90,6 +90,8 @@
                     <button id="btn-carta-succ" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_next_sheet" data-i18n-aria-label="trasc_next_sheet"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     <span id="trasc-carta-nome" class="ml-2 font-medium truncate min-w-0" translate="no"></span>
                     <button id="btn-rinomina-carta" data-on-click="rinominaCartaCorrente" class="btn btn-ghost btn-icon shrink-0" data-i18n-title="btn_rename_short" data-i18n-aria-label="btn_rename_short"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                    <!-- P2 — a che punto è questa carta; le opzioni le scrive _taAggiornaBarraCarte. -->
+                    <select id="trasc-carta-stato" class="ml-auto shrink-0 px-1 py-0.5 border border-stone-300 bg-white text-xs" data-i18n-aria-label="sheet_status" data-i18n-title="sheet_status" data-on-change="impostaStatoCarta" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]"></select>
                 </div>
                 <!-- Barra del PDF: quale pagina, e la ricerca. Sta sopra la pagina e non
                      nell'editor perché riguarda il documento; la pagina scelta qui porta con

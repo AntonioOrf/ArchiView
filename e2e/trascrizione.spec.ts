@@ -347,6 +347,38 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trascrizione-editor')).not.toContainText('Testo della seconda carta');
   });
 
+  test('P2 — stato della carta: si salva, la card mostra l avanzamento e il filtro trova la scheda', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    await creaConDueAllegati(page, 'MS-STATO-ALTRA');
+    const id = await creaConDueAllegati(page, 'MS-STATO');
+    // Senza stati la card non mostra avanzamento: gli archivi esistenti non cambiano aspetto.
+    await expect(page.locator('main progress')).toHaveCount(0);
+
+    await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), id);
+    const stato = page.locator('#trasc-carta-stato');
+    await expect(stato).toHaveValue('');
+    await stato.selectOption('trascritta');
+    await vaiAllaCarta(page, 'MS-STATO', 1);
+    await expect(stato).toHaveValue('');
+    await stato.selectOption('daTrascrivere');
+    await stato.selectOption('');
+    await vaiAllaCarta(page, 'MS-STATO', 0);
+    await expect(stato).toHaveValue('trascritta');
+
+    const allegati = (await getAppData(page)).manoscritti.find((m: any) => m.segnatura === 'MS-STATO').allegati;
+    expect(allegati[0].stato).toBe('trascritta');
+    expect('stato' in allegati[1]).toBe(false);
+
+    await page.evaluate(() => (window as any).chiudiTrascrizione());
+    await expect(page.locator('main progress')).toHaveCount(1);
+    await expect(page.locator('main progress')).toHaveAccessibleName(/1 di 2|1 of 2/);
+
+    await page.locator('#btn-filtri').click();
+    await page.locator('#filtro-stato-carte').selectOption('trascritta');
+    await expect(page.locator('main')).toContainText('MS-STATO');
+    await expect(page.locator('main')).not.toContainText('MS-STATO-ALTRA');
+  });
+
   test('il salvataggio conserva il testo di TUTTE le carte, non solo di quella a schermo', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await creaConDueAllegati(page, 'MS-CARTE-2');
