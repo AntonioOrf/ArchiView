@@ -159,6 +159,21 @@ test.describe('Accessibilità: effetti globali', () => {
     expect(durata).toBeLessThan(0.05);
     await page.evaluate(() => (window as any).nascondiProgressoCloud());
 
+    // Audit front-end P3-4: le dissolvenze che orientano restano, brevi e senza spostamento;
+    // le transizioni non muovono (niente transform), il colore cambia subito.
+    const dissolvenza = await page.evaluate(() => {
+      const d = document.createElement('div');
+      d.className = 'fade-in';
+      document.body.appendChild(d);
+      const s = getComputedStyle(d);
+      const out = { nome: s.animationName, durata: parseFloat(s.animationDuration), transizioni: s.transitionProperty };
+      d.remove();
+      return out;
+    });
+    expect(dissolvenza.nome).toBe('dissolvenza');
+    expect(dissolvenza.durata).toBeGreaterThanOrEqual(0.1);
+    expect(dissolvenza.transizioni).toBe('opacity');
+
     // La riduzione del movimento non deve rompere ciò che dipende dalle transizioni.
     await page.evaluate(() => (window as any).apriImpostazioni());
     await expect(page.locator('#settings-modal')).toBeVisible();
