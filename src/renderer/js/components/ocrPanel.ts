@@ -923,9 +923,17 @@ window.annullaOcrMassa = function() {
 
 // --- Gestione delle lingue ----------------------------------------------------
 
-window.chiudiGestioneLingueOcr = function() {
+window.chiudiGestioneLingueOcr = async function() {
     const modal = document.getElementById('ocr-langs-modal');
     if (modal) modal.classList.add('hidden-tab');
+    // Il modale OCR sotto mostra le lingue lette all'apertura: senza ricostruirlo, chi ha
+    // appena installato la prima lingua resterebbe su "Nessuna lingua" con Riconosci spento.
+    const ocr = document.getElementById('ocr-modal');
+    if (ocr && !ocr.classList.contains('hidden-tab') && !_oStato.inCorso && _oStato.recordId) {
+        await window.apriOcrModal(_oStato.recordId, _oStato.indice);
+        const conferma = document.getElementById('ocr-confirm') as HTMLButtonElement | null;
+        if (conferma && !conferma.disabled) conferma.focus();
+    }
 };
 
 window.apriGestioneLingueOcr = async function() {

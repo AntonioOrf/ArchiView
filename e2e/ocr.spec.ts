@@ -254,6 +254,38 @@ test.describe('OCR degli allegati', () => {
     expect(await conta('no')).toEqual(['DAFARE-1']);
   });
 
+  // Prova manuale M1.3: al primo uso, "Gestisci lingue → Installa → Chiudi" lasciava il modale su
+  // "Nessuna lingua installata" con Riconosci disabilitato finché non lo si riapriva.
+  test('2.3.6b — installata una lingua dal gestore, il modale OCR si abilita senza riaprirlo', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    const id = await createItemWithAttachment(page, 'OCR-PRIMO-USO', FIXTURE_PNG);
+    await electronApp.evaluate(({ ipcMain }) => {
+      let installata = false;
+      ipcMain.removeHandler('ocr-lingue');
+      ipcMain.handle('ocr-lingue', () => ({
+        ok: true,
+        lingue: [{ codice: 'ita', nome: 'Italiano', installata, dimensione: installata ? 2600000 : 0 }],
+      }));
+      ipcMain.removeHandler('ocr-installa-lingua');
+      ipcMain.handle('ocr-installa-lingua', () => { installata = true; return { ok: true }; });
+    });
+
+    await page.evaluate((rid) => (window as any).apriOcrModal(rid, 0), id);
+    await expect(page.locator('#ocr-modal')).toBeVisible();
+    await expect(page.locator('#ocr-confirm')).toBeDisabled();
+
+    await page.locator('#ocr-modal button', { hasText: 'Gestisci lingue' }).click();
+    await expect(page.locator('#ocr-langs-modal')).toBeVisible();
+    await page.locator('#ocr-langs-modal button', { hasText: 'Installa' }).click();
+    await expect(page.locator('#ocr-langs-modal button', { hasText: 'Rimuovi' })).toBeVisible();
+    await page.locator('#ocr-langs-modal button', { hasText: 'Chiudi' }).click();
+    await expect(page.locator('#ocr-langs-modal')).toBeHidden();
+
+    await expect(page.locator('#ocr-modal')).toBeVisible();
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await expect(page.locator('#ocr-modal')).not.toContainText('Nessuna lingua installata');
+  });
+
   test('2.3.7 — il pulsante OCR non compare su una scheda senza allegati', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
     await page.locator('#btn-tab-add').click();
