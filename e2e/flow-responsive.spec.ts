@@ -90,6 +90,51 @@ test.describe('Percorsi di verifica', () => {
     expect(scrollaOrizzontale).toBe(false);
   });
 
+  // Prove manuali M6.2/M7.2: a metà di uno schermo 1280 (finestra al minimo, ~656px) la segnatura
+  // delle card collassava a 0px, il piede della sidebar tagliava Impostazioni e Segnala e
+  // "Salva Trascrizione" usciva a destra.
+  test('6.3c — a metà di uno schermo 1280 nulla è tagliato', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Flow');
+    await seedItems(page, 2);
+    // Badge lungo come quello di "Imbreviature notarili", il modello predefinito.
+    await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore -- appData è una let globale
+      const tipi = appData.tipiDocumento as any[];
+      const nome = (t: any) => w.t('model_' + t.id) !== 'model_' + t.id ? w.t('model_' + t.id) : t.nome;
+      const lungo = tipi.reduce((a, b) => (nome(b).length > nome(a).length ? b : a));
+      // @ts-ignore
+      appData.manoscritti.forEach((m: any) => { m.tipoDocumento = lungo.id; });
+      await w.Store.commit();
+    });
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      w.unmaximize();
+      w.setContentSize(640, 760);
+    });
+    await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeLessThan(680);
+    await openView(page, 'list');
+
+    const tagliati = (sel: string) => page.evaluate((s) => Array.from(document.querySelectorAll(s)).filter(e => {
+      const r = e.getBoundingClientRect();
+      if (!r.width) return false;
+      // Contenitore di riferimento: la card, il piede della sidebar o la finestra.
+      const c = (e.closest('.card-scheda') || e.parentElement!).getBoundingClientRect();
+      return r.left < Math.max(0, c.left) - 1 || r.right > Math.min(innerWidth, c.right) + 1;
+    }).map(e => e.id || e.getAttribute('aria-label') || e.textContent!.trim().slice(0, 30)), sel);
+
+    const titoli = await page.locator('.card-scheda .card-title').evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+    expect(titoli.length).toBeGreaterThan(0);
+    for (const w of titoli) expect(w, 'larghezza della segnatura nella card').toBeGreaterThan(60);
+    expect(await tagliati('.card-scheda .card-badge')).toEqual([]);
+    expect(await tagliati('#sidebar button[aria-label]')).toEqual([]);
+
+    const id = await page.evaluate(() => (appData as any).manoscritti[0].id);
+    await page.evaluate((rid) => (window as any).apriTrascrizione(rid), id);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    expect(await tagliati('#view-trascrizione button')).toEqual([]);
+  });
+
   test('6.3 — sotto i 768px nessuna funzione sparisce e la pagina non scrolla in orizzontale', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Flow');
     await seedItems(page, 1);

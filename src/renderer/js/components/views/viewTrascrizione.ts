@@ -3,7 +3,7 @@
         if (!document.getElementById('view-trascrizione')) {
             const html = `
     <div id="view-trascrizione" class="fixed inset-0 z-sticky hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden" style="background-color: var(--color-bg-base);">
-        <header class="shrink-0 mb-4 flex items-center justify-between pb-4 p-3 panel-glass">
+        <header class="trasc-intestazione shrink-0 mb-4 flex items-center justify-between pb-4 p-3 panel-glass">
             <div class="flex items-center gap-4">
                 <button id="btn-back-to-list-trasc" data-on-click="chiudiTrascrizione" class="btn btn-secondary btn-icon" data-i18n-title="tooltip_back" data-i18n-aria-label="tooltip_back">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
@@ -17,7 +17,7 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="trasc-azioni flex items-center gap-2">
                 <!-- Fase 2.5 — l'export del testo sta QUI, accanto al salvataggio: e' la
                      vista in cui la trascrizione esiste, ed e' finendo di trascrivere che
                      si vuole portarla in Word o in un articolo. Ambito "corrente": la

@@ -1253,9 +1253,9 @@ function renderMain(resetPage = true) {
             div.innerHTML = `
                 ${checkboxHTML}
                 <div class="px-1 ${hasSelection ? 'pl-7' : ''}">
-                    <div class="flex justify-between items-start gap-2 mb-2">
+                    <div class="card-intestazione flex justify-between items-start gap-2 mb-2">
                         <h3 class="card-title mb-0" translate="no" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
-                        <div class="flex items-center gap-1.5 shrink-0 mt-0">
+                        <div class="card-etichette flex items-center gap-1.5 mt-0">
                             ${collegamentiHTML}
                             ${authorBadgeHTML}
                             <span class="card-badge shrink-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>

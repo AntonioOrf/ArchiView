@@ -657,6 +657,19 @@ button, .btn {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+/* Piede della sidebar: cinque icone devono stare anche nella sidebar minima (finestra a metà
+   schermo); il padding di .btn le teneva a 54px e le prime/ultime uscivano dai bordi. */
+.sidebar-azioni > .btn { min-width: 0; padding-left: 0.25rem; padding-right: 0.25rem; }
+/* Intestazione della trascrizione in una finestra stretta: i pulsanti vanno a capo a destra
+   invece di uscire dallo schermo ("Salva Trascrizione" restava tagliato). */
+.trasc-intestazione { flex-wrap: wrap; gap: 0.5rem; }
+.trasc-azioni { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+/* Card strette (finestra a metà schermo): le etichette vanno sotto la segnatura invece di
+   schiacciarla a 0px, e un badge lungo si tronca dentro la card. */
+.card-intestazione { flex-wrap: wrap; }
+.card-intestazione > .card-title { flex: 1 1 8rem; min-width: 0; }
+.card-etichette { flex-wrap: wrap; justify-content: flex-end; min-width: 0; max-width: 100%; }
+.card-etichette > .card-badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-badge {
     display: inline-block;
     background-color: var(--color-primary-light);
