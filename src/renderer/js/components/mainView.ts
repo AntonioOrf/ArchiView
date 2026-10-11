@@ -1334,6 +1334,8 @@ function switchTab(tab) {
         // Fase 3.5: la tendina dei collegamenti si ricostruisce all'apertura, non all'avvio,
         // o offrirebbe le schede esistenti quando l'app è partita.
         if (typeof window.aggiornaSelettoriRelazione === 'function') window.aggiornaSelettoriRelazione();
+        // Il pulsante premuto sparisce con la lista: senza, da tastiera il fuoco cade su <body>.
+        document.getElementById('form-segnatura')?.focus({ preventScroll: true });
     } else if (tab === 'trascrizione') {
         if (vTrascrizione) vTrascrizione.classList.remove('hidden-tab');
     }

@@ -5,6 +5,16 @@ import * as path from 'path';
 test.use({ seedWorkspace: 'Form' });
 
 test.describe('Vista Form (add/edit)', () => {
+  // Prova manuale M7.4: da tastiera, Invio su "Nuova scheda" lasciava il fuoco su <body> e il
+  // giro del Tab ripartiva dall'inizio della pagina invece che dal form.
+  test('Invio su "Nuova scheda" porta il fuoco sulla segnatura', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Form');
+    await page.locator('#btn-tab-add').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#manoscritto-form')).toBeVisible();
+    await expect(page.locator('#form-segnatura')).toBeFocused();
+  });
+
   test('cambiare tipo documento rigenera i campi dinamici', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Form');
 
