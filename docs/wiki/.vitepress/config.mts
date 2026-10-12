@@ -100,8 +100,7 @@ export default defineConfig({
               { text: 'Allegati', link: '/guida/allegati' },
               { text: 'Importare da IIIF', link: '/guida/iiif' },
               { text: 'Trascrizione', link: '/guida/trascrizione' },
-              { text: 'OCR degli allegati', link: '/guida/ocr' },
-              { text: 'Scansionare col telefono', link: '/guida/scanner' }
+              { text: 'OCR degli allegati', link: '/guida/ocr' }
             ]
           },
           {
@@ -124,6 +123,16 @@ export default defineConfig({
               { text: 'Esportare in CSV o Excel', link: '/esporta/csv' },
               { text: 'Importare da CSV o Excel', link: '/esporta/importa-csv' },
               { text: 'Trascrizioni e citazioni', link: '/esporta/testo-citazioni' }
+            ]
+          },
+          {
+            text: 'ArchiScanner (telefono)',
+            collapsed: false,
+            items: [
+              { text: 'Scansionare col telefono', link: '/archiscanner/introduzione' },
+              { text: 'Scansionare in archivio', link: '/archiscanner/scansionare' },
+              { text: 'Ricevere sul computer', link: '/archiscanner/computer' },
+              { text: 'Documenti', link: '/archiscanner/documenti' }
             ]
           },
           {
@@ -202,8 +211,7 @@ export default defineConfig({
               { text: 'Attachments', link: '/en/guide/attachments' },
               { text: 'Importing from IIIF', link: '/en/guide/iiif' },
               { text: 'Transcription', link: '/en/guide/transcription' },
-              { text: 'OCR of attachments', link: '/en/guide/ocr' },
-              { text: 'Scanning with your phone', link: '/en/guide/scanner' }
+              { text: 'OCR of attachments', link: '/en/guide/ocr' }
             ]
           },
           {
@@ -226,6 +234,16 @@ export default defineConfig({
               { text: 'Exporting to CSV or Excel', link: '/en/export/csv' },
               { text: 'Importing from CSV or Excel', link: '/en/export/csv-import' },
               { text: 'Transcriptions and citations', link: '/en/export/text-citations' }
+            ]
+          },
+          {
+            text: 'ArchiScanner (phone)',
+            collapsed: false,
+            items: [
+              { text: 'Scanning with your phone', link: '/en/archiscanner/overview' },
+              { text: 'Scanning in the archive', link: '/en/archiscanner/scanning' },
+              { text: 'Receiving on the computer', link: '/en/archiscanner/computer' },
+              { text: 'Documents', link: '/en/archiscanner/documents' }
             ]
           },
           {
