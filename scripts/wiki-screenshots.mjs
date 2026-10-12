@@ -20,6 +20,7 @@
  * Prima serve una build aggiornata: `npm run build-css && npm run build-ts`.
  */
 import { _electron as electron } from 'playwright';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -128,6 +129,7 @@ async function main() {
   await creaWorkspace(page, basePath);
   await seed(page);
   const idAllegato = await aggiungiAllegato(page);
+  await scansioniDalTelefono(app, page, basePath);
   // La pagina MGH è in latino: la scelta ricordata dal modale deve dirlo.
   await page.evaluate(() => localStorage.setItem('archiview.ocr.lingue', 'lat'));
 
@@ -307,6 +309,23 @@ async function passata(page, tema, idAllegato, cartella) {
   await scatta('impostazioni');
   await chiudi();
 
+  // --- Dal telefono (ArchiScanner) ---------------------------------------------
+  // Senza await: l'avviso aspetta una risposta. L'Esc di `chiudi` vale «Più tardi», che salva
+  // l'impronta e lo spegnerebbe nelle passate dopo: la si azzera prima.
+  await page.evaluate(() => window.apiSettings.patch({ scannerRimandato: '' }));
+  page.evaluate(() => { window.controllaScansioniAllApertura(); });
+  await page.locator('#scan-avviso').waitFor({ state: 'visible' });
+  await scatta('scanner-avviso');
+  await chiudi();
+
+  await inCartella();
+  await page.evaluate(() => window.apriScansioni());
+  await page.waitForTimeout(1500); // import automatico del lotto con la scheda, poi le miniature
+  await page.evaluate(() => window.nascondiMessaggi?.());
+  await scatta('dal-telefono');
+  await page.evaluate(() => window.chiudiScansioni());
+  await chiudi();
+
   return n;
 }
 
@@ -400,6 +419,46 @@ async function aggiungiAllegato(page) {
   await page.locator('#btn-submit-form').click();
   await page.waitForTimeout(1800);
   return id;
+}
+
+/**
+ * Due lotti arrivati dal telefono, scritti come li lascia la ricezione (CONTRATTO §2): uno per
+ * una scheda esistente (entra da solo all'apertura del pannello), uno da smistare. Drive è
+ * finto come in `e2e/scanner.spec.ts`: un archivio nuovo creato sul telefono e uno già noto.
+ */
+async function scansioniDalTelefono(app, page, basePath) {
+  const foto = fs.readFileSync(ALLEGATO);
+  const sha256 = crypto.createHash('sha256').update(foto).digest('hex');
+  const idEstimo = await page.evaluate(() => appData.manoscritti.find((m) => m.segnatura === 'ASF, Est. 12').id);
+  const lotto = (id, etichette, destinazione, extra) => {
+    const dir = path.join(basePath, 'Fondo Notarile', '.archiview', 'scanner', 'arrivo', id);
+    fs.mkdirSync(dir, { recursive: true });
+    const pagine = etichette.map((etichetta, i) => {
+      const file = `p000${i + 1}.jpg`;
+      fs.writeFileSync(path.join(dir, file), foto);
+      return { file, sha256, byte: foto.length, modalita: 'documento', etichetta };
+    });
+    fs.writeFileSync(path.join(dir, 'lotto.json'), JSON.stringify({
+      formato: 'archiview-scanner/lotto', versione: 1, id, creatoIl: '2026-10-12T10:00:00+02:00',
+      archivio: 'Fondo Notarile', destinazione, pagine, ...extra,
+    }));
+  };
+  lotto('20261012-100000-aaaa', ['1r', '1v', '2r'], { tipo: 'esistente', schedaId: idEstimo }, { titolo: 'ASF, Est. 12' });
+  lotto('20261012-101500-bbbb', ['1r', '1v'], { tipo: 'nessuna' }, { titolo: 'Carte sciolte', nota: 'Trovate nella busta 4, senza segnatura' });
+
+  await app.evaluate(({ ipcMain }, schedaId) => {
+    ipcMain.removeHandler('scanner-controlla-drive');
+    ipcMain.handle('scanner-controlla-drive', () => ({
+      success: true,
+      collegato: true,
+      qui: [{ id: 'q1', pagine: 3, destinazione: { tipo: 'esistente', schedaId } }, { id: 'q2', pagine: 2, destinazione: { tipo: 'nessuna' } }],
+      altri: [{ nome: 'Carteggio Datini', pagine: 12, nuovo: true, percorso: null }, { nome: 'Catasto 1427', pagine: 4, nuovo: false, percorso: null }],
+    }));
+    ipcMain.removeHandler('scanner-ricevi-drive');
+    ipcMain.handle('scanner-ricevi-drive', () => ({ success: true, ricevuti: [], inCaricamento: [], falliti: [] }));
+    ipcMain.removeHandler('scanner-pubblica-schede');
+    ipcMain.handle('scanner-pubblica-schede', () => ({ success: true, schede: 0 }));
+  }, idEstimo);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

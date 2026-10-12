@@ -1,0 +1,32 @@
+appId: com.antonioorf.archiview.scanner
+# seme: documenti
+name: Schermate della wiki - documenti
+---
+- launchApp
+- extendedWaitUntil:
+    visible: ArchiScanner
+    timeout: 180000
+- tapOn: Documenti, Ricevute, articoli, fotocopie
+- takeScreenshot: wiki/telefono-documenti
+- tapOn: "Ricevuta biblioteca, .*"
+- tapOn: Condividi o salva
+- takeScreenshot: wiki/telefono-condividi
+- back
+- tapOn: Apri la pagina 1
+- tapOn: Filtri
+- tapOn: Migliora
+- extendedWaitUntil:
+    visible:
+      text: Migliora
+      checked: true
+    timeout: 20000
+- takeScreenshot: wiki/telefono-filtri
+- tapOn: Filtri
+- tapOn: Testo
+- extendedWaitUntil:
+    visible: Copia testo
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible: Riconosco il testo…
+    timeout: 60000
+- takeScreenshot: wiki/telefono-testo

@@ -1,0 +1,27 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Schermate della wiki - archivio
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: "Cartella Notarile.*"
+- takeScreenshot: wiki/telefono-archivio
+- tapOn: "Da inviare, 4 pagine.*"
+- takeScreenshot: wiki/telefono-da-inviare
+- tapOn: "Da inviare, 4 pagine.*"
+- tapOn: "Reg\\. 41, Imbreviature.*"
+- takeScreenshot: wiki/telefono-scheda
+- tapOn: Apri 1r
+- takeScreenshot: wiki/telefono-visore
+- back
+- back
+- tapOn: Scansiona o crea una scheda
+- takeScreenshot: wiki/telefono-piu
+- back
+- tapOn: Fondo Prova, cambia archivio
+- takeScreenshot: wiki/telefono-tendina
+- back
+- tapOn: Impostazioni
+- takeScreenshot: wiki/telefono-impostazioni

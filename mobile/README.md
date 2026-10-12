@@ -59,6 +59,11 @@ lo spec mette il QR del desktop come poster della scena virtuale della fotocamer
 l'emulatore (i poster si leggono solo all'avvio); lanciato da solo non fa nulla.
 `19-schermate` non verifica nulla: fotografa le schermate principali, da rilanciare con
 `settings put system font_scale 2.0` e `cmd uimode night yes`.
+`98-wiki-archivio` e `99-wiki-documenti` fanno lo stesso per la wiki (pagina «Scansionare col
+telefono»): `npm run test:maestro wiki` una volta in chiaro e una con `cmd uimode night yes`, poi
+le PNG di `~/.maestro/tests/<ultimi due>/…/takeScreenshot/wiki/` vanno, ridotte a 540 px di
+larghezza, in `ArchiView-site/docs/wiki/public/img/` (le scure col suffisso `-scuro`). Barra di
+stato pulita: modalità demo di SystemUI (`am broadcast -a com.android.systemui.demo …`).
 
 Restano a mano: invio su Drive e via Wi-Fi (servono account e computer), lettura del QR reale,
 «Salva in Download» (selettore di cartelle di Android), accesso Google.
