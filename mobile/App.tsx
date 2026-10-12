@@ -14,6 +14,7 @@ import * as Crypto from 'expo-crypto';
 import { launchDocumentScannerAsync, ResultFormatOptions, ScannerModeOptions } from '@infinitered/react-native-mlkit-document-scanner';
 import { CloudUpload, FilePlus, LogIn, Plus, ScanLine, SlidersHorizontal } from 'lucide-react-native';
 import { accedi, esci, utenteSilenzioso, type Utente } from './src/accesso';
+import { chiediConsenso } from './src/consenso';
 import { azzeraCartelle, type Avanzamento } from './src/drive';
 import { Dividi } from './src/Dividi';
 import { messaggioErrore } from './src/errori';
@@ -342,6 +343,10 @@ function Principale() {
   // Fase 3a: `appenaCreata` = «Crea e scansiona»; scanner annullato → la scheda vuota non resta.
   const scansiona = (s: SchedaScelta, precedenti: Pagina[], appenaCreata = false) => esegui('Scansione', async () => {
     if (!archivio) return;
+    if (!await chiediConsenso()) {
+      if (appenaCreata && s.tipo === 'nuova') togliSchedaNuova(s.id);
+      return;
+    }
     const r = await launchDocumentScannerAsync({
       pageLimit: 100,
       galleryImportAllowed: false,
@@ -400,6 +405,7 @@ function Principale() {
 
   // «Rifai questa pagina»: ML Kit per una pagina sola, la foto nuova prende nome ed etichetta della vecchia.
   const rifai = (b: Bozza, p: Pagina) => modifica(b, async () => {
+    if (!await chiediConsenso()) return b;
     const r = await launchDocumentScannerAsync({ pageLimit: 1, galleryImportAllowed: false, scannerMode: ScannerModeOptions.BASE, resultFormats: ResultFormatOptions.JPEG });
     return r.canceled || !r.pages?.length ? b : sostituisciPagina(b, p.file, r.pages[0]);
   });

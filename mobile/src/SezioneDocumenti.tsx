@@ -15,6 +15,7 @@ import { aggiungiPagine, correggiTesto, eliminaDocumento, elencaDocumenti, impos
 import { nomeAutomatico, ocrAggiornato, spostata, type Documento as Doc } from './elencoDocumenti';
 import { testoDiPiuPagine } from './testo';
 import { TestoPagina } from './schermate/TestoPagina';
+import { chiediConsenso } from './consenso';
 import { annullato, cartellaSalvata, condividi, salva, scegliCartella } from './esporta';
 import { Condividi } from './schermate/Condividi';
 import { ritagliata, ruotata } from './immagini';
@@ -30,7 +31,10 @@ type VoceBarra = ComponentProps<typeof BarraFondo>['sinistra'];
 
 type Props = { invio: VoceBarra; impostazioni: VoceBarra; onCambiaArchivio: () => void };
 
-const scanner = (pagine: number) => launchDocumentScannerAsync({ pageLimit: pagine, galleryImportAllowed: true, scannerMode: ScannerModeOptions.BASE, resultFormats: ResultFormatOptions.JPEG });
+// Senza consenso (fotocamera e galleria) vale come scanner annullato.
+const scanner = async (pagine: number) => await chiediConsenso()
+  ? launchDocumentScannerAsync({ pageLimit: pagine, galleryImportAllowed: true, scannerMode: ScannerModeOptions.BASE, resultFormats: ResultFormatOptions.JPEG })
+  : { canceled: true as const, pages: [] as string[] };
 
 export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio }: Props) {
   const [docs, setDocs] = useState<Doc[]>([]);

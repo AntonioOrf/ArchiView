@@ -5,6 +5,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { chiediConsenso } from './consenso';
 import { paroleOcr, uriUscita } from './documenti';
 import { perPdf } from './immagini';
 import { nomeFile, nomiImmagini, type Documento } from './elencoDocumenti';
@@ -92,8 +93,15 @@ export function cartellaSalvata(): string | null {
 /** L'utente ha chiuso il selettore di cartella senza scegliere: non è un errore da mostrare. */
 export const annullato = (e: any) => e?.code === 'ERR_PICKER_CANCELLED' || /cancelled by the user/i.test(String(e?.message));
 
-/** Fa scegliere la cartella a Android e la ricorda. Annullato → errore (vedi `annullato`). */
+/** Dimentica la cartella scelta (consenso revocato): al prossimo «Salva» si richiede. */
+export function dimenticaCartella(): void {
+  const f = fileSalva();
+  if (f.exists) f.delete();
+}
+
+/** Fa scegliere la cartella a Android e la ricorda. Annullato o senza consenso → errore (vedi `annullato`). */
 export async function scegliCartella(): Promise<Directory> {
+  if (!await chiediConsenso()) throw Object.assign(new Error('cancelled by the user'), { code: 'ERR_PICKER_CANCELLED' });
   const dir = await Directory.pickDirectoryAsync();
   fileSalva().write(JSON.stringify({ cartella: dir.uri }));
   return dir;

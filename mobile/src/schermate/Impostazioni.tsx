@@ -1,8 +1,10 @@
 // Impostazioni (dalla barra in fondo): account Google, regola d'invio, Wi-Fi diretto.
 
 import { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
-import { LogIn, LogOut, QrCode, Unplug, Wifi } from 'lucide-react-native';
+import { Alert, Linking, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { LogIn, LogOut, QrCode, ShieldCheck, Unplug, Wifi } from 'lucide-react-native';
+import { chiediConsenso, consenso, INFORMATIVA, revocaConsenso } from '../consenso';
+import { dimenticaCartella } from '../esporta';
 import type { DopoInvio } from '../pagine';
 import { raggio, spazio, tipo, TOCCO, useColori } from '../theme';
 import { Intestazione } from '../ui/Intestazione';
@@ -57,6 +59,7 @@ export function Impostazioni(p: Props) {
   const c = useColori();
   const d = p.dopoInvio;
   const [giorni, setGiorni] = useState(String(d.giorni));
+  const [consentito, setConsentito] = useState(consenso);
   return (
     <View style={{ flex: 1 }}>
       <Intestazione titolo="Impostazioni" onIndietro={p.onIndietro} />
@@ -108,6 +111,25 @@ export function Impostazioni(p: Props) {
             </Scelta>
           </View>
           <Testo variante="aiuto">Le pagine tenute restano nella scheda in sola lettura e si tolgono anche a mano.</Testo>
+        </Sezione>
+
+        <Sezione titolo="Privacy">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.md }}>
+            <Testo style={{ flex: 1 }}>Fotocamera, foto e file</Testo>
+            <Switch value={!!consentito} accessibilityLabel="Consenso a fotocamera, foto e file"
+              onValueChange={async v => {
+                if (!v) {
+                  try { revocaConsenso(); dimenticaCartella(); } catch (e: any) { Alert.alert('Errore', `Revoca del consenso: ${e?.message || String(e)}`); }
+                } else await chiediConsenso();
+                setConsentito(consenso());
+              }}
+              trackColor={{ false: c.borderInput, true: c.primary }} thumbColor={consentito ? c.onPrimary : c.textMuted} />
+          </View>
+          <Testo variante="aiuto">{consentito
+            ? `Consenso dato il ${new Date(consentito).toLocaleDateString('it-IT')}. Se lo revochi, l'app dimentica la cartella di salvataggio e lo richiede al prossimo uso.`
+            : 'Senza consenso non si scansiona, non si importa dalla galleria e non si salva in una cartella.'}</Testo>
+          <Pulsante variante="ghost" icona={ShieldCheck} titolo="Informativa sulla privacy"
+            onPress={() => Linking.openURL(INFORMATIVA).catch(e => Alert.alert('Errore', `Informativa non aperta: ${e?.message || String(e)}`))} />
         </Sezione>
 
         <Sezione titolo="Wi-Fi diretto">
