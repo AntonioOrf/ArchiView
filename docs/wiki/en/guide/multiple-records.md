@@ -51,5 +51,4 @@ the next exchange.
    operation.
 3. Confirm, then check two or three records as a sample.
 
-For very large operations (hundreds of records) make a copy of the working folder first: it is the
-simplest safety net there is.
+For very large operations (hundreds of records) make a copy of the working folder first.

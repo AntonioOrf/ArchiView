@@ -16,7 +16,7 @@ To move a folder, with everything in it, into another one you can drag it in the
 ## What a record shows in the tree
 
 In the tree every record is listed by its **shelfmark**. When the shelfmark alone is not enough
-to recognise it — "165, 579" tells you where the document is, not who it is about — you can add
+to recognise it ("165, 579" tells you where the document is, not who it is about), you can add
 a second line underneath with the value of a field of your choice.
 
 The button at the top right of the **Folders** panel, next to the "Structure" heading, opens the

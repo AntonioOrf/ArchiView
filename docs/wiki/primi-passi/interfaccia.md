@@ -23,7 +23,7 @@ In cima all'albero delle cartelle c'è una riga che porta il **nome dell'archivi
 e raccoglie le schede non ancora messe in una cartella.
 
 Nell'albero ogni scheda porta la sua segnatura; il pulsante in alto a destra del pannello
-**Cartelle** vi aggiunge sotto un campo a scelta — il dichiarante, il notaio, l'autore — e
+**Cartelle** vi aggiunge sotto un campo a scelta (il dichiarante, il notaio, l'autore) e
 permette di ordinare l'albero per quel campo. Vedi
 [Che cosa mostra una scheda nell'albero](/guida/cartelle-archivi#che-cosa-mostra-una-scheda-nell-albero).
 
@@ -37,7 +37,7 @@ scarico e invio. Su un archivio locale non c'è nulla da guardare.
 
 ## Al centro: l'elenco delle schede
 
-È il cuore del lavoro. Sopra l'elenco, da sinistra a destra:
+Sopra l'elenco, da sinistra a destra:
 
 - **Nuova scheda** (il chevron preseleziona il tipo) e **Nuovo modello**;
 - **Filtri** (con il contatore dei filtri attivi), **ordinamento**, e il selettore

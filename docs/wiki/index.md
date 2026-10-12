@@ -44,8 +44,8 @@ chi lavora con manoscritti e documenti d'archivio: imbreviature notarili, atti g
 registri fiscali, carte private.
 
 Funziona **offline**: i dati restano sul tuo disco, in file leggibili, e nessuno li vede se non
-decidi tu di condividerli. Il collegamento a un archivio comune per lavorare in gruppo è
-possibile, ma è una scelta, non un obbligo.
+decidi tu di condividerli. Collegarsi a un archivio comune per lavorare in gruppo è
+facoltativo.
 
 ## Da dove cominciare
 

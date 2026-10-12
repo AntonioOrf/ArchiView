@@ -17,8 +17,7 @@ folder.
 
 ::: tip
 Make a copy **before** every bulk operation (changes to many records, change of document type,
-restoring an earlier version). It takes a few seconds and it is the most effective safety net
-available.
+restoring an earlier version). It takes a few seconds.
 :::
 
 ## Backup in a single file: the ZIP archive
@@ -46,7 +45,7 @@ Besides backup, you can extract data to work on it with other tools:
 | Archive connected to a remote one | Synchronisation is already a copy, but a periodic local copy is still useful |
 | End of a project | Dated ZIP, kept in two different places |
 
-## The survival rule
+## A copy off the computer
 
 A backup kept only on the same computer as the data is not a backup: if the disk breaks, both are
 lost together. Keep at least one copy elsewhere: an external drive, another computer, a cloud

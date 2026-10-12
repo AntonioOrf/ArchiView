@@ -11,9 +11,8 @@ documento su un lato, l'editor di testo sull'altro.
 Il testo appartiene alla **carta** che stai guardando, non alla scheda intera: cambiando
 allegato, l'editor segue. In alto compare l'indicazione «Carta 2 di 3», con il nome del file.
 
-Con `Alt+←` e `Alt+→` si passa da una carta all'altra, e il testo di ciascuna resta al suo posto.
-Il testo appena scritto viene salvato in memoria prima di ogni cambio di carta: non si perde
-nulla passando da una carta all'altra.
+Con `Alt+←` e `Alt+→` si passa da una carta all'altra, e il testo di ciascuna resta al suo posto:
+prima di ogni cambio di carta l'app tiene in memoria quello che hai appena scritto.
 
 Se la scheda non ha allegati, si scrive su un'unica trascrizione, come da sempre.
 

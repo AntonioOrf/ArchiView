@@ -26,8 +26,7 @@ For transcriptions: the scope you choose (open record, selection, folder, filter
 folio headings.
 
 A record **without** a transcription does not vanish from the file: it appears with its heading and
-the note "No transcription". An export that silently drops three records out of twenty is worse
-than an empty one.
+the note "No transcription".
 
 ## OCR uncertainty survives
 

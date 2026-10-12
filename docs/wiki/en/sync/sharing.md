@@ -65,7 +65,7 @@ trigger commands in the program.
 
 ## Leaving, revoking, closing
 
-- A **member** can leave whenever they like: their local copy remains, it simply stops
+- A **member** can leave whenever they like: their local copy remains but stops
   synchronising.
 - The **owner** can revoke one member at a time.
 - Everyone always keeps a complete, readable copy of the archive on their own disk: nobody can leave

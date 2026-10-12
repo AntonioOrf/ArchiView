@@ -17,8 +17,7 @@ cartella come cartella di lavoro.
 
 ::: tip
 Fai una copia **prima** di ogni operazione di massa (modifica su molte schede, cambio di tipo
-di documento, ripristino di una versione precedente). È un'operazione di pochi secondi ed è la
-rete di sicurezza più efficace disponibile.
+di documento, ripristino di una versione precedente). Bastano pochi secondi.
 :::
 
 ## Il backup in un solo file: l'archivio ZIP
@@ -45,7 +44,7 @@ Oltre al backup, puoi estrarre i dati per lavorarci con altri strumenti:
 | Archivio collegato a un remoto | La sincronizzazione è già una copia, ma una copia locale periodica resta utile |
 | Fine di un progetto | ZIP datato, conservato in due posti diversi |
 
-## La regola di sopravvivenza
+## Una copia fuori dal computer
 
 Un backup che sta solo sullo stesso computer dei dati non è un backup: se il disco si rompe, se
 ne vanno insieme. Tienine almeno una copia altrove: un disco esterno, un altro computer, un

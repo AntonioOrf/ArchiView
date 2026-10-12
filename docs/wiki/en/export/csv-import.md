@@ -39,7 +39,7 @@ choice the fields it brings with it.
 ![The first import step: choosing the document model](/img/en/import-csv.png){.light-only}
 ![The first import step: choosing the document model](/img/en/import-csv-scuro.png){.dark-only}
 
-This is not a formality: the model decides which fields can be chosen, how values are converted and
+The model decides which fields can be chosen, how values are converted and
 which ones are required. There is also "Create a new model", with the name suggested by the file
 name.
 
@@ -59,8 +59,7 @@ drop-down. The field does not exist until you confirm.
 
 ## The preview is the import
 
-The summary you see before confirming is not a simulation: it is exactly the result that will be
-inserted. It tells you how many records will be added, which rows are **discarded** and which carry
+The summary you see before confirming is exactly the result that will be inserted. It tells you how many records will be added, which rows are **discarded** and which carry
 a **warning**.
 
 | Situation | Outcome |
@@ -83,7 +82,7 @@ corresponding fields. A three-column CSV cannot empty twenty fields.
 ## If the import did not go as expected
 
 The import is **a single undoable action**: `Ctrl+Z` straight afterwards removes all imported
-records in one operation. Two hundred records to delete by hand would be an obstacle, not a feature.
+records in one operation.
 
 Before a large import it is still advisable to copy the working folder (see
 [Backup](/en/data/backup-export)).

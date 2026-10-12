@@ -40,7 +40,7 @@ sotto ogni scelta i campi che porta con sé.
 ![Il primo passo dell'importazione: la scelta del modello di documento](/img/import-csv.png){.light-only}
 ![Il primo passo dell'importazione: la scelta del modello di documento](/img/import-csv-scuro.png){.dark-only}
 
-Non è una formalità: il modello decide quali campi si possono scegliere, come vengono convertiti
+Il modello decide quali campi si possono scegliere, come vengono convertiti
 i valori e quali sono obbligatori. C'è anche «Crea un modello nuovo», con il nome proposto dal
 nome del file.
 
@@ -61,8 +61,7 @@ destinazione. Il campo non esiste finché non confermi.
 
 ## L'anteprima è l'import
 
-Il riepilogo che vedi prima di confermare non è una simulazione: è esattamente il risultato che
-verrà inserito. Ti dice quante schede entreranno, quali righe vengono **scartate** e quali
+Il riepilogo che vedi prima di confermare è esattamente il risultato che verrà inserito. Ti dice quante schede entreranno, quali righe vengono **scartate** e quali
 portano un **avviso**.
 
 | Situazione | Esito |
@@ -85,8 +84,7 @@ azzerano i campi corrispondenti. Un CSV di tre colonne non può svuotare venti c
 ## Se l'importazione non è andata come previsto
 
 L'import è **una sola azione annullabile**: `Ctrl+Z` subito dopo toglie tutte le schede
-importate in una sola operazione. Duecento schede da cancellare a mano sarebbero un ostacolo,
-non una funzione.
+importate in una sola operazione.
 
 Prima di un'importazione estesa conviene comunque copiare la cartella di lavoro (vedi
 [Backup](/dati/backup-export)).

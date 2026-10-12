@@ -6,8 +6,7 @@ sincronizzare. ArchiView non sceglie al posto tuo e non sovrascrive in silenzio.
 ## Prima cosa: la maggior parte dei casi non è un conflitto
 
 Se avete modificato **campi diversi** della stessa scheda, le due modifiche si sommano da sole,
-campo per campo. Nessuna finestra, nessuna decisione da prendere: è il caso più frequente e viene
-gestito senza disturbarti.
+campo per campo, senza aprire nessuna finestra. È il caso più frequente.
 
 Un conflitto vero c'è solo quando due persone hanno cambiato **lo stesso campo** in modo diverso.
 

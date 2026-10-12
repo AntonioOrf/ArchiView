@@ -21,9 +21,8 @@ archival conventions it was built for:
 | Century | `sec. XIV`, `sec. XIV in.`, `sec. XIV ex.`, `sec. XIV med.`, first and second half |
 | Undated | `s.d.` |
 
-Below the field, as you type, the program states **how it read** what you wrote. It is the most
-useful part of the feature: you check straight away whether sorting will place the record where you
-expect.
+Below the field, as you type, the program states **how it read** what you wrote, so you can check
+straight away whether sorting will place the record where you expect.
 
 ![The Chronic Date field with the interpretation feedback underneath](/img/en/form-scheda.png){.light-only}
 ![The Chronic Date field with the interpretation feedback underneath](/img/en/form-scheda-scuro.png){.dark-only}

@@ -1,14 +1,14 @@
 # Record-specific fields
 
-The document model is a **base**, not a cage. When a manuscript carries information its model does
+The document model sets the fields shared by every record of a type. When a manuscript carries information its model does
 not provide for (an ownership note, a watermark, an unusual colophon), you can add a field **to
 that record only**.
 
 ## Why not add it to the model
 
 Because after fifty manuscripts the model would become the sum of every unique case ever
-encountered, with fifty columns empty 98% of the time. A record-specific field solves exactly
-this: it lives on the record that needs it and does not weigh down the others.
+encountered, with fifty columns empty 98% of the time. A record-specific field lives on the record
+that needs it and does not weigh down the others.
 
 ## Adding a field
 
@@ -34,9 +34,6 @@ promote it to the document model: from then on it appears in every record of tha
 Records that already had it as a record-specific field are not duplicated: when a model declares a
 field with the same name, the model wins and the field appears only once.
 
-This is the natural course of archival work: you meet a case, then a second one, then you realise
-it is a rule.
-
 ## Reordering fields
 
 The **Reorder fields** button turns the form into a list of draggable names: move the fields into
@@ -55,7 +52,7 @@ The chosen order applies wherever you look at **one** record at a time:
 | Printing "one record per page" | |
 
 Table and CSV have columns shared by every record: the order of a single record cannot reorder a
-shared column. This is a stated limit of the "order per record" choice, not a defect.
+shared column.
 
 A field added to the model **after** you reordered does not disappear: it is appended at the end.
 
@@ -66,5 +63,4 @@ same field defined in two different ways, on the other hand, is a real conflict,
 lets you decide.
 
 A colleague running an older version of the program **keeps** the values of record-specific
-fields and sees them in exports and prints; they simply do not see them in the form. Nothing is
-lost.
+fields and sees them in exports and prints, but not in the form.

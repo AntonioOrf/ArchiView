@@ -3,8 +3,8 @@
 A **vocabulary** is a list of permitted values for a field: types of writing support, states of
 preservation, document typologies. The field becomes a drop-down list instead of free text.
 
-It serves one purpose, but a decisive one: **preventing the same concept from being written in five
-different ways**, with the result that no filter ever gives the right count.
+This keeps the same concept from being **written in five different ways**, which would otherwise
+leave every filter with the wrong count.
 
 ## Creating and editing a vocabulary
 

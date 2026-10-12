@@ -49,6 +49,6 @@ be read by someone else.
   records should not load three hundred images. An attachment without a thumbnail is still
   **listed**: a record declaring three folios and showing two would give false information about
   its content.
-- Uncertain words in an **OCR draft** stay marked on paper too: in print that difference matters.
+- Uncertain words in an **OCR draft** stay marked on paper too.
 - The transcription being edited is saved before the document is composed: you print what you have
   written, not what you had written a minute earlier.

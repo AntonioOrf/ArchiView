@@ -51,5 +51,4 @@ al prossimo scambio.
    sbagliato, non l'operazione.
 3. Conferma, poi verifica due o tre schede a campione.
 
-Per operazioni molto estese (centinaia di schede) fai prima una copia della cartella di lavoro:
-è la rete di sicurezza più semplice che esista.
+Per operazioni molto estese (centinaia di schede) fai prima una copia della cartella di lavoro.

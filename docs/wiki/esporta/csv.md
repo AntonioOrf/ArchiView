@@ -48,6 +48,3 @@ quindi un giro export → import non altera le segnature.
 
 Un archivio esportato in CSV si può **reimportare** in ArchiView senza perdite: le colonne
 vengono riconosciute, i tipi di documento pure. Vedi [Importare da CSV](/esporta/importa-csv).
-
-È una garanzia deliberata: un'esportazione che non rientra non è un formato aperto, è un vicolo
-cieco.

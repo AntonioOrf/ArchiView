@@ -12,8 +12,8 @@ The text belongs to the **folio** you are looking at, not to the whole record: w
 attachment, the editor follows. At the top an indication such as "Folio 2 of 3" appears, with the
 file name.
 
-`Alt+←` and `Alt+→` move from one folio to the next, and each folio keeps its own text. What you
-have just written is stored before every change of folio: nothing is lost moving back and forth.
+`Alt+←` and `Alt+→` move from one folio to the next, and each folio keeps its own text: before
+every change of folio the app stores what you have just written.
 
 If the record has no attachments, you write a single transcription, as always.
 

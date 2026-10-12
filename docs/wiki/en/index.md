@@ -44,8 +44,7 @@ people who work with manuscripts and archival documents: notarial imbreviature, 
 tax registers, private papers.
 
 It works **offline**: your data stays on your disk, in readable files, and nobody sees it unless
-you decide to share it. Connecting to a common archive for teamwork is possible, but it is a
-choice, not a requirement.
+you decide to share it. Connecting to a common archive for teamwork is optional.
 
 ## Where to start
 

@@ -17,7 +17,7 @@ non serve il mouse.
 ## Che cosa mostra una scheda nell'albero
 
 Nell'albero ogni scheda si presenta con la sua **segnatura**. Quando la segnatura da sola non
-basta a riconoscerla — «165, 579» dice dov'è il documento, non di chi parla — puoi farle
+basta a riconoscerla («165, 579» dice dov'è il documento, non di chi parla), puoi farle
 comparire sotto un secondo rigo con il valore di un campo a tua scelta.
 
 Il pulsante in alto a destra del pannello **Cartelle**, accanto alla scritta «Struttura», apre

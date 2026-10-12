@@ -46,6 +46,3 @@ so an export and import round trip does not alter shelfmarks.
 
 An archive exported to CSV can be **reimported** into ArchiView without loss: columns are
 recognised, and so are document types. See [Importing from CSV](/en/export/csv-import).
-
-This is a deliberate guarantee: an export that cannot come back in is not an open format, it is a
-dead end.

@@ -23,7 +23,7 @@ At the top of the folder tree a row carries the **name of the archive**: it is t
 holds the records that are not yet filed in a folder.
 
 In the tree every record carries its shelfmark; the button at the top right of the **Folders**
-panel adds a field of your choice underneath — the declarant, the notary, the author — and lets
+panel adds a field of your choice underneath (the declarant, the notary, the author) and lets
 you sort the tree by that field. See
 [What a record shows in the tree](/en/guide/folders-archives#what-a-record-shows-in-the-tree).
 
@@ -37,7 +37,7 @@ download and upload commands. On a purely local archive there is nothing to watc
 
 ## In the centre: the list of records
 
-This is where the work happens. Above the list, from left to right:
+Above the list, from left to right:
 
 - **New record** (the chevron preselects the type) and **New model**;
 - **Filters** (with a counter of the active filters), **sorting**, and the **grid / table**

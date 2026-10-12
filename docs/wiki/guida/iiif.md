@@ -1,7 +1,7 @@
 # Importare da IIIF
 
-Quasi tutte le biblioteche che digitalizzano codici medievali — BnF/Gallica, e-codices, la
-Vaticana, la British Library, la Bodleian — pubblicano per ogni manoscritto un **manifest IIIF**:
+Quasi tutte le biblioteche che digitalizzano codici medievali (BnF/Gallica, e-codices, la
+Vaticana, la British Library, la Bodleian) pubblicano per ogni manoscritto un **manifest IIIF**:
 un indirizzo che descrive la sequenza delle carte e da cui le immagini si ottengono a qualunque
 risoluzione. Basta quell'indirizzo per avere in ArchiView una scheda con tutte le carte in
 ordine, già etichettate, senza scaricare nulla.

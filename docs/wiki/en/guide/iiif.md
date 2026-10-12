@@ -1,7 +1,7 @@
 # Importing from IIIF
 
-Almost every library that digitises medieval codices — BnF/Gallica, e-codices, the Vatican Library,
-the British Library, the Bodleian — publishes a **IIIF manifest** for each manuscript: an address
+Almost every library that digitises medieval codices (BnF/Gallica, e-codices, the Vatican Library,
+the British Library, the Bodleian) publishes a **IIIF manifest** for each manuscript: an address
 that describes the sequence of folios and from which the images can be obtained at any resolution.
 That address is all ArchiView needs to give you a record with every folio in order, already
 labelled, without downloading anything.

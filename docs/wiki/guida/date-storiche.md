@@ -20,9 +20,8 @@ Scrivi come scriveresti in un regesto. L'app riconosce:
 | Secolo | `sec. XIV`, `sec. XIV in.`, `sec. XIV ex.`, `sec. XIV med.`, prima e seconda metà |
 | Senza data | `s.d.` |
 
-Sotto il campo, mentre scrivi, l'app dichiara **come ha letto** quello che hai scritto. È il
-punto più utile della funzione: verifichi subito se l'ordinamento collocherà la scheda dove ti
-aspetti.
+Sotto il campo, mentre scrivi, l'app dichiara **come ha letto** quello che hai scritto, così
+verifichi subito se l'ordinamento collocherà la scheda dove ti aspetti.
 
 ![Il campo Data Cronica con il riscontro dell'interpretazione sotto](/img/form-scheda.png){.light-only}
 ![Il campo Data Cronica con il riscontro dell'interpretazione sotto](/img/form-scheda-scuro.png){.dark-only}

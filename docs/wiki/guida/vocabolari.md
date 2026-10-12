@@ -3,8 +3,8 @@
 Un **vocabolario** è un elenco di valori ammessi per un campo: tipologie di supporto, stati di
 conservazione, tipologie documentarie. Il campo diventa una tendina invece che un testo libero.
 
-Serve a una cosa sola, ma decisiva: **impedire che lo stesso concetto venga scritto in cinque
-modi diversi**, con il risultato che nessun filtro darà mai il conto giusto.
+Così lo stesso concetto **non viene scritto in cinque modi diversi**, che è il motivo per cui
+altrimenti nessun filtro darebbe il conto giusto.
 
 ## Creare e modificare un vocabolario
 

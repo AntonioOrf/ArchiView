@@ -6,8 +6,7 @@ synchronising. ArchiView does not choose for you and never overwrites silently.
 ## First: most cases are not conflicts
 
 If you changed **different fields** of the same record, the two changes combine by themselves, field
-by field. No window, no decision to make: it is the most frequent case and it is handled without
-disturbing you.
+by field, without opening any window. This is the most frequent case.
 
 A real conflict only exists when two people changed **the same field** in different ways.
 

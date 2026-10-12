@@ -65,7 +65,7 @@ dell'archivio né avviare comandi dell'app.
 
 ## Uscire, revocare, chiudere
 
-- Un **membro** può uscire quando vuole: la sua copia locale resta, semplicemente smette di
+- Un **membro** può uscire quando vuole: la sua copia locale resta, ma smette di
   sincronizzarsi.
 - Il **titolare** può revocare un membro alla volta.
 - Chiunque conserva sempre una copia completa e leggibile dell'archivio sul proprio disco: nessuno

@@ -26,8 +26,7 @@ Per le trascrizioni: l'ambito che scegli (scheda aperta, selezione, cartella, ar
 con le intestazioni delle carte.
 
 Una scheda **senza** trascrizione non sparisce dal file: compare con la sua intestazione e la
-nota «Nessuna trascrizione». Un export che perde per strada tre schede su venti senza dirlo è
-peggio di uno vuoto.
+nota «Nessuna trascrizione».
 
 ## L'incertezza dell'OCR sopravvive
 

@@ -50,7 +50,6 @@ essere letti da qualcun altro.
   schede non deve caricare trecento immagini. Un allegato senza miniatura resta comunque
   **elencato**: una scheda che dichiara tre carte e ne mostra due darebbe un'informazione falsa
   sul proprio contenuto.
-- Le parole incerte di una **bozza OCR** restano marcate anche sulla carta: in stampa quella
-  differenza conta.
+- Le parole incerte di una **bozza OCR** restano marcate anche sulla carta.
 - La trascrizione in corso viene salvata prima di comporre il documento: stampi quello che hai
   scritto, non quello che avevi scritto un minuto fa.
