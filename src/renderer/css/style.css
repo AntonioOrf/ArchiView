@@ -770,6 +770,7 @@ button, .btn {
 .tag-manager-input { flex: 1 1 auto; min-width: 0; }
 .tag-manager-count { font-size: 0.75rem; color: var(--color-text-muted); }
 
+
 /* P10 — id Wikidata/VIAF sull'anagrafica e candidati della ricerca (authorityPanel.ts). */
 .auth-id { font-size: 0.6875rem; font-family: ui-monospace, monospace; color: var(--color-text-secondary); }
 a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-decoration: underline; }
@@ -1812,7 +1813,8 @@ summary:focus:not(:focus-visible) { outline: none; }
 .iv-viewport.iv-in-trascinamento .iv-img { cursor: grabbing; }
 
 .iv-barra,
-.iv-pannello-filtri {
+.iv-pannello-filtri,
+.iv-pannello-regioni {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
@@ -1927,6 +1929,81 @@ summary:focus:not(:focus-visible) { outline: none; }
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .iv-filtro select option { color: #1c1917; background-color: #fafaf9; }
+/* P6 — regioni della carta. Il velo segue la transform dell'immagine (imageViewer.ts):
+   i bordi si dividono per la scala, così restano di 2 px a qualunque ingrandimento. */
+.iv-regioni {
+    position: absolute;
+    transform-origin: center center;
+    pointer-events: none;
+    --iv-scala: 1;
+}
+.iv-regione {
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: auto;
+    border: calc(2px / var(--iv-scala)) solid var(--color-primary);
+    background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    cursor: pointer;
+    outline: none;
+}
+.iv-regione-scelta {
+    background-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+    box-shadow: 0 0 0 calc(2px / var(--iv-scala)) #fff;
+    cursor: move;
+}
+.iv-regione:focus-visible { box-shadow: 0 0 0 calc(3px / var(--iv-scala)) #fff; }
+.iv-maniglia {
+    position: absolute;
+    right: calc(-6px / var(--iv-scala));
+    bottom: calc(-6px / var(--iv-scala));
+    width: calc(12px / var(--iv-scala));
+    height: calc(12px / var(--iv-scala));
+    background-color: #fff;
+    border: calc(2px / var(--iv-scala)) solid var(--color-primary);
+    cursor: nwse-resize;
+    display: none;
+}
+.iv-regione-scelta .iv-maniglia { display: block; }
+.iv-viewport.iv-disegno,
+.iv-viewport.iv-disegno .iv-img,
+.iv-viewport.iv-disegno .iv-regione { cursor: crosshair; }
+.iv-btn[aria-expanded="true"],
+.iv-filtri-reset[aria-pressed="true"] { background-color: rgba(255, 255, 255, 0.2); }
+.iv-pannello-regioni {
+    bottom: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    width: min(20rem, calc(100% - 1rem));
+    max-height: calc(100% - 5rem);
+}
+.iv-regioni-azioni { display: flex; gap: 0.5rem; }
+.iv-regioni-aiuto { margin: 0; color: #d6d3d1; line-height: 1.35; }
+.iv-regioni-elenco {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-y: auto;
+    min-height: 0;
+}
+.iv-regioni-voce { display: flex; align-items: center; gap: 0.25rem; padding: 0.125rem; }
+.iv-regioni-voce.iv-regione-scelta { background-color: rgba(255, 255, 255, 0.12); box-shadow: none; }
+.iv-regioni-voce input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.125rem 0.375rem;
+    color: inherit;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.iv-regioni-voce input::placeholder { color: #a8a29e; }
+.iv-regioni-voce input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 0; }
+.iv-regioni-vuoto { color: #d6d3d1; font-style: italic; }
 /* Su hardware lento restano i soli filtri CSS: l'elaborazione per pixel sarebbe troppo pesante. */
 .perf-low .iv-solo-perf-ok { display: none; }
 .iv-viewport[aria-busy="true"] .iv-img { opacity: 0.6; transition: opacity 0.2s; }

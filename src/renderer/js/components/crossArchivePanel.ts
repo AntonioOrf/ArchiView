@@ -47,6 +47,7 @@ function _caEl(tag, classe?, testo?) {
 function _caEtichettaCampo(r) {
     if (r.campo === '#trascrizione') return _caT('cross_field_transcription', 'Trascrizione');
     if (r.campo === '#ocr') return _caT('cross_field_ocr', 'Testo riconosciuto (OCR)');
+    if (r.campo === '#regioni') return _caT('cross_field_regions', 'Note delle regioni');
     if (r.campo === '#tags') return _caT('th_tags', 'Tag');
     if (r.campo === 'segnatura') return _caT('field_segnatura', 'Segnatura');
     if (r.campo === 'anagrafica') return _caT('auth_title', 'Persone e luoghi');

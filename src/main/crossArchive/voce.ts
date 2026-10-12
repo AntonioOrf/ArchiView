@@ -12,7 +12,8 @@ const { normalizza, testoPulito, testoIndicizzabile } = require('./testo');
  * che finisce dentro una voce: un indice persistito con il formato vecchio va scartato.
  */
 // 2: `provenienza` e `rimandiEsterni` diventano chiavi di servizio e non entrano più nella voce.
-const INDICE_FORMATO = 2;
+// 3: le note delle regioni delle carte (P6) in `#regioni`.
+const INDICE_FORMATO = 3;
 
 /**
  * Tipo e authority dei campi BASE, cioè di quelli dichiarati in `CONFIG_CAMPI` (renderer,
@@ -33,6 +34,7 @@ const PESO = { segnatura: 4, anagrafica: 3, campo: 2, testo: 1 };
 const ID_TRASCRIZIONE = '#trascrizione';
 const ID_OCR = '#ocr';
 const ID_TAGS = '#tags';
+const ID_REGIONI = '#regioni';
 
 type CampoVoce = { id: string; label?: string; orig: string; norm: string; peso: number };
 type NomeAnagrafica = { tipo: string; chiave: string; nome: string; norm: string };
@@ -137,13 +139,15 @@ function costruisciVoce(m: any, ctx: ContestoArchivio, limiteTesto: number): Voc
   const t2 = taglia(ocr.trim(), limiteTesto);
   aggiungiCampo(voce.campi, ID_TRASCRIZIONE, t1.testo, PESO.testo);
   aggiungiCampo(voce.campi, ID_OCR, t2.testo, PESO.testo);
-  if (t1.troncato || t2.troncato) voce.troncata = true;
+  const t3 = taglia(Model.testoAnnotazioni(m).trim(), limiteTesto);
+  aggiungiCampo(voce.campi, ID_REGIONI, t3.testo, PESO.testo);
+  if (t1.troncato || t2.troncato || t3.troncato) voce.troncata = true;
 
   return voce;
 }
 
 module.exports = {
-  INDICE_FORMATO, CAMPI_BASE_AUTHORITY, PESO, ID_TRASCRIZIONE, ID_OCR, ID_TAGS,
+  INDICE_FORMATO, CAMPI_BASE_AUTHORITY, PESO, ID_TRASCRIZIONE, ID_OCR, ID_TAGS, ID_REGIONI,
   contestoArchivio, costruisciVoce
 };
 export {};

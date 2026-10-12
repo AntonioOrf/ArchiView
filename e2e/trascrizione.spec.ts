@@ -403,6 +403,66 @@ test.describe('Vista Trascrizione', () => {
     await expect.poll(() => page.evaluate(() => String(window.getSelection()))).toBe('uita');
   });
 
+  test('P6 — regione disegnata col mouse, mossa da tastiera, salvata e trovata dalla ricerca', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-REGIONI', path.join(__dirname, 'fixtures', 'carta.png'));
+    await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), id);
+    const viewport = page.locator('#trasc-img-viewport');
+    const img = page.locator('#trasc-img-preview');
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(400);
+    const regioni = () => page.evaluate(() => {
+      // @ts-ignore -- `appData` è una `let` globale.
+      return appData.manoscritti.find((m: any) => m.segnatura === 'MS-REGIONI').allegati[0].annotazioni;
+    });
+
+    await viewport.hover();
+    await viewport.locator('[data-iv="regioni"]').click();
+    await expect(viewport.locator('[data-iv="pannello-regioni"]')).toBeVisible();
+    await viewport.locator('[data-iv="disegna"]').click();
+    await expect(viewport.locator('[data-iv="disegna"]')).toHaveAttribute('aria-pressed', 'true');
+
+    // Trascinamento vero sull'immagine: dal 20% al 60% in larghezza, dal 20% al 50% in altezza.
+    const b = (await img.boundingBox())!;
+    await page.mouse.move(b.x + b.width * 0.2, b.y + b.height * 0.2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width * 0.6, b.y + b.height * 0.5, { steps: 6 });
+    await page.mouse.up();
+    await expect(viewport.locator('.iv-regione')).toHaveCount(1);
+
+    // Il fuoco va alla nota della regione nuova.
+    const nota = viewport.locator('.iv-regioni-voce input');
+    await expect(nota).toBeFocused();
+    await page.keyboard.type('Iniziale miniata');
+    await viewport.locator('.iv-regione').focus();
+    await expect.poll(async () => (await regioni())?.[0]?.testo).toBe('Iniziale miniata');
+    const prima = (await regioni())[0].xywh;
+    expect(prima[0]).toBeCloseTo(0.2, 1);
+    expect(prima[2]).toBeCloseTo(0.4, 1);
+    expect(prima[3]).toBeCloseTo(0.3, 1);
+
+    // Tastiera: freccia sposta, Maiusc+freccia ridimensiona; il visualizzatore non fa pan.
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Shift+ArrowDown');
+    await expect.poll(async () => (await regioni())[0].xywh[0]).toBeCloseTo(prima[0] + 0.01, 5);
+    await expect.poll(async () => (await regioni())[0].xywh[3]).toBeCloseTo(prima[3] + 0.01, 5);
+    expect(await page.evaluate(() => (document.getElementById('trasc-img-viewport') as any)._imageViewer.stato.tx)).toBe(0);
+
+    // Ricerca: la nota della regione porta alla carta con la regione scelta.
+    await page.evaluate(() => (window as any).chiudiTrascrizione());
+    await page.locator('header button[data-tab="search"]').click();
+    await page.locator('#search-input').fill('miniata');
+    const risultato = page.locator('#search-suggestions > div', { hasText: 'MS-REGIONI' });
+    await expect(risultato).toContainText(/Regione, c\. 1|Region, f\. 1/);
+    await risultato.click();
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    await expect(viewport.locator('.iv-regione.iv-regione-scelta')).toBeFocused();
+
+    // Canc la toglie: la chiave sparisce dalla carta, non resta [].
+    await page.keyboard.press('Delete');
+    await expect(viewport.locator('.iv-regione')).toHaveCount(0);
+    await expect.poll(async () => (await regioni()) === undefined).toBe(true);
+  });
+
   test('P5 — confronto: la carta aperta a sinistra, a destra una carta di un altra scheda, zoom sincronizzabile', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     await createItemWithAttachment(page, 'MS-CMP-B', FIXTURE_PNG);

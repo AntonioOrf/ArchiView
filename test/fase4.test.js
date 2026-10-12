@@ -143,6 +143,41 @@ test('la trascrizione della scheda derivata dalle carte non genera un conflitto 
   assert.strictEqual(M.trascrizioneDerivata(fuso), true);
 });
 
+// P6 — le regioni sono un elenco dentro la carta: si fondono per id, come i campi propri.
+const reg = (id, testo, x = 0.1) => Object.assign({ id, xywh: [x, 0.1, 0.2, 0.2] }, testo ? { testo } : {});
+
+test('P6: regioni aggiunte sulla stessa carta dalle due parti entrano entrambe', () => {
+  const base = scheda({ allegati: [carta('a', { annotazioni: [reg('r1')] })] });
+  const locale = scheda({ allegati: [carta('a', { annotazioni: [reg('r1'), reg('mia', 'glossa')] })] });
+  const esterno = scheda({ allegati: [carta('a', { annotazioni: [reg('r1', 'iniziale'), reg('sua')] })] });
+  const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
+  assert.deepStrictEqual(conflitti, []);
+  assert.deepStrictEqual(fuso.allegati[0].annotazioni.map(r => r.id), ['r1', 'mia', 'sua']);
+  assert.strictEqual(fuso.allegati[0].annotazioni[0].testo, 'iniziale');
+});
+
+test('P6: stessa regione cambiata in modi diversi è un conflitto; tolta da un lato sparisce', () => {
+  const base = scheda({ allegati: [carta('a', { annotazioni: [reg('r1'), reg('r2')] })] });
+  const { fuso, conflitti } = M.fondiRecord(base,
+    scheda({ allegati: [carta('a', { annotazioni: [reg('r1', 'qui'), reg('r2')] })] }),
+    scheda({ allegati: [carta('a', { annotazioni: [reg('r1', 'là')] })] }));
+  assert.deepStrictEqual(conflitti, ['allegati']);
+  assert.deepStrictEqual(fuso.allegati[0].annotazioni.map(r => [r.id, r.testo]), [['r1', 'qui']]);
+  // Tutte tolte da un lato, nessuna aggiunta dall'altro: la chiave sparisce, non resta [].
+  const tolte = M.fondiRecord(base,
+    scheda({ allegati: [carta('a', { annotazioni: [reg('r1'), reg('r2')] , stato: 'rivista' })] }),
+    scheda({ allegati: [carta('a')] }));
+  assert.deepStrictEqual(tolte.conflitti, []);
+  assert.strictEqual('annotazioni' in tolte.fuso.allegati[0], false);
+});
+
+test('P6: Model.annotazioni scarta le regioni non valide; testoAnnotazioni le raccoglie', () => {
+  const a = carta('a', { annotazioni: [reg('ok', 'nota'), { id: 'x', xywh: [0.9, 0, 0.5, 0.1] }, { id: '', xywh: [0, 0, 0.1, 0.1] }, { id: 'n', xywh: [0, 0, NaN, 1] }, reg('vuota', '  ')] });
+  assert.deepStrictEqual(M.annotazioni(a).map(r => r.id), ['ok', 'vuota']);
+  assert.strictEqual('testo' in M.annotazioni(a)[1], false);
+  assert.strictEqual(M.testoAnnotazioni({ allegati: [a, carta('b')] }), 'nota\n');
+});
+
 test('una scheda vecchia, con la trascrizione solo sulla scheda, la fonde ancora come campo', () => {
   const base = scheda({ allegati: [carta('a')] });
   const { conflitti } = M.fondiRecord(base, scheda({ allegati: [carta('a')], trascrizione: '<p>x</p>' }), scheda({ allegati: [carta('a')], trascrizione: '<p>y</p>' }));

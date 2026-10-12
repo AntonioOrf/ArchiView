@@ -89,6 +89,8 @@ function getSearchIndex(m) {
         const ocr = window.testoOcrRecord(m);
         if (ocr) hay += ocr + '\n';
     }
+    // P6 — le note delle regioni stanno dentro le carte, come l'OCR.
+    if (window.Model) hay += window.Model.testoAnnotazioni(m);
     hay = window.normalizzaTesto(hay);
 
     const entry = { gen: searchCacheGen, fields, hay };
@@ -1431,6 +1433,25 @@ function _cercaNelleCarte(m, tok) {
     return null;
 }
 
+/** P6 — prima regione la cui nota contiene `tok`: il clic apre la carta con la regione scelta. */
+function _cercaNelleRegioni(m, tok) {
+    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
+    for (let i = 0; i < allegati.length; i++) {
+        for (const r of window.Model.annotazioni(allegati[i])) {
+            if (!r.testo) continue;
+            const norm = window.normalizzaTesto(r.testo);
+            if (!norm.includes(tok)) continue;
+            return {
+                key: window.t('search_hit_region', 'Regione, c. {var0}').replace('{var0}', String(i + 1)),
+                snippet: buildSnippet(r.testo, r.testo.toLowerCase(), norm, tok),
+                carta: i,
+                regione: r.id
+            };
+        }
+    }
+    return null;
+}
+
 function renderSearchSuggestions() {
     const tokens = window.tokenizzaRicerca(document.getElementById('search-input').value);
     const container = document.getElementById('search-suggestions');
@@ -1468,6 +1489,11 @@ function renderSearchSuggestions() {
             }
             if (aggiunto) break; // Mostriamo solo il primo campo in cui matcha per questo documento
         }
+        // P6 — la parola può stare solo nella nota di una regione: non è un campo della scheda.
+        for (const tok of aggiunto ? [] : tokens) {
+            const inRegione = _cercaNelleRegioni(m, tok);
+            if (inRegione) { matches.push(Object.assign({ item: m }, inRegione)); break; }
+        }
         if (matches.length >= 15) break; // Massimo 15 suggerimenti
     }
 
@@ -1480,7 +1506,9 @@ function renderSearchSuggestions() {
     matches.forEach(match => {
         const div = document.createElement('div');
         div.className = "p-2 border-b border-stone-200 hover:bg-amber-50 cursor-pointer transition-colors";
-        div.onclick = () => match.carta !== undefined
+        div.onclick = () => match.regione
+            ? window.apriRegioneSuCarta(match.item.id, match.carta, match.regione)
+            : match.carta !== undefined
             ? window.apriTrascrizioneSuCarta(match.item.id, match.carta, match.pagina, match.parola)
             : window.rivelaRecordNellaGriglia(match.item.id);
         div.innerHTML = `

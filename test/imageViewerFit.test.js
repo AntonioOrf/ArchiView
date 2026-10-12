@@ -84,4 +84,24 @@ function runTests() {
   console.log(`\nAll imageViewerFit tests passed (${passed}/7).`);
 }
 
+// P6 — dal punto sullo schermo alla frazione della carta: l'inverso della transform di applica().
+function testPuntoInCarta() {
+  const window = {};
+  new Function('window', estraiFunzione(fs.readFileSync(VIEWER, 'utf8'), 'puntoInCarta'))(window);
+  const p = window.puntoInCarta;
+  const vicino = (a, b) => assert.ok(Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.y - b.y) < 1e-9, JSON.stringify(a) + ' ≠ ' + JSON.stringify(b));
+  // Carta 400×200 a (100, 50) nel viewport, nessuna trasformazione.
+  const d = { ox: 100, oy: 50, cw: 400, ch: 200, tx: 0, ty: 0, rot: 0, scala: 1 };
+  vicino(p(100, 50, d), { x: 0, y: 0 });
+  vicino(p(500, 250, d), { x: 1, y: 1 });
+  // Scala 2 attorno al centro (300, 150) e traslazione: il centro resta il centro spostato.
+  vicino(p(300 + 30, 150 - 20, { ...d, scala: 2, tx: 30, ty: -20 }), { x: 0.5, y: 0.5 });
+  vicino(p(300 + 200, 150, { ...d, scala: 2 }), { x: 0.75, y: 0.5 });
+  // Ruotata di 90° in senso orario: l'angolo in alto a sinistra della carta va in alto a destra.
+  vicino(p(300 + 100, 150 - 200, { ...d, rot: 90 }), { x: 0, y: 0 });
+  vicino(p(300 - 100, 150 + 200, { ...d, rot: 90 }), { x: 1, y: 1 });
+  console.log('  ✓ puntoInCarta: scala, traslazione e rotazione invertite');
+}
+
 runTests();
+testPuntoInCarta();

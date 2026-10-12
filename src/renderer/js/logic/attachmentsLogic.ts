@@ -476,6 +476,9 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
         const altName = allegato.originalName || window.t('attachment_image', 'Immagine');
         imgPreview.alt = altName;
         window.mostraAnteprimaImmagine();
+        // P6 — regioni solo sulle carte immagine (le pagine PDF passano da nascondiAnteprimaImmagine, che le spegne).
+        const viewer = (document.getElementById('trasc-img-viewport') as any)?._imageViewer;
+        if (viewer && m) viewer.impostaRegioni(window.Model.annotazioni(allegato), (lista) => _taSalvaRegioni(m.id, allegato.nome, lista));
 
         // Una carta remota puo' non arrivare: server lento, rete assente, misura che
         // quell'implementazione non sa calcolare. Senza questo, il viewport resta
@@ -874,7 +877,37 @@ window.nascondiAnteprimaImmagine = function() {
     const viewport = document.getElementById('trasc-img-viewport') as HTMLElement & { _imageViewer?: any };
     if (!viewport) return;
     viewport.classList.add('hidden-tab');
-    if (viewport._imageViewer) viewport._imageViewer.reimposta();
+    if (viewport._imageViewer) {
+        viewport._imageViewer.reimposta();
+        // Salva subito un'eventuale modifica in sospeso e spegne le regioni della carta lasciata.
+        viewport._imageViewer.impostaRegioni(null);
+    }
+};
+
+/**
+ * P6 — le regioni della carta `nome` della scheda `id`. Si cerca per nome e non per indice né
+ * per riferimento: dopo un riordino o un merge l'oggetto della carta può essere un altro.
+ */
+async function _taSalvaRegioni(id, nome, lista) {
+    const m = appData.manoscritti.find(x => String(x.id) === String(id));
+    const al = m && Array.isArray(m.allegati) ? m.allegati.find(a => a && a.nome === nome) : null;
+    if (!al) return;
+    if (lista.length) al.annotazioni = lista;
+    else delete al.annotazioni;
+    m.lastModified = Date.now();
+    try {
+        await salvaTutto();
+    } catch (e) {
+        console.error('Regioni della carta non salvate:', e);
+        mostraMessaggio(window.t('msg_errore_salvataggio', 'Errore nel salvataggio dei dati: ') + (e.message || e), 'error');
+    }
+}
+
+/** P6 — dal risultato di ricerca: apre la carta e sceglie la regione. */
+window.apriRegioneSuCarta = async function(id, carta, regione) {
+    await window.apriTrascrizioneSuCarta(id, carta);
+    const viewer = (document.getElementById('trasc-img-viewport') as any)?._imageViewer;
+    if (viewer) viewer.scegliRegione(regione, true);
 };
 
 window.mostraAnteprimaImmagine = function() {

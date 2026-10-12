@@ -62,6 +62,7 @@
             <button type="button" data-iv="reale" class="iv-btn iv-btn-testo" data-i18n-title="tooltip_zoom_real" data-i18n-aria-label="tooltip_zoom_real" title="Dimensione reale">1:1</button>
             <span class="iv-sep"></span>
             <button type="button" data-iv="filtri" class="iv-btn" aria-expanded="false" data-i18n-title="tooltip_image_filters" data-i18n-aria-label="tooltip_image_filters" title="Luminosità e contrasto"><i data-lucide="sliders-horizontal"></i></button>
+            <button type="button" data-iv="regioni" class="iv-btn hidden-tab" aria-expanded="false" data-i18n-title="region_button" data-i18n-aria-label="region_button" title="Regioni"><i data-lucide="square-dashed"></i></button>
             <button type="button" data-iv="reset" class="iv-btn" data-i18n-title="tooltip_view_reset" data-i18n-aria-label="tooltip_view_reset" title="Ripristina la vista"><i data-lucide="refresh-ccw"></i></button>
         </div>
         <div class="iv-pannello-filtri hidden-tab" data-iv="pannello-filtri">
@@ -97,7 +98,30 @@
             </label>
             <button type="button" data-iv="reset-filtri" class="iv-filtri-reset" data-i18n="btn_reset_filters">Reimposta</button>
         </div>
+        <div class="iv-pannello-regioni hidden-tab" data-iv="pannello-regioni" role="region" data-i18n-aria-label="region_button">
+            <div class="iv-regioni-azioni">
+                <button type="button" data-iv="disegna" class="iv-filtri-reset" aria-pressed="false" data-i18n="region_draw">Disegna</button>
+                <button type="button" data-iv="aggiungi-regione" class="iv-filtri-reset" data-i18n="region_add">Aggiungi regione</button>
+            </div>
+            <p class="iv-regioni-aiuto" data-i18n="region_help">Con «Disegna» attivo trascina sull'immagine. Su una regione: frecce per spostarla, Maiusc+frecce per ridimensionarla, Canc per eliminarla.</p>
+            <ul class="iv-regioni-elenco" data-iv="elenco-regioni"></ul>
+        </div>
     `;
+
+    /**
+     * P6 — da un punto dello schermo alla posizione nella carta, in frazioni 0..1 del riquadro
+     * dell'immagine. Inverte la `transform` di `applica()` (traslazione, rotazione attorno al
+     * centro, scala). Funzione PURA: è il conto che il test unit verifica.
+     * `px`/`py`: punto rispetto all'angolo del viewport; `ox`/`oy`/`cw`/`ch`: riquadro di layout dell'immagine.
+     */
+    window.puntoInCarta = function (px, py, d) {
+        const dx = px - (d.ox + d.cw / 2) - d.tx;
+        const dy = py - (d.oy + d.ch / 2) - d.ty;
+        const a = (d.rot || 0) * Math.PI / 180;
+        const rx = dx * Math.cos(a) + dy * Math.sin(a);
+        const ry = -dx * Math.sin(a) + dy * Math.cos(a);
+        return { x: (rx / d.scala + d.cw / 2) / d.cw, y: (ry / d.scala + d.ch / 2) / d.ch };
+    };
 
     // P4 — un solo worker per tutti i visualizzatori, creato al primo uso. Lato massimo della
     // copia elaborata: oltre, la memoria del worker cresce più del dettaglio che si guadagna.
@@ -161,6 +185,12 @@
         const barra = viewport.querySelector('.iv-barra');
         const pannelloFiltri = q('pannello-filtri');
         const etichettaPercento = q('percento');
+        const pannelloRegioni = q('pannello-regioni');
+        // P6 — le regioni stanno su un velo grande quanto l'immagine e trasformato come lei:
+        // zoom, pan e rotazione le portano con sé senza ricalcolare nulla.
+        const strato = document.createElement('div');
+        strato.className = 'iv-regioni hidden-tab';
+        img.insertAdjacentElement('afterend', strato);
 
         // luminosita/contrasto: valore del cursore, -100..100, 0 = neutro (vedi percentuale()).
         const stato = { scala: 1, tx: 0, ty: 0, rot: 0, luminosita: 0, contrasto: 0, inverti: false, elaborazione: '', soglia: 128 };
@@ -254,6 +284,15 @@
             img.style.transform = `translate(${stato.tx}px, ${stato.ty}px) rotate(${stato.rot}deg) scale(${stato.scala})`;
             img.style.filter = `brightness(${percentuale(stato.luminosita, 100)}%) contrast(${percentuale(stato.contrasto, 150)}%) invert(${stato.inverti ? 1 : 0})`;
             viewport.classList.add('iv-trascinabile');
+            if (regioni) {
+                strato.style.left = img.offsetLeft + 'px';
+                strato.style.top = img.offsetTop + 'px';
+                strato.style.width = img.clientWidth + 'px';
+                strato.style.height = img.clientHeight + 'px';
+                strato.style.transform = img.style.transform;
+                // Bordi sempre di 2 px a schermo, a qualunque ingrandimento.
+                strato.style.setProperty('--iv-scala', String(stato.scala));
+            }
 
             const d = dimensioni();
             const percento = d.nw && d.cw ? Math.round(stato.scala * (d.cw / d.nw) * 100) : Math.round(stato.scala * 100);
@@ -343,6 +382,288 @@
             applica();
         }
 
+        // --- P6: regioni della carta ---------------------------------------------
+        // `regioni` è null quando l'host non le gestisce (modale, confronto, pagine PDF): niente
+        // pulsante, niente velo. L'host passa l'elenco e riceve ogni modifica in `onCambia`.
+        let regioni = null;          // { lista, onCambia, scelta }
+        let disegno = false;
+        let timerRegioni = null;
+        const PASSO_REGIONE = 0.01;
+        const LATO_MIN = 0.01;
+
+        const btnRegioni = q('regioni');
+        const elencoRegioni = q('elenco-regioni');
+
+        /** Il salvataggio dell'host non parte a ogni freccia: si raccoglie, e `imposta` lo forza prima di cambiare carta. */
+        function notificaRegioni(subito = false) {
+            if (!regioni) return;
+            clearTimeout(timerRegioni);
+            const r = regioni;
+            const invia = () => { timerRegioni = null; r.onCambia(r.lista.map(x => ({ ...x, xywh: [...x.xywh] }))); };
+            if (subito) invia(); else timerRegioni = setTimeout(invia, 400);
+        }
+        function svuotaNotifica() {
+            if (timerRegioni) notificaRegioni(true);
+        }
+
+        function puntoCarta(e) {
+            const rect = viewport.getBoundingClientRect();
+            if (!img.clientWidth || !img.clientHeight) return null;
+            return window.puntoInCarta(e.clientX - rect.left - viewport.clientLeft, e.clientY - rect.top - viewport.clientTop, {
+                ox: img.offsetLeft, oy: img.offsetTop, cw: img.clientWidth, ch: img.clientHeight,
+                tx: stato.tx, ty: stato.ty, rot: stato.rot, scala: stato.scala
+            });
+        }
+
+        const tra = (v, min, max) => Math.min(max, Math.max(min, v));
+        const etichettaRegione = (r, i) => window.t('region_label', 'Regione {var0}').replace('{var0}', String(i + 1)) + (r.testo ? ': ' + r.testo : '');
+
+        function disegnaRegioni() {
+            if (!regioni) return;
+            strato.replaceChildren(...regioni.lista.map((r, i) => {
+                const el = document.createElement('div');
+                el.className = 'iv-regione' + (r.id === regioni.scelta ? ' iv-regione-scelta' : '');
+                el.dataset.regione = r.id;
+                el.tabIndex = 0;
+                el.setAttribute('role', 'button');
+                el.setAttribute('aria-pressed', r.id === regioni.scelta ? 'true' : 'false');
+                el.setAttribute('aria-label', etichettaRegione(r, i));
+                el.title = etichettaRegione(r, i);
+                const [x, y, w, h] = r.xywh;
+                Object.assign(el.style, { left: x * 100 + '%', top: y * 100 + '%', width: w * 100 + '%', height: h * 100 + '%' });
+                const maniglia = document.createElement('span');
+                maniglia.className = 'iv-maniglia';
+                maniglia.setAttribute('aria-hidden', 'true');
+                el.appendChild(maniglia);
+                return el;
+            }));
+            if (!elencoRegioni) return;
+            if (!regioni.lista.length) {
+                const vuoto = document.createElement('li');
+                vuoto.className = 'iv-regioni-vuoto';
+                vuoto.textContent = window.t('region_empty', 'Nessuna regione su questa carta.');
+                elencoRegioni.replaceChildren(vuoto);
+                return;
+            }
+            elencoRegioni.replaceChildren(...regioni.lista.map((r, i) => {
+                const li = document.createElement('li');
+                li.className = 'iv-regioni-voce' + (r.id === regioni.scelta ? ' iv-regione-scelta' : '');
+                li.dataset.regione = r.id;
+                const sel = document.createElement('button');
+                sel.type = 'button';
+                sel.className = 'iv-btn iv-btn-testo';
+                sel.dataset.ivRegione = 'scegli';
+                sel.textContent = String(i + 1);
+                sel.setAttribute('aria-label', window.t('region_label', 'Regione {var0}').replace('{var0}', String(i + 1)));
+                const nota = document.createElement('input');
+                nota.type = 'text';
+                nota.value = r.testo || '';
+                nota.maxLength = 2000;
+                nota.dataset.ivRegione = 'nota';
+                nota.placeholder = window.t('region_note_placeholder', 'Nota (iniziale, glossa, nota di possesso…)');
+                nota.setAttribute('aria-label', window.t('region_note', 'Nota della regione {var0}').replace('{var0}', String(i + 1)));
+                const elimina = document.createElement('button');
+                elimina.type = 'button';
+                elimina.className = 'iv-btn';
+                elimina.dataset.ivRegione = 'elimina';
+                elimina.title = window.t('region_delete', 'Elimina la regione');
+                elimina.setAttribute('aria-label', elimina.title);
+                elimina.innerHTML = window.sanitizeHTML('<i data-lucide="trash-2"></i>');
+                li.append(sel, nota, elimina);
+                return li;
+            }));
+            if (window.lucide) lucide.createIcons({ nodes: [elencoRegioni] });
+        }
+
+        function scegliRegione(id, fuoco = false) {
+            if (!regioni) return;
+            regioni.scelta = id;
+            disegnaRegioni();
+            if (fuoco && id) (strato.querySelector(`[data-regione="${CSS.escape(id)}"]`) as HTMLElement)?.focus();
+        }
+
+        function aggiungiRegione(xywh) {
+            const r = { id: window.Model.nuovoId(), xywh };
+            regioni.lista.push(r);
+            regioni.scelta = r.id;
+            disegnaRegioni();
+            notificaRegioni(true);
+            return r;
+        }
+
+        function togliRegione(id) {
+            const i = regioni.lista.findIndex(r => r.id === id);
+            if (i === -1) return;
+            regioni.lista.splice(i, 1);
+            regioni.scelta = null;
+            disegnaRegioni();
+            notificaRegioni(true);
+            viewport.focus();
+        }
+
+        /** Sposta (dx, dy) o allarga (dw, dh) una regione restando dentro la carta. */
+        function modificaRegione(r, dx, dy, dw, dh, base = r.xywh) {
+            const w = tra(base[2] + dw, LATO_MIN, 1);
+            const h = tra(base[3] + dh, LATO_MIN, 1);
+            r.xywh = [tra(base[0] + dx, 0, 1 - w), tra(base[1] + dy, 0, 1 - h), w, h];
+        }
+
+        function apriPannelloRegioni(aperto) {
+            if (!pannelloRegioni) return;
+            pannelloRegioni.classList.toggle('hidden-tab', !aperto);
+            btnRegioni?.setAttribute('aria-expanded', aperto ? 'true' : 'false');
+            if (aperto) {
+                pannelloFiltri?.classList.add('hidden-tab');
+                q('filtri')?.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        function impostaDisegno(attivo) {
+            disegno = attivo;
+            viewport.classList.toggle('iv-disegno', attivo);
+            q('disegna')?.setAttribute('aria-pressed', attivo ? 'true' : 'false');
+        }
+
+        function impostaRegioni(lista, onCambia) {
+            svuotaNotifica();
+            regioni = Array.isArray(lista) && typeof onCambia === 'function'
+                ? { lista: window.Model.annotazioni({ annotazioni: lista }), onCambia, scelta: null }
+                : null;
+            strato.classList.toggle('hidden-tab', !regioni);
+            btnRegioni?.classList.toggle('hidden-tab', !regioni);
+            if (!regioni) {
+                impostaDisegno(false);
+                apriPannelloRegioni(false);
+                strato.replaceChildren();
+                return;
+            }
+            disegnaRegioni();
+            applica();
+        }
+
+        // Tastiera sulla regione: l'alternativa al trascinamento (stessa idea delle cartelle).
+        strato.addEventListener('keydown', (e) => {
+            const el = (e.target as HTMLElement).closest('[data-regione]') as HTMLElement;
+            const r = el && regioni && regioni.lista.find(x => x.id === el.dataset.regione);
+            if (!r) return;
+            const freccia = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+            if (freccia) {
+                const [a, b] = freccia.map(v => v * PASSO_REGIONE);
+                if (e.shiftKey) modificaRegione(r, 0, 0, a, b); else modificaRegione(r, a, b, 0, 0);
+                regioni.scelta = r.id;
+                disegnaRegioni();
+                (strato.querySelector(`[data-regione="${CSS.escape(r.id)}"]`) as HTMLElement)?.focus();
+                notificaRegioni();
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                togliRegione(r.id);
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                scegliRegione(r.id);
+                apriPannelloRegioni(true);
+                (elencoRegioni?.querySelector(`[data-regione="${CSS.escape(r.id)}"] input`) as HTMLElement)?.focus();
+            } else return;
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        strato.addEventListener('focusin', (e) => {
+            const el = (e.target as HTMLElement).closest('[data-regione]') as HTMLElement;
+            if (el && regioni && regioni.scelta !== el.dataset.regione) {
+                regioni.scelta = el.dataset.regione;
+                strato.querySelectorAll('.iv-regione').forEach(x => {
+                    const s = (x as HTMLElement).dataset.regione === regioni.scelta;
+                    x.classList.toggle('iv-regione-scelta', s);
+                    x.setAttribute('aria-pressed', s ? 'true' : 'false');
+                });
+            }
+        });
+
+        if (pannelloRegioni) {
+            pannelloRegioni.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const t = e.target as HTMLElement;
+                if (t.closest('[data-iv="disegna"]')) { impostaDisegno(!disegno); return; }
+                if (t.closest('[data-iv="aggiungi-regione"]')) {
+                    const r = aggiungiRegione([0.35, 0.4, 0.3, 0.2]);
+                    scegliRegione(r.id, true);
+                    return;
+                }
+                const voce = t.closest('[data-regione]') as HTMLElement;
+                if (!voce || !regioni) return;
+                const azione = (t.closest('[data-iv-regione]') as HTMLElement)?.dataset.ivRegione;
+                if (azione === 'elimina') togliRegione(voce.dataset.regione);
+                else if (azione === 'scegli') scegliRegione(voce.dataset.regione, true);
+            });
+            pannelloRegioni.addEventListener('input', (e) => {
+                const t = e.target as HTMLInputElement;
+                const voce = t.closest('[data-regione]') as HTMLElement;
+                const r = voce && regioni && regioni.lista.find(x => x.id === voce.dataset.regione);
+                if (!r || t.dataset.ivRegione !== 'nota') return;
+                if (t.value.trim()) r.testo = t.value; else delete r.testo;
+                const el = strato.querySelector(`[data-regione="${CSS.escape(r.id)}"]`);
+                const i = regioni.lista.indexOf(r);
+                el?.setAttribute('aria-label', etichettaRegione(r, i));
+                if (el) (el as HTMLElement).title = etichettaRegione(r, i);
+                notificaRegioni();
+            });
+            pannelloRegioni.addEventListener('focusout', (e) => {
+                if ((e.target as HTMLElement).dataset?.ivRegione === 'nota') svuotaNotifica();
+            });
+        }
+
+        /**
+         * Puntatore sulle regioni: con «Disegna» si traccia un rettangolo nuovo; sulla regione già
+         * scelta si sposta (o si ridimensiona dalla maniglia); su un'altra la si sceglie e il pan
+         * continua. Restituisce true quando il gesto è suo e il pan non deve partire.
+         */
+        let opRegione = null;
+        function inizioRegione(e) {
+            if (!regioni) return false;
+            const p = puntoCarta(e);
+            if (!p) return false;
+            if (disegno) {
+                opRegione = { tipo: 'disegno', da: p, r: null };
+                return true;
+            }
+            const el = (e.target as HTMLElement).closest('[data-regione]') as HTMLElement;
+            const r = el && regioni.lista.find(x => x.id === el.dataset.regione);
+            if (!r) return false;
+            if (regioni.scelta !== r.id) { scegliRegione(r.id); return false; }
+            opRegione = { tipo: (e.target as HTMLElement).closest('.iv-maniglia') ? 'misura' : 'sposta', da: p, r, base: [...r.xywh] };
+            return true;
+        }
+        function muoviRegione(e) {
+            const p = puntoCarta(e);
+            if (!p) return;
+            const o = opRegione;
+            if (o.tipo === 'disegno') {
+                const x0 = tra(Math.min(o.da.x, p.x), 0, 1), y0 = tra(Math.min(o.da.y, p.y), 0, 1);
+                const x1 = tra(Math.max(o.da.x, p.x), 0, 1), y1 = tra(Math.max(o.da.y, p.y), 0, 1);
+                if (!o.r) {
+                    if (x1 - x0 < LATO_MIN && y1 - y0 < LATO_MIN) return;
+                    o.r = { id: window.Model.nuovoId(), xywh: [x0, y0, LATO_MIN, LATO_MIN] };
+                    regioni.lista.push(o.r);
+                    regioni.scelta = o.r.id;
+                }
+                o.r.xywh = [x0, y0, Math.max(LATO_MIN, x1 - x0), Math.max(LATO_MIN, y1 - y0)];
+                o.r.xywh[0] = Math.min(o.r.xywh[0], 1 - o.r.xywh[2]);
+                o.r.xywh[1] = Math.min(o.r.xywh[1], 1 - o.r.xywh[3]);
+            } else if (o.tipo === 'sposta') {
+                modificaRegione(o.r, p.x - o.da.x, p.y - o.da.y, 0, 0, o.base);
+            } else {
+                modificaRegione(o.r, 0, 0, p.x - o.da.x, p.y - o.da.y, o.base);
+            }
+            disegnaRegioni();
+        }
+        function fineRegione() {
+            const o = opRegione;
+            opRegione = null;
+            if (!o || !o.r) return;
+            notificaRegioni(true);
+            if (o.tipo === 'disegno') {
+                apriPannelloRegioni(true);
+                (elencoRegioni?.querySelector(`[data-regione="${CSS.escape(o.r.id)}"] input`) as HTMLElement)?.focus();
+            }
+        }
+
         // --- Comandi della barra --------------------------------------------------
         const azioni = {
             'zoom-in': () => zoomVerso(PASSO_ZOOM),
@@ -360,6 +681,12 @@
                 const chiuso = pannelloFiltri.classList.toggle('hidden-tab');
                 const btn = q('filtri');
                 if (btn) btn.setAttribute('aria-expanded', chiuso ? 'false' : 'true');
+                if (!chiuso) apriPannelloRegioni(false);
+            },
+            'regioni': () => {
+                const aperto = !!pannelloRegioni && pannelloRegioni.classList.contains('hidden-tab');
+                apriPannelloRegioni(aperto);
+                if (!aperto) impostaDisegno(false);
             }
         };
 
@@ -413,18 +740,28 @@
         // --- Trascinamento ---------------------------------------------------------
         let trascino = null;
         viewport.addEventListener('pointerdown', (e) => {
-            if (e.button !== 0 || e.target.closest('.iv-barra, .iv-pannello-filtri')) return;
+            if (e.button !== 0 || e.target.closest('.iv-barra, .iv-pannello-filtri, .iv-pannello-regioni')) return;
+            if (inizioRegione(e)) {
+                viewport.setPointerCapture(e.pointerId);
+                return;
+            }
             trascino = { x: e.clientX, y: e.clientY, tx: stato.tx, ty: stato.ty };
             viewport.classList.add('iv-in-trascinamento');
             viewport.setPointerCapture(e.pointerId);
         });
         viewport.addEventListener('pointermove', (e) => {
+            if (opRegione) { muoviRegione(e); return; }
             if (!trascino) return;
             stato.tx = trascino.tx + (e.clientX - trascino.x);
             stato.ty = trascino.ty + (e.clientY - trascino.y);
             applica();
         });
         const fineTrascinamento = (e) => {
+            if (opRegione) {
+                fineRegione();
+                try { viewport.releasePointerCapture(e.pointerId); } catch { /* già rilasciato */ }
+                return;
+            }
             if (!trascino) return;
             trascino = null;
             viewport.classList.remove('iv-in-trascinamento');
@@ -435,7 +772,7 @@
 
         // Doppio click: alterna vista adattata e 2× sul punto guardato.
         viewport.addEventListener('dblclick', (e) => {
-            if (e.target.closest('.iv-barra, .iv-pannello-filtri')) return;
+            if (disegno || e.target.closest('.iv-barra, .iv-pannello-filtri, .iv-pannello-regioni')) return;
             if (stato.scala > 1.001) adatta('pagina');
             else zoomVerso(2, e.clientX, e.clientY);
         });
@@ -445,6 +782,8 @@
         // è un contenteditable a fianco, e un handler globale gli mangerebbe i tasti.
         viewport.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.altKey || e.metaKey) return;
+            // Nella nota di una regione i tasti sono testo, non zoom.
+            if (e.target.closest('.iv-pannello-regioni')) return;
             const passo = 40;
             const tasti = {
                 '+': () => zoomVerso(PASSO_ZOOM), '=': () => zoomVerso(PASSO_ZOOM),
@@ -482,7 +821,7 @@
         if (window.lucide) lucide.createIcons({ nodes: [viewport] });
         applica();
 
-        const controller = { stato, reimposta, adatta, ruota, zoomVerso, applica };
+        const controller = { stato, reimposta, adatta, ruota, zoomVerso, applica, impostaRegioni, scegliRegione };
         viewport._imageViewer = controller;
         return controller;
     };

@@ -23,6 +23,8 @@
 // stringa CSV e i campi dinamici sono spalmati sulla radice del record. Descriverli
 // fedelmente è il presupposto per cambiarli (3.1, 3.4) sapendo che cosa si rompe.
 
+type AVAnnotazione = { id: string; xywh: [number, number, number, number]; testo?: string };
+
 type AVAllegato = {
   nome: string;
   tipo: 'pdf' | 'immagine' | string;
@@ -40,6 +42,12 @@ type AVAllegato = {
    * esistenti non devono riempirsi di carte "da fare" solo perché la funzione è nuova.
    */
   stato?: 'daTrascrivere' | 'trascritta' | 'rivista' | 'dubbio';
+  /**
+   * P6 — regioni della carta (solo immagini). `xywh` in FRAZIONI 0..1 dell'immagine, non in
+   * pixel: la stessa regione vale sulla copia IIIF a 2000 px e sul file materializzato a piena
+   * risoluzione. Assente quando non ce ne sono; si fonde per `id` (`avFondiAllegati`).
+   */
+  annotazioni?: AVAnnotazione[];
   /**
    * Import IIIF: la carta è un RIFERIMENTO, il file in `allegati_manoscritti/` non esiste
    * ancora. `nome` è comunque già deciso e riservato, così materializzare la carta fa
@@ -1798,13 +1806,20 @@ function avUgualiJson(a: any, b: any): boolean {
  * definizione LOCALE — chi sta davanti allo schermo decide.
  */
 function avFondiCampiPropri(base: any, locale: any, esterno: any): { definizioni: AVCampoDef[]; conflitto: boolean } {
-  const perId = (x: any) => {
-    const m = new Map<string, AVCampoDef>();
-    for (const d of avCampiPropri({ campiPropri: x })) m.set(d.id, d);
+  const lista = (x: any) => avCampiPropri({ campiPropri: x });
+  const { elenco, conflitto } = avFondiPerId(lista(base), lista(locale), lista(esterno));
+  return { definizioni: elenco, conflitto };
+}
+
+/** La regola di `avFondiCampiPropri` su un elenco qualunque di oggetti con `id` (anche le regioni di P6). */
+function avFondiPerId<T extends { id: string }>(base: T[], locale: T[], esterno: T[]): { elenco: T[]; conflitto: boolean } {
+  const perId = (x: T[]) => {
+    const m = new Map<string, T>();
+    for (const d of x) m.set(d.id, d);
     return m;
   };
   const b = perId(base), l = perId(locale), e = perId(esterno);
-  const definizioni: AVCampoDef[] = [];
+  const elenco: T[] = [];
   let conflitto = false;
   // L'ordine è quello locale, poi ciò che arriva da fuori: il campo che l'utente ha appena
   // aggiunto non deve saltare in mezzo agli altri sotto i suoi occhi.
@@ -1815,10 +1830,38 @@ function avFondiCampiPropri(base: any, locale: any, esterno: any): { definizioni
     visti.add(id);
     const inB = b.has(id), inL = l.has(id), inE = e.has(id);
     if (inB && (!inL || !inE)) continue;               // tolto da un lato: si toglie
-    if (inL && inE && !avUgualiJson(l.get(id), e.get(id))) conflitto = true;
-    definizioni.push((inL ? l.get(id) : e.get(id)) as AVCampoDef);
+    // Presente dai due lati: vince chi l'ha cambiato rispetto alla base; se l'hanno cambiato
+    // entrambi in modi diversi è un conflitto e resta il locale.
+    const soloEsterno = inL && inE && inB && avUgualiJson(l.get(id), b.get(id));
+    if (inL && inE && !soloEsterno && !avUgualiJson(l.get(id), e.get(id)) && !(inB && avUgualiJson(e.get(id), b.get(id)))) conflitto = true;
+    elenco.push((inL && !soloEsterno ? l.get(id) : e.get(id)) as T);
   }
-  return { definizioni, conflitto };
+  return { elenco, conflitto };
+}
+
+/** P6 — le regioni valide di una carta (id, quattro frazioni 0..1, testo facoltativo); il resto si scarta. */
+function avAnnotazioni(a: any): AVAnnotazione[] {
+  const grezze = a && Array.isArray(a.annotazioni) ? a.annotazioni : [];
+  const out: AVAnnotazione[] = [];
+  for (const r of grezze) {
+    if (!r || typeof r.id !== 'string' || !r.id || !Array.isArray(r.xywh) || r.xywh.length !== 4) continue;
+    if (!r.xywh.every((v: any) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1)) continue;
+    const [x, y, w, h] = r.xywh;
+    if (!w || !h || x + w > 1.000001 || y + h > 1.000001) continue;
+    const voce: AVAnnotazione = { id: r.id, xywh: [x, y, w, h] };
+    if (typeof r.testo === 'string' && r.testo.trim()) voce.testo = r.testo;
+    out.push(voce);
+  }
+  return out;
+}
+
+/** P6 — il testo delle regioni di una scheda, per la ricerca (una riga per regione). */
+function avTestoAnnotazioni(m: any): string {
+  let out = '';
+  for (const a of (m && Array.isArray(m.allegati) ? m.allegati : [])) {
+    for (const r of avAnnotazioni(a)) if (r.testo) out += r.testo + '\n';
+  }
+  return out;
 }
 
 /**
@@ -1875,6 +1918,14 @@ function avFondiAllegati(base: any, locale: any, esterno: any): { allegati: any[
     }
     if (inL && inE) {
       const esito = avFondiChiavi(b.get(nome) || {}, l.get(nome), e.get(nome));
+      // P6 — le regioni cambiate da entrambi i lati si fondono per id, come i campi propri.
+      const k = esito.conflitti.indexOf('annotazioni');
+      if (k !== -1) {
+        const r = avFondiPerId(avAnnotazioni(b.get(nome)), avAnnotazioni(l.get(nome)), avAnnotazioni(e.get(nome)));
+        esito.conflitti.splice(k, 1);
+        if (r.conflitto) esito.conflitti.push('annotazioni');
+        if (r.elenco.length) esito.fuso.annotazioni = r.elenco; else delete esito.fuso.annotazioni;
+      }
       if (esito.conflitti.length) conflitto = true;
       allegati.push(esito.fuso);
     } else {
@@ -2208,6 +2259,9 @@ const ArchiViewModel = {
   ordineCampi: avOrdineCampi,
   scriviOrdineCampi: avScriviOrdineCampi,
   campiPropri: avCampiPropri,
+  // Regioni delle carte (P6)
+  annotazioni: avAnnotazioni,
+  testoAnnotazioni: avTestoAnnotazioni,
   scriviCampiPropri: avScriviCampiPropri,
   unisciCampiPropri: avUnisciCampiPropri,
   normalizzaValore: avNormalizzaValore,
