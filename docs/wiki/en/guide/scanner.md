@@ -247,8 +247,8 @@ can correct the result in the box (the correction stays with the document) and c
 ![The recognised text of a page, editable, with «Copia testo» and «Tutte le pagine»](/img/telefono-testo-scuro.png){.dark-only .telefono}
 
 Recognition is built for modern print in the Latin alphabet. On a nineteenth-century edition like
-the one in the picture it reads most of the text and gets the footnotes wrong; on handwriting it
-is of little use.
+the one in the picture it reads the words but mangles quite a few («Gallorun», «Frnncorum»), so
+check it before copying. On handwriting it is of little use.
 
 ### Sharing or saving
 

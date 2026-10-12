@@ -244,8 +244,8 @@ corregge nel riquadro (la correzione resta col documento) e si copia con **Copia
 ![Il testo riconosciuto di una pagina, correggibile, con «Copia testo» e «Tutte le pagine»](/img/telefono-testo-scuro.png){.dark-only .telefono}
 
 Il riconoscimento è pensato per la stampa moderna in alfabeto latino. Su un'edizione ottocentesca
-come quella della figura legge gran parte del testo e sbaglia le note; su una scrittura a mano
-serve a poco.
+come quella della figura legge le parole ma ne storpia parecchie («Gallorun», «Frnncorum»): va
+riletto prima di copiarlo. Su una scrittura a mano serve a poco.
 
 ### Condividere o salvare
 
