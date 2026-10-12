@@ -270,7 +270,7 @@
 
         const irrisolti = totali - risolti;
         document.getElementById('conflict-counter').innerHTML = irrisolti === 0
-            ? `<span class="testo-successo font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> ${window.t("merge_all_resolved", "All conflicts have been resolved!")}</span>`
+            ? `<span class="testo-successo font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> ${window.t("merge_all_resolved", 'Tutti i conflitti sono risolti.')}</span>`
             : `${window.t("merge_conflicts_to_resolve", "Conflicts to resolve:")} <b class="testo-pericolo">${irrisolti}</b>`;
 
         const btnApply = document.getElementById('btn-resolve-all') as HTMLButtonElement;

@@ -20,7 +20,7 @@
                 <div id="custom-type-container" class="space-y-4">
                     <!-- Compare solo modificando un modello predefinito: senza, i campi
                          bloccati e il nome non scrivibile sembrerebbero un guasto. -->
-                    <p id="type-locked-note" class="hidden text-xs text-stone-500 dark:text-stone-400 leading-relaxed" data-i18n="type_locked_note">Questo è un modello predefinito: nome e campi d'origine non si cambiano — tornerebbero da soli al prossimo avvio. Puoi però aggiungere campi tuoi, modificarli ed eliminarli.</p>
+                    <p id="type-locked-note" class="hidden text-xs text-stone-500 dark:text-stone-400 leading-relaxed" data-i18n="type_locked_note">Questo è un modello predefinito: nome e campi d'origine non si cambiano, perché tornerebbero da soli al prossimo avvio. Puoi però aggiungere campi tuoi, modificarli ed eliminarli.</p>
                     <div>
                         <label class="form-label" data-i18n="label_type_name">Nome del nuovo tipo</label>
                         <input type="text" id="custom-type-name" data-i18n-placeholder="label_type_name" class="form-input">

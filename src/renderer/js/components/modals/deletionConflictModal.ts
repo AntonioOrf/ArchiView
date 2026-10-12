@@ -116,7 +116,7 @@
         const pending = total - resolved;
 
         document.getElementById('deletion-counter').innerHTML = window.sanitizeHTML(pending === 0
-            ? `<span class="testo-successo font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> ${escapeHTML(window.t('deletion_all_checked', 'Tutte le schede verificate!'))}</span>`
+            ? `<span class="testo-successo font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> ${escapeHTML(window.t('deletion_all_checked', 'Tutte le schede verificate.'))}</span>`
             : `${escapeHTML(window.t('deletion_to_check', 'Schede da verificare:'))} <b class="testo-pericolo">${pending}</b>`);
 
         const btnApply = document.getElementById('btn-resolve-deletions') as HTMLButtonElement;

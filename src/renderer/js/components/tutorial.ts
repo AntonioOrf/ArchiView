@@ -129,7 +129,7 @@ window.avviaTutorial = async function () {
             element: 'body',
             popover: {
                 title: window.t('tut_welcome_title', 'Benvenuto in ArchiView'),
-                description: window.t('tut_welcome_desc', 'Questo tour guidato ti illustrerà le funzionalità principali del sistema. Clicca su "Avanti" per iniziare la presentazione.'),
+                description: window.t('tut_welcome_desc', 'Una visita veloce ai comandi principali. Premi "Avanti" per cominciare.'),
                 side: "over",
                 align: 'start'
             }
@@ -137,7 +137,7 @@ window.avviaTutorial = async function () {
         {
             element: 'header',
             popover: {
-                title: window.t('tut_toolbar_title', 'Barra degli Strumenti Globale'),
+                title: window.t('tut_toolbar_title', 'Barra degli strumenti'),
                 description: window.t('tut_toolbar_desc', 'A sinistra i pannelli di navigazione (cartelle, ricerca, tag, modifiche, storico); a destra lo stato della sincronizzazione cloud. Le azioni sui documenti sono nella barra sopra l\'elenco.'),
                 side: "bottom",
                 align: 'start'
@@ -146,8 +146,8 @@ window.avviaTutorial = async function () {
         {
             element: 'button[data-on-click="apriNewTypeModal"]',
             popover: {
-                title: window.t('tut_models_title', 'Gestione Modelli'),
-                description: window.t('tut_models_desc', 'Clicca su questo pulsante per creare o personalizzare i modelli di documento. Un modello definisce quali campi (es. Data, Autore, Note) saranno disponibili per la compilazione della scheda.'),
+                title: window.t('tut_models_title', 'Modelli di documento'),
+                description: window.t('tut_models_desc', 'Da qui crei o modifichi i modelli di documento. Un modello stabilisce quali campi (per esempio Data, Autore, Note) compaiono nella scheda.'),
                 side: "bottom",
                 align: 'start',
                 showButtons: ['close']
@@ -157,8 +157,8 @@ window.avviaTutorial = async function () {
         {
             element: '#new-type-modal .modal-window',
             popover: {
-                title: window.t('tut_new_model_title', 'Creazione Modello'),
-                description: window.t('tut_new_model_desc', 'In questa finestra puoi selezionare un modello predefinito o crearne uno completamente personalizzato aggiungendo i tuoi campi. Chiudi la finestra (con la X o Annulla) per procedere.'),
+                title: window.t('tut_new_model_title', 'Nuovo modello'),
+                description: window.t('tut_new_model_desc', 'Qui scegli un modello predefinito o ne costruisci uno con i tuoi campi. Chiudi la finestra (X o Annulla) per proseguire.'),
                 side: "left",
                 align: 'start',
                 showButtons: []
@@ -172,8 +172,8 @@ window.avviaTutorial = async function () {
         {
             element: '[data-tab="search"]',
             popover: {
-                title: window.t('tut_search_title', 'Ricerca Globale'),
-                description: window.t('tut_search_desc', 'Per esplorare gli strumenti di ricerca avanzata, clicca sull\'icona della lente d\'ingrandimento.'),
+                title: window.t('tut_search_title', 'Ricerca'),
+                description: window.t('tut_search_desc', 'Clicca sulla lente per aprire la ricerca.'),
                 side: "bottom",
                 align: 'start',
                 showButtons: ['close']
@@ -183,8 +183,8 @@ window.avviaTutorial = async function () {
         {
             element: '#sidebar-search',
             popover: {
-                title: window.t('tut_search_engine_title', 'Motore di Ricerca Avanzato'),
-                description: window.t('tut_search_engine_desc', 'Il sistema indicizza e ricerca le parole chiave all\'interno dei metadati, dei titoli e del corpo delle trascrizioni in tempo reale.'),
+                title: window.t('tut_search_engine_title', 'Cercare nell\'archivio'),
+                description: window.t('tut_search_engine_desc', 'La ricerca guarda nei metadati, nei titoli e nelle trascrizioni, e aggiorna i risultati mentre scrivi.'),
                 side: "right",
                 align: 'start'
             }
@@ -192,8 +192,8 @@ window.avviaTutorial = async function () {
         {
             element: '[data-tab="tags"]',
             popover: {
-                title: window.t('tut_tags_title', 'Sistema di Catalogazione'),
-                description: window.t('tut_tags_desc', 'Per accedere alle funzionalità di classificazione tramite tag, seleziona l\'icona a forma di segnalibro.'),
+                title: window.t('tut_tags_title', 'Tag'),
+                description: window.t('tut_tags_desc', 'Clicca sull\'icona a segnalibro per aprire i tag.'),
                 side: "bottom",
                 align: 'start',
                 showButtons: ['close']
@@ -203,8 +203,8 @@ window.avviaTutorial = async function () {
         {
             element: '#sidebar-tags',
             popover: {
-                title: window.t('tut_tags_filter_title', 'Filtri Semantici e Tag'),
-                description: window.t('tut_tags_filter_desc', 'Questa sezione permette di organizzare il patrimonio documentario attraverso etichette personalizzabili. La selezione di un tag applica un filtro immediato all\'intero archivio.'),
+                title: window.t('tut_tags_filter_title', 'Filtrare per tag'),
+                description: window.t('tut_tags_filter_desc', 'Qui trovi tutte le etichette usate nell\'archivio. Un clic su un tag filtra l\'elenco.'),
                 side: "right",
                 align: 'start'
             }
@@ -215,7 +215,7 @@ window.avviaTutorial = async function () {
         steps.push({
             element: '#cloud-status-btn',
             popover: {
-                title: window.t('tut_cloud_sync_title', 'Sincronizzazione Remota'),
+                title: window.t('tut_cloud_sync_title', 'Stato della sincronizzazione'),
                 description: window.t('tut_cloud_sync_desc', 'Qui vedi in una riga lo stato dell\'archivio remoto: sincronizzato, aggiornamenti in entrata o modifiche locali da inviare. Il clic apre Fetch, Scarica, Carica e il collegamento al Controllo Modifiche.'),
                 side: "bottom",
                 align: 'start'
@@ -224,8 +224,8 @@ window.avviaTutorial = async function () {
         steps.push({
             element: '#btn-tab-source-control',
             popover: {
-                title: window.t('tut_source_control_title', 'Gestione Versioni'),
-                description: window.t('tut_source_control_desc', 'Per analizzare lo stato delle revisioni non ancora sincronizzate, seleziona l\'icona del Controllo Modifiche.'),
+                title: window.t('tut_source_control_title', 'Controllo modifiche'),
+                description: window.t('tut_source_control_desc', 'Clicca sull\'icona del Controllo modifiche per vedere che cosa non hai ancora inviato.'),
                 side: "bottom",
                 align: 'start',
                 showButtons: ['close']
@@ -235,8 +235,8 @@ window.avviaTutorial = async function () {
         steps.push({
             element: '#sidebar-source-control',
             popover: {
-                title: window.t('tut_source_status_title', 'Stato delle Revisioni'),
-                description: window.t('tut_source_status_desc', 'Questa vista riepiloga le modifiche effettuate in locale. Prima della sincronizzazione, è possibile revisionare o annullare ciascuna operazione in modo selettivo.'),
+                title: window.t('tut_source_status_title', 'Modifiche da inviare'),
+                description: window.t('tut_source_status_desc', 'Qui compaiono le modifiche fatte su questo computer. Prima di sincronizzare puoi rivederle e annullare quelle che non vuoi tenere.'),
                 side: "right",
                 align: 'start'
             }
@@ -244,8 +244,8 @@ window.avviaTutorial = async function () {
         steps.push({
             element: '#btn-tab-history',
             popover: {
-                title: window.t('tut_history_title', 'Storico Versioni Cloud'),
-                description: window.t('tut_history_desc', 'Clicca qui per visualizzare lo storico delle revisioni salvate sul Cloud.'),
+                title: window.t('tut_history_title', 'Storico delle versioni'),
+                description: window.t('tut_history_desc', 'Clicca qui per vedere le versioni dell\'archivio salvate sul cloud.'),
                 side: "bottom",
                 align: 'start',
                 showButtons: ['close']
@@ -255,8 +255,8 @@ window.avviaTutorial = async function () {
         steps.push({
             element: '#sidebar-history',
             popover: {
-                title: window.t('tut_history_panel_title', 'Pannello Storico'),
-                description: window.t('tut_history_panel_desc', 'Da questo pannello puoi sfogliare le vecchie versioni del database, aprirle in sola lettura, e ripristinare il tuo archivio a una versione precedente.'),
+                title: window.t('tut_history_panel_title', 'Storico'),
+                description: window.t('tut_history_panel_desc', 'Da qui sfogli le versioni precedenti dell\'archivio, le apri in sola lettura e puoi ripristinare l\'archivio a una di esse.'),
                 side: "right",
                 align: 'start'
             }
@@ -265,8 +265,8 @@ window.avviaTutorial = async function () {
         steps.push({
             element: '#sidebar-cloud-btn',
             popover: {
-                title: window.t('tut_cloud_integration_title', 'Integrazione Cloud'),
-                description: window.t('tut_cloud_integration_desc', 'L\'archivio corrente è configurato in modalità locale. Seleziona l\'icona Condivisione in basso a sinistra per esplorare le opzioni di connettività.'),
+                title: window.t('tut_cloud_integration_title', 'Condivisione e cloud'),
+                description: window.t('tut_cloud_integration_desc', 'Questo archivio è solo locale. Clicca sull\'icona Condivisione in basso a sinistra per vedere come condividerlo o farne il backup.'),
                 side: "right",
                 align: 'start',
                 showButtons: ['close']
@@ -279,8 +279,8 @@ window.avviaTutorial = async function () {
             steps.push({
                 element: '#cloud-modal',
                 popover: {
-                    title: window.t('tut_cloud_panel_title', 'Pannello di Configurazione Remota'),
-                    description: window.t('tut_cloud_panel_desc', 'Da questa interfaccia è possibile convertire l\'archivio locale in un database Condiviso (ottimizzato per team di lavoro) o in uno Personale (con backup automatico integrato). Chiudi la finestra per proseguire.'),
+                    title: window.t('tut_cloud_panel_title', 'Condividere l\'archivio'),
+                    description: window.t('tut_cloud_panel_desc', 'Da qui l\'archivio locale diventa Condiviso, per lavorare in gruppo, o Personale, con backup automatico. Chiudi la finestra per proseguire.'),
                     side: "left",
                     align: 'start',
                     showButtons: []
@@ -332,8 +332,8 @@ window.avviaTutorial = async function () {
                 // bottone Cloud dello step precedente, quindi è già nel DOM a questo punto.
                 element: '#cloud-auth-modal .modal-window',
                 popover: {
-                    title: window.t('tut_cloud_panel_title', 'Pannello di Configurazione Remota'),
-                    description: window.t('tut_cloud_no_auth_desc', 'Non sei ancora autenticato con Google. Puoi accedere ora per esplorare le funzionalità Cloud, oppure proseguire il tutorial senza configurare il Cloud.'),
+                    title: window.t('tut_cloud_panel_title', 'Condividere l\'archivio'),
+                    description: window.t('tut_cloud_no_auth_desc', 'Non hai ancora fatto l\'accesso a Google. Puoi farlo ora per provare le funzioni cloud, oppure proseguire la visita senza.'),
                     side: "right",
                     align: 'center',
                     showButtons: ['next', 'previous'],
@@ -380,8 +380,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: 'button[data-on-click="toggleVaultSwitcher"]',
         popover: {
-            title: window.t('tut_vaults_title', 'Gestione Multi-Archivio'),
-            description: window.t('tut_vaults_desc', 'ArchiView ti permette di creare e gestire un numero illimitato di archivi (vault) separati. Cliccando su questo pulsante potrai passare rapidamente da un archivio all\'altro, creare nuovi archivi locali, collegarne di Cloud o gestire Archivi Condivisi per collaborare col tuo team.'),
+            title: window.t('tut_vaults_title', 'Archivi'),
+            description: window.t('tut_vaults_desc', 'Puoi tenere quanti archivi vuoi, separati fra loro. Da questo pulsante passi da uno all\'altro, ne crei di nuovi in locale, ne colleghi uno remoto o entri in un archivio condiviso.'),
             side: "right",
             align: 'start'
         }
@@ -390,8 +390,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '[data-tab="folders"]',
         popover: {
-            title: window.t('tut_nav_return_title', 'Ritorno alla Navigazione'),
-            description: window.t('tut_nav_return_desc', 'Per ripristinare la vista principale e sfogliare i record, seleziona l\'icona a forma di cartella.'),
+            title: window.t('tut_nav_return_title', 'Torna alle cartelle'),
+            description: window.t('tut_nav_return_desc', 'Clicca sull\'icona a forma di cartella per tornare all\'elenco delle schede.'),
             side: "bottom",
             align: 'start',
             showButtons: ['close']
@@ -419,8 +419,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '#btn-vista-tabella',
         popover: {
-            title: window.t('tut_sort_title', 'Ordinamento e Vista Tabellare'),
-            description: window.t('tut_sort_desc', 'L\'elenco può essere ordinato per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla vista tabellare, dove ogni intestazione di colonna è essa stessa un comando di ordinamento e le colonne visibili sono configurabili per tipo di documento.'),
+            title: window.t('tut_sort_title', 'Ordinamento e tabella'),
+            description: window.t('tut_sort_desc', 'L\'elenco si ordina per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla tabella: lì ogni intestazione di colonna ordina, e le colonne visibili si scelgono per tipo di documento.'),
             side: "bottom",
             align: 'end'
         }
@@ -429,8 +429,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '#btn-filtri',
         popover: {
-            title: window.t('tut_filters_title', 'Filtri Avanzati e Ricerche Salvate'),
-            description: window.t('tut_filters_desc', 'Oltre alla ricerca testuale è possibile restringere l\'elenco per tipo di documento, sottoarchivi, intervallo di data di modifica, presenza di allegati o di trascrizione. Nel campo di ricerca è ammessa inoltre la sintassi campo:valore (per esempio notaio:rossi). Una combinazione di filtri può essere salvata con un nome e richiamata in seguito.'),
+            title: window.t('tut_filters_title', 'Filtri e ricerche salvate'),
+            description: window.t('tut_filters_desc', 'Oltre alla ricerca testuale puoi restringere l\'elenco per tipo di documento, sottocartelle, data di modifica, presenza di allegati o di trascrizione. La ricerca accetta anche campo:valore (per esempio notaio:rossi). Una combinazione di filtri si salva con un nome e si richiama in seguito.'),
             side: "bottom",
             align: 'end'
         }
@@ -441,8 +441,8 @@ window.avviaTutorial = async function () {
         // sul popover centrato e il passo resta comunque leggibile.
         element: '#context-overflow-slot button',
         popover: {
-            title: window.t('tut_palette_title', 'Comandi Rapidi'),
-            description: window.t('tut_palette_desc', 'La combinazione Ctrl+K apre l\'elenco dei comandi: da un unico campo si raggiunge una scheda, un archivio, una nuova scheda di un tipo specifico o qualsiasi altra azione dell\'applicazione. Il tasto ? mostra l\'elenco completo delle scorciatoie disponibili. Entrambi sono richiamabili anche da questo menu.'),
+            title: window.t('tut_palette_title', 'Comandi rapidi'),
+            description: window.t('tut_palette_desc', 'Ctrl+K apre l\'elenco dei comandi: da un unico campo raggiungi una scheda, una cartella, una nuova scheda di un tipo preciso o qualunque altra azione. Il tasto ? mostra tutte le scorciatoie. Entrambi sono anche in questo menu.'),
             side: "bottom",
             align: 'end'
         }
@@ -456,7 +456,7 @@ window.avviaTutorial = async function () {
         element: '.card-scheda',
         popover: {
             title: window.t('tut_bulk_title', 'Azioni su più schede'),
-            description: window.t('tut_bulk_desc', 'Con Ctrl+clic e Maiusc+clic si selezionano più schede, e Ctrl+A prende tutti i risultati del filtro corrente, comprese le pagine successive. Il menu del tasto destro applica allora l’azione all’intera selezione: spostamento in un archivio, cambio di tipo di documento, aggiunta o rimozione di tag e sostituzione di testo in un campo, con anteprima del numero di schede interessate e possibilità di annullare.'),
+            description: window.t('tut_bulk_desc', 'Ctrl+clic e Maiusc+clic selezionano più schede; Ctrl+A prende tutti i risultati del filtro, anche delle pagine successive. Il menu del tasto destro applica l\'azione a tutta la selezione: spostare in una cartella, cambiare tipo di documento, aggiungere o togliere tag, sostituire testo in un campo. Prima di confermare vedi quante schede cambiano, e puoi annullare.'),
             side: 'bottom',
             align: 'start'
         }
@@ -465,8 +465,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '.tutorial-modifica-btn',
         popover: {
-            title: window.t('tut_card_edit_title', 'Accesso alla Schedatura'),
-            description: window.t('tut_card_edit_desc', 'Per consultare o aggiornare i metadati di un documento, seleziona il pulsante "Modifica" posizionato sulla relativa scheda.'),
+            title: window.t('tut_card_edit_title', 'Aprire una scheda'),
+            description: window.t('tut_card_edit_desc', 'Il pulsante "Modifica" su una scheda apre i suoi metadati.'),
             side: "bottom",
             align: 'start',
             showButtons: ['close']
@@ -477,8 +477,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '#view-add',
         popover: {
-            title: window.t('tut_editor_title', 'Editor della Schedatura'),
-            description: window.t('tut_editor_desc', 'Questo pannello consente la catalogazione estesa del documento e la gestione dei relativi allegati digitali. L\'interfaccia mantiene i comandi di salvataggio sempre accessibili. Clicca sulla freccia in alto a sinistra per tornare all\'archivio.'),
+            title: window.t('tut_editor_title', 'Modulo della scheda'),
+            description: window.t('tut_editor_desc', 'Qui compili i campi della scheda e gestisci i suoi allegati. I comandi di salvataggio restano sempre visibili. La freccia in alto a sinistra riporta all\'archivio.'),
             side: "left",
             align: 'start',
             showButtons: ['close']
@@ -505,8 +505,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '.tutorial-trascrivi-btn',
         popover: {
-            title: window.t('tut_transcribe_title', 'Modulo di Trascrizione'),
-            description: window.t('tut_transcribe_desc', 'Seleziona ora il pulsante "Trascrivi" su una scheda per avviare l\'ambiente dedicato all\'analisi e alla trascrizione del documento originale.'),
+            title: window.t('tut_transcribe_title', 'Trascrizione'),
+            description: window.t('tut_transcribe_desc', 'Ora clicca su "Trascrivi" in una scheda per aprire l\'ambiente di trascrizione.'),
             side: "bottom",
             align: 'start',
             showButtons: ['close']
@@ -530,8 +530,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '#trascrizione-allegato-panel:not(.hidden-tab)',
         popover: {
-            title: window.t('tut_viewer_title', 'Analisi dell\'Immagine'),
-            description: window.t('tut_viewer_desc', 'L\'anteprima dell\'allegato dispone di ingrandimento (rotella del mouse o tasti + e −), trascinamento, rotazione a 90° (tasto R) e adattamento alla pagina o alla larghezza. I comandi di luminosità, contrasto e negativo sono destinati alla lettura di scritture di difficile decifrazione. Con Alt+← e Alt+→ si scorrono gli allegati della scheda.'),
+            title: window.t('tut_viewer_title', 'Il visore delle immagini'),
+            description: window.t('tut_viewer_desc', 'Nel visore puoi ingrandire (rotella o tasti + e −), spostare l\'immagine, ruotarla di 90° (tasto R) e adattarla alla pagina o alla larghezza. Luminosità, contrasto e negativo aiutano con le scritture difficili. Alt+← e Alt+→ passano da un allegato all\'altro della scheda.'),
             side: "right",
             align: 'start'
         },
@@ -549,8 +549,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '#view-trascrizione',
         popover: {
-            title: window.t('tut_transcribe_env_title', 'Ambiente di Trascrizione Integrato'),
-            description: window.t('tut_transcribe_env_desc', 'Quest\'area presenta l\'immagine del manoscritto affiancata all\'editor testuale avanzato. Si consiglia l\'utilizzo della combinazione Ctrl+S per il salvataggio rapido. Clicca sulla freccia in alto a sinistra per tornare all\'archivio.'),
+            title: window.t('tut_transcribe_env_title', 'Ambiente di trascrizione'),
+            description: window.t('tut_transcribe_env_desc', 'L\'immagine del documento sta accanto all\'editor. Salva spesso con Ctrl+S. La freccia in alto a sinistra riporta all\'archivio.'),
             side: "over",
             align: 'start',
             showButtons: ['close']
@@ -571,8 +571,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: '#sidebar',
         popover: {
-            title: window.t('tut_context_menu_title', 'Operazioni Contestuali'),
-            description: window.t('tut_context_menu_desc', 'La piattaforma supporta menù contestuali (tasto destro del mouse) sugli elementi dell\'archivio per l\'accesso rapido alle funzioni di esportazione, duplicazione e rimozione.'),
+            title: window.t('tut_context_menu_title', 'Il tasto destro'),
+            description: window.t('tut_context_menu_desc', 'Il tasto destro su schede, cartelle e archivi apre un menu con esportazione, duplicazione, eliminazione e le altre azioni.'),
             side: "right",
             align: 'start'
         },
@@ -591,8 +591,8 @@ window.avviaTutorial = async function () {
     steps.push({
         element: 'body',
         popover: {
-            title: window.t('tut_done_title', 'Configurazione Completata'),
-            description: window.t('tut_done_desc', 'Il sistema è ora pronto per l\'utilizzo. È possibile rieseguire questa presentazione formativa in qualsiasi momento selezionando l\'icona (?).'),
+            title: window.t('tut_done_title', 'Fatto'),
+            description: window.t('tut_done_desc', 'Puoi rifare questa visita quando vuoi dall\'icona (?).'),
             side: "over",
             align: 'start'
         }

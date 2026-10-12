@@ -354,7 +354,7 @@
     window.copiaInvitoShare = async function() {
         const linkInput = document.getElementById('share-invite-link') as HTMLInputElement;
         if (!linkInput || !linkInput.value) return;
-        try { await navigator.clipboard.writeText(linkInput.value); mostraMessaggio(window.t("msg_codice_copiato_negli_appu", "Codice copiato negli appunti!"), "success"); }
+        try { await navigator.clipboard.writeText(linkInput.value); mostraMessaggio(window.t("msg_codice_copiato_negli_appu", 'Codice copiato negli appunti.'), "success"); }
         catch { linkInput.select(); }
     };
 

@@ -481,8 +481,8 @@
                 document.getElementById('welcome-modal')?.classList.add('hidden-tab');
                 const archiveName = window.welcomeHubInvite.name;
                 const successMsg = archiveName
-                    ? window.t("msg_connesso_con_successo_nome", 'Connesso con successo a "{var0}"! Riavvio in corso...').replace('{var0}', archiveName)
-                    : window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso…");
+                    ? window.t("msg_connesso_con_successo_nome", 'Connesso a "{var0}". Riavvio in corso…').replace('{var0}', archiveName)
+                    : window.t("msg_connesso_con_successo_ria", 'Connesso. Riavvio in corso…');
                 mostraMessaggio(successMsg, "success");
             } catch (e: any) {
                 mostraMessaggio(e.message, "error");
@@ -513,7 +513,7 @@
             mostraMessaggio(window.t("msg_connessione_all_archivio_", "Connessione all'Archivio in corso..."), "info");
             await window.apiDrive.joinByFolderId(vaultId, vaultName, basePath, window.welcomeDriveInvite || null);
             document.getElementById('welcome-modal')?.classList.add('hidden-tab');
-            mostraMessaggio(window.t("msg_connesso_con_successo_ria", "Connesso con successo! Riavvio in corso..."), "success");
+            mostraMessaggio(window.t("msg_connesso_con_successo_ria", 'Connesso. Riavvio in corso…'), "success");
         } catch (e: any) {
             mostraMessaggio(e.message, "error");
             if (btn) { btn.disabled = false; btn.textContent = window.t("btn_connect", "Connettiti"); }
@@ -538,7 +538,7 @@
                 return;
             }
             
-            mostraMessaggio(window.t("msg_archivio_scaricato_selezi", "Archivio scaricato! Seleziona dove salvarlo sul tuo PC."), "info");
+            mostraMessaggio(window.t("msg_archivio_scaricato_selezi", 'Archivio scaricato. Scegli dove salvarlo sul PC.'), "info");
             
             if (window.apiBrowser && window.apiBrowser.selectBaseDirectory) {
                 const basePath = await window.apiBrowser.selectBaseDirectory(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
@@ -550,7 +550,7 @@
                     const success = await window.apiBrowser.cloneWorkspaceHub(basePath, defaultName, driveConfig, driveData.database);
                     if (success) {
                         document.getElementById('welcome-modal').classList.add('hidden-tab');
-                        mostraMessaggio(window.t("msg_archivio_ripristinato_con", "Archivio ripristinato con successo! Riavvio in corso…"), "success");
+                        mostraMessaggio(window.t("msg_archivio_ripristinato_con", 'Archivio ripristinato. Riavvio in corso…'), "success");
                     } else {
                         throw new Error(window.t("msg_error_creating_files", "Error creating local files."));
                     }

@@ -432,7 +432,7 @@ window.cambiaCartellaAllegati = async function() {
         const scelta = await window.apiSettings.scegliCartellaAllegati(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
         if (!scelta) return;
         await _mostraCartellaAllegati();
-        mostraMessaggio(window.t("msg_directory_allegati_locale", "Directory allegati locale configurata con successo."), "success");
+        mostraMessaggio(window.t("msg_directory_allegati_locale", 'Cartella locale degli allegati impostata.'), "success");
     } catch (e) {
         console.error('Scelta della cartella allegati non riuscita:', e);
         window.notificaSalvataggio(e instanceof Error ? e : new Error(String(e)));

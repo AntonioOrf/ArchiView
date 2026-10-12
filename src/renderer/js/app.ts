@@ -216,7 +216,7 @@ async function avviaApp() {
         await window.apiSettings.patch({ hubJustMigrated: false });
         setTimeout(() => {
             if (typeof mostraMessaggio === 'function') {
-                mostraMessaggio(window.t("msg_hub_migrato_reinvita", "Migrazione su Hub completata! Ricorda di re-invitare i collaboratori: genera un nuovo invito dal pannello Condivisione (i permessi di Google Drive non sono trasferibili)."), "info");
+                mostraMessaggio(window.t("msg_hub_migrato_reinvita", 'Migrazione sull\'Hub completata. Invita di nuovo i collaboratori con un nuovo invito dal pannello Condivisione: i permessi di Google Drive non si trasferiscono.'), "info");
             }
             if (typeof window.apriShareModal === 'function') window.apriShareModal();
         }, 1000);
@@ -229,7 +229,7 @@ async function avviaApp() {
             if (typeof apriCloudModal === 'function') {
                 apriCloudModal();
                 if (typeof mostraMessaggio === 'function') {
-                    mostraMessaggio(window.t("msg_benvenuto_nell_archivio_c", "Benvenuto nell'Archivio Condiviso! Effettua l'accesso a Google Drive per scaricare i dati."), "info");
+                    mostraMessaggio(window.t("msg_benvenuto_nell_archivio_c", 'Benvenuto nell\'archivio condiviso. Accedi a Google Drive per scaricare i dati.'), "info");
                 }
             }
         }, 800);
@@ -889,7 +889,7 @@ window.esportaManoscritto = async function(id) {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip([id]);
     if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_completata_c", "Esportazione completata con successo!"), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_completata_c", 'Esportazione completata.'), "success");
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
     }
@@ -914,7 +914,7 @@ window.esportaSpecificaCartella = async function(folderName) {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(ids);
     if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", '{var0} schede esportate.').replace("{var0}", String(res.count)), "success");
     } else if (!res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
     }
@@ -978,7 +978,7 @@ window.esportaCsv = async function(ids, formato = 'csv') {
         testi: { si: window.t('value_yes', 'Sì'), no: window.t('value_no', 'No') }
     });
     if (res && res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", '{var0} schede esportate.').replace("{var0}", String(res.count)), "success");
     } else if (res && !res.canceled) {
         if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + (res.error || ''), "error");
     }
@@ -1030,7 +1030,7 @@ window.importaManoscritto = async function() {
             addedCount++;
         });
 
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_importati_var_record_con_", "Importati {var0} record con successo!").replace("{var0}", String(addedCount)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_importati_var_record_con_", '{var0} schede importate.').replace("{var0}", String(addedCount)), "success");
         if (window.salvaStatoPosizione) window.salvaStatoPosizione();
         
         // Salvataggio scatena l'update chokidar ma avendo già appData aggiornato in memoria,
@@ -1133,7 +1133,7 @@ window.esportaSelezionati = async function() {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(window.selectedRecords);
     if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", "Esportazione di {var0} record completata con successo!").replace("{var0}", String(res.count)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", '{var0} schede esportate.').replace("{var0}", String(res.count)), "success");
         window.selectedRecords = [];
         window.aggiornaStatoSelezione();
         if (typeof renderMain === 'function') renderMain();
@@ -1533,7 +1533,7 @@ window.incollaRecord = async function(targetFolderOverride) {
             // spostaCartella parla il dialetto 'ROOT' per la radice
             await spostaCartella(window.cutFolderPath, targetFolder === '' ? 'ROOT' : targetFolder);
             window.cutFolderPath = null;
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_spostato_con_suc", "Archivio spostato con successo!"), "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_spostato_con_suc", 'Archivio spostato.'), "success");
         }
         return;
     }
@@ -1566,7 +1566,7 @@ window.incollaRecord = async function(targetFolderOverride) {
             if (!appData.cartelle.includes(baseTarget)) {
                 appData.cartelle.push(baseTarget);
             }
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_duplicato_con_su", "Archivio duplicato con successo ({var0} record)!").replace("{var0}", String(res.count)), "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_duplicato_con_su", 'Archivio duplicato ({var0} schede).').replace("{var0}", String(res.count)), "success");
             window.copiedFolderPath = null;
             if (window.salvaStatoPosizione) window.salvaStatoPosizione();
             await window.ricaricaDatiDaDisco();
@@ -1607,7 +1607,7 @@ window.incollaRecord = async function(targetFolderOverride) {
                 );
             }
             await window.Store.commit();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_spostati_con_s", "{var0} record spostati con successo!").replace("{var0}", String(movedCount)), "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_spostati_con_s", '{var0} schede spostate.').replace("{var0}", String(movedCount)), "success");
             window.cutRecordIds = []; // Reset dopo lo spostamento
         }
         return;
@@ -1622,7 +1622,7 @@ window.incollaRecord = async function(targetFolderOverride) {
     const res = await window.apiBrowser.duplicateRecords(window.copiedRecordIds, targetFolder);
     
     if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", "{var0} record duplicati con successo!").replace("{var0}", String(res.count)), "success");
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", '{var0} schede duplicate.').replace("{var0}", String(res.count)), "success");
         if (window.salvaStatoPosizione) window.salvaStatoPosizione();
         await window.ricaricaDatiDaDisco();
         if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();

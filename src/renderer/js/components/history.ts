@@ -323,7 +323,7 @@ async function apriConfermaRipristino(label, onConfirm) {
             // di versione Hub): in quel caso non mostriamo un secondo messaggio di successo.
             const esito = await onConfirm();
             if (esito !== false) {
-                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_vault_ripristinato_alla_v", "✅ Vault ripristinato alla versione selezionata!"), "success");
+                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_vault_ripristinato_alla_v", 'Archivio ripristinato alla versione selezionata.'), "success");
             }
             if (typeof window.renderHistoryList === 'function') window.renderHistoryList();
         } catch (err) {

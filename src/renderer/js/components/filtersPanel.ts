@@ -361,7 +361,7 @@ function _riempiPannello() {
     // Promemoria della sintassi campo:valore, che nessuno indovinerebbe da solo.
     const hint = document.createElement('p');
     hint.className = 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed border-t border-stone-200 dark:border-stone-700 pt-2';
-    hint.textContent = T('filter_query_hint', 'Nella ricerca puoi scrivere campo:valore — per esempio notaio:rossi, tag:pergamena, oppure "frase esatta".');
+    hint.textContent = T('filter_query_hint', 'Nella ricerca puoi scrivere campo:valore, per esempio notaio:rossi, tag:pergamena, oppure "frase esatta".');
     corpo.appendChild(hint);
 
     const azzera = document.createElement('button');

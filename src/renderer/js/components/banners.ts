@@ -5,7 +5,7 @@
     <div id="update-banner" class="hidden-tab banner-info w-full px-4 py-3 flex items-center justify-between shadow-md z-sticky shrink-0">
         <div class="flex items-center gap-2 text-sm font-medium">
             <i data-lucide="download" class="w-5 h-5"></i>
-            <span id="update-banner-text" data-i18n="update_available">È disponibile un nuovo aggiornamento!</span>
+            <span id="update-banner-text" data-i18n="update_available">È disponibile una nuova versione.</span>
         </div>
         <div class="flex gap-2 shrink-0 items-center">
             <button id="btn-note-rilascio" data-on-click="mostraNoteRilascio" class="hidden-tab banner-info-link underline text-xs font-medium px-1" data-i18n="btn_release_notes">Novità di questa versione</button>
@@ -19,7 +19,7 @@
     <div id="tutorial-banner" class="hidden-tab w-full px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-md shrink-0 mt-4 rounded-sm" style="background-color: var(--color-primary-light); border: 1px solid var(--color-primary-border); color: var(--color-primary-hover);">
         <div class="flex items-center gap-2 text-sm font-medium min-w-0">
             <i data-lucide="help-circle" class="w-5 h-5 shrink-0"></i>
-            <span data-i18n="tutorial_invite_text">Vuoi seguire una brevissima guida per scoprire le funzionalità principali dell'app?</span>
+            <span data-i18n="tutorial_invite_text">Vuoi una breve visita guidata alle funzioni principali?</span>
         </div>
         <div class="flex gap-2 shrink-0 items-center">
             <button data-on-click="avviaTutorialDaInvito" class="btn btn-primary text-xs py-1.5 px-3" data-i18n="btn_tutorial_start">Sì, avvia</button>

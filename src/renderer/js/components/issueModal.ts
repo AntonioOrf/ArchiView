@@ -101,7 +101,7 @@
         if (window.apiBrowser && window.apiBrowser.inviaSegnalazione) {
             window.apiBrowser.inviaSegnalazione(payload).then(response => {
                 if(response.ok) {
-                    if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_segnalazione_inviata_con_", "Segnalazione inviata con successo!"), "success");
+                    if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_segnalazione_inviata_con_", 'Segnalazione inviata.'), "success");
                 } else {
                     console.error("Errore FormSubmit:", response);
                     if (window.mostraMessaggio) window.mostraMessaggio(window.t("msg_errore_durante_l_invio_de", "Errore durante l'invio della segnalazione."), "error");

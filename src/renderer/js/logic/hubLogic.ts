@@ -147,7 +147,7 @@ window.riceviModificheHub = async function(isSilent = false) {
 
         mostraMessaggio(isSilent
             ? window.t("msg_dati_sincronizzati_automa", "Dati sincronizzati automaticamente dal server.")
-            : window.t("msg_dati_scaricati_e_fusi_con", "Dati scaricati e fusi con successo in locale."), isSilent ? "info" : "success");
+            : window.t("msg_dati_scaricati_e_fusi_con", 'Dati scaricati e uniti in locale.'), isSilent ? "info" : "success");
 
     } catch (error) {
         window.impostaErroreCloud(error.message);
@@ -209,13 +209,13 @@ window.controllaModificheHub = async function(manual = false) {
         window.impostaModificheInEntrata(true);
         if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
         if (manual) {
-            mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", "Ci sono nuovi aggiornamenti da scaricare!"), "success");
+            mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "success");
         } else if (data.version !== _ultimaVersioneAutofetchNotificata) {
             // Autofetch silenzioso: notifica una sola volta per versione remota, con
             // un'azione diretta ("Ricevi adesso") invece di lasciare solo l'indicatore acceso.
             _ultimaVersioneAutofetchNotificata = data.version;
             mostraMessaggio(
-                window.t("msg_ci_sono_nuovi_aggiornamen", "Ci sono nuovi aggiornamenti da scaricare!"), "info", null,
+                window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "info", null,
                 { label: window.t("hub_widget_receive", "Ricevi"), onClick: () => window.riceviModificheHub() }
             );
         }
@@ -260,7 +260,7 @@ window.inviaModificheHub = async function() {
         window.sincronizzaAllegatiHub(false); // carica i chunk mancanti sul proprio Drive + pubblica indice
 
         window.azzeraErroreCloud();
-        mostraMessaggio(window.t("msg_modifiche_inviate_con_suc", "Modifiche inviate con successo!"), "success");
+        mostraMessaggio(window.t("msg_modifiche_inviate_con_suc", 'Modifiche inviate.'), "success");
 
     } catch (e) {
         console.error("Errore invio sync:", e);
@@ -470,7 +470,7 @@ window.creaRepositoryHub = async function(name) {
         if (window.aggiornaVisibilitaCloud) window.aggiornaVisibilitaCloud();
         window.sincronizzaAllegatiHub(false);
 
-        mostraMessaggio(window.t("msg_repository_creato", "Repository creato! L'archivio è ora sincronizzato sull'Hub."), "success");
+        mostraMessaggio(window.t("msg_repository_creato", 'Archivio condiviso pronto: ora puoi invitare i collaboratori.'), "success");
         // Dopo il reload apri automaticamente il pannello Condivisione (l'owner deve invitare).
         try {
             if (window.apiSettings) {

@@ -409,7 +409,7 @@
                 throw new Error("Funzione non disponibile.");
             }
             const result = await apiCloud.pulisciAllegatiOrfani();
-            mostraMessaggio(window.t("msg_pulizia_completata_file_r", "Pulizia completata! File rimossi: {var0} in locale, {var1} su Drive.").replace("{var0}", String(result.deletedLocal)).replace("{var1}", String(result.deletedDrive)), "success");
+            mostraMessaggio(window.t("msg_pulizia_completata_file_r", 'Pulizia completata. File rimossi: {var0} in locale, {var1} su Drive.').replace("{var0}", String(result.deletedLocal)).replace("{var1}", String(result.deletedDrive)), "success");
         } catch(e) {
             mostraMessaggio(window.t("msg_errore_durante_la_pulizia", "Errore durante la pulizia: ") + e.message, "error");
         } finally {

@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("Notifica IPC ricevuta: Autenticazione completata con successo!");
                 window.driveStatus.isAuthenticated = true;
                 aggiornaStatoDrive();
-                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", "Autenticazione completata!"), "success");
+                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", 'Accesso effettuato.'), "success");
             }
         });
     }
@@ -119,7 +119,7 @@ window.controllaModificheInEntrata = async function(manual = false) {
             if (remoteModifiedTime && remoteModifiedTime > (window.ultimoCaricamento || 0)) {
                 // Ci sono aggiornamenti sul server più recenti dell'ultimo nostro pull
                 window.impostaModificheInEntrata(true);
-                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", "Ci sono nuovi aggiornamenti da scaricare!"), "success");
+                if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "success");
                 
                 try {
                     const peekData = await apiCloud.peekDb();
@@ -300,7 +300,7 @@ window.loginCloud = async function(provider, forceLocal = false) {
         try {
             await api.auth(forceLocal);
             await aggiornaStatoDrive();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", "Autenticazione completata!"), "success");
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", 'Accesso effettuato.'), "success");
         } catch (e) {
             console.error(e);
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_l_autentic", "Errore durante l'autenticazione"), "error");
@@ -449,14 +449,14 @@ window.chiudiCollegaArchivioDrive = function() {
 const TESTI_SYNC_DRIVE = {
     sync: {
         progresso: 'sync_in_progress',
-        ok: ["msg_sincronizzazione_completa", "Sincronizzazione completata con successo!"],
-        okDopoConflitto: ["msg_conflitto_risolto_sincron", "Conflitto risolto! Sincronizzazione completata in sicurezza."],
+        ok: ["msg_sincronizzazione_completa", 'Sincronizzazione completata.'],
+        okDopoConflitto: ["msg_conflitto_risolto_sincron", 'Conflitto risolto. Sincronizzazione completata.'],
         errore: ["msg_errore_durante_la_sincron", "Errore durante la sincronizzazione: "]
     },
     upload: {
         progresso: 'upload_in_progress',
-        ok: ["msg_caricamento_completato_in", "Caricamento completato in sicurezza!"],
-        okDopoConflitto: ["msg_conflitto_risolto_caricam", "Conflitto risolto! Caricamento completato in sicurezza."],
+        ok: ["msg_caricamento_completato_in", 'Caricamento completato.'],
+        okDopoConflitto: ["msg_conflitto_risolto_caricam", 'Conflitto risolto. Caricamento completato.'],
         errore: ["msg_errore_durante_il_caricam", "Errore durante il caricamento: "]
     }
 };
@@ -621,7 +621,7 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 }
             }
             window.azzeraErroreCloud();
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_scaricamento_completato", "Scaricamento completato!"), "success");
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_scaricamento_completato", 'Scaricamento completato.'), "success");
         } catch (e) {
             console.error(e);
             window.impostaErroreCloud(e.message);
