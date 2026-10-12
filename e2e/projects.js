@@ -19,7 +19,9 @@ const PROJECTS = {
   smoke: ['app', 'workspace', 'security'],
   ui: ['ui', 'settings', 'list-view', 'sidebar-panels', 'context-menu', 'modals-misc', 'flow-responsive', 'form', 'sort-table', 'image-viewer', 'filters', 'command-palette', 'tutorial', 'bulk-actions', 'updater', 'cascata'],
   data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict', 'sync-base', 'csv-export', 'csv-import', 'iiif-import', 'ocr', 'print', 'text-export', 'schema-migration', 'typed-fields', 'campi-propri', 'data-storica', 'tags-entity', 'fase3', 'fase4', 'cross-archive', 'scanner'],
-  cloud: ['cloud-status', 'cloud-offline']
+  cloud: ['cloud-status', 'cloud-offline'],
+  // Prove di PIANO-PROVE-MANUALI.md rese automatiche; le parti legate alla macchina si saltano.
+  manuali: ['prove-manuali', 'hub-locale', 'wifi-emulatore']
 };
 
 // `a11y` è prefisso di `a11y-global`: i pattern devono ancorare il nome completo, altrimenti
