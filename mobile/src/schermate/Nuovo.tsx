@@ -69,7 +69,8 @@ export function Nuovo({ visibile, archivio, cartelle, cartellaIniziale, onChiudi
             <Campo etichetta="Segnatura" placeholder="Es. Reg. 41" value={segnatura} onChangeText={setSegnatura} maxLength={200} />
             <Campo etichetta="Nota" placeholder="Es. legatura fragile, cc. 1-40" value={nota} onChangeText={setNota} multiline maxLength={2000} />
             <Pulsante variante="primario" icona={ScanLine} titolo="Crea e scansiona" disabilitato={!segnatura.trim()}
-              onPress={() => { const s = segnatura.trim(), n = nota.trim(); chiudi(); onNuova(s, n, cartella); }} />          </View>
+              onPress={() => { const s = segnatura.trim(), n = nota.trim(); chiudi(); onNuova(s, n, cartella); }} />
+          </View>
         </KeyboardAvoidingView>
       )}
     </Modal>
