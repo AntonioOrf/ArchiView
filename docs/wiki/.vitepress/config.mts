@@ -100,7 +100,8 @@ export default defineConfig({
               { text: 'Allegati', link: '/guida/allegati' },
               { text: 'Importare da IIIF', link: '/guida/iiif' },
               { text: 'Trascrizione', link: '/guida/trascrizione' },
-              { text: 'OCR degli allegati', link: '/guida/ocr' }
+              { text: 'OCR degli allegati', link: '/guida/ocr' },
+              { text: 'Scansionare col telefono', link: '/guida/scanner' }
             ]
           },
           {
@@ -201,7 +202,8 @@ export default defineConfig({
               { text: 'Attachments', link: '/en/guide/attachments' },
               { text: 'Importing from IIIF', link: '/en/guide/iiif' },
               { text: 'Transcription', link: '/en/guide/transcription' },
-              { text: 'OCR of attachments', link: '/en/guide/ocr' }
+              { text: 'OCR of attachments', link: '/en/guide/ocr' },
+              { text: 'Scanning with your phone', link: '/en/guide/scanner' }
             ]
           },
           {

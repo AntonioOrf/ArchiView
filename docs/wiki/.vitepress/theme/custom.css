@@ -84,6 +84,9 @@
 
 /* Le schermate esistono in due versioni, chiara e scura: si mostra quella del tema
    attivo. `html.dark` e' la classe che VitePress mette sulla radice. */
+/* Schermate del telefono: a tutta larghezza sarebbero alte quanto tre schermi. */
+.vp-doc img.telefono { max-width: 300px; }
+
 html:not(.dark) .dark-only { display: none !important; }
 html.dark .light-only { display: none !important; }
 
