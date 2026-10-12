@@ -1,0 +1,64 @@
+appId: com.antonioorf.archiview.scanner
+# seme: documenti
+name: Documenti - elenco, cartelle, ricerca, rinomina, sposta, elimina
+---
+- launchApp
+- extendedWaitUntil:
+    visible: ArchiScanner
+    timeout: 180000
+- tapOn: Documenti, Ricevute, articoli, fotocopie
+- assertVisible: Documenti, cambia archivio
+- assertVisible: Solo su questo telefono · 2 documenti
+- assertVisible: Fuori dalle cartelle
+- assertVisible: "Ricevuta biblioteca, .*2 pagine"
+- assertNotVisible: "Fotocopia articolo, .*"
+# Ricerca in tutti i documenti, anche dentro le cartelle.
+- tapOn: Cerca nei documenti
+- inputText: fotocopia
+- assertVisible: Trovati
+- assertVisible: "Fotocopia articolo, Ricevute · .*"
+- eraseText: 15
+- inputText: niente
+- assertVisible: Nessun documento trovato.
+- eraseText: 15
+- hideKeyboard
+# Cartelle: nuova, aperta, eliminata da vuota.
+- tapOn: Nuova cartella
+- inputText: "Lettere/2026"
+- assertVisible: Niente «/» nel nome.
+- eraseText: 20
+- inputText: Lettere
+- tapOn: Crea cartella
+- assertVisible: Lettere
+- tapOn: Ricevute
+- assertVisible: Documenti · 1 documento
+- assertVisible: "Fotocopia articolo, .*"
+- tapOn: Indietro
+- tapOn: Scaffale
+- assertVisible: Cartella vuota.*
+- tapOn: Elimina la cartella Scaffale
+- assertVisible: Solo su questo telefono · 2 documenti
+- assertNotVisible: Scaffale
+# Documento: rinomina e sposta.
+- tapOn: "Ricevuta biblioteca, .*"
+- assertVisible: Apri la pagina 1
+- assertVisible: Apri la pagina 2
+- tapOn: Rinomina il documento
+- eraseText: 50
+- inputText: Tessera
+- tapOn: Rinomina
+- assertVisible: Tessera
+- tapOn: Sposta
+- assertVisible: Sposta «Tessera»
+- tapOn: Lettere
+- assertVisible: "Lettere · 2 pagine · .*"
+- tapOn: Documenti
+- assertVisible: Lettere
+- assertNotVisible: "Tessera, .*"
+- tapOn: Lettere
+- tapOn: "Tessera, .*"
+# Elimina il documento.
+- tapOn: Elimina il documento
+- assertVisible: Eliminare il documento?
+- tapOn: "(?i)elimina"
+- assertVisible: Documenti · 0 documenti

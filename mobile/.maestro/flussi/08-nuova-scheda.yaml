@@ -1,0 +1,57 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Nuova scheda con scansione, numerazione, senza scheda dal «+»
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: Scansiona o crea una scheda
+- assertVisible: Nuova scheda, senza cartella
+- assertVisible: Scannerizza senza scheda, da smistare al computer
+- tapOn: Nuova scheda, senza cartella
+- assertVisible:
+    text: Crea e scansiona
+    enabled: false
+# Cartella scelta dal pannello.
+- tapOn: "Cartella: nessuna\\. Cambia"
+- assertVisible: Cartella della scheda
+- tapOn: Vuota
+- assertVisible: "Cartella: Vuota\\. Cambia"
+- tapOn: Es. Reg. 41
+- inputText: Reg. 99
+- tapOn: Es. legatura fragile, cc. 1-40
+- inputText: nota di prova
+- hideKeyboard
+- tapOn: Crea e scansiona
+- runFlow: ../comuni/scatta.yaml
+# La pagina scansionata è in coda nella scheda nuova, nella cartella scelta.
+- extendedWaitUntil:
+    visible: Da inviare · 1 pagina
+    timeout: 20000
+- assertVisible: Reg. 99
+- assertVisible: Fondo Prova · creata qui
+- assertVisible: "Cartella: Vuota\\. Cambia"
+# Numerazione automatica: la pagina dopo prende l'etichetta di partenza.
+- tapOn: Numera le carte
+- tapOn: Prima carta
+- eraseText: 5
+- inputText: 12v
+- hideKeyboard
+- tapOn: Scansiona pagine di Reg. 99
+- runFlow: ../comuni/scatta.yaml
+- extendedWaitUntil:
+    visible: Da inviare · 2 pagine
+    timeout: 20000
+- assertVisible: Apri 12v
+- back
+- assertVisible: Da inviare · 6 pagine
+- assertVisible: Cartella Vuota, 1 schede
+# Scanner chiuso senza salvare: nessuna pagina nuova.
+- tapOn: Scansiona o crea una scheda
+- tapOn: Scannerizza senza scheda, da smistare al computer
+- runFlow: ../comuni/annulla-scanner.yaml
+- assertVisible: Senza scheda
+- assertVisible: Fondo Prova · da smistare al computer
+- assertVisible: Da inviare · 1 pagina
+- assertVisible: Carte sciolte

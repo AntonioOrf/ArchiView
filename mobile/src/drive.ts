@@ -8,7 +8,8 @@
 
 import { File, UploadType } from 'expo-file-system';
 import { tokenDrive, scartaToken } from './accesso';
-import { ScannerLotto, type Lotto } from './contratto';
+import { ScannerLotto, type ConfigScanner, type Lotto } from './contratto';
+import { configDaDatabase, SUFFISSO_VAULT } from './scelta';
 
 const API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -52,13 +53,14 @@ async function chiama(fn: (token: string) => Promise<Response>): Promise<Respons
   }
 }
 
-type FileDrive = { id: string; name: string; size?: string };
+type FileDrive = { id: string; name: string; size?: string; modifiedTime?: string };
 
-async function elenca(q: string): Promise<FileDrive[]> {
+async function elenca(q: string, orderBy?: string): Promise<FileDrive[]> {
   const out: FileDrive[] = [];
   let pageToken = '';
   do {
-    const params = new URLSearchParams({ q, fields: 'nextPageToken,files(id,name,size)', pageSize: '1000', spaces: 'drive' });
+    const params = new URLSearchParams({ q, fields: 'nextPageToken,files(id,name,size,modifiedTime)', pageSize: '1000', spaces: 'drive' });
+    if (orderBy) params.set('orderBy', orderBy);
     if (pageToken) params.set('pageToken', pageToken);
     const res = await chiama(t => fetch(`${API}/files?${params}`, { headers: { Authorization: `Bearer ${t}` } }));
     const json = await res.json();
@@ -83,6 +85,12 @@ async function cartella(nome: string, padre: string | null): Promise<string> {
 }
 
 let cacheLotti: string | null = null;
+
+/** Dopo l'uscita dall'account (o una cartella sparita) la cartella dei lotti si ricerca da capo. */
+export function azzeraCartelle(): void {
+  cacheLotti = null;
+}
+
 async function cartellaLotti(): Promise<string> {
   if (cacheLotti) return cacheLotti;
   let padre: string | null = null;
@@ -135,6 +143,71 @@ async function caricaManifest(lotto: Lotto, cartellaId: string): Promise<void> {
   }));
 }
 
+/** Una cartella lungo un percorso, se esiste (da qui non si crea nulla). */
+async function trovaCartella(percorso: string[]): Promise<string | null> {
+  let padre: string | null = null;
+  for (const nome of percorso) {
+    const q: string = `name='${escape(nome)}' and mimeType='${MIME_CARTELLA}' and trashed=false` + (padre ? ` and '${padre}' in parents` : '');
+    const trovata = (await elenca(q))[0];
+    if (!trovata) return null;
+    padre = trovata.id;
+  }
+  return padre;
+}
+
+/** File degli elenchi pubblicati dal desktop, uno per archivio (CONTRATTO §4.3). */
+async function fileArchivi(): Promise<FileDrive[]> {
+  const id = await trovaCartella([PERCORSO[0], PERCORSO[1], ScannerLotto.CARTELLA_ARCHIVI]);
+  if (!id) return [];
+  return (await elenca(`'${id}' in parents and trashed=false and mimeType!='${MIME_CARTELLA}'`)).filter(f => f.name.endsWith('.json'));
+}
+
+/** Cartelle degli archivi sincronizzati dal desktop: `ArchiView/<nome>_ArchiView/`. */
+async function cartelleVault(): Promise<FileDrive[]> {
+  const radice = await trovaCartella([PERCORSO[0]]);
+  if (!radice) return [];
+  return (await elenca(`'${radice}' in parents and mimeType='${MIME_CARTELLA}' and trashed=false`))
+    .filter(c => c.name.endsWith(SUFFISSO_VAULT) && c.name.length > SUFFISSO_VAULT.length);
+}
+
+/** Nome dell'archivio (CONTRATTO §2.5, senza `_ArchiView`) di un elenco pubblicato o di una cartella. */
+const nomeDi = (f: FileDrive) => ScannerLotto.nomeArchivio(f.name.endsWith('.json') ? f.name.slice(0, -'.json'.length) : f.name);
+
+/**
+ * Nomi degli archivi noti su Drive, in ordine alfabetico: quelli sincronizzati (anche a computer
+ * spento) e quelli il cui elenco di schede è stato pubblicato dal pannello Scansioni.
+ */
+export async function elencaArchivi(): Promise<string[]> {
+  const nomi = new Set([...(await fileArchivi()), ...(await cartelleVault())].map(nomeDi));
+  return [...nomi].sort((a, b) => a.localeCompare(b));
+}
+
+const scarica = (id: string) => chiama(t => fetch(`${API}/files/${id}?alt=media`, { headers: { Authorization: `Bearer ${t}` } }));
+
+/**
+ * Elenco delle schede di un archivio, validato, dalla fonte più recente: l'elenco pubblicato
+ * dal pannello Scansioni o il database dell'archivio sincronizzato. `null` se non c'è nessuno
+ * dei due (archivio nuovo, creato sul telefono). `conDatabase: false` (dati mobili con «solo
+ * Wi-Fi», Fase 4a): solo l'elenco pubblicato, che è piccolo.
+ * ponytail: il database si scarica intero (trascrizioni comprese); se pesa troppo, un indice
+ * leggero pubblicato dal desktop a ogni sincronizzazione.
+ */
+export async function scaricaConfig(archivio: string, conDatabase = true): Promise<ConfigScanner | null> {
+  const pubblicato = (await fileArchivi()).find(f => nomeDi(f) === archivio);
+  const vault = conDatabase ? (await cartelleVault()).find(c => nomeDi(c) === archivio) : undefined;
+  const db = vault ? (await elenca(`name='database_manoscritti.json' and '${vault.id}' in parents and trashed=false`, 'modifiedTime desc'))[0] : undefined;
+  const quando = (f?: FileDrive) => (f?.modifiedTime ? Date.parse(f.modifiedTime) : 0);
+
+  let json: unknown;
+  if (db && quando(db) > quando(pubblicato)) json = configDaDatabase(archivio, await (await scarica(db.id)).json(), db.modifiedTime || new Date().toISOString());
+  else if (pubblicato) json = await (await scarica(pubblicato.id)).json();
+  else return null;
+  const esito = ScannerLotto.validaConfig(json);
+  if (!esito.ok) throw new Error('elenco_non_valido: ' + esito.errori.map(e => e.codice).join(', '));
+  // Un elenco pubblicato prima della normalizzazione porta ancora "<nome>_ArchiView".
+  return { ...esito.config, archivio };
+}
+
 export type Avanzamento = { fatte: number; totali: number };
 
 /**
@@ -144,8 +217,17 @@ export type Avanzamento = { fatte: number; totali: number };
 export async function inviaLotto(lotto: Lotto, fileDi: (nome: string) => File, avanzamento?: (a: Avanzamento) => void): Promise<void> {
   const esito = ScannerLotto.valida(lotto);
   if (!esito.ok) throw new Error('lotto_non_valido: ' + esito.errori.map(e => e.codice + '@' + e.percorso).join(', '));
-  const pulito = esito.lotto;
+  try {
+    await inviaValidato(esito.lotto, fileDi, avanzamento);
+  } catch (e) {
+    // Cartella in cache cancellata a mano su Drive: si ricerca (o ricrea) e si riprova una volta.
+    if (!(e instanceof ErroreDrive && e.stato === 404) || !cacheLotti) throw e;
+    azzeraCartelle();
+    await inviaValidato(esito.lotto, fileDi, avanzamento);
+  }
+}
 
+async function inviaValidato(pulito: Lotto, fileDi: (nome: string) => File, avanzamento?: (a: Avanzamento) => void): Promise<void> {
   const idLotti = await cartellaLotti();
   const idCartella = await cartella(pulito.id, idLotti);
   const presenti = await elenca(`'${idCartella}' in parents and trashed=false`);

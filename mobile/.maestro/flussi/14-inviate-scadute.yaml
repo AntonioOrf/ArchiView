@@ -1,0 +1,19 @@
+appId: com.antonioorf.archiview.scanner
+# seme: scadute
+name: Dopo l'invio, tieni 1 giorno - le scadute spariscono all'avvio (M8.31)
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+# Perg. 7, inviata 30 ore fa: tolta dal telefono all'avvio.
+- tapOn: Perg. 7, Privilegio
+- assertVisible: "Nessuna pagina."
+- assertNotVisible: "Inviate · .*"
+- back
+# Reg. 42, inviata un'ora fa: resta, in sola lettura.
+- tapOn: "Cartella Notarile.*"
+- tapOn: "Cartella Atti.*"
+- tapOn: "Reg\\. 42, Atti sciolti.*"
+- assertVisible: Inviate · 1 pagina
+- assertVisible: "5r · inviata"

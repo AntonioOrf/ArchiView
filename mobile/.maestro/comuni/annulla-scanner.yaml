@@ -1,0 +1,33 @@
+appId: com.antonioorf.archiview.scanner
+# Chiude lo scanner ML Kit senza salvare: l'app riceve «annullato» e non crea pagine.
+# Sull'emulatore lo scanner scatta da solo: «Discard scan» e conferma (Indietro tornerebbe
+# alla fotocamera, che scatta di nuovo). Se non ha ancora scattato, basta Indietro.
+---
+- extendedWaitUntil:
+    visible:
+      id: ".*optional_mlkit_docscan_ui.*"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: ".*discard_scan_button"
+    timeout: 20000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: ".*discard_scan_button"
+    commands:
+      - tapOn:
+          id: ".*discard_scan_button"
+      - tapOn:
+          id: "android:id/button1"
+- runFlow:
+    when:
+      visible:
+        id: ".*optional_mlkit_docscan_ui.*"
+    commands:
+      - back
+- extendedWaitUntil:
+    notVisible:
+      id: ".*optional_mlkit_docscan_ui.*"
+    timeout: 15000

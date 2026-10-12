@@ -36,6 +36,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Maestro: esiti JUnit e schermate dei flussi falliti
+/.maestro/esiti/
+
 # generated native folders
 /ios
 /android

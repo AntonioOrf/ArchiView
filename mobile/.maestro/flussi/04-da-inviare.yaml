@@ -1,0 +1,30 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Da inviare, Invia ora senza account
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+# Chiuso: le schede in attesa in una riga sola.
+- assertVisible: "Reg\\. 41 e senza scheda"
+- assertVisible: accedi per inviare
+- tapOn: Da inviare, 4 pagine, accedi per inviare
+- assertVisible: Reg. 41 · 3
+- assertVisible: Senza scheda · 1
+- assertVisible: «Carte sciolte»
+# Senza account non parte nulla, e lo dice.
+- tapOn: Invia ora
+- assertVisible: 4 pagine in attesa
+- assertVisible: "Non posso inviarle ora: accedi per inviare."
+- tapOn: OK
+- tapOn: Invia ora, 4 pagine in attesa, accedi per inviare
+- assertVisible: 4 pagine in attesa
+- tapOn: OK
+# Una miniatura apre la scheda col visore su quella pagina.
+- tapOn: Apri 1v
+- assertVisible: "Pagina 2 di 3 · striscia per le altre"
+- tapOn: Chiudi
+- assertVisible: Da inviare · 3 pagine
+- back
+- assertVisible: Fondo Prova, cambia archivio

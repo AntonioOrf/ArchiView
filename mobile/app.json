@@ -1,32 +1,43 @@
 {
   "expo": {
-    "name": "ArchiView Scanner",
+    "name": "ArchiScanner",
     "slug": "archiview-scanner",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "scheme": "archiview-scanner",
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "orientation": "portrait",
+    "experiments": {
+      "reactCompiler": true
+    },
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.antonioorf.archiview.scanner",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FF6418",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "allowBackup": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       [
-        "expo-image-picker",
+        "expo-build-properties",
         {
-          "cameraPermission": "La fotocamera serve a scansionare i documenti d'archivio.",
-          "photosPermission": false,
-          "microphonePermission": false
+          "android": {
+            "usesCleartextTraffic": true,
+            "buildArchs": ["arm64-v8a"]
+          }
         }
-      ]
+      ],
+      "expo-sharing"
     ]
   }
 }

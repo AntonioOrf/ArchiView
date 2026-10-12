@@ -1,0 +1,30 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Pagine inviate tenute sul telefono
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: Perg. 7, Privilegio
+- assertVisible: Inviate · 1 pagina
+- assertVisible: Nessuna pagina da inviare.
+- assertVisible: recto · inviata
+# Nel visore: sola lettura, niente azioni di modifica.
+- tapOn: Apri recto, inviata
+- assertVisible: Inviata · sola lettura
+- assertVisible: Il computer ha già questa pagina.
+- assertNotVisible: Ruota
+- tapOn: Togli dal telefono
+- assertVisible: Togliere dal telefono?
+- tapOn: "(?i)annulla"
+- tapOn: Chiudi
+# «Togli tutte» le toglie solo dal telefono.
+- tapOn: Togli tutte
+- assertVisible: Togliere le pagine inviate?
+# Con l'avviso aperto la gerarchia mostra solo l'avviso: nessuna ambiguità col pulsante sotto.
+- tapOn: "(?i)togli tutte"
+- extendedWaitUntil:
+    visible: "Nessuna pagina."
+    timeout: 10000
+- assertNotVisible: Inviate · 1 pagina

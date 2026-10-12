@@ -48,12 +48,19 @@ export async function esci(): Promise<void> {
   await GoogleSignin.signOut();
 }
 
+/** `getTokens` non accetta chiamate sovrapposte: chi arriva mentre una è in corso la condivide. */
+let inCorso: Promise<string> | null = null;
+
 /** Token d'accesso Drive valido (la libreria lo rinnova quando scade). */
-export async function tokenDrive(): Promise<string> {
+export function tokenDrive(): Promise<string> {
   configura();
-  const { accessToken } = await GoogleSignin.getTokens();
-  if (!accessToken) throw new Error('token_assente');
-  return accessToken;
+  inCorso ??= GoogleSignin.getTokens()
+    .then(({ accessToken }) => {
+      if (!accessToken) throw new Error('token_assente');
+      return accessToken;
+    })
+    .finally(() => { inCorso = null; });
+  return inCorso;
 }
 
 /**

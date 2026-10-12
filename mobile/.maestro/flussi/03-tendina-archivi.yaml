@@ -1,0 +1,37 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Tendina degli archivi, cambio archivio
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: Fondo Prova, cambia archivio
+- assertVisible: Archivio in uso
+- assertVisible: Fondo Altro
+# «Nuovo archivio» con un nome che c'è già: si usa quello.
+- tapOn: Nuovo archivio
+- inputText: Fondo Altro
+- assertVisible: "Esiste già: si userà quello."
+- tapOn: Annulla
+- tapOn: Fondo Altro
+- assertVisible: Fondo Altro, cambia archivio
+- assertVisible: Elenco delle schede non ancora arrivato
+# Le pagine in attesa sono di «Fondo Prova»: qui non si vedono.
+- assertNotVisible: "Da inviare · .*"
+- tapOn: Fondo Altro, cambia archivio
+- tapOn: Fondo Prova
+- assertVisible: Fondo Prova, cambia archivio
+- assertVisible: "3 schede sul computer.*"
+- assertVisible: Da inviare · 4 pagine
+# La scelta resta dopo il riavvio.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 30000
+# Indietro chiude la tendina.
+- tapOn: Fondo Prova, cambia archivio
+- assertVisible: Archivio in uso
+- back
+- assertNotVisible: Archivio in uso

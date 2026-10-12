@@ -1,0 +1,69 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: Impostazioni
+- assertVisible: Account Google
+- assertVisible: Accedi con Google
+# Invio.
+- assertVisible:
+    text: Invio automatico solo col Wi-Fi
+    checked: true
+- tapOn:
+    text: Invio automatico solo col Wi-Fi
+    checked: true
+- assertVisible:
+    text: Invio automatico solo col Wi-Fi
+    checked: false
+# Dopo l'invio (il seme parte da «Tieni sempre»).
+- assertVisible:
+    text: Tieni sempre
+    checked: true
+- tapOn: Cancella subito
+- assertVisible:
+    text: Cancella subito
+    checked: true
+- tapOn: Giorni
+- eraseText: 3
+- inputText: "3"
+# Il numero vale all'uscita dal campo (onEndEditing), non a ogni cifra.
+- pressKey: Enter
+- assertVisible:
+    text: Tieni per 3 giorni
+    checked: true
+# Le scelte restano dopo il riavvio.
+- stopApp
+# Maestro concede tutti i permessi a ogni avvio: qui la fotocamera no, per provarne la richiesta.
+- launchApp:
+    permissions:
+      camera: deny
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 30000
+- tapOn: Impostazioni
+- assertVisible:
+    text: Tieni per 3 giorni
+    checked: true
+- assertVisible:
+    text: Invio automatico solo col Wi-Fi
+    checked: false
+# Wi-Fi diretto: chiede la fotocamera, poi il lettore del QR; Annulla torna qui.
+- tapOn: Abbina col computer
+- assertVisible: "L'abbinamento usa la fotocamera.*"
+- tapOn: "Consenti.*"
+- runFlow:
+    when:
+      visible: "(?i)(while using the app|mentre usi l'app|solo questa volta|only this time)"
+    commands:
+      - tapOn: "(?i)(while using the app|mentre usi l'app)"
+- extendedWaitUntil:
+    visible: Inquadra il codice QR sul computer.
+    timeout: 15000
+- tapOn: "(?i)annulla"
+- assertVisible: Abbina col computer
+- tapOn: Indietro
+- assertVisible: Fondo Prova, cambia archivio

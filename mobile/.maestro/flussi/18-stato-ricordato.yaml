@@ -1,0 +1,24 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Cartelle aperte ricordate per archivio dopo il riavvio (M8.28)
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: "Cartella Notarile.*"
+- tapOn: "Cartella Atti.*"
+- assertVisible: Reg. 42, Atti sciolti
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 30000
+- assertVisible: Reg. 42, Atti sciolti
+# Un altro archivio ha il suo stato: lì nulla è aperto.
+- tapOn: Fondo Prova, cambia archivio
+- tapOn: Fondo Altro
+- assertNotVisible: "Reg\\. 42.*"
+- tapOn: Fondo Altro, cambia archivio
+- tapOn: Fondo Prova
+- assertVisible: Reg. 42, Atti sciolti

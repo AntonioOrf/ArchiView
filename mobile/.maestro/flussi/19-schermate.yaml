@@ -1,0 +1,26 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Giro delle schermate con fotografie (M8.36, da lanciare anche col carattere grande e il tema scuro)
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- takeScreenshot: esiti/schermate/01-archivio
+- tapOn: "Cartella Notarile.*"
+- tapOn: "Reg\\. 41, Imbreviature.*"
+- takeScreenshot: esiti/schermate/02-scheda
+- tapOn: Apri 1r
+- takeScreenshot: esiti/schermate/03-visore
+- back
+- back
+- tapOn: "Da inviare, 4 pagine.*"
+- takeScreenshot: esiti/schermate/04-da-inviare
+- tapOn: "Da inviare, 4 pagine.*"
+- tapOn: Fondo Prova, cambia archivio
+- takeScreenshot: esiti/schermate/05-tendina
+- back
+- tapOn: Impostazioni
+- takeScreenshot: esiti/schermate/06-impostazioni
+- scroll
+- takeScreenshot: esiti/schermate/07-impostazioni-giu

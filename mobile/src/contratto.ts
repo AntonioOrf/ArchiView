@@ -19,13 +19,15 @@ export type Pagina = {
 export type Destinazione =
   | { tipo: 'nessuna' }
   | { tipo: 'esistente'; schedaId: string }
-  | { tipo: 'nuova'; tipoDocumento: string; cartella?: string; campi: Record<string, string> };
+  | { tipo: 'nuova'; tipoDocumento: string; schedaId?: string; cartella?: string; campi: Record<string, string> };
 
 export type Lotto = {
   formato: string;
   versione: number;
   id: string;
   creatoIl: string;
+  archivio?: string;
+  archivioNuovo?: true;
   dispositivo?: string;
   titolo?: string;
   nota?: string;
@@ -36,7 +38,13 @@ export type Lotto = {
 export type ErroreContratto = { codice: string; percorso: string };
 export type EsitoValidazione = { ok: true; lotto: Lotto } | { ok: false; errori: ErroreContratto[] };
 
+export type VoceScheda = { id: string; segnatura: string; cartella: string; titolo: string };
+export type ConfigScanner = { formato: string; versione: number; archivio: string; aggiornatoIl: string; schede: VoceScheda[]; cartelle: string[] };
+export type EsitoConfig = { ok: true; config: ConfigScanner } | { ok: false; errori: ErroreContratto[] };
+
 type ModuloScannerLotto = {
+  CARTELLA_ARCHIVI: string;
+  validaConfig(json: unknown): EsitoConfig;
   FORMATO: string;
   VERSIONE: number;
   NOME_MANIFEST: string;
@@ -47,6 +55,7 @@ type ModuloScannerLotto = {
   idValido(id: unknown): boolean;
   nomeFileValido(nome: unknown): boolean;
   nuovoId(data: Date, suffisso: string): string;
+  nomeArchivio(nome: string): string;
   nomePagina(n: number, estensione?: 'jpg' | 'jpeg' | 'png'): string;
 };
 

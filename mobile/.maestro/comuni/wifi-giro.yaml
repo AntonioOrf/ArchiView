@@ -1,0 +1,53 @@
+appId: com.antonioorf.archiview.scanner
+# Giro del Wi-Fi diretto, vedi flussi/20-wifi-diretto.yaml.
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+# Senza account (M10.5): «Da inviare» dice «accedi per inviare» finché non si abbina.
+- assertVisible: "Da inviare, 4 pagine, accedi per inviare"
+- tapOn: Impostazioni
+- tapOn: Abbina col computer
+- runFlow:
+    when:
+      visible: "Consenti.*"
+    commands:
+      - tapOn: "Consenti.*"
+- runFlow:
+    when:
+      visible: "(?i)(while using the app|mentre usi l'app)"
+    commands:
+      - tapOn: "(?i)(while using the app|mentre usi l'app)"
+# Il lettore legge il QR del poster e verifica il computer.
+- extendedWaitUntil:
+    visible: "Collegato a «Fondo Prova».*"
+    timeout: 60000
+- tapOn: Indietro
+# M8.14 e M10.5: la coda parte da sola, senza account.
+- extendedWaitUntil:
+    notVisible: "Da inviare.*"
+    timeout: 120000
+# M10.4: la pagina di «Fondo Altro» resta sul telefono.
+- tapOn: Fondo Prova, cambia archivio
+- tapOn: Fondo Altro
+- assertVisible: "Da inviare · 1 pagina"
+- tapOn: Fondo Altro, cambia archivio
+- tapOn: Fondo Prova
+# M10.6: lo spec chiude il pannello sul desktop appena ha ricevuto i lotti; qui si aspetta.
+- extendedWaitUntil:
+    visible: "Questo testo non compare mai"
+    timeout: 25000
+    optional: true
+- tapOn: Scansiona o crea una scheda
+- tapOn: Scannerizza senza scheda, da smistare al computer
+- runFlow: scatta.yaml
+- extendedWaitUntil:
+    visible: Computer scollegato
+    timeout: 60000
+- tapOn: OK
+# Abbinamento tolto (senza account torna «accedi per inviare»), la pagina resta in coda.
+# Dalla schermata dell'archivio: nella build di debug il riquadro LogBox dell'errore copre la barra in fondo.
+- back
+- assertVisible: "Da inviare, 1 pagina, accedi per inviare"
+- assertVisible: "Senza scheda: Il computer non risponde.*"

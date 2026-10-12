@@ -1,0 +1,27 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: Nuova scheda con lo scanner annullato - nessuna scheda fantasma (M10.7)
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: Scansiona o crea una scheda
+- tapOn: Nuova scheda, senza cartella
+- tapOn: Es. Reg. 41
+- inputText: Reg. 77
+- hideKeyboard
+- tapOn: Crea e scansiona
+- runFlow: ../comuni/annulla-scanner.yaml
+- runFlow:
+    when:
+      visible: Reg. 77
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 10000
+- assertNotVisible: "Reg\\. 77.*"
+- tapOn: Cerca nell'archivio
+- inputText: "77"
+- assertVisible: Nessuna scheda trovata.

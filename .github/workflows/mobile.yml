@@ -1,4 +1,4 @@
-name: ArchiView Scanner (Android)
+name: ArchiScanner (Android)
 
 # Solo typecheck e bundle JS: la build nativa (APK) si fa con `npx expo run:android` o EAS.
 # Gira anche quando cambia il validatore condiviso, che l'app carica da ../src/shared.
@@ -32,6 +32,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Test
+        run: npm test
 
       - name: Bundle Android
         run: npx expo export --platform android --output-dir ../out-mobile

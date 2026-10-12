@@ -1,0 +1,24 @@
+appId: com.antonioorf.archiview.scanner
+# seme: vuoto
+name: Primo avvio, nuovo archivio, Documenti
+---
+- launchApp
+- extendedWaitUntil:
+    visible: ArchiScanner
+    timeout: 180000
+- assertVisible: Accedi con Google
+- assertVisible: "Nessun archivio su Drive.*"
+- tapOn: Nuovo archivio
+- inputText: "Fondo/Prova"
+- assertVisible: "Nome non valido come cartella.*"
+- eraseText: 20
+- inputText: Fondo Nuovo
+- tapOn: Crea archivio
+- assertVisible: Fondo Nuovo, cambia archivio
+- assertVisible: "Archivio nuovo: il computer lo crea quando riceve le scansioni"
+- tapOn: Fondo Nuovo, cambia archivio
+- assertVisible: "Creato qui · il computer lo crea alla prima ricezione"
+- tapOn: Documenti
+- assertVisible: Documenti, cambia archivio
+- assertVisible: "Solo su questo telefono · 0 documenti"
+- assertVisible: "Nessun documento."
