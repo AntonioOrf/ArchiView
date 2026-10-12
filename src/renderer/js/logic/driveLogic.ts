@@ -481,7 +481,9 @@ async function scaricaUnisciCarica(apiCloud, silent) {
 async function caricaDopoMerge(apiCloud, driveData, silent) {
     // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
+    const inviate = structuredClone(appData.manoscritti);
     const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
+    await window.registraBaseInviata(inviate);
 
     try {
         if (apiCloud.syncAttachments) await apiCloud.syncAttachments();

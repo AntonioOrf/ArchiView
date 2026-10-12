@@ -239,6 +239,26 @@ window.databasePerDisco = function(db) {
     return resto;
 };
 
+// Dopo un invio riuscito (push Hub, upload Drive) le schede inviate SONO il server: sono la base
+// certa del prossimo merge a tre vie. Senza, una scheda creata o modificata qui e poi inviata
+// restava senza base fino al pull successivo, e ricevendo ogni sua differenza dal server
+// diventava un conflitto. `inviate` va copiata PRIMA dell'invio: le modifiche fatte durante
+// l'invio non sono sul server e non devono entrare nella base.
+window.registraBaseInviata = async function(inviate) {
+    appData.baseObjects = {};
+    appData.baseHashes = {};
+    for (const m of inviate || []) {
+        appData.baseObjects[m.id] = m;
+        appData.baseHashes[m.id] = window.getRecordHash(m);
+    }
+    try {
+        if (window.apiBrowser) await window.apiBrowser.salvaDatiBase(appData.baseObjects);
+    } catch (err) {
+        // Base solo in memoria: al riavvio si ricade sulla base del pull precedente.
+        console.error("Errore nel salvataggio della base dopo l'invio:", err);
+    }
+};
+
 async function eseguiSalvataggio(pendenti = true, dopoCommit = false) {
     // Rete di sicurezza per le mutazioni che non passano da Store.commit(). Il differito segue
     // sempre un commit, che l'ha già invalidata: rifarlo costava un secondo reindex completo.

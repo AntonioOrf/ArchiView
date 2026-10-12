@@ -126,6 +126,8 @@ test.describe('Schema versionato e migrazioni', () => {
     if (fs.existsSync(fileBase)) fs.rmSync(fileBase);
 
     const { app: app2, page: page2 } = await riavvia(electronApp, userDataDir);
+    // La base del DB vecchio non va persa: all'apertura passa nel suo file.
+    await expect.poll(() => fs.existsSync(fileBase) && JSON.parse(fs.readFileSync(fileBase, 'utf8'))['b-1']?.segnatura).toBe('ASP 5');
     await app2.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('hub-push');
       ipcMain.handle('hub-push', (_e, _p, db) => { (globalThis as any).__e2eHubPushed = db; return { ok: true, data: { version: 2 } }; });
@@ -142,8 +144,8 @@ test.describe('Schema versionato e migrazioni', () => {
     expect(suDisco.manoscritti[0].segnatura).toBe('ASP 5 bis');
     expect(suDisco.baseObjects).toBeUndefined();
     expect(suDisco.baseHashes).toBeUndefined();
-    // La base del DB vecchio non va persa: passa nel suo file.
-    expect(JSON.parse(fs.readFileSync(fileBase, 'utf8'))['b-1'].segnatura).toBe('ASP 5');
+    // Dopo l'invio riuscito la base è ciò che è stato inviato (registraBaseInviata).
+    expect(JSON.parse(fs.readFileSync(fileBase, 'utf8'))['b-1'].segnatura).toBe('ASP 5 bis');
     const pushed: any = await app2.evaluate(() => (globalThis as any).__e2eHubPushed);
     expect(pushed.manoscritti).toHaveLength(1);
     expect(pushed.baseObjects).toBeUndefined();

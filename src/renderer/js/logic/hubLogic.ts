@@ -237,6 +237,7 @@ window.inviaModificheHub = async function() {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
 
     try {
+        const inviate = structuredClone(appData.manoscritti);
         const resPush = await pushHub(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
@@ -254,6 +255,7 @@ window.inviaModificheHub = async function() {
         window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
+        await window.registraBaseInviata(inviate);
 
         window.sincronizzaAllegatiHub(false); // carica i chunk mancanti sul proprio Drive + pubblica indice
 
@@ -315,6 +317,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         // o il merge dei colleghi riporterebbe tutto com'era (vedi `ripristinaDatabase`).
         await window.ripristinaDatabase(snap.database);
 
+        const inviate = structuredClone(appData.manoscritti);
         const resPush = await pushHub(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
@@ -328,6 +331,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
+        await window.registraBaseInviata(inviate);
 
         return true; // messaggio di successo mostrato dal chiamante (apriConfermaRipristino)
     } catch (e) {
