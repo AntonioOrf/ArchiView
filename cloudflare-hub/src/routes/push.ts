@@ -1,5 +1,5 @@
 import type { Env } from '../types';
-import { bearer, resolveAuth } from '../auth';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { pruneVersions, writeVersion } from '../db';
 import { err, json } from '../http';
 import { EVENTO_AGGIORNATO, canaleRepo, pubblica } from '../pusher';
@@ -7,7 +7,7 @@ import { EVENTO_AGGIORNATO, canaleRepo, pubblica } from '../pusher';
 // POST /api/repos/:id/push  body: { parentVersion, database }
 export async function handlePush(req: Request, env: Env, repoId: string, ctx?: ExecutionContext): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
 
   const maxMb = Number(env.MAX_PUSH_MB || '20');
   const clen = Number(req.headers.get('Content-Length') || '0');

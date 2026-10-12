@@ -6,7 +6,7 @@
 // Prereq: schema applicato (npm run migrate[:local]).
 //
 // Coperto qui (puro Worker): create, push/pull multi-utente, indice allegati,
-// invito=membro + pull con chiave membro, conflitto 409, revoca → 401.
+// invito=membro + pull con chiave membro, conflitto 409, revoca → 403.
 // NON coperto (richiede Drive/UI reali): download binario allegato via link
 // pubblico, cifratura AES-GCM, flusso "join senza Google" lato renderer.
 
@@ -137,13 +137,18 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.version === 3 && d.database?.manoscritti?.[0]?.id === vincitore, 'pull dopo i push concorrenti → v3 con i dati del vincitore');
 
-  // ── Scenario 6: revoca membro → 401 ──────────────────────────────────────────
+  // ── Scenario 6: revoca membro → 403 ──────────────────────────────────────────
   section('Scenario 6 — Revoca membro B');
   r = await fetch(`${BASE}/api/repos/${repoId}/members/${memberId}`, { method: 'DELETE', headers: auth(ownerKey) });
   ok(r.status === 200, 'A revoca B → 200');
 
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(memberKey) });
-  ok(r.status === 401, 'B pull con chiave revocata → 401');
+  // 403 e non 401: l'app distingue "accesso revocato" da "chiave non valida" (prova M3.5, 12/10).
+  ok(r.status === 403, 'B pull con chiave revocata → 403');
+  r = await fetch(`${BASE}/api/repos/${repoId}/push`, { method: 'POST', headers: auth(memberKey), body: JSON.stringify({ parentVersion: 3, database: {} }) });
+  ok(r.status === 403, 'B push con chiave revocata → 403');
+  r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth('chiave-mai-esistita') });
+  ok(r.status === 401, 'chiave inventata → 401');
 
   // ── Extra: rate-limit creazione (bucket IP isolato) ──────────────────────────
   section('Extra — Rate-limit creazione (Fase 5)');

@@ -1,5 +1,5 @@
 import type { Env } from '../types';
-import { bearer, resolveAuth } from '../auth';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { err, json } from '../http';
 
 const HASH_RE = /^[a-f0-9]{64}$/;
@@ -16,7 +16,7 @@ function urlAllowed(u: string): boolean {
 // GET /api/repos/:id/attachments/index  (membro) -> { files, chunks }
 export async function handleGetIndex(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
 
   const [filesRes, chunksRes] = await Promise.all([
     env.DB.prepare(
@@ -49,7 +49,7 @@ export async function handleGetIndex(req: Request, env: Env, repoId: string): Pr
 // body: { files?: [{fileName,hashes,lastModified,deleted?}], chunks?: [{hash,url,driveFileId?,sizeBytes?}] }
 export async function handlePutIndex(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
 
   let body: any;
   try {
@@ -109,7 +109,7 @@ export async function handleDeleteChunk(
   req: Request, env: Env, repoId: string, hash: string
 ): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
   if (!HASH_RE.test(hash)) return err(400, 'Hash non valido.');
 
   const chunk = await env.DB.prepare(

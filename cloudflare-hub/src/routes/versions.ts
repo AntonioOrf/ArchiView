@@ -1,5 +1,5 @@
 import type { Env } from '../types';
-import { bearer, resolveAuth } from '../auth';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { currentVersion, listVersions, readVersion } from '../db';
 import { err, json } from '../http';
 
@@ -7,7 +7,7 @@ import { err, json } from '../http';
 // da members.label (revoca soft -> la label resta disponibile anche dopo la revoca).
 export async function handleListVersions(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
 
   const [cur, versions] = await Promise.all([
     currentVersion(env, repoId),
@@ -26,7 +26,7 @@ export async function handleGetVersion(
   nRaw: string
 ): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
 
   if (!/^\d+$/.test(nRaw) || Number(nRaw) <= 0) {
     return err(400, 'Numero di versione non valido.');

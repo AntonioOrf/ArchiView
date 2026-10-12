@@ -72,7 +72,7 @@ window.avviaRealtimeHub = async function() {
 
     const channel = window.pusherInstance.subscribe(canale);
     channel.bind('pusher:subscription_error', (e) => {
-        // 401 = chiave revocata, 503 = realtime non configurato: resta il controllo periodico.
+        // 403 = chiave revocata, 401 = chiave non valida, 503 = realtime non configurato: resta il controllo periodico.
         console.warn("Iscrizione realtime Hub rifiutata:", e && (e.status || e.error));
     });
     channel.bind('hub-updated', async (data) => {

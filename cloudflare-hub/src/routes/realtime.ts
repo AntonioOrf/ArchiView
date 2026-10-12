@@ -1,5 +1,5 @@
 import type { Env } from '../types';
-import { bearer, resolveAuth } from '../auth';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { err, json } from '../http';
 import { canaleRepo, firmaIscrizione, pusherConfigurato } from '../pusher';
 
@@ -9,7 +9,7 @@ import { canaleRepo, firmaIscrizione, pusherConfigurato } from '../pusher';
 // riceve più notifiche.
 export async function handleRealtimeAuth(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
   if (!pusherConfigurato(env)) return err(503, 'Realtime non configurato sul server.');
 
   let body: { socketId?: unknown; channel?: unknown };

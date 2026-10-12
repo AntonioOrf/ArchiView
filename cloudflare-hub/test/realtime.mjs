@@ -128,7 +128,7 @@ async function main() {
     r = await fetch(`${BASE}/api/repos/${repoId}/members/${memberId}`, { method: 'DELETE', headers: auth(ownerKey) });
     ok(r.status === 200, 'B revocato');
     r = await post(`/api/repos/${repoId}/realtime-auth`, memberKey, { socketId, channel: canale });
-    ok(r.status === 401, 'B revocato non può più iscriversi → 401');
+    ok(r.status === 403, 'B revocato non può più iscriversi → 403');
   } finally {
     worker.kill();
     if (process.platform === 'win32' && worker.pid) spawnSync('taskkill', ['/pid', String(worker.pid), '/T', '/F']);

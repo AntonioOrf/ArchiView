@@ -1,11 +1,11 @@
 import type { AuthCtx, Env } from '../types';
-import { bearer, resolveAuth } from '../auth';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { randomId, randomKey, sha256hex } from '../crypto';
 import { err, json } from '../http';
 
 async function requireOwner(req: Request, env: Env, repoId: string): Promise<AuthCtx | Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
   if (auth.role !== 'owner') return err(403, 'Operazione riservata al proprietario del repository.');
   return auth;
 }

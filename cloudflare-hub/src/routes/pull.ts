@@ -1,12 +1,12 @@
 import type { Env } from '../types';
-import { bearer, resolveAuth } from '../auth';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { currentVersion, readLatest } from '../db';
 import { err, json } from '../http';
 
 // GET /api/repos/:id/pull[?ifVersionNot=N]
 export async function handlePull(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
-  if (!auth) return err(401, 'Chiave di accesso non valida per questo repository.');
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
 
   const url = new URL(req.url);
   const ifNot = url.searchParams.get('ifVersionNot');
