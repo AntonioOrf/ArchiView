@@ -4,78 +4,202 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ArchiView - Gestionale per Manoscritti</title>
+    <meta name="description" content="Programma gratuito e open source per Windows per catalogare e trascrivere manoscritti e documenti d'archivio. Con ArchiScanner per Android e una wiki in italiano e inglese.">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Stessa scelta del tema della wiki (VitePress), altrimenti quella del sistema
+        tailwind.config = { darkMode: 'class' };
+        (function () {
+            var scelta = null;
+            try { scelta = localStorage.getItem('vitepress-theme-appearance'); } catch (e) {}
+            var scuro = scelta === 'dark' || (scelta !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.classList.toggle('dark', scuro);
+            document.documentElement.style.colorScheme = scuro ? 'dark' : 'light';
+        })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        html { scroll-behavior: smooth; }
     </style>
    <meta name="google-site-verification" content="J0v9Zc1rRqaglzTCtAiRv-_wnPdHjJrzJJzvJNVxINU" />
 </head>
-<body class="bg-stone-50 text-stone-900 min-h-screen flex flex-col">
+<body class="bg-stone-50 text-stone-900 min-h-screen flex flex-col dark:bg-stone-950 dark:text-stone-50">
     <!-- Navbar -->
-    <nav class="bg-white shadow-sm border-b border-stone-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-40 dark:bg-stone-900 dark:border-stone-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex justify-between h-16 items-center">
-                <div class="flex-shrink-0 flex items-center gap-2">
+                <a href="/" class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-amber-700 text-white rounded flex items-center justify-center font-bold text-lg">A</div>
-                    <span class="font-bold text-xl text-stone-800">ArchiView</span>
-                </div>
-                <div class="hidden sm:flex sm:space-x-8">
-                    <a href="index.html" class="text-amber-700 px-3 py-2 text-sm font-medium">Home</a>
-                    <a href="/wiki/" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">Wiki</a>
-                    <a href="privacy.html" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">Privacy Policy</a>
-                    <a href="terms.html" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">Termini di Servizio</a>
-                    <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" class="text-stone-500 hover:text-stone-700 px-3 py-2 text-sm font-medium transition-colors">GitHub</a>
+                    <span class="font-bold text-xl text-stone-800 dark:text-stone-100">ArchiView</span>
+                </a>
+                <div class="hidden sm:flex items-center gap-6 text-sm font-medium">
+                    <a href="#app" class="text-stone-600 hover:text-stone-900 transition-colors dark:text-stone-400 dark:hover:text-stone-50">L'app</a>
+                    <a href="#archiscanner" class="text-stone-600 hover:text-stone-900 transition-colors dark:text-stone-400 dark:hover:text-stone-50">ArchiScanner</a>
+                    <a href="/wiki/" class="text-stone-600 hover:text-stone-900 transition-colors dark:text-stone-400 dark:hover:text-stone-50">Wiki</a>
+                    <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" rel="noopener" class="text-stone-600 hover:text-stone-900 transition-colors dark:text-stone-400 dark:hover:text-stone-50">GitHub</a>
+                    <a href="https://github.com/AntonioOrf/ArchiView/releases" class="px-4 py-2 bg-amber-700 text-white font-semibold rounded-lg hover:bg-amber-800 transition-colors">Scarica</a>
                 </div>
                 <!-- Menu per il telefono: sotto i 640px i link qui sopra sono nascosti -->
                 <details class="sm:hidden relative">
-                    <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer p-2 -mr-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100" aria-label="Menu">
+                    <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer p-2 -mr-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-50 dark:hover:bg-stone-800" aria-label="Menu">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
                     </summary>
-                    <div class="absolute right-0 mt-2 w-60 bg-white border border-stone-200 rounded-lg shadow-lg py-2 z-50">
-                        <a href="index.html" aria-current="page" class="block px-4 py-3 text-base font-medium text-amber-700 bg-amber-50">Home</a>
-                        <a href="/wiki/" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">Wiki</a>
-                        <a href="privacy.html" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">Privacy Policy</a>
-                        <a href="terms.html" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">Termini di Servizio</a>
-                        <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" rel="noopener" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50">GitHub</a>
+                    <div class="absolute right-0 mt-2 w-60 bg-white border border-stone-200 rounded-lg shadow-lg py-2 z-50 dark:bg-stone-900 dark:border-stone-800">
+                        <a href="#app" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50 dark:text-stone-400 dark:hover:text-stone-50 dark:hover:bg-stone-800">L'app</a>
+                        <a href="#archiscanner" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50 dark:text-stone-400 dark:hover:text-stone-50 dark:hover:bg-stone-800">ArchiScanner</a>
+                        <a href="/wiki/" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50 dark:text-stone-400 dark:hover:text-stone-50 dark:hover:bg-stone-800">Wiki</a>
+                        <a href="https://github.com/AntonioOrf/ArchiView" target="_blank" rel="noopener" class="block px-4 py-3 text-base font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50 dark:text-stone-400 dark:hover:text-stone-50 dark:hover:bg-stone-800">GitHub</a>
+                        <a href="https://github.com/AntonioOrf/ArchiView/releases" class="block px-4 py-3 text-base font-semibold text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-400/10">Scarica</a>
                     </div>
                 </details>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <main class="flex-grow flex flex-col items-center justify-center py-20 px-4 sm:px-6 lg:px-8 text-center">
-        <div class="w-20 h-20 bg-gradient-to-br from-amber-600 to-amber-800 text-white rounded-2xl flex items-center justify-center font-bold text-4xl mb-8 shadow-xl mx-auto transform hover:scale-105 transition-transform">
-            A
-        </div>
-        <h1 class="text-5xl font-extrabold text-stone-900 tracking-tight sm:text-6xl mb-4">
-            ArchiView
-        </h1>
-        <p class="mt-4 text-xl text-stone-600 max-w-2xl mx-auto">
-            Il software desktop open-source offline-first dedicato alla catalogazione, all'archiviazione e alla trascrizione di manoscritti e documenti storici.
-        </p>
-        <div class="mt-10 flex justify-center gap-4">
-            <a href="https://github.com/AntonioOrf/ArchiView/releases" class="px-8 py-3 bg-amber-700 text-white font-medium rounded-lg shadow hover:bg-amber-800 transition-colors">
-                Scarica l'App
-            </a>
-            <a href="https://github.com/AntonioOrf/ArchiView" class="px-8 py-3 bg-white text-stone-700 border border-stone-200 font-medium rounded-lg shadow-sm hover:bg-stone-50 transition-colors">
-                Codice Sorgente
-            </a>
-        </div>
+    <main class="flex-grow">
+        <!-- Apertura -->
+        <header class="max-w-6xl mx-auto px-4 sm:px-6 py-14 lg:py-20 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-center gap-12">
+            <div class="flex flex-col gap-5">
+                <span class="text-sm font-semibold text-amber-700 uppercase tracking-wide dark:text-amber-400">Gratuito · open source · offline</span>
+                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">Catalogare e trascrivere manoscritti, sul tuo computer.</h1>
+                <p class="text-lg text-stone-600 leading-relaxed dark:text-stone-400">ArchiView è un programma per Windows per chi lavora con documenti d'archivio: imbreviature notarili, atti giudiziari, registri fiscali, carte private. I dati restano sul tuo disco, in file leggibili.</p>
+                <div class="flex flex-wrap gap-3 mt-2">
+                    <a href="https://github.com/AntonioOrf/ArchiView/releases" class="inline-flex items-center gap-2 px-6 py-3.5 bg-amber-700 text-white font-semibold rounded-lg shadow hover:bg-amber-800 transition-colors">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                        Scarica per Windows
+                    </a>
+                    <a href="/wiki/" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-stone-900 font-semibold rounded-lg border border-stone-300 hover:bg-stone-50 transition-colors dark:bg-stone-900 dark:text-stone-50 dark:border-stone-700 dark:hover:bg-stone-800">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 7h6"/></svg>
+                        Leggi la guida
+                    </a>
+                </div>
+                <p class="text-sm text-stone-500 dark:text-stone-400">Windows 10 e 11. Al primo avvio Windows può mostrare un avviso: <a href="/wiki/primi-passi/installazione" class="text-amber-700 hover:text-amber-800 underline dark:text-amber-400 dark:hover:text-amber-300">ecco cosa fare</a>.</p>
+            </div>
+            <div class="rounded-xl overflow-hidden border border-stone-300 shadow-2xl bg-white dark:border-stone-700 dark:bg-stone-900">
+                <img src="/wiki/img/vista-tabella.png" width="1264" height="761" alt="ArchiView: l'archivio con la struttura delle cartelle e l'elenco delle schede" class="block w-full h-auto dark:hidden">
+                <img src="/wiki/img/vista-tabella-scuro.png" width="1264" height="761" alt="ArchiView: l'archivio con la struttura delle cartelle e l'elenco delle schede" loading="lazy" class="hidden w-full h-auto dark:block">
+            </div>
+        </header>
+
+        <!-- L'app -->
+        <section id="app" class="bg-white border-y border-stone-200 scroll-mt-16 dark:bg-stone-900 dark:border-stone-800">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16 lg:py-20">
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Cosa fa l'app</h2>
+                <p class="mt-3 text-lg text-stone-600 max-w-2xl dark:text-stone-400">Ogni funzione ha la sua pagina nella wiki, con schermate e passi da seguire.</p>
+                <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <a href="/wiki/guida/schede" class="group flex flex-col gap-2 p-6 rounded-xl border border-stone-200 bg-stone-50 hover:border-amber-600 hover:bg-white transition-colors dark:border-stone-800 dark:bg-stone-950 dark:hover:border-amber-400 dark:hover:bg-stone-900">
+                        <span class="text-lg font-bold">Le tue schede</span>
+                        <span class="text-stone-600 leading-relaxed dark:text-stone-400">Una scheda per documento, modelli già pronti, campi aggiunti da te, cartelle e archivi per tenere tutto in ordine.</span>
+                        <span class="mt-auto pt-2 font-semibold text-amber-700 group-hover:text-amber-800 dark:text-amber-400 dark:group-hover:text-amber-300">Leggi nella wiki →</span>
+                    </a>
+                    <a href="/wiki/guida/trascrizione" class="group flex flex-col gap-2 p-6 rounded-xl border border-stone-200 bg-stone-50 hover:border-amber-600 hover:bg-white transition-colors dark:border-stone-800 dark:bg-stone-950 dark:hover:border-amber-400 dark:hover:bg-stone-900">
+                        <span class="text-lg font-bold">Trascrivere</span>
+                        <span class="text-stone-600 leading-relaxed dark:text-stone-400">Il documento a sinistra, il testo a destra. Manoscritti da IIIF, contrasto e negativo per le scritture difficili, OCR per quelle tarde.</span>
+                        <span class="mt-auto pt-2 font-semibold text-amber-700 group-hover:text-amber-800 dark:text-amber-400 dark:group-hover:text-amber-300">Leggi nella wiki →</span>
+                    </a>
+                    <a href="/wiki/guida/ricerca-filtri" class="group flex flex-col gap-2 p-6 rounded-xl border border-stone-200 bg-stone-50 hover:border-amber-600 hover:bg-white transition-colors dark:border-stone-800 dark:bg-stone-950 dark:hover:border-amber-400 dark:hover:bg-stone-900">
+                        <span class="text-lg font-bold">Ritrovare tutto</span>
+                        <span class="text-stone-600 leading-relaxed dark:text-stone-400">Ricerca in metadati e trascrizioni, tag, vocabolari controllati, date storiche ordinabili, ricerche salvate.</span>
+                        <span class="mt-auto pt-2 font-semibold text-amber-700 group-hover:text-amber-800 dark:text-amber-400 dark:group-hover:text-amber-300">Leggi nella wiki →</span>
+                    </a>
+                    <a href="/wiki/cloud/sincronizzazione" class="group flex flex-col gap-2 p-6 rounded-xl border border-stone-200 bg-stone-50 hover:border-amber-600 hover:bg-white transition-colors dark:border-stone-800 dark:bg-stone-950 dark:hover:border-amber-400 dark:hover:bg-stone-900">
+                        <span class="text-lg font-bold">Lavorare in gruppo</span>
+                        <span class="text-stone-600 leading-relaxed dark:text-stone-400">Archivio condiviso con inviti revocabili, contenuti cifrati, conflitti risolti campo per campo. Facoltativo.</span>
+                        <span class="mt-auto pt-2 font-semibold text-amber-700 group-hover:text-amber-800 dark:text-amber-400 dark:group-hover:text-amber-300">Leggi nella wiki →</span>
+                    </a>
+                    <a href="/wiki/esporta/stampa" class="group flex flex-col gap-2 p-6 rounded-xl border border-stone-200 bg-stone-50 hover:border-amber-600 hover:bg-white transition-colors dark:border-stone-800 dark:bg-stone-950 dark:hover:border-amber-400 dark:hover:bg-stone-900">
+                        <span class="text-lg font-bold">Portare fuori il lavoro</span>
+                        <span class="text-stone-600 leading-relaxed dark:text-stone-400">Stampa e PDF, CSV, trascrizioni in HTML, Markdown e RTF, citazioni per Zotero e LaTeX.</span>
+                        <span class="mt-auto pt-2 font-semibold text-amber-700 group-hover:text-amber-800 dark:text-amber-400 dark:group-hover:text-amber-300">Leggi nella wiki →</span>
+                    </a>
+                    <a href="/wiki/dati/cestino-snapshot" class="group flex flex-col gap-2 p-6 rounded-xl border border-stone-200 bg-stone-50 hover:border-amber-600 hover:bg-white transition-colors dark:border-stone-800 dark:bg-stone-950 dark:hover:border-amber-400 dark:hover:bg-stone-900">
+                        <span class="text-lg font-bold">Non perdere niente</span>
+                        <span class="text-stone-600 leading-relaxed dark:text-stone-400">Annulla e ripeti, cestino, snapshot automatici, cronologia di ogni scheda.</span>
+                        <span class="mt-auto pt-2 font-semibold text-amber-700 group-hover:text-amber-800 dark:text-amber-400 dark:group-hover:text-amber-300">Leggi nella wiki →</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ArchiScanner -->
+        <section id="archiscanner" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 lg:py-20 grid md:grid-cols-[300px_minmax(0,1fr)] items-center gap-12 lg:gap-16 scroll-mt-16">
+            <div class="mx-auto w-64 sm:w-72 rounded-[2.25rem] border-[10px] border-stone-800 bg-stone-800 overflow-hidden shadow-2xl">
+                <img src="/wiki/img/telefono-scheda.png" width="540" height="1200" alt="ArchiScanner: una scheda con le pagine scansionate" loading="lazy" class="block w-full h-auto dark:hidden">
+                <img src="/wiki/img/telefono-scheda-scuro.png" width="540" height="1200" alt="ArchiScanner: una scheda con le pagine scansionate" loading="lazy" class="hidden w-full h-auto dark:block">
+            </div>
+            <div class="flex flex-col gap-5">
+                <span class="text-sm font-semibold text-amber-700 uppercase tracking-wide dark:text-amber-400">ArchiScanner per Android</span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">Fotografi in archivio, ritrovi le pagine sul computer.</h2>
+                <p class="text-lg text-stone-600 leading-relaxed dark:text-stone-400">Scegli la scheda sul telefono e scansiona le carte. A casa le pagine entrano da sole in quella scheda, come allegati. Niente file da spostare o rinominare.</p>
+                <ol class="flex flex-col gap-3.5">
+                    <li class="flex gap-3.5 items-start leading-relaxed"><span class="flex-none w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-sm flex items-center justify-center dark:bg-amber-400/15 dark:text-amber-300">1</span><span>Scegli archivio e scheda, o creane una nuova.</span></li>
+                    <li class="flex gap-3.5 items-start leading-relaxed"><span class="flex-none w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-sm flex items-center justify-center dark:bg-amber-400/15 dark:text-amber-300">2</span><span>Scansiona le carte una dopo l'altra e numerale.</span></li>
+                    <li class="flex gap-3.5 items-start leading-relaxed"><span class="flex-none w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-sm flex items-center justify-center dark:bg-amber-400/15 dark:text-amber-300">3</span><span>Le pagine partono su Google Drive col Wi-Fi, oppure via Wi-Fi diretto senza account.</span></li>
+                    <li class="flex gap-3.5 items-start leading-relaxed"><span class="flex-none w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-sm flex items-center justify-center dark:bg-amber-400/15 dark:text-amber-300">4</span><span>ArchiView le scarica, controlla che siano intere e le aggiunge alla scheda.</span></li>
+                </ol>
+                <div class="flex flex-wrap gap-3 mt-1">
+                    <a href="https://github.com/AntonioOrf/ArchiView/releases" class="px-5 py-3 bg-stone-900 text-white font-semibold rounded-lg hover:bg-stone-700 transition-colors dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white">Scarica l'APK</a>
+                    <a href="/wiki/guida/scanner" class="px-5 py-3 bg-white text-stone-900 font-semibold rounded-lg border border-stone-300 hover:bg-stone-50 transition-colors dark:bg-stone-900 dark:text-stone-50 dark:border-stone-700 dark:hover:bg-stone-800">Guida ad ArchiScanner</a>
+                </div>
+                <p class="text-sm text-stone-500 dark:text-stone-400">Solo Android, fuori dal Play Store. Interfaccia in italiano.</p>
+            </div>
+        </section>
+
+        <!-- Wiki -->
+        <section id="wiki" class="bg-stone-900 text-stone-50">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16 lg:py-20 grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-12">
+                <div class="flex flex-col gap-5">
+                    <span class="text-sm font-semibold text-amber-400 uppercase tracking-wide">Wiki</span>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">La guida per chi usa il programma.</h2>
+                    <p class="text-lg text-stone-300 leading-relaxed">Pagine senza gergo tecnico, con schermate dell'app vera. In italiano e in inglese.</p>
+                    <div class="flex flex-wrap gap-3 mt-2">
+                        <a href="/wiki/" class="px-6 py-3.5 bg-amber-400 text-stone-900 font-bold rounded-lg hover:bg-amber-300 transition-colors">Apri la wiki</a>
+                        <a href="/wiki/en/" lang="en" class="px-5 py-3.5 text-stone-50 font-semibold rounded-lg border border-stone-600 hover:bg-stone-800 transition-colors">English</a>
+                    </div>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <a href="/wiki/primi-passi/installazione" class="flex flex-col gap-1 px-5 py-4 rounded-lg bg-stone-800 border border-stone-700 hover:border-amber-400 transition-colors">
+                        <span class="text-sm text-stone-400">Non l'hai ancora installato</span>
+                        <span class="font-semibold">Installazione →</span>
+                    </a>
+                    <a href="/wiki/primi-passi/primo-avvio" class="flex flex-col gap-1 px-5 py-4 rounded-lg bg-stone-800 border border-stone-700 hover:border-amber-400 transition-colors">
+                        <span class="text-sm text-stone-400">L'hai appena aperto</span>
+                        <span class="font-semibold">Primo avvio →</span>
+                    </a>
+                    <a href="/wiki/esporta/importa-csv" class="flex flex-col gap-1 px-5 py-4 rounded-lg bg-stone-800 border border-stone-700 hover:border-amber-400 transition-colors">
+                        <span class="text-sm text-stone-400">Hai già un elenco in Excel</span>
+                        <span class="font-semibold">Importare da CSV →</span>
+                    </a>
+                    <a href="/wiki/cloud/condivisione" class="flex flex-col gap-1 px-5 py-4 rounded-lg bg-stone-800 border border-stone-700 hover:border-amber-400 transition-colors">
+                        <span class="text-sm text-stone-400">Lavori con dei colleghi</span>
+                        <span class="font-semibold">Condividere con altri →</span>
+                    </a>
+                    <a href="/wiki/guida/scorciatoie" class="flex flex-col gap-1 px-5 py-4 rounded-lg bg-stone-800 border border-stone-700 hover:border-amber-400 transition-colors">
+                        <span class="text-sm text-stone-400">Vuoi andare più veloce</span>
+                        <span class="font-semibold">Scorciatoie →</span>
+                    </a>
+                    <a href="/wiki/faq" class="flex flex-col gap-1 px-5 py-4 rounded-lg bg-stone-800 border border-stone-700 hover:border-amber-400 transition-colors">
+                        <span class="text-sm text-stone-400">Hai un dubbio</span>
+                        <span class="font-semibold">Domande frequenti →</span>
+                    </a>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-stone-200 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p class="text-stone-500 text-sm text-center md:text-left">
-                &copy; 2026 ArchiView. Open Source Software (MIT License). Sviluppato da Antonio Orfitelli.<br>
-
+    <footer class="bg-white border-t border-stone-200 py-8 dark:bg-stone-900 dark:border-stone-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-stone-500 text-sm text-center md:text-left dark:text-stone-400">
+                &copy; 2026 ArchiView. Open Source Software (MIT License). Sviluppato da Antonio Orfitelli.
             </p>
-            <div class="flex space-x-6">
-                <a href="privacy.html" class="text-stone-400 hover:text-stone-600 text-sm transition-colors">Privacy Policy</a>
-                <a href="terms.html" class="text-stone-400 hover:text-stone-600 text-sm transition-colors">Termini di Servizio</a>
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+                <a href="/wiki/" class="text-stone-500 hover:text-stone-700 text-sm transition-colors dark:text-stone-400 dark:hover:text-stone-200">Wiki</a>
+                <a href="https://github.com/AntonioOrf/ArchiView/issues" class="text-stone-500 hover:text-stone-700 text-sm transition-colors dark:text-stone-400 dark:hover:text-stone-200">Segnalazioni</a>
+                <a href="privacy.html" class="text-stone-500 hover:text-stone-700 text-sm transition-colors dark:text-stone-400 dark:hover:text-stone-200">Privacy Policy</a>
+                <a href="terms.html" class="text-stone-500 hover:text-stone-700 text-sm transition-colors dark:text-stone-400 dark:hover:text-stone-200">Termini di Servizio</a>
             </div>
         </div>
     </footer>
