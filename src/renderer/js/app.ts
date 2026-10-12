@@ -339,6 +339,8 @@ async function avviaApp() {
     // mai un aggiornamento pubblicato dopo l'avvio. La cache/dedup lato main (updaterIpc.ts) evita
     // comunque richieste ravvicinate se l'utente controlla anche manualmente dalle Impostazioni.
     setInterval(controllaAggiornamentiSeOnline, 4 * 60 * 60 * 1000);
+    // Scansioni dal telefono in attesa su Drive (PIANO-SCANNER Fase 10): solo con l'accesso già fatto.
+    setTimeout(() => window.controllaScansioniAllApertura && window.controllaScansioniAllApertura(), 2500);
 
     /**
      * Propone il tutorial senza bloccare: banner in coda alla pagina, non un overlay.
@@ -468,6 +470,7 @@ async function avviaApp() {
         'vocab-modal': 'chiudiVocabolari',
         'duplicati-modal': 'chiudiDuplicati',
         'authority-modal': 'chiudiAnagrafica',
+        'scanner-modal': 'chiudiScansioni',
         'relazioni-modal': 'chiudiCollegamenti',
         'grafo-modal': 'chiudiGrafo',
         'altro-archivio-modal': 'chiudiAnteprimaAltroArchivio',

@@ -1,4 +1,4 @@
-// ArchiView Scanner — adattatore Google Drive della ricezione (`SorgenteLotti`).
+// ArchiScanner — adattatore Google Drive della ricezione (`SorgenteLotti`).
 //
 // Struttura su Drive (docs/scanner/CONTRATTO.md):
 //   ArchiView/Scansioni in arrivo/lotti/<id>/{p0001.jpg, …, lotto.json}
@@ -9,6 +9,7 @@
 
 const { driveState } = require('../ipc/drive/auth');
 const { getOrCreateFolder, downloadFile, withDriveRetry, escapeDriveQuery } = require('../ipc/drive/fileOps');
+const ScannerLotto = require('../../shared/scannerLotto');
 
 const CARTELLA_RADICE = 'ArchiView';
 const CARTELLA_ARRIVO = 'Scansioni in arrivo';
@@ -111,5 +112,49 @@ async function creaSorgenteDrive() {
   };
 }
 
-module.exports = { creaSorgenteDrive, CARTELLA_ARRIVO, CARTELLA_LOTTI };
+/**
+ * Testi dei `lotto.json` ancora su Drive, senza scaricare pagine né creare cartelle: serve al
+ * controllo all'apertura dell'archivio, che non deve lasciare tracce su chi non usa lo scanner.
+ * Un manifest oltre `maxByte` si salta. Va chiamata con Drive già autenticato.
+ */
+async function manifestSuDrive(maxByte: number): Promise<string[]> {
+  if (!driveState.drive) throw new Error('drive_non_autenticato');
+  // Il cestino di una cartella cestina anche i figli: i lotti già ricevuti non compaiono.
+  const manifest = await elencaTutti(`name='${escapeDriveQuery('lotto.json')}' and trashed=false`, 'id, size');
+  const testi: string[] = [];
+  for (const m of manifest) {
+    if (Number(m.size) > maxByte) continue;
+    const res = await withDriveRetry(() => driveState.drive.files.get(
+      { fileId: m.id, alt: 'media', supportsAllDrives: true },
+      { responseType: 'arraybuffer' }
+    ));
+    testi.push(Buffer.from(res.data).toString('utf8'));
+  }
+  return testi;
+}
+
+/**
+ * Scrive l'elenco delle schede per il telefono (CONTRATTO §4.3) in `Scansioni in arrivo/archivi/`:
+ * aggiorna il file se c'è, lo crea altrimenti. Va chiamata con Drive già autenticato.
+ */
+async function pubblicaConfig(nome: string, testo: string): Promise<void> {
+  if (!driveState.drive) throw new Error('drive_non_autenticato');
+  const radice = await withDriveRetry(() => getOrCreateFolder(CARTELLA_RADICE));
+  const base = await withDriveRetry(() => getOrCreateFolder(CARTELLA_ARRIVO, radice));
+  const arrivo = await withDriveRetry(() => getOrCreateFolder(ScannerLotto.CARTELLA_ARCHIVI, base));
+  const esistenti = await elencaTutti(`'${arrivo}' in parents and name='${escapeDriveQuery(nome)}' and trashed=false`, 'id');
+  const media = { mimeType: 'application/json', body: testo };
+  if (esistenti.length) {
+    await withDriveRetry(() => driveState.drive.files.update({ fileId: esistenti[0].id, media, supportsAllDrives: true }));
+  } else {
+    await withDriveRetry(() => driveState.drive.files.create({
+      requestBody: { name: nome, parents: [arrivo], mimeType: 'application/json' },
+      media,
+      fields: 'id',
+      supportsAllDrives: true
+    }));
+  }
+}
+
+module.exports = { creaSorgenteDrive, pubblicaConfig, manifestSuDrive, CARTELLA_ARRIVO, CARTELLA_LOTTI };
 export {};

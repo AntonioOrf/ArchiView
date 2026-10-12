@@ -37,7 +37,7 @@ const { setupTextExportIpc } = require('./ipc/textExportIpc');
 // Fase 4 — cestino, snapshot locali e cronologia per scheda.
 const { setupSafetyIpc } = require('./ipc/safetyIpc');
 const { setupCrossArchiveIpc } = require('./ipc/crossArchiveIpc');
-// ArchiView Scanner — ricezione dei lotti dal telefono (PIANO-SCANNER.md).
+// ArchiScanner — ricezione dei lotti dal telefono (PIANO-SCANNER.md).
 const { setupScannerIpc } = require('./ipc/scannerIpc');
 const pdfHost = require('./ocr/pdfHost');
 const printHost = require('./print/printHost');

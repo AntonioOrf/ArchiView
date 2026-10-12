@@ -94,6 +94,8 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
     modale('esporta-testo', '#export-text-modal', () => w('apriEsportaTesto', 'tutto')),
     // P5: senza trascrizione aperta i due lati restano vuoti, con la sola ricerca.
     modale('confronto-carte', '#confronto-modal', () => w('apriConfrontoCarte')),
+    // PIANO-SCANNER Fase 12: pannello laterale «Dal telefono» (vuoto: senza Drive né lotti).
+    modale('scansioni', '#scanner-modal', () => w('apriScansioni')),
     trascrizione('trascrizione', id),
     trascrizione('trascrizione-senza-allegati', vuota),
   ];

@@ -1,4 +1,4 @@
-// ArchiView Scanner — ricezione dei lotti (docs/scanner/CONTRATTO.md).
+// ArchiScanner — ricezione dei lotti (docs/scanner/CONTRATTO.md).
 //
 // Codice PURO rispetto al canale: non sa se i lotti arrivano da Google Drive o dal server
 // Wi-Fi. Riceve una `SorgenteLotti` (adattatore Drive: `driveArrivo.ts`; Wi-Fi: Fase 2) e
@@ -52,6 +52,13 @@ export interface OpzioniArrivo {
   cartellaArrivo: string;
   /** Cartella di lavoro sullo stesso volume di `cartellaArrivo` (il rename deve essere atomico). */
   cartellaTemp: string;
+  /**
+   * Registro dei lotti già assegnati o scartati (un file vuoto per id): un lotto uscito da
+   * `arrivo/` ma rimasto sul canale (cestino fallito) non si riscarica.
+   */
+  cartellaAssegnati?: string;
+  /** Nome dell'archivio aperto: un lotto con un altro `archivio` resta sul canale (CONTRATTO §2.5). */
+  archivio?: string;
   /** Avanzamento facoltativo, per la UI. */
   avanzamento?: (e: { id: string; fatte: number; totali: number }) => void;
 }
@@ -61,6 +68,8 @@ export interface EsitoArrivo {
   /** Già in `arrivo/`: non riscaricati, solo rimossi dal canale. */
   giaPresenti: string[];
   inCaricamento: string[];
+  /** Lotti per un altro archivio: lasciati sul canale. */
+  altroArchivio: string[];
   falliti: { id: string; codice: string; dettaglio?: any }[];
   /** Lotti salvati in locale ma rimasti sul canale (riprova al giro dopo). */
   nonRimossi: string[];
@@ -116,6 +125,9 @@ async function scaricaLotto(id: string, o: OpzioniArrivo): Promise<void> {
   const lotto = esito.lotto;
   // Il nome della cartella decide dove finisce il lotto: deve essere lo stesso id del manifest.
   if (lotto.id !== id) throw new ErroreLotto('id_diverso', { cartella: id, manifest: lotto.id });
+  if (o.archivio !== undefined && lotto.archivio !== undefined && ScannerLotto.nomeArchivio(lotto.archivio) !== ScannerLotto.nomeArchivio(o.archivio)) {
+    throw new ErroreLotto('altro_archivio', lotto.archivio);
+  }
 
   const temp = path.join(o.cartellaTemp, id + '-' + crypto.randomBytes(4).toString('hex'));
   await fsp.mkdir(temp, { recursive: true });
@@ -146,7 +158,7 @@ async function scaricaLotto(id: string, o: OpzioniArrivo): Promise<void> {
 }
 
 async function riceviLotti(o: OpzioniArrivo): Promise<EsitoArrivo> {
-  const esito: EsitoArrivo = { ricevuti: [], giaPresenti: [], inCaricamento: [], falliti: [], nonRimossi: [] };
+  const esito: EsitoArrivo = { ricevuti: [], giaPresenti: [], inCaricamento: [], altroArchivio: [], falliti: [], nonRimossi: [] };
   await fsp.mkdir(o.cartellaArrivo, { recursive: true });
   // Le ricezioni sono serializzate dal chiamante: quel che resta in temp è di un giro interrotto.
   await fsp.rm(o.cartellaTemp, { recursive: true, force: true });
@@ -165,14 +177,16 @@ async function riceviLotti(o: OpzioniArrivo): Promise<EsitoArrivo> {
     visti.add(id);
     if (!v.completo) { esito.inCaricamento.push(id); continue; }
 
-    if (await esiste(path.join(o.cartellaArrivo, id, ScannerLotto.NOME_MANIFEST))) {
+    if (await esiste(path.join(o.cartellaArrivo, id, ScannerLotto.NOME_MANIFEST)) ||
+        (o.cartellaAssegnati && await esiste(path.join(o.cartellaAssegnati, id)))) {
       esito.giaPresenti.push(id);
     } else {
       try {
         await scaricaLotto(id, o);
         esito.ricevuti.push(id);
       } catch (e: any) {
-        if (e instanceof ErroreLotto) esito.falliti.push({ id, codice: e.codice, dettaglio: e.dettaglio });
+        if (e instanceof ErroreLotto && e.codice === 'altro_archivio') esito.altroArchivio.push(id);
+        else if (e instanceof ErroreLotto) esito.falliti.push({ id, codice: e.codice, dettaglio: e.dettaglio });
         else esito.falliti.push({ id, codice: 'errore_locale', dettaglio: e && e.message });
         continue;
       }

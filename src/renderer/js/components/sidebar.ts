@@ -122,6 +122,9 @@ function _calcolaSecondario(m, pref) {
     return '';
 }
 
+/** Il «titolo» di una scheda per il telefono (CONTRATTO §4.3): la riga secondaria automatica, a prescindere dalla preferenza. */
+window.titoloScheda = (m) => _calcolaSecondario(m, { modo: 'auto' });
+
 /** L'etichetta secondaria di una scheda, '' se disattivata o se il campo è vuoto. */
 function etichettaSecondaria(m) {
     const pref = window.alberoSecondario || {};
@@ -149,7 +152,9 @@ function calcolaFirmaSidebar() {
         // chiavi, cambiarla lascerebbe l'albero identico fino al prossimo commit.
         (window.alberoSecondario && window.alberoSecondario.modo) || 'nessuno',
         (window.alberoSecondario && window.alberoSecondario.campo) || '',
-        (window.alberoSecondario && window.alberoSecondario.ordina) || 'segnatura'
+        (window.alberoSecondario && window.alberoSecondario.ordina) || 'segnatura',
+        // Fase 12: il «+N» delle carte dal telefono cambia le righe senza toccare i record.
+        String(window.carteDalTelefono ? window.carteDalTelefono.versione : 0)
     ];
     // Dei record contano solo id, cartella ed etichette mostrate nell'albero.
     let righe = '';
@@ -293,6 +298,16 @@ function renderSidebar() {
             fileRow.append(icona, colonna);
         } else {
             fileRow.append(icona, titolo);
+        }
+        // Fase 12 — «+N»: carte appena arrivate dal telefono (stessa fonte di «Importate ora»).
+        const dalTelefono = window.carteDalTelefono ? window.carteDalTelefono(m.id) : 0;
+        if (dalTelefono) {
+            const segno = document.createElement('span');
+            segno.className = 'sidebar-dal-telefono';
+            segno.textContent = '+' + dalTelefono;
+            segno.title = window.t('sidebar_from_phone', '{var0} carte arrivate dal telefono').replace('{var0}', String(dalTelefono));
+            segno.setAttribute('aria-label', segno.title);
+            fileRow.append(segno);
         }
         return fileRow;
     }

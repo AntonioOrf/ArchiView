@@ -1,4 +1,4 @@
-// ArchiView Scanner: ricezione dei lotti con una sorgente finta (src/main/scanner/arrivoLotti.ts).
+// ArchiScanner: ricezione dei lotti con una sorgente finta (src/main/scanner/arrivoLotti.ts).
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -194,6 +194,35 @@ function cartelle() {
     assert.deepStrictEqual(e.ricevuti, [id]);
     assert.strictEqual(massimo, 3);
     assert.strictEqual(fs.readdirSync(path.join(c.arrivo, id)).length, 11);
+    fs.rmSync(c.base, { recursive: true, force: true });
+  }
+
+  // 7. Filtro per archivio (CONTRATTO §2.5): il lotto di un altro archivio resta sul canale
+  {
+    const c = cartelle();
+    const mio = '20261011-100000-mmmm', altro = '20261011-100000-oooo', libero = '20261011-100000-llll';
+    const lotti = {
+      [mio]: remoto(mio, { 'p0001.jpg': P1 }, (m) => { m.archivio = 'Podestà'; }),
+      [altro]: remoto(altro, { 'p0001.jpg': P1 }, (m) => { m.archivio = 'Notai'; m.archivioNuovo = true; }),
+      [libero]: remoto(libero, { 'p0001.jpg': P1 })
+    };
+    const s = sorgenteFinta(lotti);
+    const e = await riceviLotti({ sorgente: s, cartellaArrivo: c.arrivo, cartellaTemp: c.temp, archivio: 'Podestà' });
+    assert.deepStrictEqual(e.ricevuti.sort(), [libero, mio].sort());
+    assert.deepStrictEqual(e.altroArchivio, [altro]);
+    assert.deepStrictEqual(e.falliti, []);
+    assert.ok(lotti[altro], 'resta su Drive per l\'altro archivio');
+    assert.ok(!s.chiamate.scaricate.some(x => x.startsWith(altro)), 'pagine non scaricate');
+    fs.rmSync(c.base, { recursive: true, force: true });
+  }
+
+  // 8. Archivio ripristinato da Drive: cartella locale "<nome>_ArchiView", lotto con "<nome>"
+  {
+    const c = cartelle();
+    const id = '20261011-110000-ssss';
+    const s = sorgenteFinta({ [id]: remoto(id, { 'p0001.jpg': P1 }, (m) => { m.archivio = 'Catasto affitti'; }) });
+    const e = await riceviLotti({ sorgente: s, cartellaArrivo: c.arrivo, cartellaTemp: c.temp, archivio: 'Catasto affitti_ArchiView' });
+    assert.deepStrictEqual(e.ricevuti, [id]);
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 

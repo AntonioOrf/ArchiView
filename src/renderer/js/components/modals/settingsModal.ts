@@ -111,7 +111,17 @@
                                 ${opzione('larghezza', 'settings_pdf_zoom_width', 'Larghezza')}
                             </select>
                         </label>
-                    </div>`)
+                    </div>`),
+                sezione('settings-scanner', 'smartphone', ['settings_scanner_title', 'Scansioni dal telefono'],
+                    ['settings_scanner_desc', 'Come entrano nelle schede le pagine che arrivano da ArchiScanner.'],
+                    `<label class="flex items-center gap-2 text-sm mb-2">
+                        <input type="checkbox" id="settings-scanner-pdf" aria-describedby="settings-scanner-desc" ${window.azione('change', 'salvaPreferenzeScanner')}>
+                        <span data-i18n="settings_scanner_pdf">Unisci le pagine di ogni scansione in un solo PDF</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" id="settings-scanner-sempre" aria-describedby="settings-scanner-desc" ${window.azione('change', 'salvaPreferenzeScanner')}>
+                        <span data-i18n="settings_scanner_always">All'apertura dell'archivio importa senza chiedere</span>
+                    </label>`)
             ]
         },
         {

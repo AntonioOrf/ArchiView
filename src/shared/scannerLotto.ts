@@ -1,4 +1,4 @@
-// ArchiView Scanner — validatore del "lotto" (docs/scanner/CONTRATTO.md, versione 1).
+// ArchiScanner — validatore del "lotto" (docs/scanner/CONTRATTO.md, versione 1).
 //
 // ⚠️ PERCHÉ È CONDIVISO
 //
@@ -27,6 +27,8 @@ const AVSL_RE_SHA256 = /^[0-9a-f]{64}$/;
 const AVSL_RE_CHIAVE = /^[A-Za-z][A-Za-z0-9_]*$/;
 /** ISO 8601 con fuso esplicito (`Z` o `±hh:mm`): l'ora locale del telefono non è quella del PC. */
 const AVSL_RE_DATA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/;
+/** Id di una scheda nuova scelto dal telefono: diventa l'id della scheda (UUID o `Model.nuovoId`). */
+const AVSL_RE_ID_SCHEDA = /^[0-9A-Za-z_-]{8,64}$/;
 
 const AVSL_MODALITA = ['documento', 'grezza', 'raffica'];
 const AVSL_LATI = ['sx', 'dx'];
@@ -53,6 +55,7 @@ const AVSL_LIMITI = {
   dispositivo: 100,
   etichetta: 32,
   schedaId: 200,
+  archivio: 200,
   tipoDocumento: 200,
   cartella: 500
 };
@@ -73,13 +76,15 @@ type AvslPagina = {
 type AvslDestinazione =
   | { tipo: 'nessuna' }
   | { tipo: 'esistente'; schedaId: string }
-  | { tipo: 'nuova'; tipoDocumento: string; cartella?: string; campi: { [chiave: string]: string } };
+  | { tipo: 'nuova'; tipoDocumento: string; schedaId?: string; cartella?: string; campi: { [chiave: string]: string } };
 
 type AvslLotto = {
   formato: string;
   versione: number;
   id: string;
   creatoIl: string;
+  archivio?: string;
+  archivioNuovo?: true;
   dispositivo?: string;
   titolo?: string;
   nota?: string;
@@ -125,6 +130,16 @@ function avslNuovoId(data: Date, suffisso: string): string {
     avslDue(data.getHours()) + avslDue(data.getMinutes()) + avslDue(data.getSeconds()) + '-' + s;
 }
 
+/**
+ * Identità di un archivio fra telefono e desktop (CONTRATTO §2.5): il nome della cartella senza
+ * il suffisso `_ArchiView`, che la sincronizzazione aggiunge su Drive e il ripristino porta nella
+ * cartella locale. Così "Catasto", "Catasto_ArchiView" su Drive e in locale sono lo stesso archivio.
+ */
+function avslNomeArchivio(nome: any): string {
+  const n = typeof nome === 'string' ? nome.trim() : '';
+  return n.replace(/_ArchiView$/, '').trim() || n;
+}
+
 /** Nome della pagina `n` (da 1): `p0001.jpg`. */
 function avslNomePagina(n: number, estensione?: string): string {
   if (!avslIntero(n, 1, 9999)) throw new Error('numero_pagina_non_valido');
@@ -161,6 +176,11 @@ function avslDestinazione(d: any, errori: AvslErrore[]): AvslDestinazione {
     tipoDocumento: avslTestoObbligatorio(d.tipoDocumento, AVSL_LIMITI.tipoDocumento, 'tipo_documento_non_valido', p + '.tipoDocumento', errori),
     campi: {}
   };
+  // Più lotti con lo stesso id vanno nella stessa scheda: il primo la crea, gli altri aggiungono.
+  if (d.schedaId !== undefined) {
+    if (typeof d.schedaId === 'string' && AVSL_RE_ID_SCHEDA.test(d.schedaId)) out.schedaId = d.schedaId;
+    else errori.push({ codice: 'scheda_id_non_valido', percorso: p + '.schedaId' });
+  }
   const cartella = avslTesto(d.cartella, AVSL_LIMITI.cartella, p + '.cartella', errori);
   if (cartella !== undefined) out.cartella = cartella;
 
@@ -223,6 +243,8 @@ function avslValida(json: any): AvslEsito {
   if (typeof json.creatoIl !== 'string' || !AVSL_RE_DATA.test(json.creatoIl) || isNaN(Date.parse(json.creatoIl))) {
     errori.push({ codice: 'data_non_valida', percorso: 'creatoIl' });
   }
+  const archivio = avslTesto(json.archivio, AVSL_LIMITI.archivio, 'archivio', errori);
+  if (json.archivioNuovo !== undefined && typeof json.archivioNuovo !== 'boolean') errori.push({ codice: 'archivio_non_valido', percorso: 'archivioNuovo' });
   const dispositivo = avslTesto(json.dispositivo, AVSL_LIMITI.dispositivo, 'dispositivo', errori);
   const titolo = avslTesto(json.titolo, AVSL_LIMITI.titolo, 'titolo', errori);
   const nota = avslTesto(json.nota, AVSL_LIMITI.nota, 'nota', errori);
@@ -243,12 +265,72 @@ function avslValida(json: any): AvslEsito {
   if (errori.length) return { ok: false, errori };
   // Ordine delle chiavi fisso: il manifest scritto dal desktop è leggibile e confrontabile.
   const lotto = { formato: AVSL_FORMATO, versione: AVSL_VERSIONE, id: json.id, creatoIl: json.creatoIl } as AvslLotto;
+  if (archivio !== undefined) {
+    lotto.archivio = archivio;
+    if (json.archivioNuovo === true) lotto.archivioNuovo = true;
+  }
   if (dispositivo !== undefined) lotto.dispositivo = dispositivo;
   if (titolo !== undefined) lotto.titolo = titolo;
   if (nota !== undefined) lotto.nota = nota;
   lotto.destinazione = destinazione;
   lotto.pagine = pagine;
   return { ok: true, lotto };
+}
+
+// --- Elenco delle schede per il telefono (CONTRATTO.md §5) ---------------------
+//
+// Il desktop lo pubblica su Drive, il telefono lo legge per scegliere una destinazione
+// esistente anche offline. Stessa regola del lotto: codici, copia normalizzata, chiavi note.
+
+const AVSL_FORMATO_CONFIG = 'archiview-scanner/config';
+const AVSL_LIMITI_CONFIG = { schede: 50000, archivio: 200, segnatura: 500, cartella: 500, titolo: 500, cartelle: 10000 };
+
+type AvslConfig = {
+  formato: string;
+  versione: number;
+  archivio: string;
+  aggiornatoIl: string;
+  schede: { id: string; segnatura: string; cartella: string; titolo: string }[];
+  /** Tutte le cartelle dell'archivio, anche vuote (§4.3): assenti = []. */
+  cartelle: string[];
+};
+
+type AvslEsitoConfig = { ok: true; config: AvslConfig } | { ok: false; errori: AvslErrore[] };
+
+function avslValidaConfig(json: any): AvslEsitoConfig {
+  const errori: AvslErrore[] = [];
+  if (!avslOggetto(json)) return { ok: false, errori: [{ codice: 'non_oggetto', percorso: '' }] };
+  if (json.formato !== AVSL_FORMATO_CONFIG) return { ok: false, errori: [{ codice: 'formato_sconosciuto', percorso: 'formato' }] };
+  if (json.versione !== AVSL_VERSIONE) return { ok: false, errori: [{ codice: 'versione_non_valida', percorso: 'versione' }] };
+  const archivio = avslTestoObbligatorio(json.archivio, AVSL_LIMITI_CONFIG.archivio, 'archivio_non_valido', 'archivio', errori);
+  if (typeof json.aggiornatoIl !== 'string' || !AVSL_RE_DATA.test(json.aggiornatoIl)) errori.push({ codice: 'data_non_valida', percorso: 'aggiornatoIl' });
+  const schede: AvslConfig['schede'] = [];
+  if (!Array.isArray(json.schede) || json.schede.length > AVSL_LIMITI_CONFIG.schede) {
+    errori.push({ codice: 'schede_non_valide', percorso: 'schede' });
+  } else {
+    json.schede.forEach((s: any, i: number) => {
+      const p = 'schede[' + i + ']';
+      if (!avslOggetto(s)) { errori.push({ codice: 'scheda_non_valida', percorso: p }); return; }
+      const id = avslTestoObbligatorio(s.id, AVSL_LIMITI.schedaId, 'scheda_id_non_valido', p + '.id', errori);
+      const segnatura = avslTesto(s.segnatura, AVSL_LIMITI_CONFIG.segnatura, p + '.segnatura', errori) || '';
+      const cartella = avslTesto(s.cartella, AVSL_LIMITI_CONFIG.cartella, p + '.cartella', errori) || '';
+      const titolo = avslTesto(s.titolo, AVSL_LIMITI_CONFIG.titolo, p + '.titolo', errori) || '';
+      if (id) schede.push({ id, segnatura, cartella, titolo });
+    });
+  }
+  const cartelle: string[] = [];
+  if (json.cartelle !== undefined) {
+    if (!Array.isArray(json.cartelle) || json.cartelle.length > AVSL_LIMITI_CONFIG.cartelle) {
+      errori.push({ codice: 'cartelle_non_valide', percorso: 'cartelle' });
+    } else {
+      json.cartelle.forEach((c: any, i: number) => {
+        const v = avslTestoObbligatorio(c, AVSL_LIMITI_CONFIG.cartella, 'cartella_non_valida', 'cartelle[' + i + ']', errori);
+        if (v) cartelle.push(v);
+      });
+    }
+  }
+  if (errori.length) return { ok: false, errori };
+  return { ok: true, config: { formato: AVSL_FORMATO_CONFIG, versione: AVSL_VERSIONE, archivio, aggiornatoIl: json.aggiornatoIl, schede, cartelle } };
 }
 
 const ArchiViewScannerLotto = {
@@ -259,9 +341,14 @@ const ArchiViewScannerLotto = {
   CHIAVI_RISERVATE: AVSL_CHIAVI_RISERVATE.slice(),
   LIMITI: Object.assign({}, AVSL_LIMITI),
   valida: avslValida,
+  FORMATO_CONFIG: AVSL_FORMATO_CONFIG,
+  /** Cartella degli elenchi di schede, uno per archivio: `archivi/<archivio>.json` (§4.3). */
+  CARTELLA_ARCHIVI: 'archivi',
+  validaConfig: avslValidaConfig,
   idValido: avslIdValido,
   nomeFileValido: avslNomeFileValido,
   nuovoId: avslNuovoId,
+  nomeArchivio: avslNomeArchivio,
   nomePagina: avslNomePagina
 };
 

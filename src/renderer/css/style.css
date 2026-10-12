@@ -397,6 +397,11 @@ button, .btn {
     border: 1px solid transparent;
     outline: none;
 }
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* niente :hover su un pulsante spento */
+}
 .btn-primary {
     background-color: var(--color-primary);
     color: var(--color-on-primary);
@@ -770,6 +775,49 @@ button, .btn {
 .tag-manager-input { flex: 1 1 auto; min-width: 0; }
 .tag-manager-count { font-size: 0.75rem; color: var(--color-text-muted); }
 
+/* Scansioni in arrivo (scannerPanel.ts): un riquadro per lotto, miniature in riga. */
+/* «Dal telefono» (scannerPanel.ts): pannello a destra che lascia vedere e usare l'elenco delle
+   schede. Resta un `.modal-overlay` per Esc e lo stack dei modali, ma trasparente ai clic. */
+#scanner-modal.scan-overlay { background: transparent; backdrop-filter: none; pointer-events: none; justify-content: flex-end; align-items: stretch; padding: 0; }
+.scan-laterale { pointer-events: auto; width: min(30rem, 100vw); max-width: none; height: 100%; border-left: 1px solid var(--color-border); box-shadow: none; }
+.scan-testa { flex-direction: column; align-items: stretch; gap: 0.25rem; }
+.scan-testa-riga { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.scan-drive, .scan-stato { margin: 0; font-size: 0.75rem; color: var(--color-text-secondary); }
+.scan-stato:empty { display: none; }
+.scan-link { background: none; border: 0; padding: 0; min-height: 1.5rem; font: inherit; color: var(--color-primary-hover); text-decoration: underline; cursor: pointer; display: inline-flex; align-items: center; gap: 0.375rem; }
+.scan-link:hover { color: var(--color-primary); }
+.scan-link:disabled { opacity: 0.5; cursor: default; }
+.scan-corpo { flex: 1; padding: 0; }
+.scan-sezione { padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--color-border-light); display: flex; flex-direction: column; gap: 0.625rem; }
+.scan-sezione-titolo { margin: 0; font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); }
+.scan-righe { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.375rem; }
+.scan-riga { display: flex; align-items: center; gap: 0.625rem; font-size: 0.875rem; min-height: 2rem; }
+.scan-riga-testo { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.scan-serif { font-family: Georgia, serif; }
+.scan-sotto { color: var(--color-text-secondary); font-size: 0.8125rem; }
+.scan-lista { display: flex; flex-direction: column; gap: 0.75rem; }
+.scan-lotto { padding: 0.75rem; border: 1px solid var(--color-border-light); display: flex; flex-direction: column; gap: 0.5rem; }
+.scan-lotto-testa { display: flex; align-items: baseline; gap: 0.5rem; }
+.scan-lotto-titolo { margin: 0; flex: 1; min-width: 0; font-family: Georgia, serif; font-size: 1rem; font-weight: 600; overflow-wrap: anywhere; }
+.scan-meta { font-size: 0.75rem; color: var(--color-text-secondary); white-space: nowrap; }
+.scan-nota { margin: 0; font-size: 0.8125rem; white-space: pre-line; }
+.scan-azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.scan-azioni input[type="search"] { flex: 1 1 10rem; min-width: 0; }
+.scan-wifi { display: flex; align-items: center; gap: 1rem; padding: 0.75rem; margin: 0.875rem 1.25rem; border: 1px dashed var(--color-border-light); }
+.scan-wifi img { flex: 0 0 auto; background-color: #fff; }
+.scan-miniature { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.scan-miniature figure { margin: 0; width: 4rem; display: flex; flex-direction: column; align-items: center; gap: 0.125rem; }
+.scan-miniature img { width: 4rem; height: 5.25rem; object-fit: contain; background-color: var(--color-bg-hover); }
+.scan-miniature figcaption { font-size: 0.6875rem; color: var(--color-text-secondary); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scan-piede { display: flex; justify-content: flex-start; font-size: 0.8125rem; }
+/* Avviso all'apertura: un solo riepilogo per questo archivio e per gli altri. */
+.scan-riepilogo { border: 1px solid var(--color-border-light); display: flex; flex-direction: column; margin: 0.75rem 0; }
+.scan-riepilogo-gruppo { padding: 0.75rem 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; }
+.scan-riepilogo-gruppo + .scan-riepilogo-gruppo { border-top: 1px solid var(--color-border-light); }
+.scan-riepilogo-gruppo.is-qui { background-color: var(--color-info-light); }
+.scan-riepilogo-titolo { margin: 0; font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); }
+.scan-riepilogo-riga { display: flex; gap: 0.625rem; align-items: baseline; font-size: 0.875rem; }
+.scan-num { min-width: 2rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 
 /* P10 — id Wikidata/VIAF sull'anagrafica e candidati della ricerca (authorityPanel.ts). */
 .auth-id { font-size: 0.6875rem; font-family: ui-monospace, monospace; color: var(--color-text-secondary); }
@@ -1929,6 +1977,19 @@ summary:focus:not(:focus-visible) { outline: none; }
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .iv-filtro select option { color: #1c1917; background-color: #fafaf9; }
+/* Fase 12 — «+N» accanto alla scheda nell'albero: carte appena arrivate dal telefono. */
+.sidebar-dal-telefono {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 0 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-primary);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+}
+
 /* P6 — regioni della carta. Il velo segue la transform dell'immagine (imageViewer.ts):
    i bordi si dividono per la scala, così restano di 2 px a qualunque ingrandimento. */
 .iv-regioni {

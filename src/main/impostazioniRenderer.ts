@@ -55,7 +55,12 @@ const AMMESSE: { [chiave: string]: Validatore } = {
   dimensioneTrascrizione: intero(12, 32),
   pdfRisoluzione: intero(1600, 3200),
   pdfZoomIniziale: (v) => v === 'pagina' || v === 'larghezza',
-  aggiornamentiAutomatici: booleano
+  aggiornamentiAutomatici: booleano,
+  // Scansioni dal telefono: PDF unico all'importazione, import all'apertura senza chiedere,
+  // e l'impronta dell'ultimo avviso rimandato (non si ripropone per le stesse scansioni).
+  scannerPdf: booleano,
+  scannerImportaSempre: booleano,
+  scannerRimandato: testo(8000)
 };
 
 const MAX_ESCLUSI = 200;

@@ -144,10 +144,19 @@ contextBridge.exposeInMainWorld('apiAuthority', {
     dettagli: (id) => ipcRenderer.invoke('authority-dettagli', id)
 });
 
-// ArchiView Scanner. Il renderer chiede "ricevi" e ottiene l'esito: niente percorsi né id
-// Drive. Fase 0: nessuna UI, si prova dalla console (`await apiScanner.riceviDaDrive()`).
+// ArchiScanner. Il renderer passa solo id di lotto, nomi di pagina e id di scheda:
+// niente percorsi né id Drive (pannello "Scansioni in arrivo", scannerPanel.ts).
 contextBridge.exposeInMainWorld('apiScanner', {
     riceviDaDrive: () => ipcRenderer.invoke('scanner-ricevi-drive'),
+    elenca: () => ipcRenderer.invoke('scanner-elenca'),
+    miniatura: (id, file) => ipcRenderer.invoke('scanner-miniatura', id, file),
+    assegna: (id, schedaId, opzioni) => ipcRenderer.invoke('scanner-assegna', id, schedaId, opzioni),
+    togli: (id) => ipcRenderer.invoke('scanner-togli', id),
+    pubblicaSchede: (schede, cartelle) => ipcRenderer.invoke('scanner-pubblica-schede', schede, cartelle),
+    controllaDrive: () => ipcRenderer.invoke('scanner-controlla-drive'),
+    avviaWifi: () => ipcRenderer.invoke('scanner-wifi-avvia'),
+    fermaWifi: () => ipcRenderer.invoke('scanner-wifi-ferma'),
+    onLottoWifi: (callback) => ipcRenderer.on('scanner-wifi-lotto', (event, id) => callback(id)),
     onProgress: (callback) => ipcRenderer.on('scanner-progress', (event, dati) => callback(dati))
 });
 

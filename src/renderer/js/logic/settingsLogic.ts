@@ -97,6 +97,10 @@ window.apriImpostazioni = async function(tab?: string) {
     const pdfZoom = _campo<HTMLSelectElement>('settings-pdf-zoom');
     if (pdfZoom) pdfZoom.value = settings.pdfZoomIniziale || P.pdfZoomIniziale;
     window.popolaLingueOcrPredefinite(settings.ocrLingue);
+    const scanPdf = _campo('settings-scanner-pdf');
+    if (scanPdf) scanPdf.checked = settings.scannerPdf === true;
+    const scanSempre = _campo('settings-scanner-sempre');
+    if (scanSempre) scanSempre.checked = settings.scannerImportaSempre === true;
 
     // Ricerca tra archivi: interruttore del suggerimento ed elenco degli archivi.
     const sugg = _campo('settings-cross-suggerimenti');
@@ -310,6 +314,12 @@ window.salvaPreferenzePdf = async function() {
     if (ris) parziale.pdfRisoluzione = parseInt(ris.value, 10);
     if (zoom) parziale.pdfZoomIniziale = zoom.value;
     if (await _salvaPreferenze(parziale)) window.applicaPreferenzeTesto(await window.apiSettings.get());
+};
+
+window.salvaPreferenzeScanner = async function() {
+    const pdf = _campo('settings-scanner-pdf');
+    const sempre = _campo('settings-scanner-sempre');
+    await _salvaPreferenze({ scannerPdf: !!(pdf && pdf.checked), scannerImportaSempre: !!(sempre && sempre.checked) });
 };
 
 // --- Sistema ---------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-// ArchiView Scanner: validatore condiviso del lotto (src/shared/scannerLotto.ts, CONTRATTO.md v1).
+// ArchiScanner: validatore condiviso del lotto (src/shared/scannerLotto.ts, CONTRATTO.md v1).
 const assert = require('assert');
 const L = require('../out/shared/scannerLotto');
 
@@ -152,5 +152,56 @@ assert.throws(() => L.nomePagina(0), /numero_pagina_non_valido/);
 assert.throws(() => L.nomePagina(10000), /numero_pagina_non_valido/);
 assert.throws(() => L.nomePagina(1, 'tif'), /estensione_non_valida/);
 assert.ok(L.nomeFileValido(L.nomePagina(9999)));
+
+// 12. Elenco delle schede per il telefono (§5)
+const cfg = (x) => Object.assign({ formato: 'archiview-scanner/config', versione: 1, archivio: 'Podestà', aggiornatoIl: '2026-10-09T10:00:00Z', schede: [] }, x);
+{
+  const e = L.validaConfig(cfg({ extra: 1, schede: [{ id: 'a1', segnatura: ' Reg. 12 ', cartella: 'Serie/1', x: 'via' }, { id: 'a2' }] }));
+  assert.strictEqual(e.ok, true);
+  assert.deepStrictEqual(e.config.schede, [{ id: 'a1', segnatura: 'Reg. 12', cartella: 'Serie/1', titolo: '' }, { id: 'a2', segnatura: '', cartella: '', titolo: '' }]);
+  assert.strictEqual(e.config.extra, undefined);
+  assert.deepStrictEqual(e.config.cartelle, []);
+}
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ formato: 'x' }))), ['formato_sconosciuto@formato']);
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ archivio: '', aggiornatoIl: 'ieri' }))), ['archivio_non_valido@archivio', 'data_non_valida@aggiornatoIl']);
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: [{ id: '' }, 5] }))), ['scheda_id_non_valido@schede[0].id', 'scheda_non_valida@schede[1]']);
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: 'x' }))), ['schede_non_valide@schede']);
+
+// 13. Archivio e scheda nuova scelti sul telefono (§2.5, chiavi facoltative)
+{
+  const e = L.valida(lotto({ archivio: ' Podestà ', archivioNuovo: true, destinazione: { tipo: 'nuova', tipoDocumento: 'registro', schedaId: '3f2a9c1e-0b7d-4e55-9a10-2c4d6e8f0a1b' } }));
+  assert.strictEqual(e.ok, true, JSON.stringify(e));
+  assert.strictEqual(e.lotto.archivio, 'Podestà');
+  assert.strictEqual(e.lotto.archivioNuovo, true);
+  assert.deepStrictEqual(Object.keys(e.lotto).slice(0, 6), ['formato', 'versione', 'id', 'creatoIl', 'archivio', 'archivioNuovo']);
+  assert.strictEqual(e.lotto.destinazione.schedaId, '3f2a9c1e-0b7d-4e55-9a10-2c4d6e8f0a1b');
+  // archivioNuovo senza archivio, o false: scartato
+  assert.strictEqual(L.valida(lotto({ archivioNuovo: true })).lotto.archivioNuovo, undefined);
+  assert.strictEqual(L.valida(lotto({ archivio: 'A', archivioNuovo: false })).lotto.archivioNuovo, undefined);
+}
+assert.deepStrictEqual(codici(L.valida(lotto({ archivio: 'x'.repeat(201), archivioNuovo: 'sì' }))), ['testo_non_valido@archivio', 'archivio_non_valido@archivioNuovo']);
+// L'id della scheda nuova diventa un id e un prefisso di file: niente barre, punti o spazi.
+for (const schedaId of ['../../x', 'corto', 'a b c d e f', 5]) {
+  assert.deepStrictEqual(codici(L.valida(lotto({ destinazione: { tipo: 'nuova', tipoDocumento: 'r', schedaId } }))), ['scheda_id_non_valido@destinazione.schedaId'], String(schedaId));
+}
+
+// 15. Elenco delle schede: titolo e cartelle anche vuote (§4.3, Fase 14)
+{
+  const e = L.validaConfig(cfg({ schede: [{ id: 'a1', titolo: ' Not. Rossi ' }], cartelle: ['Serie', 'Serie/1', 'Mappe'] }));
+  assert.strictEqual(e.ok, true);
+  assert.strictEqual(e.config.schede[0].titolo, 'Not. Rossi');
+  assert.deepStrictEqual(e.config.cartelle, ['Serie', 'Serie/1', 'Mappe']);
+}
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: [{ id: 'a1', titolo: 'x'.repeat(501) }] }))), ['testo_non_valido@schede[0].titolo']);
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ cartelle: 'Serie' }))), ['cartelle_non_valide@cartelle']);
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ cartelle: ['ok', '', 5, 'x'.repeat(501)] }))), ['cartella_non_valida@cartelle[1]', 'cartella_non_valida@cartelle[2]', 'cartella_non_valida@cartelle[3]']);
+assert.deepStrictEqual(codici(L.validaConfig(cfg({ cartelle: new Array(10001).fill('a') }))), ['cartelle_non_valide@cartelle']);
+
+// 14. Identità dell'archivio senza il suffisso della sincronizzazione su Drive
+assert.strictEqual(L.nomeArchivio('Catasto affitti_ArchiView'), 'Catasto affitti');
+assert.strictEqual(L.nomeArchivio(' Catasto affitti '), 'Catasto affitti');
+assert.strictEqual(L.nomeArchivio('_ArchiView'), '_ArchiView');
+assert.strictEqual(L.nomeArchivio('Mio_ArchiView_x'), 'Mio_ArchiView_x');
+assert.strictEqual(L.nomeArchivio(undefined), '');
 
 console.log('✓ scannerLotto: tutti i test superati');
