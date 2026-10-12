@@ -96,6 +96,12 @@ Una tantum:
 
 Ogni rilascio: alza `version` in `app.json`, poi tag `scanner-v<versione>` e push del tag.
 
+Aggiornamento sul telefono (`src/aggiornaApp.ts`): all'avvio l'app (solo build di rilascio) legge
+le release `scanner-v*` di GitHub; se ce n'è una più nuova con un APK chiede «Aggiorna», lo
+scarica e apre l'installer di Android (un tocco; la prima volta Android chiede di consentire
+le installazioni da ArchiScanner). Funziona solo se l'APK è firmato con lo **stesso keystore
+EAS**: non rigenerarlo mai, o gli utenti dovranno disinstallare e reinstallare.
+
 ## Lingua
 
 Solo italiano, senza Lingui (decisione del 09/10): lo strumento è privato. Se servirà

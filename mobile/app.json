@@ -24,7 +24,8 @@
       "predictiveBackGestureEnabled": false,
       "allowBackup": false,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ]
     },
     "plugins": [
@@ -33,11 +34,19 @@
         {
           "android": {
             "usesCleartextTraffic": true,
-            "buildArchs": ["arm64-v8a"]
+            "buildArchs": [
+              "arm64-v8a"
+            ]
           }
         }
       ],
       "expo-sharing"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ccf2be2c-d068-45b9-b8a2-866769264daa"
+      }
+    },
+    "owner": "archiview"
   }
 }

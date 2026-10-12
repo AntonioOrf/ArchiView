@@ -22,6 +22,7 @@ import { aggiornaArchivi, aggiornaElenco, archiviLocali, elencoLocale, leggiImpo
 import { alternaCartella, chiaveDestinazione, destinazioneDi, perArchivio, percorsoLeggibile, type SchedaScelta } from './src/scelta';
 import { prossimaEtichetta } from './src/etichette';
 import { Abbina } from './src/Abbina';
+import { cercaAggiornamento, installaAggiornamento } from './src/aggiornaApp';
 import { abbinamentoPerso, inviaLottoWifi, type Abbinamento } from './src/wifi';
 import { ScannerLotto, type Pagina } from './src/contratto';
 import { Archivio, type SchedaInAttesa } from './src/schermate/Archivio';
@@ -132,6 +133,14 @@ function Principale() {
     try { chiudiAperti(); } catch (e) { console.warn('[app] lotti aperti non chiusi', e); }
     try { pulisciInviati(leggiImpostazioni().dopoInvio); } catch (e) { console.warn('[app] pulizia delle inviate non riuscita', e); }
     ricarica();
+    cercaAggiornamento().then(n => n && Alert.alert(
+      `ArchiScanner ${n.versione}`,
+      'È uscita una versione nuova dell\'app. Le pagine in attesa restano dove sono.',
+      [
+        { text: 'Più tardi', style: 'cancel' },
+        { text: 'Aggiorna', onPress: () => esegui('Aggiornamento', () => installaAggiornamento(n)) }
+      ]
+    ));
   }, [ricarica]);
 
   const evento = useCallback((e: EventoCoda) => {
