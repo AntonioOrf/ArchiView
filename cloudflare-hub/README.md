@@ -81,7 +81,7 @@ Copre: create → push v1 → pull → push concorrente (409) → add/revoke mem
 - **Concorrenza**: il push fa `UPDATE … WHERE current_version = parentVersion`; 0 righe → 409.
   La scrittura dei blob è compensata (rollback dell'incremento) se fallisce.
 - **Fast-path autofetch**: `?ifVersionNot=N` evita di leggere/decomprimere i blob quando
-  il client è già aggiornato — lettura D1 quasi gratuita.
+  il client è già aggiornato: la lettura D1 costa quasi nulla.
 - **Allowlist URL chunk**: solo `drive.google.com`, `googleapis.com`, `*.usercontent.google.com`.
 - **MD5**: vendorizzato in `src/crypto.ts` perché WebCrypto non lo espone e la firma REST
   Pusher richiede `body_md5`.
