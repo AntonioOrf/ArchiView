@@ -52,6 +52,9 @@ name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
     text: Invio automatico solo col Wi-Fi
     checked: false
 # Wi-Fi diretto: chiede la fotocamera, poi il lettore del QR; Annulla torna qui.
+# Sotto la sezione Privacy: va fatto scorrere.
+- scrollUntilVisible:
+    element: Abbina col computer
 - tapOn: Abbina col computer
 - assertVisible: "L'abbinamento usa la fotocamera.*"
 - tapOn: "Consenti.*"
@@ -64,6 +67,7 @@ name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
     visible: Inquadra il codice QR sul computer.
     timeout: 15000
 - tapOn: "(?i)annulla"
-- assertVisible: Abbina col computer
+- scrollUntilVisible:
+    element: Abbina col computer
 - tapOn: Indietro
 - assertVisible: Fondo Prova, cambia archivio

@@ -119,8 +119,13 @@ const SEMI = {
     'documenti/cartelle.json': JSON.stringify(['Ricevute', 'Scaffale']),
     ...documento('0b6f4c1e-1111-4a6e-9c1d-000000000001', 'Ricevuta biblioteca', 2),
     ...documento('0b6f4c1e-2222-4a6e-9c1d-000000000002', 'Fotocopia articolo', 1, 'Ricevute')
-  })
+  }),
+  /** Come «documenti», ma senza consenso a fotocamera, foto e file: l'app lo chiede. */
+  senzaConsenso: () => ({ ...SEMI.documenti(), 'consenso.json': null })
 };
+
+// Tutti i semi (tranne «vuoto», primo avvio vero) partono col consenso già dato, come `chiediConsenso`.
+const CONSENSO = JSON.stringify({ versione: 1, data: '2026-10-12T08:00:00+02:00' });
 
 // La build di debug prende il JS da Metro: `localhost:<porta>` col reverse di adb vale per
 // emulatore e telefono via USB. METRO_PORTA se Metro non è sulla 8081.
@@ -136,11 +141,12 @@ function semina(nome) {
   writeFileSync(pref, PREFERENZE);
   adb('push', pref, '/data/local/tmp/archiview-preferenze.xml');
   adb('shell', 'run-as', PKG, 'sh', '-c', `"mkdir -p shared_prefs && cp /data/local/tmp/archiview-preferenze.xml shared_prefs/${PKG}_preferences.xml"`);
-  const file = seme();
+  const file = nome === 'vuoto' ? {} : { 'consenso.json': CONSENSO, ...seme() };
   if (!Object.keys(file).length) return;
   const dir = join(tmpdir(), 'archiview-seme');
   rmSync(dir, { recursive: true, force: true });
   for (const [p, dati] of Object.entries(file)) {
+    if (dati === null) continue;
     mkdirSync(dirname(join(dir, p)), { recursive: true });
     if (Buffer.isBuffer(dati)) copyFileSync(FOTO, join(dir, p));
     else writeFileSync(join(dir, p), dati);
