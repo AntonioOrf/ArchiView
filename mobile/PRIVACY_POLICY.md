@@ -1,6 +1,6 @@
 # ArchiScanner — informativa sulla privacy
 
-Ultimo aggiornamento: 11 ottobre 2026.
+Ultimo aggiornamento: 12 ottobre 2026.
 
 ArchiScanner è l'app Android companion di ArchiView: fotografa documenti d'archivio e li
 consegna all'ArchiView desktop dello stesso utente. Ha anche una sezione **Documenti**, uno
@@ -46,6 +46,12 @@ I dati dell'app sono esclusi dal backup di Android su Google Drive.
   «Invia solo con Wi-Fi».
 - Le foto della galleria aggiunte ai Documenti passano dal selettore di sistema di Android: l'app
   vede solo quelle che scegli, senza permessi sulla galleria.
+- I file salvati fuori dall'app vanno nella cartella che scegli tu dal selettore di Android.
+  L'app non chiede né dichiara permessi su memoria, foto o video del telefono, e nemmeno quello
+  di sovrapporsi ad altre app.
+- **Consenso**: prima del primo uso di fotocamera, galleria o cartella di salvataggio l'app chiede
+  il tuo consenso. Senza consenso queste funzioni restano ferme. Lo revochi in Impostazioni →
+  Privacy: l'app dimentica anche la cartella di salvataggio e lo richiede al prossimo uso.
 
 ## Cancellazione
 
