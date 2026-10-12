@@ -2,7 +2,7 @@
 // telefono, correggibile prima di copiarlo (la correzione resta col documento). «Copia testo» per
 // la pagina, «Tutte le pagine» per il documento intero.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Copy, X } from 'lucide-react-native';
@@ -28,7 +28,10 @@ export function TestoPagina(p: Props) {
   const c = useColori();
   const margini = useSafeAreaInsets();
   const [valore, setValore] = useState(p.testo ?? '');
+  const campo = useRef<TextInput>(null);
   useEffect(() => { setValore(p.testo ?? ''); }, [p.testo]);
+  // Android porta la vista sul cursore, che sta in fondo: il testo si aprirebbe sulle ultime righe.
+  useEffect(() => { if (p.testo !== null) setTimeout(() => campo.current?.setSelection(0, 0), 0); }, [p.testo]);
   const salva = () => { if (p.testo !== null && valore !== p.testo) p.onCorreggi(valore); };
   const chiudi = () => { salva(); p.onChiudi(); };
 
@@ -50,7 +53,7 @@ export function TestoPagina(p: Props) {
             </View>
           ) : (
             <TextInput
-              accessibilityLabel="Testo riconosciuto" value={valore} onChangeText={setValore} onBlur={salva} multiline textAlignVertical="top"
+              ref={campo} accessibilityLabel="Testo riconosciuto" value={valore} onChangeText={setValore} onBlur={salva} multiline textAlignVertical="top" spellCheck={false} autoCorrect={false}
               placeholder="Nessun testo riconosciuto in questa pagina." placeholderTextColor={c.textPlaceholder} selectionColor={c.primary}
               style={[tipo.corpo, { flex: 1, padding: spazio.md, color: c.textMain, backgroundColor: c.bgBase, borderWidth: 1, borderColor: c.borderInput, borderRadius: raggio.md }]}
             />
