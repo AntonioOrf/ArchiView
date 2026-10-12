@@ -1,9 +1,14 @@
-## ArchiView 3.3.0 — Ricerca tra archivi e avvio più rapido
+## ArchiView 3.3.0 — Scansioni dal telefono, trascrizione e ricerca tra archivi
 
-Si può cercare una persona, un luogo o una segnatura in tutti gli archivi aperti su questo computer, senza cambiare archivio, e copiare una scheda da uno all'altro. L'app si apre in un terzo del tempo e la sicurezza è stata rivista da cima a fondo.
+Le carte si fotografano col telefono e arrivano da sole nella scheda giusta. La trascrizione ha nuovi strumenti per il lavoro paleografico, si può cercare in tutti gli archivi del computer senza cambiare archivio e l'app si apre in un terzo del tempo. La sicurezza è stata rivista da cima a fondo.
 
 ### Novità
 
+- **ArchiScanner, l'app Android**: si sceglie archivio e scheda, si fotografano le carte una dopo l'altra (ritaglio automatico, numerazione `1r 1v 2r…`) e le pagine partono da sole su Google Drive o, senza Drive, via Wi-Fi diretto verso il computer. Funziona anche senza rete: le pagine aspettano sul telefono. L'APK è nelle release `scanner-v*` del repository e da lì l'app si aggiorna da sola.
+- **Pannello «Dal telefono»**: le pagine in arrivo entrano nelle loro schede; quelle senza scheda si smistano a mano, in una scheda esistente o in una nuova. Da qui si abbina il telefono per il Wi-Fi diretto con un QR.
+- **Strumenti di trascrizione**: tastiera di caratteri speciali MUFI, due carte affiancate con zoom sincronizzabile, stato di lavorazione per carta con avanzamento sulla card, regioni annotate sulle immagini e filtri per l'inchiostro sbiadito.
+- **Ricerca paleografica**: la ricerca ignora le varianti grafiche (u/v, i/j, s lunga, æ/ae: "vita" trova "uita") e porta alla carta che contiene la parola.
+- **Collazione** tra testimoni dalle schede collegate e **anagrafica** collegata a Wikidata e VIAF.
 - **Cerca anche negli altri archivi**: con la casella sotto la ricerca, i risultati degli altri archivi compaiono in una sezione sotto l'elenco. Ogni scheda si apre in anteprima, in sola lettura; gli altri archivi vengono soltanto letti, mai modificati.
 - **Copia in questo archivio**: dall'anteprima una scheda si copia per intero o in parte, anche con gli allegati. Prima di confermare si vede cosa succederà (tipo di documento, cartella, persone e luoghi già presenti o nuovi, campi che diventano propri della scheda). La copia ricorda da dove viene e non cambia se l'originale viene modificato.
 - **Rimandi ad altri archivi**: nella scheda, la sezione "Rimandi ad altri archivi" collega una scheda a quella di un altro archivio, che si apre in anteprima con un clic.
@@ -15,8 +20,15 @@ Si può cercare una persona, un luogo o una segnatura in tutti gli archivi apert
 - **Salvataggio più robusto**: il database si scrive sempre in modo completo anche quando più salvataggi arrivano insieme, e una modifica fatta da fuori (un altro computer tramite il client Drive) subito dopo un salvataggio viene riconosciuta.
 - **Allegati degli archivi condivisi**: si scaricano più in fretta, più file insieme, e un download interrotto non lascia un file a metà.
 - **Sicurezza**: protezioni aggiuntive sui contenuti che arrivano da archivi condivisi, inviti e file importati. L'aggiornamento è consigliato a tutti.
+- **Impostazioni riorganizzate**: le preferenze sono raggruppate per argomento e ognuna si salva da sola.
+- **Google Drive**: davanti ai limiti momentanei di Google l'invio e la ricezione riprovano da soli invece di fermarsi.
+- **Archivio spostato**: un archivio recente spostato su un altro disco o cartella si ricollega con «Cerca cartella».
 
 ### Correzioni
+
+- **Sincronizzazione**: niente più conflitti falsi alla ricezione dopo un invio, le carte di una scheda si fondono una per una, una trascrizione scritta dopo una sincronizzazione non si perde alla successiva e annullare il confronto dei conflitti non carica più la versione locale.
+- **Export ZIP**: con schede che avevano allegati lo zip usciva troncato.
+- **Archivi condivisi su Hub**: un membro revocato vede «accesso revocato» invece di «chiave non valida», e un archivio ripristinato da una versione precedente torna uguale per tutti i membri.
 
 - **Finestra stretta**: sotto i 768 pixel l'elenco delle schede restava alto pochi pixel; ora la vista resta usabile anche a metà schermo.
 - **Conflitti di sincronizzazione**: la versione scelta nel confronto fra Locale e Cloud ora si vede ed è annunciata dai lettori di schermo.
