@@ -31,6 +31,7 @@ Quando usi un comando dal menu del tasto destro, la sua scorciatoia è scritta a
 | `Ctrl+F` | Vai alla ricerca |
 | `Ctrl+N` | Nuova scheda |
 | `Ctrl+S` | Salva la scheda o la trascrizione aperta |
+| `Ctrl+Maiusc+S` | Nella trascrizione alterna «Testo» e «Scheda»; nella scheda mostra o nasconde il documento |
 | `Ctrl+P` | Stampa o salva in PDF |
 | `Ctrl+Z` | Annulla l'ultima azione |
 | `Ctrl+Y` | Ripeti l'azione annullata (anche `Ctrl+Maiusc+Z`) |

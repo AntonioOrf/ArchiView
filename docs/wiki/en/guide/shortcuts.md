@@ -31,6 +31,7 @@ the most painless way to learn them: one at a time, while you work.
 | `Ctrl+F` | Go to search |
 | `Ctrl+N` | New record |
 | `Ctrl+S` | Save the open record or transcription |
+| `Ctrl+Shift+S` | In the transcription, switch between "Text" and "Record"; in the record, show or hide the document |
 | `Ctrl+P` | Print or save as PDF |
 | `Ctrl+Z` | Undo the last action |
 | `Ctrl+Y` | Redo the undone action (also `Ctrl+Shift+Z`) |

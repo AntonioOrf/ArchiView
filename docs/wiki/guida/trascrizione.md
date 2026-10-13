@@ -44,6 +44,27 @@ scritture difficili. `Alt+F` porta l'allegato a schermo intero.
 Il pulsante di esportazione porta il testo fuori dall'app in cinque formati: vedi
 [Esportare trascrizioni e citazioni](/esporta/testo-citazioni).
 
+## La scheda accanto al documento
+
+Sopra l'editor ci sono due tab, **Testo** e **Scheda**. «Scheda» mostra il modulo completo della
+scheda al posto del testo, con la carta sempre a destra: si compilano datazione, materia, misure
+guardando il documento. La scheda si salva da sola dopo una breve pausa, e accanto ai tab compare
+«Salvata alle…». `Ctrl+Maiusc+S` passa da un tab all'altro.
+
+Si può fare anche il contrario: modificando una scheda, il pulsante **Documento** mostra la carta
+accanto al modulo, con «Immagine | Trascrizione» per leggere il testo già trascritto.
+
+La barra fra le due colonne si trascina, si regola con le frecce `←` `→` dopo averla selezionata e
+torna a metà con un doppio clic; si aggancia a un terzo, metà e due terzi. Per «Testo» e «Scheda»
+ricorda proporzioni diverse.
+
+### In una finestra a parte
+
+Con due monitor, il pulsante **Stacca in una finestra** porta la scheda (o il documento) in una
+finestra sua. Per rimetterla al suo posto: **Riaggancia**, la chiusura della finestra, oppure
+trascinarla sopra la colonna di sinistra finché compare «Rilascia per riagganciare». Le due finestre
+lavorano sulla stessa scheda: quello che scrivi in una non si perde nell'altra.
+
 ## Il testo trascritto è ricercabile
 
 Tutto ciò che scrivi entra nella ricerca globale: cercare una formula o un nome dentro le

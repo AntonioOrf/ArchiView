@@ -45,6 +45,27 @@ It is a text editor: the toolbar offers the formatting needed to mark up the tex
 The export button takes the text out of the program in five formats: see
 [Exporting transcriptions and citations](/en/export/text-citations).
 
+## The record next to the document
+
+Above the editor there are two tabs, **Text** and **Record**. "Record" shows the full record form
+in place of the text, with the folio always on the right: you fill in date, material and
+dimensions while looking at the document. The record saves by itself after a short pause, and
+"Saved at…" appears next to the tabs. `Ctrl+Shift+S` switches between the two tabs.
+
+It also works the other way round: while editing a record, the **Document** button shows the folio
+next to the form, with "Image | Transcription" to read the text already transcribed.
+
+The bar between the two columns can be dragged, adjusted with the `←` `→` arrows once selected, and
+reset to half with a double-click; it snaps to one third, half and two thirds. "Text" and "Record"
+remember different proportions.
+
+### In a separate window
+
+With two monitors, the **Open in a separate window** button moves the record (or the document) into
+its own window. To put it back: **Dock back**, closing the window, or dragging it over the left
+column until "Release to dock" appears. Both windows work on the same record: what you write in one
+is not lost in the other.
+
 ## Transcribed text is searchable
 
 Everything you write goes into the global search: looking for a formula or a name inside
