@@ -12,6 +12,11 @@
                 </div>
                 
                 <div class="sticky top-2 z-sticky flex justify-end gap-3 mb-4 pointer-events-none" style="margin-left: -1rem; margin-right: -1rem; padding-right: 1rem;">
+                    <!-- PIANO-SCHEDA-AFFIANCATA, Fase 2 — il documento accanto (documentoScheda.ts). -->
+                    <button style="pointer-events: auto;" type="button" id="btn-documento-scheda" data-on-click="alternaDocumentoScheda" aria-pressed="false" aria-controls="doc-scheda" aria-keyshortcuts="Control+Shift+S" data-shortcut="Ctrl+Shift+S" class="hidden-tab btn btn-secondary py-2 px-4 text-sm whitespace-nowrap shadow-md" data-i18n-title="doc_record_title" title="Guarda il documento accanto alla scheda">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        <span data-i18n="doc_record_button">Documento</span>
+                    </button>
                     <button style="pointer-events: auto;" type="button" id="btn-cancel-edit" data-on-click="cancelEdit" class="hidden btn bg-stone-200 hover:bg-stone-300 text-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600 dark:text-stone-200 py-2 px-4 text-sm whitespace-nowrap shadow-md border border-stone-300 dark:border-stone-600 rounded-md transition-colors" data-i18n="btn_cancel_edit">Annulla</button>
                     <button style="pointer-events: auto;" type="submit" form="manoscritto-form" id="btn-submit-form" data-shortcut="Ctrl+S" data-i18n-title="tooltip_save_record" title="Salva la scheda" class="btn btn-primary py-2 px-6 text-sm whitespace-nowrap shadow-md rounded-md">
                         <i data-lucide="save" class="w-4 h-4 mr-1 hidden sm:inline-block"></i>

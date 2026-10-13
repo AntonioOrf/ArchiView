@@ -165,6 +165,27 @@ contextBridge.exposeInMainWorld('apiScanner', {
     onProgress: (callback) => ipcRenderer.on('scanner-progress', (event, dati) => callback(dati))
 });
 
+// PIANO-SCHEDA-AFFIANCATA — finestra staccata (main/finestraStaccata.ts). La staccata non
+// scrive l'archivio: chiede alla principale (`richiesta`), che risponde con `rispondi`.
+contextBridge.exposeInMainWorld('apiFinestre', {
+    // Principale
+    stacca: (tipo, dati, posizione) => ipcRenderer.invoke('finestra-stacca', tipo, dati, posizione),
+    messaggio: (tipo, dati) => ipcRenderer.invoke('finestra-messaggio', tipo, dati),
+    onChiusa: (callback) => ipcRenderer.on('finestra-chiusa', (event, tipo) => callback(tipo)),
+    onPosizione: (callback) => ipcRenderer.on('finestra-posizione', (event, tipo, posizione) => callback(tipo, posizione)),
+    onZona: (callback) => ipcRenderer.on('finestra-zona', (event, attiva) => callback(attiva)),
+    // Entrambe: domande con risposta (la principale riceve `salva`/`record`/`zona`, la staccata `svuota`).
+    onRichiesta: (callback) => ipcRenderer.on('finestra-richiesta', (event, id, metodo, args) => callback(id, metodo, args)),
+    onSvuota: (callback) => ipcRenderer.on('finestra-svuota', (event, id) => callback(id)),
+    rispondi: (id, esito) => ipcRenderer.send('finestra-risposta', id, esito),
+    // Staccata
+    dati: () => ipcRenderer.invoke('finestra-dati'),
+    richiesta: (metodo, args) => ipcRenderer.invoke('finestra-richiesta', metodo, args),
+    riaggancia: () => ipcRenderer.invoke('finestra-riaggancia'),
+    onCarica: (callback) => ipcRenderer.on('finestra-carica', (event, dati) => callback(dati)),
+    onChiudiRichiesta: (callback) => ipcRenderer.on('finestra-chiudi-richiesta', () => callback())
+});
+
 contextBridge.exposeInMainWorld('apiSettings', {
     get: () => ipcRenderer.invoke('get-settings'),
     // Solo le chiavi che cambiano; `null` torna al predefinito. → { ok, rifiutate[] }

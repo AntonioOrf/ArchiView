@@ -74,7 +74,25 @@ function avvisaDuplicati(definizioni, valori, idCorrente, segnatura) {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
-    
+    // Nel tab «Scheda» della trascrizione il modulo si salva da sé: Invio in un campo non
+    // deve azzerarlo né portare alla lista.
+    if (window.moduloInTrascrizione && window.moduloInTrascrizione()) {
+        window.salvaSchedaTrascrizioneOra();
+        return;
+    }
+    const esito = await salvaSchedaDalForm(false);
+    if (!esito.ok) return;
+    window.isFormDirty = false;
+    resetForm();
+    switchTab('list');
+}
+
+/**
+ * Scrive nel record ciò che c'è nel modulo. `automatico` = salvataggio del tab «Scheda» della
+ * trascrizione: niente toast, niente fuoco rubato, il modulo resta aperto e la sua copia
+ * degli allegati si riallinea al record salvato.
+ */
+async function salvaSchedaDalForm(automatico) {
     const settings = await window.apiSettings.get();
     const username = settings.username || 'Anonimo';
 
@@ -82,8 +100,8 @@ async function handleFormSubmit(e) {
     const documentoId = idCorrente || window.Model.nuovoId();
 
     let allegatiCorrenti = JSON.parse(document.getElementById('form-allegati').value || '[]');
-    const fileInput = document.getElementById('form-allegato');
-    
+    const caricati = (window.pendingFilesToUpload || []).length > 0;
+
     if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0 && window.apiBrowser) {
         const UPLOAD_CONCURRENCY = 3;
         const files = window.pendingFilesToUpload;
@@ -137,20 +155,30 @@ async function handleFormSubmit(e) {
     if (window.pulisciErroriCampi) window.pulisciErroriCampi();
     const errore = primoErroreCampi(definizioni, dynamicData);
     if (errore) {
-        mostraMessaggio(errore.messaggio, 'error');
         // Il messaggio resta accanto al campo (segnalaErroreCampo); il toast serve a chi ha
-        // il campo fuori schermo. Il fuoco va sul primo campo in errore (3.3.1).
+        // il campo fuori schermo. Il fuoco va sul primo campo in errore (3.3.1). Nel salvataggio
+        // automatico niente dei due: scatta mentre si scrive, e l'errore va nello stato del tab.
+        if (!automatico) mostraMessaggio(errore.messaggio, 'error');
         const el = window.segnalaErroreCampo
             ? window.segnalaErroreCampo(errore.campo, errore.messaggio)
             : document.getElementById(window.idControlloCampo(errore.campo));
-        if (el) el.focus();
-        return;
+        if (el && !automatico) el.focus();
+        return { ok: false, messaggio: errore.messaggio };
+    }
+
+    const mVecchio = idCorrente ? appData.manoscritti.find(x => x.id === idCorrente) : null;
+
+    // Il modulo tiene la copia degli allegati presa all'apertura; intanto l'editor di
+    // trascrizione (o un sync) può aver scritto testo, stato o regioni sulle carte vive. Merge
+    // a tre vie come nel sync: del modulo passano solo le modifiche fatte nel modulo.
+    if (mVecchio && Array.isArray(window.allegatiBaseForm)) {
+        const vivi = mVecchio.allegati || (mVecchio.allegato ? [{ nome: mVecchio.allegato, tipo: mVecchio.allegatoTipo }] : []);
+        allegatiCorrenti = window.Model.fondiAllegati(window.allegatiBaseForm, allegatiCorrenti, vivi).allegati;
     }
 
     let nomeAllegato = allegatiCorrenti.length > 0 ? allegatiCorrenti[0].nome : '';
     let tipoAllegato = allegatiCorrenti.length > 0 ? allegatiCorrenti[0].tipo : '';
 
-    const mVecchio = idCorrente ? appData.manoscritti.find(x => x.id === idCorrente) : null;
     const creatoDa = mVecchio && mVecchio.creatoDa ? mVecchio.creatoDa : username;
     // Fase 4.5 — la fotografia PRIMA della modifica, per l'annullamento. Un clone e non il
     // riferimento: `updateManoscritto` fonde nell'oggetto vivo, e tenerne il riferimento
@@ -238,6 +266,9 @@ async function handleFormSubmit(e) {
     } else {
         await window.Store.addManoscritto(newData);
     }
+    // Le carte fuse possono portare testo scritto nell'editor: la trascrizione derivata segue.
+    const salvato = appData.manoscritti.find(x => String(x.id) === String(documentoId));
+    if (salvato && window.ricomponiTrascrizioneFusa) window.ricomponiTrascrizioneFusa(salvato);
     window.cartellaAttuale = cartellaScelta;
     await window.Store.commit();
 
@@ -269,18 +300,40 @@ async function handleFormSubmit(e) {
     // Fase 3.1 — l'avviso sui campi `unico` arriva DOPO il salvataggio, non prima: la
     // scheda è salva comunque, e il messaggio dice all'utente che c'è un'altra scheda con
     // quel valore, non che ha sbagliato.
-    avvisaDuplicati(definizioni, dynamicData, documentoId, newData.segnatura);
+    // ponytail: nel salvataggio automatico l'avviso salterebbe a ogni pausa di scrittura; si
+    // perde finché la scheda resta nel tab. Da rivedere se serve: avvisare una volta per valore.
+    if (!automatico) avvisaDuplicati(definizioni, dynamicData, documentoId, newData.segnatura);
 
-    window.isFormDirty = false;
-    resetForm();
-    switchTab('list');
+    if (automatico && salvato) {
+        // Il modulo resta aperto: la sua copia degli allegati diventa il record appena scritto,
+        // altrimenti il prossimo merge rileggerebbe come "modifiche del modulo" quelle già fuse.
+        const allegatiSalvati = JSON.parse(JSON.stringify(salvato.allegati || []));
+        window.allegatiBaseForm = allegatiSalvati;
+        document.getElementById('form-allegati').value = JSON.stringify(allegatiSalvati);
+        if (caricati) {
+            window.pendingFilesToUpload = [];
+            document.getElementById('form-allegato').value = '';
+            document.getElementById('form-allegati-new-preview')?.classList.add('hidden');
+            if (window.renderPendingFiles) window.renderPendingFiles();
+            if (window.renderAllegatiForm) window.renderAllegatiForm(allegatiSalvati);
+        }
+    }
+    return { ok: true };
 }
 
 
 async function editItem(id) {
     switchTab('add');
+    window.caricaSchedaNelForm(id);
+    window.aggiornaDocumentoScheda();
+    document.getElementById('form-title').textContent = window.t("title_edit_record", "Edit Record");
+    document.getElementById('btn-cancel-edit').classList.remove('hidden');
+}
 
-    const m = appData.manoscritti.find(x => x.id === id);
+/** Riempie il modulo con la scheda `id`, ovunque il modulo si trovi (lista o tab della trascrizione). */
+window.caricaSchedaNelForm = function(id) {
+    const m = appData.manoscritti.find(x => String(x.id) === String(id));
+    if (!m) return;
     document.getElementById('form-id').value = m.id;
     document.getElementById('form-cartella').value = m.cartella || '';
     document.getElementById('form-tipo-documento').value = m.tipoDocumento || 'manoscritto';
@@ -307,16 +360,16 @@ async function editItem(id) {
         allegatiList.push({ nome: m.allegato, tipo: m.allegatoTipo });
     }
     document.getElementById('form-allegati').value = JSON.stringify(allegatiList);
+    // La base del merge a tre vie in `salvaSchedaDalForm`: gli allegati come erano all'apertura.
+    window.allegatiBaseForm = JSON.parse(JSON.stringify(allegatiList));
     if(window.renderAllegatiForm) window.renderAllegatiForm(allegatiList);
-    
+
     // Fase 3.7 — un solo popolamento per tutti i campi, propri compresi: le regole (zero
     // che è un dato, il valore fuori tendina, il riscontro della data) stanno in
     // `popolaCampiDinamici`, accanto alla lettura che le rispecchia.
     window.popolaCampiDinamici(window.campiDefinitiDelForm(), m);
-
-    document.getElementById('form-title').textContent = window.t("title_edit_record", "Edit Record");
-    document.getElementById('btn-cancel-edit').classList.remove('hidden');
-}
+    window.isFormDirty = false;
+};
 
 
 function deleteItem(id) {

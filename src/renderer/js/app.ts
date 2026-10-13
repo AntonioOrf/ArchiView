@@ -1,5 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Finestra staccata (scheda o documento, finestraStaccata.ts): non è un'altra app, non
+        // apre l'archivio né il cloud. Si ferma qui.
+        if (window.avviaFinestraStaccata && await window.avviaFinestraStaccata()) return;
+
         // Prima di qualunque render: decide se animazioni e pagine lunghe sono ammesse.
         if (window.initModalitaPrestazioni) await window.initModalitaPrestazioni();
 
@@ -122,6 +126,68 @@ window.aggiornaVisibilitaCloud = async function() {
             switchSidebarTab('folders');
         }
     }
+};
+
+/**
+ * Eventi del modulo della scheda: invio, "modificato", file in attesa di caricamento. Fuori
+ * dall'avvio perché li registra anche la finestra staccata (finestraStaccata.ts), che non avvia l'app.
+ */
+window.collegaEventiModulo = function() {
+        document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
+
+    // Tracciamento modifiche non salvate form
+    document.getElementById('manoscritto-form').addEventListener('input', () => { window.isFormDirty = true; });
+    document.getElementById('manoscritto-form').addEventListener('change', () => { window.isFormDirty = true; });
+
+    // Gestione Anteprime file
+    window.pendingFilesToUpload = window.pendingFilesToUpload || [];
+    
+    window.renderPendingFiles = function() {
+        const previewNew = document.getElementById('form-allegati-new-preview');
+        if (!previewNew) return;
+        
+        if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0) {
+            previewNew.classList.remove('hidden');
+            let html = '<div class="text-xs text-amber-700 font-medium mb-2">File pronti per il caricamento:</div>';
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+            window.pendingFilesToUpload.forEach((file, index) => {
+                html += `
+                    <div class="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-sm">
+                        <span class="text-xs truncate text-amber-900 font-semibold" title="${escapeHTML(file.name)}">
+                            <i data-lucide="file" class="w-3 h-3 inline-block mr-1"></i>${escapeHTML(file.name)}
+                        </span>
+                        <button type="button" ${window.azione('click', 'rimuoviPendingFile', index)} class="text-amber-600 hover:text-red-600 p-1 bg-white border border-amber-200 rounded shadow-sm">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            previewNew.innerHTML = html;
+            if (window.lucide) lucide.createIcons({ nodes: [previewNew] });
+        } else {
+            previewNew.classList.add('hidden');
+            previewNew.innerHTML = '';
+        }
+    };
+
+    window.rimuoviPendingFile = function(index) {
+        if (window.pendingFilesToUpload) {
+            window.pendingFilesToUpload.splice(index, 1);
+            window.renderPendingFiles();
+        }
+    };
+
+    document.getElementById('form-allegato').addEventListener('change', function(e) {
+        const fileList = e.target.files;
+        if (fileList.length > 0) {
+            for (let i = 0; i < fileList.length; i++) {
+                window.pendingFilesToUpload.push(fileList[i]);
+            }
+        }
+        (e.target as HTMLInputElement).value = ''; // Reset per poter selezionare di nuovo
+        window.renderPendingFiles();
+    });
 };
 
 async function avviaApp() {
@@ -387,61 +453,7 @@ async function avviaApp() {
 
         document.getElementById('search-input').addEventListener('input', debouncedSearch);
         document.getElementById('global-tag-search').addEventListener('input', () => { if (typeof renderTagList === 'function') renderTagList(); });
-        document.getElementById('manoscritto-form').addEventListener('submit', handleFormSubmit);
-
-    // Tracciamento modifiche non salvate form
-    document.getElementById('manoscritto-form').addEventListener('input', () => { window.isFormDirty = true; });
-    document.getElementById('manoscritto-form').addEventListener('change', () => { window.isFormDirty = true; });
-
-    // Gestione Anteprime file
-    window.pendingFilesToUpload = window.pendingFilesToUpload || [];
-    
-    window.renderPendingFiles = function() {
-        const previewNew = document.getElementById('form-allegati-new-preview');
-        if (!previewNew) return;
-        
-        if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0) {
-            previewNew.classList.remove('hidden');
-            let html = '<div class="text-xs text-amber-700 font-medium mb-2">File pronti per il caricamento:</div>';
-            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
-            window.pendingFilesToUpload.forEach((file, index) => {
-                html += `
-                    <div class="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-sm">
-                        <span class="text-xs truncate text-amber-900 font-semibold" title="${escapeHTML(file.name)}">
-                            <i data-lucide="file" class="w-3 h-3 inline-block mr-1"></i>${escapeHTML(file.name)}
-                        </span>
-                        <button type="button" ${window.azione('click', 'rimuoviPendingFile', index)} class="text-amber-600 hover:text-red-600 p-1 bg-white border border-amber-200 rounded shadow-sm">
-                            <i data-lucide="x" class="w-3 h-3"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            previewNew.innerHTML = html;
-            if (window.lucide) lucide.createIcons({ nodes: [previewNew] });
-        } else {
-            previewNew.classList.add('hidden');
-            previewNew.innerHTML = '';
-        }
-    };
-
-    window.rimuoviPendingFile = function(index) {
-        if (window.pendingFilesToUpload) {
-            window.pendingFilesToUpload.splice(index, 1);
-            window.renderPendingFiles();
-        }
-    };
-
-    document.getElementById('form-allegato').addEventListener('change', function(e) {
-        const fileList = e.target.files;
-        if (fileList.length > 0) {
-            for (let i = 0; i < fileList.length; i++) {
-                window.pendingFilesToUpload.push(fileList[i]);
-            }
-        }
-        (e.target as HTMLInputElement).value = ''; // Reset per poter selezionare di nuovo
-        window.renderPendingFiles();
-    });
+        window.collegaEventiModulo();
 
     // Mappa id-modale → funzione di chiusura dedicata (cleanup: reset iframe, callback, ecc.)
     // Overlay che NON vanno chiusi né con Esc né cliccando lo sfondo: sono in mezzo a
@@ -556,6 +568,11 @@ async function avviaApp() {
             } else if (e.altKey && e.key === 'ArrowRight') {
                 e.preventDefault();
                 if (typeof cambiaAllegatoRelativo === 'function') cambiaAllegatoRelativo(1);
+            } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+                // Ctrl+Maiusc+S alterna i tab «Testo» e «Scheda»; va prima di Ctrl+S, che
+                // con Maiusc ha comunque `key` 's'.
+                e.preventDefault();
+                window.alternaSchedaTrascrizione();
             } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
                 e.preventDefault();
                 if (typeof salvaTrascrizione === 'function') salvaTrascrizione();
@@ -597,6 +614,18 @@ async function avviaApp() {
             if (typeof switchTab === 'function') switchTab('add');
             const segInput = document.getElementById('form-segnatura');
             if (segInput) segInput.focus();
+        }
+
+        // Ctrl+Maiusc+S -> nel modulo della scheda, il documento accanto (prima di Ctrl+S: con
+        // Maiusc `key` resta 's'). Solo su una scheda con carte, dove c'è il pulsante.
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+            const vAdd = document.getElementById('view-add');
+            const btnDoc = document.getElementById('btn-documento-scheda');
+            if (vAdd && !vAdd.classList.contains('hidden-tab') && btnDoc && !btnDoc.classList.contains('hidden-tab')) {
+                e.preventDefault();
+                window.alternaDocumentoScheda();
+                return;
+            }
         }
 
         // Ctrl+S -> Salva Scheda (se siamo nel tab di inserimento)
@@ -721,7 +750,12 @@ async function avviaApp() {
             if (typeof window.flushSalvataggio === 'function') {
                 try { await window.flushSalvataggio(); } catch (e) { console.error("Errore nel flush di chiusura:", e); }
             }
-            const isEditingRecord = window.isFormDirty && !document.getElementById('view-add')?.classList.contains('hidden-tab');
+            // Il tab «Scheda» della trascrizione: ciò che si può salvare va su disco; resta
+            // sporco solo un modulo che non passa la validazione, e allora si chiede.
+            if (window.moduloInTrascrizione()) await window.salvaSchedaTrascrizioneOra();
+            // ...e quanto ha in sospeso la finestra staccata, che salva passando da qui.
+            if (window.svuotaFinestraStaccata) await window.svuotaFinestraStaccata();
+            const isEditingRecord = window.isFormDirty && (window.moduloInTrascrizione() || !document.getElementById('view-add')?.classList.contains('hidden-tab'));
             
             if (window.trascrizioneNonSalvata) {
                 window.isClosingApp = true;
@@ -752,35 +786,22 @@ async function avviaApp() {
         }
     });
 
-    let isResizing = false;
-
     if (resizer && leftPanel && container) {
-        resizer.addEventListener('mousedown', () => {
-            isResizing = true;
-            document.body.style.cursor = 'col-resize';
-            leftPanel.style.transition = 'none';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const containerRect = container.getBoundingClientRect();
-            let newWidth = e.clientX - containerRect.left;
-
-            if (newWidth < 250) newWidth = 250;
-            if (newWidth > containerRect.width - 250) newWidth = containerRect.width - 250;
-
-            const percentage = (newWidth / containerRect.width) * 100;
-            leftPanel.style.width = `${percentage}%`;
-        });
-
-        document.addEventListener('mouseup', async () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
+        // La proporzione è una preferenza di comodo, per tab («Testo» / «Scheda»): sta in
+        // localStorage (attachmentsLogic.ts), non più nell'archivio da salvare a ogni trascinamento.
+        window.attivaSeparatore(resizer, {
+            attuale: () => parseFloat(leftPanel.style.width) || 50,
+            daPuntatore: (x) => {
+                const r = container.getBoundingClientRect();
+                return ((x - r.left) / r.width) * 100;
+            },
+            applica: (p) => {
+                leftPanel.style.transition = 'none';
+                leftPanel.style.width = `${p}%`;
+            },
+            fine: (p) => {
                 leftPanel.style.transition = '';
-
-                appData.trascrizioneEditorWidth = leftPanel.style.width;
-                if (typeof salvaTutto === 'function') await salvaTutto();
+                window.ricordaLarghezzaTrascrizione(p);
             }
         });
     }

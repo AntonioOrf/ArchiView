@@ -109,10 +109,202 @@ window.ricaricaEditorTrascrizione = function(m, indice) {
 window.salvaEditorTrascrizioneInMemoria = _taSalvaEditorInMemoria;
 window.indiceCartaCorrente = function() { return _taIndiceCorrente; };
 
+// --- TAB «SCHEDA» DELLA TRASCRIZIONE (PIANO-SCHEDA-AFFIANCATA) ---
+//
+// Il modulo è uno solo: il tab ci sposta dentro #manoscritto-form e lo rimette in #view-add
+// all'uscita, così ogni controllo e ogni handler del modulo valgono anche qui. Si salva da sé
+// dopo una pausa; il "sporco" si intercetta sul setter di `isFormDirty`, che tutti i punti
+// del modulo già alzano (input, change, collegamenti, campi propri, riordino, allegati).
+
+const _TA_CHIAVE_TAB = 'trascrizioneTab';
+const _TA_PAUSA_SALVATAGGIO = 800;
+let _taTimerScheda = null;
+let _taSalvataggioScheda = null;
+let _taSporco = false;
+let _taSenzaProgramma = false;
+
+Object.defineProperty(window, 'isFormDirty', {
+    configurable: true,
+    get: () => _taSporco,
+    set: (v) => {
+        _taSporco = !!v;
+        if (_taSporco && !_taSenzaProgramma && window.moduloInTrascrizione()) _taProgrammaSalvataggio();
+    }
+});
+
+window.moduloInTrascrizione = function() {
+    const form = document.getElementById('manoscritto-form');
+    return !!form && form.parentElement?.id === 'trasc-pannello-scheda';
+};
+
+function _taStatoScheda(testo, classe?) {
+    const el = document.getElementById('trasc-scheda-stato');
+    if (!el) return;
+    el.textContent = testo;
+    el.className = 'text-xs truncate' + (classe ? ' ' + classe : '');
+}
+
+function _taProgrammaSalvataggio() {
+    clearTimeout(_taTimerScheda);
+    _taStatoScheda('');
+    _taTimerScheda = setTimeout(() => window.salvaSchedaTrascrizioneOra(), _TA_PAUSA_SALVATAGGIO);
+}
+
+/** Salva subito ciò che è in sospeso nel tab «Scheda». `true` se non resta nulla da salvare. */
+window.salvaSchedaTrascrizioneOra = async function() {
+    clearTimeout(_taTimerScheda);
+    _taTimerScheda = null;
+    // Uno alla volta: due salvataggi in volo fonderebbero gli allegati sulla stessa base.
+    while (_taSalvataggioScheda) await _taSalvataggioScheda;
+    if (!window.isFormDirty || !window.moduloInTrascrizione()) return !window.isFormDirty;
+    _taSalvataggioScheda = (async () => {
+        // Pulito PRIMA di leggere il modulo: ciò che si scrive durante il salvataggio lo
+        // risporca e riprogramma il giro successivo invece di andare perso.
+        window.isFormDirty = false;
+        _taStatoScheda(window.t('trasc_record_saving', 'Salvataggio…'));
+        try {
+            const esito = await salvaSchedaDalForm(true);
+            if (esito.ok) {
+                // Il testo dell'editor è passato in memoria all'apertura del tab ed è andato su
+                // disco con le carte fuse: non c'è più nulla di non salvato.
+                window.trascrizioneNonSalvata = false;
+                const ora = new Date().toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
+                _taStatoScheda(window.t('trasc_record_saved', 'Salvata alle {var0}').replace('{var0}', ora), 'testo-successo');
+                window.renderBarraCarte(document.getElementById('trascrizione-id').value);
+                return true;
+            }
+            _taStatoScheda(esito.messaggio, 'testo-pericolo');
+        } catch (err) {
+            console.error('Salvataggio automatico della scheda non riuscito:', err);
+            _taStatoScheda(window.t('trasc_record_save_error', 'Scheda non salvata: riprova.'), 'testo-pericolo');
+        }
+        // Resta sporca senza riprogrammare: un campo invalido riproverebbe in loop.
+        _taSenzaProgramma = true;
+        window.isFormDirty = true;
+        _taSenzaProgramma = false;
+        return false;
+    })();
+    try { return await _taSalvataggioScheda; } finally { _taSalvataggioScheda = null; }
+};
+
+function _taMostraPannello(scheda) {
+    document.getElementById('trasc-pannello-testo').classList.toggle('hidden-tab', scheda);
+    document.getElementById('trasc-pannello-scheda').classList.toggle('hidden-tab', !scheda);
+    document.getElementById('tab-trasc-testo').setAttribute('aria-selected', String(!scheda));
+    document.getElementById('tab-trasc-scheda').setAttribute('aria-selected', String(scheda));
+    _taApplicaLarghezza();
+}
+
+// Fase 3 — la proporzione delle colonne si ricorda per tab: la scheda vuole spazio, il testo no.
+function _taChiaveLarghezza() {
+    return 'larghezzaTrascrizione:' + (window.moduloInTrascrizione() ? 'scheda' : 'testo');
+}
+
+window.ricordaLarghezzaTrascrizione = function(p) {
+    window.prefLocale(_taChiaveLarghezza(), p);
+};
+
+function _taApplicaLarghezza() {
+    const editorPanel = document.getElementById('trascrizione-editor-panel');
+    // Senza carte l'editor prende tutto (apriTrascrizione) e il separatore non c'è.
+    if (!editorPanel || document.getElementById('trascrizione-allegato-panel').classList.contains('hidden-tab')) return;
+    const scheda = window.moduloInTrascrizione();
+    const salvata = window.prefLocale(_taChiaveLarghezza()) || (scheda ? null : appData.trascrizioneEditorWidth);
+    const p = window.proporzioneSeparatore(parseFloat(salvata) || 50, false);
+    editorPanel.style.width = `${p}%`;
+    document.getElementById('trascrizione-resizer')?.setAttribute('aria-valuenow', String(Math.round(p)));
+}
+
+/** Rimette il modulo in #view-add, vuoto. Chi chiama ha già salvato o rinunciato. */
+function _taRiponiModulo() {
+    clearTimeout(_taTimerScheda);
+    _taTimerScheda = null;
+    const form = document.getElementById('manoscritto-form');
+    if (form && window.moduloInTrascrizione()) {
+        document.getElementById('view-add').appendChild(form);
+        resetForm();
+    }
+    _taStatoScheda('');
+    _taMostraPannello(false);
+}
+
+/** Uscita sincrona quando non c'è nulla da salvare: `false` = serve `lasciaSchedaTrascrizione`. */
+window.riponiModuloSePulito = function() {
+    if (window.isFormDirty || _taSalvataggioScheda) return false;
+    _taRiponiModulo();
+    return true;
+};
+
+/**
+ * Prima di lasciare il tab (altra vista, altra scheda): salva, e se non si può chiede se
+ * rinunciare. `true` = si può proseguire, il modulo è già tornato al suo posto.
+ */
+window.lasciaSchedaTrascrizione = async function() {
+    if (!window.moduloInTrascrizione()) return true;
+    if (await window.salvaSchedaTrascrizioneOra()) {
+        _taRiponiModulo();
+        return true;
+    }
+    return new Promise((risolvi) => {
+        window.mostraBottomConfirm(window.t('unsaved_prompt', 'Ci sono modifiche non salvate alla scheda. Sei sicuro di voler uscire perdendo le modifiche?'), () => {
+            _taRiponiModulo();
+            risolvi(true);
+        }, null, () => risolvi(false));
+    });
+};
+
+window.mostraSchedaTrascrizione = async function(tab) {
+    const scheda = tab === 'scheda';
+    // La finestra staccata condivide il localStorage: le preferenze le scrive solo la principale.
+    if (!window.finestraSatellite) window.prefLocale(_TA_CHIAVE_TAB, scheda ? 'scheda' : 'testo');
+    // Fase 4 — scheda in un'altra finestra: il tab dice dov'è e la porta in primo piano.
+    const staccata = !!(window.schedaStaccata && window.schedaStaccata());
+    document.getElementById('trasc-scheda-staccata').classList.toggle('hidden-tab', !staccata);
+    if (staccata) {
+        _taMostraPannello(scheda);
+        if (scheda) window.apiFinestre.messaggio('mostra');
+        return;
+    }
+    if (scheda && !window.finestraSatellite && window.prefLocale('finestraStaccata:scheda') === '1' && window.staccaScheda) {
+        await window.staccaScheda();
+        return;
+    }
+    if (scheda === window.moduloInTrascrizione()) {
+        _taMostraPannello(scheda);
+        return;
+    }
+    if (!scheda) {
+        if (await window.lasciaSchedaTrascrizione()) document.getElementById('tab-trasc-testo').focus();
+        return;
+    }
+    // Il testo della carta in vista va in memoria: il salvataggio della scheda fonde le carte vive.
+    _taSalvaEditorInMemoria();
+    aggiornaSelectCartelle();
+    aggiornaSelectTipiDocumento();
+    if (typeof window.aggiornaSelettoriRelazione === 'function') window.aggiornaSelettoriRelazione();
+    document.getElementById('trasc-pannello-scheda').appendChild(document.getElementById('manoscritto-form'));
+    window.caricaSchedaNelForm(document.getElementById('trascrizione-id').value);
+    _taMostraPannello(true);
+    if (window.lucide) lucide.createIcons();
+};
+
+/** Nella finestra staccata: la scheda `id` nel tab, al posto di quella che c'era (già salvata). */
+window.caricaSchedaStaccata = async function(id) {
+    if (window.moduloInTrascrizione()) window.riponiModuloSePulito();
+    document.getElementById('trascrizione-id').value = id;
+    await window.mostraSchedaTrascrizione('scheda');
+};
+
+window.alternaSchedaTrascrizione = function() {
+    window.mostraSchedaTrascrizione(window.moduloInTrascrizione() ? 'testo' : 'scheda');
+};
+
 async function apriTrascrizione(id) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m) return;
-    
+    // Il tab «Scheda» aperto su un'altra scheda (o sulla stessa, da ricaricare): prima si salva.
+    if (!(await window.lasciaSchedaTrascrizione())) return;
+
     document.getElementById('trascrizione-id').value = m.id;
     document.getElementById('trascrizione-subtitle').textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
 
@@ -158,10 +350,8 @@ async function apriTrascrizione(id) {
     if (allegatiM.length > 0 && window.apiBrowser) {
         panelAllegato.classList.remove('hidden-tab');
         if (resizer) resizer.classList.remove('hidden');
-        if (editorPanel) {
-            editorPanel.classList.remove('hidden');
-            editorPanel.style.width = appData.trascrizioneEditorWidth || '50%';
-        }
+        if (editorPanel) editorPanel.classList.remove('hidden');
+        _taApplicaLarghezza();
         btnCarica.classList.add('hidden');
         if (btnOcr) btnOcr.classList.remove('hidden-tab');
         if (btnCollapse) {
@@ -189,8 +379,12 @@ async function apriTrascrizione(id) {
         if (btnOcr) btnOcr.classList.add('hidden-tab');
         if (btnCollapse) btnCollapse.classList.add('hidden');
     }
-    
+
     switchTab('trascrizione');
+    // La finestra staccata segue la scheda aperta qui.
+    if (window.schedaStaccata && window.schedaStaccata()) window.apiFinestre.messaggio('carica', window.datiFinestraStaccata(m.id));
+    if (window.prefLocale(_TA_CHIAVE_TAB) === 'scheda') await window.mostraSchedaTrascrizione('scheda');
+    else _taMostraPannello(false);
     if (window.lucide) lucide.createIcons();
 }
 
@@ -1017,6 +1211,8 @@ function chiudiTrascrizione() {
 }
 
 async function salvaTrascrizione() {
+    // Dal tab «Scheda» (pulsante o Ctrl+S): anche il modulo, senza aspettare la pausa.
+    if (window.moduloInTrascrizione()) await window.salvaSchedaTrascrizioneOra();
     const id = document.getElementById('trascrizione-id').value;
     const editor = document.getElementById('trascrizione-editor');
 

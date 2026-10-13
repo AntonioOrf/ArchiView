@@ -621,6 +621,9 @@ function resetForm() {
 
     const allegatiInput = document.getElementById('form-allegati');
     if (allegatiInput) allegatiInput.value = '[]';
+    window.allegatiBaseForm = null;
+    // Scheda nuova: niente carte salvate, il pannello del documento si chiude.
+    if (window.aggiornaDocumentoScheda) window.aggiornaDocumentoScheda();
 
     // Fase 3.5: senza questo, i collegamenti della scheda appena chiusa resterebbero nel
     // form e finirebbero addosso alla prossima scheda creata.

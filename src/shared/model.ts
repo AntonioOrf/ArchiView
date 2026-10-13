@@ -2331,6 +2331,7 @@ const ArchiViewModel = {
   // Merge campo per campo, snapshot e cestino (Fase 4)
   CHIAVI_NON_FUSE: AV_CHIAVI_NON_FUSE,
   fondiRecord: avFondiRecord,
+  fondiAllegati: avFondiAllegati,
   trascrizioneDerivata: avTrascrizioneDerivata,
   fondiCampiPropri: avFondiCampiPropri,
   SNAPSHOT_RECENTI: AV_SNAPSHOT_RECENTI,

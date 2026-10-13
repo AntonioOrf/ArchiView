@@ -263,7 +263,17 @@ if (!gotTheLock) {
   });
 
   createWindow();
-  
+  // PIANO-SCHEDA-AFFIANCATA — scheda o documento in una finestra a parte (finestraStaccata.ts).
+  const finestraStaccata = require('./finestraStaccata');
+  finestraStaccata.setupFinestraStaccata({
+    principale: () => state.mainWindow,
+    urlIndex: schemaApp.URL_INDEX,
+    preload: path.join(__dirname, 'preload.js'),
+    icona: app.isPackaged
+      ? path.join(process.resourcesPath, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
+      : path.join(__dirname, '..', '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
+  });
+
   let forceClose = false;
   state.mainWindow.on('close', (e) => {
     // In E2E la conferma di chiusura non è pilotabile e il renderer, sulla welcome modal,
@@ -283,7 +293,7 @@ if (!gotTheLock) {
   // L'host PDF dell'OCR è una BrowserWindow offscreen, quindi conta come finestra aperta:
   // lasciarla viva impedirebbe a `window-all-closed` di scattare e l'applicazione chiusa
   // resterebbe in memoria. Va abbattuta insieme alla finestra principale, non dopo.
-  state.mainWindow.on('closed', () => { pdfHost.distruggi(); printHost.distruggi(); });
+  state.mainWindow.on('closed', () => { pdfHost.distruggi(); printHost.distruggi(); finestraStaccata.distruggiFinestraStaccata(); });
   
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

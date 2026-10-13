@@ -1307,6 +1307,15 @@ function renderMain(resetPage = true) {
 window.pendingTabSwitch = null;
 
 function switchTab(tab) {
+    // Una finestra staccata segue la sua vista: uscendone salva e si chiude (resta ricordata).
+    if (tab !== 'trascrizione' && window.schedaStaccata && window.schedaStaccata()) window.chiudiFinestraStaccata('scheda');
+    if (tab !== 'add' && window.documentoStaccato && window.documentoStaccato()) window.chiudiFinestraStaccata('documento');
+    // Il modulo prestato al tab «Scheda» della trascrizione torna a casa prima di ogni cambio
+    // di vista; con modifiche in sospeso prima si salvano, poi si riprova.
+    if (tab !== 'trascrizione' && window.moduloInTrascrizione && window.moduloInTrascrizione() && !window.riponiModuloSePulito()) {
+        window.lasciaSchedaTrascrizione().then((ok) => { if (ok) switchTab(tab); });
+        return;
+    }
     const vAdd = document.getElementById('view-add');
     if (!vAdd.classList.contains('hidden-tab') && window.isFormDirty && tab !== 'add') {
         window.pendingTabSwitch = tab;

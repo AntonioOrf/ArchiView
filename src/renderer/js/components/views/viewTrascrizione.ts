@@ -38,6 +38,24 @@
         <div id="trascrizione-container" class="flex-1 flex flex-col lg:flex-row gap-2 overflow-hidden relative">
             
             <div id="trascrizione-editor-panel" style="width: 50%;" class="flex flex-col bg-white shadow-xl border border-stone-200/50 rounded-sm overflow-hidden transizione-larghezza shrink-0 min-w-[250px]">
+                <!-- PIANO-SCHEDA-AFFIANCATA — «Scheda» ospita il modulo vero (#manoscritto-form),
+                     spostato qui da attachmentsLogic.ts e rimesso in #view-add all'uscita. -->
+                <div class="trasc-schede shrink-0 flex items-center justify-between gap-2 pr-2">
+                    <span id="trasc-staccata-titolo" class="solo-staccata pl-3 font-semibold truncate" translate="no"></span>
+                    <div role="tablist" class="flex" data-i18n-aria-label="trasc_tabs">
+                        <button id="tab-trasc-testo" type="button" role="tab" aria-selected="true" aria-controls="trasc-pannello-testo" data-on-click="mostraSchedaTrascrizione" data-args-click="[&quot;testo&quot;]" class="trasc-tab">
+                            <i data-lucide="type" class="w-4 h-4"></i> <span data-i18n="trasc_tab_text">Testo</span></button>
+                        <button id="tab-trasc-scheda" type="button" role="tab" aria-selected="false" aria-controls="trasc-pannello-scheda" aria-keyshortcuts="Control+Shift+S" data-shortcut="Ctrl+Shift+S" data-on-click="mostraSchedaTrascrizione" data-args-click="[&quot;scheda&quot;]" class="trasc-tab" data-i18n-title="trasc_tab_record_title">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> <span data-i18n="trasc_tab_record">Scheda</span></button>
+                    </div>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span id="trasc-scheda-stato" class="text-xs truncate" role="status" aria-live="polite"></span>
+                        <!-- Fase 4 — finestra staccata (logic/finestraStaccata.ts). -->
+                        <button type="button" id="btn-stacca-scheda" data-on-click="staccaScheda" class="solo-principale btn btn-ghost btn-icon" data-i18n-title="detach_button" data-i18n-aria-label="detach_button" title="Stacca in una finestra"><i data-lucide="external-link" class="w-4 h-4"></i></button>
+                        <button type="button" data-on-click="riagganciaFinestra" class="solo-staccata btn btn-secondary text-sm" data-i18n="detach_reattach">Riaggancia</button>
+                    </div>
+                </div>
+                <div id="trasc-pannello-testo" role="tabpanel" aria-labelledby="tab-trasc-testo" class="flex-1 flex flex-col min-h-0">
                 <div id="trascrizione-toolbar" class="bg-stone-100 border-b border-stone-200 p-2 flex flex-wrap gap-2 items-center">
                     <button data-on-mousedown="nonRubareFuoco" data-cmd="bold" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;bold&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_bold" data-i18n-aria-label="tooltip_bold"><i data-lucide="bold" class="w-4 h-4"></i></button>
                     <button data-on-mousedown="nonRubareFuoco" data-cmd="italic" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;italic&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_italic" data-i18n-aria-label="tooltip_italic"><i data-lucide="italic" class="w-4 h-4"></i></button>
@@ -77,9 +95,16 @@
                 <div class="trasc-editor-area flex-1 overflow-y-auto cursor-text p-6 bg-white" data-on-click="fuocoEditorDaSfondo">
                     <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none leading-relaxed text-stone-800 select-text"></div>
                 </div>
+                </div>
+                <div id="trasc-pannello-scheda" role="tabpanel" aria-labelledby="tab-trasc-scheda" class="hidden-tab flex-1 min-h-0 overflow-y-auto p-3">
+                    <div id="trasc-scheda-staccata" class="hidden-tab riquadro-info p-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+                        <span data-i18n="detach_record_elsewhere">La scheda è aperta in un'altra finestra.</span>
+                        <button type="button" data-on-click="riportaSchedaQui" class="btn btn-secondary" data-i18n="detach_bring_back">Riporta qui</button>
+                    </div>
+                </div>
             </div>
 
-            <div id="trascrizione-resizer" class="lg:flex w-2 cursor-col-resize bg-stone-200 hover:bg-amber-400 active:bg-amber-500 border border-stone-300 rounded-sm items-center justify-center group transition-colors hidden z-10 shrink-0" data-i18n-title="tooltip_resize" title="Trascina per ridimensionare">
+            <div id="trascrizione-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="trascrizione-editor-panel" class="separatore-colonne lg:flex w-2 cursor-col-resize bg-stone-200 hover:bg-amber-400 active:bg-amber-500 border border-stone-300 rounded-sm items-center justify-center group transition-colors hidden z-10 shrink-0" data-i18n-title="tooltip_resize" data-i18n-aria-label="tooltip_resize" title="Trascina per ridimensionare">
                 <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 group-hover:text-white pointer-events-none"></i>
             </div>
 

@@ -793,6 +793,71 @@ window.applicaScorciatoieTooltip = function() {
 };
 
 /**
+ * Proporzione di un separatore fra due colonne, in % della colonna di sinistra: limiti 25–75,
+ * e vicino a 1/3, 1/2, 2/3 si aggancia (PIANO-SCHEDA-AFFIANCATA, Fase 3). `aggancia` false: la
+ * tastiera, che va a passi esatti e altrimenti non uscirebbe mai da un aggancio.
+ */
+window.proporzioneSeparatore = function(pct, aggancia = true) {
+    const n = Number(pct);
+    let p = Math.min(75, Math.max(25, Number.isFinite(n) ? n : 50));
+    if (aggancia) for (const s of [100 / 3, 50, 200 / 3]) if (Math.abs(p - s) < 2) p = s;
+    return p;
+};
+
+/**
+ * Separatore trascinabile, anche da tastiera (←/→ di 2 punti) e col doppio clic (metà).
+ * `attuale()` dà la % corrente, `daPuntatore(x)` converte un clientX, `applica(p)` ridisegna,
+ * `fine(p)` ricorda. Durante il trascinamento `data-percento` porta «52 % · 48 %».
+ */
+window.attivaSeparatore = function(sep, { attuale, daPuntatore, applica, fine }) {
+    const imposta = (valore, ricorda, aggancia = true) => {
+        const p = window.proporzioneSeparatore(valore, aggancia);
+        sep.setAttribute('aria-valuenow', String(Math.round(p)));
+        sep.dataset.percento = `${Math.round(p)} % · ${Math.round(100 - p)} %`;
+        applica(p);
+        if (ricorda) fine(p);
+    };
+    sep.setAttribute('aria-valuemin', '25');
+    sep.setAttribute('aria-valuemax', '75');
+    sep.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        sep.setPointerCapture(e.pointerId);
+        sep.classList.add('is-trascina');
+        document.body.style.cursor = 'col-resize';
+    });
+    sep.addEventListener('pointermove', (e) => {
+        if (sep.hasPointerCapture(e.pointerId)) imposta(daPuntatore(e.clientX), false);
+    });
+    const lascia = (e) => {
+        if (!sep.hasPointerCapture(e.pointerId)) return;
+        sep.releasePointerCapture(e.pointerId);
+        sep.classList.remove('is-trascina');
+        document.body.style.cursor = '';
+        fine(attuale());
+    };
+    sep.addEventListener('pointerup', lascia);
+    sep.addEventListener('pointercancel', lascia);
+    sep.addEventListener('dblclick', () => imposta(50, true));
+    sep.addEventListener('keydown', (e) => {
+        const passo = e.key === 'ArrowLeft' ? -2 : (e.key === 'ArrowRight' ? 2 : 0);
+        if (!passo) return;
+        e.preventDefault();
+        imposta(attuale() + passo, true, false);
+    });
+    return imposta;
+};
+
+/** localStorage per le preferenze di comodo: può lanciare (storage disabilitato) e non è grave. */
+window.prefLocale = function(chiave, valore?) {
+    try {
+        if (valore === undefined) return localStorage.getItem(chiave);
+        localStorage.setItem(chiave, String(valore));
+    } catch (e) { /* solo comodità */ }
+    return null;
+};
+
+/**
  * Naviga a una cartella dall'esterno dell'albero (breadcrumb, link vari):
  * azzera i filtri globali, altrimenti la griglia continuerebbe a ignorare la cartella.
  */

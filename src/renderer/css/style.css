@@ -2821,6 +2821,48 @@ label:has(> input[type="radio"]) {
 .testo-pericolo { color: var(--color-danger-text); }
 .testo-accento { color: var(--color-primary-hover); }
 
+/* Trascrizione: tab «Testo» / «Scheda» (PIANO-SCHEDA-AFFIANCATA). */
+.trasc-schede { background-color: var(--color-bg-sidebar); border-bottom: 1px solid var(--color-border-light); }
+.trasc-tab { display: inline-flex; align-items: center; gap: 0.375rem; height: 2.5rem; padding: 0 1rem; font-size: 0.875rem; font-weight: 600; color: var(--color-text-muted); background: transparent; border-bottom: 3px solid transparent; cursor: pointer; }
+.trasc-tab:hover { color: var(--color-text-main); background-color: var(--color-bg-hover); }
+.trasc-tab[aria-selected="true"] { color: var(--color-primary-hover); border-bottom-color: var(--color-primary); }
+.trasc-tab:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+/* Separatori fra colonne (attivaSeparatore, utils.ts): fuoco visibile e percentuale mentre si trascina. */
+.separatore-colonne { position: relative; touch-action: none; }
+.separatore-colonne:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.separatore-colonne.is-trascina::after { content: attr(data-percento); position: absolute; top: 0.75rem; left: 50%; transform: translateX(-50%); z-index: 20; padding: 0.25rem 0.5rem; white-space: nowrap; pointer-events: none; font: 600 12px system-ui, sans-serif; color: var(--color-bg-panel); background-color: var(--color-text-main); }
+
+/* Documento accanto al modulo della scheda (documentoScheda.ts). Fisso a destra dell'area
+   principale; #view-add gli fa posto con margin-right. Sparisce con la vista. */
+#view-add.con-documento { max-width: none; margin-left: 0; padding-left: 1rem; padding-right: 1rem; }
+#view-add.hidden-tab + .doc-scheda { display: none !important; }
+.doc-scheda { position: fixed; right: 0; z-index: 30; display: flex; background-color: var(--color-bg-panel); border-left: 1px solid var(--color-border-light); }
+.doc-scheda-sep { width: 1.5rem; /* WCAG 2.5.8: bersaglio da 24px */ flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: col-resize; color: var(--color-text-muted); background-color: var(--color-bg-hover); }
+.doc-scheda-sep:hover, .doc-scheda-sep.is-trascina { background-color: var(--color-primary-light); }
+.doc-scheda-corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.doc-scheda-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.375rem 0.5rem; font-size: 0.8125rem; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border-light); background-color: var(--color-bg-sidebar); }
+.doc-scheda-vista { display: inline-flex; }
+.doc-scheda-vista button { height: 1.875rem; padding: 0 0.75rem; font-size: 0.8125rem; font-weight: 600; color: var(--color-text-secondary); background-color: var(--color-bg-panel); border: 1px solid var(--color-border-input); cursor: pointer; }
+.doc-scheda-vista button + button { margin-left: -1px; }
+.doc-scheda-vista button[aria-pressed="true"] { color: var(--color-on-primary); background-color: var(--color-primary); border-color: var(--color-primary); }
+.doc-scheda-vista button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; position: relative; }
+.doc-scheda-viewport { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+/* Finestra staccata (logic/finestraStaccata.ts). `solo-*` sceglie i pulsanti di ciascuna finestra. */
+html.finestra-staccata .solo-principale, html.senza-finestre .solo-principale, html:not(.finestra-staccata) .solo-staccata { display: none !important; }
+html.finestra-staccata-scheda .trasc-intestazione,
+html.finestra-staccata-scheda .trasc-schede [role="tablist"],
+html.finestra-staccata-scheda #trascrizione-resizer,
+html.finestra-staccata-scheda #trascrizione-allegato-panel { display: none !important; }
+html.finestra-staccata-scheda #trascrizione-editor-panel { width: 100% !important; }
+html.finestra-staccata-scheda #view-trascrizione { padding: 0.5rem; }
+html.finestra-staccata-documento body #doc-scheda.doc-scheda { display: flex !important; top: 0 !important; left: 0; bottom: 0; width: auto !important; height: auto !important; border-left: 0; }
+html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documento #doc-scheda-chiudi { display: none !important; }
+/* Fase 5 — dove rilasciare la finestra staccata per riagganciarla. */
+.zona-riaggancio { position: fixed; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none; border: 3px dashed var(--color-primary); background-color: var(--color-primary-light); }
+.zona-riaggancio span { padding: 0.5rem 1rem; font: 700 1.25rem Georgia, serif; color: var(--color-primary-hover); background-color: var(--color-bg-panel); }
+.doc-scheda-testo { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1.5rem; font-family: Georgia, serif; color: var(--color-text-main); }
+
 /* Import da ZIP (importZipModal.ts): avanzamento ed esito, tre stati nello stesso modale. */
 .iz-finestra { max-width: 460px; padding: 28px; gap: 20px; color: var(--color-text-main); border: 1px solid var(--color-border-light); }
 .iz-finestra [hidden] { display: none !important; }
