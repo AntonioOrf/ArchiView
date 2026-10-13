@@ -97,6 +97,7 @@ Le stringhe facoltative vengono ripulite dagli spazi esterni; vuote equivalgono 
 | `modalita` | sì | `documento` (ML Kit: bordi, prospettiva) · `grezza` (nessuna correzione) · `raffica` |
 | `larghezza`, `altezza` | no | interi in pixel, da 1 a 30 000 |
 | `etichetta` | no | stringa ≤ 32 caratteri, es. `12v` |
+| `nota` | no | stringa ≤ 500 caratteri, es. `rifilata in basso`: sul desktop finisce nel campo Note della scheda come `1v: rifilata in basso` (`p. 3` senza etichetta), dopo la nota del lotto |
 | `doppia` | no | `{ "lato": "sx" \| "dx" }`: metà di una pagina doppia divisa sulla piega |
 
 ### 2.2 Destinazione
@@ -234,6 +235,11 @@ e, se quel database è più recente dell'elenco pubblicato, ne ricava le schede 
 `titolo` è la riga secondaria della sidebar del desktop in modo automatico: il primo valore
 non vuoto fra `dichiarante`, `Notaio`, `autore`, `attori_dinamici`, `titolo`.
 
+`daVedere` (facoltativa, booleana; `true` o assente): la scheda ha fra i tag `da vedere` o
+`da consultare` (senza maiuscole né spazi ai bordi, `ScannerLotto.daVedere`). Il telefono la
+mostra nel filtro «Da vedere». Lo calcolano allo stesso modo l'elenco pubblicato e quello ricavato
+dal database. Codice: `da_vedere_non_valido`.
+
 Codici: `archivio_non_valido` · `schede_non_valide` · `scheda_non_valida` ·
 `scheda_id_non_valido` · `cartelle_non_valide` · `cartella_non_valida` (più quelli comuni del §3).
 
@@ -255,3 +261,4 @@ Codici: `archivio_non_valido` · `schede_non_valide` · `scheda_non_valida` ·
 | 1 | 2026-10-09 | Aggiunti il registro dei lotti assegnati (§4.1) e l'elenco delle schede (§4.3): file nuovi, il lotto non cambia. |
 | 1 | 2026-10-11 | Chiavi facoltative `archivio`, `archivioNuovo`, `destinazione.schedaId` (§2.5); elenco delle schede per archivio in `archivi/` (§4.3) al posto del file unico. |
 | 1 | 2026-10-11 | Elenco delle schede (§4.3): chiavi facoltative `titolo` per scheda e `cartelle` (anche vuote). |
+| 1 | 2026-10-12 | Chiave facoltativa `nota` della pagina (§2.1); elenco delle schede: chiave facoltativa `daVedere` (§4.3). |

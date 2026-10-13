@@ -28,7 +28,7 @@ function png(): Buffer {
   ]);
 }
 
-function lottoInArrivo(ws: string, id: string, titolo: string, etichette: string[], destinazione: any = { tipo: 'nessuna' }, extra: any = {}) {
+function lottoInArrivo(ws: string, id: string, titolo: string, etichette: string[], destinazione: any = { tipo: 'nessuna' }, extra: any = {}, note: string[] = []) {
   const dir = path.join(ws, '.archiview', 'scanner', 'arrivo', id);
   fs.mkdirSync(dir, { recursive: true });
   const b = png();
@@ -36,7 +36,7 @@ function lottoInArrivo(ws: string, id: string, titolo: string, etichette: string
   const pagine = etichette.map((etichetta, i) => {
     const file = `p000${i + 1}.png`;
     fs.writeFileSync(path.join(dir, file), b);
-    return { file, sha256: sha, byte: b.length, modalita: 'documento', etichetta };
+    return { file, sha256: sha, byte: b.length, modalita: 'documento', etichetta, ...(note[i] ? { nota: note[i] } : {}) };
   });
   fs.writeFileSync(path.join(dir, 'lotto.json'), JSON.stringify({
     formato: 'archiview-scanner/lotto', versione: 1, id, creatoIl: '2026-10-09T10:00:00+02:00',
@@ -48,7 +48,7 @@ function lottoInArrivo(ws: string, id: string, titolo: string, etichette: string
 test.describe('Scanner — scansioni in arrivo', () => {
   test('un lotto diventa una scheda nuova, un altro si aggiunge alla scheda selezionata', async ({ page, userDataDir }) => {
     const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Scanner');
-    const primo = lottoInArrivo(ws, '20261009-100000-aaaa', 'Reg. <img src=x onerror=alert(1)>', ['1r', '1v']);
+    const primo = lottoInArrivo(ws, '20261009-100000-aaaa', 'Reg. <img src=x onerror=alert(1)>', ['1r', '1v'], undefined, {}, ['', 'rifilata']);
 
     await page.locator('#btn-scansioni').click();
     const modal = page.locator('#scanner-modal');
@@ -64,7 +64,8 @@ test.describe('Scanner — scansioni in arrivo', () => {
     await lotto.getByRole('button', { name: 'Nuova scheda' }).click();
     await expect(modal).toBeHidden();   // si apre la scheda nuova da completare
     const nuova = await page.evaluate(() => appData.manoscritti.find((m: any) => (m.segnatura || '').startsWith('Reg.')));
-    expect(nuova.note).toBe('legatura fragile');
+    // Le note del telefono (lotto e pagine) finiscono nel campo Note.
+    expect(nuova.note).toBe('legatura fragile\n\n1v: rifilata');
     expect(nuova.allegati.map((a: any) => a.originalName)).toEqual(['1r', '1v']);
     expect(fs.existsSync(primo)).toBe(false);
     const fileCarta = await page.evaluate((nome: string) => (window as any).apiBrowser.getAllegatoPath(nome), nuova.allegati[0].nome);
@@ -73,7 +74,7 @@ test.describe('Scanner — scansioni in arrivo', () => {
 
     // Secondo lotto, alla scheda appena creata (selezionata nell'elenco), come PDF unico:
     // l'opzione ora è in Impostazioni → Documenti (Fase 12), non più su ogni lotto.
-    lottoInArrivo(ws, '20261009-110000-bbbb', 'Reg. 13', ['2r', '2v', '3r']);
+    lottoInArrivo(ws, '20261009-110000-bbbb', 'Reg. 13', ['2r', '2v', ''], undefined, { nota: 'cucitura rotta' }, ['', '', 'macchia']);
     await page.evaluate(async (id: string) => {
       (window as any).selectedRecords = [id];
       await (window as any).apiSettings.patch({ scannerPdf: true });
@@ -86,6 +87,8 @@ test.describe('Scanner — scansioni in arrivo', () => {
     await expect(modal.locator('.scan-lotto')).toHaveCount(0);
     const dopo = await page.evaluate((id: string) => appData.manoscritti.find((m: any) => m.id === id), nuova.id);
     expect(dopo.allegati.map((a: any) => a.tipo)).toEqual(['immagine', 'immagine', 'pdf']);
+    // Scheda esistente, anche come PDF: le note si accodano; pagina senza etichetta = «p. N».
+    expect(dopo.note).toBe('legatura fragile\n\n1v: rifilata\n\ncucitura rotta\n\np. 3: macchia');
     // Il registro impedisce che il lotto torni con la prossima ricezione.
     expect(fs.existsSync(path.join(ws, '.archiview', 'scanner', 'assegnati', '20261009-110000-bbbb'))).toBe(true);
   });

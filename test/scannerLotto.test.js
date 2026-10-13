@@ -91,6 +91,15 @@ assert.deepStrictEqual(codici(L.valida(lotto({ pagine: {} }))), ['pagine_non_val
     'byte_non_validi@pagine[10].byte'
   ]);
 }
+
+// 7b. Nota della pagina (F8 dello scanner): ripulita, vuota = assente, oltre 500 rifiutata
+{
+  const pg = (x) => ({ file: 'p0001.jpg', sha256: SHA, byte: 10, modalita: 'documento', ...x });
+  assert.strictEqual(L.valida(lotto({ pagine: [pg({ nota: '  rifilata  ' })] })).lotto.pagine[0].nota, 'rifilata');
+  assert.strictEqual('nota' in L.valida(lotto({ pagine: [pg({ nota: '   ' })] })).lotto.pagine[0], false);
+  assert.deepStrictEqual(codici(L.valida(lotto({ pagine: [pg({ nota: 'x'.repeat(501) })] }))), ['testo_non_valido@pagine[0].nota']);
+  assert.deepStrictEqual(codici(L.valida(lotto({ pagine: [pg({ nota: 5 })] }))), ['testo_non_valido@pagine[0].nota']);
+}
 {
   const molte = Array.from({ length: 2001 }, (_, i) => ({ file: L.nomePagina(i + 1), sha256: SHA, byte: 1, modalita: 'documento' }));
   assert.deepStrictEqual(codici(L.valida(lotto({ pagine: molte }))), ['troppe_pagine@pagine']);
@@ -166,6 +175,18 @@ assert.deepStrictEqual(codici(L.validaConfig(cfg({ formato: 'x' }))), ['formato_
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ archivio: '', aggiornatoIl: 'ieri' }))), ['archivio_non_valido@archivio', 'data_non_valida@aggiornatoIl']);
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: [{ id: '' }, 5] }))), ['scheda_id_non_valido@schede[0].id', 'scheda_non_valida@schede[1]']);
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: 'x' }))), ['schede_non_valide@schede']);
+
+// 12b. Schede «da vedere» (F9 dello scanner): chiave facoltativa, solo `true` resta
+{
+  const e = L.validaConfig(cfg({ schede: [{ id: 'a1', daVedere: true }, { id: 'a2', daVedere: false }] }));
+  assert.deepStrictEqual(e.config.schede.map(s => s.daVedere), [true, undefined]);
+  assert.strictEqual('daVedere' in e.config.schede[1], false);
+  assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: [{ id: 'a1', daVedere: 'si' }] }))), ['da_vedere_non_valido@schede[0].daVedere']);
+  assert.strictEqual(L.daVedere('fondo, Da Vedere ,altro'), true);
+  assert.strictEqual(L.daVedere(['da consultare']), true);
+  assert.strictEqual(L.daVedere('vedere, da vedere dopo'), false);
+  assert.strictEqual(L.daVedere(undefined), false);
+}
 
 // 13. Archivio e scheda nuova scelti sul telefono (§2.5, chiavi facoltative)
 {

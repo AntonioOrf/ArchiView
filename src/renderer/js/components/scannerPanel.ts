@@ -229,7 +229,8 @@ window.riceviScansioni = async function() {
         // non deve tenere il pannello "occupato" (i pulsanti dei lotti non risponderebbero).
         // Il titolo è testo libero: accorciato ai 500 caratteri di CONTRATTO §4.3, o il main rifiuterebbe l'elenco intero.
         const titolo = m => String((typeof window.titoloScheda === 'function' && window.titoloScheda(m)) || '').slice(0, 500);
-        const schede = appData.manoscritti.map(m => ({ id: String(m.id), segnatura: String(m.segnatura || ''), cartella: String(m.cartella || ''), titolo: titolo(m) }));
+        // `tags`: il main ne ricava `daVedere` (F9 dello scanner, CONTRATTO §4.3) e non li pubblica.
+        const schede = appData.manoscritti.map(m => ({ id: String(m.id), segnatura: String(m.segnatura || ''), cartella: String(m.cartella || ''), titolo: titolo(m), tags: m.tags }));
         window.apiScanner.pubblicaSchede(schede, (appData.cartelle || []).filter(c => typeof c === 'string' && c && c.length <= 500))
             .then(p => { if (!p || !p.success) console.warn('[scanner] elenco schede non pubblicato:', p && p.error); })
             .catch(e => console.warn('[scanner] elenco schede non pubblicato:', e));
@@ -428,6 +429,7 @@ function _scScheda(lotto) {
  * telefono (stesso `schedaId`) si aggiunge alla scheda creata dal primo.
  */
 async function _scApplica(lotto, id, comePdf, datiNuova) {
+    const notePagine = _scNotePagine(lotto);
     const r = await window.apiScanner.assegna(lotto.id, id, { pdf: !!comePdf });
     if (!r || !r.success) throw new Error(r && r.error);
 
@@ -443,6 +445,7 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
         if (!datiNuova) throw new Error('scheda_non_trovata');
         appData.manoscritti.push(window.Model.creaScheda(Object.assign({}, datiNuova, {
             id,
+            note: _scUnisciNote(datiNuova.note, notePagine),
             allegati: r.allegati,
             allegato: r.allegati[0].nome,
             allegatoTipo: r.allegati[0].tipo,
@@ -458,6 +461,8 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
             vivo.allegati.push({ nome: vivo.allegato, tipo: vivo.allegatoTipo, originalName: 'Allegato' });
         }
         vivo.allegati.push(...r.allegati);
+        const note = _scUnisciNote(vivo.note, lotto.nota, notePagine);
+        if (note !== (vivo.note || '')) vivo.note = note;
         if (!vivo.allegato) {
             vivo.allegato = r.allegati[0].nome;
             vivo.allegatoTipo = r.allegati[0].tipo;
@@ -472,6 +477,16 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
     if (!t || !t.success) console.warn('[scanner] lotto assegnato ma rimasto in arrivo:', lotto.id, t && t.error);
     _scSegnaImportate(id, lotto.pagine.length, !vivo);
     return { allegati: r.allegati, creata: !vivo };
+}
+
+/** Note delle pagine (CONTRATTO §2.1) per il campo Note: una riga per pagina, `1v: testo` (`p. 3` senza etichetta). */
+function _scNotePagine(lotto) {
+    return lotto.pagine.map((pg, i) => pg.nota ? `${pg.etichetta || 'p. ' + (i + 1)}: ${pg.nota}` : '').filter(Boolean).join('\n');
+}
+
+/** Testi non vuoti separati da una riga vuota. */
+function _scUnisciNote(...testi) {
+    return testi.filter(t => t && String(t).trim()).join('\n\n');
 }
 
 /** La scheda nuova compilata sul telefono: i campi, poi segnatura e note con il ripiego sul lotto. */

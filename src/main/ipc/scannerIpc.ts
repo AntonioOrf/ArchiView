@@ -112,6 +112,7 @@ function setupScannerIpc() {
   // L'elenco lo compone il renderer (possiede il database); qui si aggiungono archivio e data,
   // si valida con il contratto e si carica. Nessun percorso, solo id/segnatura/cartella/titolo
   // e le cartelle dell'archivio.
+  // F9: dai `tags` di ogni scheda solo `daVedere`; il validatore toglie poi i tag (chiave ignota).
   gestisci('scanner-pubblica-schede', async (schede: unknown, cartelle: unknown) => {
     const archivio = nomeArchivio();
     const esito = ScannerLotto.validaConfig({
@@ -119,7 +120,7 @@ function setupScannerIpc() {
       versione: ScannerLotto.VERSIONE,
       archivio,
       aggiornatoIl: new Date().toISOString(),
-      schede,
+      schede: Array.isArray(schede) ? schede.map((s: any) => (s && typeof s === 'object' && ScannerLotto.daVedere(s.tags) ? { ...s, daVedere: true } : s)) : schede,
       cartelle
     });
     if (!esito.ok) throw new Error('elenco_non_valido');

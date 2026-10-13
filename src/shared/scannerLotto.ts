@@ -54,6 +54,7 @@ const AVSL_LIMITI = {
   nota: 2000,
   dispositivo: 100,
   etichetta: 32,
+  notaPagina: 500,
   schedaId: 200,
   archivio: 200,
   tipoDocumento: 200,
@@ -70,6 +71,7 @@ type AvslPagina = {
   larghezza?: number;
   altezza?: number;
   etichetta?: string;
+  nota?: string;
   doppia?: { lato: 'sx' | 'dx' };
 };
 
@@ -215,6 +217,7 @@ function avslPagina(x: any, i: number, visti: Set<string>, errori: AvslErrore[])
     if (x[lato] !== undefined && !avslIntero(x[lato], 1, AVSL_LIMITI.lato)) errori.push({ codice: 'dimensione_non_valida', percorso: p + '.' + lato });
   }
   const etichetta = avslTesto(x.etichetta, AVSL_LIMITI.etichetta, p + '.etichetta', errori);
+  const nota = avslTesto(x.nota, AVSL_LIMITI.notaPagina, p + '.nota', errori);
   if (x.doppia !== undefined && !(avslOggetto(x.doppia) && AVSL_LATI.indexOf(x.doppia.lato) !== -1)) {
     errori.push({ codice: 'doppia_non_valida', percorso: p + '.doppia' });
   }
@@ -224,6 +227,7 @@ function avslPagina(x: any, i: number, visti: Set<string>, errori: AvslErrore[])
   if (x.larghezza !== undefined) out.larghezza = x.larghezza;
   if (x.altezza !== undefined) out.altezza = x.altezza;
   if (etichetta !== undefined) out.etichetta = etichetta;
+  if (nota !== undefined) out.nota = nota;
   if (x.doppia !== undefined) out.doppia = { lato: x.doppia.lato };
   return out;
 }
@@ -290,12 +294,22 @@ type AvslConfig = {
   versione: number;
   archivio: string;
   aggiornatoIl: string;
-  schede: { id: string; segnatura: string; cartella: string; titolo: string }[];
+  /** `daVedere`: la scheda ha il tag «da vedere» (o «da consultare») sul desktop; assente = no. */
+  schede: { id: string; segnatura: string; cartella: string; titolo: string; daVedere?: true }[];
   /** Tutte le cartelle dell'archivio, anche vuote (§4.3): assenti = []. */
   cartelle: string[];
 };
 
 type AvslEsitoConfig = { ok: true; config: AvslConfig } | { ok: false; errori: AvslErrore[] };
+
+/** Tag che segnano una scheda da vedere in archivio (§4.3), confrontati senza maiuscole né spazi ai bordi. */
+const AVSL_TAG_DA_VEDERE = ['da vedere', 'da consultare'];
+
+/** true se i tag della scheda (`tags` del database: stringa CSV, o elenco) contengono «da vedere». */
+function avslDaVedere(tags: any): boolean {
+  const elenco = Array.isArray(tags) ? tags : typeof tags === 'string' ? tags.split(',') : [];
+  return elenco.some((t: any) => typeof t === 'string' && AVSL_TAG_DA_VEDERE.indexOf(t.trim().toLowerCase()) !== -1);
+}
 
 function avslValidaConfig(json: any): AvslEsitoConfig {
   const errori: AvslErrore[] = [];
@@ -315,7 +329,8 @@ function avslValidaConfig(json: any): AvslEsitoConfig {
       const segnatura = avslTesto(s.segnatura, AVSL_LIMITI_CONFIG.segnatura, p + '.segnatura', errori) || '';
       const cartella = avslTesto(s.cartella, AVSL_LIMITI_CONFIG.cartella, p + '.cartella', errori) || '';
       const titolo = avslTesto(s.titolo, AVSL_LIMITI_CONFIG.titolo, p + '.titolo', errori) || '';
-      if (id) schede.push({ id, segnatura, cartella, titolo });
+      if (s.daVedere !== undefined && typeof s.daVedere !== 'boolean') errori.push({ codice: 'da_vedere_non_valido', percorso: p + '.daVedere' });
+      if (id) schede.push(s.daVedere === true ? { id, segnatura, cartella, titolo, daVedere: true } : { id, segnatura, cartella, titolo });
     });
   }
   const cartelle: string[] = [];
@@ -345,6 +360,7 @@ const ArchiViewScannerLotto = {
   /** Cartella degli elenchi di schede, uno per archivio: `archivi/<archivio>.json` (§4.3). */
   CARTELLA_ARCHIVI: 'archivi',
   validaConfig: avslValidaConfig,
+  daVedere: avslDaVedere,
   idValido: avslIdValido,
   nomeFileValido: avslNomeFileValido,
   nuovoId: avslNuovoId,
