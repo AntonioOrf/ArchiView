@@ -1,3 +1,21 @@
+## ArchiView 3.4.0 — La scheda accanto al documento
+
+Si compila la scheda guardando il documento, nella stessa finestra o in una a parte.
+
+### Novità
+
+- **Tab «Scheda» nella trascrizione**: accanto a «Testo» c'è «Scheda», con il modulo completo. Si salva da solo dopo una breve pausa («Salvata alle 10:42») e Ctrl+Maiusc+S passa da un tab all'altro. Il testo che si sta trascrivendo non viene mai sovrascritto dal modulo.
+- **«Documento» nel modulo della scheda**: modificando una scheda con allegati, «Documento» mostra la carta a destra, con zoom, pagine e carte, e «Immagine | Trascrizione» per leggere il testo trascritto (in sola lettura, con il link all'editor).
+- **Finestra a parte**: la scheda (o il documento) si apre in una finestra sua, comoda con due monitor. «Riaggancia», la chiusura della finestra o il trascinamento sulla colonna di sinistra («Rilascia per riagganciare») la rimettono al suo posto. Le due finestre lavorano sulla stessa scheda e passando dall'una all'altra non si perde nulla.
+- **Colonne ridimensionabili**: si trascina la barra, si usano le frecce ← → o il doppio clic per tornare a metà. Si aggancia a 1/3, 1/2 e 2/3, e la proporzione si ricorda separatamente per «Testo» e «Scheda».
+- **Import da ZIP con avanzamento**: importando un archivio ZIP si vede il file N di M, poi quante schede, cartelle e allegati sono entrati; gli errori (spazio su disco, archivio non valido) sono spiegati, con «Riprova».
+
+### Correzioni
+
+- Salvare una scheda non rischia più di sovrascrivere trascrizioni, stato delle carte o regioni scritti nel frattempo: gli allegati del modulo si fondono con quelli attuali, come nella sincronizzazione.
+
+---
+
 ## ArchiView 3.3.1 — Note e buste «da vedere» con ArchiScanner 0.3.0
 
 Accompagna ArchiScanner 0.3.0, la nuova versione dell'app Android.
