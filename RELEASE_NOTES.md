@@ -1,3 +1,14 @@
+## ArchiView 3.3.1 — Note e buste «da vedere» con ArchiScanner 0.3.0
+
+Accompagna ArchiScanner 0.3.0, la nuova versione dell'app Android.
+
+### Novità
+
+- **Note dal telefono nella scheda**: la nota scritta sul telefono per una pagina («rifilata», «macchia d'umidità») arriva nel campo **Note** della scheda, una riga per pagina con l'etichetta della carta (`1v: rifilata`), anche quando le pagine si uniscono in un PDF. La nota del lotto ora si aggiunge anche a una scheda che esiste già, invece di perdersi.
+- **Buste da vedere**: le schede con il tag `da vedere` (o `da consultare`) compaiono segnate sul telefono, che le filtra con «Da vedere» per preparare la giornata d'archivio. I tag restano sul computer: al telefono arriva solo il segno.
+
+---
+
 ## ArchiView 3.3.0 — Scansioni dal telefono, trascrizione e ricerca tra archivi
 
 Le carte si fotografano col telefono e arrivano da sole nella scheda giusta. La trascrizione ha nuovi strumenti per il lavoro paleografico, si può cercare in tutti gli archivi del computer senza cambiare archivio e l'app si apre in un terzo del tempo. La sicurezza è stata rivista da cima a fondo.

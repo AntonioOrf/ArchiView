@@ -56,7 +56,8 @@ jobs:
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $tag gia' esistente: nessuna creazione."
           else
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "${tag#v}" --notes-file RELEASE_NOTES.md --verify-tag --draft
+            # Note della release su GitHub solo in inglese; RELEASE_NOTES.md (italiano) resta il changelog in-app.
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "${tag#v}" --notes-file RELEASE_NOTES.en.md --verify-tag --draft
           fi
 
       - name: Costruisci e carica gli artefatti
