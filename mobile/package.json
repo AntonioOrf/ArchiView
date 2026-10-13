@@ -46,7 +46,10 @@
     "react-native-worklets": "0.10.1"
   },
   "overrides": {
-    "@infinitered/react-native-mlkit-core": "5.0.0"
+    "@infinitered/react-native-mlkit-core": "5.0.0",
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
