@@ -61,4 +61,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" ArchiView-Scanner-*.apk \
             --prerelease --latest=false \
             --title "ArchiScanner ${GITHUB_REF_NAME#scanner-v}" \
-            --notes "App Android companion di ArchiView. APK da installare a mano (consentire le app da origini sconosciute)."
+            --notes "Android companion app of ArchiView. APK to install by hand (allow apps from unknown sources)."

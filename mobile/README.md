@@ -30,7 +30,8 @@ Flussi in `.maestro/flussi/`, uno per funzione: archivio e albero, tendina degli
 inviare, visore (etichetta, Ruota, Rifai, Ritaglia, Dividi, Elimina), pagine inviate, cartella di
 una scheda nata qui, «Senza scheda», nuova scheda con scansione e numerazione, Impostazioni,
 abbinamento Wi-Fi fino alla fotocamera, Documenti (cartelle, ricerca, rinomina, sposta, filtri,
-Condividi, scansione di documenti nuovi).
+Condividi, scansione di documenti nuovi, testo riconosciuto e correzione, unisci e separa, manda
+all'archivio), benvenuto con l'informativa, permesso della fotocamera prima dello scanner, pagina sfocata, nota della carta, filtro «Da vedere», foto libera.
 
 Una tantum: [Maestro](https://maestro.mobile.dev) in `~/.maestro`, JDK 17 in `JAVA_HOME`, un
 emulatore **Google Play** (lo scanner ML Kit sta in Play Services) o un telefono via USB.
@@ -39,9 +40,17 @@ emulatore **Google Play** (lo scanner ML Kit sta in Play Services) o un telefono
 # build di DEBUG (serve run-as), per telefono ed emulatore x86_64; poi adb install -r
 cd android && ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a,x86_64 && cd ..
 npx expo start                     # Metro; METRO_PORTA=… se non è sulla 8081
-npm run test:maestro               # tutti i flussi
+npm run test:maestro               # tutti i flussi tranne schermate e wiki
 npm run test:maestro visore        # solo quelli col nome che contiene «visore»
 ```
+
+**In parallelo**: con più emulatori accesi (e senza `ANDROID_SERIAL`) `esegui.mjs` divide i flussi
+fra loro, i più lunghi per primi secondo l'ultimo esito JUnit; con due emulatori la suite passa da
+~22 a ~11 minuti (13/10). Una AVD si apre una volta sola: per la seconda si copia
+`~/.android/avd/<avd>.avd/config.ini` in una cartella nuova (`Maestro_2.avd`) con il suo `.ini`
+accanto, si avvia con `emulator -avd Maestro_2 -port 5556` e ci si installa l'APK di debug.
+Le animazioni di sistema vanno lasciate accese: spente non fanno guadagnare tempo e alcuni tap
+vanno a vuoto.
 
 `.maestro/esegui.mjs` azzera i dati dell'app prima di ogni flusso e scrive il **seme** dichiarato
 in testa (`# seme: archivio`): archivio, schede, lotti e documenti come li scriverebbe l'app,
@@ -57,7 +66,8 @@ tolto l'account dall'app e salvato i dati (`adb exec-out run-as <pacchetto> tar 
 `20-wifi-diretto` gira solo dentro `e2e/wifi-emulatore.spec.ts` (`MAESTRO_WIFI_DESKTOP=acceso`):
 lo spec mette il QR del desktop come poster della scena virtuale della fotocamera e riavvia
 l'emulatore (i poster si leggono solo all'avvio); lanciato da solo non fa nulla.
-`19-schermate` non verifica nulla: fotografa le schermate principali, da rilanciare con
+`19-schermate` non verifica nulla e non gira nel giro completo (`npm run test:maestro schermate`):
+fotografa le schermate principali, da rilanciare con
 `settings put system font_scale 2.0` e `cmd uimode night yes`.
 `98-wiki-archivio` e `99-wiki-documenti` fanno lo stesso per la wiki (pagina «Scansionare col
 telefono»): `npm run test:maestro wiki` una volta in chiaro e una con `cmd uimode night yes`, poi
@@ -66,7 +76,9 @@ larghezza, in `ArchiView-site/docs/wiki/public/img/` (le scure col suffisso `-sc
 stato pulita: modalità demo di SystemUI (`am broadcast -a com.android.systemui.demo …`).
 
 Restano a mano: invio su Drive e via Wi-Fi (servono account e computer), lettura del QR reale,
-«Salva in Download» (selettore di cartelle di Android), accesso Google.
+«Salva in Download» (selettore di cartelle di Android), accesso Google e cambio d'account, copia e
+ripristino dei Documenti su Drive, avviso «Poco spazio», immagini condivise da altre app, riordino
+delle pagine trascinandole (Maestro non trascina dopo una pressione lunga), PDF col testo cercabile.
 
 ## Accesso Google (una volta)
 
@@ -104,8 +116,14 @@ EAS**: non rigenerarlo mai, o gli utenti dovranno disinstallare e reinstallare.
 
 ## Lingua
 
-Solo italiano, senza Lingui (decisione del 09/10): lo strumento è privato. Se servirà
-l'inglese, un dizionario come `customIt`/`customEn` del desktop, non una libreria.
+Italiano e inglese (PIANO-INGLESE-MOBILE), senza librerie: `t('testo italiano', { n })` di
+`src/lingua.ts`, dove il testo italiano è la chiave del dizionario `src/lingua.en.ts`. Lingua del
+telefono (inglese se non è italiano), oppure la scelta di Impostazioni › Lingua, salvata in
+`impostazioni.json`. La guardia `test/dizionario.test.mjs` vuole una voce inglese per ogni
+`t('…')` letterale e nessuna voce senza uso; i termini sono quelli del desktop (scheda = record,
+carta = leaf, segnatura = shelfmark). I flussi Maestro forzano l'italiano; `# lingua: en` in
+testa al flusso lo cambia (`28-inglese`). Non si traducono i dati: cartelle su Drive, nomi di
+archivi e schede, etichette delle carte. README in inglese: [README.en.md](README.en.md).
 
 ## Validatore condiviso
 
