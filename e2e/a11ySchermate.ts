@@ -112,5 +112,32 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
     },
     trascrizione('trascrizione', id),
     trascrizione('trascrizione-senza-allegati', vuota),
+    // PIANO-SCHEDA-AFFIANCATA: il modulo nel tab «Scheda» e il documento accanto al modulo.
+    {
+      nome: 'trascrizione-scheda', radice: '#view-trascrizione',
+      apri: async () => {
+        await w('apriTrascrizione', id);
+        await w('mostraSchedaTrascrizione', 'scheda');
+        await expect(page.locator('#trasc-pannello-scheda #form-segnatura')).toBeVisible();
+      },
+      chiudi: async () => {
+        await w('mostraSchedaTrascrizione', 'testo');
+        await w('confermaUscitaTrascrizione');
+        await expect(page.locator('#view-trascrizione')).toBeHidden();
+      },
+    },
+    {
+      nome: 'documento-scheda', radice: '#doc-scheda',
+      apri: async () => {
+        await w('editItem', id);
+        await w('alternaDocumentoScheda');
+        await expect(page.locator('#doc-scheda')).toBeVisible();
+      },
+      chiudi: async () => {
+        await w('alternaDocumentoScheda');
+        await w('switchTab', 'list');
+        await expect(page.locator('#doc-scheda')).toBeHidden();
+      },
+    },
   ];
 }

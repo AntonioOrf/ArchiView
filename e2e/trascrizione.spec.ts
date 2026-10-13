@@ -308,11 +308,13 @@ test.describe('Vista Trascrizione', () => {
     await page.locator('#form-segnatura').fill(segnatura);
     await page.locator('#form-allegato').setInputFiles([FIXTURE_PNG, FIXTURE_PDF]);
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
-    return page.evaluate((seg: string) => {
+    // Si aspetta il record, non il testo: «MS-STATO» compare già dentro «MS-STATO-ALTRA».
+    const idDi = () => page.evaluate((seg: string) => {
       // @ts-ignore -- `appData` è una `let` globale.
-      return appData.manoscritti.find((m: any) => m.segnatura === seg).id;
+      return appData.manoscritti.find((m: any) => m.segnatura === seg)?.id ?? null;
     }, segnatura);
+    await expect.poll(idDi, { timeout: 10_000 }).not.toBeNull();
+    return idDi();
   }
 
   async function vaiAllaCarta(page: any, segnatura: string, indice: number) {
@@ -752,5 +754,453 @@ test.describe('Trascrizione per pagina nei PDF', () => {
 
     await cerca.fill('inesistente');
     await expect(page.locator('#trasc-pdf-stato')).toHaveText(/Nessun risultato|No results/);
+  });
+});
+
+// PIANO-SCHEDA-AFFIANCATA, Fase 1 — il modulo della scheda nel tab accanto al documento.
+test.describe('Trascrizione: tab Scheda', () => {
+  test.use({ seedWorkspace: 'Trasc' });
+
+  const record = (page, id) => getAppData(page).then((d: any) => d.manoscritti.find((m: any) => m.id === id));
+
+  test('la scheda si compila guardando il documento e si salva da sola, senza perdere il testo', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-AFF-1', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+
+    // Testo scritto e non salvato: deve sopravvivere al salvataggio automatico della scheda.
+    await page.locator('#trascrizione-editor').click();
+    await page.keyboard.type('Incipit liber');
+
+    const tabScheda = page.getByRole('tab', { name: /^Scheda|^Record/ });
+    await tabScheda.click();
+    await expect(tabScheda).toHaveAttribute('aria-selected', 'true');
+    const segnatura = page.locator('#trasc-pannello-scheda #form-segnatura');
+    await expect(segnatura).toHaveValue('MS-AFF-1');
+    await expect(page.locator('#trasc-img-preview')).toBeVisible();
+
+    await segnatura.fill('MS-AFF-1bis');
+    // Invio in un campo non porta via dalla trascrizione.
+    await segnatura.press('Enter');
+    await expect(page.locator('#trasc-scheda-stato')).toHaveText(/Salvata alle|Saved at/);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    const salvato = await record(page, id);
+    expect(salvato.segnatura).toBe('MS-AFF-1bis');
+    expect(salvato.allegati[0].trascrizione).toContain('Incipit liber');
+    expect(salvato.trascrizione).toContain('Incipit liber');
+
+    await page.getByRole('tab', { name: /^Testo|^Text/ }).click();
+    await expect(page.locator('#trascrizione-editor')).toContainText('Incipit liber');
+    // Il modulo è tornato nella sua vista.
+    await expect(page.locator('#view-add #manoscritto-form')).toHaveCount(1);
+  });
+
+  test('Ctrl+Maiusc+S alterna i tab, il tab si ricorda e uscendo la modifica in sospeso si salva', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-AFF-2', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+
+    await page.locator('#trascrizione-editor').click();
+    await page.keyboard.press('Control+Shift+S');
+    const segnatura = page.locator('#trasc-pannello-scheda #form-segnatura');
+    await expect(segnatura).toBeVisible();
+
+    // Si esce subito, prima della pausa del salvataggio automatico.
+    await segnatura.fill('MS-AFF-2bis');
+    await page.locator('#btn-back-to-list-trasc').click();
+    await expect(page.locator('#view-list')).toBeVisible();
+    await expect.poll(async () => (await record(page, id)).segnatura).toBe('MS-AFF-2bis');
+    await expect(page.locator('#view-add #manoscritto-form')).toHaveCount(1);
+
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.getByRole('tab', { name: /^Scheda|^Record/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(segnatura).toHaveValue('MS-AFF-2bis');
+    await page.keyboard.press('Control+Shift+S');
+    await expect(page.locator('#trascrizione-editor')).toBeVisible();
+    await expect(segnatura).toHaveCount(0);
+  });
+
+  // Fase 3 — separatore con mouse vero, tastiera e doppio clic; la proporzione è per tab.
+  test('il separatore si trascina, si aggancia, si regola da tastiera e ricorda la proporzione per tab', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-AFF-3', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+
+    const sep = page.locator('#trascrizione-resizer');
+    const contenitore = (await page.locator('#trascrizione-container').boundingBox())!;
+    const quota = async () => {
+      const ed = (await page.locator('#trascrizione-editor-panel').boundingBox())!;
+      return (ed.width / contenitore.width) * 100;
+    };
+    const trascina = async (pct: number) => {
+      const s = (await sep.boundingBox())!;
+      await page.mouse.move(s.x + s.width / 2, s.y + s.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(contenitore.x + (contenitore.width * pct) / 100, s.y + s.height / 2, { steps: 8 });
+      await page.mouse.up();
+    };
+
+    await trascina(10);
+    expect(await quota()).toBeCloseTo(25, 0);
+    await trascina(34.5);
+    expect(await quota()).toBeCloseTo(100 / 3, 0);
+    await sep.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(sep).toHaveAttribute('aria-valuenow', '35');
+    await sep.dblclick();
+    await expect(sep).toHaveAttribute('aria-valuenow', '50');
+    // Il doppio clic anima la larghezza: si trascina solo a separatore fermo.
+    await expect.poll(quota).toBeCloseTo(50, 0);
+    await trascina(40);
+
+    // Il tab «Scheda» ha la sua proporzione: metà finché non la si cambia.
+    await page.getByRole('tab', { name: /^Scheda|^Record/ }).click();
+    await expect.poll(quota).toBeCloseTo(50, 0);
+    await trascina(65);
+    await page.getByRole('tab', { name: /^Testo|^Text/ }).click();
+    await expect.poll(quota).toBeCloseTo(40, 0);
+    await page.getByRole('tab', { name: /^Scheda|^Record/ }).click();
+    await expect.poll(quota).toBeCloseTo(200 / 3, 0);
+  });
+});
+
+// PIANO-SCHEDA-AFFIANCATA, Fase 2 — dal modulo della scheda, il documento accanto.
+test.describe('Modulo della scheda: documento accanto', () => {
+  test.use({ seedWorkspace: 'Trasc' });
+
+  test('Documento mostra la carta accanto al modulo, la trascrizione in sola lettura, e si ricorda', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-DOC-1', FIXTURE_PNG);
+
+    // Su una scheda nuova il pulsante non c'è: non ci sono carte salvate da mostrare.
+    await page.locator('#btn-tab-add').click();
+    await expect(page.locator('#btn-documento-scheda')).toBeHidden();
+    await page.locator('#btn-cancel-edit, #btn-back-to-list').first().click();
+
+    await page.evaluate((recId) => (window as any).editItem(recId), id);
+    const pulsante = page.getByRole('button', { name: /^Documento|^Document/ });
+    await pulsante.click();
+    await expect(pulsante).toHaveAttribute('aria-pressed', 'true');
+    const pannello = page.locator('#doc-scheda');
+    await expect(pannello).toBeVisible();
+    await expect(page.locator('#doc-scheda-img')).toHaveAttribute('src', /local-asset:/);
+    // Il modulo non finisce sotto il pannello.
+    const [modulo, doc] = await Promise.all([page.locator('#manoscritto-form').boundingBox(), pannello.boundingBox()]);
+    expect(modulo!.x + modulo!.width).toBeLessThanOrEqual(doc!.x + 1);
+
+    await page.getByRole('button', { name: /^Trascrizione$|^Transcription$/ }).click();
+    await expect(page.locator('#doc-scheda-testo')).toContainText(/non è ancora trascritta|not been transcribed/);
+    await expect(page.locator('#doc-scheda-viewport')).toBeHidden();
+
+    // Si scrive nel modulo con il documento aperto, e si salva come sempre.
+    await page.locator('#form-segnatura').fill('MS-DOC-1bis');
+    await page.keyboard.press('Control+Shift+S');
+    await expect(pannello).toBeHidden();
+    await page.keyboard.press('Control+Shift+S');
+    await expect(pannello).toBeVisible();
+    await page.locator('#btn-submit-form').click();
+    await expect(page.locator('#view-list')).toBeVisible();
+    await expect(pannello).toBeHidden();
+
+    // Riaprendo una scheda il documento torna, sulla vista lasciata.
+    await page.evaluate((recId) => (window as any).editItem(recId), id);
+    await expect(pannello).toBeVisible();
+    await expect(page.locator('#doc-scheda-testo')).toBeVisible();
+    await page.locator('#doc-scheda-chiudi').click();
+    await expect(pannello).toBeHidden();
+    await expect(pulsante).toBeFocused();
+  });
+});
+
+// PIANO-SCHEDA-AFFIANCATA, Fase 4 — scheda e documento in una finestra a parte.
+test.describe('Finestra staccata', () => {
+  test.use({ seedWorkspace: 'Trasc' });
+
+  const pronta = async (finestra) => {
+    await finestra.waitForLoadState('domcontentloaded');
+    await finestra.waitForFunction(() => (window as any).__appPronta === true);
+  };
+
+  test('la scheda staccata salva passando dalla principale, senza perdere il testo trascritto lì, e si riaggancia', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-STAC-1', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await page.getByRole('tab', { name: /^Scheda|^Record/ }).click();
+
+    const [staccata] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.getByRole('button', { name: /Stacca in una finestra|Open in a separate window/ }).click(),
+    ]);
+    await pronta(staccata);
+    const segnaturaFuori = staccata.locator('#trasc-pannello-scheda #form-segnatura');
+    await expect(segnaturaFuori).toHaveValue('MS-STAC-1');
+    // Nella principale il tab dice dov'è la scheda, e il modulo non c'è più.
+    await expect(page.locator('#trasc-scheda-staccata')).toBeVisible();
+    await expect(page.locator('#trasc-pannello-scheda #form-segnatura')).toHaveCount(0);
+
+    // Testo battuto nella principale e non salvato, poi un campo cambiato nella staccata.
+    await page.getByRole('tab', { name: /^Testo|^Text/ }).click();
+    await page.locator('#trascrizione-editor').click();
+    await page.keyboard.type('Explicit liber');
+    await segnaturaFuori.fill('MS-STAC-1bis');
+    await expect(staccata.locator('#trasc-scheda-stato')).toHaveText(/Salvata alle|Saved at/);
+    await expect.poll(async () => (await getAppData(page)).manoscritti.find((m: any) => m.id === id).segnatura).toBe('MS-STAC-1bis');
+    const salvato = (await getAppData(page)).manoscritti.find((m: any) => m.id === id);
+    expect(salvato.allegati[0].trascrizione).toContain('Explicit liber');
+
+    // «Riaggancia»: la finestra si chiude e il modulo torna nel tab, con il valore nuovo.
+    await page.getByRole('tab', { name: /^Scheda|^Record/ }).click();
+    await Promise.all([
+      staccata.waitForEvent('close'),
+      staccata.getByRole('button', { name: /^Riaggancia$|^Dock back$/ }).click(),
+    ]);
+    await expect(page.locator('#trasc-scheda-staccata')).toBeHidden();
+    await expect(page.locator('#trasc-pannello-scheda #form-segnatura')).toHaveValue('MS-STAC-1bis');
+  });
+
+  // Fase 5 — la zona di riaggancio (il trascinamento vero del sistema non si automatizza: il main
+  // fa ciò che fa a fine trascinamento) e la X della finestra con una modifica non ancora salvata.
+  test('la zona «Rilascia per riagganciare» copre la colonna; la X salva e riaggancia', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-STAC-3', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await page.getByRole('tab', { name: /^Scheda|^Record/ }).click();
+    const [staccata] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.getByRole('button', { name: /Stacca in una finestra|Open in a separate window/ }).click(),
+    ]);
+    await pronta(staccata);
+
+    // Come durante un trascinamento: il main chiede la zona e poi la accende.
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const principale = BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().includes('finestra='))!;
+      principale.webContents.send('finestra-richiesta', 99999, 'zona', 'scheda');
+      setTimeout(() => principale.webContents.send('finestra-zona', true), 200);
+    });
+    const velo = page.locator('#zona-riaggancio');
+    await expect(velo).toBeVisible();
+    await expect(velo).toHaveText(/Rilascia per riagganciare|Release to dock/);
+    const [v, colonna] = await Promise.all([velo.boundingBox(), page.locator('#trascrizione-editor-panel').boundingBox()]);
+    expect(Math.abs(v!.x - colonna!.x)).toBeLessThan(2);
+    expect(Math.abs(v!.width - colonna!.width)).toBeLessThan(2);
+
+    // Modifica appena battuta, poi la X: prima si salva, poi la finestra si chiude e riaggancia.
+    await staccata.locator('#trasc-pannello-scheda #form-segnatura').fill('MS-STAC-3bis');
+    await Promise.all([
+      staccata.waitForEvent('close'),
+      electronApp.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes('finestra='))!.close();
+      }),
+    ]);
+    await expect(velo).toBeHidden();
+    await expect(page.locator('#trasc-pannello-scheda #form-segnatura')).toHaveValue('MS-STAC-3bis');
+    expect((await getAppData(page)).manoscritti.find((m: any) => m.id === id).segnatura).toBe('MS-STAC-3bis');
+  });
+
+  test('il documento si stacca dal modulo e si riaggancia nel pannello', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-STAC-2', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).editItem(recId), id);
+    await page.getByRole('button', { name: /^Documento|^Document/ }).click();
+
+    const [staccata] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.locator('#doc-scheda').getByRole('button', { name: /Stacca in una finestra|Open in a separate window/ }).click(),
+    ]);
+    await pronta(staccata);
+    await expect(staccata.locator('#doc-scheda')).toBeVisible();
+    await expect(staccata.locator('#doc-scheda-img')).toHaveAttribute('src', /local-asset:/);
+    await expect(page.locator('#doc-scheda')).toBeHidden();
+    // Il modulo resta largo: il documento non gli occupa più metà schermo.
+    await expect(page.locator('#view-add')).not.toHaveClass(/con-documento/);
+
+    await Promise.all([
+      staccata.waitForEvent('close'),
+      staccata.getByRole('button', { name: /^Riaggancia$|^Dock back$/ }).click(),
+    ]);
+    await expect(page.locator('#doc-scheda')).toBeVisible();
+  });
+});
+
+// PIANO-PROVE-MANUALI M14 — le prove a mano della scheda affiancata che si possono automatizzare.
+// Resta a mano solo il trascinamento vero della finestra (M14.4): lo fa il sistema operativo.
+test.describe('Scheda affiancata: prove M14', () => {
+  test.use({ seedWorkspace: 'Trasc' });
+
+  const pronta = async (finestra) => {
+    await finestra.waitForLoadState('domcontentloaded');
+    await finestra.waitForFunction(() => (window as any).__appPronta === true);
+  };
+  const tabScheda = (page) => page.getByRole('tab', { name: /^Scheda|^Record/ });
+  const tabTesto = (page) => page.getByRole('tab', { name: /^Testo|^Text/ });
+  /** Il record come è SU DISCO, dopo aver svuotato il salvataggio differito. */
+  const suDisco = (page, id) => page.evaluate(async (recId) => {
+    await (window as any).flushSalvataggio();
+    const db = await (window as any).leggiDatiArchivio();
+    return db.manoscritti.find((m: any) => m.id === recId);
+  }, id);
+  /** La chiusura dell'app senza chiuderla: il main manda `request-close`, `confirm-close` si conta. */
+  const preparaChiusura = (electronApp) => electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.removeAllListeners('confirm-close');
+    (globalThis as any).chiusureConfermate = 0;
+    ipcMain.on('confirm-close', () => { (globalThis as any).chiusureConfermate++; });
+  });
+  const chiediChiusura = (electronApp) => electronApp.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().includes('finestra='))!.webContents.send('request-close');
+  });
+  const chiusureConfermate = (electronApp) => electronApp.evaluate(() => (globalThis as any).chiusureConfermate);
+
+  test('M14.1 — PDF multipagina: il testo di p. 2 resta, anche su disco, dopo il salvataggio della scheda', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-M141', FIXTURE_PDF3);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#trasc-pdf-pagina')).toHaveValue('1');
+    await page.locator('#btn-pdf-pagina-succ').click();
+    await expect(page.locator('#trasc-pdf-pagina')).toHaveValue('2');
+    await page.locator('#trascrizione-editor').click();
+    await page.keyboard.type('Secunda pagina');
+
+    await tabScheda(page).click();
+    await page.locator('#trasc-pannello-scheda #form-segnatura').fill('MS-M141bis');
+    await expect(page.locator('#trasc-scheda-stato')).toHaveText(/Salvata alle|Saved at/);
+    const salvato = await suDisco(page, id);
+    expect(salvato.segnatura).toBe('MS-M141bis');
+    expect(salvato.allegati[0].pagine[1]).toContain('Secunda pagina');
+    expect(salvato.allegati[0].pagine[0] || '').not.toContain('Secunda pagina');
+    expect(salvato.trascrizione).toContain('Secunda pagina');
+
+    await tabTesto(page).click();
+    await expect(page.locator('#trasc-pdf-pagina')).toHaveValue('2');
+    await expect(page.locator('#trascrizione-editor')).toContainText('Secunda pagina');
+  });
+
+  test('M14.2 — togliere e rinominare un allegato dal modulo non perde il testo dell altra carta', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    await page.locator('#btn-tab-add').click();
+    await page.locator('#form-segnatura').fill('MS-M142');
+    await page.locator('#form-allegato').setInputFiles([FIXTURE_PNG, FIXTURE_PDF]);
+    await page.locator('#btn-submit-form').click();
+    const idDi = () => page.evaluate(() => (window as any).appData.manoscritti.find((m: any) => m.segnatura === 'MS-M142')?.id ?? null);
+    await expect.poll(idDi).not.toBeNull();
+    const id = await idDi();
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#trasc-carte-bar')).toBeVisible();
+    await page.locator('#trascrizione-editor').click();
+    await page.keyboard.type('Prima carta, non salvata');
+
+    await tabScheda(page).click();
+    const righe = page.locator('#trasc-pannello-scheda #form-allegati-list .allegato-row');
+    await expect(righe).toHaveCount(2);
+    // Rinomina della prima carta, poi via la seconda (il PDF).
+    await righe.nth(0).getByRole('button', { name: /^Rinomina$|^Rename$/ }).click();
+    await page.locator('#rename-input').fill('Carta prima');
+    await page.locator('#rename-input').press('Enter');
+    await righe.nth(1).getByRole('button', { name: /^Rimuovi$|^Remove$/ }).click();
+    await expect(righe).toHaveCount(1);
+    await expect(page.locator('#trasc-scheda-stato')).toHaveText(/Salvata alle|Saved at/);
+
+    const salvato = await suDisco(page, id);
+    expect(salvato.allegati).toHaveLength(1);
+    expect(salvato.allegati[0].originalName).toBe('Carta prima');
+    expect(salvato.allegati[0].trascrizione).toContain('Prima carta, non salvata');
+    // Con una carta sola la barra delle carte sparisce.
+    await expect(page.locator('#trasc-carte-bar')).toBeHidden();
+    await tabTesto(page).click();
+    await expect(page.locator('#trascrizione-editor')).toContainText('Prima carta, non salvata');
+  });
+
+  test('M14.3 — chiudere l app con un campo obbligatorio vuoto nel tab chiede, e «Annulla» lascia tutto com era', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-M143', FIXTURE_PNG);
+    // Tipo con un campo obbligatorio, creato dal modello condiviso come farebbe la UI.
+    await page.evaluate(async (recId) => {
+      const w = window as any;
+      const tipo: any = { id: 'obblig', nome: 'Con obbligo', campi: [] };
+      w.Model.impostaCampi(tipo, [{ id: 'Notaio', tipo: 'text', obbligatorio: true }]);
+      w.appData.tipiDocumento.push(tipo);
+      const m = w.appData.manoscritti.find((x: any) => x.id === recId);
+      m.tipoDocumento = 'obblig';
+      m.Notaio = 'Rossi';
+      await w.Store.commit();
+    }, id);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await tabScheda(page).click();
+    const idNotaio = await page.evaluate(() => (window as any).idControlloCampo('Notaio'));
+    const notaio = page.locator('#trasc-pannello-scheda #' + idNotaio);
+    await expect(notaio).toHaveValue('Rossi');
+    await notaio.fill('');
+    await expect(page.locator('#trasc-scheda-stato')).toHaveText(/obbligatorio|required/i);
+
+    await preparaChiusura(electronApp);
+    await chiediChiusura(electronApp);
+    const banner = page.locator('#bottom-confirm-banner');
+    await expect(banner).toBeVisible();
+    await banner.locator('.btn-ghost').click();
+    await expect(banner).toBeHidden();
+    expect(await chiusureConfermate(electronApp)).toBe(0);
+    await expect(notaio).toHaveValue('');
+    expect((await suDisco(page, id)).Notaio).toBe('Rossi');
+  });
+
+  test('M14.5 — chiudere l app con la scheda staccata salva ciò che è in sospeso; la staccata resta ricordata', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-M145', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await tabScheda(page).click();
+    const [staccata] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.getByRole('button', { name: /Stacca in una finestra|Open in a separate window/ }).click(),
+    ]);
+    await pronta(staccata);
+
+    // Valore appena battuto, prima della pausa del salvataggio automatico, e subito la chiusura.
+    await staccata.locator('#trasc-pannello-scheda #form-segnatura').fill('MS-M145bis');
+    await preparaChiusura(electronApp);
+    await chiediChiusura(electronApp);
+    await expect.poll(() => chiusureConfermate(electronApp)).toBe(1);
+    expect((await suDisco(page, id)).segnatura).toBe('MS-M145bis');
+    expect(await page.evaluate(() => (window as any).prefLocale('finestraStaccata:scheda'))).toBe('1');
+
+    // Uscendo dalla vista la staccata si chiude senza riagganciarsi; rientrando si ristacca da sola.
+    await Promise.all([staccata.waitForEvent('close'), page.evaluate(() => (window as any).switchTab('list'))]);
+    const [di_nuovo] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.evaluate((recId) => (window as any).apriTrascrizione(recId), id),
+    ]);
+    await pronta(di_nuovo);
+    await expect(di_nuovo.locator('#trasc-pannello-scheda #form-segnatura')).toHaveValue('MS-M145bis');
+    await expect(page.locator('#trasc-scheda-staccata')).toBeVisible();
+  });
+
+  test('M14.7 — il documento staccato segue la scheda aperta, e si riaggancia nel pannello', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const idA = await createItemWithAttachment(page, 'MS-M147-A', FIXTURE_PNG);
+    const idB = await createItemWithAttachment(page, 'MS-M147-B', FIXTURE_PDF3);
+    await page.evaluate((recId) => (window as any).editItem(recId), idA);
+    await page.getByRole('button', { name: /^Documento|^Document/ }).click();
+    const [prima] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.locator('#doc-scheda').getByRole('button', { name: /Stacca in una finestra|Open in a separate window/ }).click(),
+    ]);
+    await pronta(prima);
+    await expect(prima).toHaveTitle(/MS-M147-A/);
+
+    // Dalla lista a un'altra scheda: la finestra si chiude con la vista e torna sulla scheda nuova.
+    await Promise.all([prima.waitForEvent('close'), page.locator('#btn-cancel-edit').click()]);
+    const [seconda] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.evaluate((recId) => (window as any).editItem(recId), idB),
+    ]);
+    await pronta(seconda);
+    await expect(seconda).toHaveTitle(/MS-M147-B/);
+    await expect(seconda.locator('#doc-scheda-pagine')).toBeVisible();
+    await expect(page.locator('#doc-scheda')).toBeHidden();
+
+    await Promise.all([
+      seconda.waitForEvent('close'),
+      seconda.getByRole('button', { name: /^Riaggancia$|^Dock back$/ }).click(),
+    ]);
+    await expect(page.locator('#doc-scheda')).toBeVisible();
+    await expect(page.locator('#doc-scheda-pagine')).toBeVisible();
   });
 });
