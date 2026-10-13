@@ -40,7 +40,11 @@ gruppo:
 Drive finché non apri quell'archivio (**Apri archivio**), oppure, se è nuovo, finché non lo crei
 (**Crea archivio…**).
 
-ArchiView toglie le pagine da Drive solo dopo averle scaricate e controllate. Le scansioni
+Le note scritte sul telefono per le singole pagine si aggiungono al campo **Note** della scheda,
+una riga per pagina con l'etichetta della carta (`1v: rifilata`), anche quando le pagine si
+uniscono in un PDF. La nota del lotto si aggiunge anche a una scheda che esiste già.
+
+ArchiView rimuove le pagine da Drive solo dopo averle scaricate e controllate. Le scansioni
 ancora in caricamento dal telefono non si toccano: arrivano alla ricezione successiva.
 
 ## Le opzioni
@@ -69,7 +73,8 @@ scelto sul telefono, l'app avvisa che quelle pagine verrebbero rifiutate.
 ## Se qualcosa non torna
 
 **L'archivio non compare sul telefono.** Apri sul computer il pannello «Dal telefono»: la
-ricezione pubblica anche l'elenco degli archivi e delle schede. Gli archivi condivisi via Hub
+ricezione pubblica anche l'elenco degli archivi e delle schede, con il segno delle schede che
+hanno il tag `da vedere` o `da consultare` (i tag non escono dal computer). Gli archivi condivisi via Hub
 non compaiono comunque.
 
 **Una scheda creata sul computer non si vede sul telefono.** L'elenco del telefono si aggiorna

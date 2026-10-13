@@ -15,7 +15,9 @@ as PDFs.
   to allow installs from that source.
 - For the main channel, the same **Google account** ArchiView uses to sync with Drive. Without
   an account you can use [direct Wi-Fi](/en/archiscanner/computer#direct-wi-fi-without-drive).
-- The app's interface is in Italian only. This page gives each Italian label with its meaning.
+- The app is in English and Italian: it follows the phone's language, and you change it in
+  **Settings → Language**. Older parts of this guide give the Italian label first, with the
+  English one in brackets.
 :::
 
 ## How a page travels
@@ -33,9 +35,21 @@ Photos travel as full-resolution JPEGs, one per page. Text recognition (OCR) for
 does not happen on the phone: you run it on the computer, with the languages you installed there
 (see [OCR of attachments](/en/guide/ocr)).
 
-## First run: choosing the archive
+## First run
 
-On first run the app asks for an archive. To see the list you need to sign in to Google
+On first run a three-step welcome introduces the app, with a summary of how it handles your data
+and a link to the [privacy policy](https://github.com/AntonioOrf/ArchiView/blob/main/mobile/PRIVACY_POLICY.en.md);
+then it asks what to do with pages after sending and whether to connect Google Drive. Everything
+can be changed later in **Settings**, and **Skip** jumps straight to the last step.
+
+The app does not ask for a consent of its own: the first time you scan, Android asks for the
+camera permission with its own dialog. Without it you cannot scan; you grant or revoke it in
+**Settings → Privacy → Manage in Android settings**. The gallery and folders go through Android's
+pickers and need no permission.
+
+## Choosing the archive
+
+Next the app asks for an archive. To see the list you need to sign in to Google
 (**Impostazioni → Accedi con Google**, Settings → Sign in with Google).
 
 ![The archive drop-down: archives that go to the computer and, below, the Documents that stay on the phone](/img/telefono-tendina.png){.light-only .telefono}
@@ -54,3 +68,10 @@ next receive the computer offers **Create archive…**: choose where to put it o
 pages go in.
 
 The app remembers your choice. To change it, tap the archive name at the top.
+
+## Updating the app
+
+At startup the app checks for a new version and tells you with a message: **Update** downloads
+the APK and opens Android's installer, **Later** puts it off. The new version stays in
+**Settings → App**, where **Check for updates** runs the check by hand. Pages waiting to be sent
+stay where they are.

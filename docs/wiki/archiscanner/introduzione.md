@@ -13,7 +13,8 @@ L'app ha anche una sezione [Documenti](/archiscanner/documenti), uno scanner per
   Android chiede di consentire l'installazione da quella sorgente.
 - Per il canale principale, lo stesso **account Google** con cui ArchiView sincronizza su Drive.
   Senza account si può usare il [Wi-Fi diretto](/archiscanner/computer#wi-fi-diretto-senza-drive).
-- L'interfaccia dell'app è solo in italiano.
+- L'app è in italiano e in inglese: segue la lingua del telefono, e si cambia in
+  **Impostazioni → Lingua**.
 :::
 
 ## Il percorso di una pagina
@@ -30,9 +31,21 @@ Le foto viaggiano come JPEG a piena risoluzione, una per pagina. Il riconoscimen
 (OCR) non si fa sul telefono per le pagine d'archivio: si lancia dal computer, con le lingue che
 hai installato lì (vedi [OCR degli allegati](/guida/ocr)).
 
-## Primo avvio: scegliere l'archivio
+## Primo avvio
 
-Al primo avvio l'app chiede l'archivio. Per vederne l'elenco serve l'accesso a Google
+Al primo avvio un benvenuto in tre passi presenta l'app, con un riassunto di come tratta i tuoi
+dati e il link all'[informativa sulla privacy](https://github.com/AntonioOrf/ArchiView/blob/main/mobile/PRIVACY_POLICY.md);
+poi chiede cosa fare delle pagine dopo l'invio e se collegare Google Drive. Tutto si cambia dopo
+da **Impostazioni**, e **Salta** porta direttamente all'ultimo passo.
+
+L'app non chiede un consenso suo: la prima volta che scansioni, Android chiede il permesso della
+fotocamera con la sua finestra. Senza permesso non si scansiona; si concede o si toglie in
+**Impostazioni → Privacy → Gestisci nelle impostazioni di Android**. Galleria e cartelle passano
+dai selettori di Android e non chiedono permessi.
+
+## Scegliere l'archivio
+
+L'app poi chiede l'archivio. Per vederne l'elenco serve l'accesso a Google
 (**Impostazioni → Accedi con Google**).
 
 ![La tendina degli archivi: gli archivi che vanno al computer e, sotto, i Documenti che restano sul telefono](/img/telefono-tendina.png){.light-only .telefono}
@@ -50,3 +63,10 @@ Con **Nuovo archivio** ne crei uno dal telefono, indicando solo il nome. Il comp
 alla prima ricezione con **Crea archivio…**: scegli dove metterlo sul disco e le pagine entrano.
 
 La scelta resta ricordata. Per cambiarla tocca il nome dell'archivio in alto.
+
+## Aggiornare l'app
+
+All'avvio l'app controlla se è uscita una versione nuova e lo dice con un avviso: **Aggiorna**
+scarica l'APK e apre l'installazione di Android, **Più tardi** lo rimanda. La versione nuova resta
+in **Impostazioni → App**, dove **Cerca aggiornamenti** ripete il controllo a mano. Le pagine in
+attesa restano dove sono.

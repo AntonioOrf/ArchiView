@@ -11,6 +11,18 @@ Il pulsante dello scanner crea un documento nella cartella aperta, con un nome a
 Dentro un documento lo stesso pulsante aggiunge pagine, e per cambiarne l'ordine tieni premuta
 una pagina e trascinala. La ricerca trova i documenti per nome e per il testo riconosciuto.
 
+Le immagini condivise con ArchiScanner dal menu **Condividi** di un'altra app (Galleria,
+WhatsApp…), una o più, diventano un documento nuovo.
+
+## Unire, separare, mandare all'archivio
+
+- **Unisci** (nell'intestazione del documento) accoda in fondo le pagine di un altro documento,
+  con filtri e testo riconosciuto; l'altro documento sparisce.
+- **Separa** (nel visore) fa di quella pagina e delle successive un documento nuovo, nella stessa
+  cartella.
+- **Manda all'archivio «…»**, con un archivio aperto, manda le foto originali (senza filtro) al
+  computer come pagine da smistare, col nome del documento come titolo. Il documento resta qui.
+
 ## Filtri
 
 Nel visore, **Filtri** propone **Originale**, **Migliora**, **Grigi** e **B/N**. **Usa per
@@ -53,6 +65,14 @@ riletto prima di copiarlo. Su una scrittura a mano serve a poco.
 
 ::: warning Limiti del PDF cercabile
 Il testo nascosto nel PDF è quello letto dal riconoscimento, non quello che hai corretto a mano.
-Le lettere fuori dall'alfabeto dell'Europa occidentale (polacco, greco, cirillico…) vi diventano
-«?».
+Per le lettere fuori dall'alfabeto dell'Europa occidentale (polacco, greco, cirillico…) l'app usa
+un font del telefono; se il telefono non ne ha uno leggibile, quelle lettere diventano «?».
 :::
+
+## Copia su Drive
+
+I Documenti stanno solo sul telefono: se lo perdi, li perdi. In **Impostazioni → Documenti**,
+**Copia su Drive** (serve l'accesso a Google) ne tiene una copia nel tuo Drive, in
+`ArchiView/Documenti telefono/`, aggiornata solo col Wi-Fi. Su un telefono nuovo, **Ripristina
+da Drive** riporta i documenti che mancano, con cartelle, filtri e testo, senza sovrascrivere
+nulla.

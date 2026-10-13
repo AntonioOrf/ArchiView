@@ -40,6 +40,10 @@ batch:
 Drive until you open that archive (**Open archive**) or, if it is new, until you create it
 (**Create archive…**).
 
+Notes written on the phone for single pages are added to the record's **Notes** field, one line
+per page with the leaf label (`1v: trimmed`), also when the pages are merged into a PDF. The
+batch note is added to an existing record too.
+
 ArchiView removes pages from Drive only after downloading and checking them. Scans the phone is
 still uploading are left alone and arrive with the next receive.
 
@@ -69,8 +73,9 @@ chosen on the phone, the app warns that those pages would be refused.
 ## If something doesn't add up
 
 **The archive does not appear on the phone.** Open the «From the phone» panel on the computer:
-receiving also publishes the list of archives and records. Archives shared through the Hub do
-not appear in any case.
+receiving also publishes the list of archives and records, with a mark on the records tagged
+`da vedere` or `da consultare` (the tags never leave the computer). Archives shared through the
+Hub do not appear in any case.
 
 **A record created on the computer is missing on the phone.** The phone's list updates when the
 computer receives from Drive. Open the panel, then reopen the archive on the phone.

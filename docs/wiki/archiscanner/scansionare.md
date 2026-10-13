@@ -14,6 +14,14 @@ La ricerca filtra l'albero per segnatura, titolo o cartella: restano solo le car
 risultato, già aperte. Il pallino accanto a una scheda dice quante pagine sono ancora sul
 telefono in attesa di partire.
 
+### Le buste da vedere
+
+Sul computer, dai il tag `da vedere` (o `da consultare`) alle schede che ti servono in archivio.
+Sul telefono, sotto la ricerca, compare il filtro **Da vedere · N di M**, che lascia nell'albero
+solo quelle schede; si combina con la ricerca. Un occhio segna le schede da vedere, una spunta
+verde quelle che hai già fotografato con questo telefono. Il segno arriva al telefono quando il
+computer pubblica l'elenco delle schede (aprendo il pannello [«Dal telefono»](/archiscanner/computer)).
+
 ## Scansionare
 
 Il **+** in basso offre due strade.
@@ -40,6 +48,21 @@ prospettiva. Si scansiona una pagina dopo l'altra, fino a 100, e si chiude con *
 Per tenere la foto intera, con i margini e la legatura, nella revisione allarga il ritaglio
 fino ai bordi.
 
+La prima volta Android chiede il permesso della fotocamera; senza, lo scanner non si apre. Se il
+telefono ha poco spazio libero, prima di aprire lo scanner l'app avvisa: puoi annullare o
+scansionare comunque.
+
+Dopo **Salva** l'app controlla le foto: una pagina che sembra mossa o sfocata mostra la targhetta
+**Sfocata?** nella griglia e nel visore, mentre sei ancora davanti alla carta. Ingrandiscila e, se
+serve, rifalla con **Rifai**.
+
+### Foto libera, senza ritaglio
+
+Per sigilli, filigrane in controluce, legature e dettagli lo scanner non va bene, perché ritaglia
+sempre sul bordo del foglio. Nella scheda, **Foto libera, senza ritaglio** apre la fotocamera
+normale: scatti in serie e chiudi con **Fine**. Le foto arrivano sul computer come le altre pagine,
+senza etichetta: la numerazione delle carte le salta.
+
 ### Numerare le carte
 
 ![Una scheda con le pagine da inviare, numerate 1r, 1v, 2r](/img/telefono-scheda.png){.light-only .telefono}
@@ -59,12 +82,14 @@ doppio tocco, e si passa alle altre strisciando.
 ![Il visore: la pagina a schermo intero, l'etichetta della carta e i comandi](/img/telefono-visore-scuro.png){.dark-only .telefono}
 
 - **Carta**: l'etichetta della pagina.
+- **Nota**: una riga per la pagina («rifilata», «macchia d'umidità»). Sul computer finisce nel
+  campo **Note** della scheda, con l'etichetta della carta (`1v: rifilata`).
 - **Ruota** di 90°.
 - **Ritaglia** con un riquadro dritto; **Pagina intera** lo riporta ai bordi.
 - **Rifai**: riapre lo scanner per quella sola pagina. La foto nuova prende il posto della
   vecchia, con la stessa etichetta.
 - **Dividi**: per una pagina doppia (un'apertura del registro). Sposti la linea sulla piega e
-  ottieni due pagine, etichettate per esempio 12v e 13r.
+  ottieni due pagine, etichettate per esempio 12v e 13r. La nota passa a entrambe.
 - **Elimina**.
 
 Le pagine già partite si aprono in sola lettura.
@@ -88,5 +113,6 @@ dalle pagine che non erano ancora arrivate.
 ![Le impostazioni dell'app: account Google, invio solo col Wi-Fi, cosa fare dopo l'invio, Wi-Fi diretto](/img/telefono-impostazioni-scuro.png){.dark-only .telefono}
 
 In **Dopo l'invio** decidi cosa resta sul telefono: le pagine si cancellano subito (la scelta
-predefinita), restano per un certo numero di giorni o restano sempre. Quelle tenute compaiono
-nella scheda come «inviate», in sola lettura, e si possono togliere a mano.
+predefinita), si conservano per un certo numero di giorni o si conservano sempre. Quelle
+conservate compaiono nella scheda come «inviate», in sola lettura, e si possono rimuovere a mano
+con **Rimuovi dal telefono** o **Rimuovi tutte**.

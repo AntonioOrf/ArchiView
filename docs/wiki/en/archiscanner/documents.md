@@ -11,6 +11,18 @@ The scanner button creates a document in the open folder, with an automatic name
 Inside a document the same button adds pages; to reorder them, press and hold a page and drag
 it. Search finds documents by name and by recognised text.
 
+Images shared with ArchiScanner from another app's **Share** menu (Gallery, WhatsApp…), one or
+more, become a new document.
+
+## Merging, splitting, sending to the archive
+
+- **Merge** (in the document header) appends the pages of another document at the end, with
+  filters and recognised text; the other document goes away.
+- **Split** (in the viewer) turns that page and the following ones into a new document, in the
+  same folder.
+- **Send to the archive «…»**, with an archive open, sends the original photos (without filter) to
+  the computer as pages to sort, with the document name as title. The document stays here.
+
 ## Filters
 
 In the viewer, **Filtri** (Filters) offers **Originale** (Original), **Migliora** (Enhance),
@@ -53,6 +65,14 @@ pages) or as **JPEG images**.
   it, because Android does not allow «Download» itself. From then on the app remembers it.
 
 ::: warning Limits of the searchable PDF
-The hidden text in the PDF is what recognition read, not what you corrected by hand. Letters
-outside the Western European alphabet (Polish, Greek, Cyrillic…) become «?» in it.
+The hidden text in the PDF is what recognition read, not what you corrected by hand. For letters
+outside the Western European alphabet (Polish, Greek, Cyrillic…) the app uses a font from the
+phone; if the phone has none it can read, those letters become «?».
 :::
+
+## Copy to Drive
+
+Documents live only on the phone: lose the phone and you lose them. In **Settings → Documents**,
+**Copy to Drive** (needs a Google sign-in) keeps a copy in your Drive, in
+`ArchiView/Documenti telefono/`, updated only on Wi-Fi. On a new phone, **Restore from Drive**
+brings back the missing documents, with folders, filters and text, without overwriting anything.

@@ -13,6 +13,15 @@ The search filters the tree by shelfmark, title or folder: only folders with a m
 already open. The dot next to a record says how many of its pages are still on the phone,
 waiting to be sent.
 
+### Boxes to review
+
+On the computer, tag the records you need in the archive with `da vedere` (or `da consultare`).
+On the phone, under the search field, the **To review · N of M** filter appears and leaves only
+those records in the tree; it combines with the search. An eye marks the records to review, a
+green tick the ones you have already photographed with this phone. The mark reaches the phone
+when the computer publishes the list of records (by opening the
+[«From the phone»](/en/archiscanner/computer) panel).
+
 ## Scanning
 
 The **+** button at the bottom offers two paths.
@@ -37,6 +46,21 @@ The scanner is Google's (ML Kit): it frames the page, crops it and corrects the 
 scan one page after another, up to 100, and finish with **Salva** (Save). To keep the whole
 photo, with margins and binding, drag the crop out to the edges during review.
 
+The first time, Android asks for the camera permission; without it the scanner does not open. If
+the phone is low on storage, the app warns you before opening the scanner: you can cancel or
+**Scan anyway**.
+
+After saving, the app checks the photos: a page that looks shaken or blurred shows a **Blurred?**
+tag in the grid and in the viewer, while you are still in front of the leaf. Zoom in and, if
+needed, redo it with **Redo**.
+
+### Free photo, no cropping
+
+For seals, watermarks against the light, bindings and details the scanner is no good, because it
+always crops to the edge of the sheet. In the record, **Free photo, no cropping** opens the normal
+camera: take shots in a row and finish with **Done**. The photos reach the computer like the other
+pages, without a label: leaf numbering skips them.
+
 ### Numbering the leaves
 
 ![A record with pages waiting to be sent, numbered 1r, 1v, 2r](/img/telefono-scheda.png){.light-only .telefono}
@@ -56,13 +80,15 @@ others.
 ![The viewer: the page full screen, the leaf label and the commands](/img/telefono-visore-scuro.png){.dark-only .telefono}
 
 - **Carta** (Leaf): the page label.
+- **Nota** (Note): one line for the page ("trimmed", "water stain"). On the computer it goes into
+  the record's **Notes** field, with the leaf label (`1v: trimmed`).
 - **Ruota** (Rotate) by 90°.
 - **Ritaglia** (Crop) with a straight frame; **Pagina intera** (Whole page) resets it to the
   edges.
 - **Rifai** (Redo): reopens the scanner for that page only. The new photo replaces the old one
   and keeps its label.
 - **Dividi** (Split): for a double page (an opening of the register). Move the line onto the
-  fold and you get two pages, labelled for example 12v and 13r.
+  fold and you get two pages, labelled for example 12v and 13r. The note goes to both.
 - **Elimina** (Delete).
 
 Pages that have already left open read-only.
@@ -87,4 +113,4 @@ the pages that had not arrived yet when you reopen it.
 
 **Dopo l'invio** (After sending) decides what stays on the phone: pages are deleted at once (the
 default), kept for a number of days, or kept for good. Kept pages appear in the record as sent,
-read-only, and can be removed by hand.
+read-only, and can be removed by hand with **Remove from the phone** or **Remove all**.
