@@ -9,6 +9,9 @@ name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M
     visible: Fondo Prova, cambia archivio
     timeout: 180000
 - tapOn: Impostazioni
+# Sotto la sezione Privacy: va fatto scorrere.
+- scrollUntilVisible:
+    element: Abbina col computer
 - tapOn: Abbina col computer
 - tapOn: "Consenti.*"
 # Dialogo di sistema: «Non consentire».
@@ -17,7 +20,8 @@ name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M
     visible: Serve la fotocamera
     timeout: 10000
 - tapOn: "(?i)annulla|indietro"
-- assertVisible: Abbina col computer
+- scrollUntilVisible:
+    element: Abbina col computer
 # Concessa da Android (qui: riavvio con il permesso), il lettore QR parte.
 - stopApp
 - launchApp:
@@ -27,6 +31,9 @@ name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M
     visible: Fondo Prova, cambia archivio
     timeout: 30000
 - tapOn: Impostazioni
+# Sotto la sezione Privacy: va fatto scorrere.
+- scrollUntilVisible:
+    element: Abbina col computer
 - tapOn: Abbina col computer
 - runFlow:
     when:

@@ -1,0 +1,72 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+# lingua: en
+name: App in inglese (PIANO-INGLESE-MOBILE) - archivio, scheda, visore, Documenti, cambio di lingua
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, change archive
+    timeout: 180000
+- assertVisible: "To send · 4 pages"
+- assertVisible: "3 records on the computer.*"
+# Le schermate servono a vedere i testi tagliati (l'inglese ha lunghezze diverse).
+- takeScreenshot: esiti/schermate-en/01-archivio
+# Scheda e visore.
+- tapOn: "Folder Notarile.*"
+- tapOn: "Reg\\. 41, Imbreviature.*"
+- assertVisible: "To send · 3 pages"
+- assertVisible: Number the leaves from
+- takeScreenshot: esiti/schermate-en/02-scheda
+- tapOn: Open 1r
+- assertVisible: "Page 1 of 3 · swipe for the others"
+- assertVisible: Rotate
+- assertVisible: Crop
+- takeScreenshot: esiti/schermate-en/03-visore
+- back
+- back
+# Documenti dalla tendina.
+- tapOn: Fondo Prova, change archive
+- assertVisible: "Archives · they go to the computer"
+- tapOn: "Documents, Receipts, articles, photocopies"
+- extendedWaitUntil:
+    visible: Documents, change archive
+    timeout: 15000
+- assertVisible: "Only on this phone.*"
+- takeScreenshot: esiti/schermate-en/04-documenti
+- tapOn: Settings
+# Impostazioni in inglese, poi italiano e ritorno.
+- assertVisible: Google account
+- assertVisible: Sign in with Google
+- takeScreenshot: esiti/schermate-en/05-impostazioni
+- scrollUntilVisible:
+    element: Italiano
+- assertVisible:
+    text: English
+    checked: true
+- tapOn: Italiano
+# L'app si rimonta (il React Compiler tiene in cache i testi) e riapre Impostazioni dall'alto.
+- assertVisible: Impostazioni
+- assertVisible: Account Google
+- scrollUntilVisible:
+    element: Lingua
+- scrollUntilVisible:
+    element: English
+- assertVisible:
+    text: Italiano
+    checked: true
+- assertVisible: Abbina col computer
+- assertVisible: "Automatica \\(lingua del telefono\\)"
+# La scelta resta dopo il riavvio.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Documenti, cambia archivio
+    timeout: 30000
+- tapOn: Impostazioni
+- scrollUntilVisible:
+    element: English
+- tapOn: English
+- assertVisible: Settings
+- assertVisible: Google account
+- tapOn: Back
+- assertVisible: Documents, change archive

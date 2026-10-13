@@ -1,6 +1,6 @@
 appId: com.antonioorf.archiview.scanner
 # seme: archivio
-name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
+name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 ---
 - launchApp
 - extendedWaitUntil:
@@ -19,9 +19,9 @@ name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
 - assertVisible:
     text: Invio automatico solo col Wi-Fi
     checked: false
-# Dopo l'invio (il seme parte da «Tieni sempre»).
+# Dopo l'invio (il seme parte da «Conserva sempre»).
 - assertVisible:
-    text: Tieni sempre
+    text: Conserva sempre
     checked: true
 - tapOn: Cancella subito
 - assertVisible:
@@ -33,8 +33,15 @@ name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
 # Il numero vale all'uscita dal campo (onEndEditing), non a ogni cifra.
 - pressKey: Enter
 - assertVisible:
-    text: Tieni per 3 giorni
+    text: Conserva per 3 giorni
     checked: true
+# F5: senza account la copia dei Documenti su Drive è spenta e lo dice.
+- scrollUntilVisible:
+    element: "I Documenti stanno solo su questo telefono. Accedi con Google.*"
+- assertVisible:
+    text: Copia dei Documenti su Drive
+    enabled: false
+- assertNotVisible: Ripristina da Drive
 # Le scelte restano dopo il riavvio.
 - stopApp
 # Maestro concede tutti i permessi a ogni avvio: qui la fotocamera no, per provarne la richiesta.
@@ -46,7 +53,7 @@ name: Impostazioni - invio, dopo l'invio, abbinamento Wi-Fi
     timeout: 30000
 - tapOn: Impostazioni
 - assertVisible:
-    text: Tieni per 3 giorni
+    text: Conserva per 3 giorni
     checked: true
 - assertVisible:
     text: Invio automatico solo col Wi-Fi

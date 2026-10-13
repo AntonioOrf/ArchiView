@@ -15,15 +15,15 @@ name: Pagine inviate tenute sul telefono
 - assertVisible: Inviata · sola lettura
 - assertVisible: Il computer ha già questa pagina.
 - assertNotVisible: Ruota
-- tapOn: Togli dal telefono
-- assertVisible: Togliere dal telefono?
+- tapOn: Rimuovi dal telefono
+- assertVisible: Rimuovere dal telefono?
 - tapOn: "(?i)annulla"
 - tapOn: Chiudi
-# «Togli tutte» le toglie solo dal telefono.
-- tapOn: Togli tutte
-- assertVisible: Togliere le pagine inviate?
+# «Rimuovi tutte» le rimuove solo dal telefono.
+- tapOn: Rimuovi tutte
+- assertVisible: Rimuovere le pagine inviate?
 # Con l'avviso aperto la gerarchia mostra solo l'avviso: nessuna ambiguità col pulsante sotto.
-- tapOn: "(?i)togli tutte"
+- tapOn: "(?i)rimuovi tutte"
 - extendedWaitUntil:
     visible: "Nessuna pagina."
     timeout: 10000

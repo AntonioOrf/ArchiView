@@ -3,10 +3,13 @@
 // (`# seme: archivio`) scritto in files/ come lo scriverebbe l'app; poi `maestro test`.
 // Così i flussi non dipendono da fotocamera, account Google o rete.
 //
-//   node .maestro/esegui.mjs                 tutti i flussi di .maestro/flussi
+//   node .maestro/esegui.mjs                 tutti i flussi di .maestro/flussi, tranne schermate e wiki
 //   node .maestro/esegui.mjs visore documenti   solo quelli col nome che contiene una parola
+//
+// Con più emulatori accesi (e senza ANDROID_SERIAL) i flussi si dividono fra loro: un processo
+// figlio per emulatore, i più lunghi (durata dall'ultimo esito JUnit) distribuiti per primi.
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, copyFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
@@ -36,12 +39,59 @@ function adb(...args) {
   return r.stdout;
 }
 
+const cartella = join(QUI, 'flussi');
+const filtri = process.argv.slice(2);
+// Le schermate (19, wiki) non verificano nulla: girano solo chiamate per nome.
+const flussi = process.env.MAESTRO_FLUSSI
+  ? process.env.MAESTRO_FLUSSI.split(',')
+  : readdirSync(cartella).filter(f => f.endsWith('.yaml') && (filtri.length ? filtri.some(x => f.includes(x)) : !/schermate|wiki/.test(f))).sort();
+if (!flussi.length) { console.error('Nessun flusso trovato.'); process.exit(1); }
+
 // Il runner AZZERA i dati dell'app: di default solo su un emulatore. Un telefono vero va chiesto
 // con ARCHIVIEW_MAESTRO_TELEFONO=1 (e i dati salvati prima: `adb exec-out run-as … tar cf - files`).
-// Con più dispositivi collegati si sceglie con ANDROID_SERIAL, altrimenti il primo emulatore.
+// Con più dispositivi collegati si sceglie con ANDROID_SERIAL, altrimenti gli emulatori.
 if (!process.env.ANDROID_SERIAL) {
   const collegati = adb('devices').split('\n').slice(1).map(l => l.trim().split(/\s+/)).filter(([, s]) => s === 'device').map(([id]) => id);
-  process.env.ANDROID_SERIAL = collegati.find(id => id.startsWith('emulator-')) || collegati[0] || '';
+  const emulatori = collegati.filter(id => id.startsWith('emulator-'));
+  if (emulatori.length > 1 && flussi.length > 1) process.exit(await inParallelo(emulatori));
+  process.env.ANDROID_SERIAL = emulatori[0] || collegati[0] || '';
+}
+
+/** Un figlio per emulatore; righe col prefisso dell'emulatore; esiti riuniti alla fine. */
+async function inParallelo(emulatori) {
+  const durata = f => {
+    try { return Number(/time="([\d.]+)"/.exec(readFileSync(join(QUI, 'esiti', f.replace(/\.yaml$/, '.xml')), 'utf8'))?.[1]) || 40; }
+    catch { return 40; }
+  };
+  const code = emulatori.map(id => ({ id, flussi: [], totale: 0 }));
+  for (const f of [...flussi].sort((a, b) => durata(b) - durata(a))) {
+    const c = code.reduce((a, b) => (b.totale < a.totale ? b : a));
+    c.flussi.push(f);
+    c.totale += durata(f);
+  }
+  const esiti = [];
+  await Promise.all(code.filter(c => c.flussi.length).map(c => new Promise(fine => {
+    console.log(`${c.id}: ${c.flussi.length} flussi, ~${Math.round(c.totale)} s`);
+    const figlio = spawn(process.execPath, [fileURLToPath(import.meta.url)], {
+      env: { ...process.env, ANDROID_SERIAL: c.id, MAESTRO_FLUSSI: c.flussi.sort().join(',') }
+    });
+    let resto = '';
+    const righe = dati => {
+      const parti = (resto + dati).split('\n');
+      resto = parti.pop();
+      for (const r of parti) {
+        const m = /^\s+(OK|FAIL)\s+(\S+\.yaml)$/.exec(r);
+        if (m) esiti.push([m[2], m[1] === 'OK']);
+        else if (r.trim()) console.log(`[${c.id}] ${r}`);
+      }
+    };
+    figlio.stdout.on('data', righe);
+    figlio.stderr.on('data', righe);
+    figlio.on('close', fine);
+  })));
+  console.log('\nEsiti:');
+  for (const [f, ok] of esiti.sort()) console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${f}`);
+  return esiti.length === flussi.length && esiti.every(([, ok]) => ok) ? 0 : 1;
 }
 if (!process.env.ANDROID_SERIAL) { console.error('Nessun dispositivo adb collegato.'); process.exit(1); }
 const emulatore = [adb('shell', 'getprop', 'ro.kernel.qemu'), adb('shell', 'getprop', 'ro.boot.qemu')].some(v => v.trim() === '1');
@@ -120,30 +170,57 @@ const SEMI = {
     ...documento('0b6f4c1e-1111-4a6e-9c1d-000000000001', 'Ricevuta biblioteca', 2),
     ...documento('0b6f4c1e-2222-4a6e-9c1d-000000000002', 'Fotocopia articolo', 1, 'Ricevute')
   }),
-  /** Come «documenti», ma senza consenso a fotocamera, foto e file: l'app lo chiede. */
-  senzaConsenso: () => ({ ...SEMI.documenti(), 'consenso.json': null })
+  /**
+   * F3, F8, F9: come «archivio», con la 2ª pagina di Reg. 41 segnata sfocata, Reg. 42 e Perg. 7 col
+   * tag «da vedere» sul computer e Perg. 7 già fotografata da questo telefono.
+   */
+  novita: () => {
+    const base = SEMI.archivio();
+    const schede = JSON.parse(base['schede.json']);
+    for (const s of schede.schede) if (s.id !== 'scheda-reg41') s.daVedere = true;
+    const bozza = JSON.parse(base['lotti/20261011-100000-aaaa/bozza.json']);
+    return {
+      ...base,
+      'impostazioni.json': JSON.stringify({ ...JSON.parse(base['impostazioni.json']), viste: { [ARCHIVIO]: ['scheda-perg7'] } }),
+      'schede.json': JSON.stringify(schede),
+      'lotti/20261011-100000-aaaa/bozza.json': JSON.stringify({ ...bozza, sfocate: ['p0002.jpg'] })
+    };
+  },
+  /** F6, F11: i «documenti» con un archivio scelto, l'app aperta sui Documenti. */
+  documentiArchivio: () => ({
+    ...SEMI.documenti(),
+    'impostazioni.json': JSON.stringify({ soloWifi: true, dopoInvio: { modo: 'sempre', giorni: 7 }, archivio: { nome: ARCHIVIO, nuovo: false }, documenti: true }),
+    'archivi.json': JSON.stringify([ARCHIVIO])
+  })
 };
 
-// Tutti i semi (tranne «vuoto», primo avvio vero) partono col consenso già dato, come `chiediConsenso`.
-const CONSENSO = JSON.stringify({ versione: 1, data: '2026-10-12T08:00:00+02:00' });
+// Tutti i semi (tranne «vuoto», primo avvio vero) partono col benvenuto già fatto.
+const BENVENUTO = JSON.stringify({ versione: 1, data: '2026-10-12T08:00:00+02:00' });
 
 // La build di debug prende il JS da Metro: `localhost:<porta>` col reverse di adb vale per
 // emulatore e telefono via USB. METRO_PORTA se Metro non è sulla 8081.
 const PORTA = process.env.METRO_PORTA || '8081';
 const PREFERENZE = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><string name="debug_http_host">localhost:${PORTA}</string></map>`;
 
-function semina(nome) {
+// La lingua è forzata (`# lingua: en` in testa al flusso, altrimenti italiano): i flussi cercano
+// i testi, e l'emulatore di solito è in inglese.
+function semina(nome, lingua = 'it') {
   const seme = SEMI[nome];
   if (!seme) throw new Error(`seme sconosciuto: ${nome} (noti: ${Object.keys(SEMI).join(', ')})`);
   adb('shell', 'am', 'force-stop', PKG);
-  adb('shell', 'run-as', PKG, 'sh', '-c', '"rm -rf files/* files/.[!.]*"');  adb('reverse', `tcp:${PORTA}`, `tcp:${PORTA}`);
-  const pref = join(tmpdir(), 'archiview-preferenze.xml');
+  adb('shell', 'run-as', PKG, 'sh', '-c', '"rm -rf files/* files/.[!.]*"');
+  // Due «Non consentire» in flussi diversi segnano la fotocamera «non chiedere più» (USER_FIXED) e
+  // Android smette di mostrare la finestra: si riparte come da installazione nuova.
+  adb('shell', 'pm', 'clear-permission-flags', PKG, 'android.permission.CAMERA', 'user-set', 'user-fixed');
+  adb('reverse', `tcp:${PORTA}`, `tcp:${PORTA}`);
+  // Un file per emulatore: in parallelo i figli seminano insieme.
+  const pref = join(tmpdir(), `archiview-preferenze-${process.env.ANDROID_SERIAL}.xml`);
   writeFileSync(pref, PREFERENZE);
   adb('push', pref, '/data/local/tmp/archiview-preferenze.xml');
   adb('shell', 'run-as', PKG, 'sh', '-c', `"mkdir -p shared_prefs && cp /data/local/tmp/archiview-preferenze.xml shared_prefs/${PKG}_preferences.xml"`);
-  const file = nome === 'vuoto' ? {} : { 'consenso.json': CONSENSO, ...seme() };
-  if (!Object.keys(file).length) return;
-  const dir = join(tmpdir(), 'archiview-seme');
+  const file = nome === 'vuoto' ? {} : { 'benvenuto.json': BENVENUTO, ...seme() };
+  file['impostazioni.json'] = JSON.stringify({ ...JSON.parse(file['impostazioni.json'] || '{}'), lingua });
+  const dir = join(tmpdir(), `archiview-seme-${process.env.ANDROID_SERIAL}`);
   rmSync(dir, { recursive: true, force: true });
   for (const [p, dati] of Object.entries(file)) {
     if (dati === null) continue;
@@ -158,24 +235,19 @@ function semina(nome) {
 
 // --- Flussi ---
 
-const cartella = join(QUI, 'flussi');
-const filtri = process.argv.slice(2);
-const flussi = readdirSync(cartella).filter(f => f.endsWith('.yaml') && (!filtri.length || filtri.some(x => f.includes(x)))).sort();
-if (!flussi.length) { console.error('Nessun flusso trovato.'); process.exit(1); }
-
 // Solo sull'emulatore: Gboard apre «Try out your stylus» al primo campo e si mangia il testo.
 if (emulatore) {
-  adb('shell', 'settings', 'put', 'secure', 'stylus_handwriting_enabled', '0');
-}
+  adb('shell', 'settings', 'put', 'secure', 'stylus_handwriting_enabled', '0');}
 
 mkdirSync(join(QUI, 'esiti'), { recursive: true });
 const esiti = [];
 for (const f of flussi) {
   const testo = readFileSync(join(cartella, f), 'utf8');
   const seme = /^#\s*seme:\s*(\S+)/m.exec(testo)?.[1] || 'vuoto';
-  console.log(`\n▶ ${f} (seme: ${seme})`);
+  const lingua = /^#\s*lingua:\s*(\S+)/m.exec(testo)?.[1] || 'it';
+  console.log(`\n▶ ${f} (seme: ${seme}, lingua: ${lingua})`);
   try {
-    semina(seme);
+    semina(seme, lingua);
   } catch (e) {
     console.error(`  seme non scritto: ${e.message}`);
     esiti.push([f, false]);

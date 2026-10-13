@@ -1,6 +1,6 @@
 appId: com.antonioorf.archiview.scanner
 # seme: scadute
-name: Dopo l'invio, tieni 1 giorno - le scadute spariscono all'avvio (M8.31)
+name: Dopo l'invio, conserva 1 giorno - le scadute spariscono all'avvio (M8.31)
 ---
 - launchApp
 - extendedWaitUntil:

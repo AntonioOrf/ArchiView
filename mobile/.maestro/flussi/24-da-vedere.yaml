@@ -1,0 +1,20 @@
+appId: com.antonioorf.archiview.scanner
+# seme: novita
+name: F9 - filtro «Da vedere» con le schede già fotografate spuntate
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- scrollUntilVisible:
+    element: "Da vedere · 1 di 2"
+- tapOn: "Da vedere · 1 di 2"
+# Solo le schede segnate, cartelle aperte; Reg. 41 (non segnata) sparisce.
+- assertVisible: "Reg. 42, Atti sciolti, da vedere"
+- assertVisible: "Perg. 7, Privilegio, da vedere, fotografata"
+# Solo la riga dell'albero: «Da inviare» resta aperto sopra e dice «Reg. 41 e senza scheda».
+- assertNotVisible: "Reg\\. 41, Imbreviature.*"
+# Spento il filtro torna l'albero com'era (cartelle chiuse).
+- tapOn: "Da vedere · 1 di 2"
+- assertVisible: "Cartella Notarile.*"
+- assertNotVisible: "Reg. 42.*"

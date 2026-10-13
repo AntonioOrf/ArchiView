@@ -1,0 +1,54 @@
+appId: com.antonioorf.archiview.scanner
+# seme: vuoto
+name: Benvenuto - informativa, dopo l'invio, solo Wi-Fi, riepilogo e Impostazioni
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Benvenuto in ArchiScanner
+    timeout: 180000
+# Il primo passo riassume l'informativa, col link; nessuna richiesta di consenso.
+- assertVisible: I tuoi dati
+- assertVisible: Leggi l'informativa sulla privacy
+- tapOn: Inizia
+# Passo 1: il tasto indietro di Android torna alla presentazione, non chiude l'app.
+- assertVisible: "Dopo l'invio, le pagine…"
+- back
+- assertVisible: Benvenuto in ArchiScanner
+- tapOn: Inizia
+- tapOn: Conservale per 7 giorni
+- tapOn: Un giorno in più
+- assertVisible:
+    text: Conservale per 8 giorni
+    checked: true
+- tapOn:
+    text: Invio automatico solo col Wi-Fi
+    checked: true
+- tapOn: Avanti
+# Passo 3: senza account.
+- assertVisible: Collega il tuo Drive
+- tapOn: Più tardi
+- assertVisible: Tutto pronto
+- assertVisible: Conserva 8 giorni
+- assertVisible: Anche dati
+- assertVisible: Non collegato
+- tapOn: Vai all'app
+# Le scelte arrivano in Impostazioni (senza archivio ci si arriva da Documenti).
+- tapOn: Documenti
+- tapOn: Impostazioni
+- assertVisible:
+    text: Conserva per 8 giorni
+    checked: true
+- assertVisible:
+    text: Invio automatico solo col Wi-Fi
+    checked: false
+# Privacy, sotto «Documenti» (F5): va fatto scorrere. Maestro ha concesso la fotocamera all'avvio.
+- scrollUntilVisible:
+    element: Gestisci nelle impostazioni di Android
+- assertVisible: Fotocamera consentita
+# Riaperta, l'app non ripropone il benvenuto.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Documenti, cambia archivio
+    timeout: 180000
+- assertNotVisible: Benvenuto in ArchiScanner

@@ -4,8 +4,13 @@ name: Primo avvio, nuovo archivio, Documenti
 ---
 - launchApp
 - extendedWaitUntil:
-    visible: ArchiScanner
+    visible: Benvenuto in ArchiScanner
     timeout: 180000
+# Benvenuto saltato: «Salta» porta all'account, «Più tardi» lo lascia scollegato.
+- tapOn: Salta
+- tapOn: Più tardi
+- assertVisible: Tutto pronto
+- tapOn: Vai all'app
 - assertVisible: Accedi con Google
 - assertVisible: "Nessun archivio su Drive.*"
 - tapOn: Nuovo archivio

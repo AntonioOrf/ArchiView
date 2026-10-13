@@ -1,0 +1,50 @@
+appId: com.antonioorf.archiview.scanner
+# seme: archivio
+name: F7 - foto libera senza ritaglio, fuori dalla numerazione
+---
+- launchApp
+- extendedWaitUntil:
+    visible: Fondo Prova, cambia archivio
+    timeout: 180000
+- tapOn: "Cartella Notarile.*"
+- tapOn: "Reg. 41, Imbreviature.*"
+- assertVisible: Da inviare · 3 pagine
+- scrollUntilVisible:
+    element: "Foto libera, senza ritaglio"
+- tapOn: "Foto libera, senza ritaglio"
+- extendedWaitUntil:
+    visible: Scatta
+    timeout: 20000
+# Indietro senza foto: si esce subito.
+- back
+- assertVisible: "Reg. 41"
+# «Annulla» con una foto: chiede, «Scarta» non salva nulla.
+- tapOn: "Foto libera, senza ritaglio"
+- extendedWaitUntil:
+    visible: Scatta
+    timeout: 20000
+- tapOn: Scatta
+- extendedWaitUntil:
+    visible: "1 foto · senza ritaglio"
+    timeout: 30000
+- tapOn: Annulla
+- assertVisible: Scartare le foto?
+- tapOn: "(?i)scarta"
+- assertVisible: Da inviare · 3 pagine
+- tapOn: "Foto libera, senza ritaglio"
+- extendedWaitUntil:
+    visible: Scatta
+    timeout: 20000
+- tapOn: Scatta
+- extendedWaitUntil:
+    visible: "1 foto · senza ritaglio"
+    timeout: 30000
+# Indietro con una foto: chiede, «Conserva» la salva.
+- back
+- assertVisible: Conservare le foto?
+- tapOn: "(?i)conserva"
+- extendedWaitUntil:
+    visible: Da inviare · 4 pagine
+    timeout: 20000
+# La foto libera non ha etichetta.
+- assertVisible: "Apri Pagina 4.*"
