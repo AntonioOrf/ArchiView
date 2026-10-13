@@ -1,7 +1,37 @@
 // node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cartelleConConta, documentiDi, fileFiltrato, fileOcr, fileValido, nomeAutomatico, nomeFile, nomiImmagini, nomeValido, prossimoFile, quando, spostata } from '../src/elencoDocumenti.ts';
+import { cartelleConConta, daCopiare, daRipristinare, documentiDi, fileFiltrato, fileOcr, fileValido, LUNGHEZZA_NOME, nomeAutomatico, nomeFile, nomeSeguito, nomiImmagini, nomeValido, prossimoFile, quando, spostata } from '../src/elencoDocumenti.ts';
+
+test('nomeSeguito: (2), poi (3), mai oltre la lunghezza massima (F11)', () => {
+  assert.equal(nomeSeguito('Ricevute'), 'Ricevute (2)');
+  assert.equal(nomeSeguito('Ricevute (2)'), 'Ricevute (3)');
+  assert.equal(nomeSeguito('Anno (1999) bis'), 'Anno (1999) bis (2)');
+  const lungo = nomeSeguito('x'.repeat(LUNGHEZZA_NOME));
+  assert.equal(lungo.length, LUNGHEZZA_NOME);
+  assert.ok(lungo.endsWith(' (2)'));
+});
+
+const ID1 = '0f8fad5b-d9cb-469f-a165-70867728950e';
+const ID2 = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
+
+test('daCopiare: mai copiati o cambiati', () => {
+  const ore = [{ id: ID1, ora: 10 }, { id: ID2, ora: 20 }];
+  assert.deepEqual(daCopiare(ore, { [ID1]: 10 }), [{ id: ID2, ora: 20 }]);
+  assert.deepEqual(daCopiare(ore, { [ID1]: 9, [ID2]: 20 }), [{ id: ID1, ora: 10 }]);
+  assert.deepEqual(daCopiare(ore, { [ID1]: 10, [ID2]: 20 }), []);
+});
+
+test('daRipristinare: solo copie complete che qui mancano, file ammessi, documento.json per ultimo', () => {
+  const copie = [
+    { nome: '', file: [{ nome: 'cartelle.json' }] },
+    { nome: ID1, file: [{ nome: 'documento.json' }, { nome: 'p0001.jpg' }, { nome: '../x.jpg' }, { nome: 'p0001.ocr.json' }] },
+    { nome: ID2, file: [{ nome: 'p0001.jpg' }] },
+    { nome: 'non-un-id', file: [{ nome: 'documento.json' }] }
+  ];
+  assert.deepEqual(daRipristinare(copie, []), [{ nome: ID1, file: [{ nome: 'p0001.jpg' }, { nome: 'p0001.ocr.json' }, { nome: 'documento.json' }] }]);
+  assert.deepEqual(daRipristinare(copie, [ID1]), []);
+});
 
 test('spostata: avanti, indietro, oltre i bordi, invariato', () => {
   const a = ['p1', 'p2', 'p3', 'p4'];

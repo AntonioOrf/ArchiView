@@ -85,6 +85,19 @@ test('albero: la ricerca tiene solo i risultati e apre le loro cartelle', () => 
   assert.deepEqual(righeAlbero(schede, ['Mappe'], new Set(), 'nulla'), []);
 });
 
+test('albero: «Da vedere» tiene solo le schede segnate, anche insieme alla ricerca (F9)', () => {
+  const schede = [{ ...sch('1', 'Reg. 1', 'Registri'), daVedere: true }, sch('2', 'Reg. 2', 'Registri'), { ...sch('3', 'App. 1', 'Apprezzi'), daVedere: true }];
+  assert.deepEqual(forma(righeAlbero(schede, ['Mappe'], new Set(), '', true)), ['▾ Apprezzi (1)', '  · App. 1', '▾ Registri (1)', '  · Reg. 1']);
+  assert.deepEqual(forma(righeAlbero(schede, ['Mappe'], new Set(), 'reg', true)), ['▾ Registri (1)', '  · Reg. 1']);
+});
+
+test('elenco dal database: «da vedere» dai tag, con la regola del contratto (F9)', () => {
+  const db = { manoscritti: [{ id: 'a1', tags: 'fondo, da vedere' }, { id: 'a2', tags: 'fondo' }] };
+  const e = ScannerLotto.validaConfig(configDaDatabase('Podestà', db, '2026-10-11T10:00:00Z', ScannerLotto.daVedere));
+  assert.deepEqual(e.config.schede.map(s => s.daVedere), [true, undefined]);
+  assert.equal(configDaDatabase('Podestà', db, '2026-10-11T10:00:00Z').schede.some(s => s.daVedere), false);
+});
+
 test('cartelle aperte: l\'ultima aperta è quella corrente, chiudere toglie le figlie', () => {
   let a = alternaCartella([], 'Registri');
   a = alternaCartella(a, 'Registri/Badia');

@@ -1,7 +1,7 @@
 // node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { daRisultato, soloCaratteri, stratoTesto, testoDiPiuPagine } from '../src/testo.ts';
+import { daRisultato, parolaVicina, soloCaratteri, stratoTesto, testoDiPiuPagine, testoSelezionato } from '../src/testo.ts';
 
 const el = (text, left, top, right, bottom) => ({ text, frame: { left, top, right, bottom } });
 const risultato = {
@@ -17,6 +17,21 @@ test('daRisultato: righe a capo, blocchi separati, parole con la cornice', () =>
   assert.equal(r.parole.length, 6);
   assert.deepEqual(r.parole[1], { t: 'chartes', x0: 50, y0: 10, x1: 120, y1: 30 });
   assert.deepEqual(daRisultato({ blocks: [] }), { testo: '', parole: [] });
+});
+
+test('parolaVicina: dentro la cornice o la più vicina; nessuna parola → -1', () => {
+  const { parole } = daRisultato(risultato);
+  assert.equal(parolaVicina(parole, 60, 20), 1);
+  assert.equal(parolaVicina(parole, 95, 45), 3);
+  assert.equal(parolaVicina(parole, 200, 115), 5);
+  assert.equal(parolaVicina([], 0, 0), -1);
+});
+
+test('testoSelezionato: in ordine di lettura, a capo fra le righe, estremi in qualunque ordine', () => {
+  const { parole } = daRisultato(risultato);
+  assert.equal(testoSelezionato(parole, 1, 4), 'chartes\nde Farfa\nIXe');
+  assert.equal(testoSelezionato(parole, 4, 1), 'chartes\nde Farfa\nIXe');
+  assert.equal(testoSelezionato(parole, 2, 2), 'de');
 });
 
 test('soloCaratteri: fuori dal font diventa «?»', () => {

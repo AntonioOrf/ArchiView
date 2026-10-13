@@ -1,7 +1,7 @@
 // node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { INTERA, LATO_MINIMO, eIntera, giorniRimasti, inviatiScaduti, misureJpeg, rettangoloRitaglio, spostaAngolo } from '../src/pagine.ts';
+import { INTERA, LATO_MINIMO, eIntera, giorniRimasti, inviatiScaduti, misureJpeg, quantiGiorni, rettangoloRitaglio, spostaAngolo } from '../src/pagine.ts';
 
 /** JPEG minimo: SOI, APP1 Exif (se `o`) con un solo tag Orientation, un APP0 di disturbo, SOF0 w×h. */
 function jpeg(w, h, o, le = true) {
@@ -62,4 +62,10 @@ test('giorniRimasti', () => {
   assert.equal(giorniRimasti('2026-10-10T12:00:00+02:00', 7, ora), 6);
   assert.equal(giorniRimasti('2026-10-01T12:00:00+02:00', 7, ora), 0);
   assert.equal(giorniRimasti(undefined, 7, ora), 0);
+});
+
+test('quantiGiorni', () => {
+  assert.equal(quantiGiorni(1), '1 giorno');
+  assert.equal(quantiGiorni(0), '0 giorni');
+  assert.equal(quantiGiorni(7), '7 giorni');
 });

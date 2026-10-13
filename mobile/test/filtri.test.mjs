@@ -1,7 +1,7 @@
 // node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applicaFiltro, canali, lutLivelli, nomeFiltro, otsu, percentile } from '../src/filtri.ts';
+import { applicaFiltro, canali, lutLivelli, nitidezza, nomeFiltro, otsu, percentile, quadratoCentrale, SOGLIA_NITIDEZZA } from '../src/filtri.ts';
 
 /** Pixel RGBA da terne [r, g, b] (alfa 200, per vedere che non si tocca). */
 const rgba = terne => new Uint8Array(terne.flatMap(([r, g, b]) => [r, g, b, 200]));
@@ -62,4 +62,40 @@ test('migliora: la carta diventa bianca, l\'inchiostro più scuro, il colore res
 test('nomeFiltro: assente = Originale', () => {
   assert.equal(nomeFiltro(undefined), 'Originale');
   assert.equal(nomeFiltro('bn'), 'B/N');
+});
+
+/** «Scrittura» finta: tratti neri di 2 px ogni 6 su carta chiara, RGBA. `sfoca` = media 5×5 ripetuta. */
+function pagina(w, h, sfoca = 0) {
+  let y = Array.from({ length: w * h }, (_, k) => ((k % w) % 6 < 2 && Math.floor(k / w) % 9 < 7 ? 20 : 235));
+  for (let giro = 0; giro < sfoca; giro++) {
+    y = y.map((_, k) => {
+      const x0 = k % w, y0 = Math.floor(k / w);
+      let s = 0, n = 0;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const x = x0 + dx, yy = y0 + dy;
+        if (x >= 0 && x < w && yy >= 0 && yy < h) { s += y[yy * w + x]; n++; }
+      }
+      return Math.round(s / n);
+    });
+  }
+  return new Uint8Array(y.flatMap(v => [v, v, v, 255]));
+}
+
+test('nitidezza: scrittura netta sopra la soglia, sfocata e carta bianca sotto', () => {
+  assert.ok(nitidezza(pagina(60, 60), 'RGBA', 60, 60) > SOGLIA_NITIDEZZA);
+  assert.ok(nitidezza(pagina(60, 60, 2), 'RGBA', 60, 60) < SOGLIA_NITIDEZZA);
+  assert.equal(nitidezza(new Uint8Array(40 * 40 * 4).fill(230), 'RGBA', 40, 40), 0);
+});
+
+test('nitidezza: righe con riempimento e BGRA danno lo stesso valore', () => {
+  const w = 30, h = 30, px = pagina(w, h);
+  const conRiempimento = new Uint8Array((w * 4 + 8) * h);
+  for (let y = 0; y < h; y++) conRiempimento.set(px.subarray(y * w * 4, (y + 1) * w * 4), y * (w * 4 + 8));
+  assert.equal(nitidezza(conRiempimento, 'RGBA', w, h), nitidezza(px, 'RGBA', w, h));
+  assert.equal(nitidezza(px, 'BGRA', w, h), nitidezza(px, 'RGBA', w, h));
+});
+
+test('quadratoCentrale: 1000 px al centro, o tutta l\'immagine se più piccola', () => {
+  assert.deepEqual(quadratoCentrale(3000, 4000), [1000, 1500, 2000, 2500]);
+  assert.deepEqual(quadratoCentrale(800, 4000), [0, 1500, 800, 2500]);
 });
