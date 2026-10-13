@@ -96,6 +96,20 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
     modale('confronto-carte', '#confronto-modal', () => w('apriConfrontoCarte')),
     // PIANO-SCANNER Fase 12: pannello laterale «Dal telefono» (vuoto: senza Drive né lotti).
     modale('scansioni', '#scanner-modal', () => w('apriScansioni')),
+    // Import da ZIP: i tre stati del modale di avanzamento ed esito.
+    modale('import-zip-esito', '#import-zip-modal',
+      () => w('importZipRiuscito', { schede: 136, cartelle: 31, copiati: 430, saltati: 0, primaScheda: null })),
+    modale('import-zip-errore', '#import-zip-modal',
+      () => w('importZipFallito', { codice: 'spazio', dettaglio: 'ENOSPC: no space left on device' }),
+      // Aperti senza clic: il puntatore resterebbe sulla barra di zoom della trascrizione,
+      // misurata subito dopo a metà della sua dissolvenza.
+      () => page.evaluate(() => { (document.querySelector('.iz-dettagli') as HTMLDetailsElement).open = true; })),
+    {
+      // Esc non chiude l'avanzamento: si passa all'esito, che si chiude.
+      ...modale('import-zip-corso', '#import-zip-modal',
+        () => w('importZipAvanzamento', { nome: 'genius scan - per ArchiView.zip', fatte: 120, totale: 431 })),
+      chiudi: async () => { await w('importZipFallito', { codice: 'altro' }); await chiudi(); },
+    },
     trascrizione('trascrizione', id),
     trascrizione('trascrizione-senza-allegati', vuota),
   ];

@@ -1,6 +1,7 @@
 // Estrazione ZIP in streaming, isolata dall'IPC per poter essere testata senza Electron.
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { safeAttachmentPathOrNull } = require('./pathSafety');
 
 // Limite di sicurezza per il JSON in memoria: oltre questa soglia l'import viene rifiutato
@@ -38,7 +39,7 @@ function spazioLiberoDisco(dir: string): number | null {
  * lo stream di un'entry che produce più byte di quelli dichiarati.
  */
 function extractZipStreaming(zipPath: string, allegatiDir: string,
-  opzioni: { spazioLibero?: (dir: string) => number | null } = {}): Promise<{ json: string | null }> {
+  opzioni: { spazioLibero?: (dir: string) => number | null; avanzamento?: (fatte: number, totale: number) => void } = {}): Promise<{ json: string | null; copiati: number; saltati: number }> {
   const yauzl = require('yauzl');
   const libero = (opzioni.spazioLibero || spazioLiberoDisco)(allegatiDir);
   const tetto = libero == null ? Infinity : Math.max(0, libero - MARGINE_DISCO_BYTES);
@@ -49,13 +50,19 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
       let jsonText: string | null = null;
       let settled = false;
       let totaleAllegati = 0;
+      // Per l'esito mostrato all'utente: un nome già presente non si sovrascrive, si salta.
+      let copiati = 0;
+      let saltati = 0;
       const fail = (e) => { if (!settled) { settled = true; try { zipfile.close(); } catch (_) {} reject(e); } };
 
       zipfile.on('error', fail);
-      zipfile.on('end', () => { if (!settled) { settled = true; resolve({ json: jsonText }); } });
+      zipfile.on('end', () => { if (!settled) { settled = true; resolve({ json: jsonText, copiati, saltati }); } });
 
+      let fatte = 0;
       zipfile.on('entry', (entry) => {
         const name = entry.fileName;
+        // Si segnala l'inizio di ogni voce: su un PDF da centinaia di MB è lì che si aspetta.
+        if (opzioni.avanzamento) opzioni.avanzamento(++fatte, zipfile.entryCount);
 
         if (name === 'schedatura.json') {
           if (entry.uncompressedSize > MAX_JSON_BYTES) return fail(new Error('schedatura.json troppo grande per essere importato'));
@@ -81,7 +88,7 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
             console.warn(`[import zip] allegato con nome non valido saltato: ${attName}`);
             return zipfile.readEntry();
           }
-          if (fs.existsSync(attPath)) return zipfile.readEntry();
+          if (fs.existsSync(attPath)) { saltati++; return zipfile.readEntry(); }
 
           totaleAllegati += entry.uncompressedSize;
           if (totaleAllegati > tetto) {
@@ -93,7 +100,8 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
           return zipfile.openReadStream(entry, (e, stream) => {
             if (e) return fail(e);
             // Scrittura su file temporaneo + rename: un import interrotto non lascia allegati troncati.
-            const tmpPath = `${attPath}.part`;
+            // Suffisso casuale: due import dello stesso ZIP in parallelo non si contendono il `.part`.
+            const tmpPath = `${attPath}.${crypto.randomBytes(4).toString('hex')}.part`;
             const out = fs.createWriteStream(tmpPath);
             const failPulito = (errore) => {
               stream.unpipe(out);
@@ -103,7 +111,11 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
             stream.on('error', failPulito);
             out.on('error', failPulito);
             out.on('close', () => {
-              try { fs.renameSync(tmpPath, attPath); } catch (err) { return fail(err); }
+              try {
+                // Arrivato prima l'altro import: si tiene il suo, mai sovrascrivere un allegato.
+                if (fs.existsSync(attPath)) { fs.rmSync(tmpPath, { force: true }); saltati++; }
+                else { fs.renameSync(tmpPath, attPath); copiati++; }
+              } catch (err) { return fail(err); }
               zipfile.readEntry();
             });
             stream.pipe(out);

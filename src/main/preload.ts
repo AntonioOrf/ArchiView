@@ -58,6 +58,11 @@ contextBridge.exposeInMainWorld('apiBrowser', {
     exportZip: (ids, title) => ipcRenderer.invoke('export-zip', ids, title),
     exportCsv: (ids, opzioni) => ipcRenderer.invoke('export-csv', ids, opzioni),
     importZip: (title) => ipcRenderer.invoke('import-zip', title),
+    onImportZipAvanzamento: (callback) => {
+        const h = (event, dati) => callback(dati);
+        ipcRenderer.on('import-zip-avanzamento', h);
+        return () => ipcRenderer.removeListener('import-zip-avanzamento', h);
+    },
     // Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md): solo testo e id, mai percorsi.
     crossArchiveArchivi: () => ipcRenderer.invoke('cross-archive-archivi'),
     crossArchiveSearch: (richiesta) => ipcRenderer.invoke('cross-archive-search', richiesta),

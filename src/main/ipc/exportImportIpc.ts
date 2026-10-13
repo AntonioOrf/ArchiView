@@ -153,7 +153,7 @@ function setupExportImportIpc() {
     }
   });
 
-  ipcMain.handle('import-zip', async () => {
+  ipcMain.handle('import-zip', async (event) => {
     if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
     
     const result = await dialog.showOpenDialog({
@@ -165,28 +165,42 @@ function setupExportImportIpc() {
     if (result.canceled || result.filePaths.length === 0) return { success: false, canceled: true };
     
     const zipPath = result.filePaths[0];
-    
+    const nome = path.basename(zipPath);
+    // `codice` lo traduce il renderer (la i18n vive lì); `error` resta per chi legge il testo.
+    const nonArchiview = (dettaglio) => ({ success: false, codice: 'non_archiview', error: dettaglio, dettaglio });
+
     try {
         // Estrazione in streaming (yauzl, lazyEntries): l'archivio non viene mai caricato
         // interamente in RAM, requisito su macchine con 4GB dove AdmZip mandava in swap.
-        const estratto = await extractZipStreaming(zipPath, state.attachmentsDirPath);
-        if (!estratto.json) return { success: false, error: 'File non valido: manca schedatura.json' };
+        const estratto = await extractZipStreaming(zipPath, state.attachmentsDirPath, {
+            avanzamento: (fatte, totale) => {
+                if (event && event.sender && !event.sender.isDestroyed()) event.sender.send('import-zip-avanzamento', { nome, fatte, totale });
+            }
+        });
+        if (!estratto.json) return nonArchiview('File non valido: manca schedatura.json');
 
         let data;
         try {
             data = JSON.parse(estratto.json);
         } catch (e) {
-            return { success: false, error: 'Formato JSON non valido' };
+            return nonArchiview('Formato JSON non valido');
         }
-        if (!data.manoscritti || !Array.isArray(data.manoscritti)) return { success: false, error: 'Formato JSON non valido' };
+        if (!data.manoscritti || !Array.isArray(data.manoscritti)) return nonArchiview('Formato JSON non valido');
 
-        return { success: true, manoscritti: data.manoscritti };
+        return { success: true, manoscritti: data.manoscritti, copiati: estratto.copiati, saltati: estratto.saltati };
     } catch (e) {
-        let errorMsg = e.message || String(e);
-        if (/invalid|not a zip|end of central directory/i.test(errorMsg)) {
+        const dettaglio = e.message || String(e);
+        let codice = 'altro';
+        let errorMsg = dettaglio;
+        if (/invalid|not a zip|end of central directory/i.test(dettaglio)) {
+            codice = 'zip_non_valido';
             errorMsg = "File ZIP non valido, corrotto, oppure generato incorrettamente. Assicurati che sia un'esportazione valida di ArchiView e non superi i limiti di memoria.";
+        } else if (e.code === 'ENOSPC' || /Spazio su disco insufficiente/.test(dettaglio)) {
+            codice = 'spazio';
+        } else if (['EACCES', 'EPERM', 'EBUSY', 'EROFS'].includes(e.code)) {
+            codice = 'permessi';
         }
-        return { success: false, error: errorMsg };
+        return { success: false, codice, error: errorMsg, dettaglio };
     }
   });
 

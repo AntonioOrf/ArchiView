@@ -32,10 +32,12 @@ async function run() {
     'allegati/foto.txt': 'contenuto-allegato'
   });
   const dest1 = path.join(tmpRoot, 'allegati1');
-  const res1 = await extractZipStreaming(zip1, dest1);
+  const passi1 = [];
+  const res1 = await extractZipStreaming(zip1, dest1, { avanzamento: (f, t) => passi1.push([f, t]) });
+  assert.deepStrictEqual(passi1, [[1, 2], [2, 2]], 'una notifica per voce, col totale dello ZIP');
   assert.deepStrictEqual(JSON.parse(res1.json), db);
   assert.strictEqual(fs.readFileSync(path.join(dest1, 'foto.txt'), 'utf8'), 'contenuto-allegato');
-  assert.ok(!fs.existsSync(path.join(dest1, 'foto.txt.part')), 'il file temporaneo deve essere rinominato');
+  assert.deepStrictEqual(fs.readdirSync(dest1), ['foto.txt'], 'il file temporaneo deve essere rinominato');
   console.log('✅ Test 1: JSON e allegati estratti in streaming.');
 
   // Test 2: zip senza schedatura.json → json null (l'IPC lo traduce in errore utente)
@@ -106,6 +108,18 @@ async function run() {
   await extractZipStreaming(zip7, dest7);
   assert.deepStrictEqual(fs.readdirSync(dest7), ['buono.txt']);
   console.log('✅ Test 7: nomi di allegato non validi saltati.');
+
+  // Test 8: due import dello stesso ZIP in parallelo nella stessa cartella (archivio grande,
+  // menu cliccato di nuovo): prima il secondo trovava sparito il `.part` del primo → ENOENT.
+  const zip8 = path.join(tmpRoot, 'doppio.zip');
+  const voci8 = { 'schedatura.json': '{"manoscritti":[]}' };
+  for (let i = 0; i < 10; i++) voci8[`allegati/f${i}.pdf`] = Buffer.alloc(2e6, i);
+  await creaZip(zip8, voci8);
+  const dest8 = path.join(tmpRoot, 'allegati8');
+  await Promise.all([extractZipStreaming(zip8, dest8), extractZipStreaming(zip8, dest8)]);
+  assert.strictEqual(fs.readdirSync(dest8).length, 10, 'dieci allegati, nessun .part residuo');
+  assert.ok(fs.readFileSync(path.join(dest8, 'f3.pdf')).equals(Buffer.alloc(2e6, 3)));
+  console.log('✅ Test 8: estrazioni parallele nella stessa cartella.');
 
   console.log('Tutti i test zipStreaming passati con successo!');
 }

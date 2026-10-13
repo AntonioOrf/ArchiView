@@ -460,6 +460,8 @@ async function avviaApp() {
         'campo-proprio-modal': 'chiudiCampoProprioModal',
         'manage-types-modal': 'chiudiManageTypesModal',
         'delete-modal': 'chiudiDeleteModal',
+        // Non chiude finché l'estrazione è in corso: vedi importZipModal.ts.
+        'import-zip-modal': 'chiudiImportZip',
         'unsaved-modal': 'chiudiUnsavedModal',
         'cloud-modal': 'chiudiCloudModal',
         'share-modal': 'chiudiShareModal',
@@ -1002,8 +1004,25 @@ window.esportaSelezionatiCsv = async function(formato = 'csv') {
     await window.esportaCsv((window.selectedRecords || []).slice(), formato);
 };
 
+// Un archivio grande si estrae per minuti senza segni di vita: un secondo clic avvierebbe un
+// secondo import parallelo e, se riusciti entrambi, ogni scheda entrerebbe due volte.
+let importZipInCorso = false;
 window.importaManoscritto = async function() {
-    if (!window.apiBrowser || !window.apiBrowser.importZip) return;
+    if (!window.apiBrowser || !window.apiBrowser.importZip || importZipInCorso) return;
+    importZipInCorso = true;
+    // Il primo segnale arriva dopo la scelta del file: annullare il dialogo non mostra nulla.
+    const stacca = window.apiBrowser.onImportZipAvanzamento?.((p) => window.importZipAvanzamento(p));
+    try {
+        await importaZip();
+    } catch (e) {
+        window.importZipFallito({ codice: 'altro', dettaglio: e && e.message ? e.message : String(e) });
+    } finally {
+        if (stacca) stacca();
+        importZipInCorso = false;
+    }
+};
+
+async function importaZip() {
     const res = await window.apiBrowser.importZip(window.t("dialog_import_zip", "Importa Archivio JSON"));
     if (res.success && res.manoscritti) {
         let addedCount = 0;
@@ -1030,18 +1049,24 @@ window.importaManoscritto = async function() {
             addedCount++;
         });
 
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_importati_var_record_con_", '{var0} schede importate.').replace("{var0}", String(addedCount)), "success");
         if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        
+
         // Salvataggio scatena l'update chokidar ma avendo già appData aggiornato in memoria,
         // sincronizzaEUnisciDati non avrà problemi o sovrascritture.
         await window.Store.commit();
         if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
         if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
+        window.importZipRiuscito({
+            schede: addedCount,
+            cartelle: new Set(res.manoscritti.map(m => m.cartella).filter(Boolean)).size,
+            copiati: res.copiati || 0,
+            saltati: res.saltati || 0,
+            primaScheda: res.manoscritti.length ? res.manoscritti[0].id : null
+        });
     } else if (!res.canceled) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_importazione", "Errore in importazione: ") + res.error, "error");
+        window.importZipFallito({ codice: res.codice, dettaglio: res.dettaglio || res.error });
     }
-};
+}
 
 // --- LOGICA SELEZIONE MULTIPLA E COPIA/INCOLLA ---
 
