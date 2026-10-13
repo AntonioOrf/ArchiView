@@ -5,6 +5,7 @@ import type { ComponentType } from 'react';
 import { Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
+import { t } from '../lingua';
 import { raggio, spazio, useColori } from '../theme';
 import { ALTEZZA_BARRA, CERCHIO } from './BarraFondo';
 import { Testo } from './Testo';
@@ -21,7 +22,7 @@ export function MenuPiu({ visibile, voci, onChiudi }: { visibile: boolean; voci:
   const fondoCerchio = ALTEZZA_BARRA + margini.bottom - CERCHIO / 2;
   return (
     <Modal visible={visibile} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onChiudi}>
-      <Pressable accessibilityLabel="Chiudi" onPress={onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.55)' }} />
+      <Pressable accessibilityLabel={t('Chiudi')} onPress={onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.55)' }} />
       {/* Pallini in colonna sull'asse del cerchio, etichette a sinistra. */}
       <View accessibilityViewIsModal style={{ position: 'absolute', left: 0, right: width / 2 - PALLINO / 2, bottom: fondoCerchio + CERCHIO + spazio.lg, alignItems: 'flex-end', gap: spazio.md }}>
         {voci.map(v => (
@@ -49,7 +50,7 @@ export function MenuPiu({ visibile, voci, onChiudi }: { visibile: boolean; voci:
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: fondoCerchio, alignItems: 'center' }} pointerEvents="box-none">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Chiudi"
+          accessibilityLabel={t('Chiudi')}
           onPress={onChiudi}
           style={({ pressed }) => ({ width: CERCHIO, height: CERCHIO, borderRadius: raggio.tondo, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? c.primaryHover : c.primary })}
         >

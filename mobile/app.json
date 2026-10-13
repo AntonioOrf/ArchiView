@@ -48,7 +48,16 @@
           }
         }
       ],
-      "expo-sharing"
+      [
+        "expo-sharing",
+        {
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": ["image/*"],
+            "multipleShareMimeTypes": ["image/*"]
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

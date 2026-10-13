@@ -3,6 +3,7 @@
 // Annunciato ai lettori di schermo quando cambia.
 
 import { ActivityIndicator, View } from 'react-native';
+import { t } from '../lingua';
 import { raggio, spazio, useColori } from '../theme';
 import { Testo } from './Testo';
 
@@ -20,7 +21,7 @@ export function Attesa({ invio, errori }: Props) {
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.sm, minHeight: 40 }}>
             <ActivityIndicator size="small" color={c.primary} />
-            <Testo variante="aiuto" tono="main" style={{ flex: 1 }}>{`Invio ${invio.fatte}/${invio.totali} · tieni l'app aperta`}</Testo>
+            <Testo variante="aiuto" tono="main" style={{ flex: 1 }}>{t('Invio {fatte}/{totali} · non chiudere l\'app', invio)}</Testo>
           </View>
           <View style={{ height: 4, marginBottom: spazio.xs, borderRadius: 2, backgroundColor: c.bgHover }}>
             <View style={{ height: 4, borderRadius: 2, width: `${Math.round((invio.fatte / Math.max(1, invio.totali)) * 100)}%`, backgroundColor: c.primary }} />

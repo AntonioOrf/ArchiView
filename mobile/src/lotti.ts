@@ -10,10 +10,11 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { prossimaEtichetta } from './etichette';
-import { ritagliata, ruotata } from './immagini';
+import { ritagliata, ruotata, sfocata } from './immagini';
 import { inviatiScaduti, type DopoInvio, type Riquadro } from './pagine';
 import { ScannerLotto, type Destinazione, type Lotto, type Modalita, type Pagina } from './contratto';
 import { leggiJson, scriviJson } from './fileJson';
+import { t } from './lingua';
 
 const ALFABETO = '0123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -31,6 +32,8 @@ export type Bozza = {
   nota?: string;
   destinazione: Destinazione;
   pagine: Pagina[];
+  /** F3: file delle pagine che sembrano mosse o sfocate. Solo sul telefono, non va nel manifest. */
+  sfocate?: string[];
 };
 
 function radice(): Directory {
@@ -127,7 +130,7 @@ export async function recuperaLotto(id: string, archivio?: string): Promise<Bozz
   const pagine: Pagina[] = [];
   for (const f of foto) pagine.push({ file: f.name, ...(await impronta(f)), modalita: 'documento' });
   return salvaBozza({
-    id, creatoIl: isoLocale(new Date()), stato: 'in_coda', titolo: 'Scansioni recuperate',
+    id, creatoIl: isoLocale(new Date()), stato: 'in_coda', titolo: t('Scansioni recuperate'),
     ...(archivio ? { archivio } : {}), destinazione: { tipo: 'nessuna' }, pagine
   });
 }
@@ -149,7 +152,7 @@ function prossimoNome(b: Bozza): string {
  * Copia l'immagine nel lotto come pagina successiva e ne calcola sha256 e byte.
  * L'hash si calcola sulla COPIA, cioè sul file che verrà caricato.
  */
-export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Modalita, extra?: { larghezza?: number; altezza?: number; etichetta?: string }): Promise<Bozza> {
+export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Modalita, extra?: { larghezza?: number; altezza?: number; etichetta?: string; nota?: string }): Promise<Bozza> {
   const nome = prossimoNome(b);
   const dest = new File(cartellaLotto(b.id), nome);
   if (dest.exists) dest.delete();
@@ -158,14 +161,24 @@ export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Mo
   if (extra?.larghezza) pagina.larghezza = Math.round(extra.larghezza);
   if (extra?.altezza) pagina.altezza = Math.round(extra.altezza);
   if (extra?.etichetta?.trim()) pagina.etichetta = extra.etichetta.trim();
+  if (extra?.nota?.trim()) pagina.nota = extra.nota.trim();
   return salvaBozza({ ...b, pagine: [...b.pagine, pagina] });
 }
 
 export function etichettaPagina(b: Bozza, file: string, etichetta: string): Bozza {
+  return testoPagina(b, file, 'etichetta', etichetta);
+}
+
+/** F8: la nota della pagina; vuota = assente. */
+export function notaPagina(b: Bozza, file: string, nota: string): Bozza {
+  return testoPagina(b, file, 'nota', nota);
+}
+
+function testoPagina(b: Bozza, file: string, chiave: 'etichetta' | 'nota', valore: string): Bozza {
   const pagine = b.pagine.map(p => {
     if (p.file !== file) return p;
-    const { etichetta: _vecchia, ...resto } = p;
-    return etichetta.trim() ? { ...resto, etichetta } : resto;
+    const { [chiave]: _vecchio, ...resto } = p;
+    return valore.trim() ? { ...resto, [chiave]: valore } : resto;
   });
   return salvaBozza({ ...b, pagine });
 }
@@ -173,7 +186,34 @@ export function etichettaPagina(b: Bozza, file: string, etichetta: string): Bozz
 export function rimuoviPagina(b: Bozza, file: string): Bozza {
   const f = fileDellaPagina(b, file);
   if (f.exists) f.delete();
-  return salvaBozza({ ...b, pagine: b.pagine.filter(p => p.file !== file) });
+  return salvaBozza(conSfocate({ ...b, pagine: b.pagine.filter(p => p.file !== file) }, b.sfocate ?? []));
+}
+
+/** `sfocate` ridotto alle pagine che ci sono (un nome tolto può tornare con una pagina nuova); vuoto = assente. */
+function conSfocate(b: Bozza, sfocate: string[]): Bozza {
+  const { sfocate: _vecchie, ...resto } = b;
+  const restano = [...new Set(sfocate)].filter(f => b.pagine.some(p => p.file === f));
+  return restano.length ? { ...resto, sfocate: restano } : resto;
+}
+
+/**
+ * F3: misura le pagine `file` e salva il risultato sulla bozza com'è ADESSO su disco (nel frattempo
+ * l'utente può aver cambiato un'etichetta). null se il lotto non c'è più (inviato e cancellato).
+ * Una misura che fallisce non segna nulla: l'avviso è un aiuto, non un controllo.
+ */
+export async function controllaSfocate(b: Bozza, file: string[]): Promise<Bozza | null> {
+  const sfocate: string[] = [];
+  for (const f of file) {
+    try {
+      if (await sfocata(fileDellaPagina(b, f).uri)) sfocate.push(f);
+    } catch (e) {
+      console.warn('[lotti] nitidezza non misurata', b.id, f, e);
+    }
+  }
+  const json = new File(cartellaLotto(b.id), 'bozza.json');
+  if (!json.exists) return null;
+  const ora = leggiJson(json) as Bozza;
+  return salvaBozza(conSfocate(ora, [...(ora.sfocate ?? []).filter(f => !file.includes(f)), ...sfocate]));
 }
 
 /**
@@ -198,11 +238,11 @@ export async function dividiPagina(b: Bozza, file: string, frazione: number): Pr
   const sx = await meta(0, piega);
   const dx = await meta(piega, intera.width - piega);
 
-  let nb = await aggiungiPagina(b, sx.uri, pg.modalita, { larghezza: sx.width, altezza: sx.height, etichetta: pg.etichetta });
-  nb = await aggiungiPagina(nb, dx.uri, pg.modalita, { larghezza: dx.width, altezza: dx.height, etichetta: prossimaEtichetta(pg.etichetta) });
+  let nb = await aggiungiPagina(b, sx.uri, pg.modalita, { larghezza: sx.width, altezza: sx.height, etichetta: pg.etichetta, nota: pg.nota });
+  nb = await aggiungiPagina(nb, dx.uri, pg.modalita, { larghezza: dx.width, altezza: dx.height, etichetta: prossimaEtichetta(pg.etichetta), nota: pg.nota });
   const [psx, pdx] = nb.pagine.slice(-2);
   const pagine = [...b.pagine.slice(0, i), { ...psx, doppia: { lato: 'sx' as const } }, { ...pdx, doppia: { lato: 'dx' as const } }, ...b.pagine.slice(i + 1)];
-  const finale = salvaBozza({ ...nb, pagine });
+  const finale = salvaBozza(conSfocate({ ...nb, pagine }, b.sfocate ?? []));
   for (const uri of [sorgente.uri, sx.uri, dx.uri]) {
     try { new File(uri).delete(); } catch (e) { console.warn('[lotti] file temporaneo non eliminato', uri, e); }
   }

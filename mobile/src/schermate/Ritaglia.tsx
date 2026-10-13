@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, PanResponder, View } from 'react-native';
 import { Crop, Maximize } from 'lucide-react-native';
+import { t } from '../lingua';
 import { INTERA, eIntera, spostaAngolo, type Riquadro } from '../pagine';
 import { colori } from '../theme/colori';
 import { spazio, TOCCO, useColori } from '../theme';
@@ -13,7 +14,9 @@ import { Pulsante } from '../ui/Pulsante';
 
 type Angolo = { x: 'x0' | 'x1'; y: 'y0' | 'y1' };
 const ANGOLI: Angolo[] = [{ x: 'x0', y: 'y0' }, { x: 'x1', y: 'y0' }, { x: 'x0', y: 'y1' }, { x: 'x1', y: 'y1' }];
-const NOMI = { x0y0: 'in alto a sinistra', x1y0: 'in alto a destra', x0y1: 'in basso a sinistra', x1y1: 'in basso a destra' } as const;
+const nomeAngolo = (a: Angolo) => (a.y === 'y0'
+  ? (a.x === 'x0' ? t('Angolo in alto a sinistra') : t('Angolo in alto a destra'))
+  : (a.x === 'x0' ? t('Angolo in basso a sinistra') : t('Angolo in basso a destra')));
 /** Passo dei comandi del lettore di schermo, in frazione. */
 const PASSO = 0.02;
 
@@ -51,7 +54,7 @@ export function Ritaglia({ titolo, uri, onRitaglia, onAnnulla }: Props) {
   const ombra = { position: 'absolute' as const, backgroundColor: 'rgba(0,0,0,0.55)' };
   return (
     <View style={{ flex: 1 }}>
-      <Intestazione titolo={titolo} sotto="Trascina gli angoli" onIndietro={onAnnulla} chiudi />
+      <Intestazione titolo={titolo} sotto={t('Trascina gli angoli')} onIndietro={onAnnulla} chiudi />
       <View style={{ flex: 1, backgroundColor: colori.scuro.bgBase, alignItems: 'center', justifyContent: 'center', padding: spazio.lg }}>
         {!proporzione ? <ActivityIndicator color={colori.scuro.textMain} /> : (
           <View
@@ -70,8 +73,8 @@ export function Ritaglia({ titolo, uri, onRitaglia, onAnnulla }: Props) {
                 {...maniglie[k].panHandlers}
                 accessible
                 accessibilityRole="adjustable"
-                accessibilityLabel={`Angolo ${NOMI[`${a.x}${a.y}`]}`}
-                accessibilityActions={[{ name: 'increment', label: 'Verso l\'interno' }, { name: 'decrement', label: 'Verso l\'esterno' }]}
+                accessibilityLabel={nomeAngolo(a)}
+                accessibilityActions={[{ name: 'increment', label: t('Verso l\'interno') }, { name: 'decrement', label: t('Verso l\'esterno') }]}
                 onAccessibilityAction={e => {
                   const d = (e.nativeEvent.actionName === 'increment' ? 1 : -1) * PASSO;
                   imposta(spostaAngolo(attuale.current, a, a.x === 'x0' ? d : -d, a.y === 'y0' ? d : -d));
@@ -85,8 +88,8 @@ export function Ritaglia({ titolo, uri, onRitaglia, onAnnulla }: Props) {
         )}
       </View>
       <View style={{ flexDirection: 'row', gap: spazio.md, padding: spazio.md, backgroundColor: c.bgPanel, borderTopWidth: 1, borderColor: c.divisore }}>
-        <Pulsante variante="secondario" icona={Maximize} titolo="Pagina intera" disabilitato={occupato || eIntera(r)} onPress={() => imposta(INTERA)} style={{ flex: 1 }} />
-        <Pulsante variante="primario" icona={Crop} titolo="Ritaglia" caricamento={occupato} disabilitato={eIntera(r)} onPress={conferma} style={{ flex: 1 }} />
+        <Pulsante variante="secondario" icona={Maximize} titolo={t('Pagina intera')} disabilitato={occupato || eIntera(r)} onPress={() => imposta(INTERA)} style={{ flex: 1 }} />
+        <Pulsante variante="primario" icona={Crop} titolo={t('Ritaglia')} caricamento={occupato} disabilitato={eIntera(r)} onPress={conferma} style={{ flex: 1 }} />
       </View>
     </View>
   );

@@ -27,6 +27,23 @@ export function soloCaratteri(t: string, ammessi: ReadonlySet<number>): string {
 /** Testo di più pagine, in ordine, separate da una riga vuota; le pagine senza testo si saltano. */
 export const testoDiPiuPagine = (testi: (string | undefined)[]) => testi.map(t => t?.trim()).filter(Boolean).join('\n\n');
 
+/** Indice della parola più vicina al punto (in pixel della foto; 0 se ci cade dentro), -1 se non ce ne sono. */
+export function parolaVicina(parole: Parola[], x: number, y: number): number {
+  let migliore = -1, d = Infinity;
+  for (const [i, p] of parole.entries()) {
+    const dx = Math.max(p.x0 - x, 0, x - p.x1), dy = Math.max(p.y0 - y, 0, y - p.y1);
+    const di = dx * dx + dy * dy;
+    if (di < d) { d = di; migliore = i; }
+  }
+  return migliore;
+}
+
+/** Le parole da `a` a `b` (in qualunque ordine), a capo quando la successiva torna indietro: riga nuova. */
+export function testoSelezionato(parole: Parola[], a: number, b: number): string {
+  const sel = parole.slice(Math.min(a, b), Math.max(a, b) + 1);
+  return sel.map((p, i) => (i === 0 ? '' : p.x0 < sel[i - 1].x0 ? '\n' : ' ') + p.t).join('');
+}
+
 /**
  * Dove scrivere ogni parola sulla pagina PDF (origine in basso a sinistra), con la dimensione che
  * la fa larga quanto la parola nella foto: selezione e ricerca cadono sul punto giusto.

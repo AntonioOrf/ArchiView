@@ -5,13 +5,11 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { recognizeText } from '@infinitered/react-native-mlkit-text-recognition';
-import { fileFiltrato, fileOcr, fileValido, ocrAggiornato, prossimoFile, type Documento, type OcrPagina, type PaginaDoc } from './elencoDocumenti';
+import { fileFiltrato, fileOcr, fileValido, ocrAggiornato, prossimoFile, UUID, type Documento, type OcrPagina, type PaginaDoc } from './elencoDocumenti';
 import type { Filtro } from './filtri';
 import { leggiJson, scriviJson } from './fileJson';
 import { filtrata } from './immagini';
 import { daRisultato, type Parola } from './testo';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 function radice(): Directory {
   const d = new Directory(Paths.document, 'documenti');
@@ -194,7 +192,90 @@ export function rimuoviPagina(d: Documento, file: string): Documento {
   return salvaDocumento({ ...d, pagine: d.pagine.filter(p => p.file !== file) });
 }
 
+/**
+ * F11: copia in fondo a `dest` le pagine date di `src`, con la copia filtrata e l'OCR (stessa `v`:
+ * l'OCR resta valido), con nomi nuovi. Se una copia fallisce, quelle fatte si tolgono e l'errore
+ * risale: `dest` su disco resta com'era. Restituisce le pagine di `dest` con le nuove in fondo.
+ */
+async function copiaPagine(src: Documento, dest: Documento, pagine: PaginaDoc[]): Promise<PaginaDoc[]> {
+  const out = [...dest.pagine];
+  const copiati: File[] = [];
+  try {
+    for (const p of pagine) {
+      const file = prossimoFile(out);
+      for (const [da, a] of [[p.file, file], [fileFiltrato(p.file), fileFiltrato(file)], [fileOcr(p.file), fileOcr(file)]]) {
+        const f = fileDoc(src, da);
+        if (!f.exists) continue;
+        const t = fileDoc(dest, a);
+        if (t.exists) t.delete();
+        await f.copy(t);
+        copiati.push(t);
+      }
+      out.push({ ...p, file });
+    }
+  } catch (e) {
+    for (const t of copiati) { try { if (t.exists) t.delete(); } catch (e2) { console.warn('[documenti] copia non tolta', t.uri, e2); } }
+    throw e;
+  }
+  return out;
+}
+
+/** F11: le pagine di `src` in fondo a `dest`; poi `src` si elimina (anche dalla copia su Drive). */
+export async function unisciDocumenti(dest: Documento, src: Documento): Promise<Documento> {
+  if (dest.id === src.id) throw new Error('stesso_documento');
+  const unito = salvaDocumento({ ...dest, pagine: await copiaPagine(src, dest, src.pagine) });
+  eliminaDocumento(src);
+  return unito;
+}
+
+/** F11: le pagine da `da` in poi diventano un documento nuovo, nella stessa cartella. */
+export async function dividiDocumento(d: Documento, da: number, nome: string): Promise<{ prima: Documento; seconda: Documento }> {
+  if (da < 1 || da >= d.pagine.length) throw new Error('divisione_non_valida');
+  const nuovo: Documento = { id: Crypto.randomUUID(), nome, creatoIl: new Date().toISOString(), pagine: [], ...(d.cartella ? { cartella: d.cartella } : {}) };
+  const dir = cartellaDoc(nuovo.id);
+  dir.create({ intermediates: true });
+  let seconda: Documento;
+  try {
+    seconda = salvaDocumento({ ...nuovo, pagine: await copiaPagine(d, nuovo, d.pagine.slice(da)) });
+  } catch (e) {
+    if (dir.exists) dir.delete();
+    throw e;
+  }
+  let prima = d;
+  for (const p of d.pagine.slice(da)) prima = rimuoviPagina(prima, p.file);
+  return { prima, seconda };
+}
+
 export function eliminaDocumento(d: Documento): void {
   const c = cartellaDoc(d.id);
   if (c.exists) c.delete();
+  // F5: la copia su Drive si toglie al prossimo giro. Se non si scrive, la copia resta (nessun dato perso).
+  try { fileEliminati().write(JSON.stringify([...new Set([...eliminati(), d.id])])); }
+  catch (e) { console.warn('[documenti] eliminazione non registrata per la copia', d.id, e); }
+}
+
+// --- F5: per la copia su Drive (src/copiaDocumenti.ts) ---
+
+export const radiceDocumenti = radice;
+export { cartellaDoc };
+const fileEliminati = () => new File(radice(), 'eliminati.json');
+
+/** Id dei documenti eliminati la cui copia su Drive è ancora da togliere. */
+export function eliminati(): string[] {
+  try {
+    const f = fileEliminati();
+    const v = f.exists ? JSON.parse(f.textSync()) : [];
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && UUID.test(x)) : [];
+  } catch (e) {
+    console.warn('[documenti] eliminati illeggibili', e);
+    return [];
+  }
+}
+
+/** Dopo la copia: toglie dalla lista gli id già tolti anche da Drive. */
+export function eliminatiCopiati(ids: string[]): void {
+  const restano = eliminati().filter(x => !ids.includes(x));
+  const f = fileEliminati();
+  if (restano.length) f.write(JSON.stringify(restano));
+  else if (f.exists) f.delete();
 }

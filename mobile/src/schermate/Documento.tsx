@@ -8,10 +8,11 @@ import { FlatList, Image, Pressable, useWindowDimensions, View, type ViewProps }
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { FolderInput, Pencil, Share2, Trash2 } from 'lucide-react-native';
+import { Archive, Combine, FolderInput, Pencil, Share2, Trash2 } from 'lucide-react-native';
 import { LUNGHEZZA_NOME, nomeValido, quando, type Documento as Doc, type PaginaDoc } from '../elencoDocumenti';
 import { uriPagina } from '../documenti';
 import { nomeFiltro } from '../filtri';
+import { t } from '../lingua';
 import { raggio, spazio, useColori } from '../theme';
 import { SPORGENZA_BARRA } from '../ui/BarraFondo';
 import { Campo } from '../ui/Campo';
@@ -31,6 +32,11 @@ type Props = {
   onCondividi: () => void;
   /** Riordino: la pagina `da` va in posizione `a`. */
   onRiordina: (da: number, a: number) => void;
+  /** F6: nome dell'archivio aperto, se c'è; `onArchivio` manda le pagine in «Senza scheda». */
+  archivio?: string;
+  onArchivio?: () => void;
+  /** F11: sceglie un altro documento da mettere in fondo a questo. */
+  onUnisci: () => void;
 };
 
 type PropsMiniatura = {
@@ -69,9 +75,9 @@ function Miniatura({ doc, pg, i, n, lato, onApri, onRiordina, onTrascina }: Prop
   return (
     <GestureDetector gesture={pan}>
       <Animated.View style={[{ width: lato }, stile]} onLayout={e => { alto.current = e.nativeEvent.layout.height; }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Apri la pagina ${i + 1}${pg.filtro ? `, filtro ${nomeFiltro(pg.filtro)}` : ''}`}
-          accessibilityHint={n > 1 ? 'Tieni premuto e trascina per spostarla' : undefined}
-          accessibilityActions={n > 1 ? [...(i > 0 ? [{ name: 'decrement', label: 'Sposta prima' }] : []), ...(i < n - 1 ? [{ name: 'increment', label: 'Sposta dopo' }] : [])] : undefined}
+        <Pressable accessibilityRole="button" accessibilityLabel={pg.filtro ? t('Apri la pagina {n}, filtro {filtro}', { n: i + 1, filtro: nomeFiltro(pg.filtro) }) : t('Apri la pagina {n}', { n: i + 1 })}
+          accessibilityHint={n > 1 ? t('Tieni premuto e trascina per spostarla') : undefined}
+          accessibilityActions={n > 1 ? [...(i > 0 ? [{ name: 'decrement', label: t('Sposta prima') }] : []), ...(i < n - 1 ? [{ name: 'increment', label: t('Sposta dopo') }] : [])] : undefined}
           onAccessibilityAction={e => onRiordina(i, i + (e.nativeEvent.actionName === 'increment' ? 1 : -1))}
           onPress={() => { if (Date.now() - finito.current > 400) onApri(i); }} style={{ gap: spazio.xs }}>
           {({ pressed }) => (
@@ -89,7 +95,7 @@ function Miniatura({ doc, pg, i, n, lato, onApri, onRiordina, onTrascina }: Prop
   );
 }
 
-export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onElimina, onCondividi, onRiordina }: Props) {
+export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onElimina, onCondividi, onRiordina, archivio, onArchivio, onUnisci }: Props) {
   const { width } = useWindowDimensions();
   const [nome, setNome] = useState<string | null>(null);
   /** Pagina che si sta trascinando: la sua riga va sopra le altre e l'elenco non scorre. */
@@ -97,7 +103,7 @@ export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onEli
   const rigaSu = trascinata === null ? -1 : Math.floor(trascinata / COLONNE);
   const lato = (width - spazio.md * 2 - spazio.md * (COLONNE - 1)) / COLONNE;
   const n = doc.pagine.length;
-  const sotto = [doc.cartella, `${n} ${n === 1 ? 'pagina' : 'pagine'}`, quando(doc.creatoIl, new Date())].filter(Boolean).join(' · ');
+  const sotto = [doc.cartella, n === 1 ? t('1 pagina') : t('{n} pagine', { n }), quando(doc.creatoIl, new Date())].filter(Boolean).join(' · ');
   const righe: PaginaDoc[][] = [];
   for (let i = 0; i < n; i += COLONNE) righe.push(doc.pagine.slice(i, i + COLONNE));
 
@@ -105,27 +111,31 @@ export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onEli
     <View style={{ gap: spazio.md, paddingTop: spazio.md }}>
       {nome !== null && (
         <View style={{ paddingHorizontal: spazio.md, gap: spazio.sm }}>
-          <Campo etichetta="Nome del documento" value={nome} onChangeText={setNome} maxLength={LUNGHEZZA_NOME} autoFocus selectTextOnFocus />
+          <Campo etichetta={t('Nome del documento')} value={nome} onChangeText={setNome} maxLength={LUNGHEZZA_NOME} autoFocus selectTextOnFocus />
           <View style={{ flexDirection: 'row', gap: spazio.sm }}>
-            <Pulsante variante="primario" titolo="Rinomina" disabilitato={!nomeValido(nome)} style={{ flex: 1 }} onPress={() => { onRinomina(nome.trim()); setNome(null); }} />
-            <Pulsante variante="ghost" titolo="Annulla" onPress={() => setNome(null)} />
+            <Pulsante variante="primario" titolo={t('Rinomina')} disabilitato={!nomeValido(nome)} style={{ flex: 1 }} onPress={() => { onRinomina(nome.trim()); setNome(null); }} />
+            <Pulsante variante="ghost" titolo={t('Annulla')} onPress={() => setNome(null)} />
           </View>
         </View>
       )}
       <View style={{ flexDirection: 'row', gap: spazio.sm, paddingHorizontal: spazio.md }}>
-        <Pulsante variante="primario" icona={Share2} titolo="Condividi o salva" onPress={onCondividi} style={{ flex: 1 }} />
-        <Pulsante icona={FolderInput} titolo="Sposta" onPress={onSposta} />
-        <Pulsante variante="pericoloGhost" icona={Trash2} etichetta="Elimina il documento" onPress={onElimina} />
+        <Pulsante variante="primario" icona={Share2} titolo={t('Condividi o salva')} onPress={onCondividi} style={{ flex: 1 }} />
+        <Pulsante icona={FolderInput} titolo={t('Sposta')} onPress={onSposta} />
+        <Pulsante variante="pericoloGhost" icona={Trash2} etichetta={t('Elimina il documento')} onPress={onElimina} />
       </View>
-      <Testo variante="sezione" accessibilityRole="header" style={{ paddingHorizontal: spazio.md }}>Pagine</Testo>
-      {n > 1 && <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md, marginTop: -spazio.sm }}>Tieni premuta una pagina e trascinala per cambiare l'ordine.</Testo>}
+      {archivio && <Pulsante variante="ghost" icona={Archive} titolo={t('Manda all\'archivio «{nome}»', { nome: archivio })} onPress={onArchivio!} style={{ marginHorizontal: spazio.md, marginTop: -spazio.sm, alignSelf: 'flex-start' }} />}
+      <Testo variante="sezione" accessibilityRole="header" style={{ paddingHorizontal: spazio.md }}>{t('Pagine')}</Testo>
+      {n > 1 && <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md, marginTop: -spazio.sm }}>{t('Tieni premuta una pagina e trascinala per cambiare l\'ordine.')}</Testo>}
     </View>
   );
 
   return (
     <View style={{ flex: 1 }}>
       <Intestazione titolo={doc.nome} sotto={sotto} onIndietro={onIndietro}
-        azioni={<Pulsante variante="ghost" icona={Pencil} etichetta="Rinomina il documento" onPress={() => setNome(doc.nome)} />} />
+        azioni={<>
+          <Pulsante variante="ghost" icona={Combine} etichetta={t('Unisci un altro documento in fondo')} onPress={onUnisci} />
+          <Pulsante variante="ghost" icona={Pencil} etichetta={t('Rinomina il documento')} onPress={() => setNome(doc.nome)} />
+        </>} />
       <FlatList
         data={righe}
         keyExtractor={r => r[0].file}

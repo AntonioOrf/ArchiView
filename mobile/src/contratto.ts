@@ -13,6 +13,8 @@ export type Pagina = {
   larghezza?: number;
   altezza?: number;
   etichetta?: string;
+  /** F8: una riga sulla carta («rifilata», «macchia»): sul desktop finisce nel campo Note della scheda. */
+  nota?: string;
   doppia?: { lato: 'sx' | 'dx' };
 };
 
@@ -38,13 +40,14 @@ export type Lotto = {
 export type ErroreContratto = { codice: string; percorso: string };
 export type EsitoValidazione = { ok: true; lotto: Lotto } | { ok: false; errori: ErroreContratto[] };
 
-export type VoceScheda = { id: string; segnatura: string; cartella: string; titolo: string };
+export type VoceScheda = { id: string; segnatura: string; cartella: string; titolo: string; daVedere?: true };
 export type ConfigScanner = { formato: string; versione: number; archivio: string; aggiornatoIl: string; schede: VoceScheda[]; cartelle: string[] };
 export type EsitoConfig = { ok: true; config: ConfigScanner } | { ok: false; errori: ErroreContratto[] };
 
 type ModuloScannerLotto = {
   CARTELLA_ARCHIVI: string;
   validaConfig(json: unknown): EsitoConfig;
+  daVedere(tags: unknown): boolean;
   FORMATO: string;
   VERSIONE: number;
   NOME_MANIFEST: string;

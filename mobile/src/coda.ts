@@ -11,14 +11,17 @@ import { ScannerLotto, type ConfigScanner } from './contratto';
 import { elencaLotti, fileDellaPagina, manifest, segnaInviato, type Bozza } from './lotti';
 import { DOPO_INVIO_PREDEFINITO, type DopoInvio } from './pagine';
 import { leggiJson, scriviJson } from './fileJson';
+import type { Lingua } from './lingua';
 
 /**
  * `archivio`: quello scelto (ricordato); `nuovo` = creato qui, il desktop non l'ha ancora pubblicato.
  * `aperte`: cartelle aperte nell'albero, per archivio, in ordine d'apertura (`alternaCartella`).
  * `account`: email dell'ultimo accesso con cui è partita la coda; con un altro account la coda aspetta il permesso.
  * `documenti`: l'app era nella sezione Documenti; alla riapertura riparte da lì.
+ * `copiaDocumenti` (F5): i Documenti si copiano su Drive a ogni giro della coda col Wi-Fi.
+ * `viste` (F9): per archivio, le schede «da vedere» già fotografate da questo telefono.
  */
-export type Impostazioni = { soloWifi: boolean; dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean };
+export type Impostazioni = { soloWifi: boolean; dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean; copiaDocumenti?: boolean; viste?: Record<string, string[]>; lingua?: Lingua };
 
 const IMPOSTAZIONI_PREDEFINITE: Impostazioni = { soloWifi: true, dopoInvio: DOPO_INVIO_PREDEFINITO };
 
@@ -42,6 +45,18 @@ export function leggiImpostazioni(): Impostazioni {
 
 export function salvaImpostazioni(i: Impostazioni): void {
   scriviJson(fileImpostazioni(), i);
+}
+
+// File a parte, non un campo di `Impostazioni`: i semi Maestro senza impostazioni lo scrivono da soli.
+const fileBenvenuto = () => new File(Paths.document, 'benvenuto.json');
+
+/** true se il benvenuto del primo avvio è già stato fatto (o saltato). */
+export function benvenutoFatto(): boolean {
+  try { return fileBenvenuto().exists; } catch (e) { console.warn('[coda] benvenuto illeggibile', e); return true; }
+}
+
+export function segnaBenvenuto(): void {
+  scriviJson(fileBenvenuto(), { data: new Date().toISOString() });
 }
 
 // --- Elenco delle schede (Fase 4): copia locale, per scegliere la destinazione offline ---

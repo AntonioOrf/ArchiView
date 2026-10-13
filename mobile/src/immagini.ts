@@ -5,7 +5,7 @@ import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { Images } from 'react-native-nitro-image';
 import { createWorkletRuntime, runOnRuntimeAsync, type WorkletRuntime } from 'react-native-worklets';
-import { applicaFiltro, type Filtro } from './filtri';
+import { applicaFiltro, nitidezza, quadratoCentrale, SOGLIA_NITIDEZZA, type Filtro } from './filtri';
 import { misureJpeg, rettangoloRitaglio, type Riquadro } from './pagine';
 
 /** nitro-image vuole percorsi, non URL `file://`. */
@@ -36,6 +36,22 @@ export async function filtrata(uriSorgente: string, filtro: Filtro, uriDest: str
   const gradi = GRADI_EXIF[misureDi(uriSorgente)?.orientamento ?? 1];
   if (gradi) nuova = await nuova.rotateAsync(gradi);
   await nuova.saveToFileAsync(percorso(uriDest), 'jpg', 95);
+}
+
+/**
+ * F3: true se la foto sembra mossa o sfocata. Misura il quadrato centrale a piena risoluzione nel
+ * runtime dei filtri (l'interfaccia non si ferma); l'orientamento non conta per il quadrato centrale.
+ */
+export async function sfocata(uri: string): Promise<boolean> {
+  const img = await Images.loadFromFileAsync(percorso(uri));
+  const [x0, y0, x1, y1] = quadratoCentrale(img.width, img.height);
+  const raw = await (await img.cropAsync(x0, y0, x1, y1)).toRawPixelDataAsync(false);
+  runtimeFiltri ??= createWorkletRuntime({ name: 'filtri' });
+  const v = await runOnRuntimeAsync(runtimeFiltri, (px: ArrayBuffer, formato: string, w: number, h: number) => {
+    'worklet';
+    return nitidezza(new Uint8Array(px), formato, w, h);
+  }, raw.buffer, raw.pixelFormat, raw.width, raw.height);
+  return v < SOGLIA_NITIDEZZA;
 }
 
 export type Immagine = { uri: string; width: number; height: number };

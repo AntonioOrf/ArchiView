@@ -7,6 +7,7 @@ import { FlatList, Image, Pressable, View } from 'react-native';
 import { Folder, FolderPlus, Search, Trash2 } from 'lucide-react-native';
 import { cartelleConConta, documentiDi, LUNGHEZZA_NOME, nomeValido, quando, type Documento } from '../elencoDocumenti';
 import { uriPagina } from '../documenti';
+import { t } from '../lingua';
 import { raggio, spazio, TOCCO, useColori } from '../theme';
 import { SPORGENZA_BARRA } from '../ui/BarraFondo';
 import { Campo } from '../ui/Campo';
@@ -16,7 +17,8 @@ import { Testo } from '../ui/Testo';
 import { Gruppo, Voce } from '../ui/Voce';
 import { NomeArchivio } from './Archivio';
 
-const conta = (n: number, uno: string, tanti: string) => `${n} ${n === 1 ? uno : tanti}`;
+const documenti = (n: number) => (n === 1 ? t('1 documento') : t('{n} documenti', { n }));
+const pagine = (n: number) => (n === 1 ? t('1 pagina') : t('{n} pagine', { n }));
 
 type Props = {
   docs: Documento[];
@@ -47,13 +49,13 @@ export function Documenti(p: Props) {
     <View style={{ paddingHorizontal: spazio.md, gap: spazio.sm }}>
       {creando ? (
         <>
-          <Campo etichetta="Nome della cartella" placeholder="Es. Ricevute" value={nome} onChangeText={setNome} maxLength={LUNGHEZZA_NOME} autoFocus />
-          {pulito.includes('/') && <Testo variante="aiuto" tono="danger">Niente «/» nel nome.</Testo>}
-          {esiste && <Testo variante="aiuto">Esiste già.</Testo>}
+          <Campo etichetta={t('Nome della cartella')} placeholder={t('Es. Ricevute')} value={nome} onChangeText={setNome} maxLength={LUNGHEZZA_NOME} autoFocus />
+          {pulito.includes('/') && <Testo variante="aiuto" tono="danger">{t('Niente «/» nel nome.')}</Testo>}
+          {esiste && <Testo variante="aiuto">{t('Esiste già.')}</Testo>}
           <View style={{ flexDirection: 'row', gap: spazio.sm }}>
-            <Pulsante variante="primario" titolo="Crea cartella" disabilitato={!nomeValido(pulito, true) || esiste} style={{ flex: 1 }}
+            <Pulsante variante="primario" titolo={t('Crea cartella')} disabilitato={!nomeValido(pulito, true) || esiste} style={{ flex: 1 }}
               onPress={() => { p.onNuovaCartella(pulito); setNome(''); setCreando(false); }} />
-            <Pulsante variante="ghost" titolo="Annulla" onPress={() => { setCreando(false); setNome(''); }} />
+            <Pulsante variante="ghost" titolo={t('Annulla')} onPress={() => { setCreando(false); setNome(''); }} />
           </View>
         </>
       ) : (
@@ -63,7 +65,7 @@ export function Documenti(p: Props) {
           style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spazio.md, minHeight: TOCCO, paddingHorizontal: spazio.md, borderWidth: 1, borderStyle: 'dashed', borderColor: c.borderInput, borderRadius: raggio.md, backgroundColor: pressed ? c.bgHover : 'transparent' })}
         >
           <FolderPlus size={20} color={c.primaryHover} />
-          <Testo variante="controllo" tono="accento">Nuova cartella</Testo>
+          <Testo variante="controllo" tono="accento">{t('Nuova cartella')}</Testo>
         </Pressable>
       )}
     </View>
@@ -72,26 +74,26 @@ export function Documenti(p: Props) {
   const testa = p.cartella === null ? (
     <View style={{ gap: spazio.md }}>
       <View style={{ paddingHorizontal: spazio.md, paddingTop: spazio.sm, paddingBottom: spazio.md, backgroundColor: c.bgPanel, borderBottomWidth: 1, borderColor: c.divisore, gap: 2 }}>
-        <NomeArchivio nome="Documenti" onPress={p.onCambiaArchivio} />
-        <Testo variante="aiuto">{`Solo su questo telefono · ${conta(p.docs.length, 'documento', 'documenti')}`}</Testo>
+        <NomeArchivio nome={t('Documenti')} onPress={p.onCambiaArchivio} />
+        <Testo variante="aiuto">{`${t('Solo su questo telefono')} · ${documenti(p.docs.length)}`}</Testo>
       </View>
       <View style={{ paddingHorizontal: spazio.md }}>
-        <Campo placeholder="Cerca nome o testo riconosciuto" segnapostoBreve="Cerca" value={q} onChangeText={setQ} accessibilityLabel="Cerca nei documenti" style={{ paddingLeft: 42 }} />
+        <Campo placeholder={t('Cerca nome o testo riconosciuto')} segnapostoBreve={t('Cerca')} value={q} onChangeText={setQ} accessibilityLabel={t('Cerca nei documenti')} style={{ paddingLeft: 42 }} />
         <View pointerEvents="none" style={{ position: 'absolute', left: spazio.md + 14, top: 15 }}><Search size={18} color={c.textMuted} /></View>
       </View>
       {!q.trim() && !!cartelle.length && (
         <Gruppo>
           {cartelle.map((x, i) => (
             <Voce key={x.nome} titolo={x.nome} icona={Folder} ultima={i === cartelle.length - 1}
-              destra={<Testo variante="aiuto">{x.conta ? String(x.conta) : 'vuota'}</Testo>} onPress={() => p.onApriCartella(x.nome)} />
+              destra={<Testo variante="aiuto">{x.conta ? String(x.conta) : t('vuota')}</Testo>} onPress={() => p.onApriCartella(x.nome)} />
           ))}
         </Gruppo>
       )}
       {!q.trim() && nuovaCartella}
-      {!!elenco.length && <Testo variante="sezione" accessibilityRole="header" style={{ paddingHorizontal: spazio.md }}>{q.trim() ? 'Trovati' : 'Fuori dalle cartelle'}</Testo>}
+      {!!elenco.length && <Testo variante="sezione" accessibilityRole="header" style={{ paddingHorizontal: spazio.md }}>{q.trim() ? t('Trovati') : t('Fuori dalle cartelle')}</Testo>}
       {!elenco.length && (
         <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md }}>
-          {q.trim() ? 'Nessun documento trovato.' : p.docs.length ? '' : 'Nessun documento.'}
+          {q.trim() ? t('Nessun documento trovato.') : p.docs.length ? '' : t('Nessun documento.')}
         </Testo>
       )}
     </View>
@@ -99,17 +101,17 @@ export function Documenti(p: Props) {
     <View style={{ gap: spazio.md }}>
       <Intestazione
         titolo={p.cartella}
-        sotto={`Documenti · ${conta(elenco.length, 'documento', 'documenti')}`}
+        sotto={`${t('Documenti')} · ${documenti(elenco.length)}`}
         onIndietro={p.onIndietro}
-        azioni={!elenco.length ? <Pulsante variante="pericoloGhost" icona={Trash2} etichetta={`Elimina la cartella ${p.cartella}`} onPress={() => p.onEliminaCartella(p.cartella!)} /> : undefined}
+        azioni={!elenco.length ? <Pulsante variante="pericoloGhost" icona={Trash2} etichetta={t('Elimina la cartella {nome}', { nome: p.cartella })} onPress={() => p.onEliminaCartella(p.cartella!)} /> : undefined}
       />
-      {!elenco.length && <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md }}>Cartella vuota.</Testo>}
+      {!elenco.length && <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md }}>{t('Cartella vuota.')}</Testo>}
     </View>
   );
 
   const riga = ({ item: d, index }: { item: Documento; index: number }) => {
     const prima = index === 0, ultima = index === elenco.length - 1;
-    const sotto = [cerca.trim() && d.cartella, quando(d.creatoIl, adesso), conta(d.pagine.length, 'pagina', 'pagine')].filter(Boolean).join(' · ');
+    const sotto = [cerca.trim() && d.cartella, quando(d.creatoIl, adesso), pagine(d.pagine.length)].filter(Boolean).join(' · ');
     return (
       <Pressable
         accessibilityRole="button"

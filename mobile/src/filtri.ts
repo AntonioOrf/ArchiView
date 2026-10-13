@@ -5,14 +5,18 @@
 // - `grigi`: luminanza;
 // - `bn`: luminanza e soglia di Otsu.
 
+import { t } from './lingua';
+
 export type Filtro = 'migliora' | 'grigi' | 'bn';
-export const FILTRI: { valore: Filtro | null; nome: string }[] = [
-  { valore: null, nome: 'Originale' },
-  { valore: 'migliora', nome: 'Migliora' },
-  { valore: 'grigi', nome: 'Grigi' },
-  { valore: 'bn', nome: 'B/N' }
-];
-export const nomeFiltro = (f?: Filtro | null) => FILTRI.find(x => x.valore === (f ?? null))!.nome;
+export const FILTRI: (Filtro | null)[] = [null, 'migliora', 'grigi', 'bn'];
+export function nomeFiltro(f?: Filtro | null): string {
+  switch (f) {
+    case 'migliora': return t('Migliora');
+    case 'grigi': return t('Grigi');
+    case 'bn': return t('B/N');
+    default: return t('Originale');
+  }
+}
 
 /** Posizione di R, G, B in un pixel e byte per pixel, dai formati di nitro-image. */
 export function canali(formato: string): { r: number; g: number; b: number; passo: number } {
@@ -99,4 +103,45 @@ export function applicaFiltro(filtro: Filtro, px: Uint8Array, formato: string): 
     const y = lut[(77 * px[i + r] + 150 * px[i + g] + 29 * px[i + b]) >> 8];
     px[i + r] = y; px[i + g] = y; px[i + b] = y;
   }
+}
+
+// F3 — foto mossa o sfocata: varianza del laplaciano sulla luminanza. A fuoco i bordi
+// inchiostro/carta sono netti e il laplaciano varia molto; mossa o sfocata, è piatto.
+// ponytail: una pagina quasi bianca sembra sfocata: l'avviso dice «Sfocata?» e non blocca nulla.
+
+/** Sotto questa varianza la pagina si segnala. Tarata il 12/10 sulla pagina MGH di scripts/assets
+ * ingrandita 2× (~10 MP, come una foto): nitida 435, sfocatura gaussiana 0,7 px 80, 1 px 26,
+ * 1,5 px 7; bianca 0. Bassa apposta (meglio un avviso perso che uno falso); da rivedere con foto vere. */
+export const SOGLIA_NITIDEZZA = 50;
+/** Lato del quadrato centrale misurato, a piena risoluzione: ridurre la foto nasconderebbe la sfocatura. */
+export const LATO_MISURA = 1000;
+
+/** Varianza del laplaciano (4 vicini) della luminanza. Le righe di `px` possono essere più lunghe di `w`. */
+export function nitidezza(px: Uint8Array, formato: string, w: number, h: number): number {
+  'worklet';
+  const { r, g, b, passo } = canali(formato);
+  const riga = Math.floor(px.length / h);
+  const y = new Uint8Array(w * h);
+  for (let yy = 0; yy < h; yy++) {
+    for (let x = 0, i = yy * riga, j = yy * w; x < w; x++, i += passo, j++) {
+      y[j] = (77 * px[i + r] + 150 * px[i + g] + 29 * px[i + b]) >> 8;
+    }
+  }
+  let s = 0, s2 = 0, n = 0;
+  for (let yy = 1; yy < h - 1; yy++) {
+    for (let x = 1, k = yy * w + 1; x < w - 1; x++, k++) {
+      const l = y[k - 1] + y[k + 1] + y[k - w] + y[k + w] - 4 * y[k];
+      s += l; s2 += l * l; n++;
+    }
+  }
+  if (!n) return 0;
+  const m = s / n;
+  return s2 / n - m * m;
+}
+
+/** Il quadrato centrale da misurare, come `[x0, y0, x1, y1]`: tutta l'immagine se è più piccola. */
+export function quadratoCentrale(w: number, h: number): [number, number, number, number] {
+  const lw = Math.min(w, LATO_MISURA), lh = Math.min(h, LATO_MISURA);
+  const x = Math.floor((w - lw) / 2), y = Math.floor((h - lh) / 2);
+  return [x, y, x + lw, y + lh];
 }

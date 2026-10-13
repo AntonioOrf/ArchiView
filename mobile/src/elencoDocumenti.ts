@@ -2,6 +2,7 @@
 // provano con `node --test`. I Documenti restano sul telefono: niente contratto, niente invio.
 
 import type { Filtro } from './filtri';
+import { lingua, t } from './lingua';
 
 /**
  * `v` cresce a ogni sostituzione (ruota, ritaglia, rifai, filtro): l'URI cambia e la cache delle
@@ -19,7 +20,9 @@ export const ocrAggiornato = (p: PaginaDoc) => p.ocr?.v === p.v;
 /** `cartella`: un livello solo, assente = fuori dalle cartelle. `creatoIl`: ISO. */
 export type Documento = { id: string; nome: string; cartella?: string; creatoIl: string; pagine: PaginaDoc[] };
 
-const MESI = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+// Fissi e non da Intl: il nome resta uguale su ogni telefono, e i test non dipendono dall'ICU.
+const MESI = { it: ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
+const mese = (d: Date) => MESI[lingua()][d.getMonth()];
 export const LUNGHEZZA_NOME = 100;
 
 const due = (n: number) => String(n).padStart(2, '0');
@@ -27,7 +30,7 @@ const ora = (d: Date) => `${due(d.getHours())}:${due(d.getMinutes())}`;
 
 /** «Documento 9 ott 18:05»: il nome di un documento appena scansionato, poi rinominabile. */
 export function nomeAutomatico(d: Date): string {
-  return `Documento ${d.getDate()} ${MESI[d.getMonth()]} ${ora(d)}`;
+  return t('Documento {data}', { data: `${d.getDate()} ${mese(d)} ${ora(d)}` });
 }
 
 /** «Oggi 14:32», «Ieri 9:10», «9 ott», «9 ott 2025» (anno solo se diverso). */
@@ -36,9 +39,9 @@ export function quando(iso: string, adesso: Date): string {
   if (Number.isNaN(d.getTime())) return '';
   const giorno = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diff = Math.round((giorno(adesso) - giorno(d)) / 86_400_000);
-  if (diff === 0) return `Oggi ${ora(d)}`;
-  if (diff === 1) return `Ieri ${ora(d)}`;
-  return `${d.getDate()} ${MESI[d.getMonth()]}${d.getFullYear() === adesso.getFullYear() ? '' : ` ${d.getFullYear()}`}`;
+  if (diff === 0) return t('Oggi {ora}', { ora: ora(d) });
+  if (diff === 1) return t('Ieri {ora}', { ora: ora(d) });
+  return `${d.getDate()} ${mese(d)}${d.getFullYear() === adesso.getFullYear() ? '' : ` ${d.getFullYear()}`}`;
 }
 
 /** Nome di documento o di cartella: non vuoto, non troppo lungo; per le cartelle niente «/». */
@@ -74,6 +77,14 @@ export function prossimoFile(pagine: PaginaDoc[]): string {
   return `p${String(max + 1).padStart(4, '0')}.jpg`;
 }
 
+/** F11: nome della seconda parte di un documento diviso: «Nome (2)», «Nome (2)» → «Nome (3)»; mai oltre `LUNGHEZZA_NOME`. */
+export function nomeSeguito(nome: string): string {
+  const m = /^(.*) \((\d+)\)$/.exec(nome.trim());
+  const base = m ? m[1] : nome.trim();
+  const suffisso = ` (${m ? Number(m[2]) + 1 : 2})`;
+  return base.slice(0, LUNGHEZZA_NOME - suffisso.length).trimEnd() + suffisso;
+}
+
 /** Riordino: l'elemento `da` va in posizione `a` (limitata all'elenco); stesso array se non cambia nulla. */
 export function spostata<T>(elenco: T[], da: number, a: number): T[] {
   const dove = Math.min(elenco.length - 1, Math.max(0, a));
@@ -93,6 +104,28 @@ export const fileOcr = (f: string) => f.replace(/\.jpg$/, '.ocr.json');
 export function nomeFile(nome: string): string {
   const pulito = nome.replace(/\s+/g, ' ').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim().replace(/^\.+|\.+$/g, '').slice(0, 80).trim();
   return pulito || 'Documento';
+}
+
+/** Id di un documento: è anche il nome della sua cartella, sul telefono e su Drive. */
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** F5: i documenti da copiare su Drive: mai copiati, o `documento.json` cambiato dall'ultima copia. */
+export function daCopiare(ore: { id: string; ora: number }[], copiati: Record<string, number>): { id: string; ora: number }[] {
+  return ore.filter(o => copiati[o.id] !== o.ora);
+}
+
+/**
+ * F5: le copie su Drive da riportare sul telefono: cartella con id valido, non già qui, con
+ * `documento.json`. Dentro, solo i file ammessi (foto, filtrate, OCR), `documento.json` per ultimo:
+ * una copia interrotta non ha il documento e al giro dopo riparte.
+ */
+export function daRipristinare<F extends { nome: string }>(copie: { nome: string; file: F[] }[], qui: string[]): { nome: string; file: F[] }[] {
+  return copie
+    .filter(c => UUID.test(c.nome) && !qui.includes(c.nome) && c.file.some(f => f.nome === 'documento.json'))
+    .map(c => ({
+      nome: c.nome,
+      file: [...c.file.filter(f => fileValido(f.nome)), c.file.find(f => f.nome === 'documento.json')!]
+    }));
 }
 
 /** Nomi delle immagini in uscita: «Nome.jpg» se una, «Nome - 01.jpg …» se più (ordinabili). */

@@ -1,6 +1,8 @@
 // Fase 13: conti puri sulle pagine (ritaglio, pulizia delle inviate), senza moduli Expo così
 // si provano con `node --test`.
 
+import { t } from './lingua';
+
 /** Riquadro di ritaglio in frazioni dell'immagine (0–1), dall'angolo in alto a sinistra. */
 export type Riquadro = { x0: number; y0: number; x1: number; y1: number };
 
@@ -85,6 +87,9 @@ export function inviatiScaduti(inviati: { id: string; inviatoIl?: string }[], re
   const limite = ora.getTime() - Math.max(1, regola.giorni) * GIORNO;
   return inviati.filter(l => !(Date.parse(l.inviatoIl || '') > limite)).map(l => l.id);
 }
+
+/** «1 giorno», «7 giorni». */
+export const quantiGiorni = (n: number) => (n === 1 ? t('1 giorno') : t('{n} giorni', { n }));
 
 /** Giorni interi che restano a una pagina inviata prima della pulizia (mai sotto 0). */
 export function giorniRimasti(inviatoIl: string | undefined, giorni: number, ora: Date): number {

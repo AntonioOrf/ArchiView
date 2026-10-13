@@ -63,11 +63,11 @@ export const SUFFISSO_VAULT = '_ArchiView';
  * il computer non ha mai aperto il pannello Scansioni. Voci storte si saltano o si accorciano,
  * perché una sola scheda strana non deve far rifiutare l'intero elenco.
  */
-export function configDaDatabase(archivio: string, db: any, aggiornatoIl: string) {
+export function configDaDatabase(archivio: string, db: any, aggiornatoIl: string, daVedere: (tags: unknown) => boolean = () => false) {
   const manoscritti: any[] = db && Array.isArray(db.manoscritti) ? db.manoscritti : [];
   const testo = (v: unknown) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, 500) : '');
   const schede = manoscritti
-    .map(m => ({ id: testo(m && m.id), segnatura: testo(m && m.segnatura), cartella: testo(m && m.cartella), titolo: titoloDi(m) }))
+    .map(m => ({ id: testo(m && m.id), segnatura: testo(m && m.segnatura), cartella: testo(m && m.cartella), titolo: titoloDi(m), ...(daVedere(m && m.tags) ? { daVedere: true as const } : {}) }))
     .filter(s => s.id && s.id.length <= 200)
     .slice(0, 50000);
   const cartelle = (db && Array.isArray(db.cartelle) ? db.cartelle : []).map(testo).filter(Boolean).slice(0, 10000);
@@ -75,7 +75,7 @@ export function configDaDatabase(archivio: string, db: any, aggiornatoIl: string
 }
 
 /** Una scheda nell'albero: dell'elenco del computer o creata sul telefono e non ancora arrivata. */
-export type SchedaAlbero = { id: string; segnatura: string; titolo: string; cartella: string; nuova: boolean };
+export type SchedaAlbero = { id: string; segnatura: string; titolo: string; cartella: string; nuova: boolean; daVedere?: boolean };
 
 /** Righe dell'albero appiattito (una `FlatList`, anche con 50 000 schede): cartelle e schede col loro livello. */
 export type Riga =
@@ -91,9 +91,11 @@ const confronta = (a: string, b: string) => a.localeCompare(b, undefined, { nume
  * ricerca: solo le schede trovate (segnatura, titolo o cartella) e le cartelle che le contengono,
  * tutte aperte. `conta` = schede (trovate) nella cartella e nelle sottocartelle.
  */
-export function righeAlbero(schede: SchedaAlbero[], cartelle: string[], aperte: ReadonlySet<string>, cerca = ''): Riga[] {
-  const k = chiaveRicerca(cerca);
-  const visibili = k ? schede.filter(s => [s.segnatura, s.titolo, s.cartella].some(t => chiaveRicerca(t).includes(k))) : schede;
+export function righeAlbero(schede: SchedaAlbero[], cartelle: string[], aperte: ReadonlySet<string>, cerca = '', soloDaVedere = false): Riga[] {
+  const q = chiaveRicerca(cerca);
+  // F9: il filtro «Da vedere» si comporta come una ricerca: solo le schede trovate, cartelle aperte.
+  const filtrato = !!q || soloDaVedere;
+  const visibili = schede.filter(s => (!soloDaVedere || s.daVedere) && (!q || [s.segnatura, s.titolo, s.cartella].some(t => chiaveRicerca(t).includes(q))));
   const sotto = new Map<string, Set<string>>();
   const conta = new Map<string, number>();
   const dentro = new Map<string, SchedaAlbero[]>();
@@ -107,7 +109,7 @@ export function righeAlbero(schede: SchedaAlbero[], cartelle: string[], aperte: 
       conta.set(p, (conta.get(p) || 0) + n);
     }
   };
-  if (!k) for (const c of cartelle) if (c) aggiungi(c, 0);
+  if (!filtrato) for (const c of cartelle) if (c) aggiungi(c, 0);
   for (const s of visibili) {
     if (s.cartella) aggiungi(s.cartella, 1);
     const l = dentro.get(s.cartella);
@@ -117,7 +119,7 @@ export function righeAlbero(schede: SchedaAlbero[], cartelle: string[], aperte: 
   const nome = (p: string) => p.slice(p.lastIndexOf('/') + 1);
   const visita = (padre: string, livello: number) => {
     for (const p of [...(sotto.get(padre) || [])].sort((a, b) => confronta(nome(a), nome(b)))) {
-      const aperta = !!k || aperte.has(p);
+      const aperta = filtrato || aperte.has(p);
       out.push({ tipo: 'cartella', percorso: p, nome: nome(p), livello, aperta, conta: conta.get(p) || 0 });
       if (aperta) visita(p, livello + 1);
     }

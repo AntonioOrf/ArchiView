@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, PanResponder, View } from 'react-native';
 import { Columns2 } from 'lucide-react-native';
+import { t } from './lingua';
 import { colori } from './theme/colori';
 import { spazio, TOCCO, useColori } from './theme';
 import { Intestazione } from './ui/Intestazione';
@@ -53,7 +54,7 @@ export function Dividi({ uri, onDividi, onAnnulla }: Props) {
 
   return (
     <View style={{ flex: 1 }}>
-      <Intestazione titolo="Dividi la pagina doppia" sotto="Trascina la linea sulla piega del registro" onIndietro={onAnnulla} chiudi />
+      <Intestazione titolo={t('Dividi la pagina doppia')} sotto={t('Trascina la linea sulla piega del registro')} onIndietro={onAnnulla} chiudi />
       <View style={{ flex: 1, backgroundColor: colori.scuro.bgBase, alignItems: 'center', justifyContent: 'center', padding: spazio.md }}>
         {!proporzione ? <ActivityIndicator color={colori.scuro.textMain} /> : (
           <View
@@ -65,9 +66,9 @@ export function Dividi({ uri, onDividi, onAnnulla }: Props) {
             <View
               accessible
               accessibilityRole="adjustable"
-              accessibilityLabel="Linea della piega"
-              accessibilityValue={{ text: `${Math.round(frazione * 100)}% da sinistra` }}
-              accessibilityActions={[{ name: 'increment', label: 'A destra' }, { name: 'decrement', label: 'A sinistra' }]}
+              accessibilityLabel={t('Linea della piega')}
+              accessibilityValue={{ text: t('{n}% da sinistra', { n: Math.round(frazione * 100) }) }}
+              accessibilityActions={[{ name: 'increment', label: t('A destra') }, { name: 'decrement', label: t('A sinistra') }]}
               onAccessibilityAction={e => imposta(attuale.current + (e.nativeEvent.actionName === 'increment' ? PASSO : -PASSO))}
               style={{ position: 'absolute', top: 0, bottom: 0, width: TOCCO, marginLeft: -TOCCO / 2, left: `${frazione * 100}%`, alignItems: 'center' }}
             >
@@ -77,8 +78,8 @@ export function Dividi({ uri, onDividi, onAnnulla }: Props) {
         )}
       </View>
       <View style={{ flexDirection: 'row', gap: spazio.md, padding: spazio.md, backgroundColor: c.bgPanel, borderTopWidth: 1, borderColor: c.divisore }}>
-        <Pulsante variante="secondario" titolo="Annulla" disabilitato={occupato} onPress={onAnnulla} style={{ flex: 1 }} />
-        <Pulsante variante="primario" icona={Columns2} titolo="Dividi in due pagine" caricamento={occupato} disabilitato={!proporzione} onPress={conferma} style={{ flex: 1 }} />
+        <Pulsante variante="secondario" titolo={t('Annulla')} disabilitato={occupato} onPress={onAnnulla} style={{ flex: 1 }} />
+        <Pulsante variante="primario" icona={Columns2} titolo={t('Dividi in due pagine')} caricamento={occupato} disabilitato={!proporzione} onPress={conferma} style={{ flex: 1 }} />
       </View>
     </View>
   );

@@ -53,13 +53,13 @@ async function chiama(fn: (token: string) => Promise<Response>): Promise<Respons
   }
 }
 
-type FileDrive = { id: string; name: string; size?: string; modifiedTime?: string };
+type FileDrive = { id: string; name: string; size?: string; modifiedTime?: string; md5Checksum?: string };
 
 async function elenca(q: string, orderBy?: string): Promise<FileDrive[]> {
   const out: FileDrive[] = [];
   let pageToken = '';
   do {
-    const params = new URLSearchParams({ q, fields: 'nextPageToken,files(id,name,size,modifiedTime)', pageSize: '1000', spaces: 'drive' });
+    const params = new URLSearchParams({ q, fields: 'nextPageToken,files(id,name,size,modifiedTime,md5Checksum)', pageSize: '1000', spaces: 'drive' });
     if (orderBy) params.set('orderBy', orderBy);
     if (pageToken) params.set('pageToken', pageToken);
     const res = await chiama(t => fetch(`${API}/files?${params}`, { headers: { Authorization: `Bearer ${t}` } }));
@@ -89,6 +89,7 @@ let cacheLotti: string | null = null;
 /** Dopo l'uscita dall'account (o una cartella sparita) la cartella dei lotti si ricerca da capo. */
 export function azzeraCartelle(): void {
   cacheLotti = null;
+  cacheDoc = null;
 }
 
 async function cartellaLotti(): Promise<string> {
@@ -105,7 +106,7 @@ async function elimina(id: string): Promise<void> {
 
 /** Sessione resumable + PUT del file in binario. Restituisce la dimensione vista da Drive. */
 async function caricaPagina(locale: File, nome: string, cartellaId: string, byte: number): Promise<number> {
-  const mime = nome.endsWith('.png') ? 'image/png' : 'image/jpeg';
+  const mime = nome.endsWith('.png') ? 'image/png' : nome.endsWith('.json') ? 'application/json' : 'image/jpeg';
   const sessione = await chiama(t => fetch(`${UPLOAD}/files?uploadType=resumable&fields=id,size`, {
     method: 'POST',
     headers: {
@@ -199,7 +200,7 @@ export async function scaricaConfig(archivio: string, conDatabase = true): Promi
   const quando = (f?: FileDrive) => (f?.modifiedTime ? Date.parse(f.modifiedTime) : 0);
 
   let json: unknown;
-  if (db && quando(db) > quando(pubblicato)) json = configDaDatabase(archivio, await (await scarica(db.id)).json(), db.modifiedTime || new Date().toISOString());
+  if (db && quando(db) > quando(pubblicato)) json = configDaDatabase(archivio, await (await scarica(db.id)).json(), db.modifiedTime || new Date().toISOString(), ScannerLotto.daVedere);
   else if (pubblicato) json = await (await scarica(pubblicato.id)).json();
   else return null;
   const esito = ScannerLotto.validaConfig(json);
@@ -247,4 +248,82 @@ async function inviaValidato(pulito: Lotto, fileDi: (nome: string) => File, avan
     avanzamento?.({ fatte, totali: pulito.pagine.length });
   }
   await caricaManifest(pulito, idCartella);
+}
+
+// --- F5: copia dei Documenti ------------------------------------------------------------------
+//
+//   ArchiView/Documenti telefono/{cartelle.json, <uuid>/{p0001.jpg, …, documento.json}}
+//
+// Ogni cartella è lo specchio di quella sul telefono: file nuovi o cambiati (md5) si caricano,
+// quelli che non ci sono più si tolgono. Con `drive.file` l'app vede solo i file che ha creato.
+
+const PERCORSO_DOC = [PERCORSO[0], 'Documenti telefono'];
+let cacheDoc: string | null = null;
+
+async function cartellaDocumenti(): Promise<string> {
+  if (cacheDoc) return cacheDoc;
+  let padre: string | null = null;
+  for (const nome of PERCORSO_DOC) padre = await cartella(nome, padre);
+  cacheDoc = padre;
+  return padre!;
+}
+
+export type FileDaCopiare = { nome: string; file: File; md5: string; byte: number };
+
+/**
+ * Rende la cartella `nome` (un documento; `''` = la radice, per `cartelle.json`) uguale a `file`,
+ * nell'ordine dato: chi chiama mette `documento.json` per ultimo, così una copia interrotta non ha
+ * un documento che cita pagine mancanti. Cartella in cache sparita (404): si ricerca una volta.
+ */
+export async function specchia(nome: string, file: FileDaCopiare[]): Promise<void> {
+  try {
+    await specchiaUnaVolta(nome, file);
+  } catch (e) {
+    if (!(e instanceof ErroreDrive && e.stato === 404) || !cacheDoc) throw e;
+    cacheDoc = null;
+    await specchiaUnaVolta(nome, file);
+  }
+}
+
+async function specchiaUnaVolta(nome: string, file: FileDaCopiare[]): Promise<void> {
+  const radice = await cartellaDocumenti();
+  const id = nome ? await cartella(nome, radice) : radice;
+  const presenti = await elenca(`'${id}' in parents and trashed=false and mimeType!='${MIME_CARTELLA}'`);
+  for (const f of file) {
+    const omonimi = presenti.filter(x => x.name === f.nome);
+    const buono = omonimi.find(x => x.md5Checksum === f.md5);
+    for (const x of omonimi) if (x !== buono) await elimina(x.id);
+    if (!buono) {
+      const size = await caricaPagina(f.file, f.nome, id, f.byte);
+      if (size !== f.byte) throw new Error(`dimensione_diversa: ${f.nome} ${size}/${f.byte}`);
+    }
+  }
+  for (const x of presenti) if (!file.some(f => f.nome === x.name)) await elimina(x.id);
+}
+
+/** Toglie da Drive la copia di un documento eliminato sul telefono (se c'è). */
+export async function eliminaCopia(nome: string): Promise<void> {
+  const radice = await cartellaDocumenti();
+  const q = `name='${escape(nome)}' and mimeType='${MIME_CARTELLA}' and trashed=false and '${radice}' in parents`;
+  for (const c of await elenca(q)) await elimina(c.id);
+}
+
+export type CopiaDrive = { nome: string; file: { id: string; nome: string }[] };
+
+/** Le copie su Drive: la radice (`nome: ''`) e una voce per cartella di documento. Niente se non c'è ancora nulla. */
+export async function elencaCopie(): Promise<CopiaDrive[]> {
+  const radice = await trovaCartella(PERCORSO_DOC);
+  if (!radice) return [];
+  const voce = async (nome: string, id: string): Promise<CopiaDrive> => ({
+    nome, file: (await elenca(`'${id}' in parents and trashed=false and mimeType!='${MIME_CARTELLA}'`)).map(f => ({ id: f.id, nome: f.name }))
+  });
+  const out = [await voce('', radice)];
+  for (const c of await elenca(`'${radice}' in parents and trashed=false and mimeType='${MIME_CARTELLA}'`)) out.push(await voce(c.name, c.id));
+  return out;
+}
+
+/** Scarica un file di Drive in `dest` (sovrascrive). ponytail: niente nuovo tentativo su 401 a metà; la volta dopo riparte. */
+export async function scaricaIn(id: string, dest: File): Promise<void> {
+  const token = await tokenDrive();
+  await File.downloadFileAsync(`${API}/files/${id}?alt=media`, dest, { headers: { Authorization: `Bearer ${token}` }, idempotent: true });
 }

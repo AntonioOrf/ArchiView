@@ -4,10 +4,11 @@
 
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { chiediConsenso } from './consenso';
+import { PDFDocument, StandardFonts, type PDFFont } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { paroleOcr, uriUscita } from './documenti';
 import { perPdf } from './immagini';
+import { t } from './lingua';
 import { nomeFile, nomiImmagini, type Documento } from './elencoDocumenti';
 import { soloCaratteri, stratoTesto } from './testo';
 
@@ -28,9 +29,31 @@ function uscita(): Directory {
 }
 
 /**
+ * F12: font dello strato di testo. Un font di sistema di Android (latino, greco, cirillico), così
+ * l'APK non porta font; in sottoinsieme, solo i glifi usati. Nessuno leggibile: Helvetica (WinAnsi).
+ * Su Android 12+ Roboto è un font variabile: provato in Node (12/10) con Segoe UI Variable, il
+ * sottoinsieme regge e pdf.js estrae greco e cirillico. ponytail: percorsi dei font fissi; se un
+ * produttore li sposta si torna a Helvetica (si vede: «?» al posto dei caratteri non latini).
+ */
+const FONT_SISTEMA = ['/system/fonts/Roboto-Regular.ttf', '/system/fonts/NotoSans-Regular.ttf', '/system/fonts/DroidSans.ttf'];
+
+async function fontStrato(pdf: PDFDocument): Promise<PDFFont> {
+  pdf.registerFontkit(fontkit);
+  for (const p of FONT_SISTEMA) {
+    try {
+      const f = new File(`file://${p}`);
+      if (f.exists) return await pdf.embedFont(await f.bytes(), { subset: true });
+    } catch (e) {
+      console.warn('[esporta] font di sistema non usabile', p, e);
+    }
+  }
+  return pdf.embedFont(StandardFonts.Helvetica);
+}
+
+/**
  * Un PDF con una pagina per foto, larga A4. `ricercabile` (15e): sotto ogni foto le parole
  * dell'OCR, invisibili, dove stanno nella foto (chi chiama ha già fatto `riconosci`; le pagine
- * senza parole aggiornate restano solo immagine). Helvetica: fuori da WinAnsi diventa «?».
+ * senza parole aggiornate restano solo immagine). Font: `fontStrato` (F12); fuori dal font, «?».
  * ponytail: tiene tutte le foto (ridotte da `perPdf`) in memoria; se centinaia di pagine non
  * bastano ancora, PDF a volumi (PIANO-OTTIMIZZAZIONE-MOBILE, 1c).
  */
@@ -38,7 +61,7 @@ async function pdfDi(d: Documento, ricercabile: boolean): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.setTitle(d.nome);
   pdf.setCreator('ArchiScanner');
-  const font = ricercabile ? await pdf.embedFont(StandardFonts.Helvetica) : null;
+  const font = ricercabile ? await fontStrato(pdf) : null;
   const ammessi = new Set(font?.getCharacterSet() ?? []);
   // `perPdf` decodifica fuori dal thread JS: qualche pagina insieme sfrutta i core (una bitmap
   // intera in memoria per pagina del gruppo).
@@ -62,14 +85,14 @@ async function pdfDi(d: Documento, ricercabile: boolean): Promise<Uint8Array> {
 
 /** Condivide il documento: il PDF, o la sola immagine se il documento ha una pagina. */
 export async function condividi(d: Documento, formato: Formato, ricercabile = false): Promise<void> {
-  if (!(await Sharing.isAvailableAsync())) throw new Error('Condivisione non disponibile su questo telefono');
+  if (!(await Sharing.isAvailableAsync())) throw new Error(t('Condivisione non disponibile su questo telefono'));
   const dir = uscita();
   if (formato === 'pdf') {
     const f = new File(dir, `${nomeFile(d.nome)}.pdf`);
     f.write(await pdfDi(d, ricercabile));
     return Sharing.shareAsync(f.uri, { mimeType: 'application/pdf', dialogTitle: d.nome });
   }
-  if (d.pagine.length !== 1) throw new Error('Si condivide una sola immagine per volta: usa il PDF o «Salva»');
+  if (d.pagine.length !== 1) throw new Error(t('Si condivide una sola immagine per volta: usa il PDF o «Salva»'));
   const f = new File(dir, nomiImmagini(d.nome, 1)[0]);
   await new File(uriUscita(d, d.pagine[0])).copy(f);
   return Sharing.shareAsync(f.uri, { mimeType: 'image/jpeg', dialogTitle: d.nome });
@@ -93,15 +116,8 @@ export function cartellaSalvata(): string | null {
 /** L'utente ha chiuso il selettore di cartella senza scegliere: non è un errore da mostrare. */
 export const annullato = (e: any) => e?.code === 'ERR_PICKER_CANCELLED' || /cancelled by the user/i.test(String(e?.message));
 
-/** Dimentica la cartella scelta (consenso revocato): al prossimo «Salva» si richiede. */
-export function dimenticaCartella(): void {
-  const f = fileSalva();
-  if (f.exists) f.delete();
-}
-
-/** Fa scegliere la cartella a Android e la ricorda. Annullato o senza consenso → errore (vedi `annullato`). */
+/** Fa scegliere la cartella a Android e la ricorda. Annullato → errore (vedi `annullato`). */
 export async function scegliCartella(): Promise<Directory> {
-  if (!await chiediConsenso()) throw Object.assign(new Error('cancelled by the user'), { code: 'ERR_PICKER_CANCELLED' });
   const dir = await Directory.pickDirectoryAsync();
   fileSalva().write(JSON.stringify({ cartella: dir.uri }));
   return dir;
