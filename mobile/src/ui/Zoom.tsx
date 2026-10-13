@@ -3,18 +3,21 @@
 // orizzontale cambia pagina. Montarla con `key` per pagina: lo zoom riparte da 1.
 // Shared value con `.get()`/`.set()` e non `.value`: così li accetta il React Compiler.
 
-// Con `parole` (OCR dei Documenti): tieni premuto e trascina per selezionare il testo sulla foto,
-// poi «Copia». Le parole stanno in pixel della foto, riportate allo spazio di `contain`.
+// Con `parole` (OCR dei Documenti) la selezione va come quella del testo di Android: tieni premuto
+// su una parola (e, senza staccare, trascina), poi allarga con le due maniglie; un tocco la toglie.
+// Le parole stanno in pixel della foto, riportate allo spazio di `contain`. Senza parole e con
+// `onRiconosci`, la pressione lunga fa l'OCR e seleziona la parola premuta quando arriva.
 
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { Copy, X } from 'lucide-react-native';
+import { Copy, TextSelect, X } from 'lucide-react-native';
 import { t } from '../lingua';
 import { parolaVicina, testoSelezionato, type Parola } from '../testo';
 import { raggio, spazio, useColori } from '../theme';
+import { notizia } from './Avviso';
 import { Pulsante } from './Pulsante';
 
 const MASSIMO = 5;
@@ -23,16 +26,36 @@ const DOPPIO_TOCCO = 2.5;
 const SOGLIA = 80;
 /** Ms di pressione prima che il trascinamento selezioni il testo. */
 const PRESSIONE = 350;
+/** Lato della goccia di una maniglia. */
+const MANIGLIA = 22;
 
-type Props = { uri: string; etichetta: string; onScorri: (verso: 1 | -1) => void; parole?: Parola[] | null; onCopia?: (testo: string) => void };
+type Props = { uri: string; etichetta: string; onScorri: (verso: 1 | -1) => void; parole?: Parola[] | null; onCopia?: (testo: string) => void; onRiconosci?: () => void };
 
-export function Zoom({ uri, etichetta, onScorri, parole, onCopia }: Props) {
+/** Goccia sotto il primo o l'ultimo carattere, con lo spigolo sul punto; segue zoom e spostamento. */
+function Maniglia({ punto, vista, scala, x, y, inizio, colore, gesto }: { punto: { x: number; y: number }; vista: { w: number; h: number }; scala: SharedValue<number>; x: SharedValue<number>; y: SharedValue<number>; inizio: boolean; colore: string; gesto: PanGesture }) {
+  const stile = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: vista.w / 2 + (punto.x - vista.w / 2) * scala.get() + x.get() - (inizio ? MANIGLIA : 0) },
+      { translateY: vista.h / 2 + (punto.y - vista.h / 2) * scala.get() + y.get() }
+    ]
+  }));
+  return (
+    <GestureDetector gesture={gesto}>
+      <Animated.View importantForAccessibility="no-hide-descendants" hitSlop={14}
+        style={[{ position: 'absolute', left: 0, top: 0, width: MANIGLIA, height: MANIGLIA, borderRadius: MANIGLIA / 2, backgroundColor: colore }, inizio ? { borderTopRightRadius: 0 } : { borderTopLeftRadius: 0 }, stile]} />
+    </GestureDetector>
+  );
+}
+
+export function Zoom({ uri, etichetta, onScorri, parole, onCopia, onRiconosci }: Props) {
   const c = useColori();
   const [foto, setFoto] = useState<{ w: number; h: number } | null>(null);
   const [vista, setVista] = useState({ w: 1, h: 1 });
-  /** Prima e ultima parola selezionate. */
+  /** Le due estremità della selezione (indici di parola, in qualunque ordine): una per maniglia. */
   const [sel, setSel] = useState<[number, number] | null>(null);
-  const selezionabile = !!(parole?.length && foto && onCopia);
+  /** Punto (pixel della foto) premuto mentre l'OCR della pagina era ancora da fare. */
+  const [inAttesa, setInAttesa] = useState<{ x: number; y: number } | null>(null);
+  const selezionabile = !!(foto && onCopia && (parole || onRiconosci));
   // Scala e scarto dell'immagine `contain` dentro la vista.
   const k = foto ? Math.min(vista.w / foto.w, vista.h / foto.h) : 1;
   const ox = foto ? (vista.w - foto.w * k) / 2 : 0, oy = foto ? (vista.h - foto.h * k) / 2 : 0;
@@ -43,6 +66,8 @@ export function Zoom({ uri, etichetta, onScorri, parole, onCopia }: Props) {
   const xInizio = useSharedValue(0);
   const yInizio = useSharedValue(0);
   const lato = useSharedValue({ w: 1, h: 1 });
+  /** Punto di partenza, sullo schermo, della maniglia presa. */
+  const presa = useSharedValue({ x: 0, y: 0 });
 
   // Lo spostamento resta entro il bordo dell'immagine ingrandita.
   const limita = (v: number, s: number, l: number) => {
@@ -97,13 +122,30 @@ export function Zoom({ uri, etichetta, onScorri, parole, onCopia }: Props) {
     });
 
   // Il punto toccato (nella vista) → pixel della foto, togliendo spostamento e ingrandimento
-  // (che RN applica attorno al centro), poi la parola più vicina.
+  // (che RN applica attorno al centro).
+  const inFoto = (px: number, py: number, s: number, tx: number, ty: number) => ({
+    x: (vista.w / 2 + (px - vista.w / 2 - tx) / s - ox) / k,
+    y: (vista.h / 2 + (py - vista.h / 2 - ty) / s - oy) / k
+  });
+
   const tocca = (px: number, py: number, s: number, tx: number, ty: number, inizio: boolean) => {
-    if (!parole?.length || !foto) return;
-    const qx = vista.w / 2 + (px - vista.w / 2 - tx) / s, qy = vista.h / 2 + (py - vista.h / 2 - ty) / s;
-    const i = parolaVicina(parole, (qx - ox) / k, (qy - oy) / k);
+    if (!foto) return;
+    const q = inFoto(px, py, s, tx, ty);
+    if (!parole) {
+      if (inizio && onRiconosci) { setInAttesa(q); onRiconosci(); }
+      return;
+    }
+    if (!parole.length) { if (inizio) notizia(t('Nessun testo riconosciuto in questa pagina.')); return; }
+    const i = parolaVicina(parole, q.x, q.y);
     setSel(v => (inizio || !v ? [i, i] : v[1] === i ? v : [v[0], i]));
   };
+
+  // Arrivate le parole dell'OCR chiesto dalla pressione lunga: si seleziona la parola premuta.
+  // Stato aggiustato durante il render (niente effetto); l'avviso di pagina senza testo lo dà chi fa l'OCR.
+  if (inAttesa && parole) {
+    setInAttesa(null);
+    if (parole.length) { const i = parolaVicina(parole, inAttesa.x, inAttesa.y); setSel([i, i]); }
+  }
 
   const seleziona = Gesture.Pan()
     .enabled(selezionabile)
@@ -111,15 +153,44 @@ export function Zoom({ uri, etichetta, onScorri, parole, onCopia }: Props) {
     .onStart(e => { scheduleOnRN(tocca, e.x, e.y, scala.get(), x.get(), y.get(), true); })
     .onUpdate(e => { scheduleOnRN(tocca, e.x, e.y, scala.get(), x.get(), y.get(), false); });
 
+  // Un tocco fuori dalle maniglie toglie la selezione, come nel testo normale.
+  const togli = Gesture.Tap()
+    .enabled(!!sel)
+    .onEnd(() => { scheduleOnRN(setSel, null); });
+
+  /** Il punto (nella vista non trasformata) dove sta una maniglia: sotto l'inizio o la fine della parola. */
+  const puntoManiglia = (p: Parola, inizio: boolean) => ({ x: ox + (inizio ? p.x0 : p.x1) * k, y: oy + p.y1 * k });
+
+  const sposta = (quale: 0 | 1, px: number, py: number, s: number, tx: number, ty: number) => {
+    if (!parole?.length) return;
+    const q = inFoto(px, py, s, tx, ty);
+    const i = parolaVicina(parole, q.x, q.y);
+    setSel(v => (!v || v[quale] === i ? v : quale === 0 ? [i, v[1]] : [v[0], i]));
+  };
+  // Si parte dal centro della parola (cx, cy nella vista non trasformata), non dalla goccia: muovendo
+  // poco si resta sulla stessa. `presa` ferma il punto di partenza sullo schermo per tutto il gesto.
+  const gestoManiglia = (quale: 0 | 1, cx: number, cy: number) => Gesture.Pan()
+    .minDistance(0)
+    .onStart(() => {
+      const s = scala.get();
+      presa.set({ x: vista.w / 2 + (cx - vista.w / 2) * s + x.get(), y: vista.h / 2 + (cy - vista.h / 2) * s + y.get() });
+    })
+    .onUpdate(e => {
+      const a = presa.get();
+      scheduleOnRN(sposta, quale, a.x + e.translationX, a.y + e.translationY, scala.get(), x.get(), y.get());
+    });
+
   const stile = useAnimatedStyle(() => ({
     transform: [{ translateX: x.get() }, { translateY: y.get() }, { scale: scala.get() }]
   }));
 
-  const evidenziate = sel && parole ? parole.slice(Math.min(...sel), Math.max(...sel) + 1) : [];
+  const valida = sel && parole && Math.max(...sel) < parole.length ? sel : null;
+  const evidenziate = valida && parole ? parole.slice(Math.min(...valida), Math.max(...valida) + 1) : [];
+  const tutte = !!valida && parole && Math.min(...valida) === 0 && Math.max(...valida) === parole.length - 1;
 
   return (
     <View style={{ flex: 1 }}>
-      <GestureDetector gesture={Gesture.Race(doppio, seleziona, Gesture.Simultaneous(pizzico, trascina))}>
+      <GestureDetector gesture={Gesture.Race(Gesture.Exclusive(doppio, togli), seleziona, Gesture.Simultaneous(pizzico, trascina))}>
         <View
           style={{ flex: 1, overflow: 'hidden' }}
           onLayout={e => {
@@ -129,7 +200,7 @@ export function Zoom({ uri, etichetta, onScorri, parole, onCopia }: Props) {
           }}
           accessible
           accessibilityRole="adjustable"
-          accessibilityLabel={`${etichetta}. ${t('Pizzica o tocca due volte per ingrandire, striscia per cambiare pagina.')}${selezionabile ? ` ${t('Tieni premuto e trascina per selezionare il testo.')}` : ''}`}
+          accessibilityLabel={`${etichetta}. ${t('Pizzica o tocca due volte per ingrandire, striscia per cambiare pagina.')}${selezionabile ? ` ${t('Tieni premuto su una parola per selezionarla, poi trascina le maniglie.')}` : ''}`}
           accessibilityActions={[{ name: 'increment', label: t('Pagina successiva') }, { name: 'decrement', label: t('Pagina precedente') }]}
           onAccessibilityAction={e => onScorri(e.nativeEvent.actionName === 'increment' ? 1 : -1)}
         >
@@ -144,9 +215,17 @@ export function Zoom({ uri, etichetta, onScorri, parole, onCopia }: Props) {
           )}
         </View>
       </GestureDetector>
-      {sel && parole && onCopia && (
+      {valida && parole && ([0, 1] as const).map(quale => {
+        // A parola singola la prima va all'inizio e la seconda alla fine.
+        const inizio = quale === 0 ? valida[0] <= valida[1] : valida[1] < valida[0];
+        const p = parole[valida[quale]];
+        return <Maniglia key={quale} punto={puntoManiglia(p, inizio)} vista={vista} scala={scala} x={x} y={y} inizio={inizio} colore={c.primary}
+          gesto={gestoManiglia(quale, ox + ((p.x0 + p.x1) / 2) * k, oy + ((p.y0 + p.y1) / 2) * k)} />;
+      })}
+      {valida && parole && onCopia && (
         <View style={{ position: 'absolute', bottom: spazio.md, alignSelf: 'center', flexDirection: 'row', gap: spazio.sm, padding: spazio.xs, borderRadius: raggio.lg, backgroundColor: c.bgPanel }}>
-          <Pulsante variante="primario" icona={Copy} titolo={t('Copia')} onPress={() => { onCopia(testoSelezionato(parole, sel[0], sel[1])); setSel(null); }} />
+          <Pulsante variante="primario" icona={Copy} titolo={t('Copia')} onPress={() => { onCopia(testoSelezionato(parole, valida[0], valida[1])); setSel(null); }} />
+          {!tutte && <Pulsante variante="ghost" icona={TextSelect} titolo={t('Seleziona tutto')} onPress={() => setSel([0, parole.length - 1])} />}
           <Pulsante variante="ghost" icona={X} titolo={t('Annulla')} onPress={() => setSel(null)} />
         </View>
       )}

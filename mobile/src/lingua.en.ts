@@ -448,7 +448,8 @@ export const EN: Record<string, string> = {
   'Dividi in due pagine': 'Split into two pages',
   'Invio {fatte}/{totali} · non chiudere l\'app': 'Sending {fatte}/{totali} · keep the app open',
   'Pizzica o tocca due volte per ingrandire, striscia per cambiare pagina.': 'Pinch or double-tap to zoom, swipe to change page.',
-  'Tieni premuto e trascina per selezionare il testo.': 'Press and hold, then drag to select text.',
+  'Tieni premuto su una parola per selezionarla, poi trascina le maniglie.': 'Press and hold a word to select it, then drag the handles.',
+  'Seleziona tutto': 'Select all',
   'Pagina successiva': 'Next page',
   'Pagina precedente': 'Previous page',
 

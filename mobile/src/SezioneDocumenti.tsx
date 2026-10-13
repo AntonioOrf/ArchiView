@@ -167,6 +167,11 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
           }}
           parole={i => paroleOcr(doc, doc.pagine[i])}
           onCopia={s => esegui(t('Copia'), async () => { await copia(s); })}
+          onRiconosci={i => esegui(t('Riconoscimento del testo'), async () => {
+            const d = await riconosci(doc, file(i));
+            aggiorna(d);
+            if (!paroleOcr(d, d.pagine[i])?.length) notizia(t('Nessun testo riconosciuto in questa pagina.'));
+          })}
           indice={visore}
           onIndice={setVisore}
           occupato={occupato}

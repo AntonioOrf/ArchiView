@@ -47,6 +47,8 @@ type Props = {
   /** Solo Documenti: le parole dell'OCR della pagina, selezionabili sulla foto e copiate con `onCopia`. */
   parole?: (i: number) => Parola[] | null;
   onCopia?: (testo: string) => void;
+  /** Solo Documenti: OCR della pagina chiesto dalla pressione lunga quando le parole mancano. */
+  onRiconosci?: Azione;
   /** Fase 15d, solo Documenti: «Filtri» apre la scelta sotto la foto. `null` = originale. */
   filtri?: { onScegli: (i: number, f: Filtro | null) => void; onTutte: (f: Filtro | null) => void };
 };
@@ -97,7 +99,7 @@ export function Visore(p: Props) {
       )}
 
       <View style={{ flex: 1, backgroundColor: colori.scuro.bgBase }}>
-        <Zoom key={pg.chiave} uri={pg.uri} etichetta={nome} onScorri={scorri} parole={p.parole?.(i)} onCopia={p.onCopia} />
+        <Zoom key={pg.chiave} uri={pg.uri} etichetta={nome} onScorri={scorri} parole={p.parole?.(i)} onCopia={p.onCopia} onRiconosci={p.onRiconosci && !p.occupato ? () => p.onRiconosci!(i) : undefined} />
         {p.occupato && <ActivityIndicator size="large" color={colori.scuro.textMain} accessibilityLabel={t('Elaborazione della pagina')} style={{ position: 'absolute', top: spazio.md, right: spazio.md, padding: spazio.sm, borderRadius: raggio.tondo, backgroundColor: colori.scuro.bgPanel }} />}
       </View>
 

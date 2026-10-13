@@ -1,0 +1,20 @@
+appId: com.antonioorf.archiview.scanner
+# seme: documenti
+name: Documento - selezione del testo sulla foto senza aver aperto «Testo» prima
+---
+- launchApp
+- extendedWaitUntil:
+    visible: ArchiScanner
+    timeout: 180000
+- tapOn: Documenti, Ricevute, articoli, fotocopie
+- tapOn: "Ricevuta biblioteca, .*"
+- tapOn: Apri la pagina 1
+# Pagina mai riconosciuta: la pressione lunga fa l'OCR e seleziona la parola premuta.
+- longPressOn: "Pagina 1\\. .*"
+- extendedWaitUntil:
+    visible: Seleziona tutto
+    timeout: 60000
+- tapOn: Seleziona tutto
+- assertNotVisible: Seleziona tutto
+- tapOn: Copia
+- assertVisible: Testo copiato
