@@ -130,6 +130,7 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: 'Scansionare col telefono', link: '/archiscanner/introduzione' },
+              { text: 'Installazione', link: '/archiscanner/installazione' },
               { text: 'Scansionare in archivio', link: '/archiscanner/scansionare' },
               { text: 'Ricevere sul computer', link: '/archiscanner/computer' },
               { text: 'Documenti', link: '/archiscanner/documenti' }
@@ -241,6 +242,7 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: 'Scanning with your phone', link: '/en/archiscanner/overview' },
+              { text: 'Installation', link: '/en/archiscanner/installation' },
               { text: 'Scanning in the archive', link: '/en/archiscanner/scanning' },
               { text: 'Receiving on the computer', link: '/en/archiscanner/computer' },
               { text: 'Documents', link: '/en/archiscanner/documents' }

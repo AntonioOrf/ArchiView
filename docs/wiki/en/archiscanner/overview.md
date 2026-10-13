@@ -11,8 +11,8 @@ as PDFs.
 ::: info What you need
 - An **Android** phone. There is no iPhone version and the app is not on the Play Store: you
   install it from the APK published with the
-  [ArchiView releases](https://github.com/AntonioOrf/ArchiView/releases). Android will ask you
-  to allow installs from that source.
+  [ArchiView releases](https://github.com/AntonioOrf/ArchiView/releases). The steps are in
+  [Installation](/en/archiscanner/installation).
 - For the main channel, the same **Google account** ArchiView uses to sync with Drive. Without
   an account you can use [direct Wi-Fi](/en/archiscanner/computer#direct-wi-fi-without-drive).
 - The app is in English and Italian: it follows the phone's language, and you change it in

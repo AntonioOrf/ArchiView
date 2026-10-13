@@ -10,7 +10,7 @@ L'app ha anche una sezione [Documenti](/archiscanner/documenti), uno scanner per
 ::: info Cosa serve
 - Un telefono **Android**. L'app non c'è per iPhone e non è sul Play Store: si installa dal file
   APK pubblicato fra le [release di ArchiView](https://github.com/AntonioOrf/ArchiView/releases).
-  Android chiede di consentire l'installazione da quella sorgente.
+  I passi sono in [Installazione](/archiscanner/installazione).
 - Per il canale principale, lo stesso **account Google** con cui ArchiView sincronizza su Drive.
   Senza account si può usare il [Wi-Fi diretto](/archiscanner/computer#wi-fi-diretto-senza-drive).
 - L'app è in italiano e in inglese: segue la lingua del telefono, e si cambia in
