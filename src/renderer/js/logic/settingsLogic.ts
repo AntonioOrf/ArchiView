@@ -117,7 +117,7 @@ window.apriImpostazioni = async function(tab?: string) {
 
     // Conservazione di snapshot e cestino. I predefiniti vengono dal modello condiviso e non
     // da letterali qui: il main applica quelli stessi quando la chiave manca.
-    const M = window.Model || {};
+    const M: Partial<typeof ArchiViewModel> = window.Model || {};
     const auto = _campo('settings-snapshot-auto');
     if (auto) auto.checked = settings.snapshotAutomatici !== false;
     for (const [id, valore] of [
@@ -484,7 +484,7 @@ window.esportaBackupZip = async function() {
         }
 
         try {
-            const result = await window.apiBrowser.invoke('export-workspace-zip', window.t('btn_export_zip'));
+            const result = await window.apiBrowser.exportWorkspaceZip(window.t('btn_export_zip'));
             progDiv.remove();
 
             if (result.success) {

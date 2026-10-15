@@ -1,6 +1,7 @@
-import { test, expect } from './fixtures';
+import { test, expect, stubDialog } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
+import * as fs from 'fs';
 
 test.use({ seedWorkspace: 'Impostazioni' });
 
@@ -41,6 +42,17 @@ test.describe('Impostazioni', () => {
     await page.evaluate(() => (window as any).apriImpostazioni());
     await expect(page.locator('#tab-documents')).toBeVisible();
     await expect(page.locator('#tab-documents-btn')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  // Il pulsante chiamava `apiBrowser.invoke`, che il preload non espone: il backup falliva
+  // sempre con "invoke is not a function". Trovato tipizzando le API del preload (PIANO-REFACTOR Fase 10).
+  test('Backup in ZIP: il pulsante scrive davvero il file', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
+    const out = path.join(userDataDir, 'backup.zip');
+    await stubDialog(electronApp, { canceled: false, filePath: out });
+    await page.evaluate(() => (window as any).apriImpostazioni('tab-data'));
+    await page.locator('#settings-modal button', { hasText: /Esporta Backup in ZIP|Export Backup to ZIP/ }).click();
+    await expect.poll(() => fs.existsSync(out) && fs.statSync(out).size, { timeout: 15_000 }).toBeGreaterThan(0);
   });
 
   test('numero non valido: segnalato, non salvato, valore precedente ripristinato', async ({ page, userDataDir }) => {
