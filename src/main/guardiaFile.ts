@@ -11,7 +11,7 @@
 //
 // La parte che decide è pura (niente electron): test/guardiaFile.test.js.
 
-const path = require('path');
+import * as path from 'path';
 
 /** Percorso UNC o di dispositivo (`\\host\…`, `//host/…`, `\\?\UNC\…`). */
 function percorsoDiRete(p: string): boolean {
@@ -65,5 +65,4 @@ function installaGuardiaFile(sessione: any, radici: () => string[]) {
   });
 }
 
-module.exports = { richiestaFileBloccata, installaGuardiaFile };
-export {};
+export { richiestaFileBloccata, installaGuardiaFile };

@@ -4,9 +4,9 @@
 // 2.5/2.6): tre punti in cui l'ORDINE della selezione poteva divergere, cioe' tre modi
 // diversi di rispondere alla stessa domanda "cosa ha scelto l'utente". Sta qui una volta.
 
-const fs = require('fs');
-const path = require('path');
-const { state } = require('../workspaceManager');
+import * as fs from 'fs';
+import * as path from 'path';
+import { state } from '../workspaceManager';
 
 /** Il DB come sta SU DISCO: cio' che si esporta e' cio' che e' stato salvato. */
 async function leggiDb() {
@@ -36,5 +36,4 @@ function nomeFileSicuro(base: any, fallback: string): string {
   return String(base || '').replace(/[\/:*?"<>|]/g, '_').trim().slice(0, 80) || fallback;
 }
 
-module.exports = { leggiDb, recordsRichiesti, nomeFileSicuro };
-export {};
+export { leggiDb, recordsRichiesti, nomeFileSicuro };

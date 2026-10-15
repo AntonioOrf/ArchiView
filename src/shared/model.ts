@@ -2009,6 +2009,111 @@ function avFondiRecord(base: any, locale: any, esterno: any): { fuso: any; confl
   return { fuso, conflitti };
 }
 
+/**
+ * Impronta del CONTENUTO di una scheda: JSON con le chiavi in ordine, senza timestamp e firme.
+ * È ciò che finisce in `baseHashes` e dice se un lato ha cambiato la scheda rispetto alla base.
+ */
+function avImprontaRecord(record: any): string | null {
+  if (!record) return null;
+  const r = { ...record };
+  delete r.lastModified;
+  delete r.modificatoDa;
+  delete r.creatoDa;
+  const ordinato: any = {};
+  for (const k of Object.keys(r).sort()) ordinato[k] = r[k];
+  return JSON.stringify(ordinato);
+}
+
+/**
+ * Il merge di un database remoto nel locale, senza toccare né l'uno né l'altro (era dentro
+ * `sincronizzaEUnisciDati` nel renderer, mescolato a modali e scritture su disco).
+ *
+ * - cartelle: unione, meno quelle eliminate da almeno un lato;
+ * - tag, vocabolari, authority: le loro funzioni di unione;
+ * - modelli: vince il remoto sullo stesso id, quelli solo locali restano;
+ * - schede: quelle in `risolte` (modale dei conflitti) vincono; con la base, fusione per campo
+ *   (`avFondiRecord`); con la sola impronta, a tre vie sull'intera scheda; senza nessuna delle
+ *   due, vince il timestamp più recente.
+ *
+ * Restano fuori da `schede` le due liste che chiedono una scelta all'utente: le schede locali
+ * che il remoto ha eliminato (`eliminateDalRemoto`) e le remote che il locale ha eliminato
+ * (`eliminateInLocale`). `daRicomporre` sono le schede fuse con carte diverse dalle locali:
+ * la trascrizione derivata va ricomposta dal chiamante (escape e intestazioni stanno lì).
+ */
+function avFondiDatabase(locale: any, esterno: any, risolte: any[] = []) {
+  const l = locale || {};
+  const e = esterno || {};
+
+  const deletedCartelle = new Set<string>([...(l.deletedCartelle || []), ...(e.deletedCartelle || [])]);
+  const cartelle = new Set<string>([...(l.cartelle || []), ...(e.cartelle || [])]);
+  for (const c of deletedCartelle) cartelle.delete(c);
+
+  const tipi = new Map<string, any>();
+  for (const t of e.tipiDocumento || []) tipi.set(t.id, t);
+  for (const t of l.tipiDocumento || []) if (!tipi.has(t.id)) tipi.set(t.id, t);
+
+  const risolteMap = new Map<string, any>((risolte || []).map((r: any) => [r.id, r]));
+  const localMap = new Map<string, any>((l.manoscritti || []).map((m: any) => [m.id, m]));
+  const esternoMap = new Map<string, any>((e.manoscritti || []).map((m: any) => [m.id, m]));
+  const eliminatiRemoti = new Set(e.deletedIds || []);
+  const eliminatiLocali = new Set(l.deletedIds || []);
+  const baseHashes = l.baseHashes || {};
+  const baseObjects = l.baseObjects || {};
+
+  const schede: any[] = [];
+  const daRicomporre: any[] = [];
+  const eliminateDalRemoto: any[] = [];
+  const eliminateInLocale: any[] = [];
+
+  for (const id of new Set([...localMap.keys(), ...esternoMap.keys()])) {
+    if (risolteMap.has(id)) { schede.push(risolteMap.get(id)); continue; }
+    const loc = localMap.get(id);
+    const est = esternoMap.get(id);
+
+    if (loc && est) {
+      // Con la base la fusione è per CAMPO. I conflitti veri sono già passati dal modale e
+      // stanno in `risolte`: qui restano solo se l'utente ha annullato, e allora nel fuso
+      // vince il locale, che è ciò che `avFondiRecord` lascia nei campi contesi.
+      const base = baseObjects[id];
+      if (base) {
+        const fuso = avFondiRecord(base, loc, est).fuso;
+        if (!avUgualiJson(fuso.allegati, loc.allegati)) daRicomporre.push(fuso);
+        schede.push(fuso);
+        continue;
+      }
+      const baseHash = baseHashes[id];
+      if (!baseHash) {
+        // Nessuna base: ogni differenza è già passata dal modale (`rilevaConflitti` senza base
+        // apre un conflitto su ogni campo diverso). Qui si arriva con schede uguali o con il
+        // modale annullato: timestamp.
+        schede.push((loc.lastModified || 0) >= (est.lastModified || 0) ? loc : est);
+        continue;
+      }
+      const hLoc = avImprontaRecord(loc);
+      const hEst = avImprontaRecord(est);
+      if (hLoc === hEst || hLoc === baseHash) schede.push(est);   // uguali, o locale invariato
+      else schede.push(loc);                                       // remoto invariato, o conflitto sfuggito
+    } else if (loc) {
+      (eliminatiRemoti.has(id) ? eliminateDalRemoto : schede).push(loc);
+    } else if (est) {
+      (eliminatiLocali.has(id) ? eliminateInLocale : schede).push(est);
+    }
+  }
+
+  return {
+    cartelle: Array.from(cartelle).sort(),
+    deletedCartelle: Array.from(deletedCartelle),
+    tagsAnagrafica: avUnisciAnagraficheTag(l.tagsAnagrafica, e.tagsAnagrafica),
+    vocabolari: avUnisciVocabolari(l.vocabolari, e.vocabolari),
+    authority: avUnisciAuthority(l.authority, e.authority),
+    tipiDocumento: Array.from(tipi.values()),
+    schede,
+    daRicomporre,
+    eliminateDalRemoto,
+    eliminateInLocale
+  };
+}
+
 // --- Snapshot locali: rotazione (Fase 4.2) ------------------------------------
 //
 // La regola di conservazione sta QUI e non nel main perché è aritmetica pura, quindi
@@ -2331,6 +2436,8 @@ const ArchiViewModel = {
   // Merge campo per campo, snapshot e cestino (Fase 4)
   CHIAVI_NON_FUSE: AV_CHIAVI_NON_FUSE,
   fondiRecord: avFondiRecord,
+  improntaRecord: avImprontaRecord,
+  fondiDatabase: avFondiDatabase,
   fondiAllegati: avFondiAllegati,
   trascrizioneDerivata: avTrascrizioneDerivata,
   fondiCampiPropri: avFondiCampiPropri,

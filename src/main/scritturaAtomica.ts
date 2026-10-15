@@ -11,7 +11,7 @@
 //
 // Test: test/scritturaAtomica.test.js.
 
-const fs = require('fs');
+import * as fs from 'fs';
 const fsp = require('fs').promises;
 
 let contatore = 0;
@@ -89,5 +89,4 @@ function scriviAtomicoSync(percorso: string, contenuto: string | Buffer): void {
   }
 }
 
-module.exports = { scriviAtomico, scriviAtomicoSync };
-export {};
+export { scriviAtomico, scriviAtomicoSync };

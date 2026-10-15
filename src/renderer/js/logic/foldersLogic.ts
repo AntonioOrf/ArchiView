@@ -54,47 +54,17 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
         return;
     }
 
-    const settings = await window.apiSettings.get();
-    const username = settings.username || 'Anonimo';
-
     const nomeCartella = pathSorgente.split('/').pop();
     const nuovoPath = (pathDestinazioneBase === 'ROOT' || pathDestinazioneBase === '') ? nomeCartella : `${pathDestinazioneBase}/${nomeCartella}`;
-    
+
     if (appData.cartelle.includes(nuovoPath)) {
         mostraMessaggio(window.t("msg_folder_exists_dest"), "error");
         return;
     }
 
-    // Aggiorna cartelle
-    const prefix = pathSorgente + '/';
-    if (!appData.deletedCartelle) appData.deletedCartelle = [];
-    appData.cartelle = appData.cartelle.map(c => {
-        let nuovoC = c;
-        if (c === pathSorgente) nuovoC = nuovoPath;
-        else if (c.startsWith(prefix)) nuovoC = c.replace(pathSorgente, nuovoPath);
-        
-        if (nuovoC !== c) {
-            if (!appData.deletedCartelle.includes(c)) appData.deletedCartelle.push(c);
-            appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== nuovoC);
-        }
-        return nuovoC;
-    });
-
-    // Aggiorna manoscritti
-    appData.manoscritti.forEach(m => {
-        if (m.cartella === pathSorgente) {
-            m.cartella = nuovoPath;
-            m.lastModified = Date.now();
-            m.modificatoDa = username;
-        } else if (m.cartella && m.cartella.startsWith(prefix)) {
-            m.cartella = m.cartella.replace(pathSorgente, nuovoPath);
-            m.lastModified = Date.now();
-            m.modificatoDa = username;
-        }
-    });
-
-    await window.Store.commit();
-    aggiornaSelectCartelle();
+    // Spostare è cambiare percorso: stessa aritmetica della rinomina, compresi cartella
+    // corrente ed espansione, che prima qui non seguivano lo spostamento.
+    await window.applicaRinominaCartella(pathSorgente, nuovoPath);
 }
 
 

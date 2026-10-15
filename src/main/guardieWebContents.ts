@@ -55,5 +55,4 @@ function installaGuardieWebContents(app: any, sessione: any, finestraPrincipale:
   });
 }
 
-module.exports = { permessoConcesso, installaGuardieWebContents };
-export {};
+export { permessoConcesso, installaGuardieWebContents };

@@ -17,8 +17,8 @@
 // vorrebbe dire lasciare lo stack di rete di Chromium, e perdere proxy di sistema e
 // certificati aziendali, che nelle biblioteche sono la norma.
 
-const dns = require('dns');
-const net = require('net');
+import * as dns from 'dns';
+import * as net from 'net';
 
 /**
  * Loopback, reti private, link-local, CGNAT, "questa rete", IETF (192.0.0.0/24),
@@ -131,6 +131,21 @@ async function hostPrivato(hostname: string, lookup: Lookup = dns.promises.looku
   }
 }
 
+/**
+ * Solo http/https e un host vero, senza risolvere nulla. Vale per l'URL incollato dall'utente
+ * (`fetchManifest`) e per quelli decodificati da `iiif-img://` (`imageCache`): senza, quello
+ * schema diventerebbe un lettore di `file://` pilotabile da un manifest di terzi.
+ */
+function urlAmmesso(url: string): boolean {
+  try {
+    const u = new URL(String(url || '').trim());
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    return !!u.hostname;
+  } catch {
+    return false;
+  }
+}
+
 /** `true` se l'URL è http/https e non punta alla rete locale. */
 async function urlPubblico(url: string, lookup: Lookup = dns.promises.lookup, opzioni: OpzioniHost = {}): Promise<boolean> {
   try {
@@ -230,8 +245,4 @@ function fetchGuardata(url: string, init?: any): Promise<any> {
   return sessioneGuardata().fetch(url, init);
 }
 
-module.exports = {
-  ipPrivato, hostPrivato, urlPubblico, soloViaProxy, leggiCorpoLimitato,
-  autorizzaOrigine, origineAutorizzata, fetchGuardata
-};
-export {};
+export { ipPrivato, hostPrivato, urlAmmesso, urlPubblico, soloViaProxy, leggiCorpoLimitato, autorizzaOrigine, origineAutorizzata, fetchGuardata };

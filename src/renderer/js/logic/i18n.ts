@@ -1865,7 +1865,25 @@ const customEn = {
     "export_in_progress": "Export in progress…",
     "export_calculating": "Calculating…",
     "export_progress_files": "{var0} of {var1} files processed ({var2}%)",
-    "msg_perf_save_failed": "Could not save the preference: "
+    "msg_perf_save_failed": "Could not save the preference: ",
+    "incoming_folder_new": "+ 1 folder",
+    "incoming_folders_new": "+ {var0} folders",
+    "incoming_type": "1 template",
+    "incoming_types": "{var0} templates",
+    "incoming_folder_deleted": "Folder deleted: {var0} (by {var1})",
+    "incoming_folders_deleted_more": "… and {var0} more deleted folders",
+    "incoming_record_deleted": "Deleted: {var0} (by {var1})",
+    "incoming_records_deleted_more": "… and {var0} more deletions",
+    "incoming_record_unknown": "Unknown record",
+    "incoming_author_unknown": "Unknown",
+    "sync_checking": "Checking for changes",
+    "sync_searching": "Searching…",
+    "msg_sync_ok_attachments_failed": "Database synced, but attachments failed: ",
+    "msg_vault_unauthorized": "Access denied: this account is not authorised for the Shared Archive.",
+    "msg_vault_unauthorized_hint": "Access denied: this account is not authorised for the Shared Archive. Sign in with the right account or ask the owner for a new invite.",
+    "msg_drive_login_required": "Google Drive sign-in required. Open the Cloud menu to sign in.",
+    "diff_title_cloud": "Diff from the Cloud: {var0}",
+    "diff_title_local": "Local changes: {var0}"
 };
 
 const customIt = {
@@ -3613,7 +3631,25 @@ const customIt = {
     "msg_perf_save_failed": "Impossibile salvare la preferenza: ",
     "msg_codice_copiato_negli_appu": "Codice copiato negli appunti.",
     "msg_directory_allegati_locale": "Cartella locale degli allegati impostata.",
-    "msg_la_directory_degli_allega": "La cartella degli allegati è tornata a quella predefinita (dentro l'archivio)."
+    "msg_la_directory_degli_allega": "La cartella degli allegati è tornata a quella predefinita (dentro l'archivio).",
+    "incoming_folder_new": "+ 1 cartella",
+    "incoming_folders_new": "+ {var0} cartelle",
+    "incoming_type": "1 modello",
+    "incoming_types": "{var0} modelli",
+    "incoming_folder_deleted": "Cartella eliminata: {var0} (da {var1})",
+    "incoming_folders_deleted_more": "… e altre {var0} cartelle eliminate",
+    "incoming_record_deleted": "Eliminata: {var0} (da {var1})",
+    "incoming_records_deleted_more": "… e altre {var0} eliminazioni",
+    "incoming_record_unknown": "Scheda sconosciuta",
+    "incoming_author_unknown": "Sconosciuto",
+    "sync_checking": "Controllo modifiche",
+    "sync_searching": "Ricerca in corso…",
+    "msg_sync_ok_attachments_failed": "Sincronizzazione DB completata, ma errore negli allegati: ",
+    "msg_vault_unauthorized": "Accesso negato: questo account non è autorizzato per l'Archivio Condiviso.",
+    "msg_vault_unauthorized_hint": "Accesso negato: questo account non è autorizzato per l'Archivio Condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario.",
+    "msg_drive_login_required": "Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.",
+    "diff_title_cloud": "Diff dal Cloud: {var0}",
+    "diff_title_local": "Modifiche locali: {var0}"
 };
 
 window.t = function(key, fallback) {

@@ -35,6 +35,7 @@ type Opzioni = {
 // e' quello condiviso di `shared/model.ts` (Fase 3.0), lo stesso del CSV: due elenchi
 // avrebbero stampato una scheda diversa da quella esportata.
 const Model = require('../../shared/model');
+import * as Csv from '../ipc/csvExport';
 const META = new Set(Model.CHIAVI_SERVIZIO);
 
 /** Fase 3.4: i tag passano dal modello, non da uno `split` locale. */
@@ -132,15 +133,7 @@ function haTesto(html: any): boolean {
 
 // --- Formattazione dei valori -------------------------------------------------
 
-function formattaListaDinamica(valore: any[]): string {
-  return valore.map(el => {
-    if (el === null || typeof el !== 'object') return String(el ?? '');
-    const k = el.k ?? el.ruolo ?? '';
-    const v = el.v ?? el.nome ?? '';
-    if (k && v) return `${k}: ${v}`;
-    return String(k || v || '');
-  }).filter(Boolean).join(' · ');
-}
+const formattaListaDinamica = (valore: any[]) => Csv.formattaListaDinamica(valore, ' · ');
 
 /**
  * Valore reso come testo. A differenza del CSV la data e' in forma LEGGIBILE e non ISO:
@@ -481,12 +474,4 @@ ${corpo}
 </html>`;
 }
 
-module.exports = {
-  generaHtmlStampa,
-  sanificaHtml,
-  formattaValoreStampa,
-  campiDaStampare,
-  colonneTabella,
-  escapeHtml
-};
-export {};
+export { generaHtmlStampa, sanificaHtml, formattaValoreStampa, campiDaStampare, colonneTabella, escapeHtml };

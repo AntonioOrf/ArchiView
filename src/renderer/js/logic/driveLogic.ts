@@ -111,8 +111,8 @@ window.controllaModificheInEntrata = async function(manual = false) {
     const apiCloud = await window.getApiCloud();
     if (apiCloud && window.driveStatus && window.driveStatus.isAuthenticated) {
         if (manual) {
-            window.toggleSyncProgress(true, 'Controllo Modifiche');
-            window.updateSyncProgress(100, "Ricerca in corso…");
+            window.toggleSyncProgress(true, 'sync_checking');
+            window.updateSyncProgress(100, window.t('sync_searching', 'Ricerca in corso…'));
         }
         try {
             const remoteModifiedTime = await apiCloud.checkUpdates();
@@ -127,66 +127,12 @@ window.controllaModificheInEntrata = async function(manual = false) {
                         const loadedAt = window.ultimoCaricamento || 0;
                         window.incomingChanges = peekData.database.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
                         
-                        const structural = [];
-                        
-                        // Cartelle nuove o modificate
-                        const remoteCartelle = peekData.database.cartelle || [];
-                        const localCartelle = appData.cartelle || [];
-                        const newFolders = remoteCartelle.filter(c => !localCartelle.includes(c));
-                        if (newFolders.length > 0) {
-                            structural.push({ icon: 'folder-plus', label: `+ ${newFolders.length} Cartell${newFolders.length > 1 ? 'e' : 'a'}` });
-                        }
-                        
-                        const author = peekData.lastModifyingUser ? (peekData.lastModifyingUser.displayName || peekData.lastModifyingUser.emailAddress || 'Sconosciuto') : 'Collaboratore';
+                        const utente = peekData.lastModifyingUser;
+                        const author = utente
+                            ? (utente.displayName || utente.emailAddress || window.t('incoming_author_unknown', 'Sconosciuto'))
+                            : window.t('hub_generic_author', 'Collaboratore');
                         window.incomingAuthor = author;
-
-
-                        
-                        // Tipi Documento nuovi o modificati
-                        const remoteTipi = peekData.database.tipiDocumento || [];
-                        const localTipi = appData.tipiDocumento || [];
-                        const localTipiMap = new Map(localTipi.map(t => [t.id, JSON.stringify(t)]));
-                        const newTipi = remoteTipi.filter(rt => !localTipiMap.has(rt.id));
-                        const modTipi = remoteTipi.filter(rt => localTipiMap.has(rt.id) && localTipiMap.get(rt.id) !== JSON.stringify(rt));
-                        const totTipi = newTipi.length + modTipi.length;
-                        if (totTipi > 0) {
-                            structural.push({ icon: 'file-type-2', label: `${totTipi} Modell${totTipi > 1 ? 'i' : 'o'}` });
-                        }
-                        
-                        // Cartelle Eliminate
-                        const remoteDeletedFolders = peekData.database.deletedCartelle || [];
-                        const localDeletedFolders = appData.deletedCartelle || [];
-                        const newDeletedFolders = remoteDeletedFolders.filter(c => !localDeletedFolders.includes(c));
-                        if (newDeletedFolders.length > 0) {
-                            const MAX_DEL_FOLDERS = 10;
-                            newDeletedFolders.slice(0, MAX_DEL_FOLDERS).forEach(f => {
-                                const nomeFolder = f.split('/').pop() || f;
-                                structural.push({ icon: 'folder-minus', label: `Cartella eliminata: ${nomeFolder} (da ${author})` });
-                            });
-                            if (newDeletedFolders.length > MAX_DEL_FOLDERS) {
-                                structural.push({ icon: 'more-horizontal', label: `... e altre ${newDeletedFolders.length - MAX_DEL_FOLDERS} cartelle eliminate` });
-                            }
-                        }
-                        
-                        // Cancellazioni Remote
-                        const remoteDeleted = peekData.database.deletedIds || [];
-                        const localDeleted = appData.deletedIds || [];
-                        const newDeleted = remoteDeleted.filter(id => !localDeleted.includes(id));
-                        
-                        if (newDeleted.length > 0) {
-                            const MAX_DEL = 10;
-                            newDeleted.slice(0, MAX_DEL).forEach(id => {
-                                const m = (appData.manoscritti || []).find(x => x.id === id);
-                                const nome = m ? (m.titolo || m.segnatura || 'Senza Titolo') : 'File eliminato';
-                                const itemAuthor = (m && (m.modificatoDa || m.creatoDa)) ? (m.modificatoDa || m.creatoDa) : author;
-                                structural.push({ icon: 'trash-2', label: `Eliminato: ${nome} (da ${itemAuthor})` });
-                            });
-                            if (newDeleted.length > MAX_DEL) {
-                                structural.push({ icon: 'more-horizontal', label: `... e altre ${newDeleted.length - MAX_DEL} eliminazioni` });
-                            }
-                        }
-                        
-                        window.incomingStructuralChanges = structural;
+                        window.incomingStructuralChanges = window.riepilogoInArrivo(appData, peekData.database, author);
                         if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
                     }
                 } catch(e) { console.error("Errore peek", e); }
@@ -489,12 +435,23 @@ async function caricaDopoMerge(apiCloud, driveData, silent) {
         if (apiCloud.syncAttachments) await apiCloud.syncAttachments();
     } catch (attErr) {
         console.error("Errore sync allegati:", attErr);
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio("Sincronizzazione DB completata, ma errore negli allegati: " + attErr.message, "warning");
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_sync_ok_attachments_failed', 'Sincronizzazione DB completata, ma errore negli allegati: ') + attErr.message, "warning");
     }
 
-    window.ultimoCaricamento = typeof newSyncTime === 'number'
+    await registraSyncAvvenuta(typeof newSyncTime === 'number'
         ? newSyncTime
-        : (driveData && driveData.driveModifiedTime) || Date.now();
+        : (driveData && driveData.driveModifiedTime) || Date.now());
+    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
+    window.azzeraErroreCloud();
+    // Dopo una sync riuscita lo stato auth è certo (all'avvio un token drive.file può averlo
+    // lasciato a false).
+    if (window.driveStatus) window.driveStatus.isAuthenticated = true;
+    return true;
+}
+
+/** Dopo un merge riuscito: orario dell'ultimo caricamento, niente più modifiche in entrata. */
+async function registraSyncAvvenuta(ora) {
+    window.ultimoCaricamento = ora;
     if (window.apiSettings) {
         await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
     }
@@ -502,12 +459,6 @@ async function caricaDopoMerge(apiCloud, driveData, silent) {
     window.incomingChanges = [];
     window.incomingStructuralChanges = [];
     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-    if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-    window.azzeraErroreCloud();
-    // Dopo una sync riuscita lo stato auth è certo (all'avvio un token drive.file può averlo
-    // lasciato a false).
-    if (window.driveStatus) window.driveStatus.isAuthenticated = true;
-    return true;
 }
 
 function avvisaSyncDriveAnnullata(silent) {
@@ -517,7 +468,7 @@ function avvisaSyncDriveAnnullata(silent) {
 async function sincronizzaDrive(silent, modo) {
     const testi = TESTI_SYNC_DRIVE[modo];
     if (window.driveStatus?.unauthorizedVault) {
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_vault_unauthorized', 'Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.'), 'error');
         return;
     }
     const apiCloud = await window.getApiCloud();
@@ -551,7 +502,7 @@ async function sincronizzaDrive(silent, modo) {
         } else if (e.message && e.message.includes('ACCESSO_NEGATO_VAULT')) {
             window.driveStatus.isAuthenticated = false;
             window.driveStatus.unauthorizedVault = true;
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.', 'error');
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_vault_unauthorized_hint', 'Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.'), 'error');
             if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
         } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
             // Errore di autenticazione: apri il cloud modal per guidare l'utente al login
@@ -559,7 +510,7 @@ async function sincronizzaDrive(silent, modo) {
             if (typeof window.apriCloudModal === 'function') {
                 window.apriCloudModal();
             } else if (!silent && typeof mostraMessaggio === 'function') {
-                mostraMessaggio("Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.", "warning");
+                mostraMessaggio(window.t('msg_drive_login_required', 'Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.'), "warning");
             }
         } else {
             window.impostaErroreCloud(e.message);
@@ -591,7 +542,7 @@ window.scaricaDalCloud = async function(silent = false) {
 
 async function eseguiScaricamentoDalCloud(silent = false) {
     if (window.driveStatus?.unauthorizedVault) {
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio('Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.', 'error');
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_vault_unauthorized', 'Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso.'), 'error');
         return;
     }
     const apiCloud = await window.getApiCloud();
@@ -603,15 +554,8 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                 // Annullato: niente merge, quindi le modifiche in entrata restano da ricevere.
                 if (await window.sincronizzaEUnisciDati(driveData.database) === false) return avvisaSyncDriveAnnullata(silent);
                 window.lastDriveModifiedTime = driveData.driveModifiedTime;
-                window.ultimoCaricamento = driveData.driveModifiedTime || Date.now();
-                if (window.apiSettings) {
-                    await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
-                }
-                if (typeof window.impostaModificheInEntrata === 'function') window.impostaModificheInEntrata(false);
-                window.incomingChanges = [];
-                window.incomingStructuralChanges = [];
-                if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
-                
+                await registraSyncAvvenuta(driveData.driveModifiedTime || Date.now());
+
                 try {
                     if (apiCloud.syncAttachments) {
                         await apiCloud.syncAttachments();
@@ -638,51 +582,14 @@ window.caricaSulCloud = async function(silent = false) {
     await sincronizzaDrive(silent, 'upload');
 };
 
-window.trasformaInCondiviso = async function() {
-    const btn = document.getElementById('btn-trasforma-condiviso') as HTMLButtonElement;
-    if(btn) btn.disabled = true;
-    
-    if (typeof mostraProgressoCloud === 'function') {
-        mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_auth", "Autenticazione con Google Drive in corso…"));
-    }
+window.trasformaInCondiviso = () => trasformaArchivio('shared', 'btn-trasforma-condiviso',
+    window.t("prog_conf_shared", "Impostazione Archivio come condiviso…"));
+window.trasformaInPersonale = () => trasformaArchivio('backup', 'btn-trasforma-personale',
+    window.t("prog_conf_backup", "Impostazione Backup Personale…"));
 
-    try {
-        const apiCloud = await window.getApiCloud();
-        if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
-            await apiCloud.auth();
-            await aggiornaStatoDrive();
-        }
-
-        if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_shared", "Impostazione Archivio come condiviso…"));
-        }
-        
-        if (window.apiBrowser && window.apiBrowser.setVaultType) {
-            // Il main gestisce il reset dello sharedVaultId sulla transizione local→cloud
-            // e la conservazione dell'id sullo switch shared<->backup.
-            await window.apiBrowser.setVaultType({ vaultType: 'shared', driveAutofetch: true });
-            if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
-        }
-
-        if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_sync_title", "Sincronizzazione in corso"), window.t("prog_sync_merge", "Caricamento e unione dei dati sul Cloud (potrebbe volerci un po\')…"));
-        }
-        await window.sincronizzaGoogleDrive(true);
-        
-        if (typeof apriCloudModal === 'function') {
-            apriCloudModal();
-        }
-    } catch(e) {
-        mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
-        if(btn) btn.disabled = false;
-    } finally {
-        if (typeof nascondiProgressoCloud === 'function') {
-            nascondiProgressoCloud();
-        }
-    }
-}
-window.trasformaInPersonale = async function() {
-    const btn = document.getElementById('btn-trasforma-personale') as HTMLButtonElement;
+/** Archivio locale → condiviso (`shared`) o backup personale (`backup`): accesso, tipo, prima sync. */
+async function trasformaArchivio(vaultType, idBottone, testoConfigurazione) {
+    const btn = document.getElementById(idBottone) as HTMLButtonElement;
     if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, true, window.t('btn_activating', 'Attivazione in corso...'));
     else if (btn) btn.disabled = true;
 
@@ -698,11 +605,13 @@ window.trasformaInPersonale = async function() {
         }
 
         if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_backup", "Impostazione Backup Personale…"));
+            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), testoConfigurazione);
         }
-        
+
         if (window.apiBrowser && window.apiBrowser.setVaultType) {
-            await window.apiBrowser.setVaultType({ vaultType: 'backup', driveAutofetch: true });
+            // Il main gestisce il reset dello sharedVaultId sulla transizione local→cloud
+            // e la conservazione dell'id sullo switch shared<->backup.
+            await window.apiBrowser.setVaultType({ vaultType, driveAutofetch: true });
             if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
         }
 

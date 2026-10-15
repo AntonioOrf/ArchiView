@@ -12,7 +12,7 @@
 //
 // ⚠️ Il main non conosce la i18n: etichette e testi fissi arrivano dal renderer.
 
-const { sanificaHtml, escapeHtml } = require('../print/printTemplate');
+import { sanificaHtml, escapeHtml } from '../print/printTemplate';
 
 type Record_ = { [k: string]: any };
 
@@ -531,8 +531,4 @@ function generaEsportazioneTrascrizione(records: Record_[], opzioni: Opzioni = {
   return { contenuto, estensione: ESTENSIONI[formato] };
 }
 
-module.exports = {
-  generaEsportazioneTrascrizione,
-  analizzaHtml, corpoMd, corpoRtf, escapeRtf, escapeMd, carteDiRecord, daOcr
-};
-export {};
+export { generaEsportazioneTrascrizione, analizzaHtml, corpoMd, corpoRtf, escapeRtf, escapeMd, carteDiRecord, daOcr };

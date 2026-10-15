@@ -1,9 +1,9 @@
-const { ipcMain, dialog, app } = require('electron');
-const fs = require('fs');
-const path = require('path');
-const { state, initWorkspace, getAllSettings, saveAllSettings, aggiornaHubConfigDalRenderer, loadHubConfigPubblica, disconnectHub } = require('../workspaceManager');
-const { readVaultConfig, syncUnifiedFromLegacy } = require('../vaultConfig');
-const { safeChildDir } = require('./pathSafety');
+import { ipcMain, dialog, app } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
+import { state, initWorkspace, getAllSettings, saveAllSettings, aggiornaHubConfigDalRenderer, loadHubConfigPubblica, disconnectHub } from '../workspaceManager';
+import { readVaultConfig, syncUnifiedFromLegacy } from '../vaultConfig';
+import { safeChildDir } from './pathSafety';
 
 /**
  * Crea un nuovo workspace in basePath/folderName con il database dato e lo apre.
@@ -327,7 +327,9 @@ function setupWorkspaceIpc() {
       const sorgente = fs.existsSync(sourceDir) ? sourceDir : fallbackSource;
       if (!fs.existsSync(sorgente)) return { success: false, error: 'Tutorial assets not found' };
       // Asincrona: la copia ricorsiva sincrona bloccava il main per tutta la durata.
-      await fs.promises.cp(sorgente, targetDir, { recursive: true });
+      // Non `fs.promises.cp`: dentro app.asar fallisce con ENOENT (Electron non la gestisce),
+      // e l'archivio di prova nell'app installata non si apriva (3.3.0–3.4.0).
+      await copiaCartella(sorgente, targetDir);
 
       initWorkspace(targetDir);
       if (state.mainWindow) {
@@ -341,5 +343,15 @@ function setupWorkspaceIpc() {
   });
 }
 
-module.exports = { setupWorkspaceIpc, clonaWorkspace };
-export {};
+/** Copia ricorsiva con sole funzioni che Electron sa leggere da app.asar. */
+async function copiaCartella(da: string, a: string): Promise<void> {
+  await fs.promises.mkdir(a, { recursive: true });
+  for (const voce of await fs.promises.readdir(da, { withFileTypes: true })) {
+    const sorgente = path.join(da, voce.name);
+    const destinazione = path.join(a, voce.name);
+    if (voce.isDirectory()) await copiaCartella(sorgente, destinazione);
+    else await fs.promises.writeFile(destinazione, await fs.promises.readFile(sorgente));
+  }
+}
+
+export { setupWorkspaceIpc, clonaWorkspace };

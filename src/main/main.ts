@@ -1,6 +1,6 @@
-const { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net, nativeImage } = require('electron');
-const path = require('path');
-const { pathToFileURL } = require('url');
+import { app, BrowserWindow, shell, protocol, ipcMain, nativeTheme, net, nativeImage } from 'electron';
+import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 // Isolamento test E2E: reindirizza userData se ARCHIVIEW_E2E_USER_DATA è impostata.
 // Deve precedere il require di workspaceManager (che legge userData a import-time).
@@ -8,7 +8,7 @@ require('./e2eBootstrap');
 
 // Modalità "prestazioni ridotte": la disattivazione dell'accelerazione hardware deve
 // avvenire prima di app.ready, quindi il flag si legge dal file dedicato in userData.
-const { leggiPerfConfig } = require('./perfConfig');
+import { leggiPerfConfig } from './perfConfig';
 const perfConfig = leggiPerfConfig();
 if (perfConfig.lowPerf) {
   app.disableHardwareAcceleration();
@@ -18,32 +18,32 @@ if (process.platform === 'win32' && app.isPackaged) {
   app.setAppUserModelId("com.antonioorf.archiview");
 }
 
-const { state, loadWorkspace, initWorkspace } = require('./workspaceManager');
-const { setupDatabaseIpc } = require('./ipc/databaseIpc');
-const { setupAttachmentsIpc, setupAttachmentsProtocol } = require('./ipc/attachmentsIpc');
-const { setupWorkspaceIpc } = require('./ipc/workspaceIpc');
-const { setupUpdaterIpc } = require('./ipc/updaterIpc');
-const { setupSettingsIpc } = require('./ipc/settingsIpc');
-const { collegaZoom } = require('./zoomInterfaccia');
-const { setupVaultIpc } = require('./ipc/vaultIpc');
-const { setupHubIpc } = require('./ipc/hubIpc');
-const { setupDriveIpc } = require('./ipc/drive');
-const { setupExportImportIpc } = require('./ipc/exportImportIpc');
-const { setupOcrIpc } = require('./ipc/ocrIpc');
-const { setupIiifIpc } = require('./ipc/iiifIpc');
-const { setupAuthorityIpc } = require('./ipc/authorityIpc');
-const { setupPrintIpc } = require('./ipc/printIpc');
-const { setupTextExportIpc } = require('./ipc/textExportIpc');
+import { state, loadWorkspace, initWorkspace } from './workspaceManager';
+import { setupDatabaseIpc } from './ipc/databaseIpc';
+import { setupAttachmentsIpc, setupAttachmentsProtocol } from './ipc/attachmentsIpc';
+import { setupWorkspaceIpc } from './ipc/workspaceIpc';
+import { setupUpdaterIpc } from './ipc/updaterIpc';
+import { setupSettingsIpc } from './ipc/settingsIpc';
+import { collegaZoom } from './zoomInterfaccia';
+import { setupVaultIpc } from './ipc/vaultIpc';
+import { setupHubIpc } from './ipc/hubIpc';
+import { setupDriveIpc } from './ipc/drive';
+import { setupExportImportIpc } from './ipc/exportImportIpc';
+import { setupOcrIpc } from './ipc/ocrIpc';
+import { setupIiifIpc } from './ipc/iiifIpc';
+import { setupAuthorityIpc } from './ipc/authorityIpc';
+import { setupPrintIpc } from './ipc/printIpc';
+import { setupTextExportIpc } from './ipc/textExportIpc';
 // Fase 4 — cestino, snapshot locali e cronologia per scheda.
-const { setupSafetyIpc } = require('./ipc/safetyIpc');
-const { setupCrossArchiveIpc } = require('./ipc/crossArchiveIpc');
+import { setupSafetyIpc } from './ipc/safetyIpc';
+import { setupCrossArchiveIpc } from './ipc/crossArchiveIpc';
 // ArchiScanner — ricezione dei lotti dal telefono (PIANO-SCANNER.md).
-const { setupScannerIpc } = require('./ipc/scannerIpc');
-const pdfHost = require('./ocr/pdfHost');
-const printHost = require('./print/printHost');
-const iiifImageHost = require('./iiif/imageHost');
-const iiifCache = require('./iiif/imageCache');
-const schemaApp = require('./schemaApp');
+import { setupScannerIpc } from './ipc/scannerIpc';
+import * as pdfHost from './ocr/pdfHost';
+import * as printHost from './print/printHost';
+import * as iiifImageHost from './iiif/imageHost';
+import * as iiifCache from './iiif/imageCache';
+import * as schemaApp from './schemaApp';
 
 // Protocollo custom per servire allegati
 protocol.registerSchemesAsPrivileged([
@@ -75,7 +75,7 @@ function createWindow() {
     ? path.join(process.resourcesPath, 'assets', iconFile)
     : path.join(__dirname, '..', '..', 'assets', iconFile);
   
-  state.mainWindow = new BrowserWindow({
+  const finestra = new BrowserWindow({
     width: 1200,
     height: 800,
     // Sotto questa soglia sidebar (w-60) e vista principale non convivono più. 640 lascia
@@ -93,21 +93,22 @@ function createWindow() {
       nodeIntegration: false
     }
   });
+  state.mainWindow = finestra;
 
   // E2E in background: fuori schermo, senza focus né icona nella barra, così i test non
   // interrompono chi lavora. Non `show: false`: una finestra nascosta non disegna.
   if (process.env.ARCHIVIEW_E2E_USER_DATA && process.env.ARCHIVIEW_E2E_BACKGROUND) {
-    state.mainWindow.setSkipTaskbar(true);
-    state.mainWindow.setPosition(-32000, -32000);
-    state.mainWindow.once('ready-to-show', () => state.mainWindow.showInactive());
+    finestra.setSkipTaskbar(true);
+    finestra.setPosition(-32000, -32000);
+    finestra.once('ready-to-show', () => finestra.showInactive());
   } else {
-    state.mainWindow.once('ready-to-show', () => state.mainWindow.show());
+    finestra.once('ready-to-show', () => finestra.show());
   }
 
-  state.mainWindow.setMenuBarVisibility(false);
-  collegaZoom(state.mainWindow);
+  finestra.setMenuBarVisibility(false);
+  collegaZoom(finestra);
   const indexUrl = schemaApp.URL_INDEX;
-  state.mainWindow.loadURL(indexUrl);
+  finestra.loadURL(indexUrl);
 
   // Sicurezza: blocca la navigazione verso destinazioni esterne.
   // ATTENZIONE: da Electron 34+ questo evento viene emesso anche per i reload avviati dal
@@ -115,24 +116,24 @@ function createWindow() {
   // repository Hub o il cambio workspace. Un preventDefault() incondizionato li congelava
   // (overlay "Preparazione dell'archivio condiviso" infinito), quindi consentiamo solo la
   // ri-navigazione verso la index locale dell'app.
-  state.mainWindow.webContents.on('will-navigate', (event, url) => {
+  finestra.webContents.on('will-navigate', (event, url) => {
     const target = url.split('#')[0].split('?')[0];
-    if (target === indexUrl || target === state.mainWindow.webContents.getURL().split('#')[0].split('?')[0]) return;
+    if (target === indexUrl || target === finestra.webContents.getURL().split('#')[0].split('?')[0]) return;
     event.preventDefault();
   });
 
   // Solo in dev: in produzione ogni console.log del renderer costerebbe un round-trip IPC.
   if (!app.isPackaged) {
-    state.mainWindow.webContents.on('console-message', (event, ...args) => {
+    finestra.webContents.on('console-message', (event, ...args) => {
       const msg = event.message ?? args[1];
-      const ln = event.line ?? args[2];
+      const ln = event.lineNumber ?? args[2];
       const src = event.sourceId ?? args[3];
       console.log(`[RENDERER] ${msg} (${src}:${ln})`);
     });
   }
 
   // Sicurezza: blocca l'apertura di finestre popup
-  state.mainWindow.webContents.setWindowOpenHandler((details) => {
+  finestra.webContents.setWindowOpenHandler((details) => {
     if (details.url.startsWith('http://') || details.url.startsWith('https://')) {
       shell.openExternal(details.url);
     }
@@ -233,7 +234,7 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle('invia-segnalazione', async (event, payload) => {
-    let lastError = null;
+    let lastError: { ok: boolean; status?: number; text?: string; error?: string } | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const response = await net.fetch('https://formsubmit.co/ajax/9267297c79d548e052d348548565a2fa', {
@@ -275,7 +276,7 @@ if (!gotTheLock) {
   });
 
   let forceClose = false;
-  state.mainWindow.on('close', (e) => {
+  state.mainWindow?.on('close', (e) => {
     // In E2E la conferma di chiusura non è pilotabile e il renderer, sulla welcome modal,
     // non registra nemmeno l'handler request-close → app.close() si bloccherebbe.
     if (process.env.ARCHIVIEW_E2E_USER_DATA) return;
@@ -293,7 +294,7 @@ if (!gotTheLock) {
   // L'host PDF dell'OCR è una BrowserWindow offscreen, quindi conta come finestra aperta:
   // lasciarla viva impedirebbe a `window-all-closed` di scattare e l'applicazione chiusa
   // resterebbe in memoria. Va abbattuta insieme alla finestra principale, non dopo.
-  state.mainWindow.on('closed', () => { pdfHost.distruggi(); printHost.distruggi(); finestraStaccata.distruggiFinestraStaccata(); });
+  state.mainWindow?.on('closed', () => { pdfHost.distruggi(); printHost.distruggi(); finestraStaccata.distruggiFinestraStaccata(); });
   
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

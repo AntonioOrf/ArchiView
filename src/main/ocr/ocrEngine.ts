@@ -14,13 +14,13 @@
 // dopo un periodo di inattività: tenere occupata quella memoria mentre l'utente sta scrivendo
 // una scheda è esattamente ciò che la modalità Prestazioni ridotte vuole evitare.
 
-const { linguaInstallata, cartellaLingue } = require('./ocrLangs');
+import { linguaInstallata, cartellaLingue } from './ocrLangs';
 
 const INATTIVITA_MS = 120000;
 
-let worker = null;
+let worker: any = null;   // Worker di tesseract.js, caricato al primo uso
 let chiaveLingue = '';
-let timerInattivita = null;
+let timerInattivita: NodeJS.Timeout | null = null;
 let inUso = false;
 
 function normalizzaLingue(lingue) {
@@ -53,7 +53,7 @@ async function chiudiMotore() {
 // Worker a sé: l'OSD esiste solo nel motore legacy di Tesseract (OEM 0), il riconoscimento
 // gira sull'LSTM. Un worker combinato caricherebbe i modelli legacy di OGNI lingua, che i
 // dati `tessdata_fast` installati da `ocrLangs` nemmeno contengono.
-let workerOsd = null;
+let workerOsd: any = null;
 
 /**
  * Da qui in su la rotazione si applica senza discutere. È la soglia predefinita di OCRmyPDF
@@ -147,7 +147,7 @@ async function ottieniWorker(lingue, onProgresso) {
 
 /** blocks → un array piatto di righe, la forma che `ocrText.ts` sa trattare. */
 function righeDaBlocchi(blocchi) {
-  const righe = [];
+  const righe: any[] = [];
   for (const b of blocchi || []) {
     for (const p of (b.paragraphs || [])) {
       for (const l of (p.lines || [])) {
@@ -204,8 +204,4 @@ async function riconosci(sorgente, lingue, onProgresso, pdf?: 'testo' | 'complet
   }
 }
 
-module.exports = {
-  riconosci, chiudiMotore, linguaMancanti, normalizzaLingue, righeDaBlocchi,
-  rilevaOrientamento, orientamentoDisponibile, SOGLIA_ORIENTAMENTO, SOGLIA_MINIMA_ORIENTAMENTO
-};
-export {};
+export { riconosci, chiudiMotore, linguaMancanti, normalizzaLingue, righeDaBlocchi, rilevaOrientamento, orientamentoDisponibile, SOGLIA_ORIENTAMENTO, SOGLIA_MINIMA_ORIENTAMENTO };

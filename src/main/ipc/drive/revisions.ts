@@ -1,5 +1,5 @@
-const { getActiveVaultFlags } = require('../../workspaceManager');
-const { driveState, loadSavedTokens, initGoogle } = require('./auth');
+import { getActiveVaultFlags } from '../../workspaceManager';
+import { driveState, loadSavedTokens, initGoogle } from './auth';
 
 async function getDbFileId(): Promise<string> {
   let projectFolderId: string | null = null;
@@ -66,5 +66,4 @@ async function getDriveRevision(fileId: string, revisionId: string): Promise<any
 
 // Il ripristino non sta qui: lo fa il renderer (`ripristinaRevisioneCloud`) con le regole di
 // `ripristinaDatabase` e il caricamento normale con il controllo 409.
-module.exports = { getDbFileId, listDriveRevisions, getDriveRevision };
-export {};
+export { getDbFileId, listDriveRevisions, getDriveRevision };

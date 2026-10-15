@@ -23,12 +23,12 @@
 // tenuto d'accordo con la cartella e, alla prima divergenza (una cancellazione a mano, una
 // sincronizzazione di cartella), mostrerebbe voci che non esistono più.
 
-const path = require('path');
-const fs = require('fs');
+import * as path from 'path';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const zlib = require('zlib');
-const { promisify } = require('util');
-const { state, getAllSettings } = require('./workspaceManager');
+import * as zlib from 'zlib';
+import { promisify } from 'util';
+import { state, getAllSettings } from './workspaceManager';
 const Model = require('../shared/model');
 
 const gzipAsync = promisify(zlib.gzip);
@@ -147,7 +147,7 @@ async function creaSnapshot(payload?: string | null, motivo: string = 'manuale')
   let json = typeof payload === 'string' ? payload : null;
   if (!json) {
     if (!state.dataFilePath || !fs.existsSync(state.dataFilePath)) throw new Error('Nessun database da fotografare');
-    json = await fsp.readFile(state.dataFilePath, 'utf8');
+    json = String(await fsp.readFile(state.dataFilePath, 'utf8'));
   }
 
   const ts = Date.now();
@@ -244,17 +244,4 @@ async function storiaRecord(id: string): Promise<any[]> {
   return tappe.reverse();
 }
 
-module.exports = {
-  INTERVALLO_AUTO_MS,
-  cartellaSnapshot,
-  nomeSnapshot,
-  metaDaNome,
-  elencaSnapshot,
-  creaSnapshot,
-  forseCreaSnapshotAutomatico,
-  ruotaSnapshot,
-  caricaSnapshot,
-  eliminaSnapshot,
-  storiaRecord
-};
-export {};
+export { INTERVALLO_AUTO_MS, cartellaSnapshot, nomeSnapshot, metaDaNome, elencaSnapshot, creaSnapshot, forseCreaSnapshotAutomatico, ruotaSnapshot, caricaSnapshot, eliminaSnapshot, storiaRecord };

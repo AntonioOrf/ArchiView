@@ -147,7 +147,7 @@ window.confermaCampoProprio = function() {
         return;
     }
 
-    const def: Record<string, any> = { id, tipo, label: id };
+    const def: AVCampoDef = { id, tipo, label: id };
     if (vocabolario) def.vocabolario = vocabolario;
     else if (opzioni.length) def.opzioni = opzioni;
     const authority = document.getElementById('campo-proprio-authority').value;

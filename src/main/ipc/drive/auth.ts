@@ -1,10 +1,10 @@
-const { app, shell } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const { state, finestraPrincipale, getActiveVaultFlags } = require('../../workspaceManager');
-const tokenStore = require('../../cloudTokenStore');
-const { avviaServerLoopback, leggiCallbackOAuth } = require('../loopbackServer');
+import { app, shell } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
+import { state, finestraPrincipale, getActiveVaultFlags } from '../../workspaceManager';
+import * as tokenStore from '../../cloudTokenStore';
+import { avviaServerLoopback, leggiCallbackOAuth } from '../loopbackServer';
 
 // Registrato nella console Google: porta e path non si cambiano senza aggiornare il client.
 const REDIRECT_PORT = 3456;
@@ -112,11 +112,11 @@ function initGoogle(): void {
     throw new Error("Credenziali Google Drive mancanti. Il file cloudCredentials.ts non è configurato.");
   }
 
-  // Solo il modulo Drive, non `require('googleapis')`: il pacchetto completo carica le
-  // definizioni di ~300 API e bloccava il main per circa un secondo subito dopo la creazione
-  // della finestra (misurato: 1.300 ms contro 110). `drive()` senza `this` è previsto da
-  // googleapis-common (`context.google?._options`).
-  const google = require('googleapis/build/src/apis/drive');
+  // Solo `@googleapis/drive`, non `googleapis`: il pacchetto completo pesa ~34 MB
+  // nell'installazione e, caricato, bloccava il main per circa un secondo (misurato: 1.300 ms
+  // contro 110). `drive()` senza `this` è previsto da googleapis-common
+  // (`context.google?._options`).
+  const google = require('@googleapis/drive');
   driveState.googleInstance = google;
   driveState.oauth2Client = new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
 
@@ -496,13 +496,4 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
   return { isAuthenticated: true, user: userEmail };
 }
 
-module.exports = {
-  driveState,
-  writeTokenFile, readTokenFile,
-  getGlobalTokenPath, getLocalTokenPath,
-  logAuthEvent,
-  classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND,
-  initGoogle, loadSavedTokens,
-  authenticateDrive, logoutDrive, checkDriveStatus
-};
-export {};
+export { driveState, writeTokenFile, readTokenFile, getGlobalTokenPath, getLocalTokenPath, logAuthEvent, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus };

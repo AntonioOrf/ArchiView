@@ -59,7 +59,7 @@ window.Store = {
      * nessuna parte, con lo stesso aspetto di quelli buoni (Fase 3.5).
      */
     async eliminaSchede(ids) {
-        const morti = new Set((ids || []).map(String));
+        const morti = new Set<string>((ids || []).map(String));
         const prima = appData.manoscritti.length;
         appData.manoscritti = appData.manoscritti.filter(m => !morti.has(String(m.id)));
         if (appData.manoscritti.length === prima) return;

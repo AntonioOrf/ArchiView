@@ -1,12 +1,12 @@
-const { ipcMain, shell, protocol, net, app } = require('electron');
-const path = require('path');
-const { pathToFileURL } = require('url');
-const fs = require('fs');
+import { ipcMain, shell, protocol, net, app } from 'electron';
+import * as path from 'path';
+import { pathToFileURL } from 'url';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const { state } = require('../workspaceManager');
-const { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale } = require('./pathSafety');
-const { hashFile } = require('../chunkingLogic');
-const schemaApp = require('../schemaApp');
+import { state } from '../workspaceManager';
+import { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale } from './pathSafety';
+import { hashFile } from '../chunkingLogic';
+import * as schemaApp from '../schemaApp';
 
 /**
  * Il percorso sorgente arriva dal renderer (file scelto o trascinato). Non si può legare a un
@@ -230,5 +230,4 @@ function setupAttachmentsProtocol() {
   protocol.handle('local-asset', (request) => rispostaLocalAsset(request.url));
 }
 
-module.exports = { setupAttachmentsIpc, setupAttachmentsProtocol };
-export {};
+export { setupAttachmentsIpc, setupAttachmentsProtocol };

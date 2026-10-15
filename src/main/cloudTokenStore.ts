@@ -1,7 +1,7 @@
-const { app, safeStorage } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const { state, getActiveVaultFlags } = require('./workspaceManager');
+import { app, safeStorage } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import { state, getActiveVaultFlags } from './workspaceManager';
 
 // Store centralizzato dei token cloud (Google; Microsoft solo per la pulizia dei residui).
 //
@@ -49,7 +49,7 @@ function tokenPathFor(provider: 'google' | 'hub', key: string): string {
 // dello stesso repo (es. owner + membro sullo stesso PC, per test) hanno chiavi diverse,
 // altrimenti il join del membro sovrascriverebbe la ownerKey e l'owner degraderebbe a membro.
 
-const crypto = require('crypto');
+import * as crypto from 'crypto';
 
 // `wpOverride` serve al clone Hub, dove i segreti del membro vanno salvati sotto il path del
 // NUOVO workspace mentre `state.workspacePath` punta ancora a quello corrente.
@@ -202,16 +202,4 @@ function purgeMicrosoftTokens(): number {
   return rimossi;
 }
 
-module.exports = {
-  tokensDir,
-  purgeMicrosoftTokens,
-  activeVaultKey,
-  tokenPathFor,
-  writeSerialized,
-  readSerialized,
-  migrateLegacy,
-  saveHubSecrets,
-  loadHubSecrets,
-  clearHubSecrets
-};
-export {};
+export { tokensDir, purgeMicrosoftTokens, activeVaultKey, tokenPathFor, writeSerialized, readSerialized, migrateLegacy, saveHubSecrets, loadHubSecrets, clearHubSecrets };

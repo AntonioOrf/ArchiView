@@ -1,24 +1,9 @@
-const { ipcMain } = require('electron');
-const { state, getAllSettings, saveAllSettings } = require('../workspaceManager');
-const { readVaultConfig } = require('../vaultConfig');
+import { ipcMain } from 'electron';
+import { state, getAllSettings, saveAllSettings } from '../workspaceManager';
+import { readVaultConfig, legacyDaConfig } from '../vaultConfig';
 
 // IPC dedicato al modello unificato del vault (.archiview-vault.json).
 // Sostituisce, lato renderer, la lettura/scrittura dei flag vault tramite settings globali.
-
-// Deriva l'oggetto "legacy" completo (le 7 vault keys) dal modello unificato.
-// Serve perché saveAllSettings ricostruisce .archiview-drive.json da questo set completo:
-// passarne solo un sottoinsieme azzererebbe i campi mancanti.
-function buildLegacyFromConfig(cfg: any) {
-  return {
-    isSharedVault: cfg.vaultType === 'shared',
-    isPersonalCloud: cfg.vaultType === 'backup',
-    sharedVaultId: (cfg.sync && cfg.sync.sharedVaultId) || null,
-    driveAutofetch: !!(cfg.sync && cfg.sync.driveAutofetch),
-    pusherKey: (cfg.realtime && cfg.realtime.pusherKey) || null,
-    pusherCluster: (cfg.realtime && cfg.realtime.pusherCluster) || null,
-    pusherWebhook: (cfg.realtime && cfg.realtime.pusherWebhook) || null
-  };
-}
 
 function currentConfig() {
   return readVaultConfig(state.workspacePath, getAllSettings());
@@ -39,7 +24,7 @@ function setupVaultIpc() {
     }
 
     const current = currentConfig();
-    const legacy: any = buildLegacyFromConfig(current);
+    const legacy: any = legacyDaConfig(current);
 
     legacy.isSharedVault = vaultType === 'shared';
     legacy.isPersonalCloud = vaultType === 'backup';
@@ -60,5 +45,4 @@ function setupVaultIpc() {
   });
 }
 
-module.exports = { setupVaultIpc };
-export {};
+export { setupVaultIpc };

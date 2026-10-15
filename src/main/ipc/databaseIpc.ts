@@ -1,14 +1,14 @@
-const { ipcMain } = require('electron');
-const fs = require('fs');
+import { ipcMain } from 'electron';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const path = require('path');
-const crypto = require('crypto');
-const { state } = require('../workspaceManager');
-const { forseCreaSnapshotAutomatico } = require('../snapshots');
-const { scriviAtomico } = require('../scritturaAtomica');
+import * as path from 'path';
+import * as crypto from 'crypto';
+import { state } from '../workspaceManager';
+import { forseCreaSnapshotAutomatico } from '../snapshots';
+import { scriviAtomico } from '../scritturaAtomica';
 
-let watcher = null;
-let watcherDebounceTimer = null;
+let watcher: import('fs').FSWatcher | null = null;
+let watcherDebounceTimer: NodeJS.Timeout | undefined;
 
 // N5 — Il watcher riconosce le scritture proprie dal CONTENUTO, non da una finestra di tempo:
 // prima `isSavingSelf` restava attivo 1 s dopo ogni salvataggio, e un cambiamento esterno vero
@@ -164,5 +164,4 @@ function setupDatabaseIpc() {
   });
 }
 
-module.exports = { setupDatabaseIpc };
-export {};
+export { setupDatabaseIpc };

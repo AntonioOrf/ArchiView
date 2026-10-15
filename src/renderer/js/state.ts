@@ -419,125 +419,36 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
         }
         
         const eseguiMergeFinale = async (resolvedCards = []) => {
-            // 1. Fondi le cartelle (Unione)
-            const mergedDeletedCartelle = new Set([...(appData.deletedCartelle || []), ...(nuovoDati.deletedCartelle || [])]);
-            
-            const cartelleSet = new Set([...(appData.cartelle || []), ...(nuovoDati.cartelle || [])]);
-            for (let dc of mergedDeletedCartelle) {
-                cartelleSet.delete(dc);
-            }
-            appData.cartelle = Array.from(cartelleSet).sort();
-            appData.deletedCartelle = Array.from(mergedDeletedCartelle);
-            
-            // 1-bis. Fondi l'anagrafica dei tag (Fase 3.4). Non è un campo del record,
-            // quindi non passa da `rilevaConflitti`: unione per chiave, e sul colore
-            // vince chi l'ha cambiato per ultimo.
-            const anagraficaFusa = window.Model.unisciAnagraficheTag(
-                appData.tagsAnagrafica, nuovoDati.tagsAnagrafica
-            );
-            if (Object.keys(anagraficaFusa).length) appData.tagsAnagrafica = anagraficaFusa;
+            // La fusione dei dati è in `Model.fondiDatabase` (pura, provata in test/fondiDatabase.test.js).
+            // Qui restano le domande all'utente sulle eliminazioni e la scrittura: niente tocca
+            // `appData` finché il merge non si conclude, così un annullamento non lascia un
+            // archivio fuso a metà.
+            const esito = window.Model.fondiDatabase(appData, nuovoDati, resolvedCards);
+            // Carte fuse diverse dalle locali: la trascrizione derivata va ricomposta.
+            // Solo allora, così una scheda intatta resta identica byte per byte.
+            for (const m of esito.daRicomporre) window.ricomponiTrascrizioneFusa(m);
 
-            // 1-ter. Vocabolari controllati (3.3) e anagrafica di persone e luoghi (3.5).
-            // ⚠️ I vocabolari NON si fondono come i tag: l'unione è sui VALORI, non
-            // last-write-wins sull'intero vocabolario — due colleghi che ne aggiungono uno
-            // ciascuno nella stessa sessione perderebbero quello scritto per primo.
-            const vocFusi = window.Model.unisciVocabolari(appData.vocabolari, nuovoDati.vocabolari);
-            if (Object.keys(vocFusi).length) appData.vocabolari = vocFusi;
-            const authFusa = window.Model.unisciAuthority(appData.authority, nuovoDati.authority);
-            if (Object.keys(authFusa).length) appData.authority = authFusa;
+            const mergedManoscritti = esito.schede;
+            const deletionsList = esito.eliminateDalRemoto;
+            const localDeletionsToPush = esito.eliminateInLocale;
+            // Le schede rimesse da "Annulla" sulle eliminazioni locali: escono dai tombstone.
+            const tombstoneDaTogliere = new Set();
 
-            // 2. Fondi i tipiDocumento
-            const tipiMap = new Map();
-            (nuovoDati.tipiDocumento || []).forEach(t => tipiMap.set(t.id, t));
-            (appData.tipiDocumento || []).forEach(t => {
-                if (!tipiMap.has(t.id)) tipiMap.set(t.id, t);
-            });
-            appData.tipiDocumento = Array.from(tipiMap.values());
-            
-            // 3. Fondi i manoscritti (schede)
-            const resolvedMap = new Map<string, any>((resolvedCards || []).map(r => [r.id, r]));
-            const localMap = new Map<string, any>((appData.manoscritti || []).map(m => [m.id, m]));
-            const externalMap = new Map<string, any>((nuovoDati.manoscritti || []).map(m => [m.id, m]));
-            
-            const mergedManoscritti = [];
-            const deletionsList = [];
-            const localDeletionsToPush = [];
-            
-            const tuttiIds = new Set([...localMap.keys(), ...externalMap.keys()]);
-            for (const id of tuttiIds) {
-                if (resolvedMap.has(id)) {
-                    mergedManoscritti.push(resolvedMap.get(id));
-                    continue;
+            const applicaStruttura = () => {
+                appData.cartelle = esito.cartelle;
+                appData.deletedCartelle = esito.deletedCartelle;
+                // Tag (3.4), vocabolari (3.3) e authority (3.5): un'unione vuota non sovrascrive.
+                if (Object.keys(esito.tagsAnagrafica).length) appData.tagsAnagrafica = esito.tagsAnagrafica;
+                if (Object.keys(esito.vocabolari).length) appData.vocabolari = esito.vocabolari;
+                if (Object.keys(esito.authority).length) appData.authority = esito.authority;
+                appData.tipiDocumento = esito.tipiDocumento;
+                if (tombstoneDaTogliere.size && appData.deletedIds) {
+                    appData.deletedIds = appData.deletedIds.filter(x => !tombstoneDaTogliere.has(x));
                 }
-                
-                const local = localMap.get(id);
-                const external = externalMap.get(id);
-                
-                if (local && external) {
-                    const baseHashes = appData.baseHashes || {};
-                    const baseHash = baseHashes[id];
-                    const baseObj = (appData.baseObjects || {})[id];
+            };
 
-                    // Fase 4.4 — quando c'è l'oggetto di base, la fusione è per CAMPO: due
-                    // colleghi che modificano campi diversi della stessa scheda non
-                    // producono più un conflitto, e nemmeno una versione che ne cancella
-                    // l'altra. I conflitti veri sono già passati dal modale e stanno in
-                    // `resolvedMap`, quindi qui `esito.conflitti` è vuoto salvo che
-                    // l'utente abbia annullato: in quel caso vince il locale, che è ciò
-                    // che `fondiRecord` lascia nei campi contesi.
-                    if (baseObj && window.Model && typeof window.Model.fondiRecord === 'function') {
-                        const fuso = window.Model.fondiRecord(baseObj, local, external).fuso;
-                        // Carte fuse diverse dalle locali: la trascrizione derivata va ricomposta.
-                        // Solo allora, così una scheda intatta resta identica byte per byte.
-                        if (JSON.stringify(fuso.allegati) !== JSON.stringify(local.allegati)) window.ricomponiTrascrizioneFusa(fuso);
-                        mergedManoscritti.push(fuso);
-                        continue;
-                    }
-
-                    if (!baseHash || typeof window.getRecordHash !== 'function') {
-                        // Fallback: nessuna base per questa scheda. Ogni differenza è già passata
-                        // dal modale dei conflitti (`rilevaConflitti` senza base apre un conflitto
-                        // su qualsiasi campo diverso), quindi qui si arriva solo con schede identiche
-                        // o con un modale annullato: timestamp.
-                        const tLocal = local.lastModified || 0;
-                        const tExternal = external.lastModified || 0;
-                        if (tLocal >= tExternal) {
-                            mergedManoscritti.push(local);
-                        } else {
-                            mergedManoscritti.push(external);
-                        }
-                    } else {
-                        // 3-Way Merge deterministico
-                        const localHash = window.getRecordHash(local);
-                        const externalHash = window.getRecordHash(external);
-                        
-                        if (localHash === externalHash) {
-                            mergedManoscritti.push(external);
-                        } else if (localHash === baseHash) {
-                            mergedManoscritti.push(external); // Locale invariato
-                        } else if (externalHash === baseHash) {
-                            mergedManoscritti.push(local); // Cloud invariato
-                        } else {
-                            // Conflitto sfuggito, preserviamo locale
-                            mergedManoscritti.push(local); 
-                        }
-                    }
-                } else if (local) {
-                    if (nuovoDati.deletedIds && nuovoDati.deletedIds.includes(id)) {
-                        deletionsList.push(local);
-                    } else {
-                        mergedManoscritti.push(local);
-                    }
-                } else if (external) {
-                    if (appData.deletedIds && appData.deletedIds.includes(id)) {
-                        localDeletionsToPush.push(external);
-                    } else {
-                        mergedManoscritti.push(external);
-                    }
-                }
-            }
-            
             const concludiMerge = async (manoscrittiFinali) => {
+                applicaStruttura();
                 const tombstoneSet = new Set([...(appData.deletedIds || []), ...(nuovoDati.deletedIds || [])]);
                 appData.deletedIds = Array.from(tombstoneSet);
                 
@@ -641,9 +552,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                     // Annulla: non cancellare dal cloud, e rimuovili dai tombstone locali così non ci chiede più (e li ripristiniamo)
                     localDeletionsToPush.forEach(card => {
                         mergedManoscritti.push(card);
-                        if (appData.deletedIds) {
-                            appData.deletedIds = appData.deletedIds.filter(x => x !== card.id);
-                        }
+                        tombstoneDaTogliere.add(card.id);
                     });
                     if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'sync_in_progress');
                     processDeletions();

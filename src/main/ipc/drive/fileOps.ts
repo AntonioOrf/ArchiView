@@ -1,6 +1,6 @@
-const fs = require('fs');
-const { pipeline } = require('stream/promises');
-const { driveState } = require('./auth');
+import * as fs from 'fs';
+import { pipeline } from 'stream/promises';
+import { driveState } from './auth';
 
 // --- Drive Query Helpers ---
 

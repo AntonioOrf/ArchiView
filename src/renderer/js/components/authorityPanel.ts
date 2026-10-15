@@ -146,30 +146,10 @@ function _apRiga(voce) {
  * "Bartolus de Saxoferrato" senza aprire quaranta schede.
  */
 function _apRinominaInLoco(riga, voce) {
-    const nome = riga.querySelector('.auth-nome');
-    if (!nome || riga.querySelector('input[type="text"]')) return;
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-input tag-manager-input';
-    input.value = voce.nome;
-    riga.replaceChild(input, nome);
-    input.focus();
-    input.select();
-
-    let chiuso = false;
-    const fine = async (conferma) => {
-        if (chiuso) return;
-        chiuso = true;
-        const nuovo = input.value.trim();
-        if (conferma && nuovo && nuovo !== voce.nome) await window.rinominaAuthorityArchivio(voce.tipo, voce.nome, nuovo);
+    rinominaInLoco(riga, '.auth-nome', voce.nome, async (nuovo) => {
+        if (nuovo && nuovo !== voce.nome) await window.rinominaAuthorityArchivio(voce.tipo, voce.nome, nuovo);
         window.disegnaAnagrafica();
-    };
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); fine(true); }
-        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fine(false); }
-    };
-    input.onblur = () => fine(true);
+    });
 }
 
 // --- P10: collegamento a Wikidata e VIAF ---------------------------------------

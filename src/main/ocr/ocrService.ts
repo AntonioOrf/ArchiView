@@ -4,13 +4,13 @@
 // (riconoscimento) e `ocrText` (post-processing puro). Qui vivono le due decisioni che
 // contano davvero per l'utente: quando NON fare l'OCR, e come non far crollare la macchina.
 
-const path = require('path');
-const fs = require('fs');
-const { state } = require('../workspaceManager');
-const pdfHost = require('./pdfHost');
-const { riconosci, linguaMancanti, normalizzaLingue, rilevaOrientamento } = require('./ocrEngine');
-const { testoOcrPiano, testoOcrInHtml, unisciPagine } = require('./ocrText');
-const pdfRicercabile = require('./pdfRicercabile');
+import * as path from 'path';
+import * as fs from 'fs';
+import { state } from '../workspaceManager';
+import * as pdfHost from './pdfHost';
+import { riconosci, linguaMancanti, normalizzaLingue, rilevaOrientamento } from './ocrEngine';
+import { testoOcrPiano, testoOcrInHtml, unisciPagine } from './ocrText';
+import * as pdfRicercabile from './pdfRicercabile';
 
 /**
  * Una pagina il cui livello testo supera questa soglia di caratteri alfanumerici è un PDF
@@ -221,7 +221,7 @@ async function eseguiOcr(opzioni, onProgresso) {
     }
 
     const totale = Math.min(apertura.pagine, o.maxPagine || apertura.pagine);
-    const pagine = [];
+    const pagine: any[] = [];
     for (let n = 1; n <= totale; n++) {
       verificaAnnullamento();
       segnala({ fase: 'pagina', pagina: n, pagine: totale });
@@ -309,5 +309,4 @@ function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?): any {
   };
 }
 
-module.exports = { eseguiOcr, annulla, occupato, SOGLIA_TESTO_PDF, contaAlfanumerici };
-export {};
+export { eseguiOcr, annulla, occupato, SOGLIA_TESTO_PDF, contaAlfanumerici };

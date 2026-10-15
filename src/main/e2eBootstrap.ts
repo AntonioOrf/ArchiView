@@ -2,7 +2,7 @@
 // DEVE essere il primo modulo richiesto in main.ts: reindirizza la cartella
 // `userData` PRIMA che qualsiasi altro modulo (workspaceManager, cloudTokenStore, ...)
 // la legga a import-time. Inerte in produzione: attivo solo se la env var è presente.
-const { app } = require('electron');
+import { app } from 'electron';
 
 const e2eUserData = process.env.ARCHIVIEW_E2E_USER_DATA;
 if (e2eUserData) {
@@ -24,5 +24,4 @@ if (e2eUserData && process.env.ARCHIVIEW_E2E_BACKGROUND) {
   app.commandLine.appendSwitch('disable-background-timer-throttling');
 }
 
-module.exports = {};
-export {};
+export {  };

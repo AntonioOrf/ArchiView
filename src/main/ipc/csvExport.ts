@@ -26,15 +26,18 @@ const COLONNE_BASE = [
   { chiave: 'creatoDa', etichetta: 'Creato da' }
 ];
 
-/** Liste dinamiche (`attori_dinamici` & co.): [{k,v}] oppure [{ruolo,nome}]. */
-function formattaListaDinamica(valore: any[]): string {
+/**
+ * Liste dinamiche (`attori_dinamici` & co.): [{k,v}] oppure [{ruolo,nome}]. Usata anche dalla
+ * stampa, che separa con `' · '`.
+ */
+function formattaListaDinamica(valore: any[], separatore = '; '): string {
   return valore.map(el => {
     if (el === null || typeof el !== 'object') return String(el ?? '');
     const k = el.k ?? el.ruolo ?? '';
     const v = el.v ?? el.nome ?? '';
     if (k && v) return `${k}: ${v}`;
     return String(k || v || '');
-  }).filter(Boolean).join('; ');
+  }).filter(Boolean).join(separatore);
 }
 
 function formattaAllegati(valore: any): string {
@@ -168,5 +171,4 @@ function generaCsv(
   return opzioni.bom === false ? testo : '﻿' + testo;
 }
 
-module.exports = { generaCsv, costruisciColonne, formattaValore, neutralizzaFormula };
-export {};
+export { generaCsv, costruisciColonne, formattaValore, formattaListaDinamica, neutralizzaFormula };

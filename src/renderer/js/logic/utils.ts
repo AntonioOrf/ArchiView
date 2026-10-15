@@ -84,255 +84,6 @@ window.normalizzaTesto = function(s) {
         .replace(/[\u2018\u2019\u02bc\u02b9\u2032]/g, "'");
 };
 
-/** Indice del testo normalizzato riportato sull'originale, carattere per carattere. */
-window.posizioneOriginale = function(originale, indiceNorm) {
-    let n = 0;
-    let i = 0;
-    for (const ch of originale) {
-        if (n >= indiceNorm) return i;
-        n += window.normalizzaTesto(ch).length;
-        i += ch.length;
-    }
-    return originale.length;
-};
-
-/**
- * Spezza la query in token normalizzati. Il filtro della griglia li richiede tutti (AND),
- * così "notaio 1340" seleziona i record che contengono entrambi, anche in campi diversi.
- */
-window.tokenizzaRicerca = function(str) {
-    const norm = window.normalizzaTesto(str).trim();
-    if (!norm) return [];
-    return norm.split(/\s+/).filter(Boolean);
-};
-
-/**
- * Riduce a testo il valore di un campo, qualunque forma abbia. Oltre a stringhe e numeri
- * gestisce le dynamic_list (attori, beni, debiti, crediti, familiari): sono coppie {k, v}
- * e contengono i nomi di persona, cioè ciò che si cerca più spesso in un archivio notarile.
- *
- * Vive qui, non in mainView, perché la usano due consumatori: l'indice della ricerca
- * testuale e il filtro `campo:valore` della 1.3. Due copie divergerebbero al primo tipo
- * di campo nuovo, e la ricerca per campo direbbe il falso proprio dove la griglia dice
- * il vero.
- */
-window.testoIndicizzabile = function(v) {
-    if (v === null || v === undefined) return '';
-    if (typeof v === 'string') return v;
-    if (typeof v === 'number') return String(v);
-    if (Array.isArray(v)) {
-        let out = '';
-        for (const el of v) {
-            if (el === null || el === undefined) continue;
-            if (typeof el === 'string' || typeof el === 'number') out += el + ' ';
-            else if (typeof el === 'object') out += (el.k || '') + ' ' + (el.v || '') + ' ';
-        }
-        return out;
-    }
-    return '';
-};
-
-/**
- * Analizza la query in tre parti: token liberi, frasi fra virgolette e vincoli
- * `campo:valore` (con `campo:"valore con spazi"`).
- *
- * `tokenizzaRicerca` resta la forma semplice — è ancora ciò che serve ai suggerimenti —
- * e non è stata estesa: la sua uscita è un array di stringhe, contratto su cui si
- * appoggia già dell'altro codice. Qui l'uscita è strutturata perché i vincoli per campo
- * non si possono applicare al "fieno" unico dell'indice: quello concatena tutti i campi,
- * quindi `notaio:rossi` vi troverebbe un Rossi citato nelle note.
- *
- * Un `campo:` senza valore (cioè la query a metà digitazione) viene ignorato invece di
- * diventare un token letterale che non corrisponde a nulla e svuota la lista.
- */
-window.analizzaQuery = function(str) {
-    const esito = { testo: [], campi: [] };
-    const norm = window.normalizzaTesto(str);
-    if (!norm || !norm.trim()) return esito;
-
-    const re = /([\w\-]+):"([^"]*)"|([\w\-]+):(\S+)|([\w\-]+):(?=\s|$)|"([^"]*)"|(\S+)/g;
-    let m;
-    while ((m = re.exec(norm)) !== null) {
-        if (m[1] !== undefined) {
-            const v = m[2].trim();
-            if (v) esito.campi.push({ campo: m[1], valore: v });
-        } else if (m[3] !== undefined) {
-            esito.campi.push({ campo: m[3], valore: m[4] });
-        } else if (m[5] !== undefined) {
-            continue; // `campo:` ancora senza valore
-        } else if (m[6] !== undefined) {
-            const v = m[6].trim();
-            if (v) esito.testo.push(v);
-        } else if (m[7] !== undefined) {
-            esito.testo.push(m[7]);
-        }
-    }
-    return esito;
-};
-
-// Nomi che l'utente scrive naturalmente ma che nel record hanno un'altra chiave.
-// `tipo:` è il caso che conta: nessuno digiterebbe `tipodocumento:`.
-const ALIAS_CAMPI_QUERY = {
-    tag: 'tags',
-    tipo: 'tipodocumento',
-    // Chiavi nella forma di normalizzaTesto, che è quella di `f.campo`: v→u (P3).
-    archiuio: 'cartella',
-    modificato: 'lastmodified'
-};
-
-/**
- * Il record soddisfa TUTTI i vincoli `campo:valore`. Il confronto sul nome del campo è
- * normalizzato (i tipi documento hanno campi come `Notaio` e `Marginalia`, con la
- * maiuscola), e un campo che il record non possiede lo esclude: `notaio:rossi` deve
- * restituire schede notarili, non tutte quelle prive di quel campo.
- */
-window.recordPassaCampi = function(m, campi) {
-    if (!campi || campi.length === 0) return true;
-    for (const f of campi) {
-        const cercato = ALIAS_CAMPI_QUERY[f.campo] || f.campo;
-
-        // `ocr:` non è una chiave del record: il testo riconosciuto vive dentro
-        // `m.allegati[].ocr.testo` (Fase 2.3). Senza questo caso il ciclo sulle chiavi non
-        // lo troverebbe mai e `ocr:notaio` escluderebbe ogni scheda — il modo peggiore di
-        // fallire, perché sembra "nessun risultato" e non "campo inesistente".
-        if (cercato === 'ocr') {
-            const testo = window.testoOcrRecord ? window.testoOcrRecord(m) : '';
-            if (!testo || !window.normalizzaTesto(testo).includes(f.valore)) return false;
-            continue;
-        }
-
-        let trovato = false;
-        let corrisponde = false;
-        for (const chiave of Object.keys(m)) {
-            if (window.normalizzaTesto(chiave) !== cercato) continue;
-            trovato = true;
-            if (window.normalizzaTesto(window.testoIndicizzabile(m[chiave])).includes(f.valore)) {
-                corrisponde = true;
-                break;
-            }
-        }
-        if (!trovato || !corrisponde) return false;
-    }
-    return true;
-};
-
-/**
- * Filtri avanzati (Fase 1.3): tipo documento, intervallo di data modifica, presenza di
- * allegati, presenza di trascrizione. Funzione PURA e senza effetti sul record — in
- * particolare NON usa `normalizzaAllegati`, che scriverebbe `m.allegati = []` su ogni
- * record scorso: un predicato di filtro che muta il database è un difetto, non una
- * scorciatoia.
- *
- * La cartella non è qui: dipende dalla vista corrente e resta in getManoscrittiFiltrati.
- */
-window.recordPassaFiltri = function(m, filtri) {
-    if (!filtri) return true;
-
-    if (filtri.tipo && (m.tipoDocumento || 'manoscritto') !== filtri.tipo) return false;
-
-    if (filtri.allegati === 'si' || filtri.allegati === 'no') {
-        const n = Array.isArray(m.allegati) ? m.allegati.length : (m.allegato ? 1 : 0);
-        if (filtri.allegati === 'si' && n === 0) return false;
-        if (filtri.allegati === 'no' && n > 0) return false;
-    }
-
-    if (filtri.trascrizione === 'si' || filtri.trascrizione === 'no') {
-        // Un contenteditable svuotato lascia `<br>` o `<p></p>`: senza strip dei tag,
-        // "ha trascrizione" sarebbe vero per ogni scheda mai aperta in trascrizione.
-        const testo = String(m.trascrizione || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-        if (filtri.trascrizione === 'si' && !testo) return false;
-        if (filtri.trascrizione === 'no' && testo) return false;
-    }
-
-    if (filtri.collegamenti === 'si' || filtri.collegamenti === 'no') {
-        // Fase 3.5. Conta ENTRAMBI i versi, e il verso entrante non è scritto nel record:
-        // `__idsCollegati` è l'indice costruito una volta per render da
-        // `getManoscrittiFiltrati`, perché ricavarlo qui vorrebbe dire scorrere l'intero
-        // archivio per ogni scheda — N² su un vault grande, proprio dove pesa.
-        const indice = window.__idsCollegati;
-        const collegata = indice ? indice.has(String(m.id)) : window.Model.relazioni(m).length > 0;
-        if (filtri.collegamenti === 'si' && !collegata) return false;
-        if (filtri.collegamenti === 'no' && collegata) return false;
-    }
-
-    // P2 — almeno una carta in quello stato: "da trascrivere" è la lista di lavoro.
-    if (filtri.statoCarte && !(Array.isArray(m.allegati) && m.allegati.some(a => a && a.stato === filtri.statoCarte))) return false;
-
-    if (filtri.ocr === 'si' || filtri.ocr === 'no') {
-        // Fase 2.3. Serve a due domande opposte e ugualmente frequenti: "quali carte ho già
-        // fatto riconoscere" e — più utile — "quali mi restano", che è la lista di lavoro
-        // prima di lanciare un OCR in massa.
-        const n = window.testoOcrRecord ? window.testoOcrRecord(m).trim() : '';
-        if (filtri.ocr === 'si' && !n) return false;
-        if (filtri.ocr === 'no' && n) return false;
-    }
-
-    if (filtri.daData || filtri.aData) {
-        // Un record senza `lastModified` non ha una data da confrontare: chiedere un
-        // intervallo e vederselo comparire dentro sarebbe peggio che non vederlo.
-        const ts = Number(m.lastModified) || 0;
-        if (!ts) return false;
-        if (filtri.daData) {
-            const d = Date.parse(filtri.daData + 'T00:00:00');
-            if (!isNaN(d) && ts < d) return false;
-        }
-        if (filtri.aData) {
-            // Estremo superiore INCLUSIVO: 'aData' è un giorno, non un istante, e
-            // "fino al 5" deve contenere le modifiche fatte il 5 alle 18:00.
-            const d = Date.parse(filtri.aData + 'T23:59:59.999');
-            if (!isNaN(d) && ts > d) return false;
-        }
-    }
-
-    if (filtri.daAnno || filtri.aAnno) {
-        // Fase 3.2 — il periodo STORICO, non la data di modifica. Si guardano tutti i campi
-        // che il tipo dichiara `date` (`dataCronica` e qualunque campo tipizzato così
-        // dall'utente): basta che UNO cada nel periodo, perché una scheda con due datazioni
-        // — quella dell'atto e quella della copia — appartiene a entrambi i periodi.
-        if (!window.DataStorica || !window.Model) return false;
-        const tipo = (typeof appData !== 'undefined' && appData.tipiDocumento)
-            ? appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'))
-            : null;
-        // Fase 3.7 — dalla SCHEDA: una datazione scritta in un campo proprio `date` è una
-        // datazione come le altre, e ignorarla escluderebbe la scheda dal suo stesso secolo.
-        const campiData = window.Model.campiDellaScheda(m, tipo, window.CONFIG_CAMPI, appData)
-            .filter(d => d.tipo === 'date')
-            .map(d => d.id);
-        // Nessun campo data nel tipo: la scheda non può soddisfare un filtro di periodo, e
-        // mostrarla comunque significherebbe dire che è del Trecento senza saperlo.
-        if (!campiData.length) return false;
-        const dentro = campiData.some(c => window.DataStorica.nelPeriodo(m[c], filtri.daAnno, filtri.aAnno));
-        if (!dentro) return false;
-    }
-
-    return true;
-};
-
-/** `base` vuota = radice virtuale: il suo sottoalbero è l'archivio intero. */
-window.cartellaNelSottoalbero = function(cartella, base) {
-    const c = typeof cartella === 'string' ? cartella : '';
-    const b = typeof base === 'string' ? base : '';
-    if (!b) return true;
-    return c === b || c.indexOf(b + '/') === 0;
-};
-
-/** Filtri avanzati impostati, per il badge del pulsante e per i chip. Puro. */
-window.contaFiltriAvanzati = function(filtri) {
-    if (!filtri) return 0;
-    let n = 0;
-    if (filtri.tipo) n++;
-    if (filtri.sottocartelle) n++;
-    if (filtri.daData) n++;
-    if (filtri.aData) n++;
-    if (filtri.daAnno) n++;
-    if (filtri.aAnno) n++;
-    if (filtri.allegati) n++;
-    if (filtri.trascrizione) n++;
-    if (filtri.ocr) n++;
-    if (filtri.collegamenti) n++;
-    if (filtri.statoCarte) n++;
-    return n;
-};
 
 /** P2 — stati di lavorazione di una carta, nell'ordine in cui si mostrano. */
 window.STATI_CARTA = ['daTrascrivere', 'trascritta', 'rivista', 'dubbio'];
@@ -477,7 +228,7 @@ window.apriLinkEsternoSicuro = function(url) {
  * Normalizza la lista allegati di un manoscritto nel formato array unificato.
  * Elimina la duplicazione di questo pattern in actions.js e ui.js.
  */
-function normalizzaAllegati(m) {
+function normalizzaAllegati(m): any[] {
     if (!m.allegati) m.allegati = [];
     if (m.allegati.length === 0 && m.allegato) {
         m.allegati.push({ nome: m.allegato, tipo: m.allegatoTipo, originalName: 'Allegato' });
@@ -525,201 +276,6 @@ window.srcAllegato = function(allegato, opzioni) {
     return src;
 };
 
-// --- Trascrizione per allegato (Fase 2.3-bis) --------------------------------
-//
-// Una scheda con più carte aveva UNA sola trascrizione: cambiando allegato il pannello di
-// sinistra restava fermo sul testo precedente, e chi schedava un fascicolo doveva tenere
-// tutte le carte in un unico blocco. Il testo vive ora in `m.allegati[i].trascrizione`.
-//
-// ⚠️ `m.trascrizione` NON è stata eliminata: resta, ricalcolata a ogni salvataggio come
-// concatenazione delle carte (`componiTrascrizioneRecord`). Costa una copia del testo nel
-// database, e la si paga per due ragioni concrete:
-//  1. i consumatori in sola lettura — indice di ricerca (`SEARCH_FIELDS_BASE`), filtro
-//     "ha trascrizione", diff del merge — continuano a funzionare **senza una riga di
-//     modifica**, quindi senza il rischio di dimenticarne uno;
-//  2. un collega con una versione precedente dell'app, che riceve il record dalla
-//     sincronizzazione, continua a vedere il testo. Con la sola forma nuova vedrebbe una
-//     scheda vuota, cioè un lavoro apparentemente perduto.
-
-/** Un contenteditable svuotato lascia `<p><br></p>`: "ha testo" non può essere `!== ''`. */
-window.trascrizioneHaTesto = function(html) {
-    return String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
-};
-
-/**
- * Testo dell'allegato `i`. Senza allegati la trascrizione resta quella della scheda.
- * `pagina` (da 1) conta solo per i PDF: è la pagina del documento, e ha il suo testo.
- */
-window.leggiTrascrizioneAllegato = function(m, i, pagina) {
-    if (!m) return '';
-    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
-    if (allegati.length === 0) return m.trascrizione || '';
-    const a = allegati[i];
-    if (!a) return '';
-    if (pagina > 0 && a.tipo === 'pdf') {
-        window.migraTrascrizionePdfSuPagine(a);
-        if (!Array.isArray(a.pagine)) return '';
-        return typeof a.pagine[pagina - 1] === 'string' ? a.pagine[pagina - 1] : '';
-    }
-    return typeof a.trascrizione === 'string' ? a.trascrizione : '';
-};
-
-window.scriviTrascrizioneAllegato = function(m, i, html, pagina) {
-    if (!m) return;
-    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
-    if (allegati.length === 0) { m.trascrizione = html; return; }
-    const a = allegati[i];
-    if (!a) return;
-    if (!(pagina > 0 && a.tipo === 'pdf')) { a.trascrizione = html; return; }
-
-    window.migraTrascrizionePdfSuPagine(a);
-    const pagine = Array.isArray(a.pagine) ? a.pagine : [];
-    const vuota = !window.trascrizioneHaTesto(html);
-    // Il travaso scrive anche le pagine solo sfogliate: senza questo, scorrere un PDF di
-    // trecento carte lascerebbe trecento `<p><br></p>` nel database e nella sincronizzazione.
-    if (vuota && pagina > pagine.length) return;
-    for (let k = pagine.length; k < pagina - 1; k++) pagine[k] = '';
-    pagine[pagina - 1] = vuota ? '' : html;
-    while (pagine.length && pagine[pagine.length - 1] === '') pagine.pop();
-    a.pagine = pagine;
-    a.trascrizione = window.componiPagineAllegato(pagine);
-};
-
-// --- Trascrizione per pagina nei PDF -----------------------------------------
-//
-// Un PDF di trenta carte è UN allegato: con il solo testo per allegato, sfogliandolo il
-// pannello di sinistra restava fermo. Le pagine vivono in `allegato.pagine` (indice 0 =
-// p. 1), e `allegato.trascrizione` resta come forma derivata per la stessa ragione di
-// `m.trascrizione`: tutto ciò che la legge (derivata della scheda, OCR, export, versioni
-// precedenti dell'app) continua a funzionare senza sapere che le pagine esistono.
-//
-// La derivata usa lo STESSO marcatore di pagina dell'OCR multipagina (`unisciPagine` in
-// ocrText.ts). È ciò che rende la conversione reversibile: una trascrizione OCR fatta prima
-// di questa funzione si divide esattamente, e così la derivata modificata da un collega con
-// una versione vecchia.
-
-/** Derivata di un PDF: le pagine con testo, ciascuna col suo `[p. N]`. */
-window.componiPagineAllegato = function(pagine) {
-    const lista = Array.isArray(pagine) ? pagine : [];
-    const conTesto = [];
-    for (let k = 0; k < lista.length; k++) {
-        if (window.trascrizioneHaTesto(lista[k])) conTesto.push(k);
-    }
-    if (conTesto.length === 0) return '';
-    // Solo la prima pagina: nessun marcatore, e la derivata coincide con il testo di sempre.
-    if (conTesto.length === 1 && conTesto[0] === 0) return lista[0];
-    const pezzi = [];
-    for (const k of conTesto) {
-        pezzi.push('<p class="ocr-pagina"><strong>[p. ' + (k + 1) + ']</strong></p>');
-        pezzi.push(lista[k]);
-    }
-    return pezzi.join('\n');
-};
-
-/**
- * Inversa di `componiPagineAllegato`. Il testo prima del primo marcatore è della p. 1 (lì
- * finisce anche l'intestazione dell'OCR); due marcatori della stessa pagina — un OCR accodato
- * a un altro — si sommano invece di sovrascriversi.
- */
-window.dividiTrascrizionePerPagine = function(html) {
-    const testo = String(html || '');
-    const marcatore = /<p\b[^>]*\bclass="[^"]*\bocr-pagina\b[^"]*"[^>]*>\s*<(strong|b)>\s*\[p\.\s*(\d{1,5})\]\s*<\/\1>\s*<\/p>/gi;
-    const pagine = [];
-    const aggiungi = (k, pezzo) => {
-        const pulito = pezzo.replace(/^\n/, '').replace(/\n$/, '');
-        if (!window.trascrizioneHaTesto(pulito)) return;
-        for (let j = pagine.length; j <= k; j++) pagine[j] = '';
-        pagine[k] = pagine[k] ? pagine[k] + '\n' + pulito : pulito;
-    };
-    let paginaCorrente = 0;
-    let ultimo = 0;
-    let trovato;
-    while ((trovato = marcatore.exec(testo)) !== null) {
-        aggiungi(paginaCorrente, testo.slice(ultimo, trovato.index));
-        const n = Number(trovato[2]);
-        paginaCorrente = n > 0 ? n - 1 : 0;
-        ultimo = marcatore.lastIndex;
-    }
-    aggiungi(paginaCorrente, testo.slice(ultimo));
-    return pagine;
-};
-
-/**
- * Porta un allegato PDF sulla forma per pagina. Idempotente, in memoria, come la migrazione
- * sugli allegati. Rifà la divisione anche quando `pagine` esiste ma la derivata non torna:
- * vuol dire che l'ha modificata una versione dell'app che le pagine non le conosce, e il suo
- * testo è il più recente — tenere `pagine` butterebbe via il lavoro di quel collega.
- *
- * @returns true se ha (ri)costruito le pagine.
- */
-window.migraTrascrizionePdfSuPagine = function(a) {
-    if (!a || a.tipo !== 'pdf') return false;
-    const testo = typeof a.trascrizione === 'string' ? a.trascrizione : '';
-    if (Array.isArray(a.pagine)) {
-        if (window.componiPagineAllegato(a.pagine) === testo) return false;
-    } else if (!window.trascrizioneHaTesto(testo)) {
-        return false;
-    }
-    a.pagine = window.dividiTrascrizionePerPagine(testo);
-    return true;
-};
-
-/**
- * Migrazione idempotente, in memoria: la vecchia trascrizione unica diventa quella della
- * PRIMA carta. Non si tenta di spezzarla — non c'è modo di sapere dove finisce una carta e
- * comincia l'altra, e un taglio inventato sarebbe peggio di un blocco unico da smistare a
- * mano. Gira all'apertura della vista e si limita a leggere se è già stata fatta.
- *
- * @returns true se ha spostato qualcosa (serve ai test e al log, non al chiamante).
- */
-window.migraTrascrizioneSuAllegati = function(m) {
-    if (!m) return false;
-    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
-    if (allegati.length === 0) return false;
-    // Se anche una sola carta ha già il campo, la migrazione è avvenuta: rifarla
-    // sovrascriverebbe il lavoro fatto dopo.
-    if (allegati.some(a => a && typeof a.trascrizione === 'string')) return false;
-    if (!window.trascrizioneHaTesto(m.trascrizione)) return false;
-    allegati[0].trascrizione = m.trascrizione;
-    return true;
-};
-
-/**
- * Forma derivata per `m.trascrizione`: le carte in ordine, ciascuna preceduta dal nome
- * dell'allegato quando ce n'è più di una. L'intestazione non è decorazione — è ciò che
- * rende leggibile il testo a chi lo riceve da una versione vecchia dell'app o lo esporta.
- */
-/**
- * Dopo un merge (sync o modale dei conflitti): `Model.fondiRecord` fonde le carte una per una
- * e non tocca la trascrizione derivata, che qui si ricompone dalle carte fuse. Senza, ricerca
- * ed export leggerebbero il testo di uno solo dei due lati fino al salvataggio successivo.
- */
-window.ricomponiTrascrizioneFusa = function(m) {
-    if (m && window.Model && window.Model.trascrizioneDerivata(m)) m.trascrizione = window.componiTrascrizioneRecord(m);
-    return m;
-};
-
-window.componiTrascrizioneRecord = function(m) {
-    if (!m) return '';
-    const allegati = Array.isArray(m.allegati) ? m.allegati : [];
-    if (allegati.length === 0) return m.trascrizione || '';
-
-    const pezzi = [];
-    let conTesto = 0;
-    for (const a of allegati) {
-        if (a && window.trascrizioneHaTesto(a.trascrizione)) conTesto++;
-    }
-    for (let i = 0; i < allegati.length; i++) {
-        const a = allegati[i];
-        if (!a || !window.trascrizioneHaTesto(a.trascrizione)) continue;
-        if (conTesto > 1) {
-            const nome = a.originalName || a.nome || String(i + 1);
-            pezzi.push('<p class="trasc-carta"><strong>' + window.escapeHTML(nome) + '</strong></p>');
-        }
-        pezzi.push(a.trascrizione);
-    }
-    return pezzi.join('\n');
-};
 
 /**
  * Debounce: esegue fn solo dopo `wait` ms dall'ultimo invocazione.
@@ -730,6 +286,77 @@ function debounce(fn, wait) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), wait);
     };
+}
+
+/**
+ * Rinomina nella riga (tag, vocabolari, anagrafica), non in un modale sopra il modale: un
+ * secondo livello di finestra per cambiare una parola è sproporzionato. Sostituisce
+ * l'elemento `selettore` della riga con un campo; `fine` riceve il testo confermato (Invio o
+ * uscita dal campo) oppure `null` con Esc, una volta sola, e ridisegna.
+ */
+function rinominaInLoco(riga, selettore, valore, fine) {
+    const nome = riga.querySelector(selettore);
+    if (!nome || riga.querySelector('input[type="text"]')) return;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-input tag-manager-input';
+    input.value = valore;
+    riga.replaceChild(input, nome);
+    input.focus();
+    input.select();
+
+    let chiuso = false;
+    const chiudi = (conferma) => {
+        if (chiuso) return;
+        chiuso = true;
+        fine(conferma ? input.value.trim() : null);
+    };
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); chiudi(true); }
+        // Esc annulla la SOLA rinomina: senza stopPropagation chiuderebbe anche il modale.
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); chiudi(false); }
+    };
+    input.onblur = () => chiudi(true);
+}
+
+/**
+ * Undo delle modifiche in massa (tag, vocabolari, azioni in massa): rimette le copie
+ * fotografate. Una scheda sparita nel frattempo (eliminata, o tolta da una sync) non si
+ * resuscita: l'undo annulla una modifica, non una cancellazione altrui.
+ */
+function ripristinaSchede(copie) {
+    for (const vecchio of copie) {
+        const i = appData.manoscritti.findIndex(m => String(m.id) === String(vecchio.id));
+        if (i !== -1) appData.manoscritti[i] = JSON.parse(JSON.stringify(vecchio));
+    }
+}
+
+/** Registra l'azione annullabile e mostra `testo` con il pulsante Annulla. */
+function registraAnnullabile(descrizione, testo, ripristina) {
+    if (window.gestoreAnnullamento) {
+        window.gestoreAnnullamento.registraAzione(descrizione, ripristina);
+        if (typeof mostraMessaggio === 'function') {
+            mostraMessaggio(testo, 'success', () => window.gestoreAnnullamento.annullaUltimaAzione());
+        }
+    } else if (typeof mostraMessaggio === 'function') {
+        mostraMessaggio(testo, 'success');
+    }
+}
+
+/** `<select class="form-input">` dei pannelli (Export, Stampa). `opzioni`: [{ value, label }]. */
+function creaSelect(id, opzioni, valore) {
+    const sel = document.createElement('select');
+    sel.id = id;
+    sel.className = 'form-input';
+    for (const o of opzioni) {
+        const opt = document.createElement('option');
+        opt.value = String(o.value);
+        opt.textContent = o.label;   // textContent: i nomi delle cartelle sono dati utente
+        if (String(o.value) === String(valore)) opt.selected = true;
+        sel.appendChild(opt);
+    }
+    return sel;
 }
 
 /**

@@ -270,7 +270,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
         for (const [delta, icona, chiave, testo] of [
             [-1, 'chevron-left', 'field_move_left', 'Sposta a sinistra'],
             [1, 'chevron-right', 'field_move_right', 'Sposta a destra'],
-        ]) {
+        ] as Array<[number, string, string, string]>) {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'pill-sposta text-stone-400 hover:text-amber-700 transition-colors';

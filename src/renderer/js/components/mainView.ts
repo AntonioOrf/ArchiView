@@ -30,7 +30,7 @@ function getSearchFields() {
     for (const t of tipi) {
         for (const c of (t.campi || [])) {
             // I campi sono id stringa; la forma a oggetto è ammessa per compatibilità futura.
-            const id = typeof c === 'string' ? c : (c && c.id);
+            const id = typeof c === 'string' ? c : (c as any)?.id;
             if (id) set.add(id);
         }
     }
@@ -1010,6 +1010,203 @@ function aggiornaControlliLista(records) {
     if (barra && window.lucide) lucide.createIcons({ nodes: [barra] });
 }
 
+/** Una card della griglia: intestazione, campi valorizzati, tag, carte, azioni, menu "⋯". */
+function creaCardScheda(m) {
+    const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
+    const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
+    const div = document.createElement('div');
+    div.className = `card-scheda bg-white p-4 relative flex flex-col justify-between cursor-pointer group ${isSelected ? 'ring-2 ring-amber-500' : ''}`;
+    div.id = 'card-' + m.id;
+    
+    div.onclick = (e) => {
+        if ((e.target as Element).closest('button') || (e.target as Element).closest('a') || (e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+        if (typeof window.selectItem === 'function') {
+            window.selectItem(m.id, e);
+        }
+    };
+
+
+
+    // Logica Drag and Drop
+    div.draggable = true;
+    div.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'manoscritto', id: m.id }));
+        e.dataTransfer.effectAllowed = 'move';
+        div.classList.add('opacity-50');
+    };
+    div.ondragend = () => div.classList.remove('opacity-50');
+    
+    // Context menu per Copia/Incolla
+    div.oncontextmenu = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof showRecordContextMenu === 'function') {
+            showRecordContextMenu(e, m.id);
+        }
+    };
+
+    const allegatiRender = normalizzaAllegati(m);
+
+    let allegatoHTML = '';
+    const btnTrascriviModifica = `
+        <button ${window.azione('click', 'editItem', String((m.id) ?? ''))} class="btn btn-secondary flex-1 text-xs uppercase tracking-wider tutorial-modifica-btn">
+            <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_edit') || 'Modifica'}</span>
+        </button>
+        <button ${window.azione('click', 'apriTrascrizione', String((m.id) ?? ''))} class="btn flex-1 text-xs uppercase tracking-wider tutorial-trascrivi-btn" style="background-color: var(--color-primary-light); color: var(--color-primary-hover); border: 1px solid var(--color-primary-border);">
+            <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_transcribe') || 'Trascrivi'}</span>
+        </button>
+    `;
+
+    let btnVediPdfPiccolo = '';
+
+    if (allegatiRender.length > 0) {
+        const textAllegati = allegatiRender.length === 1
+            ? window.t('attachment_count_one', '1 documento allegato')
+            : window.t('attachment_count_many', '{var0} documenti allegati').replace('{var0}', String(allegatiRender.length));
+        // P2 — quante carte sono fatte, solo se se ne sta segnando lo stato.
+        const av = window.avanzamentoCarte(m);
+        const avTesto = av ? window.t('sheet_progress', '{var0} di {var1} carte trascritte').replace('{var0}', String(av.fatte)).replace('{var1}', String(av.totale)) : '';
+        const avHTML = av ? `<progress class="card-avanzamento" max="${Number(av.totale)}" value="${Number(av.fatte)}" aria-label="${escapeHTML(avTesto)}" title="${escapeHTML(avTesto)}"></progress><span class="tabular-nums" aria-hidden="true">${Number(av.fatte)}/${Number(av.totale)}</span>` : '';
+        btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}${avHTML}</span>`;
+        allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
+    } else {
+        allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
+    }
+
+    // Fase 3.5 — il numero dei collegamenti, nei DUE versi. Senza, per sapere se una
+    // scheda è collegata bisognerebbe aprirla, e i rimandi in entrata non si
+    // vedrebbero da nessuna parte: il verso entrante non è scritto nel record.
+    let collegamentiHTML = '';
+    if (typeof window.relazioniRisolte === 'function') {
+        const r = window.relazioniRisolte(m.id);
+        const n = r.uscenti.length + r.entranti.length;
+        if (n > 0) {
+            const titolo = window.t('link_panel_title', 'Schede collegate') + ' (' + n + ')';
+            collegamentiHTML = `<button type="button" class="card-badge card-badge-link shrink-0" title="${escapeHTML(titolo)}" aria-label="${escapeHTML(titolo)}" ${window.azione('click', 'fermaEChiama', "apriCollegamenti", String((m.id) ?? ''))}><i data-lucide="link" class="w-3 h-3"></i>${n}</button>`;
+        }
+    }
+
+    let tagsHTML = '';
+    const tagsList = window.Model.tags(m);
+    if (tagsList.length > 0) {
+        tagsHTML = '<div class="flex flex-wrap gap-1 mt-2">' + tagsList.map(t => window.chipTagHTML(t)).join('') + '</div>';
+    }
+
+    let infoHTML = '';
+    const tipoDoc = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
+    // Fase 3.7 — dalla SCHEDA, non dal tipo: un campo proprio valorizzato che non
+    // comparisse qui sarebbe un dato scritto e mai più riletto.
+    const definizioniScheda = window.Model.campiDellaScheda(m, tipoDiScheda(m), CONFIG_CAMPI, appData);
+    definizioniScheda.forEach(defCampo => {
+        const campo = defCampo.id;
+        // Un `sì/no` valorizzato `no` è un dato, non un campo vuoto: senza questa
+        // riga la scheda direbbe "no" solo tacendo, cioè non lo direbbe affatto.
+        const valorizzato = defCampo.tipo === 'boolean' ? typeof m[campo] === 'boolean' : !!m[campo];
+        if (valorizzato) {
+            let conf = CONFIG_CAMPI[campo] || { type: 'text' };
+            if (defCampo.tipo === 'dynamic_list' && Array.isArray(m[campo])) {
+                if (m[campo].length > 0) {
+                    const labelStr = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
+                    infoHTML += `<div class="mt-3 mb-1"><span class="font-bold text-xs uppercase tracking-wider opacity-70 border-b border-stone-200/50 pb-1">${escapeHTML(labelStr)}</span></div>`;
+                    m[campo].forEach(item => {
+                        const k = item.k || item.ruolo || '';
+                        const v = item.v || item.nome || '';
+                        if (k || v) {
+                            infoHTML += `<p class="truncate pl-2 border-l-2 border-amber-200/50 mb-0.5"><b>${escapeHTML(k)}:</b> ${escapeHTML(v)}</p>`;
+                        }
+                    });
+                }
+            } else {
+                const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
+                if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
+                else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <i>${escapeHTML(m.titolo)}</i></p>`;
+                else if (defCampo.tipo === 'boolean') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(window.testoBooleano(m[campo]))}</p>`;
+                // Un indirizzo web si apre nel browser di sistema, mai dentro
+                // l'applicazione: una pagina remota dentro la finestra dell'app
+                // sarebbe codice di terzi nello stesso processo delle schede.
+                else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" ${window.azione('click', 'linkEsterno', String((m[campo]) ?? ''))} class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
+                else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
+            }
+        }
+    });
+
+    let authorBadgeHTML = '';
+    if (m.creatoDa || m.modificatoDa) {
+        const autore = m.modificatoDa || m.creatoDa; // Mostriamo chi ha fatto l'ultima azione
+        const titoloMeta = m.modificatoDa && m.creatoDa && m.modificatoDa !== m.creatoDa 
+            ? `Creato da ${escapeHTML(m.creatoDa)} - Modificato da ${escapeHTML(m.modificatoDa)}` 
+            : `Autore: ${escapeHTML(autore)}`;
+
+        authorBadgeHTML = `<span title="${titoloMeta}" class="flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
+            <i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(autore)}
+        </span>`;
+    }
+
+    let dateHTML = '';
+    if (m.lastModified) {
+        const dataFormat = new Date(m.lastModified).toLocaleDateString(window.localeAttuale(), { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
+        });
+        dateHTML = `<div class="text-[11px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
+    }
+
+    // Checkbox di selezione (visibile quando c'è almeno un record selezionato)
+    const checkboxHTML = hasSelection ? `
+        <div class="absolute top-2 left-2 z-10" ${window.azione('click', 'fermaEChiama', "selectItem", String((m.id) ?? ''), window.ARG.evento)}>
+            <div class="flex items-center justify-center w-5 h-5 rounded border-2 shadow-sm cursor-pointer transition-colors duration-150
+                ${isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white/90 border-stone-300 text-transparent hover:border-amber-400'}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+        </div>
+    ` : '';
+
+    div.innerHTML = `
+        ${checkboxHTML}
+        <div class="px-1 ${hasSelection ? 'pl-7' : ''}">
+            <div class="card-intestazione flex justify-between items-start gap-2 mb-2">
+                <h3 class="card-title mb-0" translate="no" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
+                <div class="card-etichette flex items-center gap-1.5 mt-0">
+                    ${collegamentiHTML}
+                    ${authorBadgeHTML}
+                    <span class="card-badge shrink-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
+                </div>
+            </div>
+            <div class="space-y-1 text-sm">
+                ${infoHTML}
+                ${tagsHTML}
+            </div>
+            ${allegatoHTML}
+            ${dateHTML}
+        </div>
+        <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end items-center gap-2">
+            ${btnVediPdfPiccolo}
+            <span class="card-overflow-slot flex"></span>
+        </div>
+    `;
+
+    // Fase 4.2 — Esporta ed Elimina non stanno più come icone sempre visibili in
+    // fondo alla card (competevano con Modifica/Trascrivi, le azioni vere): sono
+    // nel "⋯", che è lo stesso menu del tasto destro.
+    const slot = div.querySelector('.card-overflow-slot');
+    if (slot && typeof window.creaBottoneOverflow === 'function') {
+        slot.appendChild(window.creaBottoneOverflow(
+            () => window.vociMenuRecord(m.id),
+            {
+                className: 'btn btn-ghost btn-icon card-overflow-btn',
+                // Selezionare la scheda ri-disegna la griglia: recuperiamo il
+                // pulsante ricreato per ancorarci il menu.
+                preparaApertura: () => {
+                    window.assicuraSelezioneRecord(m.id);
+                    const card = document.getElementById('card-' + m.id);
+                    return card ? card.querySelector('.card-overflow-btn') : null;
+                }
+            }
+        ));
+    }
+    return div;
+}
+
 // renderMain è sincrona: non usa await, non deve essere async
 function renderMain(resetPage = true) {
     if (resetPage) window.currentPage = 0;
@@ -1103,199 +1300,7 @@ function renderMain(resetPage = true) {
         const fragment = document.createDocumentFragment();
 
         for (const m of paginated) {
-            const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
-            const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
-            const div = document.createElement('div');
-            div.className = `card-scheda bg-white p-4 relative flex flex-col justify-between cursor-pointer group ${isSelected ? 'ring-2 ring-amber-500' : ''}`;
-            div.id = 'card-' + m.id;
-            
-            div.onclick = (e) => {
-                if ((e.target as Element).closest('button') || (e.target as Element).closest('a') || (e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                if (typeof window.selectItem === 'function') {
-                    window.selectItem(m.id, e);
-                }
-            };
-
-
-
-            // Logica Drag and Drop
-            div.draggable = true;
-            div.ondragstart = (e) => {
-                e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'manoscritto', id: m.id }));
-                e.dataTransfer.effectAllowed = 'move';
-                div.classList.add('opacity-50');
-            };
-            div.ondragend = () => div.classList.remove('opacity-50');
-            
-            // Context menu per Copia/Incolla
-            div.oncontextmenu = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (typeof showRecordContextMenu === 'function') {
-                    showRecordContextMenu(e, m.id);
-                }
-            };
-
-            const allegatiRender = normalizzaAllegati(m);
-
-            let allegatoHTML = '';
-            const btnTrascriviModifica = `
-                <button ${window.azione('click', 'editItem', String((m.id) ?? ''))} class="btn btn-secondary flex-1 text-xs uppercase tracking-wider tutorial-modifica-btn">
-                    <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_edit') || 'Modifica'}</span>
-                </button>
-                <button ${window.azione('click', 'apriTrascrizione', String((m.id) ?? ''))} class="btn flex-1 text-xs uppercase tracking-wider tutorial-trascrivi-btn" style="background-color: var(--color-primary-light); color: var(--color-primary-hover); border: 1px solid var(--color-primary-border);">
-                    <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_transcribe') || 'Trascrivi'}</span>
-                </button>
-            `;
-
-            let btnVediPdfPiccolo = '';
-
-            if (allegatiRender.length > 0) {
-                const textAllegati = allegatiRender.length === 1
-                    ? window.t('attachment_count_one', '1 documento allegato')
-                    : window.t('attachment_count_many', '{var0} documenti allegati').replace('{var0}', String(allegatiRender.length));
-                // P2 — quante carte sono fatte, solo se se ne sta segnando lo stato.
-                const av = window.avanzamentoCarte(m);
-                const avTesto = av ? window.t('sheet_progress', '{var0} di {var1} carte trascritte').replace('{var0}', String(av.fatte)).replace('{var1}', String(av.totale)) : '';
-                const avHTML = av ? `<progress class="card-avanzamento" max="${Number(av.totale)}" value="${Number(av.fatte)}" aria-label="${escapeHTML(avTesto)}" title="${escapeHTML(avTesto)}"></progress><span class="tabular-nums" aria-hidden="true">${Number(av.fatte)}/${Number(av.totale)}</span>` : '';
-                btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}${avHTML}</span>`;
-                allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
-            } else {
-                allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
-            }
-
-            // Fase 3.5 — il numero dei collegamenti, nei DUE versi. Senza, per sapere se una
-            // scheda è collegata bisognerebbe aprirla, e i rimandi in entrata non si
-            // vedrebbero da nessuna parte: il verso entrante non è scritto nel record.
-            let collegamentiHTML = '';
-            if (typeof window.relazioniRisolte === 'function') {
-                const r = window.relazioniRisolte(m.id);
-                const n = r.uscenti.length + r.entranti.length;
-                if (n > 0) {
-                    const titolo = window.t('link_panel_title', 'Schede collegate') + ' (' + n + ')';
-                    collegamentiHTML = `<button type="button" class="card-badge card-badge-link shrink-0" title="${escapeHTML(titolo)}" aria-label="${escapeHTML(titolo)}" ${window.azione('click', 'fermaEChiama', "apriCollegamenti", String((m.id) ?? ''))}><i data-lucide="link" class="w-3 h-3"></i>${n}</button>`;
-                }
-            }
-
-            let tagsHTML = '';
-            const tagsList = window.Model.tags(m);
-            if (tagsList.length > 0) {
-                tagsHTML = '<div class="flex flex-wrap gap-1 mt-2">' + tagsList.map(t => window.chipTagHTML(t)).join('') + '</div>';
-            }
-
-            let infoHTML = '';
-            const tipoDoc = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
-            // Fase 3.7 — dalla SCHEDA, non dal tipo: un campo proprio valorizzato che non
-            // comparisse qui sarebbe un dato scritto e mai più riletto.
-            const definizioniScheda = window.Model.campiDellaScheda(m, tipoDiScheda(m), CONFIG_CAMPI, appData);
-            definizioniScheda.forEach(defCampo => {
-                const campo = defCampo.id;
-                // Un `sì/no` valorizzato `no` è un dato, non un campo vuoto: senza questa
-                // riga la scheda direbbe "no" solo tacendo, cioè non lo direbbe affatto.
-                const valorizzato = defCampo.tipo === 'boolean' ? typeof m[campo] === 'boolean' : !!m[campo];
-                if (valorizzato) {
-                    let conf = CONFIG_CAMPI[campo] || { type: 'text' };
-                    if (defCampo.tipo === 'dynamic_list' && Array.isArray(m[campo])) {
-                        if (m[campo].length > 0) {
-                            const labelStr = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
-                            infoHTML += `<div class="mt-3 mb-1"><span class="font-bold text-xs uppercase tracking-wider opacity-70 border-b border-stone-200/50 pb-1">${escapeHTML(labelStr)}</span></div>`;
-                            m[campo].forEach(item => {
-                                const k = item.k || item.ruolo || '';
-                                const v = item.v || item.nome || '';
-                                if (k || v) {
-                                    infoHTML += `<p class="truncate pl-2 border-l-2 border-amber-200/50 mb-0.5"><b>${escapeHTML(k)}:</b> ${escapeHTML(v)}</p>`;
-                                }
-                            });
-                        }
-                    } else {
-                        const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
-                        if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
-                        else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <i>${escapeHTML(m.titolo)}</i></p>`;
-                        else if (defCampo.tipo === 'boolean') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(window.testoBooleano(m[campo]))}</p>`;
-                        // Un indirizzo web si apre nel browser di sistema, mai dentro
-                        // l'applicazione: una pagina remota dentro la finestra dell'app
-                        // sarebbe codice di terzi nello stesso processo delle schede.
-                        else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" ${window.azione('click', 'linkEsterno', String((m[campo]) ?? ''))} class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
-                        else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
-                    }
-                }
-            });
-
-            let authorBadgeHTML = '';
-            if (m.creatoDa || m.modificatoDa) {
-                const autore = m.modificatoDa || m.creatoDa; // Mostriamo chi ha fatto l'ultima azione
-                const titoloMeta = m.modificatoDa && m.creatoDa && m.modificatoDa !== m.creatoDa 
-                    ? `Creato da ${escapeHTML(m.creatoDa)} - Modificato da ${escapeHTML(m.modificatoDa)}` 
-                    : `Autore: ${escapeHTML(autore)}`;
-
-                authorBadgeHTML = `<span title="${titoloMeta}" class="flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
-                    <i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(autore)}
-                </span>`;
-            }
-
-            let dateHTML = '';
-            if (m.lastModified) {
-                const dataFormat = new Date(m.lastModified).toLocaleDateString(window.localeAttuale(), { 
-                    day: '2-digit', month: '2-digit', year: 'numeric', 
-                    hour: '2-digit', minute: '2-digit' 
-                });
-                dateHTML = `<div class="text-[11px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
-            }
-
-            // Checkbox di selezione (visibile quando c'è almeno un record selezionato)
-            const checkboxHTML = hasSelection ? `
-                <div class="absolute top-2 left-2 z-10" ${window.azione('click', 'fermaEChiama', "selectItem", String((m.id) ?? ''), window.ARG.evento)}>
-                    <div class="flex items-center justify-center w-5 h-5 rounded border-2 shadow-sm cursor-pointer transition-colors duration-150
-                        ${isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white/90 border-stone-300 text-transparent hover:border-amber-400'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                </div>
-            ` : '';
-
-            div.innerHTML = `
-                ${checkboxHTML}
-                <div class="px-1 ${hasSelection ? 'pl-7' : ''}">
-                    <div class="card-intestazione flex justify-between items-start gap-2 mb-2">
-                        <h3 class="card-title mb-0" translate="no" title="${escapeHTML(m.segnatura)}">${escapeHTML(m.segnatura)}</h3>
-                        <div class="card-etichette flex items-center gap-1.5 mt-0">
-                            ${collegamentiHTML}
-                            ${authorBadgeHTML}
-                            <span class="card-badge shrink-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
-                        </div>
-                    </div>
-                    <div class="space-y-1 text-sm">
-                        ${infoHTML}
-                        ${tagsHTML}
-                    </div>
-                    ${allegatoHTML}
-                    ${dateHTML}
-                </div>
-                <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end items-center gap-2">
-                    ${btnVediPdfPiccolo}
-                    <span class="card-overflow-slot flex"></span>
-                </div>
-            `;
-
-            // Fase 4.2 — Esporta ed Elimina non stanno più come icone sempre visibili in
-            // fondo alla card (competevano con Modifica/Trascrivi, le azioni vere): sono
-            // nel "⋯", che è lo stesso menu del tasto destro.
-            const slot = div.querySelector('.card-overflow-slot');
-            if (slot && typeof window.creaBottoneOverflow === 'function') {
-                slot.appendChild(window.creaBottoneOverflow(
-                    () => window.vociMenuRecord(m.id),
-                    {
-                        className: 'btn btn-ghost btn-icon card-overflow-btn',
-                        // Selezionare la scheda ri-disegna la griglia: recuperiamo il
-                        // pulsante ricreato per ancorarci il menu.
-                        preparaApertura: () => {
-                            window.assicuraSelezioneRecord(m.id);
-                            const card = document.getElementById('card-' + m.id);
-                            return card ? card.querySelector('.card-overflow-btn') : null;
-                        }
-                    }
-                ));
-            }
-            fragment.appendChild(div);
+            fragment.appendChild(creaCardScheda(m));
         }
 
         grid.appendChild(fragment);

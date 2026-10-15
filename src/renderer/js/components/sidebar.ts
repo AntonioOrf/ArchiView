@@ -264,7 +264,7 @@ function renderSidebar() {
             }
         };
 
-        const titoloFile = m.segnatura || m.titolo || 'Senza Titolo';
+        const titoloFile = m.segnatura || m.titolo || window.t('untitled_record', 'Senza titolo');
 
         fileRow.draggable = true;
         fileRow.ondragstart = (e) => {
@@ -818,12 +818,12 @@ window.renderSourceControl = function() {
             if (isIncoming) {
                 const localeObj = appData.manoscritti.find(x => x.id === m.id);
                 if (typeof window.apriDiffModal === 'function') {
-                    window.apriDiffModal(localeObj || {}, m, `Diff dal Cloud: ${m.titolo || m.segnatura || 'Senza Titolo'}`);
+                    window.apriDiffModal(localeObj || {}, m, window.t('diff_title_cloud', 'Diff dal Cloud: {var0}').replace('{var0}', m.titolo || m.segnatura || window.t('untitled_record', 'Senza titolo')));
                 }
             } else {
                 const baseObj = appData.baseObjects && appData.baseObjects[m.id];
                 if (typeof window.apriDiffModal === 'function') {
-                    window.apriDiffModal(baseObj || {}, m, `Modifiche Locali: ${m.titolo || m.segnatura || 'Senza Titolo'}`);
+                    window.apriDiffModal(baseObj || {}, m, window.t('diff_title_local', 'Modifiche locali: {var0}').replace('{var0}', m.titolo || m.segnatura || window.t('untitled_record', 'Senza titolo')));
                 }
             }
         };
@@ -844,7 +844,7 @@ window.renderSourceControl = function() {
 
         const titleSpan = document.createElement('span');
         titleSpan.className = "truncate text-stone-700 dark:text-stone-300 group-hover:text-amber-700 transition-colors";
-        titleSpan.textContent = m.titolo || m.segnatura || 'Senza Titolo';
+        titleSpan.textContent = m.titolo || m.segnatura || window.t('untitled_record', 'Senza titolo');
         titleSpan.translate = false;
         
         const titleRowContainer = document.createElement('div');

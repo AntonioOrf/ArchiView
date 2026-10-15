@@ -2,7 +2,7 @@
 // repoKey ed encKey non escono mai da qui verso il renderer, che riceve solo dati ed esiti.
 //
 // Nessuna dipendenza da electron: testabile in Node puro (test/hubClient.test.js).
-const crypto = require('crypto');
+import * as crypto from 'crypto';
 
 export interface ConfigHub {
   hubUrl: string;
@@ -115,8 +115,8 @@ function decodificaInvito(raw: unknown): InvitoHub | null {
 //   né la busta di un altro repo. La versione è nota prima del push (parentVersion + 1).
 // Le versioni in chiaro già presenti sul server restano leggibili (nessuna busta → passthrough).
 
-const zlib = require('zlib');
-const { promisify } = require('util');
+import * as zlib from 'zlib';
+import { promisify } from 'util';
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 
@@ -173,7 +173,4 @@ async function decifraDatabase(db: any, encKey: unknown, repoId: string, version
   return JSON.parse(json.toString('utf8'));
 }
 
-module.exports = {
-  chiamataHub, hubUrlValido, generaEncKey, codificaInvito, decodificaInvito, ID_HUB,
-  cifraDatabase, decifraDatabase, eDatabaseCifrato
-};
+export { chiamataHub, hubUrlValido, generaEncKey, codificaInvito, decodificaInvito, ID_HUB, cifraDatabase, decifraDatabase, eDatabaseCifrato };

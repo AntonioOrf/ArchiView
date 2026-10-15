@@ -15,11 +15,11 @@
 //   ricevuto: al giro dopo risulta già presente, non si riscarica e si riprova a rimuoverlo.
 // - Un lotto che fallisce non blocca gli altri.
 
-const fs = require('fs');
-const fsp = require('fs/promises');
-const path = require('path');
-const crypto = require('crypto');
-const { hashFile } = require('../chunkingLogic');
+import * as fs from 'fs';
+import * as fsp from 'fs/promises';
+import * as path from 'path';
+import * as crypto from 'crypto';
+import { hashFile } from '../chunkingLogic';
 const ScannerLotto = require('../../shared/scannerLotto');
 
 /** Oltre questa dimensione `lotto.json` non è un manifest (2000 pagine stanno sotto i 500 KB). */
@@ -201,4 +201,4 @@ async function riceviLotti(o: OpzioniArrivo): Promise<EsitoArrivo> {
   return esito;
 }
 
-module.exports = { riceviLotti, MAX_BYTE_MANIFEST };
+export { riceviLotti, MAX_BYTE_MANIFEST };

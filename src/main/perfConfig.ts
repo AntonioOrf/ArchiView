@@ -1,7 +1,7 @@
-const { app } = require('electron');
-const path = require('path');
-const { getAllSettings, saveAllSettings } = require('./workspaceManager');
-const { migraPerfConfig } = require('./settingsStore');
+import { app } from 'electron';
+import * as path from 'path';
+import { getAllSettings, saveAllSettings } from './workspaceManager';
+import { migraPerfConfig } from './settingsStore';
 
 // "Prestazioni ridotte" è letto prima di app.ready (`app.disableHardwareAcceleration()`):
 // è l'unica lettura di settings.json fatta al boot, sincrona. Prima stava in perf-config.json,
@@ -21,5 +21,4 @@ function scriviPerfConfig(config) {
   }
 }
 
-module.exports = { leggiPerfConfig, scriviPerfConfig };
-export {};
+export { leggiPerfConfig, scriviPerfConfig };

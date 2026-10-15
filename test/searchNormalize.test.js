@@ -29,7 +29,7 @@ function estraiFunzione(sorgente, nome) {
 }
 
 function caricaFunzioni() {
-  const src = fs.readFileSync(UTILS, 'utf8');
+  const src = (fs.readFileSync(UTILS, 'utf8') + '\n' + fs.readFileSync(UTILS.replace('utils.ts', 'ricercaLogic.ts'), 'utf8'));
   const codice = estraiFunzione(src, 'normalizzaTesto') + '\n' + estraiFunzione(src, 'tokenizzaRicerca')
     + '\n' + estraiFunzione(src, 'posizioneOriginale');
   const window = {};

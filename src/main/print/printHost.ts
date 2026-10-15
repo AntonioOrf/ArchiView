@@ -14,11 +14,11 @@
 // per sicurezza, sul `closed` della finestra principale (vedi `main.ts`). Senza, un'app
 // chiusa mentre una stampa e' in coda resterebbe in memoria.
 
-const { BrowserWindow, protocol } = require('electron');
-const path = require('path');
-const fs = require('fs');
+import { BrowserWindow, protocol } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const { state } = require('../workspaceManager');
+import { state } from '../workspaceManager';
 
 const SCHEMA = 'print-host';
 
@@ -36,7 +36,7 @@ const TIPI_MIME = {
 const documenti = new Map();
 let contatore = 0;
 
-let finestra = null;
+let finestra: import('electron').BrowserWindow | null = null;
 
 /**
  * UNA sola autorita' (`app`), due radici per percorso — `/doc/<id>` e `/allegato/<nome>` —
@@ -98,7 +98,7 @@ const DPI_MINIATURA = 110;
 async function preparaMiniature(records, { pdf = true } = {}) {
   const mappa = {};
   if (!state.attachmentsDirPath) return mappa;
-  let pdfHost = null;
+  let pdfHost: any = null;   // caricato al primo PDF: la stampa senza PDF non apre l'host
 
   for (const m of records) {
     const allegati = Array.isArray(m.allegati) ? m.allegati : [];
@@ -168,8 +168,9 @@ async function caricaDocumento(html) {
   const id = `j${++contatore}`;
   documenti.set(id, html);
 
-  if (!finestra || finestra.isDestroyed()) {
-    finestra = new BrowserWindow({
+  let f = finestra;
+  if (!f || f.isDestroyed()) {
+    f = <import('electron').BrowserWindow>new BrowserWindow({
       show: false,
       width: 900,
       height: 1200,
@@ -183,7 +184,8 @@ async function caricaDocumento(html) {
         javascript: false   // la pagina non ne ha bisogno: e' HTML e CSS, nient'altro
       }
     });
-    finestra.on('closed', () => { finestra = null; });
+    f.on('closed', () => { finestra = null; });
+    finestra = f;
   }
 
   try {
@@ -194,8 +196,8 @@ async function caricaDocumento(html) {
     // passato, `isLoading()` può nondimeno restituire true un istante dopo, e la promessa
     // non si risolve mai — la stampa restava appesa per sempre, e l'unico sintomo visibile
     // era un pulsante disabilitato che non tornava più attivo.
-    await finestra.loadURL(`${SCHEMA}://app/doc/${id}`);
-    return finestra.webContents;
+    await f.loadURL(`${SCHEMA}://app/doc/${id}`);
+    return f.webContents;
   } finally {
     // L'HTML non serve piu' una volta caricato: tenerlo significherebbe tenere in RAM ogni
     // documento stampato nella sessione.
@@ -268,5 +270,4 @@ function distruggi() {
   finestra = null;
 }
 
-module.exports = { SCHEMA, registraProtocollo, preparaMiniature, generaPdf, stampa, distruggi };
-export {};
+export { SCHEMA, registraProtocollo, preparaMiniature, generaPdf, stampa, distruggi };

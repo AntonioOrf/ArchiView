@@ -7,8 +7,8 @@
 //
 // Puro (niente electron): testato in Node da test/settingsStore.test.js.
 
-const fs = require('fs');
-const { scriviAtomicoSync } = require('./scritturaAtomica');
+import * as fs from 'fs';
+import { scriviAtomicoSync } from './scritturaAtomica';
 
 let percorso = '';
 let cache: any = null;
@@ -82,5 +82,4 @@ function migraPerfConfig(percorsoPerf: string) {
   }
 }
 
-module.exports = { configuraStore, leggiStore, scriviStore, migraPerfConfig };
-export {};
+export { configuraStore, leggiStore, scriviStore, migraPerfConfig };

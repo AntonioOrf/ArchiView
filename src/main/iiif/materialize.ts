@@ -9,14 +9,14 @@
 // scritto come fa `salva-allegato`: su un facsimile da 30 MB per 400 carte sarebbero 12 GB
 // di letture in più per ottenere lo stesso numero.
 
-const path = require('path');
-const fs = require('fs');
+import * as path from 'path';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const crypto = require('crypto');
-const { leggiCorpoLimitato, fetchGuardata } = require('./reteSicura');
-const { state } = require('../workspaceManager');
-const { safeAttachmentPathOrNull } = require('../ipc/pathSafety');
-const cache = require('./imageCache');
+import * as crypto from 'crypto';
+import { leggiCorpoLimitato, fetchGuardata } from './reteSicura';
+import { state } from '../workspaceManager';
+import { safeAttachmentPathOrNull } from '../ipc/pathSafety';
+import * as cache from './imageCache';
 
 const CONCORRENZA = 3;
 const TIMEOUT_MS = 60000;
@@ -148,5 +148,4 @@ async function materializza(richieste: any[], progresso?: (d: any) => void): Pro
   }
 }
 
-module.exports = { CONCORRENZA, materializza, annulla, occupato };
-export {};
+export { CONCORRENZA, materializza, annulla, occupato };

@@ -8,7 +8,7 @@
 // Restituisce CODICI di errore, non frasi: l'italiano lo aggiunge il renderer, che sa in che
 // lingua sta parlando (lezione della 2.1).
 
-const { hostPrivato, leggiCorpoLimitato, autorizzaOrigine, fetchGuardata } = require('./reteSicura');
+import { hostPrivato, leggiCorpoLimitato, autorizzaOrigine, fetchGuardata, urlAmmesso } from './reteSicura';
 
 const TIMEOUT_MS = 20000;
 
@@ -16,17 +16,6 @@ const TIMEOUT_MS = 20000;
 const MAX_BYTE = 20 * 1024 * 1024;
 
 const ACCEPT = 'application/ld+json;profile="http://iiif.io/api/presentation/3/context.json", application/ld+json;q=0.9, application/json;q=0.8, */*;q=0.1';
-
-/** Solo http/https e un host vero: l'URL arriva incollato dall'utente. */
-function urlAmmesso(url: string): boolean {
-  try {
-    const u = new URL(String(url || '').trim());
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-    return !!u.hostname;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Scarica un manifest. Non solleva: ogni errore diventa un codice, perché il modale deve
@@ -77,5 +66,4 @@ async function leggiManifest(url: string): Promise<any> {
   }
 }
 
-module.exports = { MAX_BYTE, urlAmmesso, leggiManifest };
-export {};
+export { MAX_BYTE, urlAmmesso, leggiManifest };

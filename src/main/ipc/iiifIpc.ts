@@ -4,10 +4,10 @@
 // finestra, perché il canale verso il renderer è del main e non deve entrare nei moduli che
 // fanno il lavoro. Interpretazione del manifest e interfaccia stanno altrove.
 
-const { ipcMain } = require('electron');
-const { state } = require('../workspaceManager');
-const { leggiManifest } = require('../iiif/fetchManifest');
-const { materializza, annulla, occupato } = require('../iiif/materialize');
+import { ipcMain } from 'electron';
+import { state } from '../workspaceManager';
+import { leggiManifest } from '../iiif/fetchManifest';
+import { materializza, annulla, occupato } from '../iiif/materialize';
 
 function inviaProgresso(dati: any) {
   const w = state.mainWindow;
@@ -43,5 +43,4 @@ function setupIiifIpc() {
   ipcMain.handle('iiif-stato', () => ({ ok: true, occupato: occupato() }));
 }
 
-module.exports = { setupIiifIpc };
-export {};
+export { setupIiifIpc };

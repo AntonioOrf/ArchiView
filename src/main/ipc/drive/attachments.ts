@@ -1,11 +1,10 @@
-const path = require('path');
-const fs = require('fs');
-const { state, finestraPrincipale, getAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
-const { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChunkPath, hashFile,
-  leggiMappaChunk, scriviMappaChunk, conMappaChunk } = require('../../chunkingLogic');
-const { driveState, loadSavedTokens } = require('./auth');
+import * as path from 'path';
+import * as fs from 'fs';
+import { state, finestraPrincipale, getAllSettings, getActiveVaultFlags } from '../../workspaceManager';
+import { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChunkPath, hashFile, leggiMappaChunk, scriviMappaChunk, conMappaChunk } from '../../chunkingLogic';
+import { driveState, loadSavedTokens } from './auth';
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
-const { safeAttachmentPath, safeAttachmentPathOrNull } = require('../pathSafety');
+import { safeAttachmentPath, safeAttachmentPathOrNull } from '../pathSafety';
 
 function indiceSicuro(grezzo: unknown): Record<string, string[]> {
   const { indice, scartate } = filtraIndiceChunk(grezzo);
@@ -190,5 +189,4 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   }
 }
 
-module.exports = { syncAttachmentsBidirectional };
-export {};
+export { syncAttachmentsBidirectional };

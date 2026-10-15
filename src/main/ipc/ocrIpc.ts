@@ -4,12 +4,12 @@
 // L'unica cosa che vive qui è l'inoltro dell'avanzamento alla finestra, perché il canale
 // verso il renderer è del main e non deve entrare nei moduli di calcolo.
 
-const { ipcMain, dialog } = require('electron');
-const { state } = require('../workspaceManager');
-const { listaLingue, installaLingua, rimuoviLingua } = require('../ocr/ocrLangs');
-const { eseguiOcr, annulla, occupato } = require('../ocr/ocrService');
-const pdfRicercabile = require('../ocr/pdfRicercabile');
-const { nomeFileSicuro } = require('./recordSelection');
+import { ipcMain, dialog } from 'electron';
+import { state } from '../workspaceManager';
+import { listaLingue, installaLingua, rimuoviLingua } from '../ocr/ocrLangs';
+import { eseguiOcr, annulla, occupato } from '../ocr/ocrService';
+import * as pdfRicercabile from '../ocr/pdfRicercabile';
+import { nomeFileSicuro } from './recordSelection';
 
 function inviaProgresso(dati) {
   const w = state.mainWindow;
@@ -71,11 +71,14 @@ function setupOcrIpc() {
       // Una sessione rimasta aperta (renderer ricaricato a metà) si scarta, non si riprende.
       if (pdfRicercabile.attiva()) await pdfRicercabile.concludi(true);
       const base = nomeFileSicuro(String(nomeSuggerito || '').replace(/\.pdf$/i, ''), 'OCR');
-      const scelta = await dialog.showSaveDialog(state.mainWindow, {
+      const opzioni = {
         title: String(titolo || 'PDF'),
         defaultPath: `${base}.pdf`,
         filters: [{ name: 'PDF', extensions: ['pdf'] }]
-      });
+      };
+      const scelta = state.mainWindow
+        ? await dialog.showSaveDialog(state.mainWindow, opzioni)
+        : await dialog.showSaveDialog(opzioni);
       if (scelta.canceled || !scelta.filePath) return { ok: false, canceled: true };
       await pdfRicercabile.apri(scelta.filePath);
       return { ok: true };
@@ -95,5 +98,4 @@ function setupOcrIpc() {
   });
 }
 
-module.exports = { setupOcrIpc };
-export {};
+export { setupOcrIpc };

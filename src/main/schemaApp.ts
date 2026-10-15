@@ -8,8 +8,8 @@
 //
 // Si serve solo la cartella out/renderer, in sola lettura, con un Content-Type fisso per
 // estensione: ciò che non è nell'elenco non si serve.
-const { protocol } = require('electron');
-const path = require('path');
+import { protocol } from 'electron';
+import * as path from 'path';
 const fsp = require('fs').promises;
 
 const SCHEMA = 'app';
@@ -76,5 +76,4 @@ function registraProtocollo(radice: string) {
   });
 }
 
-module.exports = { SCHEMA, HOST, ORIGINE, URL_INDEX, PRIVILEGI, TIPI_MIME, percorsoRichiesto, registraProtocollo };
-export {};
+export { SCHEMA, HOST, ORIGINE, URL_INDEX, PRIVILEGI, TIPI_MIME, percorsoRichiesto, registraProtocollo };

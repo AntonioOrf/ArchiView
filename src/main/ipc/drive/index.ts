@@ -1,9 +1,9 @@
-const { ipcMain } = require('electron');
-const { driveState, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus } = require('./auth');
-const { listVaultsFromDrive, checkUpdatesFromDrive, pullFromDrive, syncToDrive, cleanOrphanedAttachments } = require('./vaultOps');
-const { syncAttachmentsBidirectional } = require('./attachments');
-const { getDbFileId, listDriveRevisions, getDriveRevision } = require('./revisions');
-const { generateInviteCode, decodeInviteCode, joinByInviteCode, joinByFolderId, shareVault, listPermissions, removePermission, openExternalPicker } = require('./sharing');
+import { ipcMain } from 'electron';
+import { driveState, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus } from './auth';
+import { listVaultsFromDrive, checkUpdatesFromDrive, pullFromDrive, syncToDrive, cleanOrphanedAttachments } from './vaultOps';
+import { syncAttachmentsBidirectional } from './attachments';
+import { getDbFileId, listDriveRevisions, getDriveRevision } from './revisions';
+import { generateInviteCode, decodeInviteCode, joinByInviteCode, joinByFolderId, shareVault, listPermissions, removePermission, openExternalPicker } from './sharing';
 
 function setupDriveIpc() {
   // Auth
@@ -128,5 +128,4 @@ function setupDriveIpc() {
   });
 }
 
-module.exports = { setupDriveIpc };
-export {};
+export { setupDriveIpc };

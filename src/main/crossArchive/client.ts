@@ -10,9 +10,9 @@
 //    l'asar, ambiente senza worker_threads) l'indice gira nel main. Più lento sotto carico,
 //    ma la funzione non sparisce. Lo stesso dopo troppi crash ravvicinati.
 
-const path = require('path');
-const { Worker } = require('worker_threads');
-const { IndiceMemoria } = require('./indiceMemoria');
+import * as path from 'path';
+import { Worker } from 'worker_threads';
+import { IndiceMemoria } from './indiceMemoria';
 
 import type { IndiceArchivi, ArchivioRif, StatoArchivio, Query, PaginaRisultati } from './indiceMemoria';
 
@@ -187,5 +187,4 @@ class IndiceWorker implements IndiceArchivi {
   }
 }
 
-module.exports = { IndiceWorker };
-export {};
+export { IndiceWorker };

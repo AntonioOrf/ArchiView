@@ -30,12 +30,12 @@
 // `cartella` è ridondante (sta nel record) ma è ciò che si mostra nella lista: leggerla dal
 // record vorrebbe dire riesumare l'intero oggetto per stampare una riga.
 
-const path = require('path');
-const fs = require('fs');
+import * as path from 'path';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const { state, getAllSettings } = require('./workspaceManager');
+import { state, getAllSettings } from './workspaceManager';
 const Model = require('../shared/model');
-const { scriviAtomico } = require('./scritturaAtomica');
+import { scriviAtomico } from './scritturaAtomica';
 
 /** Tetto di sicurezza: un'operazione in massa su un archivio grosso non deve gonfiare il file. */
 const MAX_VOCI = 2000;

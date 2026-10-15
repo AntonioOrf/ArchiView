@@ -11,10 +11,10 @@
 // `&` non diventano struttura dell'URL — e il main resta l'unico a parlare con l'esterno,
 // come per ogni altra chiamata di rete dell'applicazione.
 
-const { protocol } = require('electron');
-const cache = require('./imageCache');
+import { protocol } from 'electron';
+import * as cache from './imageCache';
 const Iiif = require('../../shared/iiifManifest');
-const schemaApp = require('../schemaApp');
+import * as schemaApp from '../schemaApp';
 
 const SCHEMA = 'iiif-img';
 
@@ -52,7 +52,8 @@ function registraProtocollo() {
       // (si è offline e non è in cache), non un guasto da segnalare.
       if (!immagine) return new Response('Not Found', { status: 404 });
 
-      return new Response(immagine.dati, {
+      // Un Buffer è un Uint8Array, che `Response` accetta: il cast copre solo i tipi di lib.dom.
+      return new Response(immagine.dati as unknown as BodyInit, {
         status: 200,
         headers: {
           'Content-Type': immagine.mime,
@@ -71,5 +72,4 @@ function registraProtocollo() {
   });
 }
 
-module.exports = { SCHEMA, registraProtocollo, candidatiDa };
-export {};
+export { SCHEMA, registraProtocollo, candidatiDa };

@@ -17,7 +17,7 @@
 // sessione.
 
 const fsp = require('fs').promises;
-const path = require('path');
+import * as path from 'path';
 // pdf-lib si carica al primo PDF ricercabile: richiesto in testa costava ~100 ms all'avvio
 // del main, che passa di qui (ocrIpc) prima ancora di creare la finestra.
 let _pdfLib: any = null;
@@ -137,7 +137,7 @@ async function aggiungiPdf(percorsoSorgente: string, livelli: Map<number, Uint8A
  * completa di Tesseract è già dritta (il motore ha visto la PNG ruotata); il JPEG incorporato
  * resta com'è nel file e si raddrizza con `/Rotate`.
  */
-async function aggiungiImmagine(percorsoSorgente: string, pdfTesseract: Uint8Array, incorporabile: boolean, rotazione = 0) {
+async function aggiungiImmagine(percorsoSorgente: string, pdfTesseract: Uint8Array | null, incorporabile: boolean, rotazione = 0) {
   const s = richiediSessione();
   if (!pdfTesseract) throw new Error('Il motore non ha prodotto la pagina PDF');
 
@@ -188,5 +188,4 @@ async function concludi(scarta: boolean) {
   }
 }
 
-module.exports = { apri, attiva, aggiungiPdf, aggiungiImmagine, concludi, immagineIncorporabile };
-export {};
+export { apri, attiva, aggiungiPdf, aggiungiImmagine, concludi, immagineIncorporabile };

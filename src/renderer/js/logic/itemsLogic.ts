@@ -88,6 +88,41 @@ async function handleFormSubmit(e) {
 }
 
 /**
+ * Copia nella cartella allegati i file scelti nel modulo, tre alla volta, e restituisce le voci
+ * `allegati` di quelli riusciti, nell'ordine di scelta. Un file che non si copia lo dice e si salta.
+ */
+async function caricaFileInAttesa(files, documentoId) {
+    const UPLOAD_CONCURRENCY = 3;
+    const results: any[] = new Array(files.length).fill(null);
+
+    const uploadOne = async (i: number) => {
+        const file = files[i];
+        try {
+            const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
+            const risultato = await window.apiBrowser.salvaAllegato(filePath, documentoId);
+            if (risultato) {
+                results[i] = {
+                    nome: risultato.fileName,
+                    tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
+                    originalName: file.name,
+                    hash: risultato.hash
+                };
+            }
+        } catch (error) {
+            console.error("Errore durante il salvataggio dell'allegato:", error);
+            mostraMessaggio(window.t("msg_file_save_error"), "error");
+        }
+    };
+
+    const queue = Array.from({ length: files.length }, (_, i) => i);
+    const workers = Array.from({ length: Math.min(UPLOAD_CONCURRENCY, files.length) }, async () => {
+        while (queue.length) await uploadOne(queue.shift()!);
+    });
+    await Promise.all(workers);
+    return results.filter(Boolean);
+}
+
+/**
  * Scrive nel record ciò che c'è nel modulo. `automatico` = salvataggio del tab «Scheda» della
  * trascrizione: niente toast, niente fuoco rubato, il modulo resta aperto e la sua copia
  * degli allegati si riallinea al record salvato.
@@ -101,42 +136,7 @@ async function salvaSchedaDalForm(automatico) {
 
     let allegatiCorrenti = JSON.parse(document.getElementById('form-allegati').value || '[]');
     const caricati = (window.pendingFilesToUpload || []).length > 0;
-
-    if (window.pendingFilesToUpload && window.pendingFilesToUpload.length > 0 && window.apiBrowser) {
-        const UPLOAD_CONCURRENCY = 3;
-        const files = window.pendingFilesToUpload;
-        const results: any[] = new Array(files.length).fill(null);
-
-        const uploadOne = async (i: number) => {
-            const file = files[i];
-            try {
-                const filePath = window.apiBrowser.getPathForFile ? window.apiBrowser.getPathForFile(file) : file.path;
-                const risultato = await window.apiBrowser.salvaAllegato(filePath, documentoId);
-                if (risultato) {
-                    results[i] = {
-                        nome: risultato.fileName,
-                        tipo: risultato.ext === '.pdf' ? 'pdf' : 'immagine',
-                        originalName: file.name,
-                        hash: risultato.hash
-                    };
-                }
-            } catch (error) {
-                console.error("Errore durante il salvataggio dell'allegato:", error);
-                mostraMessaggio(window.t("msg_file_save_error"), "error");
-            }
-        };
-
-        // Upload concurrenti con limite UPLOAD_CONCURRENCY
-        const queue = Array.from({ length: files.length }, (_, i) => i);
-        const workers = Array.from({ length: Math.min(UPLOAD_CONCURRENCY, files.length) }, async () => {
-            while (queue.length) await uploadOne(queue.shift()!);
-        });
-        await Promise.all(workers);
-
-        for (const r of results) {
-            if (r) allegatiCorrenti.push(r);
-        }
-    }
+    if (caricati && window.apiBrowser) allegatiCorrenti.push(...await caricaFileInAttesa(window.pendingFilesToUpload, documentoId));
 
     const cartellaScelta = document.getElementById('form-cartella').value;
     const tipoId = document.getElementById('form-tipo-documento').value;

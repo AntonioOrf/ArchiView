@@ -1,9 +1,9 @@
-const path = require('path');
-const fs = require('fs');
-const { app } = require('electron');
-const { syncUnifiedFromLegacy, readVaultConfig } = require('./vaultConfig');
-const { scriviAtomicoSync } = require('./scritturaAtomica');
-const { configuraStore, leggiStore, scriviStore } = require('./settingsStore');
+import * as path from 'path';
+import * as fs from 'fs';
+import { app } from 'electron';
+import { syncUnifiedFromLegacy, readVaultConfig, legacyDaConfig } from './vaultConfig';
+import { scriviAtomicoSync } from './scritturaAtomica';
+import { configuraStore, leggiStore, scriviStore } from './settingsStore';
 const { esaminaPatch } = require('./impostazioniRenderer');
 
 const userDataPath = app.getPath('userData');
@@ -27,23 +27,14 @@ function getActiveVaultFlags() {
     driveAutofetch: false, pusherKey: null, pusherCluster: null, pusherWebhook: null
   };
   if (!state.workspacePath) return empty;
-  const cfg = readVaultConfig(state.workspacePath, getAllSettings());
-  return {
-    isSharedVault: cfg.vaultType === 'shared',
-    isPersonalCloud: cfg.vaultType === 'backup',
-    sharedVaultId: (cfg.sync && cfg.sync.sharedVaultId) || null,
-    driveAutofetch: !!(cfg.sync && cfg.sync.driveAutofetch),
-    pusherKey: (cfg.realtime && cfg.realtime.pusherKey) || null,
-    pusherCluster: (cfg.realtime && cfg.realtime.pusherCluster) || null,
-    pusherWebhook: (cfg.realtime && cfg.realtime.pusherWebhook) || null
-  };
+  return legacyDaConfig(readVaultConfig(state.workspacePath, getAllSettings()));
 }
 
 const state = {
   workspacePath: '',
   dataFilePath: '',
   attachmentsDirPath: '',
-  mainWindow: null
+  mainWindow: null as import('electron').BrowserWindow | null
 };
 
 /**
@@ -318,20 +309,4 @@ function aggiornaHubConfigDalRenderer(parziale: any): boolean {
   return saveHubConfig(next);
 }
 
-module.exports = {
-  state,
-  finestraPrincipale,
-  loadWorkspace,
-  initWorkspace,
-  getAllSettings,
-  saveAllSettings,
-  patchSettings,
-  rimuoviImpostazioni,
-  getActiveVaultFlags,
-  saveHubConfig,
-  loadHubConfig,
-  loadHubConfigPubblica,
-  aggiornaHubConfigDalRenderer,
-  disconnectHub
-};
-export {};
+export { state, finestraPrincipale, loadWorkspace, initWorkspace, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni, getActiveVaultFlags, saveHubConfig, loadHubConfig, loadHubConfigPubblica, aggiornaHubConfigDalRenderer, disconnectHub };

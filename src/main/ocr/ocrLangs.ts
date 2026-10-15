@@ -8,11 +8,11 @@
 //
 // Dopo l'installazione il riconoscimento è completamente offline: la rete serve solo qui.
 
-const { app, net } = require('electron');
-const path = require('path');
-const fs = require('fs');
+import { app, net } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const zlib = require('zlib');
+import * as zlib from 'zlib';
 
 // tessdata_fast: la variante che il progetto Tesseract raccomanda per l'uso generale.
 // I modelli "best" sono 3-4 volte più lenti a parità di resa su stampato, e su hardware
@@ -114,11 +114,11 @@ async function installaLingua(codice) {
   try {
     // Prima si tenta il `.gz` (circa un terzo del peso), poi il file nudo: non tutte le
     // lingue del repository hanno l'archivio compresso.
-    let dati = null;
+    let dati: Buffer | null = null;
     for (const [url, comprimuto] of [
       [BASE_URL + codice + '.traineddata.gz', true],
       [BASE_URL + codice + '.traineddata', false]
-    ]) {
+    ] as Array<[string, boolean]>) {
       const risposta = await net.fetch(url);
       if (!risposta.ok) continue;
       const buffer = Buffer.from(await risposta.arrayBuffer());
@@ -152,15 +152,4 @@ async function rimuoviLingua(codice) {
   }
 }
 
-module.exports = {
-  LINGUE_NOTE,
-  codiceValido,
-  cartellaLingue,
-  percorsoLingua,
-  linguaInstallata,
-  codiciInstallati,
-  listaLingue,
-  installaLingua,
-  rimuoviLingua
-};
-export {};
+export { LINGUE_NOTE, codiceValido, cartellaLingue, percorsoLingua, linguaInstallata, codiciInstallati, listaLingue, installaLingua, rimuoviLingua };

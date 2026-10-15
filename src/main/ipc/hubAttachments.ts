@@ -1,14 +1,15 @@
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const { state, finestraPrincipale, loadHubConfig } = require('../workspaceManager');
-const { splitFileIntoChunks, leggiMappaChunk, scriviMappaChunk, conMappaChunk } = require('../chunkingLogic');
-const { loadSavedTokens } = require('./drive/auth');
+import * as path from 'path';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
+import { state, finestraPrincipale, loadHubConfig } from '../workspaceManager';
+import { splitFileIntoChunks, leggiMappaChunk, scriviMappaChunk, conMappaChunk } from '../chunkingLogic';
+import { loadSavedTokens } from './drive/auth';
 const { getOrCreateFolder, uploadFileReturningId, makeFilePublic, asyncPool } = require('./drive/fileOps');
+// `require` e non `import`: il file è generato dal template, che non ha tutte le chiavi.
 const { GOOGLE_API_KEY } = require('./cloudCredentials');
-const { safeAttachmentPathOrNull } = require('./pathSafety');
-const { fetchChunkGuardata, leggiConTetto } = require('./hubUrlChunk');
-const { chiamataHub } = require('./hubClient');
+import { safeAttachmentPathOrNull } from './pathSafety';
+import { fetchChunkGuardata, leggiConTetto } from './hubUrlChunk';
+import { chiamataHub } from './hubClient';
 
 // Sincronizzazione allegati per vault Hub.
 // Modello: i chunk (5MB, content-addressable) vivono sul Drive PERSONALE di ogni utente con
@@ -394,5 +395,4 @@ async function getHubChunkFolder(repoId: string): Promise<string> {
   return getOrCreateFolder(repoId, chunks);
 }
 
-module.exports = { syncHubAttachments };
-export {};
+export { syncHubAttachments };

@@ -6,15 +6,15 @@
 // cartella interna che non si sincronizza e da cui `attachmentsIpc` rifiuta di copiare: le
 // pagine diventano allegati solo da qui (`arrivoLocale.copiaInAllegati`).
 
-const path = require('path');
-const { ipcMain, nativeImage } = require('electron');
-const { state, getAllSettings } = require('../workspaceManager');
-const { authenticateDrive, loadSavedTokens } = require('./drive/auth');
-const { riceviLotti, MAX_BYTE_MANIFEST } = require('../scanner/arrivoLotti');
-const { creaSorgenteDrive, pubblicaConfig, manifestSuDrive } = require('../scanner/driveArrivo');
+import * as path from 'path';
+import { ipcMain, nativeImage } from 'electron';
+import { state, getAllSettings } from '../workspaceManager';
+import { authenticateDrive, loadSavedTokens } from './drive/auth';
+import { riceviLotti, MAX_BYTE_MANIFEST } from '../scanner/arrivoLotti';
+import { creaSorgenteDrive, pubblicaConfig, manifestSuDrive } from '../scanner/driveArrivo';
 const ScannerLotto = require('../../shared/scannerLotto');
-const arrivo = require('../scanner/arrivoLocale');
-const { avviaServerWifi, indirizziLan, urlAbbinamento } = require('../scanner/wifiArrivo');
+import * as arrivo from '../scanner/arrivoLocale';
+import { avviaServerWifi, indirizziLan, urlAbbinamento } from '../scanner/wifiArrivo';
 const QRCode = require('qrcode');
 
 /** Lato massimo della miniatura nel pannello. */
@@ -195,5 +195,4 @@ function setupScannerIpc() {
   });
 }
 
-module.exports = { setupScannerIpc, fermaWifi };
-export {};
+export { setupScannerIpc, fermaWifi };

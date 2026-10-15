@@ -18,12 +18,12 @@ function _tmT(id, fallback) {
 }
 
 /** I tag selezionati per la fusione, per chiave. Sopravvive ai ridisegni della lista. */
-let _tmSelezionati = new Set();
+let _tmSelezionati = new Set<string>();
 
 window.apriGestioneTag = function() {
     const modal = document.getElementById('tag-manager-modal');
     if (!modal) return;
-    _tmSelezionati = new Set();
+    _tmSelezionati = new Set<string>();
     const filtro = document.getElementById('tag-manager-filter');
     if (filtro) filtro.value = '';
     modal.classList.remove('hidden-tab');
@@ -113,33 +113,10 @@ function _tmRiga(voce) {
     return riga;
 }
 
-/**
- * La rinomina avviene nella riga, non in un modale sopra il modale: un secondo livello di
- * finestra per cambiare una parola è sproporzionato, e su Esc si finirebbe per chiudere
- * l'uno o l'altro senza sapere quale.
- */
+/** Rinomina nella riga (`rinominaInLoco`); Esc ridisegna senza toccare la selezione. */
 function _tmRinominaInLoco(riga, voce) {
-    const nome = riga.querySelector('.tag-manager-name');
-    if (!nome || riga.querySelector('input[type="text"]')) return;
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-input tag-manager-input';
-    input.value = voce.nome;
-    riga.replaceChild(input, nome);
-    input.focus();
-    input.select();
-
-    let chiuso = false;
-    const annulla = () => {
-        if (chiuso) return;
-        chiuso = true;
-        window.disegnaGestioneTag();
-    };
-    const conferma = async () => {
-        if (chiuso) return;
-        chiuso = true;
-        const nuovo = input.value.trim();
+    rinominaInLoco(riga, '.tag-manager-name', voce.nome, async (nuovo) => {
+        if (nuovo === null) { window.disegnaGestioneTag(); return; }
         if (nuovo && window.Model.chiaveTag(nuovo) !== voce.chiave) {
             // Se la chiave nuova esiste già è una FUSIONE, e va detto: l'utente crede di
             // rinominare e si ritroverebbe due tag diventati uno senza averlo chiesto.
@@ -152,15 +129,7 @@ function _tmRinominaInLoco(riga, voce) {
         if (nuovo) await window.rinominaTagArchivio(voce.nome, nuovo);
         _tmSelezionati.delete(voce.chiave);
         window.disegnaGestioneTag();
-    };
-
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); conferma(); }
-        // Esc annulla la SOLA rinomina e si ferma qui: senza stopPropagation chiuderebbe
-        // anche il modale, cioè due passi indietro per un tasto solo.
-        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); annulla(); }
-    };
-    input.onblur = () => conferma();
+    });
 }
 
 /** La barra della fusione compare solo con almeno due tag scelti: sotto non ha significato. */

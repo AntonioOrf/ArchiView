@@ -1,7 +1,7 @@
-const path = require('path');
-const fs = require('fs');
-const { state, getAllSettings, saveAllSettings, getActiveVaultFlags } = require('../../workspaceManager');
-const { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } = require('./auth');
+import * as path from 'path';
+import * as fs from 'fs';
+import { state, getAllSettings, saveAllSettings, getActiveVaultFlags } from '../../workspaceManager';
+import { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } from './auth';
 const { getOrCreateFolder, uploadFile, withDriveRetry } = require('./fileOps');
 
 // Verifica che la cartella del vault sia raggiungibile con l'account attualmente autenticato.
@@ -150,7 +150,7 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
   if (!projectFolderId) {
     const rootFolderId = await getOrCreateFolder('ArchiView');
-    projectFolderId = await getOrCreateFolder(path.basename(state.workspacePath) + '_ArchiView', rootFolderId);
+    projectFolderId = (await getOrCreateFolder(path.basename(state.workspacePath) + '_ArchiView', rootFolderId)) as string;
   }
 
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
@@ -210,35 +210,9 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
         }
         for (const name of orphanedFileNames) delete remoteIndex[name];
 
-        // Cancella chunk su Drive che non servono più
-        const dataFolderRes = await withDriveRetry(() => driveState.drive.files.list({
-          q: `name='data' and '${projectFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-          fields: 'files(id)'
-        }));
-        if (dataFolderRes.data.files && dataFolderRes.data.files.length > 0) {
-          const dataFolderId = dataFolderRes.data.files[0].id;
-          let pageToken: string | undefined;
-          const MAX_PAGES = 100;
-          let pages = 0;
-          do {
-            const chunksRes = await withDriveRetry(() => driveState.drive.files.list({
-              q: `'${dataFolderId}' in parents and trashed=false`,
-              fields: 'nextPageToken, files(id, name)',
-              pageSize: 1000,
-              pageToken
-            }));
-            for (const f of (chunksRes.data.files || [])) {
-              if (!usedHashes.has(f.name)) {
-                try { await driveState.drive.files.update({ fileId: f.id, requestBody: { trashed: true } }); deletedDrive++; } catch (e) { console.error("Errore eliminazione chunk Drive:", e); }
-              }
-            }
-            pageToken = chunksRes.data.nextPageToken;
-            pages++;
-          } while (pageToken && pages < MAX_PAGES);
-        }
+        deletedDrive += await cestinaChunkInutili(projectFolderId, usedHashes);
 
         // Aggiorna index.json su Drive senza le entry orfane
-        const { uploadFile } = require('./fileOps');
         const cacheDir = path.join(state.workspacePath, '.archiview-chunks');
         if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
         const localIndexPath = path.join(cacheDir, 'index.json');
@@ -252,5 +226,41 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
   return { deletedLocal, deletedDrive };
 }
 
-module.exports = { listVaultsFromDrive, checkUpdatesFromDrive, pullFromDrive, syncToDrive, cleanOrphanedAttachments };
-export {};
+/**
+ * Cestina su Drive i chunk di `data/` che nessun allegato usa più. Restituisce quanti. Il cestino
+ * di Drive e non la cancellazione: un errore di calcolo resta recuperabile per trenta giorni.
+ */
+async function cestinaChunkInutili(projectFolderId: string, usedHashes: Set<string>): Promise<number> {
+  const dataFolderRes = await withDriveRetry(() => driveState.drive.files.list({
+    q: `name='data' and '${projectFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id)'
+  }));
+  if (!dataFolderRes.data.files || dataFolderRes.data.files.length === 0) return 0;
+
+  const dataFolderId = dataFolderRes.data.files[0].id;
+  const MAX_PAGES = 100;
+  let cestinati = 0;
+  let pageToken: string | undefined;
+  let pages = 0;
+  do {
+    const chunksRes = await withDriveRetry(() => driveState.drive.files.list({
+      q: `'${dataFolderId}' in parents and trashed=false`,
+      fields: 'nextPageToken, files(id, name)',
+      pageSize: 1000,
+      pageToken
+    }));
+    for (const f of (chunksRes.data.files || [])) {
+      if (usedHashes.has(f.name)) continue;
+      try {
+        // Invariante 7: anche questa passa da withDriveRetry (rimettere nel cestino è idempotente).
+        await withDriveRetry(() => driveState.drive.files.update({ fileId: f.id, requestBody: { trashed: true } }));
+        cestinati++;
+      } catch (e) { console.error("Errore eliminazione chunk Drive:", e); }
+    }
+    pageToken = chunksRes.data.nextPageToken;
+    pages++;
+  } while (pageToken && pages < MAX_PAGES);
+  return cestinati;
+}
+
+export { listVaultsFromDrive, checkUpdatesFromDrive, pullFromDrive, syncToDrive, cleanOrphanedAttachments };

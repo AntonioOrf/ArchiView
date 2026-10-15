@@ -3,7 +3,7 @@
 // scrivono la stessa chiave, così tastiera e pannello non si contraddicono e lo zoom resta
 // dopo il riavvio (quello di Chromium non si ricorda).
 
-const { getAllSettings, saveAllSettings, finestraPrincipale } = require('./workspaceManager');
+import { getAllSettings, saveAllSettings, finestraPrincipale } from './workspaceManager';
 
 const MIN = 80;
 const MAX = 150;
@@ -49,5 +49,4 @@ function collegaZoom(finestra) {
   });
 }
 
-module.exports = { applicaZoom, collegaZoom, zoomPerTasto };
-export {};
+export { applicaZoom, collegaZoom, zoomPerTasto };

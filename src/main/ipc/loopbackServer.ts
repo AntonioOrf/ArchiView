@@ -6,7 +6,7 @@
 // il browser può risolverlo in 127.0.0.1 o in ::1. Porte e URI restano quelli registrati.
 //
 // Nessuna dipendenza da electron: testabile in Node puro (test/loopbackServer.test.js).
-const http = require('http');
+import * as http from 'http';
 
 const INDIRIZZI_LOOPBACK = ['127.0.0.1', '::1'];
 
@@ -86,4 +86,4 @@ function confrontoCostante(a: string, b: string): boolean {
   return diff === 0;
 }
 
-module.exports = { avviaServerLoopback, leggiCallbackOAuth, INDIRIZZI_LOOPBACK };
+export { avviaServerLoopback, leggiCallbackOAuth, INDIRIZZI_LOOPBACK };

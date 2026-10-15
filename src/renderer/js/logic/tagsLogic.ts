@@ -48,25 +48,12 @@ async function _tgApplica(descrizione, messaggio, schedeToccate, foto) {
     await window.Store.commit();
 
     const ripristina = async () => {
-        for (const vecchio of foto.schede) {
-            const i = appData.manoscritti.findIndex(m => String(m.id) === String(vecchio.id));
-            // Come nell'undo delle azioni in massa: una scheda sparita nel frattempo non
-            // si resuscita — l'undo annulla una modifica, non una cancellazione altrui.
-            if (i !== -1) appData.manoscritti[i] = JSON.parse(JSON.stringify(vecchio));
-        }
+        ripristinaSchede(foto.schede);
         appData.tagsAnagrafica = JSON.parse(JSON.stringify(foto.anagrafica));
         await window.Store.commit();
     };
 
-    const testo = String(messaggio).replace('{var0}', String(schedeToccate));
-    if (window.gestoreAnnullamento) {
-        window.gestoreAnnullamento.registraAzione(descrizione, ripristina);
-        if (typeof mostraMessaggio === 'function') {
-            mostraMessaggio(testo, 'success', () => window.gestoreAnnullamento.annullaUltimaAzione());
-        }
-    } else if (typeof mostraMessaggio === 'function') {
-        mostraMessaggio(testo, 'success');
-    }
+    registraAnnullabile(descrizione, String(messaggio).replace('{var0}', String(schedeToccate)), ripristina);
 }
 
 /**

@@ -1,9 +1,9 @@
-const { ipcMain, dialog, BrowserWindow } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const { state, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni } = require('../workspaceManager');
-const { applicaZoom } = require('../zoomInterfaccia');
-const { leggiPerfConfig, scriviPerfConfig } = require('../perfConfig');
+import { ipcMain, dialog, BrowserWindow } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import { state, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni } from '../workspaceManager';
+import { applicaZoom } from '../zoomInterfaccia';
+import { leggiPerfConfig, scriviPerfConfig } from '../perfConfig';
 
 function setupSettingsIpc() {
   // get-settings ritorna SOLO le preferenze globali. I flag del vault
@@ -30,10 +30,11 @@ function setupSettingsIpc() {
   ipcMain.handle('scegli-cartella-allegati', async (event, titolo) => {
     try {
       const finestra = BrowserWindow.fromWebContents(event.sender);
-      const esito = await dialog.showOpenDialog(finestra, {
+      const opzioni: import('electron').OpenDialogOptions = {
         title: typeof titolo === 'string' ? titolo.slice(0, 200) : undefined,
         properties: ['openDirectory', 'createDirectory']
-      });
+      };
+      const esito = finestra ? await dialog.showOpenDialog(finestra, opzioni) : await dialog.showOpenDialog(opzioni);
       if (esito.canceled || !esito.filePaths || !esito.filePaths[0]) return null;
       const scelta = path.resolve(esito.filePaths[0]);
       if (!fs.statSync(scelta).isDirectory()) return null;
@@ -74,5 +75,4 @@ function setupSettingsIpc() {
   ipcMain.handle('set-perf-mode', (event, lowPerf) => scriviPerfConfig({ lowPerf }));
 }
 
-module.exports = { setupSettingsIpc };
-export {};
+export { setupSettingsIpc };

@@ -1,5 +1,23 @@
+// I membri di `window` più usati hanno il loro tipo; gli altri passano ancora dall'indice `any`
+// (PIANO-REFACTOR Fase 10, strada piccola: si aggiungono qui uno alla volta).
+type ApiPreload = import('./main/preload').ApiPreload;
+
 interface Window {
   [key: string]: any;
+  t(chiave: string, ripiego?: string): string;
+  escapeHTML(valore: unknown): string;
+  sanitizeHTML(html: unknown): string;
+  azione(tipo: string, nome: string, ...args: any[]): string;
+  Model: typeof ArchiViewModel;
+  apiBrowser: ApiPreload['apiBrowser'];
+  apiOcr: ApiPreload['apiOcr'];
+  apiSicurezza: ApiPreload['apiSicurezza'];
+  apiIiif: ApiPreload['apiIiif'];
+  apiAuthority: ApiPreload['apiAuthority'];
+  apiScanner: ApiPreload['apiScanner'];
+  apiFinestre: ApiPreload['apiFinestre'];
+  apiSettings: ApiPreload['apiSettings'];
+  apiDrive: ApiPreload['apiDrive'];
 }
 interface HTMLElement {
   value: any;

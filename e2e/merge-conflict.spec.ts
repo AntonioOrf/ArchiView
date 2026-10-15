@@ -281,7 +281,9 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
           const locale = { id: 'ann-1', segnatura: 'Locale', cartella: '', lastModified: 1000 };
           const remoto = caso === 'conflitti'
             ? { manoscritti: [{ ...locale, segnatura: 'Remoto' }], cartelle: [] }
-            : { manoscritti: [], cartelle: [], deletedIds: ['ann-1'] };
+            // Una cartella nuova dal remoto: annullando non deve entrare nell'archivio (prima
+            // la struttura si fondeva subito, prima della domanda sulle cancellazioni).
+            : { manoscritti: [], cartelle: ['Remota'], deletedIds: ['ann-1'] };
           w.appData.manoscritti = [locale];
           w.appData.baseObjects = {};
           w.appData.baseHashes = {};
@@ -305,10 +307,15 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
         const esito = await page.evaluate(async () => {
           const w = window as any;
           await w.__e2eFine;
-          return { sync: w.__e2eSync, segnatura: w.appData.manoscritti.find((m: any) => m.id === 'ann-1')?.segnatura };
+          return {
+            sync: w.__e2eSync,
+            segnatura: w.appData.manoscritti.find((m: any) => m.id === 'ann-1')?.segnatura,
+            cartelle: w.appData.cartelle
+          };
         });
         expect(esito.sync).toBe(0);
         expect(esito.segnatura).toBe('Locale');
+        expect(esito.cartelle).not.toContain('Remota');
       });
     }
   }

@@ -8,15 +8,15 @@
 // La finestra è un processo a sé, quindi il rendering di una carta a 300 dpi non tocca
 // l'event loop del main né la UI. È la stessa infrastruttura che servirà alla stampa (2.2).
 
-const { BrowserWindow, protocol } = require('electron');
-const path = require('path');
+import { BrowserWindow, protocol } from 'electron';
+import * as path from 'path';
 const fsp = require('fs').promises;
-const { state } = require('../workspaceManager');
+import { state } from '../workspaceManager';
 
 const SCHEMA = 'ocr-host';
 
-let finestra = null;
-let pronta = null;
+let finestra: import('electron').BrowserWindow | null = null;
+let pronta: Promise<boolean> | null = null;
 
 /** Cartella dei file statici della pagina host (HTML + build di pdf.js), dentro out/renderer. */
 function cartellaHost() {
@@ -55,7 +55,7 @@ function registraProtocollo() {
         return new Response('Access Denied', { status: 403 });
       }
 
-      let base = null;
+      let base: string | null = null;
       if (radice === 'allegato') base = state.attachmentsDirPath;
       else if (radice === 'file') base = cartellaHost();
       if (!base) return new Response('Not Found', { status: 404 });
@@ -86,7 +86,9 @@ function registraProtocollo() {
 async function avvia() {
   if (finestra && !finestra.isDestroyed()) return pronta;
 
-  finestra = new BrowserWindow({
+  // `f` e non `finestra` nelle chiusure qui sotto: se la finestra si chiude a metà caricamento
+  // `finestra` torna null, e l'errore sarebbe un TypeError invece di "non inizializzato".
+  const f = new BrowserWindow({
     show: false,
     width: 1,
     height: 1,
@@ -103,12 +105,13 @@ async function avvia() {
     }
   });
 
-  finestra.on('closed', () => { finestra = null; pronta = null; });
+  finestra = f;
+  f.on('closed', () => { finestra = null; pronta = null; });
 
-  pronta = finestra.loadURL(`${SCHEMA}://app/file/pdfHost.html`).then(async () => {
+  pronta = f.loadURL(`${SCHEMA}://app/file/pdfHost.html`).then(async () => {
     // `loadURL` risolve al DOMContentLoaded: il modulo ES può non aver ancora valutato.
-    for (let i = 0; i < 100; i++) {
-      const ok = await finestra.webContents.executeJavaScript('window.__pdfPronto === true').catch(() => false);
+    for (let i = 0; i < 100 && !f.isDestroyed(); i++) {
+      const ok = await f.webContents.executeJavaScript('window.__pdfPronto === true').catch(() => false);
       if (ok) return true;
       await new Promise(r => setTimeout(r, 50));
     }
@@ -120,6 +123,7 @@ async function avvia() {
 
 async function chiama(espressione) {
   await avvia();
+  if (!finestra || finestra.isDestroyed()) throw new Error('Host PDF chiuso');
   return finestra.webContents.executeJavaScript(espressione);
 }
 
@@ -152,5 +156,4 @@ function distruggi() {
   pronta = null;
 }
 
-module.exports = { SCHEMA, registraProtocollo, apriPdf, testoPagina, immaginePagina, immagineRuotata, chiudiPdf, distruggi };
-export {};
+export { SCHEMA, registraProtocollo, apriPdf, testoPagina, immaginePagina, immagineRuotata, chiudiPdf, distruggi };

@@ -652,7 +652,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
         }
     }
 
-    const allegato = (m && m.allegati && m.allegati[index]) || { nome, tipo };
+    const allegato: Partial<AVAllegato> = (m && m.allegati && m.allegati[index]) || { nome, tipo };
 
     if (isPdf) {
         const r = await window.PdfViewer.apri(nome);

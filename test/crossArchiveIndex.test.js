@@ -28,7 +28,7 @@ function bloccoBilanciato(sorgente, inizio) {
 }
 
 function funzioniRenderer() {
-  const src = fs.readFileSync(UTILS, 'utf8');
+  const src = (fs.readFileSync(UTILS, 'utf8') + '\n' + fs.readFileSync(UTILS.replace('utils.ts', 'ricercaLogic.ts'), 'utf8'));
   const estrai = (nome) => {
     const marker = 'window.' + nome + ' = function';
     const i = src.indexOf(marker);

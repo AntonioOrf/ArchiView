@@ -194,6 +194,100 @@ async function avviaApp() {
     await initData();
     if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
 
+    collegaEventiMain();
+
+    const settings = await window.apiSettings.get();
+    ripristinaStatoSalvato(settings);
+    await eseguiAzioniRimandate(settings);
+
+    if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
+
+    renderSidebar();
+    renderMain();
+    
+    // Inizializza tutte le icone statiche dell'HTML
+    if (window.lucide) lucide.createIcons();
+
+    switchTab('list');
+
+    // Un unico debounce sincronizzato per renderMain + renderSearchSuggestions
+    const debouncedSearch = debounce(() => { renderMain(); renderSearchSuggestions(); }, 150);
+    pianificaControlli(settings);
+
+    // Guard: assicuriamoci di bindare gli eventi globali una sola volta
+    if (!window._eventsBound) {
+        window._eventsBound = true;
+
+        document.getElementById('search-input').addEventListener('input', debouncedSearch);
+        document.getElementById('global-tag-search').addEventListener('input', () => { if (typeof renderTagList === 'function') renderTagList(); });
+        window.collegaEventiModulo();
+
+        collegaScorciatoie();      // components/scorciatoie.ts
+        collegaChiusuraModali();   // components/pilaModali.ts
+
+    window.trascrizioneNonSalvata = false;
+    document.getElementById('trascrizione-editor').addEventListener('input', () => {
+        window.trascrizioneNonSalvata = true;
+    });
+
+    if (window.apiBrowser && window.apiBrowser.onRequestClose) {
+        window.apiBrowser.onRequestClose(async () => {
+            // Chiusura: qualunque salvataggio differito deve finire su disco prima di uscire.
+            if (typeof window.flushSalvataggio === 'function') {
+                try { await window.flushSalvataggio(); } catch (e) { console.error("Errore nel flush di chiusura:", e); }
+            }
+            // Il tab «Scheda» della trascrizione: ciò che si può salvare va su disco; resta
+            // sporco solo un modulo che non passa la validazione, e allora si chiede.
+            if (window.moduloInTrascrizione()) await window.salvaSchedaTrascrizioneOra();
+            // ...e quanto ha in sospeso la finestra staccata, che salva passando da qui.
+            if (window.svuotaFinestraStaccata) await window.svuotaFinestraStaccata();
+            const isEditingRecord = window.isFormDirty && (window.moduloInTrascrizione() || !document.getElementById('view-add')?.classList.contains('hidden-tab'));
+            
+            if (window.trascrizioneNonSalvata) {
+                window.isClosingApp = true;
+                const modal = document.getElementById('unsaved-modal');
+                if (modal) modal.classList.remove('hidden-tab');
+            } else if (isEditingRecord && window.mostraBottomConfirm) {
+                window.mostraBottomConfirm(window.t('unsaved_prompt') || "Ci sono modifiche non salvate alla scheda. Sei sicuro di voler uscire perdendo le modifiche?", () => {
+                    window.apiBrowser.confirmClose();
+                });
+            } else {
+                window.apiBrowser.confirmClose();
+            }
+        });
+    }
+    
+
+    // Drag to resize Trascrizione panels
+    const resizer = document.getElementById('trascrizione-resizer');
+    const leftPanel = document.getElementById('trascrizione-editor-panel');
+    const container = document.getElementById('trascrizione-container');
+
+
+    if (resizer && leftPanel && container) {
+        // La proporzione è una preferenza di comodo, per tab («Testo» / «Scheda»): sta in
+        // localStorage (attachmentsLogic.ts), non più nell'archivio da salvare a ogni trascinamento.
+        window.attivaSeparatore(resizer, {
+            attuale: () => parseFloat(leftPanel.style.width) || 50,
+            daPuntatore: (x) => {
+                const r = container.getBoundingClientRect();
+                return ((x - r.left) / r.width) * 100;
+            },
+            applica: (p) => {
+                leftPanel.style.transition = 'none';
+                leftPanel.style.width = `${p}%`;
+            },
+            fine: (p) => {
+                leftPanel.style.transition = '';
+                window.ricordaLarghezzaTrascrizione(p);
+            }
+        });
+    }
+    } // End of if (!window._eventsBound)
+}
+
+/** Avvisi dal main: database cambiato fuori (sync, realtime) e allegato Hub appena scaricato. */
+function collegaEventiMain() {
     if (window.apiBrowser && window.apiBrowser.onDatabaseModificatoEsterno) {
         window.apiBrowser.onDatabaseModificatoEsterno(async () => {
             const nuovoDati = await window.leggiDatiArchivio();
@@ -219,8 +313,10 @@ async function avviaApp() {
             }
         });
     }
+}
 
-    const settings = await window.apiSettings.get();
+/** Stato dell'interfaccia salvato all'uscita: cartella, espansione, ricerca, filtri, vista. */
+function ripristinaStatoSalvato(settings) {
     const statoSalvato = settings.appState;
     if (statoSalvato) {
         try {
@@ -235,73 +331,6 @@ async function avviaApp() {
             window.statoIniziale = stato;
         } catch (e) {}
     }
-
-    // Creazione Hub da welcome: il workspace locale è appena stato creato, ora lo si pubblica.
-    if (settings && settings.autoStartCreaHub) {
-        await window.apiSettings.patch({ autoStartCreaHub: false });
-        setTimeout(async () => {
-            if (typeof window.creaRepositoryHub === 'function') {
-                // null → creaRepositoryHub usa il basename della cartella come nome vault.
-                await window.creaRepositoryHub(null);
-            }
-        }, 400);
-    }
-
-    // Primo render per popolare l'interfaccia all'avvio
-    if (settings && (settings.autoStartTrasformaCondiviso || settings.autoStartTrasformaPersonale)) {
-        const isCondiviso = settings.autoStartTrasformaCondiviso;
-        const isPersonale = settings.autoStartTrasformaPersonale;
-
-        await window.apiSettings.patch({ autoStartTrasformaCondiviso: false, autoStartTrasformaPersonale: false });
-
-        if (typeof mostraProgressoCloud === 'function') {
-            mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_cloud", "Avvio configurazione cloud…"));
-        }
-
-        setTimeout(async () => {
-            if (window.driveAuthPromise) {
-                try { await window.driveAuthPromise; } catch (e) { console.error(e); }
-            }
-            // apriCloudModal() rimossa da qui: chiedeva login prima che trasformaIn*
-            // gestisse la propria auth, causando una doppia richiesta di accesso.
-            // trasformaIn* chiama apriCloudModal() al termine, quindi il modal si apre
-            // correttamente dopo il completamento del setup.
-            if (isCondiviso && typeof trasformaInCondiviso === 'function') await trasformaInCondiviso();
-            else if (isPersonale && typeof trasformaInPersonale === 'function') await trasformaInPersonale();
-        }, 300);
-    }
-
-    if (settings && settings.hubJustCreated) {
-        await window.apiSettings.patch({ hubJustCreated: false });
-        setTimeout(() => {
-            if (typeof window.apriShareModal === 'function') window.apriShareModal();
-        }, 800);
-    }
-
-    if (settings && settings.hubJustMigrated) {
-        await window.apiSettings.patch({ hubJustMigrated: false });
-        setTimeout(() => {
-            if (typeof mostraMessaggio === 'function') {
-                mostraMessaggio(window.t("msg_hub_migrato_reinvita", 'Migrazione sull\'Hub completata. Invita di nuovo i collaboratori con un nuovo invito dal pannello Condivisione: i permessi di Google Drive non si trasferiscono.'), "info");
-            }
-            if (typeof window.apriShareModal === 'function') window.apriShareModal();
-        }, 1000);
-    }
-
-    if (settings && settings.promptCloudAuth) {
-        await window.apiSettings.patch({ promptCloudAuth: false });
-        
-        setTimeout(() => {
-            if (typeof apriCloudModal === 'function') {
-                apriCloudModal();
-                if (typeof mostraMessaggio === 'function') {
-                    mostraMessaggio(window.t("msg_benvenuto_nell_archivio_c", 'Benvenuto nell\'archivio condiviso. Accedi a Google Drive per scaricare i dati.'), "info");
-                }
-            }
-        }, 800);
-    }
-
-    if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
 
     // Ripristina il contesto di ricerca prima del primo render: altrimenti la griglia
     // mostrerebbe l'archivio intero per un istante prima di filtrarsi. Che il filtro sia
@@ -373,19 +402,78 @@ async function avviaApp() {
             window.ripristinaImpostazioniExportTesto(window.statoIniziale.esportaTesto);
         }
     }
+}
 
-    renderSidebar();
-    renderMain();
-    
-    // Inizializza tutte le icone statiche dell'HTML
-    if (window.lucide) lucide.createIcons();
+/** Azioni chieste da un passo precedente (welcome, migrazione Hub) e da eseguire a archivio aperto. */
+async function eseguiAzioniRimandate(settings) {
+    // Creazione Hub da welcome: il workspace locale è appena stato creato, ora lo si pubblica.
+    if (settings && settings.autoStartCreaHub) {
+        await window.apiSettings.patch({ autoStartCreaHub: false });
+        setTimeout(async () => {
+            if (typeof window.creaRepositoryHub === 'function') {
+                // null → creaRepositoryHub usa il basename della cartella come nome vault.
+                await window.creaRepositoryHub(null);
+            }
+        }, 400);
+    }
 
-    switchTab('list');
+    // Primo render per popolare l'interfaccia all'avvio
+    if (settings && (settings.autoStartTrasformaCondiviso || settings.autoStartTrasformaPersonale)) {
+        const isCondiviso = settings.autoStartTrasformaCondiviso;
+        const isPersonale = settings.autoStartTrasformaPersonale;
 
-    // Un unico debounce sincronizzato per renderMain + renderSearchSuggestions
-    const debouncedSearch = debounce(() => { renderMain(); renderSearchSuggestions(); }, 150);
-    const debouncedRenderMain = debounce(renderMain, 150);
+        await window.apiSettings.patch({ autoStartTrasformaCondiviso: false, autoStartTrasformaPersonale: false });
 
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud(window.t("prog_prep_title", "Preparazione in corso"), window.t("prog_prep_cloud", "Avvio configurazione cloud…"));
+        }
+
+        setTimeout(async () => {
+            if (window.driveAuthPromise) {
+                try { await window.driveAuthPromise; } catch (e) { console.error(e); }
+            }
+            // apriCloudModal() rimossa da qui: chiedeva login prima che trasformaIn*
+            // gestisse la propria auth, causando una doppia richiesta di accesso.
+            // trasformaIn* chiama apriCloudModal() al termine, quindi il modal si apre
+            // correttamente dopo il completamento del setup.
+            if (isCondiviso && typeof trasformaInCondiviso === 'function') await trasformaInCondiviso();
+            else if (isPersonale && typeof trasformaInPersonale === 'function') await trasformaInPersonale();
+        }, 300);
+    }
+
+    if (settings && settings.hubJustCreated) {
+        await window.apiSettings.patch({ hubJustCreated: false });
+        setTimeout(() => {
+            if (typeof window.apriShareModal === 'function') window.apriShareModal();
+        }, 800);
+    }
+
+    if (settings && settings.hubJustMigrated) {
+        await window.apiSettings.patch({ hubJustMigrated: false });
+        setTimeout(() => {
+            if (typeof mostraMessaggio === 'function') {
+                mostraMessaggio(window.t("msg_hub_migrato_reinvita", 'Migrazione sull\'Hub completata. Invita di nuovo i collaboratori con un nuovo invito dal pannello Condivisione: i permessi di Google Drive non si trasferiscono.'), "info");
+            }
+            if (typeof window.apriShareModal === 'function') window.apriShareModal();
+        }, 1000);
+    }
+
+    if (settings && settings.promptCloudAuth) {
+        await window.apiSettings.patch({ promptCloudAuth: false });
+        
+        setTimeout(() => {
+            if (typeof apriCloudModal === 'function') {
+                apriCloudModal();
+                if (typeof mostraMessaggio === 'function') {
+                    mostraMessaggio(window.t("msg_benvenuto_nell_archivio_c", 'Benvenuto nell\'archivio condiviso. Accedi a Google Drive per scaricare i dati.'), "info");
+                }
+            }
+        }, 800);
+    }
+}
+
+/** Controllo aggiornamenti (all'avvio e ogni 4 h), scansioni dal telefono, invito al tutorial. */
+function pianificaControlli(settings) {
     // Controlla aggiornamenti in background all'avvio senza mostrare popup se è già aggiornato.
     // Salta il check se offline (l'utente potrebbe aprire l'app in aereo/senza rete): evita una
     // chiamata di rete destinata a fallire e un log 'error' inutile.
@@ -446,414 +534,8 @@ async function avviaApp() {
             mostraInvitoTutorial();
         }
     }, 1500);
-
-    // Guard: assicuriamoci di bindare gli eventi globali una sola volta
-    if (!window._eventsBound) {
-        window._eventsBound = true;
-
-        document.getElementById('search-input').addEventListener('input', debouncedSearch);
-        document.getElementById('global-tag-search').addEventListener('input', () => { if (typeof renderTagList === 'function') renderTagList(); });
-        window.collegaEventiModulo();
-
-    // Mappa id-modale → funzione di chiusura dedicata (cleanup: reset iframe, callback, ecc.)
-    // Overlay che NON vanno chiusi né con Esc né cliccando lo sfondo: sono in mezzo a
-    // un'operazione (progresso di sync, finestra di autenticazione).
-    // accesso-negato-overlay: con Esc si resterebbe davanti a un vault non autorizzato;
-    // le uscite sono solo i due pulsanti (cambia account / altro archivio).
-    const modaliNonChiudibili = ['cloud-progress-overlay', 'cloud-auth-modal', 'email-prompt-modal', 'accesso-negato-overlay'];
-
-    const modalClosers = {
-        'image-modal': 'chiudiModal',
-        'docs-modal': 'chiudiModalDocumenti',
-        'rename-modal': 'chiudiRenameModal',
-        'settings-modal': 'chiudiImpostazioni',
-        'folder-modal': 'chiudiFolderModal',
-        'new-type-modal': 'chiudiNewTypeModal',
-        'campo-proprio-modal': 'chiudiCampoProprioModal',
-        'manage-types-modal': 'chiudiManageTypesModal',
-        'delete-modal': 'chiudiDeleteModal',
-        // Non chiude finché l'estrazione è in corso: vedi importZipModal.ts.
-        'import-zip-modal': 'chiudiImportZip',
-        'unsaved-modal': 'chiudiUnsavedModal',
-        'cloud-modal': 'chiudiCloudModal',
-        'share-modal': 'chiudiShareModal',
-        'changelog-modal': 'chiudiChangelogModal',
-        'issue-modal': 'chiudiIssueModal',
-        'bulk-modal': 'chiudiAzioniMassa',
-        'tag-manager-modal': 'chiudiGestioneTag',
-        'vocab-modal': 'chiudiVocabolari',
-        'duplicati-modal': 'chiudiDuplicati',
-        'authority-modal': 'chiudiAnagrafica',
-        'scanner-modal': 'chiudiScansioni',
-        'relazioni-modal': 'chiudiCollegamenti',
-        'grafo-modal': 'chiudiGrafo',
-        'altro-archivio-modal': 'chiudiAnteprimaAltroArchivio',
-        'copia-archivio-modal': 'chiudiCopiaAltroArchivio',
-        'rimando-esterno-modal': 'chiudiSelettoreRimando',
-        'omonimi-modal': 'chiudiOmonimiAltriArchivi',
-        // Fase 5.3 — prima mancavano: Esc li nascondeva con il fallback `hidden-tab`,
-        // che sui modali creati e rimossi al volo lasciava il nodo nel DOM, e sui
-        // conflitti di sync abbandonava la callback di risoluzione senza annullarla.
-        'diff-modal': 'chiudiDiffModal',
-        'history-diff-modal': 'chiudiHistoryDiffModal',
-        'release-notes-modal': 'chiudiNoteRilascio',
-        'merge-conflict-modal': 'annullaSincronizzazioneConflitto',
-        'deletion-conflict-modal': 'annullaSincronizzazioneDeletions',
-    };
-
-    // Chiusura centralizzata del modale in cima allo stack (riusata da Esc e click sul backdrop).
-    // Ritorna false se la chiusura è stata bloccata (es. welcome-modal obbligatorio).
-    function chiudiModaleTop(top) {
-        if (modaliNonChiudibili.includes(top.id)) return false;
-
-        // Il welcome-modal è chiudibile solo se un workspace esiste già (pulsante chiusura visibile);
-        // durante la scelta iniziale è obbligatorio.
-        if (top.id === 'welcome-modal') {
-            const closeBtn = document.getElementById('welcome-close-btn');
-            if (closeBtn && !closeBtn.classList.contains('hidden') && window.chiudiWelcomeModal) {
-                window.chiudiWelcomeModal();
-                return true;
-            }
-            return false;
-        }
-
-        if (top.id === 'bottom-confirm-banner') {
-            const btnCancel = top.querySelector('.btn-ghost');
-            if (btnCancel) btnCancel.click();
-            else if (window.chiudiBottomConfirm) window.chiudiBottomConfirm();
-        } else {
-            const fnName = modalClosers[top.id];
-            // I modali costruiti al volo (es. vault-delete-modal) espongono il proprio
-            // annulla con data-modal-cancel: cliccarlo esegue anche il resolve della promise.
-            const btnAnnulla = top.querySelector('[data-modal-cancel]');
-            if (fnName && typeof (window as any)[fnName] === 'function') (window as any)[fnName]();
-            else if (btnAnnulla) btnAnnulla.click();
-            else top.classList.add('hidden-tab'); // fallback per modali senza handler dedicato
-        }
-
-        if (typeof editingTypeId !== 'undefined') editingTypeId = null;
-        return true;
-    }
-
-    function inCampoDiTesto(el) {
-        if (!el) return false;
-        const tag = (el.tagName || '').toLowerCase();
-        return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
-    }
-
-    /**
-     * Vero quando una scorciatoia che agisce sulle SCHEDE può scattare: fuori dai campi
-     * di testo (dove Ctrl+C, Canc e F2 hanno un significato loro), con nessun modale
-     * aperto, e senza una selezione di testo in corso — quella è quasi sempre un utente
-     * che sta copiando una segnatura dalla card, e rubargli Ctrl+C sarebbe il modo più
-     * rapido per rendere la scorciatoia odiosa.
-     */
-    function scorciatoiaSuSchede(e) {
-        if (inCampoDiTesto(document.activeElement)) return false;
-        if (document.querySelector('.modal-overlay:not(.hidden-tab)')) return false;
-        const sel = window.getSelection();
-        if (sel && !sel.isCollapsed && String(sel).trim() !== '') return false;
-        return true;
-    }
-
-    // Scorciatoie da tastiera
-    document.addEventListener('keydown', function(e) {
-        const vTrascrizione = document.getElementById('view-trascrizione');
-
-        // Salva trascrizione con Ctrl+S o sfoglia
-        if (vTrascrizione && !vTrascrizione.classList.contains('hidden-tab')) {
-            if (e.altKey && e.key === 'ArrowLeft') {
-                e.preventDefault();
-                if (typeof cambiaAllegatoRelativo === 'function') cambiaAllegatoRelativo(-1);
-            } else if (e.altKey && e.key === 'ArrowRight') {
-                e.preventDefault();
-                if (typeof cambiaAllegatoRelativo === 'function') cambiaAllegatoRelativo(1);
-            } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
-                // Ctrl+Maiusc+S alterna i tab «Testo» e «Scheda»; va prima di Ctrl+S, che
-                // con Maiusc ha comunque `key` 's'.
-                e.preventDefault();
-                window.alternaSchedaTrascrizione();
-            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-                e.preventDefault();
-                if (typeof salvaTrascrizione === 'function') salvaTrascrizione();
-            }
-            if (e.altKey && e.key === 'f') {
-                e.preventDefault();
-                if (typeof toggleFullscreenAllegato === 'function') toggleFullscreenAllegato();
-            }
-            // Alt+K apre i caratteri speciali col fuoco sul primo; senza Ctrl, che con Alt è AltGr.
-            if (e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                const pannello = document.getElementById('trasc-caratteri');
-                const aperto = pannello && !pannello.classList.contains('hidden-tab');
-                window.toggleCaratteriSpeciali(!aperto || !pannello.contains(document.activeElement), true);
-            }
-            // Interrompe qui se siamo in modalità trascrizione, tranne Esc su un modale aperto
-            // sopra la vista (confronto carte, esporta): va al ramo Esc più sotto.
-            if (!(e.key === 'Escape' && document.querySelector('.modal-overlay:not(.hidden-tab)'))) return;
-        }
-
-        // --- SCORCIATOIE GLOBALI ---
-        // Ctrl+F -> Cerca
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-            e.preventDefault();
-            const searchInput = document.getElementById('search-input') as HTMLInputElement;
-            if (searchInput) {
-                if (typeof switchTab === 'function') switchTab('list');
-                // Il campo vive nel pannello 'search' della sidebar: se e' chiuso o
-                // sostituito da un altro tab, il focus finiva su un elemento nascosto.
-                if (typeof window.apriSidebarTab === 'function') window.apriSidebarTab('search');
-                searchInput.focus();
-                searchInput.select();
-            }
-        }
-        
-        // Ctrl+N -> Nuovo Documento
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
-            e.preventDefault();
-            if (typeof switchTab === 'function') switchTab('add');
-            const segInput = document.getElementById('form-segnatura');
-            if (segInput) segInput.focus();
-        }
-
-        // Ctrl+Maiusc+S -> nel modulo della scheda, il documento accanto (prima di Ctrl+S: con
-        // Maiusc `key` resta 's'). Solo su una scheda con carte, dove c'è il pulsante.
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
-            const vAdd = document.getElementById('view-add');
-            const btnDoc = document.getElementById('btn-documento-scheda');
-            if (vAdd && !vAdd.classList.contains('hidden-tab') && btnDoc && !btnDoc.classList.contains('hidden-tab')) {
-                e.preventDefault();
-                window.alternaDocumentoScheda();
-                return;
-            }
-        }
-
-        // Ctrl+S -> Salva Scheda (se siamo nel tab di inserimento)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-            const vAdd = document.getElementById('view-add');
-            if (vAdd && !vAdd.classList.contains('hidden-tab')) {
-                e.preventDefault();
-                // trigger form submit per sfruttare la validazione
-                const form = document.getElementById('manoscritto-form');
-                if (form) {
-                    const event = new Event('submit', { cancelable: true });
-                    form.dispatchEvent(event);
-                }
-            }
-        }
-
-        // --- SCORCIATOIE SU SELEZIONE E AZIONI IN MASSA (Fase 1.5) ---
-        //
-        // Tutte guardate da `scorciatoiaSuSchede`: dentro un campo di testo Ctrl+C deve
-        // copiare il testo, non le schede, e sopra un modale aperto nessuna di queste
-        // deve agire su una lista che l'utente in quel momento non sta guardando.
-        if (scorciatoiaSuSchede(e)) {
-            const selezionate = (window.selectedRecords && window.selectedRecords.length) || 0;
-            const k = e.key.toLowerCase();
-            const ctrl = e.ctrlKey || e.metaKey;
-
-            // Ctrl+Maiusc+X va valutato PRIMA di Ctrl+X: `key` con Maiusc è comunque 'x',
-            // e senza questo ordine "cambia tipo" verrebbe intercettato da "taglia".
-            // Fase 2.1: Ctrl+Maiusc+E = CSV, accanto a Ctrl+E = ZIP. Va prima del blocco
-            // Ctrl+E per lo stesso motivo di Ctrl+Maiusc+X: `key` con Maiusc resta 'e'.
-            if (ctrl && e.shiftKey && k === 'e' && selezionate > 0) {
-                e.preventDefault();
-                window.esportaSelezionatiCsv('csv');
-                return;
-            }
-            if (ctrl && e.shiftKey && typeof window.apriAzioneMassa === 'function' && (k === 'm' || k === 't' || k === 'l')) {
-                e.preventDefault();
-                window.apriAzioneMassa(k === 'm' ? 'cartella' : (k === 't' ? 'tipo' : 'tag'));
-                return;
-            }
-            if (ctrl && !e.shiftKey && k === 'a') {
-                e.preventDefault();
-                window.selezionaTuttiIRisultati();
-                return;
-            }
-            if (ctrl && !e.shiftKey && k === 'd') {
-                e.preventDefault();
-                window.azzeraSelezione();
-                return;
-            }
-            if (ctrl && !e.shiftKey && k === 'h' && typeof window.apriAzioneMassa === 'function') {
-                e.preventDefault();
-                window.apriAzioneMassa('sostituisci');
-                return;
-            }
-            // Copia/taglia/esporta/elimina hanno senso solo con una selezione: senza,
-            // devono restare inerti e lasciare il tasto al comportamento nativo.
-            if (selezionate > 0) {
-                if (ctrl && !e.shiftKey && k === 'c') { e.preventDefault(); window.copiaSelezionati(); return; }
-                if (ctrl && !e.shiftKey && k === 'x') { e.preventDefault(); window.tagliaSelezionati(); return; }
-                if (ctrl && !e.shiftKey && k === 'e') { e.preventDefault(); window.esportaSelezionati(); return; }
-                if (e.key === 'Delete' && !ctrl) { e.preventDefault(); window.eliminaSelezionati(); return; }
-                if (e.key === 'F2' && selezionate === 1) { e.preventDefault(); window.editItem(window.selectedRecords[0]); return; }
-            }
-            if (ctrl && !e.shiftKey && k === 'v') {
-                const appunti = ((window.copiedRecordIds && window.copiedRecordIds.length) || 0)
-                    + ((window.cutRecordIds && window.cutRecordIds.length) || 0);
-                if (appunti > 0) {
-                    e.preventDefault();
-                    // `undefined` = cartella corrente, la stessa destinazione del tasto
-                    // destro sullo sfondo (vedi voceMenuIncolla).
-                    window.incollaRecord(undefined);
-                    return;
-                }
-            }
-        }
-
-        // Esc -> Chiudi SOLO il modale in primo piano (non tutti in blocco) oppure
-        // pulisci la barra di ricerca. La chiusura passa per gli handler dedicati così
-        // da eseguire i cleanup (reset iframe PDF, callback di annullamento, ecc.).
-        if (e.key === 'Escape') {
-            const aperti = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden-tab)'));
-            if (aperti.length > 0) {
-                // Determina il modale in cima allo stack (z-index più alto)
-                let top = aperti[0];
-                let topZ = -1;
-                for (const m of aperti) {
-                    const z = parseInt(window.getComputedStyle(m).zIndex) || 0;
-                    if (z >= topZ) { topZ = z; top = m; }
-                }
-
-                chiudiModaleTop(top);
-                return;
-            }
-
-            const searchInput = document.getElementById('search-input') as HTMLInputElement;
-            if (searchInput && document.activeElement === searchInput) {
-                searchInput.value = '';
-                searchInput.blur();
-                if (typeof renderMain === 'function') renderMain();
-                if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();
-                return;
-            }
-
-            // Ultimo anello: Esc azzera la selezione. Va DOPO modali e ricerca — una
-            // selezione multipla costruita a fatica non deve sparire per un Esc dato a
-            // una finestra — ed è l'uscita che mancava a chi seleziona con Ctrl+A.
-            if ((window.selectedRecords && window.selectedRecords.length) > 0 && !inCampoDiTesto(document.activeElement)) {
-                window.azzeraSelezione();
-            }
-        }
-    });
-
-    window.trascrizioneNonSalvata = false;
-    document.getElementById('trascrizione-editor').addEventListener('input', () => {
-        window.trascrizioneNonSalvata = true;
-    });
-
-    if (window.apiBrowser && window.apiBrowser.onRequestClose) {
-        window.apiBrowser.onRequestClose(async () => {
-            // Chiusura: qualunque salvataggio differito deve finire su disco prima di uscire.
-            if (typeof window.flushSalvataggio === 'function') {
-                try { await window.flushSalvataggio(); } catch (e) { console.error("Errore nel flush di chiusura:", e); }
-            }
-            // Il tab «Scheda» della trascrizione: ciò che si può salvare va su disco; resta
-            // sporco solo un modulo che non passa la validazione, e allora si chiede.
-            if (window.moduloInTrascrizione()) await window.salvaSchedaTrascrizioneOra();
-            // ...e quanto ha in sospeso la finestra staccata, che salva passando da qui.
-            if (window.svuotaFinestraStaccata) await window.svuotaFinestraStaccata();
-            const isEditingRecord = window.isFormDirty && (window.moduloInTrascrizione() || !document.getElementById('view-add')?.classList.contains('hidden-tab'));
-            
-            if (window.trascrizioneNonSalvata) {
-                window.isClosingApp = true;
-                const modal = document.getElementById('unsaved-modal');
-                if (modal) modal.classList.remove('hidden-tab');
-            } else if (isEditingRecord && window.mostraBottomConfirm) {
-                window.mostraBottomConfirm(window.t('unsaved_prompt') || "Ci sono modifiche non salvate alla scheda. Sei sicuro di voler uscire perdendo le modifiche?", () => {
-                    window.apiBrowser.confirmClose();
-                });
-            } else {
-                window.apiBrowser.confirmClose();
-            }
-        });
-    }
-    
-
-    // Drag to resize Trascrizione panels
-    const resizer = document.getElementById('trascrizione-resizer');
-    const leftPanel = document.getElementById('trascrizione-editor-panel');
-    const container = document.getElementById('trascrizione-container');
-
-    // Chiusura automatica modali cliccando sullo sfondo (solo sull'overlay, non sul contenuto)
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal-overlay')) {
-            // Instrada alle funzioni chiudi* dedicate (cleanup) come il dispatcher Esc;
-            // gli overlay non chiudibili sono filtrati dentro chiudiModaleTop, un elenco solo.
-            chiudiModaleTop(e.target);
-        }
-    });
-
-    if (resizer && leftPanel && container) {
-        // La proporzione è una preferenza di comodo, per tab («Testo» / «Scheda»): sta in
-        // localStorage (attachmentsLogic.ts), non più nell'archivio da salvare a ogni trascinamento.
-        window.attivaSeparatore(resizer, {
-            attuale: () => parseFloat(leftPanel.style.width) || 50,
-            daPuntatore: (x) => {
-                const r = container.getBoundingClientRect();
-                return ((x - r.left) / r.width) * 100;
-            },
-            applica: (p) => {
-                leftPanel.style.transition = 'none';
-                leftPanel.style.width = `${p}%`;
-            },
-            fine: (p) => {
-                leftPanel.style.transition = '';
-                window.ricordaLarghezzaTrascrizione(p);
-            }
-        });
-    }
-    } // End of if (!window._eventsBound)
 }
 
-// Theme Selection Logic
-window.applicaTema = function(theme) {
-    let activeTheme = theme;
-    if (theme === 'system') {
-        activeTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    
-    const classi = window.CLASSI_TEMA; // temaIniziale.ts
-    document.documentElement.classList.remove(...Object.values(classi).filter(Boolean) as string[]);
-    if (classi[activeTheme]) document.documentElement.classList.add(classi[activeTheme]);
-};
-
-window.cambiaTemaSelezionato = async function(theme) {
-    await window.apiSettings.patch({ theme });
-    localStorage.setItem('theme', theme);
-    // Dissolvenza solo per il cambio scelto dall'utente (regola :root.cambio-tema in style.css).
-    document.documentElement.classList.add('cambio-tema');
-    clearTimeout(window._timerCambioTema);
-    window._timerCambioTema = setTimeout(() => document.documentElement.classList.remove('cambio-tema'), 300);
-    window.applicaTema(theme);
-};
-
-// Initialize Theme
-window.initTheme = async function() {
-    const settings = await window.apiSettings.get();
-    const savedTheme = settings.theme || 'system';
-    // localStorage è solo la copia letta da temaIniziale.js per il primo frame: va riallineata
-    // qui, o resta vuota quando cambia l'origine della pagina (passaggio a app://, O3) e il
-    // tema scelto arriva solo dopo un lampo di quello di sistema, a ogni avvio.
-    try { localStorage.setItem('theme', savedTheme); } catch (e) { /* solo il primo frame */ }
-
-    // Set the select element if it's already in the DOM (unlikely since it's in a modal, but safe)
-    const sel = document.getElementById('settings-theme');
-    if (sel) sel.value = savedTheme;
-    
-    window.applicaTema(savedTheme);
-    
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', async e => {
-        const s = await window.apiSettings.get();
-        const currentPref = s.theme || 'system';
-        if (currentPref === 'system') {
-            window.applicaTema('system');
-        }
-    });
-};
 
 // Dispatcher unico per gli inviti: riconosce sia i codici Hub (HUB1|...) sia quelli
 // Google Drive legacy. È il punto d'ingresso di deep-link (archiview://join/...) e incolla
@@ -906,776 +588,6 @@ if (window.apiBrowser && window.apiBrowser.onInviteUrl) {
     });
 }
 
-window.esportaManoscritto = async function(id) {
-    if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
-    // Il main legge il DB dal disco: flush del salvataggio differito.
-    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-    const res = await window.apiBrowser.exportZip([id]);
-    if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_completata_c", 'Esportazione completata.'), "success");
-    } else if (!res.canceled) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
-    }
-};
-
-window.esportaCartellaAttuale = async function() {
-    window.esportaSpecificaCartella(window.cartellaAttuale);
-};
-
-window.esportaSpecificaCartella = async function(folderName) {
-    if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
-    // Radice ('') = intero vault: esporta tutto, non solo le schede non archiviate.
-    const manoscrittiInCartella = folderName
-        ? appData.manoscritti.filter(m => m.cartella === folderName || (m.cartella || '').startsWith(folderName + '/'))
-        : appData.manoscritti.slice();
-    if (manoscrittiInCartella.length === 0) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_vuoto_nulla_da", "La cartella è vuota, nulla da esportare."), "warning");
-        return;
-    }
-    const ids = manoscrittiInCartella.map(m => m.id);
-    // Il main legge il DB dal disco: flush del salvataggio differito.
-    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-    const res = await window.apiBrowser.exportZip(ids);
-    if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", '{var0} schede esportate.').replace("{var0}", String(res.count)), "success");
-    } else if (!res.canceled) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
-    }
-};
-
-/**
- * Fase 2.1 — Esportazione CSV/TSV. Le etichette (CONFIG_CAMPI tradotto) e i nomi dei tipi
- * viaggiano col messaggio IPC: il main non ha accesso alla i18n né allo store del renderer.
- */
-window.etichetteColonneExport = function() {
-    const et = {
-        id: window.t('col_id', 'ID'),
-        segnatura: window.t('th_signature', 'Segnatura'),
-        tipoDocumento: window.t('col_type', 'Tipo documento'),
-        cartella: window.t('th_folder', 'Cartella'),
-        tags: window.t('th_tags', 'Tag'),
-        allegati: window.t('th_attachments', 'Allegati'),
-        lastModified: window.t('th_modified', 'Modificato'),
-        modificatoDa: window.t('col_modified_by', 'Modificato da'),
-        creatoDa: window.t('col_created_by', 'Creato da'),
-        // Fase 2.4: `trascrizione` è una chiave di servizio e NON diventa mai una colonna
-        // dell'export, ma è una destinazione dell'import — e le due liste di etichette
-        // devono restare una sola, o import ed export chiamerebbero le cose in modo diverso.
-        trascrizione: window.t('th_transcription', 'Trascrizione')
-    };
-    // Le colonne dei campi riusano l'etichetta della vista tabella: un export che chiama
-    // le cose in modo diverso dalla UI costringe l'utente a ricostruire la corrispondenza.
-    const conf = window.CONFIG_CAMPI || {};
-    const etichetta = window.etichettaCampo || ((k) => (conf[k] && conf[k].label) || k);
-    const campi = new Set(Object.keys(conf));
-    ((typeof appData !== 'undefined' && appData.tipiDocumento) || []).forEach(t => (t.campi || []).forEach(c => campi.add(c)));
-    campi.forEach(k => { et[k] = etichetta(k); });
-    return et;
-};
-
-window.nomiTipiExport = function() {
-    const nomi = {};
-    ((typeof appData !== 'undefined' && appData.tipiDocumento) || []).forEach(t => {
-        const chiave = 'model_' + t.id;
-        const tradotto = window.t(chiave);
-        nomi[t.id] = tradotto && tradotto !== chiave ? tradotto : (t.nome || t.id);
-    });
-    return nomi;
-};
-
-window.esportaCsv = async function(ids, formato = 'csv') {
-    if (!window.apiBrowser || !window.apiBrowser.exportCsv) return;
-    if (!ids || ids.length === 0) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_vuoto_nulla_da", "La cartella è vuota, nulla da esportare."), "warning");
-        return;
-    }
-    // Il main legge il DB dal disco: flush del salvataggio differito.
-    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-    const res = await window.apiBrowser.exportCsv(ids, {
-        formato,
-        titolo: window.t('dialog_export_csv', 'Esporta in CSV/TSV'),
-        etichette: window.etichetteColonneExport(),
-        nomiTipi: window.nomiTipiExport(),
-        // Fase 3.1: i campi `sì/no` sono booleani nel record, e il main non conosce la
-        // i18n — senza queste due parole scriverebbe `true` in una colonna di Excel.
-        testi: { si: window.t('value_yes', 'Sì'), no: window.t('value_no', 'No') }
-    });
-    if (res && res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", '{var0} schede esportate.').replace("{var0}", String(res.count)), "success");
-    } else if (res && !res.canceled) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + (res.error || ''), "error");
-    }
-};
-
-/** CSV di una cartella e delle sue sottocartelle (radice = intero vault, come lo ZIP). */
-window.esportaCartellaCsvSpecifica = async function(folderName, formato = 'csv') {
-    const inCartella = folderName
-        ? appData.manoscritti.filter(m => m.cartella === folderName || (m.cartella || '').startsWith(folderName + '/'))
-        : appData.manoscritti.slice();
-    await window.esportaCsv(inCartella.map(m => m.id), formato);
-};
-
-/** CSV della cartella corrente. */
-window.esportaCartellaCsv = async function(formato = 'csv') {
-    await window.esportaCartellaCsvSpecifica(window.cartellaAttuale, formato);
-};
-
-/** CSV della selezione corrente: a differenza dello ZIP la selezione non viene azzerata. */
-window.esportaSelezionatiCsv = async function(formato = 'csv') {
-    await window.esportaCsv((window.selectedRecords || []).slice(), formato);
-};
-
-// Un archivio grande si estrae per minuti senza segni di vita: un secondo clic avvierebbe un
-// secondo import parallelo e, se riusciti entrambi, ogni scheda entrerebbe due volte.
-let importZipInCorso = false;
-window.importaManoscritto = async function() {
-    if (!window.apiBrowser || !window.apiBrowser.importZip || importZipInCorso) return;
-    importZipInCorso = true;
-    // Il primo segnale arriva dopo la scelta del file: annullare il dialogo non mostra nulla.
-    const stacca = window.apiBrowser.onImportZipAvanzamento?.((p) => window.importZipAvanzamento(p));
-    try {
-        await importaZip();
-    } catch (e) {
-        window.importZipFallito({ codice: 'altro', dettaglio: e && e.message ? e.message : String(e) });
-    } finally {
-        if (stacca) stacca();
-        importZipInCorso = false;
-    }
-};
-
-async function importaZip() {
-    const res = await window.apiBrowser.importZip(window.t("dialog_import_zip", "Importa Archivio JSON"));
-    if (res.success && res.manoscritti) {
-        let addedCount = 0;
-        const existingIds = new Set(appData.manoscritti.map(m => m.id));
-        
-        res.manoscritti.forEach(m => {
-            if (existingIds.has(m.id)) {
-                m.id = window.Model.nuovoId();
-                m.titolo = m.titolo ? m.titolo + ' (Copia)' : '';
-            }
-            // Fase 3.0 — lo ZIP puo' venire da una versione vecchia dell'app: la scheda va
-            // portata alla forma corrente prima di entrare nell'archivio, o resterebbe
-            // l'unica non migrata (la migrazione gira all'apertura, non all'import).
-            window.Model.normalizzaScheda(m);
-            // Essenziale: se l'utente aveva cancellato l'ID, lo stiamo importando esplicitamente, quindi va rimosso dai tombstone!
-            window.Store.togliTombstone([m.id]);
-            appData.manoscritti.push(m);
-            
-            // Assicuriamoci che la cartella esista
-            if (m.cartella && !appData.cartelle.includes(m.cartella)) {
-                appData.cartelle.push(m.cartella);
-            }
-            
-            addedCount++;
-        });
-
-        if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-
-        // Salvataggio scatena l'update chokidar ma avendo già appData aggiornato in memoria,
-        // sincronizzaEUnisciDati non avrà problemi o sovrascritture.
-        await window.Store.commit();
-        if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
-        if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-        window.importZipRiuscito({
-            schede: addedCount,
-            cartelle: new Set(res.manoscritti.map(m => m.cartella).filter(Boolean)).size,
-            copiati: res.copiati || 0,
-            saltati: res.saltati || 0,
-            primaScheda: res.manoscritti.length ? res.manoscritti[0].id : null
-        });
-    } else if (!res.canceled) {
-        window.importZipFallito({ codice: res.codice, dettaglio: res.dettaglio || res.error });
-    }
-}
-
-// --- LOGICA SELEZIONE MULTIPLA E COPIA/INCOLLA ---
-
-window.lastSelectedId = null;
-window.selectedRecords = window.selectedRecords || [];
-window.copiedRecordIds = window.copiedRecordIds || [];
-window.cutRecordIds = window.cutRecordIds || [];
-
-window.selectItem = function(id, event) {
-    if (!event) event = window.event || {};
-    
-    // Lista di id renderizzati corrente
-    const currentRenderedIds = Array.from(document.querySelectorAll('.card-scheda')).map(el => el.id.replace('card-', ''));
-    // Se stiamo operando dalla sidebar e l'elemento non è in currentRenderedIds, non possiamo fare shift select
-    const isShift = event.shiftKey;
-    const isCtrl = event.ctrlKey || event.metaKey;
-
-    if (isShift && window.lastSelectedId && currentRenderedIds.includes(window.lastSelectedId) && currentRenderedIds.includes(id)) {
-        const startIdx = currentRenderedIds.indexOf(window.lastSelectedId);
-        const endIdx = currentRenderedIds.indexOf(id);
-        const minIdx = Math.min(startIdx, endIdx);
-        const maxIdx = Math.max(startIdx, endIdx);
-        
-        if (!isCtrl) {
-            window.selectedRecords = [];
-        }
-        
-        for (let i = minIdx; i <= maxIdx; i++) {
-            const sid = currentRenderedIds[i];
-            if (!window.selectedRecords.includes(sid)) {
-                window.selectedRecords.push(sid);
-            }
-        }
-    } else if (isCtrl) {
-        const idx = window.selectedRecords.indexOf(id);
-        if (idx === -1) {
-            window.selectedRecords.push(id);
-        } else {
-            window.selectedRecords.splice(idx, 1);
-        }
-        window.lastSelectedId = id;
-    } else {
-        if (window.selectedRecords.length === 1 && window.selectedRecords[0] === id) {
-            window.selectedRecords = [];
-            window.lastSelectedId = null;
-        } else {
-            window.selectedRecords = [id];
-            window.lastSelectedId = id;
-        }
-    }
-
-    if (typeof renderSidebar === 'function') renderSidebar();
-    if (typeof renderMain === 'function') renderMain();
-    window.aggiornaStatoSelezione();
-};
-
-/**
- * Aggiorna il solo indicatore testuale della selezione, accanto al contatore risultati.
- * Sostituisce la vecchia barra di azioni multiple, che compariva sopra la lista a ogni
- * selezione spingendo in basso le schede: le azioni ora vivono tutte nel menu del tasto
- * destro (e nel "⋯" della card, che è lo stesso menu) — vedi vociMenuRecord.
- */
-window.aggiornaStatoSelezione = function() {
-    const ind = document.getElementById('selection-indicator');
-    if (!ind) return;
-    const n = (window.selectedRecords && window.selectedRecords.length) || 0;
-    ind.classList.toggle('hidden', n === 0);
-    if (n === 0) {
-        ind.innerText = '';
-        return;
-    }
-    ind.innerText = n === 1
-        ? window.t('selection_count_one', '1 scheda selezionata')
-        : window.t('selection_count_many', '{var0} schede selezionate').replace('{var0}', String(n));
-};
-
-window.azzeraSelezione = function() {
-    window.selectedRecords = [];
-    window.lastSelectedId = null;
-    window.aggiornaStatoSelezione();
-    if (typeof renderMain === 'function') renderMain();
-    if (typeof renderSidebar === 'function') renderSidebar();
-};
-
-window.esportaSelezionati = async function() {
-    if (window.selectedRecords.length === 0) return;
-    if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
-    // Il main legge il DB dal disco: flush del salvataggio differito.
-    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-    const res = await window.apiBrowser.exportZip(window.selectedRecords);
-    if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_esportazione_di_var_recor", '{var0} schede esportate.').replace("{var0}", String(res.count)), "success");
-        window.selectedRecords = [];
-        window.aggiornaStatoSelezione();
-        if (typeof renderMain === 'function') renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
-    } else if (!res.canceled) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_esportazione", "Errore in esportazione: ") + res.error, "error");
-    }
-};
-
-window.eliminaSelezionati = async function() {
-    if (window.selectedRecords.length === 0) return;
-    const count = window.selectedRecords.length;
-    
-    const procediEliminazione = async () => {
-        // Salviamo i record da eliminare
-        const recordDaEliminare = appData.manoscritti.filter(m => window.selectedRecords.includes(m.id));
-        const recordSalvati = JSON.parse(JSON.stringify(recordDaEliminare));
-
-        // Fase 4.1 — copia nel cestino prima della rimozione (vedi logic/cestinoLogic.ts).
-        if (typeof window.cestinaRecord === 'function') {
-            await window.cestinaRecord(recordSalvati, window.origineCestino(count));
-        }
-
-        const idsEliminati = recordSalvati.map(r => String(r.id));
-        await window.Store.eliminaSchede(idsEliminati);
-        window.selectedRecords = [];
-        window.aggiornaStatoSelezione();
-
-        const ripristinaFn = async () => {
-            window.Store.togliTombstone(idsEliminati);
-            appData.manoscritti.push(...JSON.parse(JSON.stringify(recordSalvati)));
-            await window.Store.commit();
-        };
-
-        // Fase 4.5 — ripetizione: rielimina gli id ancora presenti, ricopiandoli nel cestino.
-        const rifaiFn = async () => {
-            const vivi = appData.manoscritti.filter(m => idsEliminati.includes(String(m.id)));
-            if (vivi.length === 0) return;
-            if (typeof window.cestinaRecord === 'function') {
-                await window.cestinaRecord(vivi, window.origineCestino(vivi.length));
-            }
-            await window.Store.eliminaSchede(idsEliminati);
-        };
-
-        if (window.gestoreAnnullamento) {
-            window.gestoreAnnullamento.registraAzione(`Eliminazione di ${count} record`, ripristinaFn, rifaiFn);
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_eliminati", "{var0} record eliminati.").replace("{var0}", String(count)), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
-        }
-    };
-
-    if (typeof window.mostraBottomConfirm === 'function') {
-        const msg = count > 1 
-            ? window.t("confirm_delete_multiple", "Sei sicuro di voler eliminare {var0} record selezionati? L\'operazione è irreversibile.").replace("{var0}", String(count))
-            : window.t("confirm_delete_single", "Sei sicuro di voler eliminare questo record? L\'operazione è irreversibile.");
-        window.mostraBottomConfirm(msg, procediEliminazione);
-    } else {
-        await procediEliminazione();
-    }
-};
-
-window.copiaSelezionati = function() {
-    if (window.selectedRecords.length === 0) return;
-    window.copiedRecordIds = [...window.selectedRecords];
-    window.cutRecordIds = [];
-    const count = window.copiedRecordIds.length;
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_copiati_negli_", "{var0} record copiati negli appunti di ArchiView. Tasto destro per incollarli in un altro archivio.").replace("{var0}", String(count)), "info");
-    window.selectedRecords = [];
-    window.aggiornaStatoSelezione();
-    setTimeout(() => {
-        if (typeof renderMain === 'function') renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
-    }, 50);
-};
-
-window.tagliaSelezionati = function() {
-    if (window.selectedRecords.length === 0) return;
-    window.cutRecordIds = [...window.selectedRecords];
-    window.copiedRecordIds = [];
-    const count = window.cutRecordIds.length;
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_tagliati_tasto", "{var0} record tagliati. Tasto destro per spostarli in un altro archivio.").replace("{var0}", String(count)), "info");
-    window.selectedRecords = [];
-    window.aggiornaStatoSelezione();
-    setTimeout(() => {
-        if (typeof renderMain === 'function') renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
-    }, 50);
-};
-
-// --- CONTEXT MENU ---
-// Le voci sono dichiarative; disegno, tastiera e posizionamento stanno in
-// components/contextMenu.ts (Fase 4.3). Gli stessi array alimentano il tasto destro
-// e i pulsanti overflow "⋯" di card e cartelle, così le due strade non divergono.
-
-// Il tasto destro (o il "⋯") su un record fuori selezione lavora su quel solo record.
-window.assicuraSelezioneRecord = function(id) {
-    if (!window.selectedRecords.includes(id)) {
-        window.selectedRecords = [id];
-        window.lastSelectedId = id;
-        if (typeof renderMain === 'function') renderMain();
-        if (typeof renderSidebar === 'function') renderSidebar();
-        window.aggiornaStatoSelezione();
-    }
-};
-
-window.vociMenuRecord = function(id) {
-    const selCount = window.selectedRecords.length;
-    const suffisso = selCount > 1 ? ` (${selCount})` : '';
-    // ETICHETTE A UNA O DUE PAROLE. Il menu è largo al massimo 280px e le voci con una
-    // scorciatoia ne lasciano ~150 al testo, che `truncate` taglia senza avvisare: con le
-    // dizioni per esteso metà colonna finiva in "Sposta in un arch…", "Cambia tipo di do…",
-    // "Aggiungi o rimuov…" — cioè tre voci che si distinguevano solo dall'icona.
-    // Allargare il menu non è la soluzione: coprirebbe la scheda su cui si sta agendo.
-    // La dizione estesa non si perde, va nel `title` della voce.
-    const voci = [];
-    if (selCount === 1) {
-        voci.push({ label: window.t('menu_edit_short', 'Modifica'), title: window.t('menu_edit_record', 'Rinomina / Modifica'), icon: 'edit-3', shortcut: 'F2', onSelect: () => window.editItem(id) });
-        voci.push({ label: window.t('btn_transcribe', 'Trascrivi'), icon: 'pen-line', onSelect: () => window.apriTrascrizione(id) });
-        // Fase 2.3 — solo se la scheda ha allegati: offrire l'OCR su una scheda senza
-        // immagini aprirebbe un modale capace solo di dire "non c'è niente da riconoscere",
-        // cioè un comando che non fa nulla. Stesso criterio della palette nella 1.4.
-        if (typeof window.apriOcrModal === 'function') {
-            // Lettura NON distruttiva: `normalizzaAllegati` scriverebbe `m.allegati = []`
-            // sul record, e costruire un menu non è un motivo per modificare il database
-            // (è la stessa trappola evitata in `recordPassaFiltri`, Fase 1.3).
-            const rec = appData.manoscritti.find(x => String(x.id) === String(id));
-            const conAllegati = !!(rec && ((Array.isArray(rec.allegati) && rec.allegati.length) || rec.allegato));
-            if (conAllegati) {
-                voci.push({ label: window.t('menu_ocr_short', 'Riconosci testo'), title: window.t('ocr_menu_entry', 'Riconosci testo (OCR)…'), icon: 'scan-text', onSelect: () => window.apriOcrModal(id, 0) });
-            }
-        }
-
-        // Le tre viste secondarie della scheda in un sottomenu: sono la stessa domanda —
-        // "guarda questa scheda da un'altra angolazione" — e nessuna è un'azione che
-        // modifica qualcosa, quindi nessuna merita una riga del primo livello.
-        // Fase 3.5 / 4.3 — le voci ci sono SEMPRE, anche senza collegamenti o cronologia:
-        // sono anche il modo di scoprire che non ce n'è, cosa che una voce condizionale
-        // non distinguerebbe da "non ho guardato". Il modale lo dice a parole.
-        const vociVedi = [];
-        if (typeof window.apriCollegamenti === 'function') {
-            vociVedi.push({ label: window.t('menu_links', 'Collegate'), title: window.t('link_panel_title', 'Schede collegate'), icon: 'link', onSelect: () => window.apriCollegamenti(id) });
-        }
-        // P9 — sempre presente come "Collegate": senza testimoni il messaggio dice cosa manca.
-        if (typeof window.apriCollazione === 'function') {
-            vociVedi.push({ label: window.t('coll_title', 'Collazione'), title: window.t('coll_title', 'Collazione'), icon: 'git-compare', onSelect: () => window.apriCollazione(id) });
-        }
-        if (typeof window.apriGrafo === 'function') {
-            vociVedi.push({ label: window.t('menu_graph', 'Grafo'), title: window.t('graph_title', 'Grafo dei collegamenti'), icon: 'git-fork', onSelect: () => window.apriGrafo() });
-        }
-        if (typeof window.apriStoriaRecord === 'function') {
-            vociVedi.push({ label: window.t('menu_record_history', 'Cronologia'), title: window.t('rec_history_title', 'Cronologia della scheda'), icon: 'history', onSelect: () => window.apriStoriaRecord(id) });
-        }
-        if (vociVedi.length > 0) {
-            voci.push({ separator: true });
-            voci.push({ label: window.t('menu_view_group', 'Vedi'), title: window.t('menu_view_group_title', 'Collegamenti, grafo, cronologia'), icon: 'eye', submenu: vociVedi });
-        }
-        voci.push({ separator: true });
-    }
-    voci.push({ label: window.t('menu_copy', 'Copia') + suffisso, icon: 'copy', shortcut: 'Ctrl+C', onSelect: () => window.copiaSelezionati() });
-    voci.push({ label: window.t('menu_cut', 'Taglia') + suffisso, icon: 'scissors', shortcut: 'Ctrl+X', onSelect: () => window.tagliaSelezionati() });
-    // Quattro modi di portare fuori le stesse schede: una famiglia sola, una riga sola.
-    // Le scorciatoie restano visibili dentro il sottomenu, accanto al comando che eseguono.
-    const vociEsporta: any[] = [
-        { label: window.t('menu_export_zip', 'Esporta ZIP') + suffisso, title: window.t('bulk_export_zip_full', 'Esporta la selezione in ZIP'), icon: 'upload', shortcut: 'Ctrl+E', onSelect: () => window.esportaSelezionati() },
-        { label: window.t('menu_export_csv', 'Esporta CSV') + suffisso, title: window.t('bulk_export_csv', 'Esporta selezione in CSV'), icon: 'table', shortcut: 'Ctrl+Maiusc+E', onSelect: () => window.esportaSelezionatiCsv('csv') }
-    ];
-    // Fasi 2.5/2.6. Un'unica voce per cinque formati: la scelta fra RTF e BibTeX è una
-    // domanda del modale, non del menu — cinque voci qui renderebbero il menu illeggibile.
-    if (typeof window.apriEsportaTesto === 'function') {
-        vociEsporta.push({ label: window.t('menu_export_text', 'Esporta testo') + suffisso, title: window.t('tx_cmd_selection', 'Esporta la trascrizione o la citazione'), icon: 'file-output', onSelect: () => window.apriEsportaTesto('selezione') });
-    }
-    // Fase 2.2. `apriStampa('selezione')` e non la stampa immediata: il layout è una
-    // scelta, e stampare venti schede nel formato sbagliato costa carta vera.
-    if (typeof window.apriStampa === 'function') {
-        vociEsporta.push({ label: window.t('menu_print_short', 'Stampa') + suffisso, title: window.t('print_cmd_selection', 'Stampa la selezione'), icon: 'printer', shortcut: 'Ctrl+P', onSelect: () => window.apriStampa('selezione') });
-    }
-    voci.push({ label: window.t('menu_export_group', 'Esporta') + suffisso, title: window.t('menu_export_group_title', 'ZIP, CSV, testo, stampa'), icon: 'share', submenu: vociEsporta });
-
-    // Fase 1.5 — le azioni in massa vivono QUI e non in una barra: la barra della
-    // selezione era stata rimossa nella 1.1 perché spingeva in basso le schede a ogni
-    // click. In un gruppo a sé, perché agiscono su TUTTA la selezione mentre le voci
-    // sopra ne agiscono anche su una sola.
-    if (typeof window.apriAzioneMassa === 'function') {
-        const vociMassa: any[] = [
-            { label: window.t('menu_bulk_move', 'Sposta'), title: window.t('bulk_move_title', 'Sposta in una cartella'), icon: 'folder-input', shortcut: 'Ctrl+Maiusc+M', onSelect: () => window.apriAzioneMassa('cartella') },
-            { label: window.t('menu_bulk_type', 'Cambia tipo'), title: window.t('bulk_type_title', 'Cambia tipo di documento'), icon: 'shapes', shortcut: 'Ctrl+Maiusc+T', onSelect: () => window.apriAzioneMassa('tipo') },
-            { label: window.t('menu_bulk_tag', 'Modifica tag'), title: window.t('bulk_tag_title', 'Aggiungi o rimuovi tag'), icon: 'tags', shortcut: 'Ctrl+Maiusc+L', onSelect: () => window.apriAzioneMassa('tag') },
-            { label: window.t('menu_bulk_replace', 'Sostituisci'), title: window.t('bulk_replace_title', 'Trova e sostituisci'), icon: 'replace', shortcut: 'Ctrl+H', onSelect: () => window.apriAzioneMassa('sostituisci') }
-        ];
-        if (typeof window.ocrSelezionati === 'function') {
-            vociMassa.push({ label: window.t('menu_bulk_ocr', 'OCR'), title: window.t('ocr_bulk_title', 'OCR delle schede selezionate'), icon: 'scan-text', onSelect: () => window.ocrSelezionati() });
-        }
-        // Il conteggio passa dall'intestazione all'etichetta del GENITORE: è lì che si
-        // decide se aprire il gruppo, ed è lì che deve stare il numero di schede che si
-        // stanno per cambiare — l'informazione che manca proprio nel momento del rischio.
-        voci.push({ separator: true });
-        voci.push({
-            label: selCount > 1
-                ? window.t('menu_bulk_on', 'Su {var0} schede').replace('{var0}', String(selCount))
-                : window.t('menu_bulk_on_one', 'Su questa scheda'),
-            title: window.t('menu_bulk_group_title', 'Modifica in massa'),
-            icon: 'list-checks',
-            submenu: vociMassa
-        });
-    }
-
-    voci.push({ separator: true });
-    voci.push({ label: window.t('tooltip_delete', 'Elimina') + suffisso, icon: 'trash-2', danger: true, shortcut: 'Canc', onSelect: () => window.eliminaSelezionati() });
-    // "Deseleziona" viveva solo nella barra rimossa: senza, con una selezione multipla non
-    // ci sarebbe più modo esplicito di azzerarla (il click su una card la sostituisce, ma
-    // non è la stessa cosa quando le schede selezionate sono su più pagine).
-    if (selCount > 0) {
-        voci.push({ separator: true });
-        voci.push(window.voceSelezionaTutti());
-        voci.push({
-            label: window.t('btn_clear_selection', 'Deseleziona') + suffisso,
-            icon: 'x',
-            shortcut: 'Ctrl+D',
-            onSelect: () => window.azzeraSelezione()
-        });
-    }
-    return voci;
-};
-
-window.showRecordContextMenu = function(e, id) {
-    window.assicuraSelezioneRecord(id);
-    window.apriMenuContestuale(e, window.vociMenuRecord(id));
-};
-
-window.showFolderContextMenu = function(e) {
-    // Mostra solo se clicchiamo nello sfondo del view-list
-    if (e.target.closest('.card-scheda')) return;
-
-    // Fase 1.5: "Seleziona tutti i risultati" ha bisogno di un punto di partenza che NON
-    // sia una scheda — cliccare su una la seleziona da sola — e lo sfondo della lista è
-    // l'unico posto in cui non c'è nulla di selezionato su cui il comando possa confondersi.
-    const voci: any[] = [window.voceSelezionaTutti()];
-    const voceIncolla = window.voceMenuIncolla(null);
-    if (voceIncolla) voci.push({ separator: true }, voceIncolla);
-    window.apriMenuContestuale(e, voci);
-};
-
-/**
- * Voce condivisa fra il menu di una scheda e quello dello sfondo: la selezione totale è
- * il presupposto di ogni azione in massa e deve raggiungersi da entrambi, senza che le
- * due strade possano divergere sull'etichetta o sul conteggio.
- */
-window.voceSelezionaTutti = function() {
-    const totale = typeof window.getManoscrittiFiltrati === 'function' ? window.getManoscrittiFiltrati().length : 0;
-    return {
-        label: window.t('menu_select_all_short', 'Seleziona tutto') + (totale > 0 ? ` (${totale})` : ''),
-        title: window.t('menu_select_all', 'Seleziona tutti i risultati'),
-        icon: 'check-square',
-        shortcut: 'Ctrl+A',
-        disabled: totale === 0,
-        onSelect: () => window.selezionaTuttiIRisultati()
-    };
-};
-
-// Voce "Incolla" condivisa fra sfondo lista e cartelle: null se non c'è nulla negli appunti.
-window.voceMenuIncolla = function(folderPath) {
-    const countRecord = (window.copiedRecordIds && window.copiedRecordIds.length) || (window.cutRecordIds && window.cutRecordIds.length) || 0;
-    const hasFolderAction = !!(window.cutFolderPath || window.copiedFolderPath);
-    if (countRecord === 0 && !hasFolderAction) return null;
-    const isMoving = !!((window.cutRecordIds && window.cutRecordIds.length > 0) || window.cutFolderPath);
-    // null = sfondo della lista ⇒ "incolla nella cartella corrente". '' e 'ROOT' sono
-    // entrambi la radice virtuale, ed è una destinazione esplicita come le altre.
-    const destinazione = folderPath === null || folderPath === undefined
-        ? undefined
-        : (folderPath === 'ROOT' ? '' : folderPath);
-    const label = countRecord > 0
-        ? (destinazione !== undefined
-            ? window.t('menu_paste_here', 'Incolla qui') + ` (${countRecord})`
-            : window.t('menu_paste', 'Incolla') + ` (${countRecord})`)
-        : window.t('menu_paste_folder_here', 'Incolla cartella qui');
-    return {
-        label,
-        icon: 'clipboard-paste',
-        accent: !isMoving,
-        accentWarn: isMoving,
-        onSelect: () => window.incollaRecord(destinazione)
-    };
-};
-
-window.vociMenuCartella = function(folderPath) {
-    // La radice virtuale ('') non è una cartella vera: si può creare dentro e incollare,
-    // ma non rinominare/copiare/eliminare. 'ROOT' = click a vuoto nell'area della sidebar,
-    // che è la stessa cosa della radice: senza una riga dedicata nell'albero, quel menu è
-    // l'unico posto da cui nasce la prima cartella di un archivio vuoto.
-    const isRadice = folderPath === '' || folderPath === 'ROOT';
-    const percorsoCreazione = isRadice ? '' : folderPath;
-    const voci = [];
-
-    voci.push({ label: window.t('menu_new_record_short', 'Nuova scheda'), title: window.t('menu_new_record_here', 'Crea nuova scheda'), icon: 'file-plus', onSelect: () => window.creaSchedaContext(percorsoCreazione) });
-    voci.push({ label: window.t('menu_new_folder_short', 'Nuova cartella'), title: window.t('menu_new_folder_here', 'Crea nuova cartella'), icon: 'folder-plus', onSelect: () => window.mostraAggiungiCartellaContext(percorsoCreazione) });
-
-    if (!isRadice) {
-        voci.push({ separator: true });
-        voci.push({ label: window.t('menu_rename_short', 'Rinomina'), title: window.t('menu_rename_folder', 'Rinomina cartella'), icon: 'edit-2', onSelect: () => window.rinominaCartellaDaSidebar(folderPath) });
-        // Alternativa al drag nell'albero (WCAG 2.5.7): spostare una cartella non richiede trascinare.
-        voci.push({ label: window.t('menu_move_short', 'Sposta in…'), title: window.t('menu_move_folder', "Sposta la cartella in un'altra"), icon: 'folder-input', onSelect: () => window.apriSpostaCartella(folderPath) });
-
-        const vociEsporta: any[] = [
-            { label: window.t('menu_export_zip', 'Esporta ZIP'), title: window.t('tooltip_export_folder', 'Esporta cartella'), icon: 'upload', onSelect: () => window.esportaSpecificaCartella(folderPath) },
-            { label: window.t('menu_export_csv', 'Esporta CSV'), title: window.t('menu_export_folder_csv', 'Esporta cartella in CSV'), icon: 'table', onSelect: () => window.esportaCartellaCsvSpecifica(folderPath, 'csv') }
-        ];
-        // Come la stampa qui sotto: si NAVIGA prima nella cartella, perché l'ambito del
-        // modale si calcola sulla cartella corrente e un export che dice "Archivio
-        // corrente" mentre ne esporta un altro sarebbe una trappola silenziosa (2.2).
-        if (typeof window.apriEsportaTesto === 'function') {
-            vociEsporta.push({ label: window.t('menu_export_text', 'Esporta testo'), title: window.t('menu_export_text_folder', 'Esporta il testo della cartella'), icon: 'file-output', onSelect: () => {
-                window.vaiACartella(folderPath);
-                window.apriEsportaTesto('cartella');
-            } });
-        }
-        // Fase 2.2 — la stampa di una cartella parte SEMPRE navigandoci dentro: gli ambiti
-        // del modale si calcolano sulla cartella corrente, e una stampa che dice "Archivio
-        // corrente" mentre ne stampa un altro sarebbe una trappola silenziosa.
-        if (typeof window.apriStampa === 'function') {
-            vociEsporta.push({ label: window.t('menu_print_short', 'Stampa'), title: window.t('menu_print_folder', 'Stampa cartella'), icon: 'printer', onSelect: () => {
-                window.vaiACartella(folderPath);
-                window.apriStampa('cartella');
-            } });
-        }
-        voci.push({ label: window.t('menu_export_group', 'Esporta'), title: window.t('menu_export_group_title', 'ZIP, CSV, testo, stampa'), icon: 'share', submenu: vociEsporta });
-
-        voci.push({ label: window.t('menu_explorer_short', 'Esplora risorse'), title: window.t('menu_open_in_explorer', 'Apri in Esplora Risorse'), icon: 'folder-open', onSelect: () => window.apriCartellaInEsploraRisorse(folderPath) });
-        voci.push({ separator: true });
-        voci.push({ label: window.t('menu_copy', 'Copia'), title: window.t('menu_copy_folder', 'Copia cartella'), icon: 'copy', onSelect: () => window.copiaCartella(folderPath) });
-        voci.push({ label: window.t('menu_cut', 'Taglia'), title: window.t('menu_cut_folder', 'Taglia cartella'), icon: 'scissors', onSelect: () => window.tagliaCartella(folderPath) });
-        voci.push({ label: window.t('menu_delete_folder', 'Elimina cartella'), icon: 'trash-2', danger: true, onSelect: () => window.eliminaCartellaDaSidebar(folderPath) });
-    }
-
-    const voceIncolla = window.voceMenuIncolla(folderPath);
-    if (voceIncolla) {
-        if (voci.length > 0) voci.push({ separator: true });
-        voci.push(voceIncolla);
-    }
-    return voci;
-};
-
-window.showSidebarFolderContextMenu = function(e, folderPath) {
-    e.preventDefault();
-    e.stopPropagation();
-    const voci = window.vociMenuCartella(folderPath);
-    if (voci.length === 0) {
-        // ROOT senza appunti: niente da mostrare, ma il menu del sistema resta soppresso
-        return;
-    }
-    window.apriMenuContestuale(e, voci);
-};
-
-window.copiaCartella = function(folderPath) {
-    window.copiedFolderPath = folderPath;
-    window.cutFolderPath = null;
-    window.cutRecordIds = [];
-    window.copiedRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_cartella_copiata_tasto_de", "Cartella copiata. Tasto destro su un'altra cartella per incollarla."), "info");
-};
-
-window.apriCartellaInEsploraRisorse = async function(folderPath) {
-    if (window.apiBrowser && window.apiBrowser.apriCartellaWorkspace) {
-        const success = await window.apiBrowser.apriCartellaWorkspace();
-        if (!success) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_impossibile_aprire_la_car", "Impossibile aprire la cartella in Esplora Risorse."), "error");
-        }
-    }
-};
-
-// Nota: nessuna chiamata a selectItem qui — passava un percorso di cartella come id di
-// record, sporcando window.selectedRecords. L'evidenziazione della cartella nell'albero
-// dipende già da window.cartellaAttuale.
-window.creaSchedaContext = function(folderPath) {
-    window.cartellaAttuale = folderPath;
-    if (typeof switchTab === 'function') switchTab('add');
-};
-
-window.mostraAggiungiCartellaContext = function(folderPath) {
-    window.cartellaAttuale = folderPath;
-    if (typeof aggiungiCartella === 'function') aggiungiCartella();
-};
-
-window.tagliaCartella = function(folderPath) {
-    if (!folderPath) return; // la radice virtuale non si taglia
-    window.cutFolderPath = folderPath;
-    window.copiedFolderPath = null;
-    window.cutRecordIds = [];
-    window.copiedRecordIds = [];
-    if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_cartella_tagliata_tasto_d", "Cartella tagliata. Tasto destro per spostarla."), "info");
-};
-window.incollaRecord = async function(targetFolderOverride) {
-    // ?? e non ||: '' è la radice, una destinazione valida, non un valore "assente".
-    const targetFolder = targetFolderOverride ?? window.cartellaAttuale ?? '';
-
-    // Se stiamo spostando un intero archivio (Taglia Archivio)
-    if (window.cutFolderPath) {
-        if (typeof spostaCartella === 'function') {
-            // spostaCartella parla il dialetto 'ROOT' per la radice
-            await spostaCartella(window.cutFolderPath, targetFolder === '' ? 'ROOT' : targetFolder);
-            window.cutFolderPath = null;
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_spostato_con_suc", 'Archivio spostato.'), "success");
-        }
-        return;
-    }
-
-    // Se stiamo copiando un intero archivio (Copia Archivio)
-    if (window.copiedFolderPath) {
-        // Estraiamo gli ID dei record della cartella copiata
-        const prefix = window.copiedFolderPath + '/';
-        const manoscrittiDaCopiare = appData.manoscritti.filter(m => m.cartella === window.copiedFolderPath || (m.cartella && m.cartella.startsWith(prefix)));
-        
-        if (manoscrittiDaCopiare.length === 0) {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_l_archivio_copiato_vuoto", "La cartella copiata è vuota."), "warning");
-            window.copiedFolderPath = null;
-            return;
-        }
-
-        const idsToCopy = manoscrittiDaCopiare.map(m => m.id);
-        
-        // Determiniamo la cartella destinazione (sotto-cartella del target con il nome dell'archivio copiato)
-        const nomeArchivioCopiato = window.copiedFolderPath.split('/').pop();
-        const baseTarget = (targetFolder === 'ROOT' || targetFolder === '') ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
-
-        if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
-        // Il main legge il DB dal disco: flush del salvataggio differito.
-        if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-        const res = await window.apiBrowser.duplicateRecords(idsToCopy, baseTarget);
-
-        if (res.success) {
-            // Assicuriamoci che la nuova cartella esista nel db
-            if (!appData.cartelle.includes(baseTarget)) {
-                appData.cartelle.push(baseTarget);
-            }
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_duplicato_con_su", 'Archivio duplicato ({var0} schede).').replace("{var0}", String(res.count)), "success");
-            window.copiedFolderPath = null;
-            if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-            await window.ricaricaDatiDaDisco();
-            if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-        } else {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_duplicazione_ar", "Errore in duplicazione archivio: ") + res.error, "error");
-        }
-        return;
-    }
-
-    // Se stiamo incollando record tagliati (Spostamento singolo/multiplo)
-    if (window.cutRecordIds && window.cutRecordIds.length > 0) {
-        let movedCount = 0;
-        // Fase 4.5 — si annota da DOVE veniva ogni scheda, non solo quante ne sono state
-        // spostate: uno spostamento multiplo può pescare da cartelle diverse, e riportarle
-        // tutte in una sola sarebbe un secondo spostamento sbagliato spacciato per undo.
-        const provenienza = [];
-        appData.manoscritti.forEach(m => {
-            if (window.cutRecordIds.includes(m.id)) {
-                provenienza.push({ id: String(m.id), cartella: m.cartella });
-                m.cartella = targetFolder;
-                movedCount++;
-            }
-        });
-        if (movedCount > 0) {
-            const spostaIn = async (destinazioni) => {
-                for (const [id, cartella] of destinazioni) {
-                    const m = appData.manoscritti.find(x => String(x.id) === String(id));
-                    if (m) m.cartella = cartella;
-                }
-                await window.Store.commit();
-            };
-            if (window.gestoreAnnullamento) {
-                window.gestoreAnnullamento.registraAzione(
-                    window.t('undo_move_records', 'Spostamento di {var0} schede').replace('{var0}', String(movedCount)),
-                    () => spostaIn(provenienza.map(p => [p.id, p.cartella])),
-                    () => spostaIn(provenienza.map(p => [p.id, targetFolder]))
-                );
-            }
-            await window.Store.commit();
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_spostati_con_s", '{var0} schede spostate.').replace("{var0}", String(movedCount)), "success");
-            window.cutRecordIds = []; // Reset dopo lo spostamento
-        }
-        return;
-    }
-
-    // Se stiamo incollando record copiati (Duplicazione singolo/multiplo)
-    if (!window.copiedRecordIds || window.copiedRecordIds.length === 0) return;
-    if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
-    
-    // Il main legge il DB dal disco: flush del salvataggio differito.
-    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-    const res = await window.apiBrowser.duplicateRecords(window.copiedRecordIds, targetFolder);
-    
-    if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", '{var0} schede duplicate.').replace("{var0}", String(res.count)), "success");
-        if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        await window.ricaricaDatiDaDisco();
-        if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-    } else {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_incolla", "Errore in incolla: ") + res.error, "error");
-    }
-};
 
 function mostraErroreAccessoNegato(account: string) {
     const overlay = document.createElement('div');

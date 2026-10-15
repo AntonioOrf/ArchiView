@@ -96,20 +96,6 @@ function _xRiga(etichetta, controllo) {
     return wrap;
 }
 
-function _xSelect(id, opzioni, valore) {
-    const sel = document.createElement('select');
-    sel.id = id;
-    sel.className = 'form-input';
-    for (const o of opzioni) {
-        const opt = document.createElement('option');
-        opt.value = String(o.value);
-        opt.textContent = o.label;   // textContent: i nomi delle cartelle sono dati utente
-        if (String(o.value) === String(valore)) opt.selected = true;
-        sel.appendChild(opt);
-    }
-    return sel;
-}
-
 function _xBloccoFormati(scelto) {
     const box = document.createElement('div');
     box.className = 'flex flex-col gap-3';
@@ -161,7 +147,7 @@ function _xRiempi() {
 
     const ambiti = _xAmbiti();
     if (!ambiti.some(a => a.id === window.__txAmbito)) window.__txAmbito = ambiti[0].id;
-    const selAmbito = _xSelect('tx-scope',
+    const selAmbito = creaSelect('tx-scope',
         ambiti.map(a => ({ value: a.id, label: `${a.label} (${a.ids.length})` })),
         window.__txAmbito);
     selAmbito.addEventListener('change', () => { window.__txAmbito = selAmbito.value; _xAggiornaConteggio(); });

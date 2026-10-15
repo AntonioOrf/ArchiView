@@ -9,9 +9,11 @@
 // Il worker NON decide quali archivi leggere: riceve percorsi già risolti dal main, che li
 // prende dalle impostazioni e mai dal renderer.
 
-const { parentPort, workerData } = require('worker_threads');
-const { IndiceMemoria } = require('./indiceMemoria');
+import { parentPort as portaGrezza, workerData } from 'worker_threads';
+import { IndiceMemoria } from './indiceMemoria';
 
+if (!portaGrezza) throw new Error('worker.ts va avviato come worker_thread');
+const parentPort = portaGrezza;
 const indice = new IndiceMemoria(workerData || {});
 const inCorso = new Map<number, AbortController>();
 const OPERAZIONI = new Set(['sincronizza', 'cerca', 'scheda', 'invalida']);

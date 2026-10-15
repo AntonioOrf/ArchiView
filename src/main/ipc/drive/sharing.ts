@@ -1,14 +1,14 @@
-const path = require('path');
-const fs = require('fs');
-const { avviaServerLoopback } = require('../loopbackServer');
-const crypto = require('crypto');
-const { shell } = require('electron');
-const { state, initWorkspace, getActiveVaultFlags, saveAllSettings } = require('../../workspaceManager');
-const { driveState, authenticateDrive } = require('./auth');
+import * as path from 'path';
+import * as fs from 'fs';
+import { avviaServerLoopback } from '../loopbackServer';
+import * as crypto from 'crypto';
+import { shell } from 'electron';
+import { state, initWorkspace, getActiveVaultFlags, saveAllSettings } from '../../workspaceManager';
+import { driveState, authenticateDrive } from './auth';
 const { getOrCreateFolder } = require('./fileOps');
-const { pullFromDrive } = require('./vaultOps');
-const { pickerGetSecretOk } = require('./pickerSecurity');
-const { safeChildDir, nomeCartellaSicuro } = require('../pathSafety');
+import { pullFromDrive } from './vaultOps';
+import { pickerGetSecretOk } from './pickerSecurity';
+import { safeChildDir, nomeCartellaSicuro } from '../pathSafety';
 
 // Un nuovo membro parte senza base del merge: quella dentro un DB scritto da versioni vecchie
 // è di chi l'ha caricato, e farebbe passare per modifiche proprie le differenze dei colleghi.
@@ -427,10 +427,4 @@ async function openExternalPicker(): Promise<any> {
   });
 }
 
-module.exports = {
-  generateInviteCode, decodeInviteCode,
-  joinByInviteCode, joinByFolderId,
-  shareVault, listPermissions, removePermission,
-  openExternalPicker
-};
-export {};
+export { generateInviteCode, decodeInviteCode, joinByInviteCode, joinByFolderId, shareVault, listPermissions, removePermission, openExternalPicker };

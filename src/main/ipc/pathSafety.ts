@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs');
+import * as path from 'path';
+import * as fs from 'fs';
 
 // Sanitizza un nome di allegato proveniente da fonti NON fidate (DB di vault condivisi/Hub,
 // listing OneDrive/Drive di altri collaboratori). Impedisce path traversal e path assoluti:
@@ -78,5 +78,4 @@ function dentroCartellaReale(fileReale: string, dir: string): boolean {
   return !rel.startsWith('..') && !path.isAbsolute(rel);
 }
 
-module.exports = { safeAttachmentPath, safeAttachmentPathOrNull, safeChildDir, nomeCartellaSicuro, dentroCartellaReale };
-export {};
+export { safeAttachmentPath, safeAttachmentPathOrNull, safeChildDir, nomeCartellaSicuro, dentroCartellaReale };

@@ -200,25 +200,12 @@ window.applicaInMassa = async function(descrizione, mutatore, messaggio) {
     await _bSalva();
 
     const ripristina = async () => {
-        for (const vecchio of primaDi) {
-            const i = appData.manoscritti.findIndex(m => String(m.id) === String(vecchio.id));
-            // Se nel frattempo la scheda è stata eliminata (o è arrivata una sync che
-            // l'ha rimossa) non la si resuscita: l'undo annulla una modifica, non una
-            // cancellazione altrui.
-            if (i !== -1) appData.manoscritti[i] = JSON.parse(JSON.stringify(vecchio));
-        }
+        ripristinaSchede(primaDi);
         await _bSalva();
     };
 
     const testo = (messaggio || window.t('msg_bulk_done', '{var0} schede modificate.')).replace('{var0}', String(toccati));
-    if (window.gestoreAnnullamento) {
-        window.gestoreAnnullamento.registraAzione(descrizione, ripristina);
-        if (typeof mostraMessaggio === 'function') {
-            mostraMessaggio(testo, 'success', () => window.gestoreAnnullamento.annullaUltimaAzione());
-        }
-    } else if (typeof mostraMessaggio === 'function') {
-        mostraMessaggio(testo, 'success');
-    }
+    registraAnnullabile(descrizione, testo, ripristina);
     return toccati;
 };
 

@@ -16,15 +16,15 @@
 // altri metodi. Il token muore con il server. Il traffico è in chiaro sulla LAN: sono foto
 // di documenti già destinate al proprio Drive, e il token non apre nient'altro.
 
-const http = require('http');
-const os = require('os');
-const fs = require('fs');
-const fsp = require('fs/promises');
-const path = require('path');
-const crypto = require('crypto');
-const { pipeline } = require('stream/promises');
+import * as http from 'http';
+import * as os from 'os';
+import * as fs from 'fs';
+import * as fsp from 'fs/promises';
+import * as path from 'path';
+import * as crypto from 'crypto';
+import { pipeline } from 'stream/promises';
 const ScannerLotto = require('../../shared/scannerLotto');
-const { riceviLotti, MAX_BYTE_MANIFEST } = require('./arrivoLotti');
+import { riceviLotti, MAX_BYTE_MANIFEST } from './arrivoLotti';
 
 export interface OpzioniWifi {
   cartellaArrivo: string;
@@ -163,7 +163,7 @@ async function avviaServerWifi(o: OpzioniWifi): Promise<ServerWifi> {
   await new Promise<void>((ok, ko) => { server.once('error', ko); server.listen(0, '0.0.0.0', () => ok()); });
 
   return {
-    porta: server.address().port,
+    porta: (server.address() as import('net').AddressInfo).port,
     token,
     async ferma() {
       server.closeAllConnections?.();
@@ -173,4 +173,4 @@ async function avviaServerWifi(o: OpzioniWifi): Promise<ServerWifi> {
   };
 }
 
-module.exports = { avviaServerWifi, indirizziLan, urlAbbinamento };
+export { avviaServerWifi, indirizziLan, urlAbbinamento };

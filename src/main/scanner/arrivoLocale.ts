@@ -10,10 +10,10 @@
 // Nessun percorso arriva dal renderer: solo un id di lotto e nomi di pagina, controllati con
 // il validatore del contratto, e un id di scheda ripulito come fa `salva-allegato`.
 
-const fs = require('fs');
-const fsp = require('fs/promises');
-const path = require('path');
-const { hashFile } = require('../chunkingLogic');
+import * as fs from 'fs';
+import * as fsp from 'fs/promises';
+import * as path from 'path';
+import { hashFile } from '../chunkingLogic';
 const ScannerLotto = require('../../shared/scannerLotto');
 
 export type CartelleScanner = { arrivo: string; assegnati: string };
@@ -134,4 +134,4 @@ async function togliDaArrivo(c: CartelleScanner, id: unknown): Promise<void> {
   await fsp.rm(dir, { recursive: true, force: true });
 }
 
-module.exports = { elencaArrivo, percorsoPagina, copiaInAllegati, unisciInPdf, togliDaArrivo };
+export { elencaArrivo, percorsoPagina, copiaInAllegati, unisciInPdf, togliDaArrivo };

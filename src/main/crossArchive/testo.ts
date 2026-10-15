@@ -95,5 +95,4 @@ function analizzaQuery(q: any): QueryAnalizzata {
   return esito;
 }
 
-module.exports = { NORMALIZZAZIONE_VERSIONE, normalizza, posizioneOriginale, testoIndicizzabile, testoPulito, analizzaQuery };
-export {};
+export { NORMALIZZAZIONE_VERSIONE, normalizza, posizioneOriginale, testoIndicizzabile, testoPulito, analizzaQuery };

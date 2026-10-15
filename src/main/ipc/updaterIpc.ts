@@ -1,9 +1,9 @@
-const { ipcMain, app } = require('electron');
+import { ipcMain, app } from 'electron';
 const { autoUpdater } = require('electron-updater');
-const fs = require('fs');
-const path = require('path');
-const { state } = require('../workspaceManager');
-const { classifyUpdateError } = require('./updateErrorClassifier');
+import * as fs from 'fs';
+import * as path from 'path';
+import { state } from '../workspaceManager';
+import { classifyUpdateError } from './updateErrorClassifier';
 
 // Logger minimale su file per diagnosticare fallimenti in produzione (electron-updater
 // non stampa nulla di suo se non gli si assegna un logger). Rotazione semplice a 1MB:
@@ -37,9 +37,9 @@ function setupUpdaterIpc() {
   autoUpdater.autoDownload = false; // L'utente deciderà quando scaricare
   autoUpdater.autoInstallOnAppQuit = true; // Se scaricato ma non installato, installa alla chiusura successiva
 
-  let lastCheckResult = null; // Ultimo UpdateCheckResult riuscito (per download-update senza ri-check)
+  let lastCheckResult: any = null; // Ultimo UpdateCheckResult riuscito (per download-update senza ri-check)
   let lastCheckAt = 0;
-  let checkInFlight = null; // Promise in corso, per deduplicare click ripetuti
+  let checkInFlight: Promise<any> | null = null; // Promise in corso, per deduplicare click ripetuti
   let downloadInFlight = null;
   const CHECK_CACHE_MS = 10 * 60 * 1000; // 10 minuti: evita rate-limit sull'API GitHub
 
@@ -141,5 +141,4 @@ function setupUpdaterIpc() {
   });
 }
 
-module.exports = { setupUpdaterIpc };
-export {};
+export { setupUpdaterIpc };

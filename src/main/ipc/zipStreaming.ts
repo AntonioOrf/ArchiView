@@ -1,8 +1,8 @@
 // Estrazione ZIP in streaming, isolata dall'IPC per poter essere testata senza Electron.
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { safeAttachmentPathOrNull } = require('./pathSafety');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
+import { safeAttachmentPathOrNull } from './pathSafety';
 
 // Limite di sicurezza per il JSON in memoria: oltre questa soglia l'import viene rifiutato
 // invece di far esplodere l'heap su macchine deboli.
@@ -68,7 +68,7 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
           if (entry.uncompressedSize > MAX_JSON_BYTES) return fail(new Error('schedatura.json troppo grande per essere importato'));
           return zipfile.openReadStream(entry, (e, stream) => {
             if (e) return fail(e);
-            const chunks = [];
+            const chunks: Buffer[] = [];
             let size = 0;
             stream.on('data', (c) => {
               size += c.length;
@@ -131,5 +131,4 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
 }
 
 
-module.exports = { extractZipStreaming, MAX_JSON_BYTES, MARGINE_DISCO_BYTES };
-export {};
+export { extractZipStreaming, MAX_JSON_BYTES, MARGINE_DISCO_BYTES };

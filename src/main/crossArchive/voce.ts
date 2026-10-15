@@ -5,7 +5,7 @@
 // servirà, di scriverla su disco così com'è (vedi `INDICE_FORMATO`).
 
 const Model = require('../../shared/model');
-const { normalizza, testoPulito, testoIndicizzabile } = require('./testo');
+import { normalizza, testoPulito, testoIndicizzabile } from './testo';
 
 /**
  * Versione della forma di `Voce`. Va incrementata a OGNI cambiamento di struttura o di ciò
@@ -146,8 +146,4 @@ function costruisciVoce(m: any, ctx: ContestoArchivio, limiteTesto: number): Voc
   return voce;
 }
 
-module.exports = {
-  INDICE_FORMATO, CAMPI_BASE_AUTHORITY, PESO, ID_TRASCRIZIONE, ID_OCR, ID_TAGS, ID_REGIONI,
-  contestoArchivio, costruisciVoce
-};
-export {};
+export { INDICE_FORMATO, CAMPI_BASE_AUTHORITY, PESO, ID_TRASCRIZIONE, ID_OCR, ID_TAGS, ID_REGIONI, contestoArchivio, costruisciVoce };

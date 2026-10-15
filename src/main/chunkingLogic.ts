@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-const { scriviAtomico } = require('./scritturaAtomica');
+import { scriviAtomico } from './scritturaAtomica';
 
 const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 

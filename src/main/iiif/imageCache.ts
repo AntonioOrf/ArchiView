@@ -9,12 +9,12 @@
 // la stessa a 2000 px sono due voci distinte, e chiedere la miniatura non può far sparire
 // dalla cache il facsimile grande già scaricato.
 
-const { app } = require('electron');
-const path = require('path');
-const fs = require('fs');
+import { app } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 const fsp = require('fs').promises;
-const crypto = require('crypto');
-const { leggiCorpoLimitato, fetchGuardata } = require('./reteSicura');
+import * as crypto from 'crypto';
+import { leggiCorpoLimitato, fetchGuardata, urlAmmesso } from './reteSicura';
 
 /** Oltre questa soglia si sfoltisce, dal file usato meno di recente. */
 const TETTO_BYTE = 2 * 1024 * 1024 * 1024;
@@ -49,20 +49,6 @@ function percorsi(url: string) {
   return { dati: base, meta: base + '.mime', parziale: base + '.part' };
 }
 
-/**
- * Solo http/https, e solo host veri. Senza questo controllo `iiif-img://img/<base64>`
- * diventerebbe un lettore di `file://` pilotabile da un manifest scaricato da chissà dove:
- * il manifest è un dato di terzi, non una fonte di fiducia.
- */
-function urlAmmesso(url: string): boolean {
-  try {
-    const u = new URL(url);
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-    return !!u.hostname;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Il riferimento che il renderer infila nel path, codificato base64url.
@@ -241,9 +227,4 @@ async function sfoltisci(tetto = TETTO_BYTE) {
   }
 }
 
-module.exports = {
-  TETTO_BYTE, MAX_IMMAGINE,
-  cartella, chiave, urlAmmesso, decodificaRiferimento,
-  leggiDallaCache, immagine, sfoltisci
-};
-export {};
+export { TETTO_BYTE, MAX_IMMAGINE, cartella, chiave, urlAmmesso, decodificaRiferimento, leggiDallaCache, immagine, sfoltisci };

@@ -8,17 +8,17 @@
 // Dipende solo dal contratto `IndiceArchivi`: che sotto ci sia un worker, il ripiego in
 // memoria o un domani un indice su disco, qui non cambia nulla.
 
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const { ipcMain } = require('electron');
-const { state, getAllSettings } = require('../workspaceManager');
-const { readVaultConfig, assicuraArchivioId } = require('../vaultConfig');
-const { leggiPerfConfig } = require('../perfConfig');
-const { IndiceWorker } = require('../crossArchive/client');
-const { safeAttachmentPathOrNull, safeAttachmentPath } = require('./pathSafety');
+import * as path from 'path';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
+import { ipcMain } from 'electron';
+import { state, getAllSettings } from '../workspaceManager';
+import { readVaultConfig, assicuraArchivioId } from '../vaultConfig';
+import { leggiPerfConfig } from '../perfConfig';
+import { IndiceWorker } from '../crossArchive/client';
+import { safeAttachmentPathOrNull, safeAttachmentPath } from './pathSafety';
 // sha256 in streaming: un PDF da centinaia di MB non deve passare tutto in memoria.
-const { hashFile } = require('../chunkingLogic');
+import { hashFile } from '../chunkingLogic';
 
 import type { IndiceArchivi } from '../crossArchive/indiceMemoria';
 
@@ -40,7 +40,7 @@ function ottieniIndice(): IndiceArchivi {
     const lowPerf = !!leggiPerfConfig().lowPerf;
     indice = new IndiceWorker({
       indice: { maxArchivi: lowPerf ? 4 : 16, limiteTesto: lowPerf ? 64 * 1024 : 256 * 1024 }
-    });
+    }) as IndiceArchivi;
   }
   return indice;
 }
@@ -65,7 +65,7 @@ function archiviRecenti(): ArchivioConsultabile[] {
   const attivo = state.workspacePath ? chiavePercorso(state.workspacePath) : null;
   const visti = new Set<string>();
   const percorsiVisti = new Set<string>();
-  if (state.workspacePath) {
+  if (state.workspacePath && attivo) {
     const idAttivo = idPerPercorso.get(attivo) || assicuraArchivioId(state.workspacePath, settings);
     if (idAttivo) { idPerPercorso.set(attivo, idAttivo); visti.add(idAttivo); }
   }
@@ -77,7 +77,7 @@ function archiviRecenti(): ArchivioConsultabile[] {
     if (chiave === attivo || percorsiVisti.has(chiave)) continue;
     percorsiVisti.add(chiave);
 
-    let id = idPerPercorso.get(chiave);
+    let id: string = idPerPercorso.get(chiave) || '';
     if (!id) {
       const generato = assicuraArchivioId(p, settings);
       if (generato) { id = generato; idPerPercorso.set(chiave, id); }
@@ -303,5 +303,4 @@ function idValido(v: any): boolean {
   return typeof v === 'string' && v.length > 0 && v.length <= 128;
 }
 
-module.exports = { setupCrossArchiveIpc, archiviRecenti };
-export {};
+export { setupCrossArchiveIpc, archiviRecenti };

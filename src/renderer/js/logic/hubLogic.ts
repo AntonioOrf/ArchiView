@@ -193,18 +193,7 @@ window.controllaModificheHub = async function(manual = false) {
         window.incomingChanges = (remote.manoscritti || []).filter(m => (m.lastModified || 0) > loadedAt);
         window.incomingAuthor = window.t("hub_generic_author", "Collaboratore");
 
-        const structural = [];
-        const localCartelle = appData.cartelle || [];
-        const newFolders = (remote.cartelle || []).filter(c => !localCartelle.includes(c));
-        if (newFolders.length > 0) {
-            structural.push({ icon: 'folder-plus', label: `+ ${newFolders.length} Cartell${newFolders.length > 1 ? 'e' : 'a'}` });
-        }
-        const localTipiMap = new Map((appData.tipiDocumento || []).map(t => [t.id, JSON.stringify(t)]));
-        const totTipi = (remote.tipiDocumento || []).filter(rt => localTipiMap.get(rt.id) !== JSON.stringify(rt)).length;
-        if (totTipi > 0) {
-            structural.push({ icon: 'file-type-2', label: `${totTipi} Modell${totTipi > 1 ? 'i' : 'o'}` });
-        }
-        window.incomingStructuralChanges = structural;
+        window.incomingStructuralChanges = window.riepilogoInArrivo(appData, remote, window.incomingAuthor);
 
         window.impostaModificheInEntrata(true);
         if (typeof window.renderSourceControl === 'function') window.renderSourceControl();

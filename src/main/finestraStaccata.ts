@@ -7,7 +7,7 @@
 // Fase 5: trascinando la finestra staccata sopra la colonna della principale, questa mostra
 // «Rilascia per riagganciare»; rilasciandola lì la finestra si chiude e il contenuto torna al
 // suo posto. La zona la dichiara il renderer (in px CSS), qui si porta in coordinate schermo.
-const { BrowserWindow, ipcMain, screen, nativeTheme } = require('electron');
+import { BrowserWindow, ipcMain, screen, nativeTheme } from 'electron';
 
 const TIPI = new Set(['scheda', 'documento']);
 const ATTESA_MAX_MS = 30000;
@@ -222,5 +222,4 @@ function distruggiFinestraStaccata() {
   }
 }
 
-module.exports = { setupFinestraStaccata, distruggiFinestraStaccata, posizioneValida, cursoreSullaZona };
-export {};
+export { setupFinestraStaccata, distruggiFinestraStaccata, posizioneValida, cursoreSullaZona };

@@ -20,5 +20,4 @@ function classifyUpdateError(error: unknown): 'offline' | 'release-incomplete' |
   return 'generic';
 }
 
-module.exports = { classifyUpdateError };
-export {};
+export { classifyUpdateError };

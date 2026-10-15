@@ -63,5 +63,4 @@ async function leggiConTetto(res: Response, max: number): Promise<Buffer | null>
   return Buffer.concat(parti, totale);
 }
 
-module.exports = { urlChunkAmmesso, fetchChunkGuardata, leggiConTetto, HOST_CHUNK_AMMESSI };
-export {};
+export { urlChunkAmmesso, fetchChunkGuardata, leggiConTetto, HOST_CHUNK_AMMESSI };

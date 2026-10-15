@@ -12,11 +12,11 @@
 // riscritto: un archivio di una versione più nuova resta com'è, un archivio vecchio verrà
 // migrato da chi lo apre davvero.
 
-const path = require('path');
+import * as path from 'path';
 const fsp = require('fs').promises;
 const Model = require('../../shared/model');
-const { NORMALIZZAZIONE_VERSIONE, analizzaQuery, posizioneOriginale, normalizza } = require('./testo');
-const { INDICE_FORMATO, PESO, contestoArchivio, costruisciVoce } = require('./voce');
+import { NORMALIZZAZIONE_VERSIONE, analizzaQuery, posizioneOriginale, normalizza } from './testo';
+import { INDICE_FORMATO, PESO, contestoArchivio, costruisciVoce } from './voce';
 
 const FILE_DATABASE = 'database_manoscritti.json';
 
@@ -354,8 +354,9 @@ class IndiceMemoria implements IndiceArchivi {
     if (this.archivi.size <= this.maxArchivi) return;
     const attivi = new Set(this.attivi);
     const candidati = [...this.archivi.values()].filter(a => !attivi.has(a.id)).sort((x, y) => x.ultimoUso - y.ultimoUso);
-    while (this.archivi.size > this.maxArchivi && candidati.length) {
-      this.archivi.delete(candidati.shift().id);
+    for (const a of candidati) {
+      if (this.archivi.size <= this.maxArchivi) break;
+      this.archivi.delete(a.id);
     }
   }
 
@@ -442,7 +443,7 @@ class IndiceMemoria implements IndiceArchivi {
 
     risultati.sort((a, b) =>
       b.punteggio - a.punteggio ||
-      posizione.get(a.archivioId) - posizione.get(b.archivioId) ||
+      (posizione.get(a.archivioId) ?? 0) - (posizione.get(b.archivioId) ?? 0) ||
       confrontaSegnature(a.voce.segnatura, b.voce.segnatura) ||
       (a.voce.id < b.voce.id ? -1 : a.voce.id > b.voce.id ? 1 : 0));
     return { risultati, troncato };
@@ -451,10 +452,10 @@ class IndiceMemoria implements IndiceArchivi {
   /** Ogni termine deve stare in almeno un campo (AND, anche su campi diversi, come la griglia). */
   private provaCampi(voce: any, termini: string[]) {
     let punteggio = 0;
-    let primo = null;
+    let primo: { campo: any; termine: string } | null = null;
     let comune: Set<any> | null = null;
     for (const t of termini) {
-      let migliore = null;
+      let migliore: any = null;
       const contenenti = new Set<any>();
       for (const c of voce.campi) {
         if (c.norm.indexOf(t) === -1) continue;
@@ -469,6 +470,7 @@ class IndiceMemoria implements IndiceArchivi {
     // Tutti i termini nello stesso campo ("luca abete" dentro un solo nome) vale più degli
     // stessi termini sparsi fra note e trascrizione.
     if (termini.length > 1 && comune && comune.size) punteggio += PESO.campo;
+    if (!primo) return null;   // nessun termine: nessuna corrispondenza
     return { campo: primo.campo, termine: primo.termine, punteggio };
   }
 
@@ -517,5 +519,5 @@ class IndiceMemoria implements IndiceArchivi {
   }
 }
 
-module.exports = { IndiceMemoria, LIMITE_MASSIMO, MAX_RISULTATI };
+export { IndiceMemoria, LIMITE_MASSIMO, MAX_RISULTATI };
 export type { IndiceArchivi, ArchivioRif, StatoArchivio, Query, PaginaRisultati, Risultato, ContestoScheda };

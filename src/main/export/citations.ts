@@ -185,5 +185,4 @@ function generaCitazioni(records: Record_[], opzioni: Opzioni = {}) {
   };
 }
 
-module.exports = { generaCitazioni, anno, chiaveCitazione, escapeBibtex };
-export {};
+export { generaCitazioni, anno, chiaveCitazione, escapeBibtex };

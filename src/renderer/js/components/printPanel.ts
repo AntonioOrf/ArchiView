@@ -152,20 +152,6 @@ function _sInput(id, valore, placeholder) {
     return el;
 }
 
-function _sSelect(id, opzioni, valore) {
-    const sel = document.createElement('select');
-    sel.id = id;
-    sel.className = 'form-input';
-    for (const o of opzioni) {
-        const opt = document.createElement('option');
-        opt.value = String(o.value);
-        opt.textContent = o.label;   // textContent: i nomi delle cartelle sono dati utente
-        if (String(o.value) === String(valore)) opt.selected = true;
-        sel.appendChild(opt);
-    }
-    return sel;
-}
-
 /** I tre layout, con una riga che dice a cosa serve ciascuno: "regesto" e "inventario" non
  *  sono parole ovvie per chi arriva da un foglio di calcolo. */
 function _sBloccoLayout(scelto) {
@@ -222,7 +208,7 @@ function _sRiempi() {
     if (!ambiti.some(a => a.id === window.__printAmbito)) {
         window.__printAmbito = ambiti[0].id;
     }
-    const selAmbito = _sSelect('print-scope',
+    const selAmbito = creaSelect('print-scope',
         ambiti.map(a => ({ value: a.id, label: `${a.label} (${a.ids.length})` })),
         window.__printAmbito);
     selAmbito.addEventListener('change', () => { window.__printAmbito = selAmbito.value; _sAggiornaConteggio(); });
@@ -263,7 +249,7 @@ function _sRiempi() {
         aggiungi('print-opt-transcription', _sT('print_opt_transcription', 'Includi la trascrizione'), 'trascrizione');
         aggiungi('print-opt-empty', _sT('print_opt_empty', 'Mostra anche i campi vuoti'), 'campiVuoti');
     }
-    const orientamento = _sSelect('print-orientation', [
+    const orientamento = creaSelect('print-orientation', [
         { value: 'portrait', label: _sT('print_portrait', 'Verticale') },
         { value: 'landscape', label: _sT('print_landscape', 'Orizzontale') }
     ], o.orientamento);

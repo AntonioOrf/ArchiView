@@ -5,11 +5,11 @@
 // formato vive qui — è l'unico modo perché quelle decisioni restino testabili senza avviare
 // Electron.
 
-const { ipcMain, dialog, shell } = require('electron');
-const fs = require('fs');
-const { leggiDb, recordsRichiesti, nomeFileSicuro } = require('./recordSelection');
-const { generaEsportazioneTrascrizione } = require('../export/transcriptExport');
-const { generaCitazioni } = require('../export/citations');
+import { ipcMain, dialog, shell } from 'electron';
+import * as fs from 'fs';
+import { leggiDb, recordsRichiesti, nomeFileSicuro } from './recordSelection';
+import { generaEsportazioneTrascrizione } from '../export/transcriptExport';
+import { generaCitazioni } from '../export/citations';
 
 // Etichetta e filtro del dialog per estensione. Il nome del formato NON arriva tradotto dal
 // renderer perché è un'estensione di file, non una frase: "BibTeX" è "BibTeX" ovunque.
@@ -85,5 +85,4 @@ function setupTextExportIpc() {
   });
 }
 
-module.exports = { setupTextExportIpc };
-export {};
+export { setupTextExportIpc };

@@ -7,7 +7,7 @@
 //
 // Solo I/O: validazione, verifica e scrittura stanno in `arrivoLotti.ts`.
 
-const { driveState } = require('../ipc/drive/auth');
+import { driveState } from '../ipc/drive/auth';
 const { getOrCreateFolder, downloadFile, withDriveRetry, escapeDriveQuery } = require('../ipc/drive/fileOps');
 const ScannerLotto = require('../../shared/scannerLotto');
 
@@ -156,5 +156,4 @@ async function pubblicaConfig(nome: string, testo: string): Promise<void> {
   }
 }
 
-module.exports = { creaSorgenteDrive, pubblicaConfig, manifestSuDrive, CARTELLA_ARRIVO, CARTELLA_LOTTI };
-export {};
+export { creaSorgenteDrive, pubblicaConfig, manifestSuDrive, CARTELLA_ARRIVO, CARTELLA_LOTTI };

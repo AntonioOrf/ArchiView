@@ -12,5 +12,4 @@ function pickerGetSecretOk(reqUrl: string, sessionSecret: string): boolean {
   }
 }
 
-module.exports = { pickerGetSecretOk };
-export {};
+export { pickerGetSecretOk };

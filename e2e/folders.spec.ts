@@ -146,6 +146,21 @@ test.describe('Cartelle', () => {
       ['Fiscale', 'Fiscale/Notarile', 'Fiscale/Notarile/Imbreviature']);
   });
 
+  test('spostare la cartella aperta: la vista la segue nel percorso nuovo', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
+    await createFolder(page, 'Notarile');
+    await createFolder(page, 'Fiscale');
+    await createFolder(page, 'Notarile/Imbreviature');
+    expect(await page.evaluate(() => (window as any).cartellaAttuale)).toBe('Notarile/Imbreviature');
+
+    await page.evaluate(() => (window as any).apriSpostaCartella('Notarile'));
+    await page.locator('#sposta-cartella-dest').selectOption('Fiscale');
+    await page.locator('#sposta-cartella-conferma').click();
+
+    // Prima la vista restava su un percorso che non esisteva più: lista vuota senza motivo.
+    await expect.poll(() => page.evaluate(() => (window as any).cartellaAttuale)).toBe('Fiscale/Notarile/Imbreviature');
+  });
+
   test('WCAG 2.5.7 — Esc chiude il dialog di spostamento senza spostare nulla', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
     await createFolder(page, 'A');

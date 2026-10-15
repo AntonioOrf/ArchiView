@@ -43,7 +43,7 @@ function normalizzaRiga(testo) {
   let out = '';
   let spazioPendente = false;
   for (const ch of s) {
-    const c = ch.codePointAt(0);
+    const c = ch.codePointAt(0) ?? 0;
     // Controlli C0/C1, soft hyphen e i vari separatori invisibili: si buttano o
     // diventano uno spazio normale. Scritto a codepoint e non con una regex di
     // caratteri letterali perché in sorgente quei byte sono invisibili e la prima
@@ -70,7 +70,7 @@ function normalizzaRiga(testo) {
  */
 function unisciSillabazione(righe) {
   const lavoro = (righe || []).slice();
-  const out = [];
+  const out: any[] = [];
   for (let i = 0; i < lavoro.length; i++) {
     const corrente = lavoro[i];
     const m = /^(.*\p{L})[-‐‑]$/u.exec(corrente);
@@ -91,8 +91,8 @@ function unisciSillabazione(righe) {
  * originale, cioè illeggibile appena si cambia la larghezza della finestra.
  */
 function raggruppaParagrafi(righe) {
-  const paragrafi = [];
-  let corrente = [];
+  const paragrafi: string[][] = [];
+  let corrente: string[] = [];
   for (const r of righe || []) {
     if (!r) {
       if (corrente.length) { paragrafi.push(corrente); corrente = []; }
@@ -171,13 +171,13 @@ function confidenzePerParola(righe) {
  * resta nel testo salvato: chi riapre la scheda fra un anno deve sapere che quel testo non
  * l'ha battuto nessuno.
  */
-function testoOcrInHtml(righe, opzioni) {
+function testoOcrInHtml(righe, opzioni?) {
   const o = opzioni || {};
   const soglia = typeof o.soglia === 'number' ? o.soglia : SOGLIA_CONFIDENZA;
   const paragrafi = raggruppaParagrafi(righeNormalizzate(righe));
   const parole = confidenzePerParola(righe);
 
-  const parti = [];
+  const parti: string[] = [];
   if (o.intestazione) {
     parti.push('<p class="ocr-origine"><em>' + escapeHtml(o.intestazione) + '</em></p>');
   }
@@ -201,10 +201,10 @@ function testoOcrInHtml(righe, opzioni) {
  * ciascuna. Il numero va conservato: senza, una trascrizione di trenta carte non è più
  * riconducibile all'immagine da cui viene, ed è il primo dato che serve per il controllo.
  */
-function unisciPagine(pagine, etichettaPagina) {
+function unisciPagine(pagine, etichettaPagina?) {
   const et = etichettaPagina || function (n) { return 'p. ' + n; };
-  const piano = [];
-  const html = [];
+  const piano: string[] = [];
+  const html: string[] = [];
   for (const pg of pagine || []) {
     const t = testoOcrPiano(pg.righe);
     if (!t) continue;
@@ -216,16 +216,4 @@ function unisciPagine(pagine, etichettaPagina) {
   return { piano: piano.join('\n\n'), html: html.join('\n') };
 }
 
-module.exports = {
-  SOGLIA_CONFIDENZA,
-  normalizzaRiga,
-  unisciSillabazione,
-  raggruppaParagrafi,
-  righeNormalizzate,
-  testoOcrPiano,
-  testoOcrInHtml,
-  confidenzaMedia,
-  confidenzePerParola,
-  unisciPagine
-};
-export {};
+export { SOGLIA_CONFIDENZA, normalizzaRiga, unisciSillabazione, raggruppaParagrafi, righeNormalizzate, testoOcrPiano, testoOcrInHtml, confidenzaMedia, confidenzePerParola, unisciPagine };

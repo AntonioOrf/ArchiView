@@ -1,11 +1,11 @@
-const { ipcMain, dialog } = require('electron');
-const fs = require('fs');
-const path = require('path');
-const { state } = require('../workspaceManager');
-const { extractZipStreaming } = require('./zipStreaming');
-const { generaCsv } = require('./csvExport');
-const { leggiDb, recordsRichiesti, nomeFileSicuro } = require('./recordSelection');
-const { scriviAtomico } = require('../scritturaAtomica');
+import { ipcMain, dialog } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
+import { state } from '../workspaceManager';
+import { extractZipStreaming } from './zipStreaming';
+import { generaCsv } from './csvExport';
+import { leggiDb, recordsRichiesti, nomeFileSicuro } from './recordSelection';
+import { scriviAtomico } from '../scritturaAtomica';
 
 function setupExportImportIpc() {
   ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
@@ -25,7 +25,7 @@ function setupExportImportIpc() {
     
     // Trova gli allegati necessari
     const allegatiDir = state.attachmentsDirPath;
-    const requiredAttachments = new Set();
+    const requiredAttachments = new Set<string>();
     
     for (const m of toExport) {
         for (const a of Array.isArray(m.allegati) ? m.allegati : []) {
@@ -252,5 +252,4 @@ function setupExportImportIpc() {
   });
 }
 
-module.exports = { setupExportImportIpc };
-export {};
+export { setupExportImportIpc };

@@ -125,31 +125,10 @@ function _vpRigaValore(voc, valore, usi) {
 
 /** Come nel pannello dei tag: si rinomina nella riga, non in un modale sopra il modale. */
 function _vpRinominaInLoco(riga, voc, valore) {
-    const nome = riga.querySelector('.vocab-valore-nome');
-    if (!nome || riga.querySelector('input[type="text"]')) return;
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-input tag-manager-input';
-    input.value = valore;
-    riga.replaceChild(input, nome);
-    input.focus();
-    input.select();
-
-    let chiuso = false;
-    const fine = async (conferma) => {
-        if (chiuso) return;
-        chiuso = true;
-        const nuovo = input.value.trim();
-        if (conferma && nuovo && nuovo !== valore) await window.rinominaValoreVocabolario(voc.id, valore, nuovo);
+    rinominaInLoco(riga, '.vocab-valore-nome', valore, async (nuovo) => {
+        if (nuovo && nuovo !== valore) await window.rinominaValoreVocabolario(voc.id, valore, nuovo);
         window.disegnaVocabolari();
-    };
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); fine(true); }
-        // Esc annulla la sola rinomina: senza stopPropagation chiuderebbe anche il modale.
-        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fine(false); }
-    };
-    input.onblur = () => fine(true);
+    });
 }
 
 window.aggiungiValoreDalPannello = async function() {

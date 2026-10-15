@@ -1,6 +1,6 @@
 // Fase 2.3-bis — trascrizione per allegato.
 //
-// Le quattro funzioni sono pure e vivono in utils.ts, quindi si esercitano con la stessa
+// Le funzioni sono pure e vivono in trascrizioneLogic.ts (prima in utils.ts), quindi si esercitano con la stessa
 // tecnica di searchNormalize.test.js: si ESTRAE il sorgente reale e lo si valuta contro un
 // `window` finto, invece di riprodurne una copia che può divergere in silenzio.
 //
@@ -31,7 +31,7 @@ function estraiFunzione(sorgente, nome) {
 }
 
 function carica() {
-  const src = fs.readFileSync(UTILS, 'utf8');
+  const src = (fs.readFileSync(UTILS, 'utf8') + '\n' + fs.readFileSync(UTILS.replace('utils.ts', 'trascrizioneLogic.ts'), 'utf8'));
   const nomi = [
     'trascrizioneHaTesto',
     'leggiTrascrizioneAllegato',
@@ -271,6 +271,25 @@ const MARCA = (n) => `<p class="ocr-pagina"><strong>[p. ${n}]</strong></p>`;
   w.scriviTrascrizioneAllegato(m, 0, '<p>Nuovo</p>');
   assert.strictEqual(m.allegati[0].trascrizione, '<p>Nuovo</p>');
   ok('PDF: senza numero di pagina resta il testo dell\'allegato');
+}
+
+// --- Test 16: il marcatore dell'OCR multipagina e quello del renderer coincidono ----
+// PIANO-REFACTOR Fase 7: `[p. N]` lo scrive `unisciPagine` (main, ocrText.ts) e lo rilegge
+// `dividiTrascrizionePerPagine` (renderer). Le due metà stanno in file diversi: se una cambia
+// forma, un OCR di trenta pagine finisce tutto sulla prima. Qui si prova sul codice compilato.
+{
+  const { unisciPagine, testoOcrInHtml } = require('../out/main/ocr/ocrText');
+  const riga = (t) => [{ text: t, confidence: 90, words: [] }];
+  const { html } = unisciPagine([
+    { numero: 1, righe: riga('Carta prima') },
+    { numero: 3, righe: riga('Carta terza') }
+  ]);
+  const pagine = w.dividiTrascrizionePerPagine(html);
+  assert.strictEqual(pagine.length, 3, 'una voce per pagina fino all\'ultima con testo');
+  assert.strictEqual(pagine[0], testoOcrInHtml(riga('Carta prima')), 'la prima pagina è il suo HTML, intero');
+  assert.strictEqual(pagine[1], '', 'la pagina senza testo resta vuota');
+  assert.ok(pagine[2].includes('Carta terza') && !pagine[2].includes('[p.'), 'la terza ha il suo testo, senza marcatore');
+  ok('OCR multipagina: unisciPagine (main) e dividiTrascrizionePerPagine (renderer) si capiscono');
 }
 
 console.log(`\ntrascrizioneAllegati: ${test} test superati.`);

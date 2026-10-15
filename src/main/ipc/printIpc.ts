@@ -4,12 +4,12 @@
 // cio' che si stampa sia cio' che e' stato salvato), chiede il documento al template puro e
 // lo passa a `printHost`. Nessuna decisione di layout vive qui.
 
-const { ipcMain, dialog, shell } = require('electron');
-const fs = require('fs');
-const { state } = require('../workspaceManager');
-const { leggiDb, recordsRichiesti, nomeFileSicuro } = require('./recordSelection');
-const { generaHtmlStampa } = require('../print/printTemplate');
-const printHost = require('../print/printHost');
+import { ipcMain, dialog, shell } from 'electron';
+import * as fs from 'fs';
+import { state } from '../workspaceManager';
+import { leggiDb, recordsRichiesti, nomeFileSicuro } from './recordSelection';
+import { generaHtmlStampa } from '../print/printTemplate';
+import * as printHost from '../print/printHost';
 const Model = require('../../shared/model');
 
 /** Documento pronto per la finestra: template puro + miniature lette da disco. */
@@ -51,7 +51,7 @@ function setupPrintIpc() {
     const opt = opzioni || {};
     try {
       const doc = await componiDocumento(ids, opt);
-      if (doc.errore) return { success: false, error: doc.errore };
+      if (doc.errore || !doc.records) return { success: false, error: doc.errore };
 
       const base = doc.records.length === 1
         ? (doc.records[0].segnatura || 'Scheda')
@@ -83,7 +83,7 @@ function setupPrintIpc() {
     const opt = opzioni || {};
     try {
       const doc = await componiDocumento(ids, opt);
-      if (doc.errore) return { success: false, error: doc.errore };
+      if (doc.errore || !doc.records) return { success: false, error: doc.errore };
       const esito = await printHost.stampa(doc.html, opt);
       return Object.assign({ count: doc.records.length }, esito);
     } catch (errore) {
@@ -93,5 +93,4 @@ function setupPrintIpc() {
   });
 }
 
-module.exports = { setupPrintIpc };
-export {};
+export { setupPrintIpc };

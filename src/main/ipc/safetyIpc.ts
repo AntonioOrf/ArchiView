@@ -10,8 +10,8 @@
 // Il renderer non vede mai un percorso: chiede per nome (snapshot) o per id (schede), e
 // riceve dati. Ogni nome che arriva da qui passa da `percorsoSicuro` in `snapshots.ts`.
 
-const { ipcMain } = require('electron');
-const snapshots = require('../snapshots');
+import { ipcMain } from 'electron';
+import * as snapshots from '../snapshots';
 const trash = require('../trash');
 
 /** Uniforma l'esito: il renderer distingue "fatto" da "fallito" senza try/catch ovunque. */
@@ -50,5 +50,4 @@ function setupSafetyIpc() {
     esito(async () => ({ tappe: await snapshots.storiaRecord(id) })));
 }
 
-module.exports = { setupSafetyIpc };
-export {};
+export { setupSafetyIpc };

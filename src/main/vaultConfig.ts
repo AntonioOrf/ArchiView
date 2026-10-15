@@ -1,6 +1,6 @@
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
+import * as path from 'path';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 // Nome del file unificato (fonte di verità per il tipo/provider di un vault)
 const VAULT_FILE = '.archiview-vault.json';
@@ -163,10 +163,19 @@ function assicuraArchivioId(folderPath, globalSettings) {
   return writeVaultConfig(folderPath, cfg) ? cfg.archivioId : null;
 }
 
-module.exports = {
-  readVaultConfig,
-  writeVaultConfig,
-  syncUnifiedFromLegacy,
-  assicuraArchivioId
-};
-export {};
+// Le 7 chiavi "legacy" del vault derivate dal modello unificato. Serve completo perché
+// saveAllSettings ricostruisce .archiview-drive.json da questo set: un sottoinsieme
+// azzererebbe i campi mancanti.
+function legacyDaConfig(cfg) {
+  return {
+    isSharedVault: cfg.vaultType === 'shared',
+    isPersonalCloud: cfg.vaultType === 'backup',
+    sharedVaultId: (cfg.sync && cfg.sync.sharedVaultId) || null,
+    driveAutofetch: !!(cfg.sync && cfg.sync.driveAutofetch),
+    pusherKey: (cfg.realtime && cfg.realtime.pusherKey) || null,
+    pusherCluster: (cfg.realtime && cfg.realtime.pusherCluster) || null,
+    pusherWebhook: (cfg.realtime && cfg.realtime.pusherWebhook) || null
+  };
+}
+
+export { readVaultConfig, writeVaultConfig, syncUnifiedFromLegacy, assicuraArchivioId, legacyDaConfig };

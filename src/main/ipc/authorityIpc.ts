@@ -8,8 +8,8 @@
 // seguito (un 30x verso un altro host sarebbe un'uscita dalla whitelist), corpo a tetto.
 // Codici di errore, non frasi: l'italiano lo aggiunge il renderer.
 
-const { ipcMain } = require('electron');
-const { leggiCorpoLimitato, fetchGuardata } = require('../iiif/reteSicura');
+import { ipcMain } from 'electron';
+import { leggiCorpoLimitato, fetchGuardata } from '../iiif/reteSicura';
 
 const API = 'https://www.wikidata.org/w/api.php';
 const TIMEOUT_MS = 15000;
@@ -106,5 +106,4 @@ function setupAuthorityIpc() {
   ipcMain.handle('authority-dettagli', (event: any, id: any) => dettagli(id));
 }
 
-module.exports = { setupAuthorityIpc, urlApi, leggiCandidati, leggiVarianti, leggiViaf };
-export {};
+export { setupAuthorityIpc, urlApi, leggiCandidati, leggiVarianti, leggiViaf };

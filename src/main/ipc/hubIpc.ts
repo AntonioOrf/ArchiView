@@ -1,13 +1,11 @@
-const { ipcMain } = require('electron');
-const { syncHubAttachments } = require('./hubAttachments');
+import { ipcMain } from 'electron';
+import { syncHubAttachments } from './hubAttachments';
+// `require` e non `import`: il file è generato e le chiavi Hub possono mancare (restano undefined).
 const { HUB_URL, HUB_CREATE_SECRET, PUSHER_KEY, PUSHER_CLUSTER } = require('./cloudCredentials');
-const { loadHubConfig, loadHubConfigPubblica, saveHubConfig } = require('../workspaceManager');
-const {
-  chiamataHub, generaEncKey, codificaInvito, decodificaInvito, ID_HUB,
-  cifraDatabase, decifraDatabase, eDatabaseCifrato
-} = require('./hubClient');
-const { clonaWorkspace } = require('./workspaceIpc');
-const { nomeCartellaSicuro } = require('./pathSafety');
+import { loadHubConfig, loadHubConfigPubblica, saveHubConfig } from '../workspaceManager';
+import { chiamataHub, generaEncKey, codificaInvito, decodificaInvito, ID_HUB, cifraDatabase, decifraDatabase, eDatabaseCifrato } from './hubClient';
+import { clonaWorkspace } from './workspaceIpc';
+import { nomeCartellaSicuro } from './pathSafety';
 
 // Tutte le chiamate all'Hub passano da qui: repoKey ed encKey si
 // leggono dal token store del vault aperto e non tornano mai al renderer, che riceve
@@ -232,5 +230,4 @@ function setupHubIpc() {
   });
 }
 
-module.exports = { setupHubIpc };
-export {};
+export { setupHubIpc };
