@@ -21,7 +21,8 @@ const PROJECTS = {
   data: ['items', 'folders', 'types', 'tags-search', 'trascrizione', 'attachments', 'merge-conflict', 'sync-base', 'csv-export', 'csv-import', 'import-zip', 'iiif-import', 'ocr', 'print', 'text-export', 'schema-migration', 'typed-fields', 'campi-propri', 'data-storica', 'tags-entity', 'fase3', 'fase4', 'cross-archive', 'scanner'],
   cloud: ['cloud-status', 'cloud-offline'],
   // Prove di PIANO-PROVE-MANUALI.md rese automatiche; le parti legate alla macchina si saltano.
-  manuali: ['prove-manuali', 'hub-locale', 'wifi-emulatore']
+  // `pacchetto` gira solo con `npm run test:e2e:pacchetto` (app impacchettata), altrimenti si salta.
+  manuali: ['prove-manuali', 'hub-locale', 'wifi-emulatore', 'pacchetto']
 };
 
 // `a11y` è prefisso di `a11y-global`: i pattern devono ancorare il nome completo, altrimenti

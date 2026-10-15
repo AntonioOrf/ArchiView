@@ -40,7 +40,7 @@ export const seededWorkspaces = new WeakMap<Page, string>();
  * boot. `lastSeenVersion` = versione corrente: il changelog del primo avvio non compare.
  * Misurato: risparmia ~0,7s per test in seriale (welcome + reload), di più sotto contesa.
  */
-function seedWorkspaceOnDisk(userDataDir: string, name: string): string {
+export function seedWorkspaceOnDisk(userDataDir: string, name: string): string {
   const ws = path.join(userDataDir, 'ws', name);
   fs.mkdirSync(ws, { recursive: true });
   fs.writeFileSync(
@@ -65,9 +65,15 @@ export async function launchApp(userDataDir: string): Promise<{ app: ElectronApp
 
   // ARCHIVIEW_E2E_EXE punta all'eseguibile impacchettato (es. dist/win-unpacked/ArchiView.exe):
   // stessi test, ma con il codice dentro app.asar come lo riceve l'utente. Senza, si usa out/.
+  // Con i fuse attivi (`enableNodeCliInspectArguments: false`) Playwright non si collega
+  // all'exe: ARCHIVIEW_E2E_ASAR (es. dist/win-unpacked/resources/app.asar) fa caricare lo
+  // stesso asar, con le esclusioni di `build.files`, all'Electron di sviluppo. Differenza:
+  // `app.isPackaged` è falso, quindi le icone si cercano nell'asar e non in resources/assets.
   const exe = process.env.ARCHIVIEW_E2E_EXE;
+  const asar = process.env.ARCHIVIEW_E2E_ASAR;
   const app = await electron.launch({
-    ...(exe ? { executablePath: path.resolve(repoRoot, exe), args: [] } : { args: ['.'] }),
+    ...(exe ? { executablePath: path.resolve(repoRoot, exe), args: [] }
+      : { args: [asar ? path.resolve(repoRoot, asar) : '.'] }),
     cwd: repoRoot,
     env: {
       ...cleanEnv,
