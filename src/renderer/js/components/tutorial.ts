@@ -65,13 +65,13 @@ window.avviaTutorial = async function () {
                 appData.manoscritti.push({
                     id: 'test-doc-tutorial',
                     cartella: 'Tutorial',
-                    tipo: 'Manoscritto',
+                    tipoDocumento: 'manoscritto',
                     titolo: 'Esempio di Scheda',
                     segnatura: 'Documento di Esempio',
                     tags: 'tutorial, esempio',
                     note: 'Questo è un documento generato automaticamente per farti esplorare le funzionalità di ArchiView.',
                     allegati: [],
-                    text: '<p>Benvenuto nell\'editor di trascrizione! Qui puoi annotare i tuoi documenti in modo strutturato.</p>'
+                    trascrizione: '<p>Benvenuto nell\'editor di trascrizione! Qui puoi annotare i tuoi documenti in modo strutturato.</p>'
                 });
                 if (window.salvaDatiApp) {
                     try {
