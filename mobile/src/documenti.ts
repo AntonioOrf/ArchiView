@@ -7,7 +7,7 @@ import * as Crypto from 'expo-crypto';
 import { recognizeText } from '@infinitered/react-native-mlkit-text-recognition';
 import { fileFiltrato, fileOcr, fileValido, ocrAggiornato, prossimoFile, UUID, type Documento, type OcrPagina, type PaginaDoc } from './elencoDocumenti';
 import type { Filtro } from './filtri';
-import { leggiJson, scriviJson } from './fileJson';
+import { leggiJson, rimpiazzaFile, scriviJson } from './fileJson';
 import { filtrata } from './immagini';
 import { daRisultato, type Parola } from './testo';
 
@@ -139,13 +139,7 @@ export async function aggiungiPagine(d: Documento, uris: string[]): Promise<Docu
 
 /** La foto nuova prende il posto della vecchia (copia accanto, poi scambio): se la copia fallisce la vecchia resta. */
 export async function sostituisciPagina(d: Documento, file: string, uriNuova: string): Promise<Documento> {
-  const dest = fileDoc(d, file);
-  const tmp = new File(cartellaDoc(d.id), `${file}.nuova`);
-  if (tmp.exists) tmp.delete();
-  await new File(uriNuova).copy(tmp);
-  if (dest.exists) dest.delete();
-  await tmp.move(dest);
-  try { new File(uriNuova).delete(); } catch (e) { console.warn('[documenti] file temporaneo non eliminato', uriNuova, e); }
+  await rimpiazzaFile(fileDoc(d, file), uriNuova);
   // Il filtro resta: la copia filtrata si rifà dalla foto nuova.
   const p = d.pagine.find(x => x.file === file);
   if (p?.filtro) await rifaiFiltrata(d, p, p.filtro);

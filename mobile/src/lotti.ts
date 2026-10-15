@@ -13,7 +13,7 @@ import { prossimaEtichetta } from './etichette';
 import { ritagliata, ruotata, sfocata } from './immagini';
 import { inviatiScaduti, type DopoInvio, type Riquadro } from './pagine';
 import { ScannerLotto, type Destinazione, type Lotto, type Modalita, type Pagina } from './contratto';
-import { leggiJson, scriviJson } from './fileJson';
+import { leggiJson, rimpiazzaFile, scriviJson } from './fileJson';
 import { t } from './lingua';
 
 const ALFABETO = '0123456789abcdefghijklmnopqrstuvwxyz';
@@ -257,13 +257,7 @@ export async function dividiPagina(b: Bozza, file: string, frazione: number): Pr
 export async function sostituisciPagina(b: Bozza, file: string, uriNuova: string, dim?: { larghezza: number; altezza: number }): Promise<Bozza> {
   const vecchia = b.pagine.find(p => p.file === file);
   if (!vecchia) throw new Error('pagina_assente');
-  const dest = fileDellaPagina(b, file);
-  const tmp = new File(cartellaLotto(b.id), `${file}.nuova`);
-  if (tmp.exists) tmp.delete();
-  await new File(uriNuova).copy(tmp);
-  if (dest.exists) dest.delete();
-  await tmp.move(dest);
-  try { new File(uriNuova).delete(); } catch (e) { console.warn('[lotti] file temporaneo non eliminato', uriNuova, e); }
+  await rimpiazzaFile(fileDellaPagina(b, file), uriNuova);
   const { larghezza: _l, altezza: _a, ...resto } = vecchia;
   const pagina: Pagina = { ...resto, ...(await impronta(fileDellaPagina(b, file))) };
   if (dim) { pagina.larghezza = Math.round(dim.larghezza); pagina.altezza = Math.round(dim.altezza); }

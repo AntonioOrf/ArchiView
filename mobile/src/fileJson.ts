@@ -12,6 +12,19 @@ export function scriviJson(f: File, dati: unknown, spazi?: number): void {
   tmp.moveSync(f, { overwrite: true });
 }
 
+/**
+ * Mette al posto di `dest` la foto in `uriNuova` (una pagina rifatta, ruotata, ritagliata): copia
+ * accanto come `<nome>.nuova`, poi sposta sopra, e cancella il temporaneo di partenza.
+ */
+export async function rimpiazzaFile(dest: File, uriNuova: string): Promise<void> {
+  const tmp = new File(dest.parentDirectory, `${dest.name}.nuova`);
+  if (tmp.exists) tmp.delete();
+  await new File(uriNuova).copy(tmp);
+  if (dest.exists) dest.delete();
+  await tmp.move(dest);
+  try { new File(uriNuova).delete(); } catch (e) { console.warn('[file] temporaneo non eliminato', uriNuova, e); }
+}
+
 /** Il contenuto del file, o del `.tmp` rimasto da una scrittura interrotta. `undefined` se non c'è nessuno dei due. */
 export function leggiJson(f: File): unknown {
   if (f.exists) return JSON.parse(f.textSync());

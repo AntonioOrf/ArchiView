@@ -148,6 +148,8 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   }, []);
   const aggiorna = (b: Bozza) => setLotti(ls => (ls.some(l => l.id === b.id) ? ls.map(l => (l.id === b.id ? b : l)) : [...ls, b]));
+  /** Un lotto rimasto senza pagine sparisce dal disco e dall'elenco. */
+  const scarta = (b: Bozza) => { eliminaLotto(b); setLotti(ls => ls.filter(l => l.id !== b.id)); };
 
   useEffect(() => {
     utenteSilenzioso().then(setUtente);
@@ -420,18 +422,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       nota: s.tipo === 'nuova' ? s.nota : s.tipo === 'smistare' ? notaSmistare.trim() || undefined : undefined
     });
     if (s.tipo === 'smistare') { setTitoloSmistare(''); setNotaSmistare(''); }
-    aggiorna(b);
-    try {
-      for (const uri of uris) {
-        b = await aggiungiPagina(b, uri, modalita, { etichetta: modalita === 'grezza' ? undefined : etichettaNuova([...precedenti, ...b.pagine]) });
-        aggiorna(b);
-      }
-    } finally {
-      // Anche a metà (memoria piena, file sparito): le pagine copiate partono, nessun lotto resta aperto.
-      if (b.pagine.length) aggiorna(salvaBozza({ ...b, stato: 'in_coda' }));
-      else { eliminaLotto(b); setLotti(ls => ls.filter(l => l.id !== b.id)); }
-    }
-    setTimeout(() => giro(), 0);
+    b = await riempiLotto(b, uris, modalita, x => (modalita === 'grezza' ? undefined : etichettaNuova([...precedenti, ...x.pagine])));
     misuraSfocate(b, b.pagine.map(p => p.file));
     // F9: una scheda «da vedere» che riceve pagine prende la spunta (impostazioni rilette: lo scatto è durato).
     if (b.pagine.length && s.tipo === 'esistente' && elenco?.schede.some(x => x.id === s.id && x.daVedere)) {
@@ -459,15 +450,26 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
    */
   const mandaDaDocumento = async (titolo: string, uris: string[]) => {
     if (!archivio) return;
-    let b = nuovoLotto({ tipo: 'nessuna' }, { archivio: archivio.nome, archivioNuovo: archivio.nuovo || undefined, titolo });
+    await riempiLotto(nuovoLotto({ tipo: 'nessuna' }, { archivio: archivio.nome, archivioNuovo: archivio.nuovo || undefined, titolo }), uris, 'documento');
+  };
+
+  /**
+   * Copia le foto nel lotto una per una e lo mette in coda. Anche a metà (memoria piena, file
+   * sparito): le pagine copiate partono, nessun lotto resta aperto; senza pagine sparisce.
+   */
+  const riempiLotto = async (b: Bozza, uris: string[], modalita: Modalita, etichetta?: (b: Bozza) => string | undefined) => {
     aggiorna(b);
     try {
-      for (const uri of uris) { b = await aggiungiPagina(b, uri, 'documento'); aggiorna(b); }
+      for (const uri of uris) {
+        b = await aggiungiPagina(b, uri, modalita, { etichetta: etichetta?.(b) });
+        aggiorna(b);
+      }
     } finally {
       if (b.pagine.length) aggiorna(salvaBozza({ ...b, stato: 'in_coda' }));
-      else { eliminaLotto(b); setLotti(ls => ls.filter(l => l.id !== b.id)); }
+      else scarta(b);
     }
     setTimeout(() => giro(), 0);
+    return b;
   };
 
   /** F3: in sottofondo, dopo «Salva» o «Rifai»: le pagine mosse prendono la targhetta «Sfocata?». */
@@ -486,9 +488,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     if (invio?.id === b.id) { avviso(t('Invio in corso'), t('Queste pagine stanno partendo: aspetta la fine dell\'invio.')); return; }
     return esegui(t('Modifica'), async () => {
       const nb = await fn();
-      if (nb.pagine.length) { aggiorna(nb); return; }
-      eliminaLotto(nb);
-      setLotti(ls => ls.filter(l => l.id !== nb.id));
+      if (nb.pagine.length) aggiorna(nb); else scarta(nb);
     });
   };
 
