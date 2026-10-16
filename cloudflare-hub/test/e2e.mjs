@@ -1,15 +1,3 @@
-// E2E scenari 1-6 del piano Hub, a livello di protocollo Worker (senza UI/Electron).
-// Simula owner "A" e membro "B" con chiavi Bearer distinte.
-// Uso:  node test/e2e.mjs [BASE_URL] [CREATE_SECRET]
-//   locale:  node test/e2e.mjs http://localhost:8787 dev-secret
-//   remoto:  node test/e2e.mjs https://archiview-hub.orfhist.workers.dev <CREATE_SECRET>
-// Prereq: schema applicato (npm run migrate[:local]).
-//
-// Coperto qui (puro Worker): create, push/pull multi-utente, indice allegati,
-// invito=membro + pull con chiave membro, conflitto 409, revoca → 403.
-// NON coperto (richiede Drive/UI reali): download binario allegato via link
-// pubblico, cifratura AES-GCM, flusso "join senza Google" lato renderer.
-
 const BASE = (process.argv[2] || 'http://localhost:8787').replace(/\/$/, '');
 const CREATE_SECRET = process.argv[3] || 'dev-secret';
 
@@ -26,7 +14,6 @@ function section(title) { console.log(`\n── ${title}`); }
 async function main() {
   console.log('BASE =', BASE);
 
-  // ── Scenario 1: crea Hub (owner A) ──────────────────────────────────────────
   section('Scenario 1 — Crea Hub (owner A)');
   let r = await fetch(`${BASE}/api/repos`, {
     method: 'POST',
@@ -46,7 +33,6 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.version === 0, 'pull iniziale → version 0 (DB vuoto)');
 
-  // ── Scenario 2: push/pull multi-utente ──────────────────────────────────────
   section('Scenario 2 — Push A, pull B');
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: auth(ownerKey),
@@ -55,7 +41,6 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.version === 1, 'A push v1 → version 1');
 
-  // (B entra sotto, allo Scenario 4; qui verifichiamo che il pull rilegga il DB)
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(ownerKey) });
   d = await j(r);
   ok(r.status === 200 && d.version === 1 && d.database?.manoscritti?.[0]?.id === 'ms-1', 'pull v1 → database corretto');
@@ -64,7 +49,6 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.unchanged === true, 'pull ?ifVersionNot=1 → unchanged (fast-path free-tier)');
 
-  // ── Scenario 3: indice allegati (parte Worker-testabile) ─────────────────────
   section('Scenario 3 — Indice allegati (upsert/get)');
   const hash = 'b'.repeat(64);
   r = await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, {
@@ -86,7 +70,6 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.chunks?.length === 1 && d.files?.[0]?.fileName === 'scan-01.pdf', 'get indice → chunk+file');
 
-  // ── Scenario 4: invito = membro B, pull con chiave membro ────────────────────
   section('Scenario 4 — Invita membro B, pull con chiave membro');
   r = await fetch(`${BASE}/api/repos/${repoId}/members`, {
     method: 'POST', headers: auth(ownerKey), body: JSON.stringify({ label: 'Utente B' }),
@@ -102,9 +85,7 @@ async function main() {
   r = await fetch(`${BASE}/api/repos/${repoId}/members`, { headers: auth(memberKey) });
   ok(r.status === 403, 'B (non owner) su GET members → 403');
 
-  // ── Scenario 5: conflitto concorrente → 409 ──────────────────────────────────
   section('Scenario 5 — Conflitto concorrente');
-  // B pusha da parentVersion 1 → diventa v2
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: auth(memberKey),
     body: JSON.stringify({ parentVersion: 1, database: { manoscritti: [{ id: 'ms-1', titolo: 'Beatus', lastModified: 100 }, { id: 'ms-2', titolo: 'Salterio', lastModified: 300 }] } }),
@@ -112,19 +93,16 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.version === 2, 'B push da v1 → version 2');
 
-  // A pusha ANCORA da parentVersion 1 (stantio) → 409
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: auth(ownerKey),
     body: JSON.stringify({ parentVersion: 1, database: { manoscritti: [] } }),
   });
   ok(r.status === 409, 'A push da v1 stantio → 409 (nessun overwrite)');
 
-  // dopo un pull A vede v2 e può pushare v3 (merge lato client simulato)
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(ownerKey) });
   d = await j(r);
   ok(r.status === 200 && d.version === 2 && d.database?.manoscritti?.length === 2, 'A ri-pull → v2 con entrambi i record');
 
-  // Due push contemporanei dallo stesso parent: uno vince, l'altro 409; il pull vede i dati del vincitore.
   const pushDa2 = (key, id) => fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: auth(key),
     body: JSON.stringify({ parentVersion: 2, database: { manoscritti: [{ id, lastModified: 400 }] } }),
@@ -137,20 +115,17 @@ async function main() {
   d = await j(r);
   ok(r.status === 200 && d.version === 3 && d.database?.manoscritti?.[0]?.id === vincitore, 'pull dopo i push concorrenti → v3 con i dati del vincitore');
 
-  // ── Scenario 6: revoca membro → 403 ──────────────────────────────────────────
   section('Scenario 6 — Revoca membro B');
   r = await fetch(`${BASE}/api/repos/${repoId}/members/${memberId}`, { method: 'DELETE', headers: auth(ownerKey) });
   ok(r.status === 200, 'A revoca B → 200');
 
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(memberKey) });
-  // 403 e non 401: l'app distingue "accesso revocato" da "chiave non valida" (prova M3.5, 12/10).
   ok(r.status === 403, 'B pull con chiave revocata → 403');
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, { method: 'POST', headers: auth(memberKey), body: JSON.stringify({ parentVersion: 3, database: {} }) });
   ok(r.status === 403, 'B push con chiave revocata → 403');
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth('chiave-mai-esistita') });
   ok(r.status === 401, 'chiave inventata → 401');
 
-  // ── Extra: rate-limit creazione (bucket IP isolato) ──────────────────────────
   section('Extra — Rate-limit creazione (Fase 5)');
   const rlIp = `198.51.100.${Math.floor(Math.random() * 250) + 1}`;
   const createAs = () => fetch(`${BASE}/api/repos`, {

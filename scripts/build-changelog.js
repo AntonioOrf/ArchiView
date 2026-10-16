@@ -1,15 +1,3 @@
-// Genera il contenuto del changelog in-app a partire da RELEASE_NOTES.md.
-//
-// Perché esiste: il modal era HTML scritto a mano dentro changelogModal.ts e andava
-// aggiornato a ogni rilascio. Non è successo — l'app 2.4.5 mostrava ancora "Novità della
-// Versione 2.4.3" — e un changelog che mente è peggio di uno assente, perché l'utente
-// crede di sapere cosa è cambiato. RELEASE_NOTES.md è già la fonte usata da
-// electron-builder (`build.releaseInfo.releaseNotesFile`): qui diventa anche la fonte del
-// modal, così le due non possono più divergere.
-//
-// Emette out/renderer/js/changelogContent.js, che definisce window.changelogData.
-// Deve girare DOPO copy-assets (che genera out/renderer/index.html) e PRIMA di
-// build-renderer-bundle (che pretende presenti tutti gli script referenziati dall'HTML).
 const fs = require('fs');
 const path = require('path');
 
@@ -18,7 +6,6 @@ const notesFile = path.join(root, 'RELEASE_NOTES.md');
 const outFile = path.join(root, 'out/renderer/js/changelogContent.js');
 const version = require(path.join(root, 'package.json')).version;
 
-/** Escape HTML: le note sono nostre, ma finiscono in innerHTML e non devono poter iniettare. */
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -28,28 +15,17 @@ function esc(s) {
     .replace(/'/g, '&#039;');
 }
 
-/**
- * Markdown inline, limitato a ciò che RELEASE_NOTES usa davvero: **grassetto** e `codice`.
- * Si applica DOPO l'escape, così i tag prodotti qui sono gli unici presenti.
- */
 function inline(testo) {
   return esc(testo)
     .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-stone-900 dark:text-stone-100">$1</strong>')
     .replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[0.9em]">$1</code>');
 }
 
-/**
- * Estrae la sezione della versione richiesta. Il formato atteso è
- * `## ArchiView <versione> — <titolo>`, seguito da paragrafi introduttivi e da blocchi
- * `### <sezione>` con elenchi puntati, fino al `---` o alla versione successiva.
- */
 function estraiVersione(md, versione) {
   const righe = md.split(/\r?\n/);
   const inizio = righe.findIndex(r => new RegExp('^##\\s+ArchiView\\s+' + versione.replace(/\./g, '\\.') + '\\b').test(r));
   if (inizio === -1) return null;
 
-  // Dal titolo si toglie il prefisso "ArchiView <versione> — ": l'intestazione del modal
-  // dice già "Novità della Versione X", ripeterlo nel sottotitolo è rumore.
   const titolo = righe[inizio]
     .replace(/^##\s+/, '')
     .replace(new RegExp('^ArchiView\\s+' + versione.replace(/\./g, '\\.') + '\\s*[—–-]\\s*'), '')
@@ -63,7 +39,6 @@ function estraiVersione(md, versione) {
   return { titolo, corpo };
 }
 
-/** Converte il corpo in HTML: intro come <p>, `###` come sezioni con elenco. */
 function corpoInHtml(corpo) {
   const out = [];
   let intro = [];
@@ -97,11 +72,10 @@ function corpoInHtml(corpo) {
     if (/^[-*]\s+/.test(riga)) {
       const testo = riga.replace(/^[-*]\s+/, '');
       if (sezione) voci.push(testo);
-      else intro.push(testo); // elenco prima di qualsiasi ### : trattato come intro
+      else intro.push(testo);
       continue;
     }
 
-    // Riga di continuazione di una voce (elenco su più righe).
     if (sezione && voci.length) voci[voci.length - 1] += ' ' + riga;
     else if (!sezione) intro.push(riga);
   }
@@ -125,8 +99,6 @@ function main() {
     const md = fs.readFileSync(notesFile, 'utf8');
     const sezione = estraiVersione(md, version);
     if (!sezione) {
-      // Non blocca la build: un rilascio può essere impacchettato prima di scrivere le note.
-      // Ma va detto forte, perché il sintomo a valle è un changelog silenziosamente assente.
       console.warn(`[build-changelog] ATTENZIONE: RELEASE_NOTES.md non contiene una sezione per la versione ${version}. Il changelog in-app non verrà mostrato.`);
     } else {
       const { introHtml, sezioniHtml } = corpoInHtml(sezione.corpo);

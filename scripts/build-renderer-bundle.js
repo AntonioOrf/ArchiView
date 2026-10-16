@@ -1,12 +1,3 @@
-// Concatena e minifica in un unico file tutti gli script del renderer.
-//
-// Perché non `esbuild --bundle`: il codice del renderer non usa moduli, condivide lo scope
-// globale di script classici (window.X, funzioni e `let` top-level visibili fra file). Un
-// bundle a moduli cambierebbe quella semantica. Qui si concatena nell'ORDINE ESATTO dei tag
-// <script defer> di index.html e si minifica senza rinominare gli identificatori top-level
-// (minifyIdentifiers: false), che restano globali per contratto.
-//
-// Effetto su hardware lento: ~40 richieste file + 40 compilazioni V8 → una sola.
 const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
@@ -18,8 +9,6 @@ const bundleFile = path.join(outDir, bundleRelative);
 
 let html = fs.readFileSync(htmlFile, 'utf8');
 
-// Solo gli script dell'app (js/…): i vendor restano tag separati, sono già minificati
-// e vengono serviti prima (non-defer) perché l'app li assume presenti a DOMContentLoaded.
 const tagRegex = /[ \t]*<script defer src="(js\/[^"]+)"><\/script>\r?\n?/g;
 const sources = [];
 const matches = [...html.matchAll(tagRegex)];
@@ -36,8 +25,6 @@ for (const m of matches) {
     console.error(`[build-bundle] ERRORE: manca ${rel} — build TS incompleta.`);
     process.exit(1);
   }
-  // `;` di sicurezza fra file: senza, un file che termina senza punto e virgola
-  // potrebbe fondersi con la prima espressione del successivo (ASI).
   sources.push(`// ---- ${rel} ----\n${fs.readFileSync(abs, 'utf8')}\n;`);
 }
 
@@ -53,7 +40,6 @@ const result = esbuild.transformSync(sources.join('\n'), {
 fs.mkdirSync(path.dirname(bundleFile), { recursive: true });
 fs.writeFileSync(bundleFile, result.code);
 
-// Sostituisce il primo tag con il bundle ed elimina gli altri.
 let replaced = false;
 html = html.replace(tagRegex, () => {
   if (replaced) return '';

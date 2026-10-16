@@ -1,13 +1,8 @@
 import type { Env } from './types';
 import { hmacSha256hex, md5hex } from './crypto';
 
-// Realtime Hub. Nessun endpoint pubblica per conto del client:
-// il Worker pubblica da sé dopo un push riuscito, e ci si iscrive solo a canali privati
-// autorizzati da una chiave del repo. Il vecchio relay aperto /api/ping è stato rimosso.
-
 export const EVENTO_AGGIORNATO = 'hub-updated';
 
-/** Canale privato di un repo: Pusher chiede l'autorizzazione al Worker per iscriversi. */
 export function canaleRepo(repoId: string): string {
   return `private-repo-${repoId}`;
 }
@@ -16,15 +11,10 @@ export function pusherConfigurato(env: Env): boolean {
   return !!(env.PUSHER_APP_ID && env.PUSHER_KEY && env.PUSHER_SECRET && env.PUSHER_CLUSTER);
 }
 
-// Solo per i test (`wrangler dev` con un finto Pusher): in produzione resta non impostato.
 function baseApi(env: Env): string {
   return env.PUSHER_HOST ? env.PUSHER_HOST.replace(/\/+$/, '') : `https://api-${env.PUSHER_CLUSTER}.pusher.com`;
 }
 
-/**
- * Pubblica un evento via REST API Pusher (firma: HMAC-SHA256 su metodo, path e query ordinata,
- * con body_md5). Mai un'eccezione: un Pusher irraggiungibile non deve far fallire chi chiama.
- */
 export async function pubblica(env: Env, channel: string, event: string, data: unknown): Promise<boolean> {
   if (!pusherConfigurato(env)) return false;
   try {
@@ -50,13 +40,8 @@ export async function pubblica(env: Env, channel: string, event: string, data: u
   }
 }
 
-// socket_id di Pusher: "<numero>.<numero>".
 const SOCKET_ID = /^\d{1,20}\.\d{1,20}$/;
 
-/**
- * Firma l'iscrizione a un canale privato: auth = "<key>:" + HMAC-SHA256(secret, "socket_id:canale").
- * Restituisce null se il socket id non è valido.
- */
 export async function firmaIscrizione(env: Env, socketId: string, channel: string): Promise<string | null> {
   if (!pusherConfigurato(env) || !SOCKET_ID.test(socketId)) return null;
   const sig = await hmacSha256hex(env.PUSHER_SECRET!, `${socketId}:${channel}`);

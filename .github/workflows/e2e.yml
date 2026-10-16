@@ -1,7 +1,6 @@
 name: E2E Tests
 
 on:
-  # L'app Android (mobile/) ha il suo workflow: una modifica solo lì non tocca il desktop.
   pull_request:
     paths-ignore: ["mobile/**"]
   push:
@@ -9,9 +8,6 @@ on:
     paths-ignore: ["mobile/**"]
 
 jobs:
-  # Audit delle sole dipendenze che finiscono nell'installer (npm audit legge il lockfile,
-  # non serve installare). Quelle di sviluppo (shx, electron-builder) restano fuori:
-  # i loro advisory aperti non hanno correzioni senza downgrade e non girano sulla macchina utente.
   security-check:
     runs-on: ubuntu-latest
 
@@ -37,11 +33,6 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          # 24, non 22. "npm install" con npm 11.6 pota dal lockfile le voci incluse in
-          # @tailwindcss/oxide-wasm32-wasi (@emnapi/core, @emnapi/runtime); l'npm 10 di
-          # node 22 e l'npm 12 di node 24 le esigono e "npm ci" muore in pochi secondi con
-          # "Missing: @emnapi/core ... from lock file". Dopo ogni "npm install" locale
-          # controllare con: npx npm@12 ci --dry-run --ignore-scripts
           node-version: 24
           cache: "npm"
 
@@ -50,8 +41,6 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
-      # I test E2E sono offline: nessun segreto reale, solo uno stub con i nomi esportati
-      # richiesti a import-time (hubIpc, hubAttachments) per evitare MODULE_NOT_FOUND.
       - name: Stub cloudCredentials.ts
         shell: bash
         run: |

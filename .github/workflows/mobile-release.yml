@@ -1,12 +1,5 @@
 name: ArchiScanner — release APK
 
-# Tag `scanner-vX.Y.Z` (stessa versione di mobile/app.json): APK costruito su EAS e allegato a
-# una release GitHub PRERELEASE e mai "latest". L'updater del desktop legge la release
-# "latest" del repository: se diventasse questa, proporrebbe l'APK come aggiornamento.
-# release.yml ascolta solo `v*`, quindi questi tag non costruiscono l'installer Windows.
-#
-# Una tantum (vedi mobile/README.md): `npx eas-cli@latest init` in mobile/ (projectId in
-# app.json) e il segreto EXPO_TOKEN nel repository.
 on:
   push:
     tags: ["scanner-v*"]

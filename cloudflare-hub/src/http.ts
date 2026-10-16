@@ -1,6 +1,3 @@
-// Helper risposta + CORS. Il renderer Electron chiama l'hub cross-origin:
-// serve CORS permissivo e gestione del preflight OPTIONS (Authorization lo scatena).
-
 export const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
@@ -19,7 +16,6 @@ export function err(status: number, message: string): Response {
   return json({ error: message }, status);
 }
 
-/** 429 con header Retry-After (secondi) per il rate-limit. */
 export function tooMany(message: string, retryAfterSec: number): Response {
   return new Response(JSON.stringify({ error: message }), {
     status: 429,

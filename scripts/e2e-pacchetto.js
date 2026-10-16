@@ -1,7 +1,3 @@
-// Tutta la suite e2e sull'app impacchettata (dist/win-unpacked), più le prove M15 di
-// e2e/pacchetto.spec.ts. Le esclusioni di `build.files` valgono solo lì: su out/ non si vedono.
-//
-// Uso: npx electron-builder --win --dir, poi `npm run test:e2e:pacchetto [-- <argomenti playwright>]`.
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +10,6 @@ if (!fs.existsSync(asar)) {
   process.exit(1);
 }
 
-// Un pacchetto più vecchio della build proverebbe codice che non è quello del working tree.
 const mainOut = path.join(radice, 'out', 'main', 'main.js');
 if (fs.existsSync(mainOut) && fs.statSync(mainOut).mtimeMs > fs.statSync(asar).mtimeMs) {
   console.error('[e2e-pacchetto] out/ è più recente di app.asar: rifare "npx electron-builder --win --dir".');

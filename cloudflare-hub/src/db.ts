@@ -1,8 +1,6 @@
 import type { Env } from './types';
 
-const BLOB_MAX = 900 * 1024; // limite prudente per valore/riga D1
-
-// --- gzip/gunzip via Compression Streams (nativi nel runtime Workers) --------
+const BLOB_MAX = 900 * 1024;
 
 async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
   const cs = new CompressionStream('gzip');
@@ -16,7 +14,6 @@ async function gunzip(bytes: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-// D1 restituisce i BLOB come ArrayBuffer; normalizziamo difensivamente.
 function toU8(v: unknown): Uint8Array {
   if (v instanceof ArrayBuffer) return new Uint8Array(v);
   if (v instanceof Uint8Array) return v;
@@ -32,17 +29,12 @@ function concat(parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
-// Buffer indipendente (evita di passare viste condivise al binding D1).
 function slab(seg: Uint8Array): ArrayBuffer {
   return seg.slice().buffer;
 }
 
 const EMPTY_DB = {};
 
-/**
- * Legge una versione specifica. version 0 => DB vuoto (repo appena creato, mai nessun push).
- * Ritorna null se la versione non esiste (mai scritta o eliminata dalla retention).
- */
 export async function readVersion(
   env: Env,
   repoId: string,
@@ -66,7 +58,6 @@ export async function readVersion(
   return { version, database: JSON.parse(new TextDecoder().decode(jsonBytes)) };
 }
 
-/** Ultima versione + DB deserializzato. null => repo inesistente. */
 export async function readLatest(
   env: Env,
   repoId: string
@@ -75,12 +66,10 @@ export async function readLatest(
     .bind(repoId).first<{ current_version: number }>();
   if (!repo) return null;
   const result = await readVersion(env, repoId, repo.current_version);
-  // Versione corrente senza righe: mai `{}`, che il client fonderebbe come archivio vuoto.
   if (!result) throw new Error('VERSIONE_SENZA_DATI');
   return result;
 }
 
-/** Elenco versioni (metadata-only, nessuna lettura di blob) con autore risolto da members.label. */
 export async function listVersions(
   env: Env,
   repoId: string
@@ -110,19 +99,12 @@ export async function listVersions(
   return rows.results ?? [];
 }
 
-/** Solo la versione corrente (fast-path per ?ifVersionNot). */
 export async function currentVersion(env: Env, repoId: string): Promise<number | null> {
   const repo = await env.DB.prepare('SELECT current_version FROM repos WHERE repo_id = ?')
     .bind(repoId).first<{ current_version: number }>();
   return repo ? repo.current_version : null;
 }
 
-/**
- * Scrive la versione parentVersion+1 (versions + blob gzippati) e avanza current_version, in
- * un unico batch atomico: nessun pull vede la versione nuova senza i suoi dati.
- * Ritorna false se current_version non era più parentVersion (righe già annullate);
- * lancia se la versione esiste già (un altro push l'ha presa): vincolo di chiave.
- */
 export async function writeVersion(
   env: Env,
   repoId: string,
@@ -159,7 +141,6 @@ export async function writeVersion(
   const esiti = await env.DB.batch(stmts);
   if (esiti[esiti.length - 1].meta.changes > 0) return true;
 
-  // Versione corrente già oltre (o repo inesistente): via le righe appena scritte.
   await env.DB.batch([
     env.DB.prepare('DELETE FROM version_blobs WHERE repo_id = ? AND version = ?').bind(repoId, newVersion),
     env.DB.prepare('DELETE FROM versions WHERE repo_id = ? AND version = ?').bind(repoId, newVersion),
@@ -167,7 +148,6 @@ export async function writeVersion(
   return false;
 }
 
-/** Conserva solo le ultime MAX_VERSIONS versioni; elimina le più vecchie + blob. */
 export async function pruneVersions(env: Env, repoId: string, keep: number): Promise<void> {
   const threshold = await env.DB.prepare(
     'SELECT MAX(version) AS maxv FROM versions WHERE repo_id = ?'

@@ -3,10 +3,6 @@ import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { err, json } from '../http';
 import { canaleRepo, firmaIscrizione, pusherConfigurato } from '../pusher';
 
-// POST /api/repos/:id/realtime-auth  body: { socketId, channel }
-// Autorizza l'iscrizione al canale privato del repo: solo owner o membro attivo, e solo il
-// canale di QUESTO repo. Un membro revocato riceve 401 e alla prossima riconnessione non
-// riceve più notifiche.
 export async function handleRealtimeAuth(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return rispostaNegata(env, repoId, bearer(req));

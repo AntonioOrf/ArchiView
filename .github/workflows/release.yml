@@ -14,18 +14,15 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Action fissate per SHA (il tag è mobile); commento = versione corrispondente.
       - name: Checkout del codice
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          # 24 come e2e.yml: con l'npm 10 di node 22 "npm ci" rifiuta il lockfile.
           node-version: 24
           cache: "npm"
 
-      # npm ci: la release si costruisce esattamente dal lockfile, senza risolvere versioni nuove.
       - name: Installa le dipendenze
         run: npm ci
 
@@ -42,9 +39,6 @@ jobs:
           export const HUB_CREATE_SECRET = "${{ secrets.HUB_CREATE_SECRET }}";
           EOF
 
-      # La Release nasce BOZZA: una release pubblicata senza ancora latest.yml e' visibile agli
-      # updater, che ricevono un 404 e mostrano "Nessuna versione pubblicata" (3.2.1: due minuti
-      # fra la pubblicazione e il caricamento di latest.yml). Si pubblica solo nell'ultimo step.
       - name: Pre-crea la Release come bozza (evita la race di electron-builder)
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
@@ -56,7 +50,6 @@ jobs:
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $tag gia' esistente: nessuna creazione."
           else
-            # Note della release su GitHub solo in inglese; RELEASE_NOTES.md (italiano) resta il changelog in-app.
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "${tag#v}" --notes-file RELEASE_NOTES.en.md --verify-tag --draft
           fi
 

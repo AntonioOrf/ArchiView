@@ -1,13 +1,3 @@
-// Copia in out/renderer/ocr la pagina host dell'OCR e i due file di pdf.js che le servono
-// (Fase 2.3).
-//
-// Perché copiare invece di caricare da node_modules: la pagina è servita dallo schema
-// `ocr-host://`, la cui autorità `app` punta a UNA cartella sola. Servire node_modules
-// significherebbe esporre alla pagina l'intero albero delle dipendenze per risparmiare
-// una copia di due file.
-//
-// Si usa la build `legacy`: è quella trasposta per i target più vecchi, e ArchiView gira
-// anche su macchine dove `npm start` parte con l'accelerazione hardware disattivata.
 const fs = require('fs');
 const path = require('path');
 

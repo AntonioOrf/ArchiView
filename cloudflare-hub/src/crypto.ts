@@ -1,6 +1,3 @@
-// Primitive crittografiche basate su WebCrypto (disponibile nel runtime Workers),
-// + MD5 vendorizzato (WebCrypto non lo offre) richiesto dalla firma REST Pusher.
-
 const HEX = '0123456789abcdef';
 
 function toHex(buf: ArrayBuffer): string {
@@ -10,7 +7,6 @@ function toHex(buf: ArrayBuffer): string {
   return s;
 }
 
-/** 32 byte random -> base64url senza padding. Chiave mostrata una sola volta. */
 export function randomKey(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -19,7 +15,6 @@ export function randomKey(): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** ID opaco: prefisso + 16 byte hex. `repo_` deve restare a 5 char (client fa substring(5)). */
 export function randomId(prefix: string): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -46,16 +41,12 @@ export async function hmacSha256hex(secret: string, message: string): Promise<st
   return toHex(sig);
 }
 
-/** Confronto in tempo costante per gli hash delle chiavi (evita timing leak). */
 export function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
-
-// --- MD5 (per body_md5 della REST API Pusher) --------------------------------
-// Implementazione compatta RFC 1321, opera sui byte UTF-8 del messaggio.
 
 function md5cmn(q: number, a: number, b: number, x: number, s: number, t: number): number {
   const n = (a + q + (x >>> 0) + t) | 0;
@@ -77,7 +68,6 @@ function ii(a: number, b: number, c: number, d: number, x: number, s: number, t:
 export function md5hex(message: string): string {
   const bytes = new TextEncoder().encode(message);
   const len = bytes.length;
-  // padding
   const withOne = new Uint8Array((((len + 8) >> 6) + 1) * 64);
   withOne.set(bytes);
   withOne[len] = 0x80;

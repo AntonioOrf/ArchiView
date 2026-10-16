@@ -1,7 +1,3 @@
-// Realtime Hub, a livello di protocollo Worker.
-// Avvia da sé `wrangler dev` in locale (D1 locale, segreti di prova) e un finto Pusher che
-// registra le pubblicazioni. Nessun account Cloudflare o Pusher richiesto.
-// Uso:  npm run realtime
 import { spawn, spawnSync } from 'node:child_process';
 import { createHmac, createHash } from 'node:crypto';
 import http from 'node:http';
@@ -23,7 +19,6 @@ const portaLibera = () => new Promise((resolve) => {
 });
 const attendi = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// --- Finto Pusher: registra le chiamate REST ---
 const pubblicazioni = [];
 const pusher = http.createServer((req, res) => {
   let body = '';
@@ -59,7 +54,6 @@ async function main() {
   worker.stderr.on('data', (d) => { logWorker += d; });
 
   try {
-    // Attesa dell'avvio (fino a 60 s)
     let pronto = false;
     for (let i = 0; i < 120 && !pronto; i++) {
       try { pronto = (await fetch(`${BASE}/`)).ok; } catch { await attendi(500); }

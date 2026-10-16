@@ -3,8 +3,6 @@ import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { currentVersion, listVersions, readVersion } from '../db';
 import { err, json } from '../http';
 
-// GET /api/repos/:id/versions -> lista metadata-only (nessuna lettura di blob), autore risolto
-// da members.label (revoca soft -> la label resta disponibile anche dopo la revoca).
 export async function handleListVersions(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return rispostaNegata(env, repoId, bearer(req));
@@ -18,7 +16,6 @@ export async function handleListVersions(req: Request, env: Env, repoId: string)
   return json({ currentVersion: cur, versions });
 }
 
-// GET /api/repos/:id/versions/:n -> snapshot completo di una versione specifica (per diff/restore).
 export async function handleGetVersion(
   req: Request,
   env: Env,

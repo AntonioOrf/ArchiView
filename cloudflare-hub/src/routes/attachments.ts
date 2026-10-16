@@ -13,7 +13,6 @@ function urlAllowed(u: string): boolean {
   return URL_HOST_ALLOW.some((d) => host === d || host.endsWith('.' + d));
 }
 
-// GET /api/repos/:id/attachments/index  (membro) -> { files, chunks }
 export async function handleGetIndex(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return rispostaNegata(env, repoId, bearer(req));
@@ -40,13 +39,9 @@ export async function handleGetIndex(req: Request, env: Env, repoId: string): Pr
     sizeBytes: c.size_bytes,
     uploaderMemberId: c.uploader_member_id,
   }));
-  // selfMemberId: identifica quali chunk/file appartengono al chiamante (per la pulizia
-  // lato client di allegati rimossi in locale, senza toccare quelli di altri membri).
   return json({ files, chunks, selfMemberId: auth.memberId });
 }
 
-// POST /api/repos/:id/attachments/index  (membro)
-// body: { files?: [{fileName,hashes,lastModified,deleted?}], chunks?: [{hash,url,driveFileId?,sizeBytes?}] }
 export async function handlePutIndex(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return rispostaNegata(env, repoId, bearer(req));
@@ -66,7 +61,6 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
   for (const c of (Array.isArray(body.chunks) ? body.chunks : [])) {
     if (!c || typeof c.hash !== 'string' || !HASH_RE.test(c.hash)) return err(400, 'Hash chunk non valido.');
     if (typeof c.url !== 'string' || !urlAllowed(c.url)) return err(400, 'URL chunk non consentito: ' + (c?.url || ''));
-    // Last-writer-wins sul link (il file può essere ri-pubblicato da un altro membro).
     stmts.push(
       env.DB.prepare(
         `INSERT INTO attachment_chunks(repo_id,hash,url,drive_file_id,uploader_member_id,size_bytes,created_at)
@@ -83,11 +77,8 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
     if (!Array.isArray(f.hashes) || !f.hashes.every((h: unknown) => typeof h === 'string' && HASH_RE.test(h))) {
       return err(400, 'Lista hashes non valida per ' + f.fileName);
     }
-    // Mai nel futuro: un orologio avanti (o un membro malevolo) bloccherebbe per sempre la voce,
-    // perché vince solo chi ha un timestamp ≥ di quello registrato.
     const lastModified = typeof f.lastModified === 'number' ? Math.min(f.lastModified, now) : now;
     const deleted = f.deleted ? 1 : 0;
-    // Last-writer-wins per fileName (solo se il timestamp in arrivo è più recente).
     stmts.push(
       env.DB.prepare(
         `INSERT INTO attachment_files(repo_id,file_name,hashes,last_modified,deleted)
@@ -104,7 +95,6 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
   return json({ ok: true, applied: stmts.length });
 }
 
-// DELETE /api/repos/:id/attachments/chunks/:hash  (uploader o owner)
 export async function handleDeleteChunk(
   req: Request, env: Env, repoId: string, hash: string
 ): Promise<Response> {

@@ -1,16 +1,3 @@
-// Sostituisce out/renderer/vendor/lucide.min.js (~390 KB, ~2.000 icone) con le sole icone
-// usate dall'app.
-//
-// Quali icone: ogni parola in kebab-case che compare in un sorgente del renderer o di
-// src/shared e che è il nome di un'icona lucide. È una sovra-inclusione voluta: "check",
-// "list" o "x" entrano anche quando sono parole qualunque, e così entra pure ogni nome
-// scritto in un ternario o in una tabella (`asc ? 'arrow-down-a-z' : 'arrow-up-z-a'`).
-// Sfuggirebbe solo un nome composto a runtime ('arrow-' + verso): non ce ne sono, e
-// logic/icone.ts lo segnalerebbe in console ("icona lucide sconosciuta").
-//
-// Il file prodotto espone solo ciò che usa logic/icone.ts: `createElement` e `icons`.
-// I nodi delle icone e gli attributi predefiniti dell'<svg> si leggono dal file vendor
-// valutandolo in un contesto isolato, quindi un aggiornamento di lucide non va riportato qui.
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -48,7 +35,6 @@ function main() {
     throw new Error('lucide.min.js non espone icons/createElement: formato del vendor cambiato');
   }
 
-  // Attributi predefiniti dell'<svg>: l'oggetto che createElement fonde sotto quelli passati.
   const m = codice.match(/\{xmlns:"http:\/\/www\.w3\.org\/2000\/svg"[^}]*\}/);
   if (!m) throw new Error('attributi predefiniti dell\'svg non trovati nel vendor lucide');
   const predefiniti = vm.runInNewContext('(' + m[0] + ')');

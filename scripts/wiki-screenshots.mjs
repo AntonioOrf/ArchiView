@@ -1,24 +1,3 @@
-/**
- * Genera gli screenshot della wiki utente pilotando l'app VERA (Electron + Playwright).
- *
- * Non è un test: vive fuori da `e2e/` di proposito, perché la guardia
- * `test/e2eProjects.test.js` fallisce su uno spec che non appartiene a nessun progetto.
- * Riusa però lo stesso avvio isolato dei test (`ARCHIVIEW_E2E_USER_DATA`), quindi non
- * tocca la userData reale né il workspace dell'utente.
- *
- * Ogni schermata viene catturata due volte, in tema chiaro e in tema scuro: la wiki
- * mostra l'una o l'altra secondo il tema scelto da chi legge (classi `light-only` e
- * `dark-only` in `.vitepress/theme/custom.css`).
- *
- * Uso:  node scripts/wiki-screenshots.mjs [cartella-di-destinazione] [--schermo-intero]
- * Default: ../ArchiView-site/docs/wiki/public/img
- *
- * `--schermo-intero` apre l'app a tutto schermo invece che nella finestra 1280×800: è la
- * vista del README, dove l'immagine deve mostrare l'app com'è sul monitor di chi la usa.
- * La scala resta 1:1 (niente zoom del sistema), quindi la risoluzione è quella dello schermo.
- *
- * Prima serve una build aggiornata: `npm run build-css && npm run build-ts`.
- */
 import { _electron as electron } from 'playwright';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -31,24 +10,16 @@ const outDir = path.resolve(
   process.argv.slice(2).find((a) => !a.startsWith('--')) || path.join(repoRoot, '..', 'ArchiView-site', 'docs', 'wiki', 'public', 'img')
 );
 
-// Finestra ampia ma non enorme: su una pagina di documentazione uno screenshot 1440px
-// va ridotto al 60% e le etichette non si leggono più.
 const LARGHEZZA = 1280;
 const SCHERMO_INTERO = process.argv.includes('--schermo-intero');
 const ALTEZZA = 800;
 
-// Una pagina vera di un'edizione a stampa: l'OCR e il visore vanno mostrati su un testo reale,
-// non su una carta disegnata. MGH, Scriptores XXII (Hannover 1872), p. 104: Goffredo da
-// Viterbo, Memoria seculorum. Pubblico dominio, dalla scansione Internet Archive
-// `monumentagermani0000unse_n9j2` (Wikimedia Commons, pagina 120 del PDF).
 const ALLEGATO = path.join(repoRoot, 'scripts', 'assets', 'mgh-ss22-p104.jpg');
 
 fs.mkdirSync(outDir, { recursive: true });
 
-/** Le prime righe della pagina MGH, come le trascriverebbe chi la sta schedando. */
 const TRASC_MGH = '<p>Gallorum, Saxonum et Suevorum et Romanorum et Francorum, Teotonicorum et Lombardorum et Hunorum et Gothorum et Guisogothorum et Austrogothorum et Anglorum et Pannoniorum, Atheniensium et Sicilie et Crete et Sardinie et Guandalorum, similiter ystorias imperatorum Romanorum, et omnium pontificum gesta et annos et menses et dies, et nomina eorum principaliter.</p><p>Apponemus etiam nativitatem et miracula domini nostri Ihesu Christi et mortem et resurrectionem et ascensionem et adventum Spiritus sancti.</p>';
 
-/** Dati d'esempio: un fondo notarile verosimile ma inventato. */
 const SCHEDE = [
   { seg: 'ASF, Not. 1042', tipo: 'imbreviature', data: 'c. 1340', luogo: 'Firenze', notaio: 'Ser Giovanni di Lapo', atto: 'Compravendita', oggetto: 'Vendita di un podere in Val di Pesa', tags: 'da rivedere, val di pesa' },
   { seg: 'ASF, Not. 1043', tipo: 'imbreviature', data: '12 maggio 1341', luogo: 'Firenze', notaio: 'Ser Giovanni di Lapo', atto: 'Dote', oggetto: 'Costituzione di dote per Nera di Bindo', tags: 'doti' },
@@ -59,7 +30,6 @@ const SCHEDE = [
   { seg: 'ASF, Giud. 91', tipo: 'atti', data: '1339', oggetto: 'Causa matrimoniale Buondelmonti-Donati', tags: 'cause matrimoniali' },
   { seg: 'ASF, Est. 12', tipo: 'fiscali', data: '1347', oggetto: 'Estimo del popolo di San Frediano', tags: 'estimi' },
   { seg: 'ASF, Est. 13', tipo: 'fiscali', data: 's.d.', oggetto: 'Frammento di estimo, popolo non identificato', tags: 'estimi, lacunoso' },
-  // In coda: gli indici delle schede sopra servono ai collegamenti di `seed`.
   { seg: 'MGH, SS 22, p. 104', tipo: 'edizioni', data: '1872', autore: 'Goffredo da Viterbo', titolo: 'Memoria seculorum', note: 'Monumenta Germaniae Historica, Scriptores XXII, ed. G. Waitz, Hannover 1872.', tags: 'edizioni', trascrizione: TRASC_MGH },
 ];
 
@@ -84,7 +54,6 @@ async function main() {
   }
 
   const app = await electron.launch({
-    // Scala 1:1: con lo zoom di Windows al 125% lo screenshot mostrerebbe l'interfaccia ingrandita.
     args: ['.', '--force-device-scale-factor=1'],
     cwd: repoRoot,
     env: { ...cleanEnv, ARCHIVIEW_E2E_USER_DATA: userDataDir, PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1' },
@@ -94,16 +63,14 @@ async function main() {
   await page.waitForURL(/index\.html$/, { timeout: 30_000 });
   await page.waitForLoadState('domcontentloaded');
 
-  // Dimensione deterministica: senza, lo screenshot dipende dallo schermo di chi lo genera.
   await app.evaluate(({ BrowserWindow }, [w, h, intero]) => {
     const win = BrowserWindow.getAllWindows()[0];
     if (intero) { win.setFullScreen(true); return; }
     win.setSize(w, h);
     win.center();
   }, [LARGHEZZA, ALTEZZA, SCHERMO_INTERO]);
-  if (SCHERMO_INTERO) await page.waitForTimeout(1200); // l'animazione del tutto schermo
+  if (SCHERMO_INTERO) await page.waitForTimeout(1200);
 
-  // I dialog nativi non sono pilotabili da Playwright: il wizard di import ne apre uno.
   await app.evaluate(({ dialog }, percorso) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [percorso] });
     dialog.showSaveDialog = async () => ({ canceled: true, filePath: undefined });
@@ -111,8 +78,6 @@ async function main() {
     dialog.showMessageBoxSync = () => 0;
   }, csvPath);
 
-  // Lingue OCR finte, come in `e2e/ocr.spec.ts`: scaricare i dati veri costerebbe decine
-  // di MB a ogni run, e senza lingue il modale mostra solo "Nessuna lingua installata".
   await app.evaluate(({ ipcMain }) => {
     ipcMain.removeHandler('ocr-lingue');
     ipcMain.handle('ocr-lingue', () => ({
@@ -130,12 +95,8 @@ async function main() {
   await seed(page);
   const idAllegato = await aggiungiAllegato(page);
   await scansioniDalTelefono(app, page, basePath);
-  // La pagina MGH è in latino: la scelta ricordata dal modale deve dirlo.
   await page.evaluate(() => localStorage.setItem('archiview.ocr.lingue', 'lat'));
 
-  // Quattro passate: due lingue per due temi. La wiki italiana usa le schermate in
-  // italiano, quella inglese le proprie: una guida che mostra un'interfaccia in
-  // un'altra lingua costringe il lettore a tradurre da sé i nomi dei comandi.
   let totale = 0;
   for (const lingua of ['it', 'en']) {
     await page.evaluate((l) => window.cambiaLingua(l), lingua);
@@ -152,18 +113,17 @@ async function main() {
 
   console.log(`\n${totale} screenshot generati.\n`);
 
-  try { await app.close(); } catch { /* già chiusa */ }
-  try { fs.rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* lock */ }
-  try { fs.rmSync(basePath, { recursive: true, force: true, maxRetries: 3 }); } catch { /* lock */ }
+  try { await app.close(); } catch {}
+  try { fs.rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3 }); } catch {}
+  try { fs.rmSync(basePath, { recursive: true, force: true, maxRetries: 3 }); } catch {}
 }
 
-/** Cattura l'intero catalogo di schermate nel tema corrente. */
 async function passata(page, tema, idAllegato, cartella) {
   const suffisso = tema === 'dark' ? '-scuro' : '';
   let n = 0;
 
   const scatta = async (nome) => {
-    await page.waitForTimeout(400); // transizioni CSS: senza, si fotografa un modale a metà
+    await page.waitForTimeout(400);
     const file = path.join(cartella, `${nome}${suffisso}.png`);
     await page.screenshot({ path: file });
     console.log(`  ${nome}${suffisso}.png (${Math.round(fs.statSync(file).size / 1024)} KB)`);
@@ -186,7 +146,6 @@ async function passata(page, tema, idAllegato, cartella) {
     await page.waitForTimeout(600);
   };
 
-  // --- Viste principali ------------------------------------------------------
   await inCartella();
   await scatta('vista-griglia');
 
@@ -195,7 +154,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await page.evaluate(() => window.cambiaVistaLista('griglia'));
   await page.waitForTimeout(400);
 
-  // --- Scheda e campi --------------------------------------------------------
   await page.evaluate(() => window.editItem(appData.manoscritti[0].id));
   await scatta('form-scheda');
 
@@ -209,7 +167,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await chiudi();
   await inCartella();
 
-  // --- Trascrizione e allegati ----------------------------------------------
   await page.evaluate((id) => window.apriTrascrizione(id), idAllegato);
   await page.waitForTimeout(1400);
   await scatta('trascrizione');
@@ -219,7 +176,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await chiudi();
   await inCartella();
 
-  // --- Ricerca, filtri, comandi ---------------------------------------------
   await page.evaluate(() => window.apriPannelloFiltri(document.getElementById('btn-filtri')));
   await scatta('filtri');
   await chiudi();
@@ -234,7 +190,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await scatta('scorciatoie');
   await chiudi();
 
-  // --- Tag, vocabolari, anagrafica ------------------------------------------
   await page.evaluate(() => window.switchSidebarTab('tags'));
   await scatta('tag');
 
@@ -252,17 +207,15 @@ async function passata(page, tema, idAllegato, cartella) {
   await scatta('anagrafica');
   await chiudi();
 
-  // --- Collegamenti ----------------------------------------------------------
   await page.evaluate(() => window.apriCollegamenti(appData.manoscritti[0].id));
   await scatta('collegamenti');
   await chiudi();
 
   await page.evaluate(() => window.apriGrafo());
-  await page.waitForTimeout(2000); // il layout a forze gira a blocchi: va lasciato assestare
+  await page.waitForTimeout(2000);
   await scatta('grafo');
   await chiudi();
 
-  // --- Più schede insieme ----------------------------------------------------
   await page.evaluate(() => {
     window.selectedRecords = appData.manoscritti.slice(0, 3).map((m) => m.id);
     window.aggiornaStatoSelezione?.();
@@ -275,7 +228,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await page.evaluate(() => { window.selectedRecords = []; window.renderMain?.(); });
   await page.waitForTimeout(300);
 
-  // --- Stampa ed esportazioni ------------------------------------------------
   await page.evaluate(() => window.apriStampa('cartella'));
   await scatta('stampa');
   await chiudi();
@@ -285,11 +237,10 @@ async function passata(page, tema, idAllegato, cartella) {
   await chiudi();
 
   await page.evaluate(() => window.apriImportCsv());
-  await page.waitForTimeout(1500); // legge il file dal disco
+  await page.waitForTimeout(1500);
   await scatta('import-csv');
   await chiudi();
 
-  // --- Sicurezza del dato ----------------------------------------------------
   await page.evaluate(() => window.apriCestino());
   await scatta('cestino');
   await chiudi();
@@ -300,7 +251,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await page.evaluate(() => window.switchSidebarTab('folders'));
   await page.waitForTimeout(300);
 
-  // --- Condivisione e impostazioni ------------------------------------------
   await page.evaluate(() => window.apriShareModal());
   await scatta('condivisione');
   await chiudi();
@@ -309,9 +259,6 @@ async function passata(page, tema, idAllegato, cartella) {
   await scatta('impostazioni');
   await chiudi();
 
-  // --- Dal telefono (ArchiScanner) ---------------------------------------------
-  // Senza await: l'avviso aspetta una risposta. L'Esc di `chiudi` vale «Più tardi», che salva
-  // l'impronta e lo spegnerebbe nelle passate dopo: la si azzera prima.
   await page.evaluate(() => window.apiSettings.patch({ scannerRimandato: '' }));
   page.evaluate(() => { window.controllaScansioniAllApertura(); });
   await page.locator('#scan-avviso').waitFor({ state: 'visible' });
@@ -320,7 +267,7 @@ async function passata(page, tema, idAllegato, cartella) {
 
   await inCartella();
   await page.evaluate(() => window.apriScansioni());
-  await page.waitForTimeout(1500); // import automatico del lotto con la scheda, poi le miniature
+  await page.waitForTimeout(1500);
   await page.evaluate(() => window.nascondiMessaggi?.());
   await scatta('dal-telefono');
   await page.evaluate(() => window.chiudiScansioni());
@@ -329,7 +276,6 @@ async function passata(page, tema, idAllegato, cartella) {
   return n;
 }
 
-/** Crea un archivio locale dalla welcome modal (stesso percorso di `e2e/helpers.ts`). */
 async function creaWorkspace(page, basePath) {
   await page.locator('#welcome-modal').waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction(
@@ -345,7 +291,6 @@ async function creaWorkspace(page, basePath) {
   await page.locator('#btn-tab-add').waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction(() => window.__appPronta === true, null, { timeout: 20_000 });
 
-  // Changelog e banner del primo avvio coprirebbero ogni schermata.
   await page.waitForTimeout(1500);
   await page.evaluate(() => {
     window.chiudiChangelogModal?.();
@@ -358,11 +303,9 @@ async function creaWorkspace(page, basePath) {
   await page.waitForTimeout(400);
 }
 
-/** Popola l'archivio con cartelle, schede d'esempio e qualche collegamento. */
 async function seed(page) {
   await page.evaluate(async (schede) => {
     appData.cartelle = ['Imbreviature', 'Imbreviature/Ser Giovanni di Lapo', 'Atti giudiziari', 'Estimi', 'Edizioni'];
-    // Nessuno dei tre modelli predefiniti descrive un'edizione a stampa.
     if (!appData.tipiDocumento.some((t) => t.id === 'edizioni')) {
       appData.tipiDocumento.push({ id: 'edizioni', nome: 'Edizioni a stampa', campi: ['autore', 'titolo', 'dataCronica', 'note'] });
     }
@@ -396,7 +339,6 @@ async function seed(page) {
       modificatoDa: 'Antonio',
     }));
 
-    // Qualche collegamento, o il pannello e il grafo sarebbero vuoti.
     const m = appData.manoscritti;
     m[0].relazioni = [{ id: m[1].id, tipo: 'atto collegato' }, { id: m[4].id, tipo: 'copia di' }];
     m[1].relazioni = [{ id: m[2].id, tipo: 'citato in' }];
@@ -409,7 +351,6 @@ async function seed(page) {
   await page.waitForTimeout(800);
 }
 
-/** Aggiunge la pagina MGH alla scheda dell'edizione, per la trascrizione e per l'OCR. */
 async function aggiungiAllegato(page) {
   const id = await page.evaluate(() => appData.manoscritti.find((m) => m.tipoDocumento === 'edizioni').id);
   await page.evaluate((i) => window.editItem(i), id);
@@ -421,11 +362,6 @@ async function aggiungiAllegato(page) {
   return id;
 }
 
-/**
- * Due lotti arrivati dal telefono, scritti come li lascia la ricezione (CONTRATTO §2): uno per
- * una scheda esistente (entra da solo all'apertura del pannello), uno da smistare. Drive è
- * finto come in `e2e/scanner.spec.ts`: un archivio nuovo creato sul telefono e uno già noto.
- */
 async function scansioniDalTelefono(app, page, basePath) {
   const foto = fs.readFileSync(ALLEGATO);
   const sha256 = crypto.createHash('sha256').update(foto).digest('hex');

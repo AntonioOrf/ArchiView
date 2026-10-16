@@ -4,7 +4,6 @@ import { pruneVersions, writeVersion } from '../db';
 import { err, json } from '../http';
 import { EVENTO_AGGIORNATO, canaleRepo, pubblica } from '../pusher';
 
-// POST /api/repos/:id/push  body: { parentVersion, database }
 export async function handlePush(req: Request, env: Env, repoId: string, ctx?: ExecutionContext): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return rispostaNegata(env, repoId, bearer(req));
@@ -32,14 +31,11 @@ export async function handlePush(req: Request, env: Env, repoId: string, ctx?: E
     return err(400, 'database mancante o non valido.');
   }
 
-  // Guardia di concorrenza atomica: solo un push con parentVersion corretto vince. Dati e
-  // avanzamento di current_version vanno nello stesso batch (vedi writeVersion).
   const conflitto = () => err(409, 'Il server contiene una versione più recente. Esegui prima il pull.');
   let vinto: boolean;
   try {
     vinto = await writeVersion(env, repoId, parentVersion, body.database, auth.memberId);
   } catch (e: any) {
-    // Chiave duplicata: un altro push ha già scritto parentVersion+1.
     if (/UNIQUE|constraint/i.test(String(e?.message))) return conflitto();
     return err(500, 'Errore nel salvataggio della versione: ' + (e?.message || 'sconosciuto'));
   }
@@ -49,12 +45,10 @@ export async function handlePush(req: Request, env: Env, repoId: string, ctx?: E
   }
   const newVersion = parentVersion + 1;
 
-  // Retention: prune best-effort, non deve far fallire il push.
   try {
     await pruneVersions(env, repoId, Number(env.MAX_VERSIONS || '20'));
-  } catch { /* ignore */ }
+  } catch {}
 
-  // Notifica ai membri connessi (S6): dopo la risposta, senza farla attendere né fallire.
   const notifica = pubblica(env, canaleRepo(repoId), EVENTO_AGGIORNATO, { version: newVersion });
   if (ctx) ctx.waitUntil(notifica);
 

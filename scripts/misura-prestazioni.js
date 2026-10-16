@@ -1,15 +1,3 @@
-// Baseline di prestazioni.
-//
-// Avvia l'app buildata (out/) su un archivio sintetico e misura:
-//  - avvio:       dal lancio del processo all'app pronta (wall clock) e dalla navigazione al
-//                 mark `archiview:pronta` (lato renderer, senza il costo di Playwright);
-//  - heap:        heap JS del renderer dopo il caricamento, a valle di una GC forzata;
-//  - apertura:    `leggi-dati` (lettura + parse + passaggio IPC) e riapertura completa (reload);
-//  - salvataggio: `salvaTutto()` (validazione + stringify + IPC + scrittura atomica).
-// Più le dimensioni degli script caricati da index.html.
-//
-// Uso: npm run build-ts && node scripts/misura-prestazioni.js [--schede 5000] [--giri 5] [--radice] [--json out.json]
-// I numeri hanno senso solo come confronto sulla stessa macchina: lanciare prima e dopo.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -39,9 +27,6 @@ const caso = (n) => { seme = (Math.imul(seme, 1103515245) + 12345) >>> 0; return
 const frase = (n) => Array.from({ length: n }, () => PAROLE[caso(PAROLE.length)]).join(' ');
 const persona = () => NOMI[caso(NOMI.length)] + ' ' + COGNOMI[caso(COGNOMI.length)];
 
-// Archivio realistico: 20 buste dentro un fondo, la prima aperta nella sidebar.
-// Con --radice tutte le schede stanno nella radice (aperta di default): sidebar con una riga
-// per scheda, il caso peggiore per il render.
 const BUSTE = 20;
 const busta = (i) => `Fondo/Busta ${i % BUSTE}`;
 
@@ -107,7 +92,6 @@ async function lancia(userData) {
   const renderer = await page.evaluate(() => {
     const m = performance.getEntriesByName('archiview:pronta')[0];
     const nav = performance.getEntriesByType('navigation')[0];
-    // Mark aggiuntivi (`av:*`), messi a mano per scomporre l'avvio quando serve.
     const passi = performance.getEntriesByType('mark').filter(e => e.name.startsWith('av:'))
       .map(e => e.name.slice(3) + '=' + Math.round(e.startTime));
     return { pronta: m ? m.startTime : NaN, dcl: nav ? nav.domContentLoadedEventEnd : NaN, passi };
@@ -119,7 +103,7 @@ async function chiudi(app) {
   try {
     await Promise.race([app.close(), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 8000))]);
   } catch {
-    try { app.process().kill(); } catch { /* già chiuso */ }
+    try { app.process().kill(); } catch {}
   }
 }
 
@@ -133,8 +117,6 @@ async function heapDopoGc(page) {
   return usedSize / 1048576;
 }
 
-// --profilo: profilo CPU di una riapertura, con il tempo proprio per funzione. Il profiler
-// rallenta tutto: conta la proporzione fra le voci, non i millisecondi assoluti.
 async function profilaRiapertura(page) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Profiler.enable');
@@ -183,7 +165,6 @@ async function main() {
   const avvii = [];
   let ultimo = null;
   try {
-    // Il primo avvio crea la userData e, se l'app la usa, la cache del codice: va a parte.
     for (let i = 0; i <= GIRI; i++) {
       const r = await lancia(userData);
       if (i < GIRI) await chiudi(r.app);
@@ -211,7 +192,6 @@ async function main() {
       }));
     }
 
-    // Ridisegno di sidebar + vista principale, cioè ciò che segue ogni selezione o modifica.
     const render = [];
     for (let i = 0; i < GIRI; i++) {
       render.push(await page.evaluate(() => {
@@ -267,7 +247,7 @@ async function main() {
     if (OUT_JSON) fs.writeFileSync(path.resolve(OUT_JSON), JSON.stringify(risultato, null, 2));
   } finally {
     if (ultimo) await chiudi(ultimo.app);
-    try { fs.rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* lock di Chromium */ }
+    try { fs.rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch {}
   }
 }
 

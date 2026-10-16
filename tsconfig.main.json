@@ -1,6 +1,4 @@
 {
-  // Solo controllo (niente emissione): main e codice condiviso con i controlli più severi che
-  // il renderer, a script globali, non regge ancora. La build resta su tsconfig.json.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,

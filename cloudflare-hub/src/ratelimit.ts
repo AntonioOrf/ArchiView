@@ -14,15 +14,10 @@ export interface LimitResult {
   reason: string;
 }
 
-/** IP client reale: alla edge Cloudflare sovrascrive CF-Connecting-IP (non falsificabile in prod). */
 export function clientIp(req: Request): string {
   return req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'unknown';
 }
 
-/**
- * Incremento atomico del contatore di finestra con INSERT ... ON CONFLICT ... RETURNING.
- * Un solo round-trip per bucket; ritorna il valore post-incremento.
- */
 async function bump(env: Env, bucket: string, windowStart: number): Promise<number> {
   const row = await env.DB.prepare(
     `INSERT INTO rate_counters(bucket, window_start, count) VALUES(?, ?, 1)
@@ -32,12 +27,6 @@ async function bump(env: Env, bucket: string, windowStart: number): Promise<numb
   return row?.count ?? 1;
 }
 
-/**
- * Argine anti-abuso su POST /api/repos, persistito su D1.
- * Il CREATE_SECRET è bakeato nel client e quindi estraibile: questo è il vero limite.
- * Tre finestre, dalla più stretta: burst per-IP/minuto, quota per-IP/giorno, tetto globale/giorno.
- * Ogni tentativo consuma quota anche se poi rifiutato (più severo, voluto).
- */
 export async function enforceCreateLimits(env: Env, ip: string): Promise<LimitResult> {
   const now = Date.now();
   const minute = Math.floor(now / MINUTE) * MINUTE;
@@ -59,17 +48,11 @@ export async function enforceCreateLimits(env: Env, ip: string): Promise<LimitRe
     return { ok: false, retryAfterSec: dayReset, reason: 'Limite giornaliero globale raggiunto, riprova domani.' };
   }
 
-  // Pulizia opportunistica delle finestre scadute (volume basso: costo trascurabile).
   await env.DB.prepare('DELETE FROM rate_counters WHERE window_start < ?').bind(now - 2 * DAY).run();
 
   return { ok: true, retryAfterSec: 0, reason: '' };
 }
 
-/**
- * Verifica Turnstile opzionale: attiva solo se TURNSTILE_SECRET è impostato.
- * Il client deve inviare il token in header `CF-Turnstile-Response` o body `{ turnstileToken }`.
- * Ritorna true se disabilitata (nessun secret) o token valido.
- */
 export async function verifyTurnstile(env: Env, req: Request, ip: string, token: string | null): Promise<boolean> {
   if (!env.TURNSTILE_SECRET) return true;
   const t = token || req.headers.get('CF-Turnstile-Response');

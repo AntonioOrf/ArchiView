@@ -1,7 +1,3 @@
-// Smoke test end-to-end contro un'istanza `wrangler dev`.
-// Uso: node test/smoke.mjs http://localhost:8787 <CREATE_SECRET>
-// Richiede: schema applicato con `npm run migrate:local`.
-
 const BASE = process.argv[2] || 'http://localhost:8787';
 const CREATE_SECRET = process.argv[3] || 'dev-secret';
 
@@ -17,7 +13,6 @@ const H = (key) => ({ Authorization: `Bearer ${key}`, 'Content-Type': 'applicati
 async function main() {
   console.log('BASE =', BASE);
 
-  // 1. create repo
   let r = await fetch(`${BASE}/api/repos`, {
     method: 'POST',
     headers: { 'X-Create-Secret': CREATE_SECRET, 'Content-Type': 'application/json' },
@@ -27,22 +22,18 @@ async function main() {
   assert(r.status === 201 && created?.repoId?.startsWith('repo_') && created?.ownerKey, 'create repo → 201 {repoId, ownerKey}');
   const { repoId, ownerKey } = created;
 
-  // create con secret errato → 403
   r = await fetch(`${BASE}/api/repos`, {
     method: 'POST', headers: { 'X-Create-Secret': 'wrong', 'Content-Type': 'application/json' }, body: '{}',
   });
   assert(r.status === 403, 'create con secret errato → 403');
 
-  // 2. pull iniziale (v0, db vuoto)
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: H(ownerKey) });
   let d = await j(r);
   assert(r.status === 200 && d.version === 0, 'pull iniziale → version 0');
 
-  // pull con chiave errata → 401
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: H('chiave-fasulla') });
   assert(r.status === 401, 'pull con chiave errata → 401');
 
-  // 3. push v1
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: H(ownerKey),
     body: JSON.stringify({ parentVersion: 0, database: { manoscritti: [{ id: 'a', lastModified: 1 }] } }),
@@ -50,24 +41,20 @@ async function main() {
   d = await j(r);
   assert(r.status === 200 && d.version === 1, 'push v1 → version 1');
 
-  // 4. pull v1 ritorna il db
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: H(ownerKey) });
   d = await j(r);
   assert(r.status === 200 && d.version === 1 && d.database?.manoscritti?.[0]?.id === 'a', 'pull v1 → database corretto');
 
-  // ifVersionNot fast-path
   r = await fetch(`${BASE}/api/repos/${repoId}/pull?ifVersionNot=1`, { headers: H(ownerKey) });
   d = await j(r);
   assert(r.status === 200 && d.unchanged === true, 'pull ?ifVersionNot=1 → unchanged');
 
-  // 5. push concorrente con parentVersion superato → 409
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: H(ownerKey),
     body: JSON.stringify({ parentVersion: 0, database: {} }),
   });
   assert(r.status === 409, 'push con parentVersion stantio → 409');
 
-  // 6. membri: add + pull con chiave membro
   r = await fetch(`${BASE}/api/repos/${repoId}/members`, {
     method: 'POST', headers: H(ownerKey), body: JSON.stringify({ label: 'Mario' }),
   });
@@ -78,7 +65,6 @@ async function main() {
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: H(memberKey) });
   assert(r.status === 200, 'pull con chiave membro → 200');
 
-  // 6b. push v2 come membro + cronologia versioni
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: H(memberKey),
     body: JSON.stringify({ parentVersion: 1, database: { manoscritti: [{ id: 'a', lastModified: 1 }, { id: 'b', lastModified: 2 }] } }),
@@ -105,24 +91,20 @@ async function main() {
   r = await fetch(`${BASE}/api/repos/${repoId}/versions`, { headers: H('chiave-fasulla') });
   assert(r.status === 401, 'GET /versions con chiave fasulla → 401');
 
-  // membro NON è owner: list members → 403
   r = await fetch(`${BASE}/api/repos/${repoId}/members`, { headers: H(memberKey) });
   assert(r.status === 403, 'membro su GET members → 403');
 
-  // revoca → chiave membro non funziona più
   r = await fetch(`${BASE}/api/repos/${repoId}/members/${memberId}`, { method: 'DELETE', headers: H(ownerKey) });
   assert(r.status === 200, 'revoke member → 200');
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: H(memberKey) });
   assert(r.status === 401, 'pull con chiave revocata → 401');
 
-  // /versions con chiave revocata → 401; ma la label del membro resta nello storico (revoca soft)
   r = await fetch(`${BASE}/api/repos/${repoId}/versions`, { headers: H(memberKey) });
   assert(r.status === 401, 'GET /versions con chiave revocata → 401');
   r = await fetch(`${BASE}/api/repos/${repoId}/versions`, { headers: H(ownerKey) });
   d = await j(r);
   assert(d.versions?.find(v => v.version === 2)?.authorLabel === 'Mario', 'label "Mario" ancora presente su v2 dopo la revoca');
 
-  // 7. indice allegati
   const hash = 'a'.repeat(64);
   r = await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, {
     method: 'POST', headers: H(ownerKey),
@@ -133,7 +115,6 @@ async function main() {
   });
   assert(r.status === 200, 'upsert indice allegati → 200');
 
-  // URL non consentito → 400
   r = await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, {
     method: 'POST', headers: H(ownerKey),
     body: JSON.stringify({ chunks: [{ hash, url: 'https://evil.example.com/x' }] }),
@@ -144,8 +125,6 @@ async function main() {
   d = await j(r);
   assert(r.status === 200 && d.chunks?.length === 1 && d.files?.[0]?.fileName === 'scan.pdf', 'get indice → chunk+file');
 
-  // 8. rate-limit creazione: bucket IP isolato (CF-Connecting-IP dedicato) per non
-  // inquinare il flusso principale. Default CREATE_MAX_PER_IP_MIN=5 → il 6° → 429.
   const rlIp = `203.0.113.${Math.floor(Math.random() * 250) + 1}`;
   const createAs = () => fetch(`${BASE}/api/repos`, {
     method: 'POST',

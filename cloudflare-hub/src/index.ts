@@ -13,61 +13,46 @@ export default {
     if (req.method === 'OPTIONS') return preflight();
 
     const url = new URL(req.url);
-    // segmenti puliti: ['api','repos',':id','pull'] ...
     const seg = url.pathname.split('/').filter(Boolean);
     const M = req.method;
 
     try {
-      // GET /  -> health check
       if (seg.length === 0) return json({ service: 'archiview-hub', ok: true });
 
       if (seg[0] !== 'api') return err(404, 'Not found');
 
-      // /api/ping (relay Pusher aperto) rimosso. Ora pubblica il
-      // Worker stesso dopo un push; risponde il 404 in fondo.
-
       if (seg[1] === 'repos') {
-        // POST /api/repos
         if (seg.length === 2 && M === 'POST') return handleCreateRepo(req, env);
 
         const repoId = seg[2];
         if (!repoId) return err(404, 'Not found');
 
-        // /api/repos/:id/pull
         if (seg.length === 4 && seg[3] === 'pull' && M === 'GET') {
           return handlePull(req, env, repoId);
         }
-        // /api/repos/:id/push
         if (seg.length === 4 && seg[3] === 'push' && M === 'POST') {
           return handlePush(req, env, repoId, ctx);
         }
-        // /api/repos/:id/versions
         if (seg.length === 4 && seg[3] === 'versions' && M === 'GET') {
           return handleListVersions(req, env, repoId);
         }
-        // /api/repos/:id/versions/:n
         if (seg.length === 5 && seg[3] === 'versions' && M === 'GET') {
           return handleGetVersion(req, env, repoId, seg[4]);
         }
-        // /api/repos/:id/realtime-auth
         if (seg.length === 4 && seg[3] === 'realtime-auth' && M === 'POST') {
           return handleRealtimeAuth(req, env, repoId);
         }
-        // /api/repos/:id/members
         if (seg.length === 4 && seg[3] === 'members') {
           if (M === 'GET') return handleListMembers(req, env, repoId);
           if (M === 'POST') return handleAddMember(req, env, repoId);
         }
-        // /api/repos/:id/members/:mid
         if (seg.length === 5 && seg[3] === 'members' && M === 'DELETE') {
           return handleRevokeMember(req, env, repoId, seg[4]);
         }
-        // /api/repos/:id/attachments/index
         if (seg.length === 5 && seg[3] === 'attachments' && seg[4] === 'index') {
           if (M === 'GET') return handleGetIndex(req, env, repoId);
           if (M === 'POST') return handlePutIndex(req, env, repoId);
         }
-        // /api/repos/:id/attachments/chunks/:hash
         if (seg.length === 6 && seg[3] === 'attachments' && seg[4] === 'chunks' && M === 'DELETE') {
           return handleDeleteChunk(req, env, repoId, seg[5]);
         }
@@ -75,8 +60,6 @@ export default {
 
       return err(404, 'Not found');
     } catch (e: any) {
-      // Il dettaglio (messaggi D1, nomi di tabelle e colonne) va nei log del Worker, non al
-      // client: il riferimento basta a ritrovarlo con `wrangler tail`.
       const rif = crypto.randomUUID().slice(0, 8);
       console.error(`[${rif}] ${req.method} ${new URL(req.url).pathname}:`, e?.stack || e?.message || e);
       return err(500, `Errore interno del server (rif. ${rif}).`);

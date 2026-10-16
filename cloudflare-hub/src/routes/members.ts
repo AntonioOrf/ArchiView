@@ -10,7 +10,6 @@ async function requireOwner(req: Request, env: Env, repoId: string): Promise<Aut
   return auth;
 }
 
-// GET /api/repos/:id/members  (owner) -> { members: [...] }
 export async function handleListMembers(req: Request, env: Env, repoId: string): Promise<Response> {
   const gate = await requireOwner(req, env, repoId);
   if (gate instanceof Response) return gate;
@@ -30,7 +29,6 @@ export async function handleListMembers(req: Request, env: Env, repoId: string):
   return json({ members });
 }
 
-// POST /api/repos/:id/members  (owner)  body: { label?, role? } -> { memberId, memberKey }
 export async function handleAddMember(req: Request, env: Env, repoId: string): Promise<Response> {
   const gate = await requireOwner(req, env, repoId);
   if (gate instanceof Response) return gate;
@@ -42,9 +40,9 @@ export async function handleAddMember(req: Request, env: Env, repoId: string): P
     if (raw) {
       const p = JSON.parse(raw);
       if (p && typeof p.label === 'string') label = p.label.slice(0, 200);
-      if (p && p.role === 'member') role = 'member'; // owner non assegnabile via API
+      if (p && p.role === 'member') role = 'member';
     }
-  } catch { /* body opzionale */ }
+  } catch {}
 
   const memberId = randomId('mbr_');
   const memberKey = randomKey();
@@ -54,11 +52,9 @@ export async function handleAddMember(req: Request, env: Env, repoId: string): P
     'INSERT INTO members(member_id,repo_id,label,key_hash,role,revoked_at,created_at) VALUES(?,?,?,?,?,NULL,?)'
   ).bind(memberId, repoId, label, keyHash, role, Date.now()).run();
 
-  // memberKey mostrata UNA sola volta (finisce nell'invite code).
   return json({ memberId, memberKey }, 201);
 }
 
-// DELETE /api/repos/:id/members/:mid  (owner) -> revoca soft
 export async function handleRevokeMember(
   req: Request, env: Env, repoId: string, memberId: string
 ): Promise<Response> {
