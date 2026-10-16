@@ -28,7 +28,6 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
   const allegatiLocalDir = state.attachmentsDirPath;
   const cacheDir = path.join(state.workspacePath, '.archiview-chunks');
-  // cacheDir viene sempre pulita in finally, anche in caso di errore
 
   if (!fs.existsSync(allegatiLocalDir)) fs.mkdirSync(allegatiLocalDir, { recursive: true });
   if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
@@ -62,14 +61,13 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     const indexContent = await driveState.drive.files.get({ fileId: indexFileId, alt: 'media' });
     remoteIndex = typeof indexContent.data === 'string' ? JSON.parse(indexContent.data) : indexContent.data;
   }
-  // index.json è scrivibile da ogni collaboratore: i suoi hash diventano nomi di file in cache.
   remoteIndex = indiceSicuro(remoteIndex);
 
   const filesToUpload = fs.readdirSync(allegatiLocalDir).filter((f: string) => usedAttachments.has(f));
   const allRequiredHashes = new Set<string>();
   let indexChanged = false;
   const mappa = leggiMappaChunk(state.workspacePath);
-  const daMappa = new Map<string, string[]>(); // file non riletti: i loro chunk non sono in cache
+  const daMappa = new Map<string, string[]>();
 
   for (const file of filesToUpload) {
     const filePath = path.join(allegatiLocalDir, file);
@@ -131,11 +129,8 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     if (win && (iDown % 5 === 0 || iDown === totalDown)) {
       win.webContents.send('sync-progress', { percent: (iDown / totalDown) * 100, message: `Scaricamento blocco allegati ${iDown} di ${totalDown}` });
     }
-    // f.name è già un hash valido (chunksToDownload viene dall'indice filtrato), ma il percorso
-    // passa comunque da safeChunkPath: la destinazione non deve dipendere da un nome remoto.
     const dest = safeChunkPath(cacheDir, f.name);
     await downloadFile(f.id, dest);
-    // Il nome È l'hash del contenuto: un chunk che non corrisponde è corrotto o sostituito.
     if (await hashFile(dest) !== f.name) {
       console.warn(`[drive-att] chunk ${f.name.slice(0, 8)} scartato: contenuto non corrispondente all'hash`);
       await fs.promises.unlink(dest).catch(() => {});
@@ -147,7 +142,6 @@ async function syncAttachmentsBidirectional(): Promise<void> {
       await assembleFileFromChunks(item.hashes, cacheDir, safeAttachmentPath(allegatiLocalDir, item.fileName));
       if (win) win.webContents.send('allegato-scaricato', item.fileName);
     } catch (e: any) {
-      // Un allegato non ricomponibile (chunk mancante o scartato) non deve fermare gli altri.
       console.warn(`[drive-att] ricomposizione saltata per ${item.fileName}: ${e.message}`);
     }
   }

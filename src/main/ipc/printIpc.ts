@@ -1,9 +1,3 @@
-// IPC della stampa (Fase 2.2).
-//
-// Sottile come quello dell'OCR: legge il database dal disco (come `export-csv`, cosi' che
-// cio' che si stampa sia cio' che e' stato salvato), chiede il documento al template puro e
-// lo passa a `printHost`. Nessuna decisione di layout vive qui.
-
 import { ipcMain, dialog, shell } from 'electron';
 import * as fs from 'fs';
 import { state } from '../workspaceManager';
@@ -12,15 +6,12 @@ import { generaHtmlStampa } from '../print/printTemplate';
 import * as printHost from '../print/printHost';
 const Model = require('../../shared/model');
 
-/** Documento pronto per la finestra: template puro + miniature lette da disco. */
 async function componiDocumento(ids, opzioni) {
   const db = await leggiDb();
   if (!db) return { errore: 'Database non trovato' };
   const records = recordsRichiesti(db, ids);
   if (records.length === 0) return { errore: 'Nessuna scheda da stampare' };
 
-  // Le miniature costano I/O e rasterizzazione: si preparano SOLO per il layout che le
-  // mostra. Un inventario di trecento schede non deve pagare trecento letture di file.
   const miniature = opzioni.layout === 'scheda' && opzioni.miniature !== false
     ? await printHost.preparaMiniature(records, { pdf: opzioni.miniaturePdf !== false })
     : {};
@@ -67,9 +58,6 @@ function setupPrintIpc() {
 
       const pdf = await printHost.generaPdf(doc.html, opt);
       await fs.promises.writeFile(scelta.filePath, pdf);
-      // Il PDF si apre da solo: e' l'anteprima. Confrontare la resa a schermo con quella
-      // stampata e' l'unico modo di accorgersi di un troncamento, e chiederlo con un
-      // secondo clic significa che quasi nessuno lo farebbe.
       if (opt.apri !== false) shell.openPath(scelta.filePath).catch(() => {});
       return { success: true, count: doc.records.length, path: scelta.filePath };
     } catch (errore) {

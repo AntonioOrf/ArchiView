@@ -1,16 +1,9 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-// Sanitizza un nome di allegato proveniente da fonti NON fidate (DB di vault condivisi/Hub,
-// listing OneDrive/Drive di altri collaboratori). Impedisce path traversal e path assoluti:
-// il file può essere scritto/letto SOLO dentro `dir`.
-// Ritorna il path assoluto sicuro, oppure lancia se il nome è malevolo/vuoto.
-// N7: anche i nomi che Windows interpreta in modo speciale. `x.jpg:flusso` scriverebbe uno
-// stream alternato (ADS) di x.jpg, `CON`/`nul.txt` un dispositivo, `x.` e `x ` un file diverso
-// da quello chiesto (Windows toglie punto e spazio finali).
 function safeAttachmentPath(dir: string, rawName: string): string {
   if (typeof rawName !== 'string' || !rawName) throw new Error('Nome allegato non valido');
-  const base = path.basename(rawName);                 // rimuove ../ e componenti di percorso
+  const base = path.basename(rawName);
   if (!base || base === '.' || base === '..' || /[. ]$/.test(base) || base.length > 255
       || CARATTERI_VIETATI.test(base) || NOMI_RISERVATI_WIN.test(base)) {
     throw new Error('Nome allegato non valido');
@@ -21,22 +14,13 @@ function safeAttachmentPath(dir: string, rawName: string): string {
   return resolved;
 }
 
-// Variante non-throwing: ritorna null invece di lanciare (utile nei loop di sync
-// dove un singolo nome malevolo non deve abortire l'intera sincronizzazione).
 function safeAttachmentPathOrNull(dir: string, rawName: string): string | null {
   try { return safeAttachmentPath(dir, rawName); } catch { return null; }
 }
 
-// Nomi che Windows riserva ai dispositivi, anche con un'estensione ("CON.txt").
 const NOMI_RISERVATI_WIN = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-// Caratteri vietati nei nomi di file su Windows, più i controlli.
 const CARATTERI_VIETATI = /[<>:"/\\|?*\u0000-\u001f]/;
 
-/**
- * Cartella `nome` DIRETTAMENTE dentro `base`, per un nuovo workspace. `nome` può arrivare da
- * fuori (nome della cartella Drive scelta nel Picker, invito): deve essere un solo segmento,
- * senza separatori né `..`, e il risultato deve restare figlio di `base`. Lancia altrimenti.
- */
 function safeChildDir(base: string, nome: string): string {
   if (typeof base !== 'string' || !base) throw new Error('Cartella di destinazione non valida');
   if (typeof nome !== 'string') throw new Error('Nome cartella non valido');
@@ -51,11 +35,6 @@ function safeChildDir(base: string, nome: string): string {
   return risultato;
 }
 
-/**
- * Rende un nome qualsiasi (es. "Fondo: Carte / 1500_ArchiView" da Drive) un nome di cartella
- * valido su Windows, invece di rifiutarlo: un nome remoto legittimo non deve bloccare un join.
- * Il risultato passa comunque da safeChildDir.
- */
 function nomeCartellaSicuro(nome: unknown, riserva = 'Vault_Condiviso'): string {
   let s = typeof nome === 'string' ? nome : '';
   s = s.replace(new RegExp(CARATTERI_VIETATI.source, 'g'), '_').replace(/_+/g, '_').trim().replace(/[. ]+$/, '');
@@ -64,12 +43,6 @@ function nomeCartellaSicuro(nome: unknown, riserva = 'Vault_Condiviso'): string 
   return s.slice(0, 200);
 }
 
-/**
- * True se `fileReale` (già passato da realpath) sta dentro `dir`. Anche `dir` va risolta con la
- * stessa funzione nativa: un alias (nome breve 8.3 come `RUNNER~1`, junction, collegamento
- * simbolico) farebbe sembrare "fuori" un file che è dentro, e il controllo si aggirerebbe
- * passando dall'alias. Se `dir` non esiste si confronta il percorso così com'è.
- */
 function dentroCartellaReale(fileReale: string, dir: string): boolean {
   if (typeof fileReale !== 'string' || typeof dir !== 'string' || !dir) return false;
   let base: string;

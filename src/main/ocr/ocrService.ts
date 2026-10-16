@@ -1,9 +1,3 @@
-// Orchestrazione dell'OCR di un allegato (Fase 2.3).
-//
-// Mette insieme le tre parti: `pdfHost` (pagine e rasterizzazione), `ocrEngine`
-// (riconoscimento) e `ocrText` (post-processing puro). Qui vivono le due decisioni che
-// contano davvero per l'utente: quando NON fare l'OCR, e come non far crollare la macchina.
-
 import * as path from 'path';
 import * as fs from 'fs';
 import { state } from '../workspaceManager';
@@ -12,15 +6,8 @@ import { riconosci, linguaMancanti, normalizzaLingue, rilevaOrientamento } from 
 import { testoOcrPiano, testoOcrInHtml, unisciPagine } from './ocrText';
 import * as pdfRicercabile from './pdfRicercabile';
 
-/**
- * Una pagina il cui livello testo supera questa soglia di caratteri alfanumerici è un PDF
- * digitale: si prende il testo così com'è. Non è zero perché gli scanner timbrano numeri di
- * pagina e nomi di file dentro PDF che restano immagini pure — con soglia zero quelle poche
- * cifre passerebbero per "documento con testo" e l'OCR non partirebbe mai dove serve.
- */
 const SOGLIA_TESTO_PDF = 25;
 
-/** Un solo lavoro alla volta. */
 let inCorso = false;
 let annullato = false;
 
@@ -53,14 +40,11 @@ function verificaAnnullamento() {
   }
 }
 
-/** Una pagina PDF: prima il livello testo, l'OCR solo se non c'è. */
 async function elaboraPaginaPdf(numero, opzioni, segnala) {
   const risTesto = await pdfHost.testoPagina(numero);
   if (risTesto && risTesto.ok) {
     const righe = risTesto.righe || [];
     if (contaAlfanumerici(righe.join(' ')) >= SOGLIA_TESTO_PDF) {
-      // Testo già nel file: resa perfetta, costo quasi nullo, nessuna confidenza da mostrare
-      // perché non c'è stato alcun riconoscimento da mettere in dubbio.
       return { numero, righe, origine: 'testo', confidenza: 100 };
     }
   }
@@ -72,8 +56,6 @@ async function elaboraPaginaPdf(numero, opzioni, segnala) {
     return { numero, righe: [], origine: 'errore', confidenza: 0, errore: img && img.errore };
   }
 
-  // La versione raddrizzata si rasterizza di nuovo con la rotazione aggiunta: pdf.js ruota il
-  // vettoriale, nessuna perdita da ricampionare la PNG.
   const { esito, rotazione, orientamentoIncerto } = await riconosciOrientato({
     originale: Buffer.from(img.png, 'base64'),
     ruota: async (gradi) => {
@@ -92,23 +74,8 @@ async function elaboraPaginaPdf(numero, opzioni, segnala) {
   };
 }
 
-/**
- * Di quanti punti la lettura nel verso proposto deve battere quella nel verso originale
- * perché una proposta incerta dell'OSD venga accettata. Il testo letto di traverso esce
- * come rumore a confidenza bassa (in prova: simboli sparsi contro 85+ sul verso giusto): il
- * margine serve solo a non girare una carta per un pareggio.
- */
 const MARGINE_ARBITRATO = 10;
 
-/**
- * Riconoscimento con raddrizzamento.
- *
- * - OSD sicuro → si riconosce solo la versione ruotata.
- * - OSD incerto → ARBITRATO: si riconosce nei due versi e vince la lettura con confidenza
- *   nettamente migliore. Costa un OCR in più, ma solo sulle pagine dubbie, ed evita sia di
- *   girare per errore una carta dritta sia di lasciarne storta una che l'OSD aveva capito.
- * - Nessuna proposta, rotazione fallita → l'originale, come senza l'opzione.
- */
 async function riconosciOrientato({ originale, ruota, raddrizza, lingue, pdf, numero, segnala }) {
   const leggi = (sorgente) => riconosci(sorgente, lingue, (p) => {
     segnala({ fase: p.fase, pagina: numero, progresso: p.progresso });
@@ -145,16 +112,6 @@ async function riconosciOrientato({ originale, ruota, raddrizza, lingue, pdf, nu
   return { esito: suOriginale, rotazione: 0, orientamentoIncerto: true };
 }
 
-/**
- * OCR di un allegato.
- *
- * `opzioni`: `{ nomeFile, tipo, lingue, dpi, maxPagine, intestazione, pdf, raddrizza }`.
- * Con `pdf` l'allegato si accoda anche al PDF ricercabile aperto da `pdfRicercabile.apri`.
- * Con `raddrizza` le pagine scansionate di traverso si ruotano prima del riconoscimento
- * (serve `osd` installato; senza, l'opzione è ignorata in silenzio).
- * `onProgresso` riceve `{fase, pagina, pagine, progresso}` ad ogni passo: su un PDF di
- * trenta carte l'operazione dura minuti, e una barra ferma è indistinguibile da un blocco.
- */
 async function eseguiOcr(opzioni, onProgresso) {
   const o = opzioni || {};
   const lingue = normalizzaLingue(o.lingue);
@@ -173,7 +130,7 @@ async function eseguiOcr(opzioni, onProgresso) {
   inCorso = true;
   annullato = false;
   const segnala = (dati) => {
-    try { if (typeof onProgresso === 'function') onProgresso(dati); } catch { /* la UI non deve poter far fallire un OCR */ }
+    try { if (typeof onProgresso === 'function') onProgresso(dati); } catch {}
   };
 
   try {
@@ -183,7 +140,6 @@ async function eseguiOcr(opzioni, onProgresso) {
     if (o.tipo !== 'pdf') {
       let incorporabile = false;
       if (conPdf) {
-        // Bastano i primi byte per il formato e l'EXIF, non il file intero.
         const fh = await fs.promises.open(percorso, 'r');
         try {
           const testa = Buffer.alloc(512);
@@ -193,7 +149,6 @@ async function eseguiOcr(opzioni, onProgresso) {
           await fh.close();
         }
       }
-      // La rotazione di un'immagine la fa il canvas della finestra host: il main non ne ha uno.
       const { esito, rotazione, orientamentoIncerto } = await riconosciOrientato({
         originale: percorso,
         ruota: async (gradi) => {
@@ -249,10 +204,6 @@ async function eseguiOcr(opzioni, onProgresso) {
   }
 }
 
-/**
- * Un errore nel PDF ricercabile non invalida l'OCR: il testo è già riconosciuto e va comunque
- * nella trascrizione. Torna il codice, che il renderer mostra accanto al risultato.
- */
 async function accodaAlPdf(azione) {
   try {
     await azione();
@@ -275,9 +226,6 @@ function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?): any {
     ? unisciPagine(pagine).html
     : testoOcrInHtml(utili.length ? utili[0].righe : [], { intestazione: o.intestazione });
 
-  // La confidenza dichiarata copre le sole pagine davvero riconosciute: mediarla con le
-  // pagine prese dal livello testo (100 per definizione) gonfierebbe il numero proprio sui
-  // PDF misti, cioè dove all'utente serve sapere quanto fidarsi.
   const daOcr = pagine.filter(p => p.origine === 'ocr');
   const confidenza = daOcr.length
     ? Math.round((daOcr.reduce((s, p) => s + (p.confidenza || 0), 0) / daOcr.length) * 10) / 10
@@ -292,9 +240,6 @@ function componiRisultato(pagine, lingue, o, paginePdf?, pagineFatte?): any {
     confidenza,
     lingue,
     motore: 'tesseract',
-    // L'HTML di ciascuna pagina, oltre al blocco unito: il renderer scrive ogni pagina di un
-    // PDF sulla SUA trascrizione. Rifarlo dividendo `html` sui marcatori sarebbe possibile,
-    // ma farebbe dipendere la scrittura dal formato di un testo pensato per essere letto.
     pagine: pagine.map(p => ({
       numero: p.numero,
       origine: p.origine,

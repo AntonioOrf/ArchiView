@@ -1,17 +1,12 @@
-// Estrazione ZIP in streaming, isolata dall'IPC per poter essere testata senza Electron.
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { safeAttachmentPathOrNull } from './pathSafety';
 
-// Limite di sicurezza per il JSON in memoria: oltre questa soglia l'import viene rifiutato
-// invece di far esplodere l'heap su macchine deboli.
 const MAX_JSON_BYTES = 64 * 1024 * 1024;
 
-// Spazio che l'import lascia comunque libero sul disco degli allegati.
 const MARGINE_DISCO_BYTES = 1024 * 1024 * 1024;
 
-/** Byte disponibili sul volume di `dir` (o del primo antenato esistente); `null` se ignoto. */
 function spazioLiberoDisco(dir: string): number | null {
   let corrente = path.resolve(dir);
   for (;;) {
@@ -26,18 +21,6 @@ function spazioLiberoDisco(dir: string): number | null {
   }
 }
 
-/**
- * Estrae uno ZIP entry-per-entry senza caricarlo in RAM.
- * - `schedatura.json` viene bufferizzato (unico contenuto che serve in memoria, con cap).
- * - Le entry `allegati/*` vengono scritte su disco via pipe stream→file.
- * I nomi sono normalizzati con `path.basename` per neutralizzare lo zip-slip, poi passano
- * da `safeAttachmentPath` (niente ADS né nomi riservati di Windows): un nome rifiutato si salta.
- *
- * Tetto: la somma delle dimensioni dichiarate degli allegati non deve superare lo spazio
- * libero meno `MARGINE_DISCO_BYTES` (uno zip bomb riempirebbe il disco). Le dimensioni
- * dichiarate sono affidabili: yauzl (`validateEntrySizes`, attivo di default) interrompe
- * lo stream di un'entry che produce più byte di quelli dichiarati.
- */
 function extractZipStreaming(zipPath: string, allegatiDir: string,
   opzioni: { spazioLibero?: (dir: string) => number | null; avanzamento?: (fatte: number, totale: number) => void } = {}): Promise<{ json: string | null; copiati: number; saltati: number }> {
   const yauzl = require('yauzl');
@@ -50,7 +33,6 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
       let jsonText: string | null = null;
       let settled = false;
       let totaleAllegati = 0;
-      // Per l'esito mostrato all'utente: un nome già presente non si sovrascrive, si salta.
       let copiati = 0;
       let saltati = 0;
       const fail = (e) => { if (!settled) { settled = true; try { zipfile.close(); } catch (_) {} reject(e); } };
@@ -61,7 +43,6 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
       let fatte = 0;
       zipfile.on('entry', (entry) => {
         const name = entry.fileName;
-        // Si segnala l'inizio di ogni voce: su un PDF da centinaia di MB è lì che si aspetta.
         if (opzioni.avanzamento) opzioni.avanzamento(++fatte, zipfile.entryCount);
 
         if (name === 'schedatura.json') {
@@ -99,8 +80,6 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
 
           return zipfile.openReadStream(entry, (e, stream) => {
             if (e) return fail(e);
-            // Scrittura su file temporaneo + rename: un import interrotto non lascia allegati troncati.
-            // Suffisso casuale: due import dello stesso ZIP in parallelo non si contendono il `.part`.
             const tmpPath = `${attPath}.${crypto.randomBytes(4).toString('hex')}.part`;
             const out = fs.createWriteStream(tmpPath);
             const failPulito = (errore) => {
@@ -112,7 +91,6 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
             out.on('error', failPulito);
             out.on('close', () => {
               try {
-                // Arrivato prima l'altro import: si tiene il suo, mai sovrascrivere un allegato.
                 if (fs.existsSync(attPath)) { fs.rmSync(tmpPath, { force: true }); saltati++; }
                 else { fs.renameSync(tmpPath, attPath); copiati++; }
               } catch (err) { return fail(err); }

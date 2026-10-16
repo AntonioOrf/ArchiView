@@ -1,25 +1,3 @@
-// Ricerca tra archivi — Fase 3: copia di una scheda da un altro archivio in quello aperto.
-//
-// ⚠️ PERCHÉ QUESTO MODULO È CONDIVISO E PURO (stessa ragione di csvImport.ts)
-//
-// La finestra di copia mostra che cosa succederà ("3 campi diventano campi propri", "1
-// persona nuova in anagrafica"). Quell'anteprima vale solo se È la copia: `avcsPianifica`
-// costruisce la scheda e il riepilogo insieme, e la conferma inserisce esattamente la scheda
-// che l'anteprima ha appena descritto. Due funzioni diverse divergerebbero proprio sui casi
-// storti — un campo legato a un vocabolario, un tipo che nell'archivio aperto non esiste.
-//
-// Vive in `src/shared/` perché la scheda va costruita dove stanno i dati dell'archivio
-// aperto (`appData`, nel renderer) e testata in Node. Il main fa solo I/O: legge la scheda
-// sorgente e copia i file allegati.
-//
-// Non ha `import`/`export` (è uno script): espone `module.exports` per il main e i test e
-// `window.CopiaScheda` per il renderer. Nomi globali prefissati `avcs`: nel bundle e per
-// TypeScript condividono lo scope di model.ts e csvImport.ts.
-//
-// NON contiene i18n: le etichette dei campi base arrivano da `opzioni.etichetta` (il
-// renderer passa `etichettaCampo`), gli avvisi sono CODICI.
-
-/** Il modello condiviso, nel main come nel renderer. */
 function avcsModel(): any {
   if (typeof window !== 'undefined' && (window as any).Model) return (window as any).Model;
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -30,7 +8,6 @@ type AvcsSorgente = {
   scheda: any;
   tipo: any;
   archivio: { id: string; nome: string; tipo?: string };
-  /** Dal main: vocabolari e voci d'anagrafica dell'archivio sorgente, segnature dei rimandi. */
   contesto?: {
     vocabolari?: { [id: string]: any };
     authority?: { [chiave: string]: any };
@@ -39,58 +16,37 @@ type AvcsSorgente = {
 };
 
 type AvcsOpzioni = {
-  /** Id del tipo documento dell'archivio aperto da usare. */
   tipoDestinazione: string;
   cartella: string;
   autore: string;
   ora: number;
   nuovoId: string;
-  /** Catalogo dei campi base (CONFIG_CAMPI): etichette e tipi. */
   baseConf?: any;
-  /** Etichetta leggibile di un campo base (i18n del renderer). */
   etichetta?: (id: string) => string;
-  /** true = gli allegati vengono copiati; servono allora `allegatiCopiati`. */
   copiaAllegati: boolean;
-  /** Esito della copia dei file (dal main): posizione dell'allegato → nuovo nome e hash. */
   allegatiCopiati?: { [posizione: number]: { nome: string; hash?: string } };
 };
 
 type AvcsPiano = {
   scheda: any;
   tipo: { id: string; nome: string };
-  /** Campi del tipo sorgente che nell'archivio aperto diventano campi propri della scheda. */
   campiPropri: { id: string; label: string }[];
-  /** Persone/luoghi citati: `esistente` = la chiave c'è già nell'anagrafica dell'archivio aperto. */
   anagrafica: { tipo: string; chiave: string; nome: string; esistente: boolean }[];
-  /**
-   * Voci d'anagrafica (grafia scelta, note) che la sorgente ha e l'archivio aperto no.
-   * `nome` è il nome COME CITATO nella scheda, da cui deriva la chiave; `grafia` è quella scelta.
-   */
   vociNuove: { tipo: string; nome: string; grafia: string; note?: string }[];
   tagNuovi: string[];
   rimandi: number;
   allegati: { copiati: number; remoti: number; mancanti: number; omessi: number };
-  /**
-   * Codici: 'vocabolario_esplicitato', 'allegato_mancante', 'trascrizione_senza_allegati',
-   * 'trascrizioni_in_campo' (testo di carte non copiate messo in un campo proprio).
-   */
   avvisi: string[];
 };
 
 const AVCS_CHIAVE_PROVENIENZA = 'provenienza';
 const AVCS_CHIAVE_RIMANDI = 'rimandiEsterni';
-/** Campo proprio che raccoglie le trascrizioni delle carte non copiate. */
 const AVCS_CAMPO_TRASCRIZIONI = 'trascrizioni_non_copiate';
 
 function avcsHaTesto(html: any): boolean {
   return typeof html === 'string' && html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
 }
 
-/**
- * Le trascrizioni delle carte in un solo testo, ciascuna preceduta dal nome della carta
- * quando sono più d'una (o sempre, con `intestaSempre`): senza, non si saprebbe di quale
- * carta è un passo.
- */
 function avcsComponiCarte(carte: any[], intestaSempre?: boolean): string {
   const conTesto = carte.filter(a => a && avcsHaTesto(a.trascrizione));
   if (!conTesto.length) return '';
@@ -102,7 +58,6 @@ function avcsEscape(t: string): string {
   return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** HTML di una trascrizione → testo per una textarea: a capo dove c'erano paragrafi e righe. */
 function avcsTestoSemplice(html: string): string {
   return String(html || '')
     .replace(/<br\s*\/?>/gi, '\n')
@@ -114,7 +69,6 @@ function avcsTestoSemplice(html: string): string {
     .trim();
 }
 
-/** Il tipo dell'archivio aperto che corrisponde a quello della sorgente: stesso id o stesso nome. */
 function avcsTipoCorrispondente(tipoSorgente: any, tipiDestinazione: any[]): string | null {
   if (!tipoSorgente) return null;
   const Model = avcsModel();
@@ -133,7 +87,6 @@ function avcsVuoto(v: any): boolean {
   return false;
 }
 
-/** I nomi d'anagrafica che un valore porta, secondo la definizione del campo. */
 function avcsNomi(def: any, valore: any): string[] {
   if (!def || !def.authority) return [];
   if (def.tipo === 'dynamic_list') {
@@ -144,12 +97,6 @@ function avcsNomi(def: any, valore: any): string[] {
   return s ? [s] : [];
 }
 
-/**
- * Definizione di campo proprio per un campo della sorgente che il tipo di destinazione non ha.
- * Un campo legato a un vocabolario della sorgente diventa un `enum` con le opzioni scritte
- * sopra: i vocabolari dell'archivio aperto non si toccano, e un legame a un vocabolario che
- * qui non esiste darebbe una tendina vuota.
- */
 function avcsDefPropria(def: any, etichetta: string, avvisi: Set<string>): any {
   const out: any = { id: def.id, tipo: def.tipo === 'attachments' ? 'text' : def.tipo, label: def.label || etichetta || def.id };
   if (def.placeholder) out.placeholder = def.placeholder;
@@ -173,8 +120,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
   const etichetta = (id: string) => (o.etichetta ? o.etichetta(id) : '') || id;
 
   const tipoDest = (db.tipiDocumento || []).find((t: any) => t && t.id === o.tipoDestinazione) || null;
-  // Definizioni della sorgente con i SUOI vocabolari: un enum legato a un vocabolario
-  // trova lì le sue opzioni.
   const dbSorgente = { vocabolari: ctx.vocabolari || {} };
   const defsSorgente = Model.campiDellaScheda(s, sorgente.tipo, o.baseConf, dbSorgente);
   const defsDest = Model.campiDelTipo(tipoDest, o.baseConf, db);
@@ -193,20 +138,16 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
     if (!idDest.has(id)) propri.push(avcsDefPropria(def || { id, tipo: Array.isArray(v) ? 'dynamic_list' : 'text' }, etichetta(id), avvisi));
   };
   for (const d of defsSorgente) if (d.tipo !== 'attachments') trasferisci(d.id, d);
-  // Valori rimasti da un tipo cambiato: dati scritti dal ricercatore, si portano anche loro.
   for (const k of Object.keys(s)) trasferisci(k, null);
 
-  // --- Allegati e trascrizione
   const allegati: any[] = [];
   const conteggi = { copiati: 0, remoti: 0, mancanti: 0, omessi: 0 };
   const origine = Array.isArray(s.allegati) ? s.allegati : [];
-  // Carte che restano indietro con una trascrizione: il testo non deve andare perso con loro.
   const lasciate: any[] = [];
   if (o.copiaAllegati) {
     origine.forEach((a: any, i: number) => {
       if (!a) return;
       if (a.remoto) {
-        // Una carta IIIF è un riferimento a un server, non un file: si copia com'è.
         allegati.push(JSON.parse(JSON.stringify(a)));
         conteggi.remoti++;
         return;
@@ -238,10 +179,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
     creatoDa: o.autore,
     modificatoDa: o.autore
   });
-  // Trascrizione. Con gli allegati vive nelle carte; senza, resta sulla scheda (regola di
-  // `leggiTrascrizioneAllegato`: niente allegati = trascrizione della scheda). Si porta la
-  // forma derivata se c'è, altrimenti la si ricompone dalle carte: una scheda con il testo
-  // solo nelle carte, copiata senza allegati, lo perderebbe.
   const carteConTesto = lasciate.filter(a => avcsHaTesto(a.trascrizione));
   if (!allegati.length) {
     const testo = avcsHaTesto(s.trascrizione) ? s.trascrizione : avcsComponiCarte(carteConTesto);
@@ -251,9 +188,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
     }
   } else {
     if (avcsHaTesto(s.trascrizione)) scheda.trascrizione = s.trascrizione;
-    // Alcune carte arrivano, altre no: la forma derivata verrà ricalcolata dalle carte
-    // presenti al primo salvataggio, quindi il testo delle carte rimaste indietro va messo
-    // in un campo proprio, dove nessun ricalcolo lo tocca.
     if (carteConTesto.length) {
       valori[AVCS_CAMPO_TRASCRIZIONI] = avcsTestoSemplice(avcsComponiCarte(carteConTesto, true));
       scheda[AVCS_CAMPO_TRASCRIZIONI] = valori[AVCS_CAMPO_TRASCRIZIONI];
@@ -267,7 +201,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
     Model.scriviOrdineCampi(scheda, s.ordineCampi, Model.campiDellaScheda(Object.assign({}, scheda, { ordineCampi: undefined }), tipoDest, o.baseConf, db));
   }
 
-  // --- Rimandi: le relazioni della sorgente puntano a schede di QUELL'archivio
   const rimandi = Model.relazioni(s).map((r: any) => {
     const x: any = { archivioId: sorgente.archivio.id, archivioNome: sorgente.archivio.nome, schedaId: r.id };
     const seg = ctx.segnatureRelazioni && ctx.segnatureRelazioni[r.id];
@@ -285,8 +218,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
     copiataIl: o.ora
   };
 
-  // --- Anagrafica: calcolata sulle definizioni FINALI, cioè su ciò che l'archivio aperto
-  // leggerà davvero (un campo persona nella sorgente può non esserlo qui, e viceversa).
   const defsFinali = Model.campiDellaScheda(scheda, tipoDest, o.baseConf, db);
   const anaDest = Model.authority(db);
   const anaSorg = ctx.authority || {};
@@ -306,8 +237,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
       if (!chiave || anagrafica.some(a => a.chiave === chiave)) continue;
       const esistente = !!anaDest[chiave] || conosciute.has(chiave);
       anagrafica.push({ tipo: d.authority, chiave, nome, esistente });
-      // La grafia scelta e le note della sorgente si portano solo se qui la voce non c'è:
-      // l'anagrafica dell'archivio aperto vince sempre sulla sua.
       const voce = anaSorg[chiave];
       if (!anaDest[chiave] && voce && (voce.nome !== nome || voce.note)) {
         const v: any = { tipo: d.authority, nome, grafia: voce.nome || nome };
@@ -334,11 +263,6 @@ function avcsPianifica(sorgente: AvcsSorgente, destinazione: any, opzioni: AvcsO
   };
 }
 
-/**
- * Applica il piano all'archivio aperto (muta `db`). È l'unica scrittura: inserisce la scheda
- * del piano, registra i tag e le voci d'anagrafica nuove. Il salvataggio su disco resta del
- * chiamante (`Store.commit`).
- */
 function avcsApplica(db: any, piano: AvcsPiano): void {
   const Model = avcsModel();
   if (!db || !piano || !piano.scheda) return;
@@ -349,8 +273,6 @@ function avcsApplica(db: any, piano: AvcsPiano): void {
     db.cartelle.push(piano.scheda.cartella);
   }
   Model.registraTag(db, Model.tags(piano.scheda));
-  // La chiave viene dal nome citato, la grafia mostrata da `grafia`: passare la grafia come nome
-  // creerebbe la voce sotto una chiave che nessuna scheda cita.
   for (const v of piano.vociNuove) Model.salvaVoceAuthority(db, v.tipo, v.nome, v.note ? { nome: v.grafia, note: v.note } : { nome: v.grafia });
 }
 

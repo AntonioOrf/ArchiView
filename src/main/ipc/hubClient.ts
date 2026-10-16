@@ -1,7 +1,3 @@
-// Client HTTP dell'Hub e formato degli inviti HUB1. Vive nel main:
-// repoKey ed encKey non escono mai da qui verso il renderer, che riceve solo dati ed esiti.
-//
-// Nessuna dipendenza da electron: testabile in Node puro (test/hubClient.test.js).
 import * as crypto from 'crypto';
 
 export interface ConfigHub {
@@ -10,7 +6,6 @@ export interface ConfigHub {
   repoKey: string;
 }
 
-/** Esito di una chiamata: `status` 0 = rete assente o timeout. Mai un'eccezione. */
 export interface EsitoHub {
   ok: boolean;
   status: number;
@@ -28,10 +23,6 @@ export interface InvitoHub {
   name: string;
 }
 
-/**
- * L'URL dell'Hub arriva anche da un invito (Hub self-hosted): la repoKey viaggia solo su HTTPS,
- * o in chiaro verso la macchina stessa (sviluppo). Niente credenziali o query nell'URL base.
- */
 function hubUrlValido(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw) return null;
   let u: URL;
@@ -42,7 +33,6 @@ function hubUrlValido(raw: unknown): string | null {
   return u.origin + u.pathname.replace(/\/+$/, '');
 }
 
-// Id di repo e membri generati dal server: alfanumerici. Un id con `/` o `..` cambierebbe la rotta.
 const ID_HUB = /^[A-Za-z0-9_-]{1,128}$/;
 
 async function chiamataHub(
@@ -61,7 +51,7 @@ async function chiamataHub(
         ...(opzioni.body !== undefined ? { 'Content-Type': 'application/json' } : {})
       },
       body: opzioni.body !== undefined ? JSON.stringify(opzioni.body) : undefined,
-      redirect: 'error', // un redirect porterebbe l'header Authorization altrove
+      redirect: 'error',
       signal: AbortSignal.timeout(opzioni.timeoutMs || 30000)
     });
     const data = await res.json().catch(() => null);
@@ -77,12 +67,10 @@ function b64urlEncode(s: string): string {
   return Buffer.from(s, 'utf8').toString('base64url');
 }
 
-/** Chiave AES-256 per gli allegati, base64url (formato letto da hubAttachments.encKeyBuffer). */
 function generaEncKey(): string {
   return crypto.randomBytes(32).toString('base64url');
 }
 
-// Convenzione pipe: HUB1|hubUrl|repoId|memberKey|encKey|pusherKey|pusherCluster|name(URI-encoded)
 function codificaInvito(i: InvitoHub): string {
   return b64urlEncode(['HUB1', i.hubUrl, i.repoId, i.memberKey, i.encKey || '', i.pusherKey || '',
     i.pusherCluster || '', encodeURIComponent(i.name || '')].join('|'));
@@ -103,25 +91,12 @@ function decodificaInvito(raw: unknown): InvitoHub | null {
   return { hubUrl: url, repoId, memberKey, encKey: encKey || null, pusherKey: pusherKey || '', pusherCluster: pusherCluster || '', name };
 }
 
-// --- Cifratura del database ---
-//
-// Il server conserva il database così come lo riceve: cifrato, chi legge D1 (o gestisce un Hub
-// self-hosted) non vede schede e trascrizioni. Busta:
-//   { archiviewCifrato: 1, iv, dati }   dati = AES-256-GCM(gzip(JSON)) || tag, base64
-// - gzip prima di cifrare: il server comprime, ma un testo cifrato non si comprime più;
-// - chiave derivata da encKey con HKDF: gli allegati usano encKey con nonce deterministici, il
-//   DB nonce casuali; chiavi separate evitano qualsiasi incrocio fra i due schemi;
-// - AAD = repoId + versione: il server non può spacciare una versione vecchia per la corrente,
-//   né la busta di un altro repo. La versione è nota prima del push (parentVersion + 1).
-// Le versioni in chiaro già presenti sul server restano leggibili (nessuna busta → passthrough).
-
 import * as zlib from 'zlib';
 import { promisify } from 'util';
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 
 const FORMATO_CIFRATO = 1;
-// Tetto al JSON decompresso: una busta ostile non deve esaurire la memoria del main.
 const MAX_DB_DECOMPRESSO = 512 * 1024 * 1024;
 
 function chiaveDatabase(encKey: unknown): Buffer | null {
@@ -148,7 +123,6 @@ async function cifraDatabase(database: any, encKey: unknown, repoId: string, ver
   return { archiviewCifrato: FORMATO_CIFRATO, iv: iv.toString('base64'), dati: dati.toString('base64') };
 }
 
-/** Busta → database. Un database in chiaro (versioni precedenti alla cifratura) passa com'è. */
 async function decifraDatabase(db: any, encKey: unknown, repoId: string, version: number): Promise<any> {
   if (!eDatabaseCifrato(db)) return db;
   if (db.archiviewCifrato !== FORMATO_CIFRATO) {

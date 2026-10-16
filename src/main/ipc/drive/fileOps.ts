@@ -2,12 +2,9 @@ import * as fs from 'fs';
 import { pipeline } from 'stream/promises';
 import { driveState } from './auth';
 
-// --- Drive Query Helpers ---
-
 const escapeDriveQuery = (str: string) => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
 const STATI_TRANSITORI = new Set([429, 500, 502, 503, 504, 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN']);
-// Drive segnala il throttling anche con 403: solo questi motivi, gli altri 403 sono permessi veri.
 const MOTIVI_RATE_LIMIT = new Set(['rateLimitExceeded', 'userRateLimitExceeded']);
 
 function riprovabile(e: any): boolean {
@@ -17,14 +14,12 @@ function riprovabile(e: any): boolean {
   return status === 403 && motivi.some((m: any) => MOTIVI_RATE_LIMIT.has(m?.reason));
 }
 
-// `attesaBaseMs` è un parametro solo per i test.
 async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3, attesaBaseMs = 1000): Promise<any> {
   for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (e: any) {
       if (!riprovabile(e) || attempt >= maxRetries) throw e;
-      // Backoff esponenziale con jitter; se il server dice quanto aspettare, si aspetta almeno quello.
       const retryAfter = Number(e?.response?.headers?.['retry-after']) * 1000;
       const backoff = attesaBaseMs * 2 ** attempt * (0.5 + Math.random());
       await new Promise(r => setTimeout(r, Number.isFinite(retryAfter) ? Math.max(retryAfter, backoff) : backoff));
@@ -82,9 +77,6 @@ async function uploadFile(localPath: string, driveFileName: string, parentId: st
   const files = res.data.files || [];
   if (files.length > 0) {
     if (skipIfExist) return;
-    // Dedup: Drive consente più file omonimi nella stessa cartella. Se esistono duplicati,
-    // aggiorna il più recente (files[0], orderBy modifiedTime desc) ed elimina gli altri,
-    // altrimenti pull/push finiscono su file diversi → i dati "non si sincronizzano".
     if (files.length > 1) {
       for (let i = 1; i < files.length; i++) {
         try {
@@ -112,8 +104,6 @@ async function uploadFile(localPath: string, driveFileName: string, parentId: st
   }
 }
 
-// Come uploadFile ma ritorna l'id Drive del file (serve agli allegati hub per costruire il link pubblico).
-// Nessuna dedup per-nome: i chunk hanno nome = hash (content-addressable), il chiamante fa lo skip a monte.
 async function uploadFileReturningId(localPath: string, driveFileName: string, parentId: string): Promise<string> {
   const mimeType = driveFileName.endsWith('.json') ? 'application/json' : 'application/octet-stream';
   const createRes = await driveState.drive.files.create({
@@ -125,7 +115,6 @@ async function uploadFileReturningId(localPath: string, driveFileName: string, p
   return createRes.data.id;
 }
 
-// Rende un file scaricabile da chiunque abbia il link (reader) e ritorna l'id (idempotente).
 async function makeFilePublic(fileId: string): Promise<void> {
   await driveState.drive.permissions.create({
     fileId,
@@ -155,9 +144,6 @@ async function downloadFile(fileId: string, destPath: string): Promise<void> {
   await pipeline(res.data, dest);
 }
 
-// Upload, download e pubblicazione riprovano da sé: i chiamanti (sync allegati, DB, Hub) non
-// devono ricordarsi di avvolgerli. Tutti idempotenti: un upload ripetuto aggiorna il file per
-// nome, un chunk ricreato è un doppione innocuo (nome = hash), un download riscrive la destinazione.
 module.exports = {
   escapeDriveQuery, withDriveRetry, getOrCreateFolder, asyncPool,
   uploadFile: (localPath: string, nome: string, parentId: string, skipIfExist = false) =>

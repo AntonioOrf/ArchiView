@@ -1,16 +1,3 @@
-// Fase 2.2 — Stampa e PDF: generazione del documento.
-//
-// Modulo PURO (nessun `fs`, nessun Electron, nessuna rete) esattamente come `csvExport.ts`
-// della 2.1, e per la stessa ragione: la parte che si puo' sbagliare — colonne, campi vuoti,
-// paginazione, sanificazione della trascrizione — si testa a freddo con `node`, senza avviare
-// l'applicazione (`test/printTemplate.test.js`). Chi tocca il disco e la stampante e'
-// `printHost.ts`; chi decide *cosa* stampare e' questo file.
-//
-// ⚠️ Il main NON conosce la i18n (lezione della 2.1): ogni stringa visibile all'utente —
-// etichette dei campi, nomi dei tipi e anche le intestazioni fisse del documento — arriva
-// dal renderer nel messaggio IPC. I default inglesi/italiani qui sotto sono solo una rete di
-// sicurezza per non stampare mai una pagina con dei buchi.
-
 type Tipo = { id: string; nome?: string; campi?: string[] };
 type Record_ = { [k: string]: any };
 
@@ -26,29 +13,20 @@ type Opzioni = {
   includiTrascrizione?: boolean;
   includiVuoti?: boolean;
   orientamento?: 'portrait' | 'landscape';
-  /** nomeFile allegato → URL da mettere in `src`. Preparata da printHost: qui non si legge nulla. */
   miniature?: { [nomeFile: string]: string };
   testi?: { [k: string]: string };
 };
 
-// Chiavi di servizio: non sono "campi della scheda" e vanno rese a parte (o mai). L'elenco
-// e' quello condiviso di `shared/model.ts` (Fase 3.0), lo stesso del CSV: due elenchi
-// avrebbero stampato una scheda diversa da quella esportata.
 const Model = require('../../shared/model');
 import * as Csv from '../ipc/csvExport';
 const META = new Set(Model.CHIAVI_SERVIZIO);
 
-/** Fase 3.4: i tag passano dal modello, non da uno `split` locale. */
 function tagsDi(m: any): string {
   return Model.tags(m).join(', ');
 }
 
-// Il regesto e' il cuore di un inventario: una frase che dice cosa contiene il documento.
-// Non esiste un campo "regesto" nel modello (lo introdurra' semmai la 3.1), quindi si prende
-// il primo campo valorizzato di questa scala, che e' l'ordine in cui un archivista lo cerca.
 const CAMPI_REGESTO = ['oggetto', 'titolo', 'motivazione_processo', 'note'];
 
-// Le date che compaiono nella riga d'intestazione del regesto, nell'ordine cronica → topica.
 const CAMPI_DATA = ['dataCronica', 'dataTopica'];
 
 const TESTI_DEFAULT: { [k: string]: string } = {
@@ -73,40 +51,24 @@ function escapeHtml(s: any): string {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// --- Sanificazione della trascrizione ----------------------------------------
-//
-// La trascrizione e' HTML scritto dall'utente (contenteditable) e puo' arrivare dalla
-// sincronizzazione, cioe' da un'altra macchina: nel documento di stampa e' contenuto
-// NON FIDATO. DOMPurify vive nel renderer e qui non c'e' un DOM, quindi la difesa e'
-// doppia e indipendente:
-//  1. questa whitelist, che scarta il tag e ne conserva il testo;
-//  2. la CSP `default-src 'none'` della pagina generata (vedi `generaHtmlStampa`).
-// Una sola delle due basterebbe; averle entrambe significa che un buco nell'una non e'
-// sufficiente, ed e' il motivo per cui la sanificazione e' una funzione pura testabile.
-
 const TAG_AMMESSI = new Set([
   'p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'sup', 'sub',
   'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'span', 'div', 'mark', 'small', 'hr', 'a'
 ]);
 
-// Tag il cui CONTENUTO va buttato insieme al tag: conservarne il testo significherebbe
-// stampare il sorgente di uno script in mezzo a una trascrizione.
 const TAG_DA_SVUOTARE = /<(script|style|iframe|object|embed|noscript|template|svg|math)\b[\s\S]*?<\/\1\s*>/gi;
 
 function attributiAmmessi(tag: string, grezzi: string): string {
   let out = '';
   const classe = /\bclass\s*=\s*("([^"]*)"|'([^']*)')/i.exec(grezzi);
   if (classe) {
-    // Le classi servono: `ocr-incerto` e `ocr-origine` sono cio' che distingue una bozza
-    // OCR da una trascrizione riletta a mano, e in stampa quella differenza va conservata.
     const valore = (classe[2] || classe[3] || '').replace(/[^A-Za-z0-9 _-]/g, '').trim();
     if (valore) out += ` class="${valore}"`;
   }
   if (tag === 'a') {
     const href = /\bhref\s*=\s*("([^"]*)"|'([^']*)')/i.exec(grezzi);
     const url = (href && (href[2] || href[3]) || '').trim();
-    // Solo schemi inerti: `javascript:` e `data:` in un href sono esecuzione, non un link.
     if (/^(https?:|mailto:)/i.test(url)) out += ` href="${escapeHtml(url)}"`;
   }
   return out;
@@ -114,34 +76,23 @@ function attributiAmmessi(tag: string, grezzi: string): string {
 
 function sanificaHtml(html: any): string {
   let testo = String(html || '').replace(TAG_DA_SVUOTARE, '');
-  // Commenti: `<!-- -->` puo' nascondere markup che alcuni parser riaprono.
   testo = testo.replace(/<!--[\s\S]*?-->/g, '');
   return testo.replace(/<\/?([A-Za-z][A-Za-z0-9]*)\b([^>]*)>/g, (intero, nome, resto) => {
     const tag = String(nome).toLowerCase();
-    if (!TAG_AMMESSI.has(tag)) return '';           // tag scartato, testo interno conservato
+    if (!TAG_AMMESSI.has(tag)) return '';
     if (intero[1] === '/') return `</${tag}>`;
-    // Il tag viene RISCRITTO, non filtrato: cosi' l'output non puo' contenere attributi che
-    // non siano passati da `attributiAmmessi` — nemmeno quelli che un giorno inventeranno.
     return `<${tag}${attributiAmmessi(tag, resto)}>`;
   });
 }
 
-/** Un contenteditable svuotato lascia `<p><br></p>`: "ha testo" non puo' essere `!== ''`. */
 function haTesto(html: any): boolean {
   return String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
 }
 
-// --- Formattazione dei valori -------------------------------------------------
-
 const formattaListaDinamica = (valore: any[]) => Csv.formattaListaDinamica(valore, ' · ');
 
-/**
- * Valore reso come testo. A differenza del CSV la data e' in forma LEGGIBILE e non ISO:
- * un foglio di calcolo deve poterla ordinare, un foglio di carta deve poterla leggere.
- */
 function formattaValoreStampa(chiave: string, valore: any, locale?: string, testi?: { [k: string]: string }): string {
   if (valore === null || valore === undefined) return '';
-  // Fase 3.1: i campi `boolean` sono booleani veri. Sulla carta `true` non si legge.
   if (typeof valore === 'boolean') return valore ? ((testi && testi.value_yes) || 'Sì') : ((testi && testi.value_no) || 'No');
   if (chiave === 'lastModified') {
     const n = Number(valore);
@@ -167,13 +118,6 @@ function fileAllegato(a: any): string {
   return (a && (a.nome || a.name)) || '';
 }
 
-/**
- * Campi da stampare per una scheda: quelli del suo tipo, nell'ordine dichiarato dal tipo —
- * cioe' lo stesso ordine del form, che e' l'ordine in cui l'utente li ha compilati e in cui
- * si aspetta di rileggerli. In coda i campi valorizzati che il tipo non prevede (piu'):
- * senza, un cambio di modello farebbe sparire dei dati dalla carta stampata senza dirlo,
- * che e' il modo peggiore di perdere informazione.
- */
 function campiDaStampare(m: Record_, tipiDocumento: Tipo[], includiVuoti?: boolean): string[] {
   const tipo = (tipiDocumento || []).find(t => t.id === (m.tipoDocumento || 'manoscritto'));
   const campi: string[] = [];
@@ -182,9 +126,6 @@ function campiDaStampare(m: Record_, tipiDocumento: Tipo[], includiVuoti?: boole
     if (META.has(c) || visti.has(c)) continue;
     visti.add(c); campi.push(c);
   }
-  // Fase 3.7 — i campi propri della scheda, nell'ordine in cui l'utente li ha dichiarati.
-  // Senza, arriverebbero comunque dalla rete di sicurezza qui sotto, ma in ordine di chiave
-  // dell'oggetto e mescolati alle chiavi di modelli cambiati dopo la compilazione.
   for (const d of Model.campiPropri(m)) {
     if (META.has(d.id) || visti.has(d.id)) continue;
     visti.add(d.id); campi.push(d.id);
@@ -195,26 +136,17 @@ function campiDaStampare(m: Record_, tipiDocumento: Tipo[], includiVuoti?: boole
     if (Array.isArray(m[k]) && m[k].length === 0) continue;
     visti.add(k); campi.push(k);
   }
-  // Fase 3.8 — l'ordine scelto su questa scheda. La stampa "scheda" guarda UNA scheda per
-  // volta, quindi può seguirlo; la tabella no, perché le sue colonne sono comuni a tutte.
   const ordinati = Model.ordinaDefinizioni(campi.map((id: string) => ({ id })), m.ordineCampi)
     .map((d: any) => d.id);
   if (includiVuoti) return ordinati;
   return ordinati.filter((c: string) => formattaValoreStampa(c, m[c]).trim() !== '');
 }
 
-// --- Blocchi del documento ----------------------------------------------------
-
 function testo(opzioni: Opzioni, chiave: string): string {
   const t = opzioni.testi || {};
   return t[chiave] !== undefined ? t[chiave] : TESTI_DEFAULT[chiave] || chiave;
 }
 
-/**
- * L'etichetta visibile del campo. Il terzo argomento è la scheda: Fase 3.7, un campo proprio
- * porta la sua etichetta con sé, e il catalogo del renderer non la conosce — senza, sulla
- * carta comparirebbe l'id del campo, che è una chiave di database, non un nome.
- */
 function etichetta(opzioni: Opzioni, chiave: string, m?: Record_): string {
   const e = opzioni.etichette || {};
   if (e[chiave]) return e[chiave];
@@ -256,9 +188,6 @@ function miniatureDi(m: Record_, opzioni: Opzioni): string {
     const file = fileAllegato(a);
     const src = file && mappa[file];
     const didascalia = escapeHtml(nomeAllegato(a, i));
-    // Un allegato senza miniatura (PDF non rasterizzabile, file mancante) resta comunque
-    // ELENCATO: una scheda che dichiara tre carte e ne mostra due sarebbe una scheda che
-    // mente sul proprio contenuto.
     const corpo = src
       ? `<img src="${escapeHtml(src)}" alt="${didascalia}">`
       : `<span class="mini-assente"></span>`;
@@ -302,12 +231,9 @@ function schedaSingola(m: Record_, tipiDocumento: Tipo[], opzioni: Opzioni): str
     trascrizione = `<div class="blocco"><h3 class="blocco-titolo">${escapeHtml(testo(opzioni, 'print_section_transcription'))}</h3><div class="trascrizione">${sanificaHtml(htmlTrasc)}</div></div>`;
   }
 
-  // `scheda` e' l'unita' di paginazione: una scheda per pagina e' il formato cartaceo di
-  // schedatura, quello che si archivia in una cartellina o si porta in archivio.
   return `<article class="scheda">${intestazioneScheda}<div class="campi">${righe}</div>${miniatureDi(m, opzioni)}${trascrizione}</article>`;
 }
 
-/** Riga di regesto: segnatura, date, sintesi. E' il formato di un inventario a stampa. */
 function rigaRegesto(m: Record_, opzioni: Opzioni): string {
   const date = CAMPI_DATA.map(c => String(m[c] || '').trim()).filter(Boolean).join(', ');
   let sintesi = '';
@@ -328,11 +254,6 @@ function rigaRegesto(m: Record_, opzioni: Opzioni): string {
     </div>`;
 }
 
-/**
- * Colonne della tabella: quelle passate dal renderer (cioe' le colonne VISIBILI della vista
- * tabella della 1.1), filtrate su cio' che i record hanno davvero. Se non ne arriva nessuna
- * si ricade sui campi delle schede: una tabella con la sola segnatura non e' una tabella.
- */
 function colonneTabella(records: Record_[], tipiDocumento: Tipo[], opzioni: Opzioni): string[] {
   const richieste = (opzioni.colonne || []).filter(c => !META.has(c));
   if (richieste.length) return richieste;
@@ -343,7 +264,7 @@ function colonneTabella(records: Record_[], tipiDocumento: Tipo[], opzioni: Opzi
       if (!visti.has(c)) { visti.add(c); campi.push(c); }
     }
   }
-  return campi.slice(0, 6);   // oltre le sei colonne la riga non entra piu' in un A4
+  return campi.slice(0, 6);
 }
 
 function tabella(records: Record_[], tipiDocumento: Tipo[], opzioni: Opzioni): string {
@@ -354,17 +275,9 @@ function tabella(records: Record_[], tipiDocumento: Tipo[], opzioni: Opzioni): s
     const celle = colonne.map(c => `<td>${escapeHtml(formattaValoreStampa(c, m[c], undefined, opzioni.testi))}</td>`).join('');
     return `<tr><td class="col-segnatura">${escapeHtml(segnaturaDi(m, opzioni))}</td>${celle}</tr>`;
   }).join('');
-  // `thead` ripetuto a ogni pagina: e' comportamento nativo del box model di stampa, ed e'
-  // la ragione per cui questa vista e' una `<table>` vera e non una griglia CSS.
   return `<table class="tabella"><thead><tr>${th}</tr></thead><tbody>${righe}</tbody></table>`;
 }
 
-// --- Foglio di stile ----------------------------------------------------------
-//
-// Serif e corpo 10.5pt: il documento finisce su carta o in un'appendice, non a schermo.
-// I margini della pagina li impone `printToPDF` (`margins`), non il CSS: `@page` sarebbe
-// ignorato la' dove i due si contraddicono, e avere UN solo punto in cui il margine e'
-// deciso evita la classe di bug in cui l'anteprima e il PDF non coincidono.
 function foglioDiStile(opzioni: Opzioni): string {
   return `
   :root { color-scheme: light; }
@@ -426,16 +339,6 @@ function foglioDiStile(opzioni: Opzioni): string {
   `;
 }
 
-/**
- * Documento completo. Il risultato e' una pagina autonoma: nessuna risorsa esterna oltre
- * alle miniature, che arrivano gia' come URL dallo strato impuro.
- *
- * ⚠️ La CSP `default-src 'none'` non e' decorativa: la trascrizione e i nomi degli allegati
- * sono dati dell'utente e possono arrivare da un collega via sincronizzazione. E' la seconda
- * barriera dopo `sanificaHtml`, e vale anche per i due layout che la trascrizione non la
- * stampano affatto — un `<img onerror>` in un nome di file resterebbe altrimenti la strada
- * piu' corta verso l'esecuzione dentro la finestra di stampa.
- */
 function generaHtmlStampa(records: Record_[], tipiDocumento: Tipo[], opzioni: Opzioni = {}): string {
   const layout = opzioni.layout === 'regesto' || opzioni.layout === 'tabella' ? opzioni.layout : 'scheda';
   const lista = Array.isArray(records) ? records : [];
@@ -447,8 +350,6 @@ function generaHtmlStampa(records: Record_[], tipiDocumento: Tipo[], opzioni: Op
     corpo = lista.map(m => schedaSingola(m, tipiDocumento || [], opzioni)).join('\n');
   } else {
     const i = opzioni.intestazione || {};
-    // Nei due layout d'elenco il titolo del fondo apre la prima pagina anche senza
-    // frontespizio: un inventario senza il nome del fondo non e' citabile.
     const titolo = !opzioni.frontespizio && (i.fondo || '').trim()
       ? `<h1 class="titolo-elenco">${escapeHtml(i.fondo)}</h1>` : '';
     corpo = titolo + (layout === 'regesto'

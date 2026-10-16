@@ -1,9 +1,3 @@
-// IPC dell'import IIIF.
-//
-// Sottile per scelta, come `ocrIpc.ts`: qui c'è solo l'inoltro dell'avanzamento alla
-// finestra, perché il canale verso il renderer è del main e non deve entrare nei moduli che
-// fanno il lavoro. Interpretazione del manifest e interfaccia stanno altrove.
-
 import { ipcMain } from 'electron';
 import { state } from '../workspaceManager';
 import { leggiManifest } from '../iiif/fetchManifest';

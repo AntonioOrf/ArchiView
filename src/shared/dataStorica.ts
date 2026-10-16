@@ -1,41 +1,9 @@
-// Fase 3.2 — Data storica fuzzy: interpretazione di una datazione scritta a mano.
-//
-// `dataCronica` è sempre stata un campo di testo con segnaposto "Es. 12 Maggio 1340",
-// quindi la lista si ordinava alfabeticamente: "12 maggio 1340" prima di "3 aprile 1290",
-// perché 1 viene prima di 3. Questo modulo dà un significato a quel testo — un intervallo di
-// anni — e con esso arrivano l'ordinamento cronologico e il filtro per secolo.
-//
-// ⚠️ DECISIONE CENTRALE: **il risultato non viene salvato nel record**. `m.dataCronica`
-// resta la stringa che l'utente ha battuto, e l'intervallo si ricalcola quando serve, con
-// una memoria in RAM per il testo già visto. Le tre ragioni, in ordine di peso:
-//  1. il parser migliorerà (le forme di datazione sono infinite): un intervallo salvato
-//     resterebbe quello sbagliato di oggi anche dopo la correzione, su ogni scheda mai più
-//     riaperta;
-//  2. una chiave in più sul record cambia la sua impronta (`getRecordHash`) e farebbe
-//     apparire modificato a ogni collega un archivio che nessuno ha toccato;
-//  3. sarebbe un dato derivato dentro un file sincronizzato, cioè una cosa che due macchine
-//     con versioni diverse dell'app scriverebbero in modo diverso.
-// Il costo è una regex su una stringa corta per record ordinato: irrilevante rispetto al
-// filtro che gira già su ogni battuta (`objectMatchesTokens`).
-//
-// ⚠️ `raw` resta sempre l'unica cosa mostrata e modificabile: una datazione incerta non va
-// forzata in un calendario. Se l'app non capisce, lo dice — e il campo continua a funzionare
-// come prima.
-//
-// Modulo PURO e condiviso (main + renderer), come `model.ts`: stessa doppia esposizione in
-// coda al file, stesso prefisso `AV` sui nomi globali.
-
 type AVIntervalloData = {
-  /** Il testo come l'ha scritto l'utente. */
   raw: string;
-  /** Estremi INCLUSIVI come interi AAAAMMGG, o null se l'estremo è ignoto. */
   da: number | null;
   a: number | null;
-  /** `esatta`, `anno`, `circa`, `ante`, `post`, `intervallo`, `secolo`, `nessuna`. */
   qualificatore: string;
-  /** false quando la datazione è dichiarata incerta (`c.`, `ante`, `post`, secolo). */
   certa: boolean;
-  /** true se il testo è stato riconosciuto: l'interfaccia mostra il resto solo allora. */
   riconosciuta: boolean;
 };
 
@@ -60,14 +28,6 @@ const AV_ROMANI: { [k: string]: number } = {
   XIX: 19, XX: 20, XXI: 21
 };
 
-/**
- * Il giorno prima / il giorno dopo, in chiave AAAAMMGG.
- *
- * Servono ad `ante` e `post`, e non basta `chiave ± 1`: il giorno prima del 1° maggio
- * sarebbe `…0500`, che non è una data. Come chiave di ordinamento funzionerebbe lo stesso,
- * ed è proprio per questo che l'errore sarebbe sopravvissuto — fino al punto in cui
- * l'intervallo viene mostrato all'utente o confrontato per anno.
- */
 function avGiornoPrima(chiave: number): number {
   const anno = Math.floor(chiave / 10000);
   const mese = Math.floor((chiave % 10000) / 100);
@@ -86,7 +46,6 @@ function avGiornoDopo(chiave: number): number {
   return avChiaveData(anno + 1, 1, 1);
 }
 
-/** Anno plausibile per un archivio: fuori da qui il numero è una segnatura, non una data. */
 const AV_ANNO_MIN = 500;
 const AV_ANNO_MAX = 2200;
 
@@ -95,7 +54,6 @@ function avGiorniDelMese(anno: number, mese: number): number {
   return [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mese - 1] || 31;
 }
 
-/** AAAAMMGG come intero: confrontabile con `<`, ordinabile, e leggibile in un log. */
 function avChiaveData(anno: number, mese: number, giorno: number): number {
   return anno * 10000 + mese * 100 + giorno;
 }
@@ -116,17 +74,10 @@ function avVuota(raw: string): AVIntervalloData {
   return { raw, da: null, a: null, qualificatore: 'nessuna', certa: false, riconosciuta: false };
 }
 
-/** L'intero anno, dal 1° gennaio al 31 dicembre. */
 function avAnnoIntero(anno: number): { da: number; a: number } {
   return { da: avChiaveData(anno, 1, 1), a: avChiaveData(anno, 12, 31) };
 }
 
-/**
- * Il secolo N va dall'anno (N-1)*100+1 all'anno N*100: il XIV secolo è 1301-1400.
- * È la convenzione italiana, ed è quella che un archivista si aspetta di leggere.
- * Le partizioni (`in.`, `ex.`, `med.`, prima/seconda metà) sono convenzioni di catalogo:
- * primo/ultimo quarto e metà centrale.
- */
 function avSecolo(numero: number, parte: string): { da: number; a: number } | null {
   if (!isFinite(numero) || numero < 5 || numero > 22) return null;
   const primo = (numero - 1) * 100 + 1;
@@ -143,37 +94,30 @@ function avMeseDaNome(nome: string): number {
   if (!nome) return 0;
   const pulito = nome.replace(/\./g, '');
   if (AV_MESI[pulito]) return AV_MESI[pulito];
-  // Abbreviazioni non previste: si prova il prefisso più lungo che corrisponde.
   for (const chiave of Object.keys(AV_MESI)) {
     if (pulito.length >= 3 && chiave.indexOf(pulito) === 0) return AV_MESI[chiave];
   }
   return 0;
 }
 
-/** Giorno + mese + anno, nelle forme in cui si scrive una data in un regesto. */
 function avGiornoMeseAnno(t: string): { anno: number; mese: number; giorno: number } | null {
-  // "12 maggio 1340", "12 magg. 1340", "12 di maggio 1340"
   let m = /(\b\d{1,2})\s*(?:di\s+)?([a-z]{3,12}\.?)\s+(\d{3,4})\b/.exec(t);
   if (m) {
     const mese = avMeseDaNome(m[2]);
     if (mese) return { anno: Number(m[3]), mese, giorno: Number(m[1]) };
   }
-  // "1340 maggio 12" — l'ordine degli inventari a stampa.
   m = /\b(\d{3,4})\s+([a-z]{3,12}\.?)\s+(\d{1,2})\b/.exec(t);
   if (m) {
     const mese = avMeseDaNome(m[2]);
     if (mese) return { anno: Number(m[1]), mese, giorno: Number(m[3]) };
   }
-  // "12/5/1340", "12-05-1340", "12.5.1340"
   m = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{3,4})\b/.exec(t);
   if (m) return { anno: Number(m[3]), mese: Number(m[2]), giorno: Number(m[1]) };
-  // "1340-05-12" (ISO)
   m = /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/.exec(t);
   if (m) return { anno: Number(m[1]), mese: Number(m[2]), giorno: Number(m[3]) };
   return null;
 }
 
-/** Mese e anno senza giorno: "maggio 1340", "1340 maggio". */
 function avMeseAnno(t: string): { anno: number; mese: number } | null {
   let m = /\b([a-z]{3,12}\.?)\s+(\d{3,4})\b/.exec(t);
   if (m) {
@@ -188,28 +132,15 @@ function avMeseAnno(t: string): { anno: number; mese: number } | null {
   return null;
 }
 
-/**
- * Interpreta una datazione scritta a mano.
- *
- * Le forme riconosciute sono quelle che si trovano davvero in una schedatura: data piena,
- * solo anno, `c./ca./circa`, `ante/prima del`, `post/dopo il`, intervallo `1340-1345` o
- * `tra il … e il …`, secolo in numeri romani con le sue partizioni, `s.d.`.
- * Tutto il resto **non viene indovinato**: `riconosciuta: false`, e a schermo il campo si
- * comporta come prima. Un intervallo inventato su una datazione che l'app non ha capito
- * sarebbe peggio di nessun intervallo, perché entrerebbe negli ordinamenti come se fosse
- * un dato.
- */
 function avAnalizzaData(testo: any): AVIntervalloData {
   const raw = String(testo === null || testo === undefined ? '' : testo);
   const t = avNormalizza(raw);
   if (!t) return avVuota(raw);
 
-  // Senza data dichiarata: è un'informazione, non un vuoto — ma non è nemmeno una data.
   if (/^(s\.?\s?d\.?|senza data|sine data|n\.?\s?d\.?)$/.test(t)) {
     return { raw, da: null, a: null, qualificatore: 'nessuna', certa: false, riconosciuta: true };
   }
 
-  // --- Secolo: "sec. XIV", "XIV secolo", "sec. XIV in.", "prima meta del sec. XIV" -------
   const mSec = /(?:sec\.?|secolo|s\.)\s*([ivxl]+)|(\b[ivxl]+)\s*(?:sec\.?|secolo)/.exec(t);
   if (mSec) {
     const numero = AV_ROMANI[String(mSec[1] || mSec[2]).toUpperCase()];
@@ -225,12 +156,10 @@ function avAnalizzaData(testo: any): AVIntervalloData {
     }
   }
 
-  // --- Intervallo fra due anni: "1340-1345", "1340/45", "tra il 1340 e il 1345" ----------
   const mFra = /\b(\d{3,4})\s*(?:-|\/|–|—|\s+e\s+il\s+|\s+e\s+|\s+al\s+)\s*(\d{2,4})\b/.exec(t);
   if (mFra && !avGiornoMeseAnno(t)) {
     const a1 = Number(mFra[1]);
     let a2 = Number(mFra[2]);
-    // "1340-45": il secondo numero è l'abbreviazione del primo, non l'anno 45.
     if (a2 < 100 && a1 >= 100) a2 = Math.floor(a1 / 100) * 100 + a2;
     if (avAnnoValido(a1) && avAnnoValido(a2) && a2 >= a1) {
       return {
@@ -244,7 +173,6 @@ function avAnalizzaData(testo: any): AVIntervalloData {
   const ante = /\b(ante|prima del|prima di|anteriore al?)\b/.test(t);
   const post = /\b(post|dopo il|dopo di|posteriore al?)\b/.test(t);
 
-  // --- Data piena ------------------------------------------------------------------------
   const gma = avGiornoMeseAnno(t);
   if (gma && avAnnoValido(gma.anno) && gma.mese >= 1 && gma.mese <= 12 &&
       gma.giorno >= 1 && gma.giorno <= avGiorniDelMese(gma.anno, gma.mese)) {
@@ -257,7 +185,6 @@ function avAnalizzaData(testo: any): AVIntervalloData {
     };
   }
 
-  // --- Mese e anno -------------------------------------------------------------------------
   const ma = avMeseAnno(t);
   if (ma && avAnnoValido(ma.anno) && ma.mese >= 1 && ma.mese <= 12) {
     const da = avChiaveData(ma.anno, ma.mese, 1);
@@ -267,7 +194,6 @@ function avAnalizzaData(testo: any): AVIntervalloData {
     return { raw, da, a, qualificatore: circa ? 'circa' : 'anno', certa: !circa, riconosciuta: true };
   }
 
-  // --- Solo anno ---------------------------------------------------------------------------
   const mAnno = /\b(\d{3,4})\b/.exec(t);
   if (mAnno) {
     const anno = Number(mAnno[1]);
@@ -285,13 +211,6 @@ function avAnalizzaData(testo: any): AVIntervalloData {
   return avVuota(raw);
 }
 
-// --- Memoria in RAM -----------------------------------------------------------
-//
-// L'ordinamento chiama il parser una volta per record a ogni render, e il testo si ripete
-// (un fondo ha decine di schede datate "sec. XIV"). La memoria è sul TESTO, non sul record:
-// così vale anche fra schede diverse, e non va invalidata quando un record cambia — cambia
-// il testo, e con esso la chiave.
-
 const AV_CACHE_DATE = new Map<string, AVIntervalloData>();
 const AV_CACHE_MAX = 5000;
 
@@ -300,20 +219,11 @@ function avData(testo: any): AVIntervalloData {
   const memo = AV_CACHE_DATE.get(chiave);
   if (memo) return memo;
   const esito = avAnalizzaData(chiave);
-  // Tetto grossolano: un archivio con più di 5000 datazioni DIVERSE esiste, e la memoria
-  // non deve crescere all'infinito in un processo che resta aperto per giorni.
   if (AV_CACHE_DATE.size >= AV_CACHE_MAX) AV_CACHE_DATE.clear();
   AV_CACHE_DATE.set(chiave, esito);
   return esito;
 }
 
-/**
- * Chiave di ordinamento cronologico: l'estremo INIZIALE dell'intervallo.
- *
- * `ante 1350` non ha un inizio: si ordina appena prima della sua fine, o finirebbe in testa
- * all'archivio insieme alle datazioni più antiche. `null` per ciò che non è una data: chi
- * ordina lo mette in coda, dove stanno già i campi vuoti.
- */
 function avChiaveOrdinamento(testo: any): number | null {
   const d = avData(testo);
   if (!d.riconosciuta) return null;
@@ -322,13 +232,6 @@ function avChiaveOrdinamento(testo: any): number | null {
   return null;
 }
 
-/**
- * L'intervallo [daAnno, aAnno] tocca la datazione? Estremi inclusivi, anni interi.
- *
- * Basta una **sovrapposizione**, non il contenimento: cercando il Trecento, una scheda
- * datata "1290-1310" va mostrata. Escluderla perché sborda significherebbe nascondere
- * proprio i documenti a cavallo, che sono quelli che si cercano.
- */
 function avNelPeriodo(testo: any, daAnno: any, aAnno: any): boolean {
   const d = avData(testo);
   if (!d.riconosciuta || (d.da === null && d.a === null)) return false;
@@ -341,7 +244,6 @@ function avNelPeriodo(testo: any, daAnno: any, aAnno: any): boolean {
   return true;
 }
 
-/** L'anno di un estremo (AAAAMMGG → AAAA), per mostrarlo o per il filtro per secolo. */
 function avAnnoDi(chiave: number | null): number | null {
   return chiave === null ? null : Math.floor(chiave / 10000);
 }

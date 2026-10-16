@@ -1,14 +1,3 @@
-// Ricerca tra archivi — il worker. Ospita l'indice fuori dal thread del main, così
-// `JSON.parse` di un database grande e la scansione non fermano l'interfaccia (regola 5).
-//
-// Protocollo (tutti dati clonabili):
-//   in:  { reqId, op: 'sincronizza'|'cerca'|'scheda'|'invalida', args }   |  { op: 'annulla', reqId }
-//   out: { pronto: true }  una volta, all'avvio
-//        { reqId, ok: true, valore }  |  { reqId, ok: false, errore: { name, message } }
-//
-// Il worker NON decide quali archivi leggere: riceve percorsi già risolti dal main, che li
-// prende dalle impostazioni e mai dal renderer.
-
 import { parentPort as portaGrezza, workerData } from 'worker_threads';
 import { IndiceMemoria } from './indiceMemoria';
 

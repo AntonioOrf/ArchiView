@@ -8,13 +8,11 @@ const apiBrowser = {
     onDatabaseModificatoEsterno: (callback) => ipcRenderer.on('database-modificato-esterno', () => callback()),
     onInviteUrl: (callback) => ipcRenderer.on('handle-invite-url', (event, url) => callback(url)),
     
-    // Funzioni aggiornate per gestire qualsiasi tipo di allegato
     salvaAllegato: (filePath, documentoId) => ipcRenderer.invoke('salva-allegato', filePath, documentoId),
     onAllegatoScaricato: (callback) => ipcRenderer.on('allegato-scaricato', (event, fileName) => callback(fileName)),
     verificaHashAllegato: (fileName, expectedHash) => ipcRenderer.invoke('verifica-hash-allegato', fileName, expectedHash),
     mostraCartellaAllegato: (fileName) => ipcRenderer.invoke('mostra-cartella-allegato', fileName),
     getAllegatoPath: (fileName) => ipcRenderer.invoke('get-allegato-path', fileName),
-    // Visualizzatore PDF della trascrizione: dimensione + primo pezzo, poi intervalli di byte.
     pdfAllegatoInfo: (fileName) => ipcRenderer.invoke('pdf-allegato-info', fileName),
     pdfAllegatoIntervallo: (fileName, inizio, fine) => ipcRenderer.invoke('pdf-allegato-intervallo', fileName, inizio, fine),
     getPathForFile: (file) => webUtils.getPathForFile(file),
@@ -32,7 +30,6 @@ const apiBrowser = {
     loadHubConfig: () => ipcRenderer.invoke('load-hub-config'),
     disconnectHub: () => ipcRenderer.invoke('disconnect-hub'),
     syncHubAttachments: () => ipcRenderer.invoke('hub-sync-attachments'),
-    // Hub: le chiavi restano nel main (S8), qui passano solo dati ed esiti { ok, status, data?, error? }.
     hubCreateRepo: (name, database) => ipcRenderer.invoke('hub-create-repo', name, database),
     hubPull: (ifVersionNot) => ipcRenderer.invoke('hub-pull', ifVersionNot),
     hubPush: (parentVersion, database) => ipcRenderer.invoke('hub-push', parentVersion, database),
@@ -63,7 +60,6 @@ const apiBrowser = {
         ipcRenderer.on('import-zip-avanzamento', h);
         return () => ipcRenderer.removeListener('import-zip-avanzamento', h);
     },
-    // Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md): solo testo e id, mai percorsi.
     crossArchiveArchivi: () => ipcRenderer.invoke('cross-archive-archivi'),
     crossArchiveSearch: (richiesta) => ipcRenderer.invoke('cross-archive-search', richiesta),
     crossArchiveGet: (archivioId, schedaId) => ipcRenderer.invoke('cross-archive-get', archivioId, schedaId),
@@ -74,15 +70,9 @@ const apiBrowser = {
         ipcRenderer.on('cross-archive-copia-progresso', h);
         return () => ipcRenderer.removeListener('cross-archive-copia-progresso', h);
     },
-    // Fase 2.4 — il main apre il dialogo e legge il file; l'analisi e la costruzione delle
-    // schede stanno in shared/csvImport.ts, che gira nel renderer (vedi exportImportIpc.ts).
     importCsvLeggi: (titolo) => ipcRenderer.invoke('import-csv-leggi', titolo),
-    // Stampa e PDF (Fase 2.2): il renderer manda ids + opzioni e riceve un esito. Template,
-    // finestra di rendering e stampante restano nel main.
     printPdf: (ids, opzioni) => ipcRenderer.invoke('print-pdf', ids, opzioni),
     printDirect: (ids, opzioni) => ipcRenderer.invoke('print-direct', ids, opzioni),
-    // Export testuali (Fasi 2.5 e 2.6): il renderer manda ids + opzioni, il main scrive il
-    // file. HTML/Markdown/RTF per la trascrizione, BibTeX/RIS per la citazione.
     exportTranscript: (ids, opzioni) => ipcRenderer.invoke('export-transcript', ids, opzioni),
     exportCitations: (ids, opzioni) => ipcRenderer.invoke('export-citations', ids, opzioni),
     duplicateRecords: (ids, targetFolder) => ipcRenderer.invoke('duplicate-records', ids, targetFolder),
@@ -94,7 +84,6 @@ const apiBrowser = {
     inviaSegnalazione: (payload) => ipcRenderer.invoke('invia-segnalazione', payload),
     onExportProgress: (callback) => ipcRenderer.on('export-progress', (event, progress) => callback(progress)),
     
-    // Auto-updater
     downloadUpdate: () => ipcRenderer.invoke('download-update'),
     installUpdate: () => ipcRenderer.invoke('install-update'),
     onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (event, progressObj) => callback(progressObj)),
@@ -103,8 +92,6 @@ const apiBrowser = {
 };
 contextBridge.exposeInMainWorld('apiBrowser', apiBrowser);
 
-// OCR degli allegati (Fase 2.3). Il renderer non vede mai né tesseract né pdf.js: chiede
-// un riconoscimento e riceve testo. Motore, pagine e dati di lingua restano nel main.
 const apiOcr = {
     lingue: () => ipcRenderer.invoke('ocr-lingue'),
     installaLingua: (codice) => ipcRenderer.invoke('ocr-installa-lingua', codice),
@@ -118,9 +105,6 @@ const apiOcr = {
 };
 contextBridge.exposeInMainWorld('apiOcr', apiOcr);
 
-// Fase 4 — sicurezza del dato. Il renderer non vede mai un percorso: chiede per nome di
-// snapshot o per id di scheda. Cestino e snapshot vivono in <workspace>/.archiview/ e non
-// entrano nel database, quindi non si sincronizzano (vedi main/trash.ts).
 const apiSicurezza = {
     cestinoElenca: () => ipcRenderer.invoke('cestino-elenca'),
     cestinoAggiungi: (records, da) => ipcRenderer.invoke('cestino-aggiungi', records, da),
@@ -135,9 +119,6 @@ const apiSicurezza = {
 };
 contextBridge.exposeInMainWorld('apiSicurezza', apiSicurezza);
 
-// Import IIIF. Il renderer non parla mai con il server della biblioteca: passa un URL e
-// riceve il JSON, oppure chiede di scaricare delle carte. Le immagini che vede arrivano dal
-// protocollo `iiif-img:` (main/iiif/imageHost.ts), non da una fetch del renderer.
 const apiIiif = {
     leggiManifest: (url) => ipcRenderer.invoke('iiif-leggi-manifest', url),
     materializza: (richieste) => ipcRenderer.invoke('iiif-materializza', richieste),
@@ -147,15 +128,12 @@ const apiIiif = {
 };
 contextBridge.exposeInMainWorld('apiIiif', apiIiif);
 
-// P10 — anagrafica e Wikidata: il renderer passa un nome o un id `Q…`, il main costruisce l'URL.
 const apiAuthority = {
     cerca: (nome, lingua) => ipcRenderer.invoke('authority-cerca', nome, lingua),
     dettagli: (id) => ipcRenderer.invoke('authority-dettagli', id)
 };
 contextBridge.exposeInMainWorld('apiAuthority', apiAuthority);
 
-// ArchiScanner. Il renderer passa solo id di lotto, nomi di pagina e id di scheda:
-// niente percorsi né id Drive (pannello "Scansioni in arrivo", scannerPanel.ts).
 const apiScanner = {
     riceviDaDrive: () => ipcRenderer.invoke('scanner-ricevi-drive'),
     elenca: () => ipcRenderer.invoke('scanner-elenca'),
@@ -171,20 +149,15 @@ const apiScanner = {
 };
 contextBridge.exposeInMainWorld('apiScanner', apiScanner);
 
-// PIANO-SCHEDA-AFFIANCATA — finestra staccata (main/finestraStaccata.ts). La staccata non
-// scrive l'archivio: chiede alla principale (`richiesta`), che risponde con `rispondi`.
 const apiFinestre = {
-    // Principale
     stacca: (tipo, dati, posizione) => ipcRenderer.invoke('finestra-stacca', tipo, dati, posizione),
     messaggio: (tipo, dati?) => ipcRenderer.invoke('finestra-messaggio', tipo, dati),
     onChiusa: (callback) => ipcRenderer.on('finestra-chiusa', (event, tipo) => callback(tipo)),
     onPosizione: (callback) => ipcRenderer.on('finestra-posizione', (event, tipo, posizione) => callback(tipo, posizione)),
     onZona: (callback) => ipcRenderer.on('finestra-zona', (event, attiva) => callback(attiva)),
-    // Entrambe: domande con risposta (la principale riceve `salva`/`record`/`zona`, la staccata `svuota`).
     onRichiesta: (callback) => ipcRenderer.on('finestra-richiesta', (event, id, metodo, args) => callback(id, metodo, args)),
     onSvuota: (callback) => ipcRenderer.on('finestra-svuota', (event, id) => callback(id)),
     rispondi: (id, esito) => ipcRenderer.send('finestra-risposta', id, esito),
-    // Staccata
     dati: () => ipcRenderer.invoke('finestra-dati'),
     richiesta: (metodo, args) => ipcRenderer.invoke('finestra-richiesta', metodo, args),
     riaggancia: () => ipcRenderer.invoke('finestra-riaggancia'),
@@ -195,12 +168,9 @@ contextBridge.exposeInMainWorld('apiFinestre', apiFinestre);
 
 const apiSettings = {
     get: () => ipcRenderer.invoke('get-settings'),
-    // Solo le chiavi che cambiano; `null` torna al predefinito. → { ok, rifiutate[] }
     patch: (parziale) => ipcRenderer.invoke('patch-settings', parziale),
-    // Chiavi cambiate dal main fuori dal pannello (zoom da tastiera).
     onCambiate: (callback) => ipcRenderer.on('impostazioni-cambiate', (event, chiavi) => callback(chiavi)),
     percorsoAllegati: () => ipcRenderer.invoke('percorso-allegati-effettivo'),
-    // Percorsi: li sceglie o li toglie il main, il renderer non li scrive (N2).
     scegliCartellaAllegati: (titolo) => ipcRenderer.invoke('scegli-cartella-allegati', titolo),
     ripristinaCartellaAllegati: () => ipcRenderer.invoke('ripristina-cartella-allegati'),
     rimuoviArchivioRecente: (percorso) => ipcRenderer.invoke('rimuovi-archivio-recente', percorso)
@@ -228,7 +198,6 @@ const apiDrive = {
     listPermissions: () => ipcRenderer.invoke('drive-list-permissions'),
     removePermission: (permissionId) => ipcRenderer.invoke('drive-remove-permission', permissionId),
     joinByFolderId: (folderId, vaultName, basePath, invito) => ipcRenderer.invoke('drive-join-folder-id', folderId, vaultName, basePath, invito),
-    // --- Storico Versioni Cloud ---
     getDbFileId: () => ipcRenderer.invoke('drive-get-db-file-id'),
     listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),
     getRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-get-revision', fileId, revisionId),
@@ -237,5 +206,4 @@ const apiDrive = {
 };
 contextBridge.exposeInMainWorld('apiDrive', apiDrive);
 
-/** La forma delle API esposte: `src/global.d.ts` la dà a `window` nel renderer. */
 export type ApiPreload = { apiBrowser: typeof apiBrowser; apiOcr: typeof apiOcr; apiSicurezza: typeof apiSicurezza; apiIiif: typeof apiIiif; apiAuthority: typeof apiAuthority; apiScanner: typeof apiScanner; apiFinestre: typeof apiFinestre; apiSettings: typeof apiSettings; apiDrive: typeof apiDrive };

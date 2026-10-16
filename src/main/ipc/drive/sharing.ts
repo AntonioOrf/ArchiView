@@ -10,8 +10,6 @@ import { pullFromDrive } from './vaultOps';
 import { pickerGetSecretOk } from './pickerSecurity';
 import { safeChildDir, nomeCartellaSicuro } from '../pathSafety';
 
-// Un nuovo membro parte senza base del merge: quella dentro un DB scritto da versioni vecchie
-// è di chi l'ha caricato, e farebbe passare per modifiche proprie le differenze dei colleghi.
 function dbPerNuovoMembro(database: any): string {
   if (typeof database === 'string') return database;
   const { baseObjects, baseHashes, ...db } = database;
@@ -34,13 +32,11 @@ async function generateInviteCode(): Promise<string> {
       saveAllSettings(settings);
     }
 
-    // I vault Drive non hanno realtime: i campi Pusher e webhook restano vuoti, tenuti solo
-    // perché le posizioni del formato non cambino per i client che leggono il codice.
     const parts = [
-      "",                                          // r: refresh_token (non condiviso per sicurezza)
-      "",                                          // pusherKey
-      "",                                          // pusherCluster
-      "",                                          // webhook
+      "",
+      "",
+      "",
+      "",
       settings.driveAutofetch ? 1 : 0,
       vaultFolderId,
       projectName
@@ -66,20 +62,13 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   while (b64.length % 4 !== 0) b64 += '=';
   const parts = Buffer.from(b64, 'base64').toString('utf8').split('|');
   if (parts.length < 5) throw new Error("Codice incompleto");
-  // parts[1..3] = Pusher e webhook: ignorati, i vault Drive non hanno realtime.
   const [, , , , pAuto, vaultId] = parts;
 
-  // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
   if (fs.existsSync(newPath)) {
     throw new Error(`La cartella "${name}" esiste già nel percorso selezionato. Per favore rinominala, cancellala o scegli un'altra posizione.`);
   }
   fs.mkdirSync(newPath, { recursive: true });
-
-  // Nota: l'invito NON trasporta refresh_token (parts[0] è sempre vuoto per sicurezza).
-  // Il ricevente autentica il proprio account; con scope drive.file l'accesso al vault
-  // condiviso passa dal Google Picker (vedi openExternalPicker). I token vivono in
-  // userData/cloud-tokens/ (cloudTokenStore), mai dentro il workspace.
 
   const settingsToSave: any = { isSharedVault: true, driveAutofetch: pAuto === "1" };
   if (vaultId) {
@@ -91,9 +80,6 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   saveAllSettings(settingsToSave);
 
   if (vaultId) {
-    // Con scope drive.file, il ricevente non può accedere a cartelle create da altri
-    // finché non le "apre" tramite il picker. Tentiamo il pull: se fallisce, l'utente
-    // dovrà usare il picker (openExternalPicker) e poi joinByFolderId.
     try {
       await authenticateDrive();
       const driveData = await pullFromDrive(vaultId);
@@ -103,7 +89,6 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
       }
     } catch (syncErr: any) {
       console.warn("Auto-sync iniziale fallita (probabile scope drive.file su cartella altrui):", syncErr.message);
-      // Il db verrà scaricato al primo sync manuale dopo che l'utente ha aperto il picker
     }
   }
 
@@ -111,11 +96,8 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   return true;
 }
 
-// `invito`: opzioni lette dal codice d'invito Drive (oggi solo driveAutofetch), null se si è
-// arrivati dal solo Picker.
 async function joinByFolderId(vaultId: string, vaultName: string, basePath: string, invito: any): Promise<boolean> {
   const name = vaultName || "Vault_Condiviso";
-  // `name` può venire dalla cartella Drive scelta nel Picker o dall'invito: un solo segmento.
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
   if (fs.existsSync(newPath)) {
     throw new Error(`La cartella "${name}" esiste già. Rinominala o scegli un'altra posizione.`);
@@ -137,7 +119,7 @@ async function joinByFolderId(vaultId: string, vaultName: string, basePath: stri
         const dbContent = dbPerNuovoMembro(driveData.database);
         fs.writeFileSync(path.join(newPath, 'database_manoscritti.json'), dbContent, 'utf8');
       }
-    } catch (syncErr) { /* Sincronizzazione manuale richiesta dall'utente */ }
+    } catch (syncErr) {}
   }
 
   if (state.mainWindow) state.mainWindow.reload();
@@ -369,8 +351,6 @@ async function openExternalPicker(): Promise<any> {
       let pickerServer: any = null;
       const chiudiPicker = () => { if (pickerServer) { pickerServer.close(); pickerServer = null; } };
 
-      // POST dalla pagina del Picker: corpo JSON con il sessionSecret. Una richiesta senza il
-      // secret (un'altra pagina, un altro processo) riceve 403 e NON chiude né decide nulla.
       const leggiCorpoConSecret = (req: any, res: any, suValido: (data: any) => void) => {
         let body = '';
         req.on('data', (chunk: any) => {
@@ -394,10 +374,6 @@ async function openExternalPicker(): Promise<any> {
         const parsedUrl = new URL(req.url, 'http://127.0.0.1:3457');
         const pathname = parsedUrl.pathname;
         if ((pathname === '/' || pathname === '/picker') && req.method === 'GET') {
-          // Il GET serve HTML con l'access token OAuth interpolato in chiaro. Senza auth,
-          // qualsiasi processo locale (o pagina web nel browser dell'utente) potrebbe fare
-          // GET su questa URL e scrapare il token. Richiediamo il sessionSecret anche qui e
-          // impediamo il caching della risposta.
           if (!pickerGetSecretOk(req.url, sessionSecret)) {
             res.writeHead(403); res.end('Forbidden');
             return;

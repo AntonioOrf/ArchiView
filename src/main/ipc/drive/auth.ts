@@ -6,21 +6,17 @@ import { state, finestraPrincipale, getActiveVaultFlags } from '../../workspaceM
 import * as tokenStore from '../../cloudTokenStore';
 import { avviaServerLoopback, leggiCallbackOAuth } from '../loopbackServer';
 
-// Registrato nella console Google: porta e path non si cambiano senza aggiornare il client.
 const REDIRECT_PORT = 3456;
 const REDIRECT_PATH = '/oauth2callback';
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}${REDIRECT_PATH}`;
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
-// Stato condiviso del client Drive — mutato da initGoogle(), letto dagli altri moduli
 const driveState = {
   localServer: null as any,
   googleInstance: null as any,
   oauth2Client: null as any,
   drive: null as any
 };
-
-// --- Token Storage ---
 
 function writeTokenFile(tokenPath: string, tokenData: object): void {
   tokenStore.writeSerialized(tokenPath, JSON.stringify(tokenData));
@@ -37,12 +33,10 @@ function readTokenFile(tokenPath: string): object | null {
   }
 }
 
-// Percorso legacy (pre-refactor) del token globale, usato solo per la migrazione one-shot.
 function getLegacyGlobalTokenPath(): string {
   return path.join(app.getPath('userData'), 'google-drive-tokens-global.json');
 }
 
-// Percorso legacy (pre-refactor) del token dentro il workspace, usato solo per la migrazione.
 function getLegacyLocalTokenPath(ws: string): string {
   return path.join(ws, '.archiview-chunks', '.credentials.json');
 }
@@ -51,17 +45,12 @@ function getGlobalTokenPath(): string {
   return tokenStore.tokenPathFor('google', 'global');
 }
 
-// Percorso token del vault attivo: null per i workspace non-cloud (usano il globale).
 function getLocalTokenPath(): string | null {
   const key = tokenStore.activeVaultKey();
   if (key === 'global') return null;
   return tokenStore.tokenPathFor('google', key);
 }
 
-// --- Classificazione errori di accesso alla cartella vault ---
-
-// La stessa discriminazione serviva in authenticateDrive, checkDriveStatus e pullFromDrive:
-// centralizzata qui (auth.ts non dipende da vaultOps/fileOps, quindi niente require circolari).
 function classifyDriveFolderError(err: any): 'forbidden' | 'notfound' | null {
   const status = err?.code || err?.status || err?.response?.status;
   const msg = (err?.message || '').toLowerCase();
@@ -76,8 +65,6 @@ function classifyDriveFolderError(err: any): 'forbidden' | 'notfound' | null {
 const ERR_VAULT_FORBIDDEN = "ACCESSO_NEGATO_VAULT: Questo account Google non è autorizzato ad accedere all'archivio condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario.";
 const ERR_VAULT_NOTFOUND = "L'archivio condiviso non esiste o è stato eliminato. Richiedi un nuovo invito al proprietario.";
 
-// --- Auth Logging ---
-
 function logAuthEvent(message: string): void {
   let logPath: string;
   if (state.workspacePath) {
@@ -91,8 +78,6 @@ function logAuthEvent(message: string): void {
     fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${message}\n`);
   } catch (e) { console.error("Errore scrittura log auth:", e); }
 }
-
-// --- Google OAuth2 Client ---
 
 function initGoogle(): void {
   if (driveState.googleInstance) return;
@@ -112,10 +97,6 @@ function initGoogle(): void {
     throw new Error("Credenziali Google Drive mancanti. Il file cloudCredentials.ts non è configurato.");
   }
 
-  // Solo `@googleapis/drive`, non `googleapis`: il pacchetto completo pesa ~34 MB
-  // nell'installazione e, caricato, bloccava il main per circa un secondo (misurato: 1.300 ms
-  // contro 110). `drive()` senza `this` è previsto da googleapis-common
-  // (`context.google?._options`).
   const google = require('@googleapis/drive');
   driveState.googleInstance = google;
   driveState.oauth2Client = new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
@@ -127,18 +108,12 @@ function initGoogle(): void {
     if (!targetPath) return;
     const currentTokens = readTokenFile(targetPath);
     if (currentTokens) {
-      // Merge preservando refresh_token e scope dal file esistente.
-      // I token di refresh event non includono refresh_token: il merge lo preserva.
       writeTokenFile(targetPath, { ...currentTokens, ...tokens });
       logAuthEvent("REFRESH TOKEN RICEVUTO: Salvato in " + targetPath);
     } else if ((tokens as any).refresh_token) {
-      // File non leggibile (corrotto/chiave cambiata) ma abbiamo un refresh_token nuovo
       writeTokenFile(targetPath, tokens);
       logAuthEvent("REFRESH TOKEN (file riscritto da zero): Salvato in " + targetPath);
     }
-    // Se currentTokens è null E tokens non ha refresh_token → NON sovrascrivere.
-    // Scrivere un token parziale senza refresh_token corromperebbe il file e causerebbe
-    // un loop di re-auth ogni volta che l'access_token scade (dopo 1h).
   });
 
   driveState.drive = google.drive({ version: 'v3', auth: driveState.oauth2Client });
@@ -153,7 +128,6 @@ function loadSavedTokens(): boolean {
     return false;
   }
 
-  // Migrazione one-shot dai vecchi percorsi (workspace / userData legacy) → cloud-tokens/.
   tokenStore.migrateLegacy('google', getLegacyGlobalTokenPath(), getLegacyLocalTokenPath);
 
   let tokenPath: string | null;
@@ -162,13 +136,10 @@ function loadSavedTokens(): boolean {
     if (localPath && fs.existsSync(localPath)) {
       tokenPath = localPath;
     } else {
-      // Nessun token locale: fallback al token globale per evitare re-auth inutile.
-      // Se il globale è valido, lo copiamo in locale per isolare il workspace da qui in poi.
       const globalPath = getGlobalTokenPath();
       if (fs.existsSync(globalPath)) {
         logAuthEvent("Nessun token locale: fallback al token globale per questo workspace.");
         tokenPath = globalPath;
-        // Copia in locale così i successivi avvii usano il percorso locale.
         if (localPath) {
           try {
             const globalTokenData = readTokenFile(globalPath);
@@ -241,14 +212,9 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
               if (kind === 'notfound') return reject(new Error(ERR_VAULT_NOTFOUND));
             }
           }
-          // Percorso "già autenticato": risolve SENZA aprire il browser. Va tracciato, altrimenti
-          // un click su "Accedi" che non apre nulla resta inspiegabile in diagnostica.
           logAuthEvent("AUTH: token già validi, login saltato (nessun browser aperto).");
           return resolve(true);
         } catch (e: any) {
-          // Distingui errori di autenticazione (401/invalid_grant) da errori transienti
-          // (rete, quota, timeout). Solo gli errori di auth reali richiedono un nuovo login.
-          // Un fallthrough cieco causava OAuth ad ogni disconnessione temporanea di rete.
           const status = e.code || e.status || (e.response && e.response.status);
           const isAuthError = status === 401 || (typeof e.message === 'string' && (
             e.message.includes('invalid_grant') ||
@@ -272,9 +238,6 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
         }
       }
 
-      // consent serve solo al primo login per ottenere il refresh_token.
-      // Con consent fisso → consent screen ad ogni re-auth → esperienza pessima.
-      // Senza consent se abbiamo già refresh_token → Google non lo re-emette (comportamento corretto).
       let needConsent = true;
       let loginHint: string | null = null;
       try {
@@ -284,23 +247,15 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
           if (existingTok && existingTok.refresh_token) needConsent = false;
           if (existingTok && existingTok.email) loginHint = existingTok.email;
         }
-      } catch (e) { /* non bloccante: fallback a consent=true */ }
+      } catch (e) {}
 
-      // Selezione del prompt OAuth:
-      //  - forceLocal (cambio account volontario) → chooser + consent
-      //  - primo login senza refresh_token → chooser + consent (necessario per ottenere il refresh_token)
-      //  - re-auth con refresh_token già presente → nessun prompt = refresh SILENZIOSO (niente chooser nel browser)
       let promptMode = '';
       if (forceLocal || needConsent) promptMode = 'select_account consent';
 
       const authUrlParams: any = { access_type: 'offline', scope: SCOPES };
       if (promptMode) authUrlParams.prompt = promptMode;
-      // login_hint salta il chooser puntando all'account già in uso (solo re-auth, non cambio account).
       if (!forceLocal && loginHint) authUrlParams.login_hint = loginHint;
 
-      // PKCE + state: senza, il primo `?code=` arrivato al server
-      // veniva scambiato, anche quello di un account altrui iniettato da un'altra pagina o
-      // dalla rete (login CSRF: la vittima sincronizzava il vault sul Drive dell'attaccante).
       const { codeVerifier, codeChallenge } = await driveState.oauth2Client.generateCodeVerifierAsync();
       const statoLogin = crypto.randomBytes(24).toString('hex');
       authUrlParams.code_challenge = codeChallenge;
@@ -318,7 +273,6 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
           const esito = leggiCallbackOAuth(req.url, { path: REDIRECT_PATH, stato: statoLogin });
           if (esito.tipo === 'estranea') { res.writeHead(404); res.end(); return; }
           if (esito.tipo === 'rifiutata') {
-            // Non chiude il server e non fa fallire il login: quello vero può ancora arrivare.
             logAuthEvent("OAUTH: callback scartato (state assente o diverso).");
             res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end('Richiesta di autenticazione non valida.');
@@ -337,9 +291,6 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
               throw tokenErr;
             }
 
-            // Se Google non restituisce refresh_token (consenso già dato, prompt senza consent),
-            // preserva il refresh_token dal file token precedente per non perdere la capacità
-            // di auto-refresh alla scadenza dell'access_token.
             if (!tokens.refresh_token) {
               try {
                 const existingPath = getLocalTokenPath() || getGlobalTokenPath();
@@ -350,16 +301,14 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
                     logAuthEvent("refresh_token preservato dal file token precedente.");
                   }
                 }
-              } catch (e) { /* non bloccante */ }
+              } catch (e) {}
             }
 
             driveState.oauth2Client.setCredentials(tokens);
-            // Salva l'email dell'account nel token file: abilita login_hint per il refresh silenzioso.
-            // best-effort: about.get può fallire con scope drive.file, in quel caso si prosegue senza email.
             try {
               const about = await driveState.drive.about.get({ fields: 'user' });
               if (about?.data?.user?.emailAddress) tokens.email = about.data.user.emailAddress;
-            } catch (e) { /* non bloccante */ }
+            } catch (e) {}
             const win = finestraPrincipale();
             if (win) win.webContents.send('drive-status-updated', { authenticated: true });
 
@@ -416,15 +365,9 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
 }
 
 async function logoutDrive(): Promise<boolean> {
-  // Il logout deve rimuovere OGNI traccia locale del token, non solo quella del vault attivo:
-  // getLocalTokenPath() è null per i workspace non-vault (activeVaultKey()==='global') e in quel
-  // caso il vecchio codice non cancellava nulla, mentre loadSavedTokens() ricopia comunque il
-  // token globale su quello locale → l'account restava collegato dopo la "disconnessione".
   const localTokenPath = getLocalTokenPath();
   const globalTokenPath = getGlobalTokenPath();
 
-  // Revoca best-effort lato Google PRIMA di cancellare i file: senza refresh_token non
-  // potremmo più revocare. Rete assente o grant già revocato non devono bloccare il logout locale.
   try {
     for (const p of new Set([localTokenPath, globalTokenPath])) {
       if (!p || !fs.existsSync(p)) continue;
@@ -435,7 +378,7 @@ async function logoutDrive(): Promise<boolean> {
       if (!driveState.oauth2Client) break;
       await driveState.oauth2Client.revokeToken(toRevoke);
       logAuthEvent("LOGOUT: token revocato su Google (" + p + ").");
-      break; // local e global appartengono allo stesso grant: una revoca basta
+      break;
     }
   } catch (e: any) {
     logAuthEvent("LOGOUT: revoca su Google fallita (non bloccante): " + e.message);
@@ -452,14 +395,11 @@ async function logoutDrive(): Promise<boolean> {
     }
   }
 
-  // Teardown dello stato in memoria. Azzerare googleInstance è ciò che permette a initGoogle()
-  // di ricostruire il client e RI-REGISTRARE il listener 'tokens': tenere l'oggetto vecchio
-  // con sole credenziali svuotate lasciava attivo un listener legato al grant precedente.
-  try { if (driveState.localServer) driveState.localServer.close(); } catch (e) { /* best-effort */ }
+  try { if (driveState.localServer) driveState.localServer.close(); } catch (e) {}
   driveState.localServer = null;
   if (driveState.oauth2Client) {
-    try { driveState.oauth2Client.setCredentials(null); } catch (e) { /* best-effort */ }
-    try { driveState.oauth2Client.removeAllListeners('tokens'); } catch (e) { /* best-effort */ }
+    try { driveState.oauth2Client.setCredentials(null); } catch (e) {}
+    try { driveState.oauth2Client.removeAllListeners('tokens'); } catch (e) {}
   }
   driveState.oauth2Client = null;
   driveState.drive = null;
@@ -491,7 +431,7 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
         }
       }
     }
-  } catch (e) { /* getAllSettings fallisce se nessun workspace attivo */ }
+  } catch (e) {}
 
   return { isAuthenticated: true, user: userEmail };
 }

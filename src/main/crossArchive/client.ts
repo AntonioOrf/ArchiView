@@ -1,15 +1,3 @@
-// Ricerca tra archivi — il lato main del worker. Implementa lo stesso contratto
-// `IndiceArchivi` dell'indice che ospita: chi lo usa non sa che c'è un thread in mezzo.
-//
-// Tre garanzie:
-// 1. **Annullamento**: un `AbortSignal` scattato nel main rifiuta subito la promessa e manda
-//    `annulla` al worker, che smette di scansionare al prossimo passo.
-// 2. **Riavvio**: se il worker muore, le richieste pendenti falliscono con un errore e la
-//    successiva ne avvia uno nuovo. L'indice si ricostruisce alla prima `sincronizza`.
-// 3. **Ripiego**: se il worker non riesce nemmeno a partire (modulo non trovato dentro
-//    l'asar, ambiente senza worker_threads) l'indice gira nel main. Più lento sotto carico,
-//    ma la funzione non sparisce. Lo stesso dopo troppi crash ravvicinati.
-
 import * as path from 'path';
 import { Worker } from 'worker_threads';
 import { IndiceMemoria } from './indiceMemoria';
@@ -17,13 +5,9 @@ import { IndiceMemoria } from './indiceMemoria';
 import type { IndiceArchivi, ArchivioRif, StatoArchivio, Query, PaginaRisultati } from './indiceMemoria';
 
 type OpzioniClient = {
-  /** Percorso dello script del worker; predefinito: `worker.js` accanto a questo file. */
   script?: string;
-  /** Passate all'indice (nel worker o nel ripiego). */
   indice?: { maxArchivi?: number; limiteTesto?: number };
-  /** Dopo quanto tempo senza richieste il worker viene chiuso per liberare memoria. 0 = mai. */
   inattivitaMs?: number;
-  /** Crash tollerati nella finestra prima di passare al ripiego definitivo. */
   maxCrash?: number;
   log?: (msg: string, e?: any) => void;
 };
@@ -54,7 +38,6 @@ class IndiceWorker implements IndiceArchivi {
     this.log = this.opz.log || ((m, e) => console.warn('[ricerca-archivi] ' + m, e || ''));
   }
 
-  /** true se l'indice sta girando nel main invece che nel worker. */
   get inRipiego(): boolean {
     return !!this.ripiego;
   }
@@ -108,7 +91,6 @@ class IndiceWorker implements IndiceArchivi {
     }
     this.worker = w;
     this.pronto = false;
-    // Il worker non deve tenere in vita il processo (test, chiusura dell'app).
     if (typeof w.unref === 'function') w.unref();
 
     w.on('message', (msg: any) => {
@@ -129,8 +111,6 @@ class IndiceWorker implements IndiceArchivi {
       this.worker = null;
       this.pronto = false;
       if (!eraPronto) {
-        // Non è mai partito: riprovare darebbe lo stesso esito. Le richieste in attesa
-        // vengono rigirate al ripiego invece di fallire.
         this.passaAlRipiego(motivo, e);
         const attese = [...this.pendenti.values()];
         this.pendenti.clear();

@@ -1,13 +1,3 @@
-// Schema `app://` della finestra principale.
-//
-// Prima il renderer girava su `file://`: V8 ricompilava da zero il bundle a ogni avvio
-// (Chromium non tiene cache del codice per `file:`), e nella CSP `'self'` comprendeva
-// qualunque `file:`, quindi anche `file://host/…` verso la rete (N1).
-// Con uno schema `standard` + `codeCache` la pagina ha un'origine vera (`app://archiview`),
-// la cache del codice V8 sopravvive fra un avvio e l'altro e `'self'` non tocca più il disco.
-//
-// Si serve solo la cartella out/renderer, in sola lettura, con un Content-Type fisso per
-// estensione: ciò che non è nell'elenco non si serve.
 import { protocol } from 'electron';
 import * as path from 'path';
 const fsp = require('fs').promises;
@@ -38,10 +28,6 @@ const TIPI_MIME: Record<string, string> = {
   '.map': 'application/json; charset=utf-8'
 };
 
-/**
- * Percorso su disco per una richiesta `app://archiview/<percorso>`, o null se esce dalla
- * radice, punta a un'altra autorità o a un tipo non servito. Pura, per i test.
- */
 function percorsoRichiesto(radice: string, url: string): string | null {
   let u: URL;
   try { u = new URL(url); } catch { return null; }

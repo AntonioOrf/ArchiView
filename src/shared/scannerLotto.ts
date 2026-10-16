@@ -1,42 +1,15 @@
-// ArchiScanner — validatore del "lotto" (docs/scanner/CONTRATTO.md, versione 1).
-//
-// ⚠️ PERCHÉ È CONDIVISO
-//
-// Il lotto lo scrive il telefono e lo legge il desktop. Se ciascuno avesse il suo controllo,
-// i due divergerebbero proprio sui casi storti (un nome file con una barra, un campo che si
-// chiama `allegati`) e il desktop accetterebbe ciò che il telefono non avrebbe dovuto
-// scrivere, o rifiuterebbe ciò che il telefono considera buono. Qui c'è UNA risposta.
-// Lo usano il main del desktop (`require('../../shared/scannerLotto')`) e l'app Android
-// (Metro con `watchFolders` su `../src/shared`, tipizzato in `mobile/src/contratto.ts`).
-//
-// Non ha `import`/`export` (è uno script, come gli altri file di `src/shared/`): espone
-// `module.exports` sotto guardia e `window.ScannerLotto`. Nomi globali prefissati `avsl`.
-// Niente dipendenze: né Node né DOM né `model.ts` (l'app lo carica da sola).
-//
-// NON contiene frasi: gli errori sono CODICI con il percorso del valore sbagliato. Con
-// `ok: true` restituisce una copia NORMALIZZATA, con le sole chiavi note: è quella, e non
-// il JSON ricevuto, che il desktop scrive su disco.
-
 const AVSL_FORMATO = 'archiview-scanner/lotto';
 const AVSL_VERSIONE = 1;
 
 const AVSL_RE_ID = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})-[0-9a-z]{4}$/;
-/** Solo nomi piatti: niente barre, niente `..`, niente maiuscole (Windows non le distingue). */
 const AVSL_RE_FILE = /^p\d{4}\.(jpg|jpeg|png)$/;
 const AVSL_RE_SHA256 = /^[0-9a-f]{64}$/;
 const AVSL_RE_CHIAVE = /^[A-Za-z][A-Za-z0-9_]*$/;
-/** ISO 8601 con fuso esplicito (`Z` o `±hh:mm`): l'ora locale del telefono non è quella del PC. */
 const AVSL_RE_DATA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/;
-/** Id di una scheda nuova scelto dal telefono: diventa l'id della scheda (UUID o `Model.nuovoId`). */
 const AVSL_RE_ID_SCHEDA = /^[0-9A-Za-z_-]{8,64}$/;
 
 const AVSL_MODALITA = ['documento', 'grezza', 'raffica'];
 const AVSL_LATI = ['sx', 'dx'];
-/**
- * Chiavi di servizio della scheda (in `model.ts`: AV_CHIAVI_SERVIZIO, meno `segnatura`, che dal
- * telefono si compila) più i nomi che su un oggetto JS non sono dati. Un campo della bozza
- * con uno di questi nomi sovrascriverebbe la scheda quando il desktop la crea dal lotto.
- */
 const AVSL_CHIAVI_RISERVATE = [
   'id', 'cartella', 'tipoDocumento', 'allegati', 'allegato', 'allegatoTipo', 'lastModified',
   'modificatoDa', 'creatoDa', 'trascrizione', 'schemaVersion', 'relazioni', 'campiPropri',
@@ -45,7 +18,6 @@ const AVSL_CHIAVI_RISERVATE = [
 
 const AVSL_LIMITI = {
   pagine: 2000,
-  /** 200 MB: un JPEG a piena risoluzione sta sotto i 20; oltre è un file sbagliato. */
   byte: 200 * 1024 * 1024,
   lato: 30000,
   campi: 100,
@@ -106,7 +78,6 @@ function avslIntero(v: any, min: number, max: number): boolean {
   return typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
 }
 
-/** L'id è anche il nome della cartella: oltre alla forma, una data e un'ora che esistono. */
 function avslIdValido(id: any): boolean {
   if (typeof id !== 'string') return false;
   const m = AVSL_RE_ID.exec(id);
@@ -124,7 +95,6 @@ function avslDue(n: number): string {
   return (n < 10 ? '0' : '') + n;
 }
 
-/** `AAAAMMGG-hhmmss-xxxx` nell'ora locale di `data`; `suffisso` = 4 caratteri [0-9a-z] casuali. */
 function avslNuovoId(data: Date, suffisso: string): string {
   const s = String(suffisso || '').toLowerCase();
   if (!/^[0-9a-z]{4}$/.test(s)) throw new Error('suffisso_non_valido');
@@ -132,17 +102,11 @@ function avslNuovoId(data: Date, suffisso: string): string {
     avslDue(data.getHours()) + avslDue(data.getMinutes()) + avslDue(data.getSeconds()) + '-' + s;
 }
 
-/**
- * Identità di un archivio fra telefono e desktop (CONTRATTO §2.5): il nome della cartella senza
- * il suffisso `_ArchiView`, che la sincronizzazione aggiunge su Drive e il ripristino porta nella
- * cartella locale. Così "Catasto", "Catasto_ArchiView" su Drive e in locale sono lo stesso archivio.
- */
 function avslNomeArchivio(nome: any): string {
   const n = typeof nome === 'string' ? nome.trim() : '';
   return n.replace(/_ArchiView$/, '').trim() || n;
 }
 
-/** Nome della pagina `n` (da 1): `p0001.jpg`. */
 function avslNomePagina(n: number, estensione?: string): string {
   if (!avslIntero(n, 1, 9999)) throw new Error('numero_pagina_non_valido');
   const est = estensione || 'jpg';
@@ -150,7 +114,6 @@ function avslNomePagina(n: number, estensione?: string): string {
   return 'p' + String(n).padStart(4, '0') + '.' + est;
 }
 
-/** Testo facoltativo: assente, oppure stringa entro `max`. Vuoto dopo il trim = assente. */
 function avslTesto(v: any, max: number, percorso: string, errori: AvslErrore[]): string | undefined {
   if (v === undefined || v === null) return undefined;
   if (typeof v !== 'string' || v.length > max) { errori.push({ codice: 'testo_non_valido', percorso }); return undefined; }
@@ -158,7 +121,6 @@ function avslTesto(v: any, max: number, percorso: string, errori: AvslErrore[]):
   return t ? t : undefined;
 }
 
-/** Testo obbligatorio e non vuoto. */
 function avslTestoObbligatorio(v: any, max: number, codice: string, percorso: string, errori: AvslErrore[]): string {
   if (typeof v !== 'string' || !v.trim() || v.length > max) { errori.push({ codice, percorso }); return ''; }
   return v.trim();
@@ -178,7 +140,6 @@ function avslDestinazione(d: any, errori: AvslErrore[]): AvslDestinazione {
     tipoDocumento: avslTestoObbligatorio(d.tipoDocumento, AVSL_LIMITI.tipoDocumento, 'tipo_documento_non_valido', p + '.tipoDocumento', errori),
     campi: {}
   };
-  // Più lotti con lo stesso id vanno nella stessa scheda: il primo la crea, gli altri aggiungono.
   if (d.schedaId !== undefined) {
     if (typeof d.schedaId === 'string' && AVSL_RE_ID_SCHEDA.test(d.schedaId)) out.schedaId = d.schedaId;
     else errori.push({ codice: 'scheda_id_non_valido', percorso: p + '.schedaId' });
@@ -196,7 +157,6 @@ function avslDestinazione(d: any, errori: AvslErrore[]): AvslDestinazione {
     if (AVSL_CHIAVI_RISERVATE.indexOf(k) !== -1) { errori.push({ codice: 'campo_riservato', percorso: pk }); continue; }
     const v = d.campi[k];
     if (typeof v !== 'string' || v.length > AVSL_LIMITI.valoreCampo) { errori.push({ codice: 'campo_valore_non_valido', percorso: pk }); continue; }
-    // Un campo lasciato vuoto nel form non è un dato.
     if (v.trim()) out.campi[k] = v;
   }
   return out;
@@ -236,8 +196,6 @@ function avslValida(json: any): AvslEsito {
   const errori: AvslErrore[] = [];
   if (!avslOggetto(json)) return { ok: false, errori: [{ codice: 'non_oggetto', percorso: '' }] };
   if (json.formato !== AVSL_FORMATO) return { ok: false, errori: [{ codice: 'formato_sconosciuto', percorso: 'formato' }] };
-  // Una versione futura può cambiare il significato di campi che qui sembrerebbero validi:
-  // meglio rifiutarla che leggerla a metà. Il desktop dirà "aggiorna ArchiView".
   if (json.versione !== AVSL_VERSIONE) {
     const codice = avslIntero(json.versione, AVSL_VERSIONE + 1, Number.MAX_SAFE_INTEGER) ? 'versione_futura' : 'versione_non_valida';
     return { ok: false, errori: [{ codice, percorso: 'versione' }] };
@@ -267,7 +225,6 @@ function avslValida(json: any): AvslEsito {
   }
 
   if (errori.length) return { ok: false, errori };
-  // Ordine delle chiavi fisso: il manifest scritto dal desktop è leggibile e confrontabile.
   const lotto = { formato: AVSL_FORMATO, versione: AVSL_VERSIONE, id: json.id, creatoIl: json.creatoIl } as AvslLotto;
   if (archivio !== undefined) {
     lotto.archivio = archivio;
@@ -281,11 +238,6 @@ function avslValida(json: any): AvslEsito {
   return { ok: true, lotto };
 }
 
-// --- Elenco delle schede per il telefono (CONTRATTO.md §5) ---------------------
-//
-// Il desktop lo pubblica su Drive, il telefono lo legge per scegliere una destinazione
-// esistente anche offline. Stessa regola del lotto: codici, copia normalizzata, chiavi note.
-
 const AVSL_FORMATO_CONFIG = 'archiview-scanner/config';
 const AVSL_LIMITI_CONFIG = { schede: 50000, archivio: 200, segnatura: 500, cartella: 500, titolo: 500, cartelle: 10000 };
 
@@ -294,18 +246,14 @@ type AvslConfig = {
   versione: number;
   archivio: string;
   aggiornatoIl: string;
-  /** `daVedere`: la scheda ha il tag «da vedere» (o «da consultare») sul desktop; assente = no. */
   schede: { id: string; segnatura: string; cartella: string; titolo: string; daVedere?: true }[];
-  /** Tutte le cartelle dell'archivio, anche vuote (§4.3): assenti = []. */
   cartelle: string[];
 };
 
 type AvslEsitoConfig = { ok: true; config: AvslConfig } | { ok: false; errori: AvslErrore[] };
 
-/** Tag che segnano una scheda da vedere in archivio (§4.3), confrontati senza maiuscole né spazi ai bordi. */
 const AVSL_TAG_DA_VEDERE = ['da vedere', 'da consultare'];
 
-/** true se i tag della scheda (`tags` del database: stringa CSV, o elenco) contengono «da vedere». */
 function avslDaVedere(tags: any): boolean {
   const elenco = Array.isArray(tags) ? tags : typeof tags === 'string' ? tags.split(',') : [];
   return elenco.some((t: any) => typeof t === 'string' && AVSL_TAG_DA_VEDERE.indexOf(t.trim().toLowerCase()) !== -1);
@@ -357,7 +305,6 @@ const ArchiViewScannerLotto = {
   LIMITI: Object.assign({}, AVSL_LIMITI),
   valida: avslValida,
   FORMATO_CONFIG: AVSL_FORMATO_CONFIG,
-  /** Cartella degli elenchi di schede, uno per archivio: `archivi/<archivio>.json` (§4.3). */
   CARTELLA_ARCHIVI: 'archivi',
   validaConfig: avslValidaConfig,
   daVedere: avslDaVedere,

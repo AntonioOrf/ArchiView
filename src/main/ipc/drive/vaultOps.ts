@@ -4,9 +4,6 @@ import { state, getAllSettings, saveAllSettings, getActiveVaultFlags } from '../
 import { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } from './auth';
 const { getOrCreateFolder, uploadFile, withDriveRetry } = require('./fileOps');
 
-// Verifica che la cartella del vault sia raggiungibile con l'account attualmente autenticato.
-// Senza questo probe una cartella inaccessibile produce solo una files.list vuota, indistinguibile
-// da "nessun database ancora caricato".
 async function assertVaultFolderAccessible(vaultFolderId: string): Promise<void> {
   try {
     await driveState.drive.files.get({ fileId: vaultFolderId, fields: 'id', supportsAllDrives: true });
@@ -18,7 +15,6 @@ async function assertVaultFolderAccessible(vaultFolderId: string): Promise<void>
   }
 }
 
-// true se il vault è già dichiarato cloud (shared o backup personale).
 function isCloudVault(s: any): boolean {
   return !!(s && (s.isSharedVault || s.isPersonalCloud));
 }
@@ -31,7 +27,6 @@ async function listVaultsFromDrive(): Promise<any[]> {
   return res.data.files || [];
 }
 
-// Cartella Drive del vault aperto (cloud), o null.
 function cartellaVaultAttivo(): string | null {
   try {
     const s = getActiveVaultFlags();
@@ -39,11 +34,6 @@ function cartellaVaultAttivo(): string | null {
   } catch (e) { console.error("Errore lettura settings:", e); return null; }
 }
 
-/**
- * Il database_manoscritti.json più recente (Drive ammette omonimi): nella cartella data, e
- * SOLO senza archivio aperto (primo ingresso) fra tutti i propri e poi i condivisi. Con un
- * archivio aperto, il database di un altro vault non è mai una risposta valida.
- */
 async function trovaDbDrive(cartella: string | null): Promise<any | null> {
   const cerca = (q: string) => withDriveRetry(() => driveState.drive.files.list({
     q, spaces: 'drive', orderBy: 'modifiedTime desc',
@@ -69,8 +59,6 @@ async function pullFromDrive(vaultFolderId: string | null = null): Promise<any |
     throw new Error("Autenticazione Google Drive non effettuata. Apri il menu Cloud ed effettua l'accesso.");
   }
   const cartella = vaultFolderId || (state.workspacePath ? cartellaVaultAttivo() : null);
-  // Archivio aperto senza cartella Drive: legittimo solo alla prima pubblicazione del vault.
-  // Il renderer avvisa (pull vuoto) invece di annunciare una sincronizzazione riuscita.
   if (!cartella && state.workspacePath) return null;
   if (cartella) await assertVaultFolderAccessible(cartella);
 
@@ -103,9 +91,6 @@ async function syncToDrive(parentModifiedTime: number | null = null): Promise<nu
   } catch (e) { console.error("Errore lettura settings:", e); }
 
   if (!projectFolderId) {
-    // getOrCreateFolder invece della files.create diretta: se la cartella con quel nome esiste già
-    // sull'account (creata da un altro PC dello stesso utente) viene RIUSATA e non duplicata.
-    // La create diretta faceva nascere una seconda cartella omonima e i due PC divergevano.
     const rootFolderId = await getOrCreateFolder('ArchiView');
     projectFolderId = await getOrCreateFolder(path.basename(state.workspacePath) + '_ArchiView', rootFolderId);
     try {
@@ -158,7 +143,6 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
   const db = JSON.parse(await fs.promises.readFile(dbPath, 'utf8'));
   const usedLocal = new Set<string>();
-  // Il cestino non sta nel DB: senza le sue schede, ripristinarne una la riporterebbe senza file.
   const { elencaCestino } = require('../../trash');
   const cestinate = (await elencaCestino()).map((v: any) => v.record);
   for (const m of [...(db.manoscritti || []), ...cestinate]) {
@@ -168,8 +152,6 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
   let deletedLocal = 0;
   let deletedDrive = 0;
 
-  // Di proposito la cartella predefinita e non `state.attachmentsDirPath`: quella personalizzata
-  // è un'impostazione globale, condivisa da tutti gli archivi, e qui si cancellerebbero i loro file.
   const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
   if (fs.existsSync(allegatiLocalDir)) {
     for (const file of fs.readdirSync(allegatiLocalDir)) {
@@ -180,7 +162,6 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
   }
 
   try {
-    // Su Drive è "in uso" anche ciò che usano i colleghi: senza un DB remoto leggibile non si tocca nulla.
     const remoto = await pullFromDrive(projectFolderId);
     if (!remoto || !Array.isArray(remoto.database?.manoscritti)) return { deletedLocal, deletedDrive };
     const usedAttachments = new Set<string>(usedLocal);
@@ -188,7 +169,6 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
       for (const a of m.allegati || []) { if (a.nome) usedAttachments.add(a.nome); }
     }
 
-    // La struttura su Drive usa index.json + data/ (chunk content-addressable), non allegati_manoscritti
     const indexRes = await driveState.drive.files.list({
       q: `name='index.json' and '${projectFolderId}' in parents and trashed=false`,
       fields: 'files(id)'
@@ -198,10 +178,8 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
       const indexContent = await driveState.drive.files.get({ fileId: indexFileId, alt: 'media' });
       let remoteIndex: any = typeof indexContent.data === 'string' ? JSON.parse(indexContent.data) : indexContent.data;
 
-      // Rimuove dall'indice le entry di file non più referenziati
       const orphanedFileNames = Object.keys(remoteIndex).filter(name => !usedAttachments.has(name));
       if (orphanedFileNames.length > 0) {
-        // Raccoglie gli hash ancora in uso dopo la rimozione degli orfani
         const usedHashes = new Set<string>();
         for (const name of Object.keys(remoteIndex)) {
           if (usedAttachments.has(name)) {
@@ -212,13 +190,12 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
         deletedDrive += await cestinaChunkInutili(projectFolderId, usedHashes);
 
-        // Aggiorna index.json su Drive senza le entry orfane
         const cacheDir = path.join(state.workspacePath, '.archiview-chunks');
         if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
         const localIndexPath = path.join(cacheDir, 'index.json');
         fs.writeFileSync(localIndexPath, JSON.stringify(remoteIndex, null, 2));
         await uploadFile(localIndexPath, 'index.json', projectFolderId, false);
-        try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) { /* non bloccante */ }
+        try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) {}
       }
     }
   } catch (e) { console.error("Errore durante pulizia Drive:", e); }
@@ -226,10 +203,6 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
   return { deletedLocal, deletedDrive };
 }
 
-/**
- * Cestina su Drive i chunk di `data/` che nessun allegato usa più. Restituisce quanti. Il cestino
- * di Drive e non la cancellazione: un errore di calcolo resta recuperabile per trenta giorni.
- */
 async function cestinaChunkInutili(projectFolderId: string, usedHashes: Set<string>): Promise<number> {
   const dataFolderRes = await withDriveRetry(() => driveState.drive.files.list({
     q: `name='data' and '${projectFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -252,7 +225,6 @@ async function cestinaChunkInutili(projectFolderId: string, usedHashes: Set<stri
     for (const f of (chunksRes.data.files || [])) {
       if (usedHashes.has(f.name)) continue;
       try {
-        // Invariante 7: anche questa passa da withDriveRetry (rimettere nel cestino è idempotente).
         await withDriveRetry(() => driveState.drive.files.update({ fileId: f.id, requestBody: { trashed: true } }));
         cestinati++;
       } catch (e) { console.error("Errore eliminazione chunk Drive:", e); }

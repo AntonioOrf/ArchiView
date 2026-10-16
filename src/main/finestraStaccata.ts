@@ -1,12 +1,3 @@
-// PIANO-SCHEDA-AFFIANCATA, Fasi 4–5 — la scheda (o il documento) in una finestra a parte.
-//
-// La finestra staccata carica la stessa app con `?finestra=<tipo>`, ma l'archivio non lo tocca:
-// parte dalla fotografia che le passa la finestra principale e ogni salvataggio torna lì
-// (staccata → main → principale → risposta). Un solo scrittore del database, sempre.
-//
-// Fase 5: trascinando la finestra staccata sopra la colonna della principale, questa mostra
-// «Rilascia per riagganciare»; rilasciandola lì la finestra si chiude e il contenuto torna al
-// suo posto. La zona la dichiara il renderer (in px CSS), qui si porta in coordinate schermo.
 import { BrowserWindow, ipcMain, screen, nativeTheme } from 'electron';
 
 const TIPI = new Set(['scheda', 'documento']);
@@ -15,19 +6,15 @@ const ATTESA_MAX_MS = 30000;
 let finestra: any = null;
 let tipoAperto: string | null = null;
 let datiIniziali: any = null;
-// La chiusura è già passata dal renderer staccato (salvataggio fatto): non chiedere di nuovo.
 let chiusuraConfermata = false;
-// Chiusa dalla principale (altra vista, app che esce): niente riaggancio da notificare.
 let senzaRiaggancio = false;
 let ultimaPosizione: any = null;
 const inAttesa = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void; timer: any }>();
 let prossimoId = 1;
-// Fase 5 — stato del trascinamento in corso.
 let zona: any = null;
 let zonaChiesta = false;
 let zonaAttiva = false;
 
-/** Posizione salvata ancora su uno schermo collegato, o `null`. `schermi` solo per i test. */
 function posizioneValida(p: any, schermi?: any[]) {
   if (!p || ![p.x, p.y, p.width, p.height].every((n) => Number.isFinite(n))) return null;
   const visibile = (schermi || screen.getAllDisplays()).some((d: any) => {
@@ -37,10 +24,6 @@ function posizioneValida(p: any, schermi?: any[]) {
   return visibile ? { x: Math.round(p.x), y: Math.round(p.y), width: Math.round(p.width), height: Math.round(p.height) } : null;
 }
 
-/**
- * Il cursore (coordinate schermo, DIP) è sulla zona di riaggancio? `zona` arriva dal renderer in
- * px CSS relativi al contenuto della finestra; `fattore` è lo zoom dell'interfaccia.
- */
 function cursoreSullaZona(zona: any, contenuto: any, fattore: number, cursore: any): boolean {
   if (!zona || ![zona.x, zona.y, zona.width, zona.height].every((n) => Number.isFinite(n)) || zona.width <= 0 || zona.height <= 0) return false;
   const f = Number.isFinite(fattore) && fattore > 0 ? fattore : 1;
@@ -60,7 +43,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
   const daStaccata = (e: any) => !!viva() && e.sender === viva().webContents;
   const allaPrincipale = (canale: string, ...args: any[]) => { const p = vivaPrincipale(); if (p) p.webContents.send(canale, ...args); };
 
-  /** Domanda alla principale (o alla staccata) con risposta su `finestra-risposta`. */
   function chiedi(destinatario: any, canale: string, ...args: any[]): Promise<any> {
     if (!destinatario) return Promise.reject(new Error('finestra non disponibile'));
     const id = prossimoId++;
@@ -83,7 +65,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
     const p = vivaPrincipale();
     if (!p || p.isMinimized() || !viva()) return;
     if (!zonaChiesta) {
-      // Prima mossa del trascinamento: la zona si chiede una volta sola, non a ogni pixel.
       zonaChiesta = true;
       try { zona = await chiedi(p, 'finestra-richiesta', 'zona', tipoAperto); } catch { zona = null; }
     }
@@ -93,7 +74,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
       zona = null;
       if (zonaAttiva) allaPrincipale('finestra-zona', false);
       zonaAttiva = false;
-      // Si riaggancia passando dalla staccata, che prima salva ciò che ha in sospeso.
       if (dentro && viva()) viva().webContents.send('finestra-chiudi-richiesta');
       return;
     }
@@ -113,7 +93,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
       aperta.focus();
       return true;
     }
-    // Una finestra staccata alla volta: l'altra torna al suo posto.
     if (aperta) aperta.destroy();
     tipoAperto = tipo;
     chiusuraConfermata = false;
@@ -144,7 +123,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
     f.on('close', (ev: any) => {
       ultimaPosizione = f.getBounds();
       if (chiusuraConfermata) return;
-      // La X della finestra: prima la staccata salva, poi chiede lei di chiudere.
       ev.preventDefault();
       f.webContents.send('finestra-chiudi-richiesta');
     });
@@ -163,13 +141,11 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
 
   ipcMain.handle('finestra-dati', (e: any) => (daStaccata(e) ? datiIniziali : null));
 
-  // Dalla staccata alla principale: salva, rileggi la scheda.
   ipcMain.handle('finestra-richiesta', (e: any, metodo: string, args: any) => {
     if (!daStaccata(e) || (metodo !== 'salva' && metodo !== 'record')) return Promise.reject(new Error('richiesta non ammessa'));
     return chiedi(vivaPrincipale(), 'finestra-richiesta', metodo, args);
   });
 
-  // Risposte, da entrambe le finestre: ciascuna risponde solo alle domande rivolte a lei.
   ipcMain.on('finestra-risposta', (e: any, id: number, esito: any) => {
     if (!daPrincipale(e) && !daStaccata(e)) return;
     const r = inAttesa.get(id);
@@ -180,7 +156,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
     else r.resolve(esito ? esito.valore : undefined);
   });
 
-  // Dalla principale alla staccata.
   ipcMain.handle('finestra-messaggio', async (e: any, tipoMsg: string, dati: any) => {
     if (!daPrincipale(e)) return false;
     const f = viva();
@@ -196,7 +171,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
       return true;
     }
     if (tipoMsg === 'svuota' || tipoMsg === 'chiudi' || tipoMsg === 'riaggancia') {
-      // Ciò che la staccata ha in sospeso arriva su disco prima di proseguire.
       try { await chiedi(f, 'finestra-svuota'); } catch (err) { console.warn('[Finestra staccata] Salvataggio prima della chiusura non confermato:', err); }
       if (tipoMsg !== 'svuota') chiudi(tipoMsg === 'riaggancia');
       return true;
@@ -204,7 +178,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
     return false;
   });
 
-  // Dalla staccata: «Riaggancia», o la X dopo il salvataggio.
   ipcMain.handle('finestra-riaggancia', (e: any) => {
     if (!daStaccata(e)) return false;
     chiudi(true);
@@ -212,7 +185,6 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
   });
 }
 
-/** La principale si chiude: la staccata se ne va con lei, senza chiedere (ha già salvato). */
 function distruggiFinestraStaccata() {
   for (const r of inAttesa.values()) { clearTimeout(r.timer); r.reject(new Error('finestra chiusa')); }
   inAttesa.clear();

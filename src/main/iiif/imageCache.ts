@@ -1,14 +1,3 @@
-// Import IIIF — cache su disco delle immagini remote.
-//
-// ⚠️ LA CACHE NON STA NEL WORKSPACE. Sta in `userData`, per la stessa ragione per cui ci
-// stanno i token e `auth_debug.log`: la cartella del workspace è sincronizzata, e qualche
-// centinaio di megabyte di miniature finirebbe chunkato su Drive per tutti i collaboratori —
-// cioè esattamente il costo che il modello "carte remote" esiste per evitare.
-//
-// Il nome del file è l'hash dell'URL COMPLETO, misura inclusa: una carta chiesta a 160 px e
-// la stessa a 2000 px sono due voci distinte, e chiedere la miniatura non può far sparire
-// dalla cache il facsimile grande già scaricato.
-
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -16,18 +5,10 @@ const fsp = require('fs').promises;
 import * as crypto from 'crypto';
 import { leggiCorpoLimitato, fetchGuardata, urlAmmesso } from './reteSicura';
 
-/** Oltre questa soglia si sfoltisce, dal file usato meno di recente. */
 const TETTO_BYTE = 2 * 1024 * 1024 * 1024;
 
-/** Un facsimile a piena risoluzione può pesare parecchio; oltre questo non è più un'immagine. */
 const MAX_IMMAGINE = 80 * 1024 * 1024;
 
-/**
- * Per SINGOLO tentativo, non per l'intera catena: un server che macina una misura che non
- * sa calcolare tiene aperta la connessione finché non si arrende (Bodleian: 504 al
- * cinquantesimo secondo). Tagliare prima e passare al ripiego mostra la carta in pochi
- * secondi invece di lasciare il visualizzatore vuoto per un minuto.
- */
 const TIMEOUT_MS = 20000;
 
 function cartella() {
@@ -40,25 +21,12 @@ function chiave(url: string): string {
   return crypto.createHash('sha256').update(url).digest('hex');
 }
 
-/**
- * Il MIME si conserva accanto al file perché il nome è un hash e non ha estensione. Senza,
- * servire un PNG dichiarandolo JPEG funziona per caso finché non smette.
- */
 function percorsi(url: string) {
   const base = path.join(cartella(), chiave(url));
   return { dati: base, meta: base + '.mime', parziale: base + '.part' };
 }
 
 
-/**
- * Il riferimento che il renderer infila nel path, codificato base64url.
- *
- * È il JSON della carta (`{s, v, u, l}` — servizio, versione della Image API, immagine
- * statica, lato richiesto) e non un URL già pronto, perché l'URL da solo non basta: se la
- * misura non è servibile serve sapere COME ripiegare, e quella conoscenza sta in
- * `shared/iiifManifest.ts`, non in una stringa. Una stringa semplice resta accettata: è un
- * singolo candidato, senza ripieghi.
- */
 function decodificaRiferimento(riferimento: string): any {
   const b64 = String(riferimento || '').replace(/-/g, '+').replace(/_/g, '/');
   let testo = '';
@@ -81,9 +49,7 @@ async function leggiDallaCache(url: string) {
   try {
     const dati = await fsp.readFile(p.dati);
     let mime = 'image/jpeg';
-    try { mime = (await fsp.readFile(p.meta, 'utf8')) || mime; } catch { /* default */ }
-    // `utimes` per la LRU: il timestamp di accesso è l'unico modo per sapere quali file
-    // buttare, e su Windows `atime` non si aggiorna da solo alla lettura.
+    try { mime = (await fsp.readFile(p.meta, 'utf8')) || mime; } catch {}
     fsp.utimes(p.dati, new Date(), new Date()).catch(() => {});
     return { dati, mime };
   } catch {
@@ -94,22 +60,17 @@ async function leggiDallaCache(url: string) {
 async function scriviInCache(url: string, dati: Buffer, mime: string) {
   const p = percorsi(url);
   try {
-    // `.part` + rename: un'interruzione di rete lascerebbe altrimenti sul disco un JPEG
-    // troncato che la cache servirebbe per sempre al posto della carta (stesso accorgimento
-    // di `ocrLangs.installaLingua` e `zipStreaming`).
     await fsp.writeFile(p.parziale, dati);
     await fsp.rename(p.parziale, p.dati);
     await fsp.writeFile(p.meta, mime);
   } catch (errore) {
     console.warn('[IIIF] Scrittura in cache fallita:', (errore as any) && (errore as any).message);
-    try { if (fs.existsSync(p.parziale)) await fsp.unlink(p.parziale); } catch { /* best effort */ }
+    try { if (fs.existsSync(p.parziale)) await fsp.unlink(p.parziale); } catch {}
   }
 }
 
-/** Un solo tentativo, senza cache. Ritorna `null` con una riga di log su qualunque intoppo. */
 async function scarica(url: string): Promise<{ dati: Buffer; mime: string } | null> {
   try {
-    // Sessione guardata: l'URL viene dal manifest, un dato di terzi (vedi `reteSicura`).
     const risposta = await fetchGuardata(url, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: { 'Accept': 'image/jpeg,image/png,image/*;q=0.8' }
@@ -133,35 +94,17 @@ async function scarica(url: string): Promise<{ dati: Buffer; mime: string } | nu
     if (!dati.length) return null;
 
     const mime = (risposta.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
-    // Un server che risponde 200 con una pagina di errore HTML non deve finire in cache
-    // come se fosse una carta: la voce sbagliata resterebbe lì a lungo.
     if (!/^image\//i.test(mime)) {
       console.warn(`[IIIF] Risposta non immagine (${mime}): ${url}`);
       return null;
     }
     return { dati, mime };
   } catch (errore) {
-    // Rete assente o server che non risponde: non è un errore da mostrare, è il caso
-    // normale dell'uso offline e del ripiego sulla misura successiva.
     console.warn(`[IIIF] Scaricamento fallito (${url}):`, (errore as any) && (errore as any).message);
     return null;
   }
 }
 
-/**
- * Scarica un'immagine servendosi della cache, tentando i candidati in ordine.
- *
- * ⚠️ PERCHÉ UNA LISTA E NON UN URL. I server IIIF sono decine di implementazioni diverse e
- * quello che non sa servire una misura non ripiega da sé: risponde 400, 501, o — il caso
- * peggiore, quello di Bodleian con `!w,h` — un 504 dopo cinquanta secondi. Con un solo URL
- * l'esito è una carta che non compare e nessuna spiegazione.
- *
- * La cache è indicizzata sul PRIMO candidato: la chiave è la richiesta logica ("questa
- * carta a questa misura"), non quello che si è riusciti a ottenere. Altrimenti ogni
- * apertura della carta ritenterebbe la misura che sul quel server non funziona.
- *
- * Ritorna `null` se nessun candidato risponde: il renderer mostra il segnaposto.
- */
 async function immagine(candidati: string | string[]): Promise<{ dati: Buffer; mime: string } | null> {
   const elenco = (Array.isArray(candidati) ? candidati : [candidati]).filter(urlAmmesso);
   if (!elenco.length) return null;
@@ -184,11 +127,6 @@ async function immagine(candidati: string | string[]): Promise<{ dati: Buffer; m
   return null;
 }
 
-/**
- * Sfoltimento LRU, eseguito una volta all'avvio e non a ogni scrittura: contare l'intera
- * cartella costa una `stat` per file, e farlo per ogni miniatura di una striscia da 400
- * carte trasformerebbe una cache in un problema di I/O.
- */
 async function sfoltisci(tetto = TETTO_BYTE) {
   try {
     const dir = cartella();
@@ -201,11 +139,10 @@ async function sfoltisci(tetto = TETTO_BYTE) {
       try {
         const st = await fsp.stat(path.join(dir, nome));
         if (!st.isFile()) continue;
-        // I `.part` sono residui di un'interruzione: non sono cache, sono spazzatura.
         if (nome.endsWith('.part')) { await fsp.unlink(path.join(dir, nome)).catch(() => {}); continue; }
         voci.push({ nome, dimensione: st.size, usato: st.atimeMs || st.mtimeMs });
         totale += st.size;
-      } catch { /* il file può sparire fra readdir e stat */ }
+      } catch {}
     }
 
     if (totale <= tetto) return { rimossi: 0, totale };

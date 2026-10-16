@@ -1,34 +1,14 @@
-// Ricerca tra archivi — dalla scheda alla voce d'indice.
-//
-// La voce è DATI PURI (stringhe, numeri, array): niente funzioni, niente riferimenti al
-// database d'origine. È ciò che permette di spedirla fra worker e main e, il giorno in cui
-// servirà, di scriverla su disco così com'è (vedi `INDICE_FORMATO`).
-
 const Model = require('../../shared/model');
 import { normalizza, testoPulito, testoIndicizzabile } from './testo';
 
-/**
- * Versione della forma di `Voce`. Va incrementata a OGNI cambiamento di struttura o di ciò
- * che finisce dentro una voce: un indice persistito con il formato vecchio va scartato.
- */
-// 2: `provenienza` e `rimandiEsterni` diventano chiavi di servizio e non entrano più nella voce.
-// 3: le note delle regioni delle carte (P6) in `#regioni`.
 const INDICE_FORMATO = 3;
 
-/**
- * Tipo e authority dei campi BASE, cioè di quelli dichiarati in `CONFIG_CAMPI` (renderer,
- * logic/utils.ts). Il main non può leggere quel catalogo e senza questa tabella non saprebbe
- * che `attori_dinamici` contiene persone.
- * ⚠️ È una copia: `test/crossArchiveIndex.test.js` la confronta con CONFIG_CAMPI e fallisce
- * se un campo base acquista o perde `authority` da una parte sola.
- */
 const CAMPI_BASE_AUTHORITY = {
   dataTopica: { type: 'text', authority: 'luogo' },
   attori_dinamici: { type: 'dynamic_list', authority: 'persona' },
   famiglia_dinamici: { type: 'dynamic_list', authority: 'persona' }
 };
 
-/** Peso di un campo nel punteggio: la segnatura e le persone contano più delle note. */
 const PESO = { segnatura: 4, anagrafica: 3, campo: 2, testo: 1 };
 
 const ID_TRASCRIZIONE = '#trascrizione';
@@ -49,7 +29,6 @@ type Voce = {
   troncata?: true;
 };
 
-/** Ciò che serve a costruire le voci di UN archivio, calcolato una volta per archivio. */
 type ContestoArchivio = { tipi: Map<string, any>; db: any; firma: string };
 
 function contestoArchivio(db: any): ContestoArchivio {
@@ -57,9 +36,6 @@ function contestoArchivio(db: any): ContestoArchivio {
   for (const t of (db && Array.isArray(db.tipiDocumento)) ? db.tipiDocumento : []) {
     if (t && t.id) tipi.set(String(t.id), t);
   }
-  // La firma copre ciò che cambia una voce SENZA cambiare la scheda: un campo dichiarato
-  // persona, un tipo rinominato, una grafia scelta in anagrafica. Se cambia, le voci si
-  // ricostruiscono tutte anche se nessun `lastModified` si è mosso.
   const firma = require('crypto').createHash('sha1')
     .update(JSON.stringify([db && db.tipiDocumento || [], db && db.authority || {}]))
     .digest('base64');
@@ -98,8 +74,6 @@ function costruisciVoce(m: any, ctx: ContestoArchivio, limiteTesto: number): Voc
   aggiungiCampo(voce.campi, 'segnatura', voce.segnatura, PESO.segnatura);
   if (m.tags) aggiungiCampo(voce.campi, ID_TAGS, testoPulito(m.tags), PESO.campo);
 
-  // Tutti i campi della scheda, non solo quelli del tipo: un campo rimasto da un tipo
-  // cambiato è ancora un dato che il ricercatore ha scritto e che si aspetta di ritrovare.
   const servizio = new Set(Model.CHIAVI_SERVIZIO);
   const ana = Model.authority(ctx.db);
   for (const k of Object.keys(m)) {
@@ -124,7 +98,6 @@ function costruisciVoce(m: any, ctx: ContestoArchivio, limiteTesto: number): Voc
     }
   }
 
-  // Trascrizione: la forma derivata `m.trascrizione` se c'è, altrimenti le carte.
   let trascr = typeof m.trascrizione === 'string' ? m.trascrizione : '';
   let ocr = '';
   if (Array.isArray(m.allegati)) {

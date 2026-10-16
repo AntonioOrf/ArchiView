@@ -6,7 +6,6 @@ import { getDbFileId, listDriveRevisions, getDriveRevision } from './revisions';
 import { generateInviteCode, decodeInviteCode, joinByInviteCode, joinByFolderId, shareVault, listPermissions, removePermission, openExternalPicker } from './sharing';
 
 function setupDriveIpc() {
-  // Auth
   ipcMain.handle('drive-auth', async (event: any, forceLocal: boolean) => {
     return await authenticateDrive(forceLocal);
   });
@@ -20,7 +19,6 @@ function setupDriveIpc() {
     return await checkDriveStatus();
   });
 
-  // Vault Operations
   ipcMain.handle('drive-list-vaults', async () => {
     return await listVaultsFromDrive();
   });
@@ -40,12 +38,10 @@ function setupDriveIpc() {
     return await cleanOrphanedAttachments();
   });
 
-  // Attachments
   ipcMain.handle('drive-sync-attachments', async () => {
     return await syncAttachmentsBidirectional();
   });
 
-  // Revisions
   ipcMain.handle('drive-get-db-file-id', async () => {
     initGoogle();
     return await getDbFileId();
@@ -59,7 +55,6 @@ function setupDriveIpc() {
     return await getDriveRevision(fileId, revisionId);
   });
 
-  // Sharing & Invites
   ipcMain.handle('drive-generate-invite', async () => {
     return await generateInviteCode();
   });
@@ -109,14 +104,10 @@ function setupDriveIpc() {
     }
   });
 
-  // Utilities
-  // `drive-get-client-id` rimosso: nessuno lo chiamava e passava la chiave API Google al renderer.
   ipcMain.handle('drive-open-external-picker', async () => {
     return await openExternalPicker();
   });
 
-  // DIAGNOSTICA (temporanea): verifica se il file dell'owner è accessibile PER ID
-  // col grant drive.file ottenuto via Picker sulla cartella. Prerequisito dell'opzione B.
   ipcMain.handle('drive-get-file-meta', async (event: any, fileId: string) => {
     if (!loadSavedTokens()) throw new Error("Autenticazione Google Drive non effettuata.");
     const res = await driveState.drive.files.get({

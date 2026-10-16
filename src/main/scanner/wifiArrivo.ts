@@ -1,21 +1,3 @@
-// ArchiScanner — Wi-Fi diretto (CONTRATTO §4.2, Fase 7 di PIANO-SCANNER.md).
-//
-// Un server HTTP sulla rete locale, acceso SOLO mentre il pannello "Scansioni in arrivo" ha
-// la ricezione Wi-Fi attiva. Il telefono lo trova dal QR (indirizzo, porta, token).
-//
-//   PUT /lotti/<id>/<pagina>      → 204   pagina parcheggiata in `staging/<id>/`
-//   PUT /lotti/<id>/lotto.json    → 201   lotto valido, verificato e in `arrivo/<id>/`
-//                                   422   lotto rifiutato (codici in JSON)
-//   GET /ping                     → 200   abbinamento riuscito
-//
-// Il lotto completo passa da `riceviLotti` con una `SorgenteLotti` sulla cartella di
-// parcheggio: validazione, byte, sha256 e rename atomico sono gli stessi del canale Drive.
-//
-// Sicurezza: token di 32 byte casuali per sessione (confronto a tempo costante), solo id e
-// nomi del contratto nell'URL, Content-Length obbligatorio e con tetto, niente redirect né
-// altri metodi. Il token muore con il server. Il traffico è in chiaro sulla LAN: sono foto
-// di documenti già destinate al proprio Drive, e il token non apre nient'altro.
-
 import * as http from 'http';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -28,10 +10,8 @@ import { riceviLotti, MAX_BYTE_MANIFEST } from './arrivoLotti';
 
 export interface OpzioniWifi {
   cartellaArrivo: string;
-  /** Temporanea della verifica: diversa da quella di Drive (riceviLotti la svuota). */
   cartellaTemp: string;
   cartellaAssegnati?: string;
-  /** Dove si parcheggiano le pagine finché non arriva `lotto.json`. */
   cartellaStaging: string;
   archivio: string;
   onLotto?: (id: string) => void;
@@ -43,12 +23,6 @@ export interface ServerWifi {
   ferma(): Promise<void>;
 }
 
-/**
- * Rango di un IPv4 per il QR. Il telefono accetta solo indirizzi privati (`ipPrivato` in
- * mobile/src/qr.ts): una VPN elencata prima del Wi-Fi (Radmin, 26.x) finiva nel QR e
- * l'abbinamento non riusciva mai. Fra i privati 192.168 prima di 10 e di 172.16–31, dove
- * stanno di solito le schede virtuali (WSL, Hyper-V, Docker).
- */
 function rangoLan(ip: string): number {
   const [a, b] = ip.split('.').map(Number);
   if (a === 192 && b === 168) return 0;
@@ -57,13 +31,12 @@ function rangoLan(ip: string): number {
   return 3;
 }
 
-/** Indirizzi IPv4 della LAN (niente loopback), il più adatto per primo: va nel QR, gli altri si mostrano. */
 function indirizziLan(schedeRete: Record<string, any[] | undefined> = os.networkInterfaces()): string[] {
   const out: string[] = [];
   for (const schede of Object.values(schedeRete)) {
     for (const s of schede || []) if (s.family === 'IPv4' && !s.internal) out.push(s.address);
   }
-  return out.sort((x, y) => rangoLan(x) - rangoLan(y)); // stabile: a parità di rango resta l'ordine di sistema
+  return out.sort((x, y) => rangoLan(x) - rangoLan(y));
 }
 
 function urlAbbinamento(host: string, porta: number, token: string): string {
@@ -83,7 +56,6 @@ function tokenValido(header: unknown, token: string): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-/** Sorgente su `staging/<id>/` per un solo lotto: la stessa interfaccia del canale Drive. */
 function sorgenteStaging(staging: string, id: string) {
   const dir = path.join(staging, id);
   return {
@@ -102,7 +74,6 @@ function sorgenteStaging(staging: string, id: string) {
 
 async function avviaServerWifi(o: OpzioniWifi): Promise<ServerWifi> {
   const token = crypto.randomBytes(32).toString('hex');
-  // I manifest si verificano uno alla volta: riceviLotti svuota la sua cartella temporanea.
   let catena: Promise<any> = Promise.resolve();
 
   async function ricevi(id: string): Promise<{ stato: number; corpo?: any }> {
@@ -117,7 +88,6 @@ async function avviaServerWifi(o: OpzioniWifi): Promise<ServerWifi> {
       if (o.onLotto) o.onLotto(id);
       return { stato: 201 };
     }
-    // Un lotto rifiutato non resta parcheggiato: il telefono lo rimanda da capo.
     await fsp.rm(path.join(o.cartellaStaging, id), { recursive: true, force: true });
     const codici = esito.falliti.map((f: any) => f.codice).concat(esito.altroArchivio.map(() => 'altro_archivio'));
     return { stato: 422, corpo: { falliti: codici } };

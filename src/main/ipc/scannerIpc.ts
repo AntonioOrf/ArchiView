@@ -1,11 +1,3 @@
-// ArchiScanner — IPC della ricezione dei lotti e del pannello "Scansioni in arrivo"
-// (PIANO-SCANNER.md, Fasi 0 e 2).
-//
-// Il renderer non passa percorsi né id Drive: chiede "ricevi", "elenca", "assegna" con un id
-// di lotto e ottiene l'esito. I lotti stanno in `<workspace>/.archiview/scanner/arrivo/<id>/`,
-// cartella interna che non si sincronizza e da cui `attachmentsIpc` rifiuta di copiare: le
-// pagine diventano allegati solo da qui (`arrivoLocale.copiaInAllegati`).
-
 import * as path from 'path';
 import { ipcMain, nativeImage } from 'electron';
 import { state, getAllSettings } from '../workspaceManager';
@@ -17,13 +9,10 @@ import * as arrivo from '../scanner/arrivoLocale';
 import { avviaServerWifi, indirizziLan, urlAbbinamento } from '../scanner/wifiArrivo';
 const QRCode = require('qrcode');
 
-/** Lato massimo della miniatura nel pannello. */
 const LATO_MINIATURA = 240;
 
-/** Una ricezione alla volta: due giri paralleli si contenderebbero la cartella temporanea. */
 let inCorso: Promise<any> | null = null;
 
-/** Server Wi-Fi attivo (al più uno). */
 let wifi: { server: any; sender: any } | null = null;
 
 async function fermaWifi(): Promise<void> {
@@ -37,7 +26,6 @@ async function fermaWifi(): Promise<void> {
   }
 }
 
-/** Identità dell'archivio per il telefono: il nome della cartella (CONTRATTO §2.5). */
 function nomeArchivio(): string {
   if (!state.workspacePath) throw new Error('nessun_archivio_aperto');
   return ScannerLotto.nomeArchivio(path.basename(state.workspacePath)).slice(0, 200);
@@ -49,7 +37,6 @@ function cartelleScanner(): { arrivo: string; temp: string; assegnati: string } 
   return { arrivo: path.join(base, 'arrivo'), temp: path.join(base, 'tmp'), assegnati: path.join(base, 'assegnati') };
 }
 
-/** Handler con esito `{ success, … }`: un errore diventa un codice, mai un'eccezione nel renderer. */
 function gestisci(canale: string, fn: (...args: any[]) => Promise<any>) {
   ipcMain.handle(canale, async (_event: any, ...args: any[]) => {
     try {
@@ -91,8 +78,6 @@ function setupScannerIpc() {
 
   gestisci('scanner-elenca', async () => ({ lotti: await arrivo.elencaArrivo(cartelleScanner()) }));
 
-  // Miniatura dal sistema (cache delle anteprime di Windows/macOS): niente decodifica di un
-  // JPEG da 12 MP nell'event loop del main. Dove non c'è (Linux) il pannello mostra il nome.
   gestisci('scanner-miniatura', async (id: unknown, file: unknown) => {
     const p = arrivo.percorsoPagina(cartelleScanner(), id, file);
     if (typeof nativeImage.createThumbnailFromPath !== 'function') return { dataUrl: null };
@@ -109,10 +94,6 @@ function setupScannerIpc() {
     return { allegati };
   });
 
-  // L'elenco lo compone il renderer (possiede il database); qui si aggiungono archivio e data,
-  // si valida con il contratto e si carica. Nessun percorso, solo id/segnatura/cartella/titolo
-  // e le cartelle dell'archivio.
-  // F9: dai `tags` di ogni scheda solo `daVedere`; il validatore toglie poi i tag (chiave ignota).
   gestisci('scanner-pubblica-schede', async (schede: unknown, cartelle: unknown) => {
     const archivio = nomeArchivio();
     const esito = ScannerLotto.validaConfig({
@@ -129,12 +110,6 @@ function setupScannerIpc() {
     return { schede: esito.config.schede.length };
   });
 
-  // All'apertura dell'archivio: quanti lotti aspettano su Drive per lui, e quali archivi nuovi
-  // creati sul telefono non esistono qui. Solo con un accesso Google già salvato: mai una
-  // finestra di login, mai cartelle create. Senza accesso o senza rete → nulla da dire.
-  // Riepilogo di Drive senza scaricare nulla e senza chiedere l'accesso (niente finestra di login):
-  // `qui` = i lotti di questo archivio (il renderer sa quali hanno una scheda), `altri` = per
-  // archivio, con il percorso se è tra i recenti e `nuovo` se nato sul telefono e sconosciuto.
   gestisci('scanner-controlla-drive', async () => {
     const archivio = nomeArchivio();
     if (!loadSavedTokens()) return { collegato: false, qui: [], altri: [] };
@@ -157,8 +132,6 @@ function setupScannerIpc() {
     return { collegato: true, qui, altri: [...altri.values()].sort((a, b) => a.nome.localeCompare(b.nome)) };
   });
 
-  // Wi-Fi diretto: un server alla volta, legato al pannello aperto. Si spegne con
-  // `scanner-wifi-ferma`, alla chiusura della finestra e al cambio di archivio.
   ipcMain.handle('scanner-wifi-avvia', async (event: any) => {
     try {
       await fermaWifi();
@@ -173,7 +146,6 @@ function setupScannerIpc() {
         onLotto: (id: string) => { if (!event.sender.isDestroyed()) event.sender.send('scanner-wifi-lotto', id); }
       });
       wifi = { server, sender: event.sender };
-      // Finestra chiusa o ricaricata (cambio di archivio): i percorsi del server non valgono più.
       event.sender.once('destroyed', () => { fermaWifi(); });
       event.sender.once('did-start-loading', () => { fermaWifi(); });
       const indirizzi = indirizziLan();

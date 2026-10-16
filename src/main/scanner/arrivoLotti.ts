@@ -1,20 +1,3 @@
-// ArchiScanner — ricezione dei lotti (docs/scanner/CONTRATTO.md).
-//
-// Codice PURO rispetto al canale: non sa se i lotti arrivano da Google Drive o dal server
-// Wi-Fi. Riceve una `SorgenteLotti` (adattatore Drive: `driveArrivo.ts`; Wi-Fi: Fase 2) e
-// scrive su disco. Così le due strade condividono la parte che conta — validazione,
-// controllo dei byte e degli hash, scrittura atomica — e il test gira in Node puro con una
-// sorgente finta.
-//
-// Invarianti:
-// - Un lotto senza `lotto.json` è ancora in caricamento: non si tocca.
-// - Il lotto si scarica in una cartella temporanea SULLO STESSO VOLUME e diventa visibile in
-//   `arrivo/<id>/` con un solo `rename`, dopo che ogni pagina ha byte e sha256 attesi e il
-//   manifest normalizzato è scritto. In `arrivo/` non c'è mai un lotto a metà.
-// - La copia remota si rimuove SOLO DOPO il rename. Se la rimozione fallisce il lotto resta
-//   ricevuto: al giro dopo risulta già presente, non si riscarica e si riprova a rimuoverlo.
-// - Un lotto che fallisce non blocca gli altri.
-
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
@@ -22,56 +5,38 @@ import * as crypto from 'crypto';
 import { hashFile } from '../chunkingLogic';
 const ScannerLotto = require('../../shared/scannerLotto');
 
-/** Oltre questa dimensione `lotto.json` non è un manifest (2000 pagine stanno sotto i 500 KB). */
 const MAX_BYTE_MANIFEST = 2 * 1024 * 1024;
-/** Download in parallelo per lotto: oltre, Drive comincia a rispondere 429. */
 const PAGINE_IN_PARALLELO = 3;
 
 type PaginaLotto = { file: string; sha256: string; byte: number };
 
 export interface VoceSorgente {
-  /** Nome della cartella remota, che per contratto è l'id del lotto. */
   id: string;
-  /** true = c'è `lotto.json`, cioè il telefono ha finito di caricare. */
   completo: boolean;
 }
 
 export interface SorgenteLotti {
   elenca(): Promise<VoceSorgente[]>;
-  /** Testo di `lotto.json`. Può rifiutare oltre `maxByte`. */
   leggiManifest(id: string, maxByte: number): Promise<string>;
-  /** Scrive la pagina in `destinazione` (sovrascrivendo). */
   scaricaPagina(id: string, pagina: PaginaLotto, destinazione: string): Promise<void>;
-  /** Toglie il lotto dal canale (Drive: cestino). Chiamata solo a lotto salvato. */
   rimuovi(id: string): Promise<void>;
 }
 
 export interface OpzioniArrivo {
   sorgente: SorgenteLotti;
-  /** `<workspace>/.archiview/scanner/arrivo` */
   cartellaArrivo: string;
-  /** Cartella di lavoro sullo stesso volume di `cartellaArrivo` (il rename deve essere atomico). */
   cartellaTemp: string;
-  /**
-   * Registro dei lotti già assegnati o scartati (un file vuoto per id): un lotto uscito da
-   * `arrivo/` ma rimasto sul canale (cestino fallito) non si riscarica.
-   */
   cartellaAssegnati?: string;
-  /** Nome dell'archivio aperto: un lotto con un altro `archivio` resta sul canale (CONTRATTO §2.5). */
   archivio?: string;
-  /** Avanzamento facoltativo, per la UI. */
   avanzamento?: (e: { id: string; fatte: number; totali: number }) => void;
 }
 
 export interface EsitoArrivo {
   ricevuti: string[];
-  /** Già in `arrivo/`: non riscaricati, solo rimossi dal canale. */
   giaPresenti: string[];
   inCaricamento: string[];
-  /** Lotti per un altro archivio: lasciati sul canale. */
   altroArchivio: string[];
   falliti: { id: string; codice: string; dettaglio?: any }[];
-  /** Lotti salvati in locale ma rimasti sul canale (riprova al giro dopo). */
   nonRimossi: string[];
 }
 
@@ -96,7 +61,6 @@ async function verificaFile(percorso: string, atteso: PaginaLotto): Promise<void
   if (sha !== atteso.sha256) throw new ErroreLotto('sha256_diverso', { file: atteso.file });
 }
 
-/** Esegue `fn` su ogni elemento con al più `limite` operazioni in corso; al primo errore smette. */
 async function inParallelo<T>(elementi: T[], limite: number, fn: (x: T) => Promise<void>): Promise<void> {
   let prossimo = 0;
   let errore: any = null;
@@ -123,7 +87,6 @@ async function scaricaLotto(id: string, o: OpzioniArrivo): Promise<void> {
   const esito = ScannerLotto.valida(json);
   if (!esito.ok) throw new ErroreLotto('manifest_non_valido', esito.errori);
   const lotto = esito.lotto;
-  // Il nome della cartella decide dove finisce il lotto: deve essere lo stesso id del manifest.
   if (lotto.id !== id) throw new ErroreLotto('id_diverso', { cartella: id, manifest: lotto.id });
   if (o.archivio !== undefined && lotto.archivio !== undefined && ScannerLotto.nomeArchivio(lotto.archivio) !== ScannerLotto.nomeArchivio(o.archivio)) {
     throw new ErroreLotto('altro_archivio', lotto.archivio);
@@ -148,7 +111,6 @@ async function scaricaLotto(id: string, o: OpzioniArrivo): Promise<void> {
     await fsp.writeFile(path.join(temp, ScannerLotto.NOME_MANIFEST), JSON.stringify(lotto, null, 2), 'utf8');
 
     const finale = path.join(o.cartellaArrivo, id);
-    // Una cartella senza manifest non è un lotto ricevuto (es. creata a mano): si sostituisce.
     if (await esiste(finale)) await fsp.rm(finale, { recursive: true, force: true });
     await fsp.rename(temp, finale);
   } catch (e) {
@@ -160,7 +122,6 @@ async function scaricaLotto(id: string, o: OpzioniArrivo): Promise<void> {
 async function riceviLotti(o: OpzioniArrivo): Promise<EsitoArrivo> {
   const esito: EsitoArrivo = { ricevuti: [], giaPresenti: [], inCaricamento: [], altroArchivio: [], falliti: [], nonRimossi: [] };
   await fsp.mkdir(o.cartellaArrivo, { recursive: true });
-  // Le ricezioni sono serializzate dal chiamante: quel che resta in temp è di un giro interrotto.
   await fsp.rm(o.cartellaTemp, { recursive: true, force: true });
   await fsp.mkdir(o.cartellaTemp, { recursive: true });
 
@@ -169,7 +130,6 @@ async function riceviLotti(o: OpzioniArrivo): Promise<EsitoArrivo> {
   for (const v of voci) {
     const id = v && v.id;
     if (!ScannerLotto.idValido(id)) {
-      // Una cartella estranea nel canale: non è nostra, non si tocca.
       esito.falliti.push({ id: String(id), codice: 'id_non_valido' });
       continue;
     }

@@ -1,19 +1,13 @@
 import { ipcMain } from 'electron';
 import { syncHubAttachments } from './hubAttachments';
-// `require` e non `import`: il file è generato e le chiavi Hub possono mancare (restano undefined).
 const { HUB_URL, HUB_CREATE_SECRET, PUSHER_KEY, PUSHER_CLUSTER } = require('./cloudCredentials');
 import { loadHubConfig, loadHubConfigPubblica, saveHubConfig } from '../workspaceManager';
 import { chiamataHub, generaEncKey, codificaInvito, decodificaInvito, ID_HUB, cifraDatabase, decifraDatabase, eDatabaseCifrato } from './hubClient';
 import { clonaWorkspace } from './workspaceIpc';
 import { nomeCartellaSicuro } from './pathSafety';
 
-// Tutte le chiamate all'Hub passano da qui: repoKey ed encKey si
-// leggono dal token store del vault aperto e non tornano mai al renderer, che riceve
-// { ok, status, data?, error? }. status 0 = Hub non raggiungibile.
-
 const NON_COLLEGATO = { ok: false, status: 0, error: 'Questo archivio non è collegato ad un repository Hub.' };
 
-// Il DB completo può essere grande: più margine delle chiamate di controllo.
 const TIMEOUT_DB_MS = 120000;
 
 function configAttiva() {
@@ -21,10 +15,6 @@ function configAttiva() {
   return cfg && cfg.repoId && cfg.repoKey ? cfg : null;
 }
 
-// --- Cifratura del database (S7): il renderer vede sempre il DB in chiaro, il server mai ---
-
-// Corpo del push: DB cifrato per la versione che il server assegnerà (parentVersion + 1).
-// Senza encKey (vault legacy, invito senza chiave) non c'è una chiave condivisa: resta in chiaro.
 async function corpoPush(cfg: any, parentVersion: number, database: any) {
   if (!cfg.encKey) {
     console.warn(`[hub] repo ${cfg.repoId}: nessuna encKey, database inviato in chiaro.`);
@@ -33,18 +23,11 @@ async function corpoPush(cfg: any, parentVersion: number, database: any) {
   return { parentVersion, database: await cifraDatabase(database, cfg.encKey, cfg.repoId, parentVersion + 1) };
 }
 
-// Da quando il vault ha visto il DB cifrato, un DB corrente in chiaro è un downgrade (server
-// alterato o client vecchio che ha sovrascritto): rifiutato invece di essere fuso.
 function segnaDbCifrato() {
   const cfg = loadHubConfig();
   if (cfg && cfg.repoId && !cfg.dbCifrato) saveHubConfig({ ...cfg, dbCifrato: true });
 }
 
-/**
- * Sostituisce data.database con il DB in chiaro. `corrente`: pull della versione attuale (vale
- * la guardia anti-downgrade); false per gli snapshot della cronologia, che possono precedere
- * l'attivazione della cifratura.
- */
 async function conDatabaseInChiaro(r: any, cfg: any, corrente: boolean) {
   if (!r.ok || !r.data || r.data.unchanged === true || r.data.database === undefined) return r;
   const { version, database } = r.data;
@@ -65,14 +48,11 @@ async function conDatabaseInChiaro(r: any, cfg: any, corrente: boolean) {
 }
 
 function setupHubIpc() {
-  // Creazione repo: il CREATE_SECRET vive SOLO nel main. Crea il repo, genera la encKey,
-  // fa il push iniziale e salva la config: al renderer torna la config senza segreti.
   ipcMain.handle('hub-create-repo', async (event: any, name: string, database: any) => {
     try {
       const res = await fetch(`${HUB_URL}/api/repos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Create-Secret': HUB_CREATE_SECRET },
-        // Il nome non va al server (S7): lo conserverebbe in chiaro senza usarlo. Resta nel DB cifrato.
         body: JSON.stringify({ name: null }),
         signal: AbortSignal.timeout(20000)
       });
@@ -102,7 +82,6 @@ function setupHubIpc() {
     }
   });
 
-  // `ifVersionNot`: fast-path del server, 1 sola lettura se nulla è cambiato ({ unchanged: true }).
   ipcMain.handle('hub-pull', async (event: any, ifVersionNot?: number) => {
     const cfg = configAttiva();
     if (!cfg) return NON_COLLEGATO;
@@ -110,7 +89,6 @@ function setupHubIpc() {
     return conDatabaseInChiaro(await chiamataHub(cfg, 'GET', `/pull${qs}`, { timeoutMs: TIMEOUT_DB_MS }), cfg, true);
   });
 
-  // 409 = il server è avanzato rispetto a parentVersion: il renderer chiede di ricevere prima.
   ipcMain.handle('hub-push', async (event: any, parentVersion: number, database: any) => {
     const cfg = configAttiva();
     if (!cfg) return NON_COLLEGATO;
@@ -139,8 +117,6 @@ function setupHubIpc() {
     return conDatabaseInChiaro(await chiamataHub(cfg, 'GET', `/versions/${n}`, { timeoutMs: TIMEOUT_DB_MS }), cfg, false);
   });
 
-  // Ruolo sul repo: GET /members è owner-only (200 = owner, 401/403 = member). L'esito certo si
-  // persiste; un errore transitorio restituisce 'unknown' e riprova alla prossima apertura.
   ipcMain.handle('hub-role', async () => {
     const cfg = configAttiva();
     if (!cfg) return 'unknown';
@@ -152,8 +128,6 @@ function setupHubIpc() {
     return role;
   });
 
-  // Invito HUB1: nuovo membro revocabile + chiave fresca + encKey. Composto qui perché contiene
-  // i segreti; al renderer torna solo il codice da mostrare all'utente.
   ipcMain.handle('hub-invite', async (event: any, label: string, nomeArchivio: string) => {
     const cfg = configAttiva();
     if (!cfg) return NON_COLLEGATO;
@@ -180,8 +154,6 @@ function setupHubIpc() {
     return chiamataHub(cfg, 'DELETE', `/members/${memberId}`);
   });
 
-  // Join da invito: decodifica, scarica il DB e crea il workspace, tutto nel main. La cartella
-  // prende il nome condiviso del vault (dal DB, poi dall'invito), ripulito per il filesystem.
   ipcMain.handle('hub-join', async (event: any, code: string, basePath: string) => {
     const inv = decodificaInvito(code);
     if (!inv) return { ok: false, status: 0, error: 'Invito non valido.' };
@@ -192,7 +164,6 @@ function setupHubIpc() {
         ? "Invito non valido o accesso revocato." : "Impossibile connettersi al repository remoto." };
     }
     const dbCifrato = eDatabaseCifrato(grezzo.data && grezzo.data.database);
-    // Il workspace non è ancora aperto: niente segnaDbCifrato, il flag va nella config del clone.
     const r = await conDatabaseInChiaro(grezzo, cfg, false);
     if (!r.ok) return r;
     const database = (r.data && r.data.database) || {};
@@ -206,8 +177,6 @@ function setupHubIpc() {
     return ok ? { ok: true, status: 200, data: { name: sharedName } } : { ok: false, status: 0, error: "Errore durante la creazione dei file locali." };
   });
 
-  // Firma per iscriversi al canale privato del repo (S6): la chiede il main con la repoKey.
-  // Solo il canale del vault aperto e un socket id nel formato Pusher arrivano al Worker.
   ipcMain.handle('hub-realtime-auth', async (event: any, socketId: string, channel: string) => {
     const cfg = configAttiva();
     if (!cfg) return NON_COLLEGATO;
@@ -217,9 +186,6 @@ function setupHubIpc() {
     return chiamataHub(cfg, 'POST', '/realtime-auth', { body: { socketId, channel }, timeoutMs: 15000 });
   });
 
-  // Sincronizza gli allegati del vault Hub (upload dei propri chunk se autenticato Google,
-  // download via link pubblici per tutti). Ritorna il riepilogo, non lancia in caso di
-  // allegati singoli non disponibili (vengono conteggiati in `unavailable`).
   ipcMain.handle('hub-sync-attachments', async () => {
     try {
       return { ok: true, ...(await syncHubAttachments()) };

@@ -8,21 +8,13 @@ import { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale } fro
 import { hashFile } from '../chunkingLogic';
 import * as schemaApp from '../schemaApp';
 
-/**
- * Il percorso sorgente arriva dal renderer (file scelto o trascinato). Non si può legare a un
- * dialogo del main, ma si escludono i casi che non sono "un file dell'utente da allegare":
- * percorsi relativi, cartelle, e i dati dell'app (userData con i token cifrati, la cartella
- * .archiview del workspace): copiati fra gli allegati finirebbero sincronizzati ai colleghi.
- */
 async function verificaSorgenteAllegato(sourcePath: unknown): Promise<void> {
   if (typeof sourcePath !== 'string' || !path.isAbsolute(sourcePath)) throw new Error('Percorso allegato non valido');
   const reale = await fsp.realpath(sourcePath);
   const st = await fsp.stat(reale);
   if (!st.isFile()) throw new Error('L\'allegato non è un file');
-  // Cartelle risolte come il file: con un alias (8.3, junction) il file sembrerebbe fuori.
   const dentro = (dir: string) => dentroCartellaReale(reale, dir);
   const ws = state.workspacePath;
-  // userData sì, ma non il workspace aperto quando sta lì (l'archivio del tutorial).
   const inUserData = dentro(app.getPath('userData')) && !(ws && dentro(ws));
   if (inUserData || (ws && dentro(path.join(ws, '.archiview')))) {
     throw new Error('File interno dell\'applicazione: non allegabile');
@@ -34,15 +26,12 @@ function setupAttachmentsIpc() {
     try {
       if (!state.attachmentsDirPath) throw new Error("Cartella allegati non definita");
       await verificaSorgenteAllegato(sourcePath);
-      // Solo lettere/cifre nell'estensione: è l'unica parte del nome che resta com'è.
       const ext = path.extname(sourcePath).toLowerCase().replace(/[^a-z0-9.]/g, '').substring(0, 16);
 
       const cleanOriginalName = path.basename(sourcePath, path.extname(sourcePath))
         .replace(/[^a-zA-Z0-9_-]/g, '_')
         .substring(0, 50);
 
-      // L'id della scheda arriva dal vault (anche condiviso): con "..\\..\\x" il file allegato
-      // veniva copiato fuori dalla cartella allegati.
       const idPulito = typeof documentoId === 'string' || typeof documentoId === 'number'
         ? String(documentoId).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64)
         : '';
@@ -52,7 +41,6 @@ function setupAttachmentsIpc() {
 
       await fsp.copyFile(sourcePath, destPath);
 
-      // O5: in streaming. Prima il file intero passava in RAM (PDF da centinaia di MB).
       const hash = await hashFile(destPath);
 
       return { fileName, ext, hash };
@@ -65,7 +53,6 @@ function setupAttachmentsIpc() {
   ipcMain.handle('verifica-hash-allegato', async (event, fileName, expectedHash) => {
     try {
       if (!state.attachmentsDirPath || !fileName || !expectedHash) return { status: 'missing', path: '' };
-      // Stesso criterio dei nomi di tutti gli allegati (N7): `path.basename('..')` restituiva '..'.
       const destPath = safeAttachmentPathOrNull(state.attachmentsDirPath, fileName);
       if (!destPath || !fs.existsSync(destPath)) {
         return { status: 'missing', path: state.attachmentsDirPath };
@@ -83,9 +70,6 @@ function setupAttachmentsIpc() {
       return { status: 'error', message: error.message };
     }
   });
-
-  // `apri-pdf-esterno` rimosso: nessuno lo chiamava, e faceva
-  // shell.openPath su un nome arrivato dal vault, cioè eseguiva un .hta/.lnk condiviso.
 
   ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {
     try {
@@ -108,18 +92,11 @@ function setupAttachmentsIpc() {
     return path.join(state.attachmentsDirPath, safeFileName);
   });
 
-  // Visualizzatore PDF della trascrizione. pdf.js gira nel renderer ma non può leggere
-  // `local-asset://` (la pagina è su file://, e Chromium nega le richieste cross-origin verso
-  // schemi non http), quindi i byte li fornisce il main, A INTERVALLI: pdf.js chiede solo
-  // i pezzi che gli servono per la pagina da disegnare, e un facsimile da 300 MB non
-  // transita mai intero né in memoria né sull'IPC.
   ipcMain.handle('pdf-allegato-info', async (event, fileName) => {
     try {
       const percorso = percorsoPdfAllegato(fileName);
       const st = await fsp.stat(percorso);
       if (!st.isFile()) throw new Error('L\'allegato non è un file');
-      // Il primo pezzo viaggia con la risposta: è quello che pdf.js chiede comunque per
-      // primo, e risparmia un giro di IPC sull'apertura.
       const iniziale = await leggiIntervallo(percorso, 0, Math.min(st.size, PDF_PEZZO_INIZIALE));
       return { ok: true, dimensione: st.size, iniziale };
     } catch (error) {
@@ -142,11 +119,8 @@ function setupAttachmentsIpc() {
 }
 
 const PDF_PEZZO_INIZIALE = 64 * 1024;
-// Tetto per singola richiesta: pdf.js raggruppa pezzi contigui, ma un renderer compromesso
-// non deve poter chiedere il file intero in un colpo e far esplodere la memoria del main.
 const PDF_MAX_INTERVALLO = 16 * 1024 * 1024;
 
-/** Solo PDF della cartella allegati: l'API esiste per il visualizzatore, non per leggere file. */
 function percorsoPdfAllegato(fileName: unknown): string {
   if (!state.attachmentsDirPath) throw new Error('Cartella allegati non definita');
   const percorso = safeAttachmentPath(state.attachmentsDirPath, fileName as string);
@@ -165,19 +139,12 @@ async function leggiIntervallo(percorso: string, inizio: number, fine: number): 
   }
 }
 
-// N4 — local-asset serve solo immagini e PDF, con un tipo deciso dall'estensione e non dal
-// contenuto. `al.tipo` arriva dal vault: un "pdf" che si chiama x.html o x.svg finiva come
-// pagina nell'iframe del modal, con i suoi script. HTML e qualsiasi altro tipo non si servono;
-// l'SVG sì (è un'immagine legittima in un <img>), ma con una CSP che ne spegne gli script se
-// qualcuno lo carica come documento.
 const TIPI_LOCAL_ASSET: { [ext: string]: string } = {
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.jfif': 'image/jpeg', '.png': 'image/png',
   '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.avif': 'image/avif',
   '.ico': 'image/x-icon', '.tif': 'image/tiff', '.tiff': 'image/tiff', '.svg': 'image/svg+xml',
   '.pdf': 'application/pdf'
 };
-// Non al PDF: il visualizzatore nativo di Chromium è un documento a sé, e una CSP sul PDF
-// rischia di spegnerlo. Un PDF non esegue script in quel visualizzatore.
 const CSP_LOCAL_ASSET = "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'";
 
 function negato(motivo: string): Response {
@@ -187,8 +154,6 @@ function negato(motivo: string): Response {
 
 async function rispostaLocalAsset(url: string): Promise<Response> {
   if (!state.attachmentsDirPath) return negato('cartella allegati non definita');
-  // Query (`?t=` anti-cache) e frammento sono parte dell'URL, non del nome: un `#` o un `?`
-  // veri nel nome arrivano codificati (%23, %3F).
   const grezzo = url.slice('local-asset://'.length).split(/[?#]/)[0];
   let nome: string;
   try {
@@ -198,7 +163,6 @@ async function rispostaLocalAsset(url: string): Promise<Response> {
   }
   let percorso: string;
   try {
-    // Rifiuta `..`, `.` e vuoto: path.basename('..') restituiva `..`, cioè la cartella padre.
     percorso = safeAttachmentPath(state.attachmentsDirPath, nome);
   } catch {
     return negato('nome non valido');
@@ -207,20 +171,17 @@ async function rispostaLocalAsset(url: string): Promise<Response> {
   if (!tipo) return negato(`tipo non servito (${path.extname(percorso) || 'senza estensione'})`);
 
   try {
-    // pathToFileURL codifica `#`, `%` e `?` del nome, e scrive bene i percorsi UNC.
     const r = await net.fetch(pathToFileURL(percorso).href);
     if (!r.ok) return new Response(null, { status: r.status });
     const headers: { [k: string]: string } = { 'Content-Type': tipo, 'X-Content-Type-Options': 'nosniff' };
     if (tipo !== 'application/pdf') {
       headers['Content-Security-Policy'] = CSP_LOCAL_ASSET;
-      // P4: pixel leggibili dal solo visualizzatore dell'app (filtri su canvas).
       headers['Access-Control-Allow-Origin'] = schemaApp.ORIGINE;
     }
     const lunghezza = r.headers.get('content-length');
     if (lunghezza) headers['Content-Length'] = lunghezza;
     return new Response(r.body, { status: 200, headers });
   } catch (error) {
-    // File assente o illeggibile: niente dettagli del filesystem verso il renderer.
     console.error('Errore lettura local-asset:', error && error.message);
     return new Response(null, { status: 404 });
   }

@@ -3,26 +3,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { state, getActiveVaultFlags } from './workspaceManager';
 
-// Store centralizzato dei token cloud (Google; Microsoft solo per la pulizia dei residui).
-//
-// I token vivono SEMPRE in userData/cloud-tokens/, MAI dentro la cartella del workspace:
-// - il blob DPAPI (safeStorage) è legato a utente+macchina, quindi non deve finire in una
-//   cartella potenzialmente sincronizzata (Drive/OneDrive desktop) → sarebbe indecifrabile
-//   su un'altra macchina e causerebbe re-login perpetuo.
-// - la chiave è il vaultId del vault attivo (isolamento per account/vault), con fallback 'global'
-//   per i workspace non-cloud → indipendente dal path della cartella (re-join = stesso token).
-
 function tokensDir(): string {
   return path.join(app.getPath('userData'), 'cloud-tokens');
 }
 
-// Sanifica il vaultId per l'uso come nome file. Gli id Drive sono già [A-Za-z0-9_-],
-// ma normalizziamo per robustezza.
 function sanitizeKey(key: string): string {
   return String(key).replace(/[^A-Za-z0-9_-]/g, '_');
 }
 
-// Chiave del vault attivo: vaultId se il workspace è un vault cloud, altrimenti 'global'.
 function activeVaultKey(): string {
   try {
     if (state.workspacePath) {
@@ -31,7 +19,7 @@ function activeVaultKey(): string {
         return sanitizeKey(flags.sharedVaultId);
       }
     }
-  } catch (e) { /* nessun workspace / config illeggibile → global */ }
+  } catch (e) {}
   return 'global';
 }
 
@@ -39,27 +27,14 @@ function tokenPathFor(provider: 'google' | 'hub', key: string): string {
   return path.join(tokensDir(), `${provider}-${sanitizeKey(key)}.json`);
 }
 
-// --- Segreti Hub (repoKey owner/membro + encKey AES per-repo) ---
-//
-// Non sono token OAuth ma vanno protetti allo stesso modo: la repoKey concede accesso
-// in lettura/scrittura al repo, la encKey decifra gli allegati. Vivono in userData
-// (fuori dal workspace, che può essere sincronizzato) cifrati con DPAPI.
-//
-// La chiave dello slot combina repoId + hash del workspace path: due workspace locali
-// dello stesso repo (es. owner + membro sullo stesso PC, per test) hanno chiavi diverse,
-// altrimenti il join del membro sovrascriverebbe la ownerKey e l'owner degraderebbe a membro.
-
 import * as crypto from 'crypto';
 
-// `wpOverride` serve al clone Hub, dove i segreti del membro vanno salvati sotto il path del
-// NUOVO workspace mentre `state.workspacePath` punta ancora a quello corrente.
 function hubScopeKey(repoId: string, wpOverride?: string): string {
   const wp = wpOverride || state.workspacePath || '';
   const suffix = wp ? crypto.createHash('sha256').update(wp).digest('hex').slice(0, 12) : 'noworkspace';
   return `${repoId}-${suffix}`;
 }
 
-// Path legacy (solo repoId): mantenuto per la migrazione one-shot dei vault esistenti.
 function hubLegacyPath(repoId: string): string {
   return tokenPathFor('hub', repoId);
 }
@@ -72,7 +47,7 @@ function saveHubSecrets(repoId: string, secrets: { repoKey?: string; encKey?: st
     try {
       const raw = readSerialized(scopedPath);
       if (raw) existing = JSON.parse(raw);
-    } catch (e) { /* slot assente/illeggibile → sovrascrivi */ }
+    } catch (e) {}
     const merged = { ...existing, ...secrets };
     writeSerialized(scopedPath, JSON.stringify(merged));
     return true;
@@ -87,13 +62,12 @@ function loadHubSecrets(repoId: string): { repoKey?: string; encKey?: string | n
     if (!repoId) return null;
     const scopedPath = tokenPathFor('hub', hubScopeKey(repoId));
     let raw = readSerialized(scopedPath);
-    // Migrazione one-shot dal path legacy (keyed solo per repoId) al path per-workspace.
     if (!raw) {
       const legacyPath = hubLegacyPath(repoId);
       if (legacyPath !== scopedPath && fs.existsSync(legacyPath)) {
         raw = readSerialized(legacyPath);
         if (raw) {
-          try { writeSerialized(scopedPath, raw); fs.unlinkSync(legacyPath); } catch (e) { /* best-effort */ }
+          try { writeSerialized(scopedPath, raw); fs.unlinkSync(legacyPath); } catch (e) {}
         }
       }
     }
@@ -107,11 +81,9 @@ function loadHubSecrets(repoId: string): { repoKey?: string; encKey?: string | n
 
 function clearHubSecrets(repoId: string): void {
   for (const p of [tokenPathFor('hub', hubScopeKey(repoId)), hubLegacyPath(repoId)]) {
-    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) { /* best-effort */ }
+    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {}
   }
 }
-
-// --- Crittografia condivisa (envelope { encrypted, v:1 } via DPAPI, oppure plaintext) ---
 
 function writeSerialized(filePath: string, serialized: string): void {
   const dir = path.dirname(filePath);
@@ -120,19 +92,17 @@ function writeSerialized(filePath: string, serialized: string): void {
     const encrypted = safeStorage.encryptString(serialized).toString('base64');
     fs.writeFileSync(filePath, JSON.stringify({ encrypted, v: 1 }));
   } else {
-    // Fallback plaintext: safeStorage non disponibile (raro su Windows con DPAPI).
     console.warn('[cloudTokenStore] safeStorage non disponibile: token salvato in chiaro.');
     fs.writeFileSync(filePath, serialized);
   }
 }
 
-// Ritorna la stringa serializzata (JSON per Google, cache MSAL per MS) oppure null.
 function readSerialized(filePath: string): string | null {
   if (!fs.existsSync(filePath)) return null;
   try {
     const raw = fs.readFileSync(filePath, 'utf8');
     let parsed: any = null;
-    try { parsed = JSON.parse(raw); } catch { /* non JSON → plaintext legacy MSAL */ }
+    try { parsed = JSON.parse(raw); } catch {}
     if (parsed && parsed.v === 1 && parsed.encrypted) {
       return safeStorage.decryptString(Buffer.from(parsed.encrypted, 'base64'));
     }
@@ -143,17 +113,13 @@ function readSerialized(filePath: string): string | null {
   }
 }
 
-// --- Migrazione one-shot dai vecchi percorsi ---
-
 function moveFile(src: string, dst: string): void {
   const dir = path.dirname(dst);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.copyFileSync(src, dst); // il formato envelope è identico: copia byte-for-byte, niente re-encrypt
-  try { fs.unlinkSync(src); } catch { /* best-effort */ }
+  fs.copyFileSync(src, dst);
+  try { fs.unlinkSync(src); } catch {}
 }
 
-// Migra il token globale legacy e quello locale del workspace attivo verso la nuova location.
-// legacyLocalFor: risolve il vecchio percorso locale dato il workspacePath (null se n/d).
 function migrateLegacy(
   provider: 'google',
   legacyGlobalPath: string | null,
@@ -172,7 +138,6 @@ function migrateLegacy(
           const keyedNew = tokenPathFor(provider, key);
           if (!fs.existsSync(keyedNew)) moveFile(legacyLocal, keyedNew);
         } else if (!fs.existsSync(globalNew)) {
-          // workspace non-vault: il token locale diventa il globale (stesso account).
           moveFile(legacyLocal, globalNew);
         }
       }
@@ -182,16 +147,13 @@ function migrateLegacy(
   }
 }
 
-// OneDrive rimosso: cancella i token MSAL rimasti (cloud-tokens/ms-*.json, il vecchio globale in
-// userData e quello legacy nel workspace aperto). Contengono un refresh token ancora valido
-// per l'account Microsoft dell'utente: non devono restare su disco senza più uno scopo.
 function purgeMicrosoftTokens(): number {
   const candidati: string[] = [path.join(app.getPath('userData'), 'ms-tokens-global.json')];
   try {
     for (const nome of fs.readdirSync(tokensDir())) {
       if (/^ms-.*\.json$/.test(nome)) candidati.push(path.join(tokensDir(), nome));
     }
-  } catch { /* cartella token assente: niente da pulire */ }
+  } catch {}
   if (state.workspacePath) candidati.push(path.join(state.workspacePath, '.ms-tokens.json'));
   let rimossi = 0;
   for (const p of candidati) {

@@ -1,5 +1,3 @@
-// I membri di `window` più usati hanno il loro tipo; gli altri passano ancora dall'indice `any`
-// (PIANO-REFACTOR Fase 10, strada piccola: si aggiungono qui uno alla volta).
 type ApiPreload = import('./main/preload').ApiPreload;
 
 interface Window {
@@ -65,9 +63,7 @@ declare var process: any;
 declare var require: any;
 declare var __dirname: any;
 
-// State variables shared across files (set on window by state.ts)
 declare var cartellaAttuale: any;
 declare var cartelleEspanse: any;
 declare var statoIniziale: any;
 declare var toggleFullscreenAllegato: any;
-// editingTypeId: dichiarata con `let` in typesLogic.ts, visibile anche agli altri script.

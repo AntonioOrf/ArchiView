@@ -5,18 +5,11 @@ import { state, initWorkspace, getAllSettings, saveAllSettings, aggiornaHubConfi
 import { readVaultConfig, syncUnifiedFromLegacy } from '../vaultConfig';
 import { safeChildDir } from './pathSafety';
 
-/**
- * Crea un nuovo workspace in basePath/folderName con il database dato e lo apre.
- * `hubConfig` completo di segreti arriva solo dal main (join Hub in hubIpc); dal renderer passa
- * solo la variante Drive ({ isSharedVault, sharedVaultId }).
- */
 function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, database: any): boolean {
   try {
     let newPath: string;
     try {
-      // folderName è digitato o viene dall'invito: un nome con separatori è rifiutato, non riscritto.
       newPath = safeChildDir(basePath, folderName);
-      // Una cartella che contiene già un archivio non si sovrascrive: si prende "Nome (2)", "Nome (3)"…
       for (let n = 2; fs.existsSync(path.join(newPath, 'database_manoscritti.json')); n++) {
         newPath = safeChildDir(basePath, `${folderName} (${n})`);
       }
@@ -28,21 +21,14 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
       fs.mkdirSync(newPath, { recursive: true });
     }
     
-    // Scrivi config dell'Hub (se presente e valido). I segreti (repoKey/encKey) vanno
-    // in cloudTokenStore (DPAPI), MAI in chiaro nel file di vault potenzialmente sincronizzato.
     if (hubConfig && hubConfig.hubUrl) {
         const { saveHubSecrets } = require('../cloudTokenStore');
         const { repoKey, encKey, ...publicCfg } = hubConfig;
-        // Salva i segreti sotto lo scope del NUOVO workspace (state.workspacePath punta ancora
-        // a quello corrente: senza override finirebbero nello slot sbagliato e il clone
-        // non li ritroverebbe al riavvio).
         if (publicCfg.repoId && (repoKey || encKey)) saveHubSecrets(publicCfg.repoId, { repoKey, encKey }, newPath);
         const configPath = path.join(newPath, '.archiview-hub.json');
-        // Le chiavi Pusher restano in .archiview-hub.json: è da lì che le legge il realtime Hub.
         fs.writeFileSync(configPath, JSON.stringify(publicCfg, null, 2), 'utf8');
     }
 
-    // Se hubConfig contiene dati Drive (è stato "abusato" per passare impostazioni Drive)
     if (hubConfig && hubConfig.isSharedVault) {
         const settingsPath = path.join(newPath, 'settings.json');
         fs.writeFileSync(settingsPath, JSON.stringify({
@@ -51,18 +37,15 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
         }, null, 2), 'utf8');
     }
 
-    // Scrivi database JSON, senza la base del merge di chi l'ha caricato (DB di versioni vecchie).
     const { baseObjects, baseHashes, ...dbSenzaBase } = database || {};
     const dbPath = path.join(newPath, 'database_manoscritti.json');
     fs.writeFileSync(dbPath, JSON.stringify(dbSenzaBase, null, 2), 'utf8');
 
-    // Crea cartella allegati vuota
     const attPath = path.join(newPath, 'allegati_manoscritti');
     if (!fs.existsSync(attPath)) {
       fs.mkdirSync(attPath, { recursive: true });
     }
 
-    // Genera subito il modello unificato dai legacy appena scritti
     syncUnifiedFromLegacy(newPath, getAllSettings());
 
     initWorkspace(newPath);
@@ -105,14 +88,12 @@ function setupWorkspaceIpc() {
   ipcMain.handle('get-recent-workspaces', () => {
     const settings = getAllSettings();
     const recents = settings.recentWorkspaces || [];
-    // Fonte di verità unica: .archiview-vault.json (con fallback derivato dai legacy)
     return recents.map((folderPath: string) => {
       const cfg = readVaultConfig(folderPath, settings);
       return {
         path: folderPath,
         vaultType: cfg.vaultType,
         provider: cfg.provider,
-        // Campi derivati per retrocompatibilità con il renderer (sidebar)
         isShared: cfg.vaultType === 'shared',
         isPersonal: cfg.vaultType === 'backup'
       };
@@ -120,8 +101,6 @@ function setupWorkspaceIpc() {
   });
 
   ipcMain.handle('open-recent-workspace', (event, folderPath) => {
-    // Solo un archivio già fra i recenti (N2): un percorso qualsiasi dal renderer diventerebbe
-    // un recente, e delete-vault-local cestina i recenti.
     const recenti: string[] = getAllSettings().recentWorkspaces || [];
     if (typeof folderPath !== 'string' || !recenti.some(w => path.resolve(w) === path.resolve(folderPath))) return false;
     if (fs.existsSync(folderPath)) {
@@ -134,8 +113,6 @@ function setupWorkspaceIpc() {
     return false;
   });
 
-  // Archivio recente spostato su disco: l'utente indica la nuova cartella, che prende il posto
-  // del vecchio percorso nei recenti. Il percorso nuovo nasce dal dialogo nel main, mai dal renderer.
   ipcMain.handle('ricollega-archivio-recente', async (event, vecchioPercorso, titoloDialogo) => {
     try {
       const recenti: string[] = getAllSettings().recentWorkspaces || [];
@@ -146,7 +123,6 @@ function setupWorkspaceIpc() {
       });
       if (result.canceled || result.filePaths.length === 0) return { ok: false, annullato: true };
       const nuovo = result.filePaths[0];
-      // Il database nasce al primo salvataggio: un archivio vuoto ha solo il file di vault.
       if (!['database_manoscritti.json', '.archiview-vault.json'].some(f => fs.existsSync(path.join(nuovo, f)))) {
         return { ok: false, motivo: 'non-archivio' };
       }
@@ -216,7 +192,6 @@ function setupWorkspaceIpc() {
     }
     initWorkspace(newPath);
     if (config) {
-      // Dal renderer passano solo preferenze (i flag autoStart*), non percorsi né chiavi del vault (N2).
       const { saveAllSettings } = require('../workspaceManager');
       const { filtraImpostazioniRenderer } = require('../impostazioniRenderer');
       saveAllSettings(filtraImpostazioniRenderer(config));
@@ -229,7 +204,6 @@ function setupWorkspaceIpc() {
 
   ipcMain.handle('delete-vault-local', async (event, pathToRemove) => {
     try {
-        // Sicurezza: Controlliamo che il percorso appartenga alla lista di workspace recenti o a quello attuale
         const settings = getAllSettings();
         const recentWorkspaces = settings.recentWorkspaces || [];
         const isKnownWorkspace = (state.workspacePath && path.resolve(pathToRemove) === path.resolve(state.workspacePath)) || 
@@ -241,8 +215,6 @@ function setupWorkspaceIpc() {
         }
 
         if (fs.existsSync(pathToRemove)) {
-            // Conferma nel main con il percorso per esteso: la finestra del renderer non basta
-            // se il renderer è compromesso.
             const { response } = await dialog.showMessageBox({
                 type: 'warning',
                 title: 'Elimina archivio',
@@ -263,8 +235,6 @@ function setupWorkspaceIpc() {
     }
   });
 
-  // Dal renderer solo il ripristino Drive: la config Hub con i segreti la scrive hub-join nel main,
-  // altrimenti il renderer potrebbe legare un vault a un Hub arbitrario.
   ipcMain.handle('clone-workspace-hub', async (event, basePath, folderName, driveConfig, database) => {
     if (driveConfig && (driveConfig.hubUrl || driveConfig.repoKey || driveConfig.encKey)) {
       console.error("[SECURITY] clone-workspace-hub: config Hub dal renderer rifiutata.");
@@ -295,7 +265,6 @@ function setupWorkspaceIpc() {
       output.on('close', function() {
         resolve({ success: true, path: destPath });
       });
-      // Destinazione non scrivibile o bloccata (EBUSY): senza listener è un'eccezione nel main.
       output.on('error', function(err) {
         archive.abort();
         resolve({ success: false, error: err.message });
@@ -322,13 +291,9 @@ function setupWorkspaceIpc() {
       const sourceDir = path.join(app.getAppPath(), 'assets', 'tutorial_workspace');
       const targetDir = path.join(app.getPath('userData'), 'Tutorial_Archive');
 
-      // Fallback nel caso gli asset non siano trovati (es. in dev mode)
       const fallbackSource = path.join(__dirname, '..', '..', '..', 'assets', 'tutorial_workspace');
       const sorgente = fs.existsSync(sourceDir) ? sourceDir : fallbackSource;
       if (!fs.existsSync(sorgente)) return { success: false, error: 'Tutorial assets not found' };
-      // Asincrona: la copia ricorsiva sincrona bloccava il main per tutta la durata.
-      // Non `fs.promises.cp`: dentro app.asar fallisce con ENOENT (Electron non la gestisce),
-      // e l'archivio di prova nell'app installata non si apriva (3.3.0–3.4.0).
       await copiaCartella(sorgente, targetDir);
 
       initWorkspace(targetDir);
@@ -343,7 +308,6 @@ function setupWorkspaceIpc() {
   });
 }
 
-/** Copia ricorsiva con sole funzioni che Electron sa leggere da app.asar. */
 async function copiaCartella(da: string, a: string): Promise<void> {
   await fs.promises.mkdir(a, { recursive: true });
   for (const voce of await fs.promises.readdir(da, { withFileTypes: true })) {

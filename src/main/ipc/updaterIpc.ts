@@ -5,9 +5,6 @@ import * as path from 'path';
 import { state } from '../workspaceManager';
 import { classifyUpdateError } from './updateErrorClassifier';
 
-// Logger minimale su file per diagnosticare fallimenti in produzione (electron-updater
-// non stampa nulla di suo se non gli si assegna un logger). Rotazione semplice a 1MB:
-// evita di far crescere il file indefinitamente su installazioni di lunga durata.
 const LOG_MAX_BYTES = 1024 * 1024;
 function getUpdaterLogPath() {
   return path.join(app.getPath('userData'), 'logs', 'updater.log');
@@ -20,10 +17,10 @@ function writeUpdaterLog(level, args) {
     try {
       const st = fs.statSync(logPath);
       if (st.size > LOG_MAX_BYTES) fs.renameSync(logPath, logPath + '.old');
-    } catch { /* file non ancora esistente: ok */ }
+    } catch {}
     const line = `[${new Date().toISOString()}] [${level}] ${args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}\n`;
     fs.appendFileSync(logPath, line);
-  } catch { /* logging best-effort: non deve mai bloccare l'updater */ }
+  } catch {}
 }
 const updaterLogger = {
   info: (...args) => writeUpdaterLog('info', args),
@@ -34,14 +31,14 @@ const updaterLogger = {
 
 function setupUpdaterIpc() {
   autoUpdater.logger = updaterLogger;
-  autoUpdater.autoDownload = false; // L'utente deciderà quando scaricare
-  autoUpdater.autoInstallOnAppQuit = true; // Se scaricato ma non installato, installa alla chiusura successiva
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
 
-  let lastCheckResult: any = null; // Ultimo UpdateCheckResult riuscito (per download-update senza ri-check)
+  let lastCheckResult: any = null;
   let lastCheckAt = 0;
-  let checkInFlight: Promise<any> | null = null; // Promise in corso, per deduplicare click ripetuti
+  let checkInFlight: Promise<any> | null = null;
   let downloadInFlight = null;
-  const CHECK_CACHE_MS = 10 * 60 * 1000; // 10 minuti: evita rate-limit sull'API GitHub
+  const CHECK_CACHE_MS = 10 * 60 * 1000;
 
   function sendToRenderer(channel, payload?) {
     if (state.mainWindow && !state.mainWindow.isDestroyed()) {
@@ -97,7 +94,6 @@ function setupUpdaterIpc() {
         return { success: true };
       }
       if (!lastCheckResult) {
-        // Nessun check eseguito in questa sessione: eseguilo prima di scaricare
         await doCheckForUpdates();
       }
       downloadInFlight = autoUpdater.downloadUpdate();
@@ -130,8 +126,6 @@ function setupUpdaterIpc() {
     sendToRenderer('update-downloaded');
   });
 
-  // Errori emessi in modo asincrono (rete caduta a metà download, checksum non valido, ecc.):
-  // senza questo listener, un 'error' non gestito su un EventEmitter termina il processo main.
   autoUpdater.on('error', (error) => {
     downloadInFlight = null;
     sendToRenderer('update-error', {

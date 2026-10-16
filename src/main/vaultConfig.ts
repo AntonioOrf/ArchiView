@@ -2,9 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 
-// Nome del file unificato (fonte di verità per il tipo/provider di un vault)
 const VAULT_FILE = '.archiview-vault.json';
-// File legacy mantenuti in sola lettura come fallback / per retrocompatibilità
 const DRIVE_FILE = '.archiview-drive.json';
 const HUB_FILE = '.archiview-hub.json';
 const INFOLDER_SETTINGS_FILE = 'settings.json';
@@ -23,23 +21,18 @@ function safeReadJson(filePath) {
 function emptyConfig() {
   return {
     schemaVersion: 1,
-    vaultType: 'local',      // 'local' | 'backup' | 'shared'
-    provider: 'none',        // 'none' | 'google' | 'hub'
+    vaultType: 'local',
+    provider: 'none',
     sync: {
       sharedVaultId: null,
       driveAutofetch: false,
       syncAttachments: true
     },
-    hub: { url: null, repoId: null, attachmentsMode: 'drive-links' }, // 'drive-links' | 'off'
+    hub: { url: null, repoId: null, attachmentsMode: 'drive-links' },
     realtime: { pusherKey: null, pusherCluster: null, pusherWebhook: null }
   };
 }
 
-// Deriva il modello normalizzato dai file legacy (+ settings globali per il vault attivo).
-// Non scrive nulla.
-// OneDrive è stato rimosso (non aveva controllo conflitti, dedup allegati né inviti). Un vault
-// rimasto con provider 'microsoft' torna locale: i dati restano sul disco, niente sync. Senza
-// questo passerebbe a Google Drive con l'id di una cartella OneDrive.
 function degradaMicrosoft(cfg) {
   if (!cfg || cfg.provider !== 'microsoft') return cfg;
   return {
@@ -58,7 +51,6 @@ function deriveFromLegacy(folderPath, globalSettings) {
   const inFolder = safeReadJson(path.join(folderPath, INFOLDER_SETTINGS_FILE)) || {};
   const g = globalSettings || {};
 
-  // I flag globali valgono solo per il vault attualmente attivo
   let isActiveVault = false;
   try {
     isActiveVault = !!g.workspacePath && path.resolve(g.workspacePath) === path.resolve(folderPath);
@@ -68,12 +60,10 @@ function deriveFromLegacy(folderPath, globalSettings) {
   const isShared = !!(drive.isSharedVault || inFolder.isSharedVault || ga.isSharedVault);
   const isPersonal = !!(drive.isPersonalCloud || inFolder.isPersonalCloud || ga.isPersonalCloud);
 
-  // Tipo vault
   if (hub || isShared) cfg.vaultType = 'shared';
   else if (isPersonal) cfg.vaultType = 'backup';
   else cfg.vaultType = 'local';
 
-  // Provider
   if (hub) {
     cfg.provider = 'hub';
   } else if (cfg.vaultType !== 'local') {
@@ -82,20 +72,17 @@ function deriveFromLegacy(folderPath, globalSettings) {
     cfg.provider = 'none';
   }
 
-  // Sync
   cfg.sync.sharedVaultId = drive.sharedVaultId || inFolder.sharedVaultId || ga.sharedVaultId || null;
   cfg.sync.driveAutofetch = !!(drive.driveAutofetch || ga.driveAutofetch);
   const syncAtt = drive.syncAttachments !== undefined ? drive.syncAttachments : ga.syncAttachments;
-  cfg.sync.syncAttachments = syncAtt !== false; // default true
+  cfg.sync.syncAttachments = syncAtt !== false;
 
-  // Hub
   if (hub) {
     cfg.hub.url = hub.hubUrl || null;
     cfg.hub.repoId = hub.repoId || null;
     cfg.hub.attachmentsMode = hub.attachmentsMode || 'drive-links';
   }
 
-  // Realtime (Pusher)
   cfg.realtime.pusherKey = drive.pusherKey || ga.pusherKey || null;
   cfg.realtime.pusherCluster = drive.pusherCluster || ga.pusherCluster || null;
   cfg.realtime.pusherWebhook = drive.pusherWebhook || ga.pusherWebhook || null;
@@ -103,8 +90,6 @@ function deriveFromLegacy(folderPath, globalSettings) {
   return degradaMicrosoft(cfg);
 }
 
-// Ritorna il modello normalizzato: legge il file unificato se presente,
-// altrimenti deriva dai legacy (senza scrivere).
 function readVaultConfig(folderPath, globalSettings) {
   if (!folderPath) return emptyConfig();
   const existing = safeReadJson(path.join(folderPath, VAULT_FILE));
@@ -121,7 +106,6 @@ function readVaultConfig(folderPath, globalSettings) {
   return deriveFromLegacy(folderPath, globalSettings);
 }
 
-// Scrive SOLO il file unificato (non tocca i legacy).
 function writeVaultConfig(folderPath, config) {
   if (!folderPath) return false;
   try {
@@ -133,25 +117,18 @@ function writeVaultConfig(folderPath, config) {
   }
 }
 
-// Primitiva di migrazione/refresh: ricalcola dai legacy e (ri)scrive il file unificato. Idempotente.
 function syncUnifiedFromLegacy(folderPath, globalSettings) {
   if (!folderPath) return null;
   try {
     if (!fs.existsSync(folderPath)) return null;
   } catch (e) { return null; }
   const cfg = deriveFromLegacy(folderPath, globalSettings);
-  // L'identità dell'archivio non è uno stato derivabile dai legacy: rigenerare il file non
-  // deve cambiarla, o ogni rimando da un altro archivio diventerebbe orfano.
   const prima = safeReadJson(path.join(folderPath, VAULT_FILE));
   if (prima && typeof prima.archivioId === 'string' && prima.archivioId) cfg.archivioId = prima.archivioId;
   writeVaultConfig(folderPath, cfg);
   return cfg;
 }
 
-// Identità stabile dell'archivio (ricerca tra archivi): sopravvive allo spostamento della
-// cartella, che è il motivo per cui non si usa il percorso. Generata alla prima richiesta e
-// scritta solo nel file unificato, che non viaggia con la sincronizzazione.
-// Ritorna null se la cartella non esiste o non è scrivibile: il chiamante ricade sul percorso.
 function assicuraArchivioId(folderPath, globalSettings) {
   if (!folderPath) return null;
   try {
@@ -163,9 +140,6 @@ function assicuraArchivioId(folderPath, globalSettings) {
   return writeVaultConfig(folderPath, cfg) ? cfg.archivioId : null;
 }
 
-// Le 7 chiavi "legacy" del vault derivate dal modello unificato. Serve completo perché
-// saveAllSettings ricostruisce .archiview-drive.json da questo set: un sottoinsieme
-// azzererebbe i campi mancanti.
 function legacyDaConfig(cfg) {
   return {
     isSharedVault: cfg.vaultType === 'shared',

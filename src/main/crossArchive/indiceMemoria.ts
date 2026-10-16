@@ -1,17 +1,3 @@
-// Ricerca tra archivi — primo backend del contratto `IndiceArchivi`: tutto in memoria,
-// scansione lineare sui testi normalizzati.
-//
-// È la scelta giusta per pochi archivi piccoli e la sbagliata per cento archivi grandi: per
-// questo nessuno fuori da `crossArchive/` conosce questa classe. Il giorno in cui la prova di
-// carico (`test/crossArchiveBench.test.js`) sfora le soglie, si scrive un altro backend con
-// gli stessi quattro metodi e cambia una riga in `client.ts`.
-//
-// Nessuna dipendenza da electron: gira identico nel worker, nel main (ripiego) e nei test.
-//
-// ⚠️ SOLA LETTURA. Il database degli altri archivi viene letto e migrato IN MEMORIA, mai
-// riscritto: un archivio di una versione più nuova resta com'è, un archivio vecchio verrà
-// migrato da chi lo apre davvero.
-
 import * as path from 'path';
 const fsp = require('fs').promises;
 const Model = require('../../shared/model');
@@ -20,34 +6,22 @@ import { INDICE_FORMATO, PESO, contestoArchivio, costruisciVoce } from './voce';
 
 const FILE_DATABASE = 'database_manoscritti.json';
 
-// --- Contratto -----------------------------------------------------------------
-
 type ArchivioRif = { id: string; percorso: string };
 
 type StatoArchivio = {
   id: string;
   raggiungibile: boolean;
   schede: number;
-  /** mtime del database letto: dice quanto è recente la copia locale di un archivio condiviso. */
   aggiornatoIl: number | null;
-  /** 'assente' = cartella sparita; 'illeggibile' = I/O fallito; 'formato' = JSON non valido. */
   errore?: 'assente' | 'illeggibile' | 'formato';
-  /** Il file viene da una versione più nuova dell'app: indicizzato com'è, senza migrazioni. */
   futuro?: true;
-  /** Voci ricalcolate all'ultima sincronizzazione (0 = archivio invariato). Diagnostica e test. */
   ricostruite: number;
 };
 
 type Query = {
   testo: string;
   soloAnagrafica?: boolean;
-  /**
-   * Corrispondenza ESATTA su una voce d'anagrafica (`persona:luca d'abete`): è la domanda del
-   * suggerimento nel form, "questa persona compare altrove?". Con questa `testo` non serve, e
-   * "Luca di Piero d'Abete" NON è "Luca d'Abete".
-   */
   chiaveAnagrafica?: string;
-  /** Sottoinsieme degli archivi sincronizzati; assente = tutti. */
   archivi?: string[];
   cursore?: string | null;
   limite?: number;
@@ -61,12 +35,10 @@ type Risultato = {
   segnatura: string;
   tipoId: string;
   tipoNome: string;
-  /** Id del campo che ha dato l'estratto (`#trascrizione`, `#ocr`, `#tags` per i derivati). */
   campo: string;
   campoLabel?: string;
   estratto: Estratto;
   punteggio: number;
-  /** Nomi d'anagrafica della scheda, nella grafia scelta: servono al suggerimento nel form. */
   anagrafica: { tipo: string; nome: string }[];
 };
 
@@ -74,25 +46,16 @@ type PaginaRisultati = {
   risultati: Risultato[];
   cursore: string | null;
   totale: number;
-  /** I risultati sono più di `MAX_RISULTATI`: conviene restringere la ricerca. */
   totaleTroncato: boolean;
-  /** Il cursore apparteneva a un indice ormai cambiato: ripartire dalla prima pagina. */
   cursoreScaduto?: true;
 };
 
-/** Ciò che serve a copiare una scheda altrove, oltre alla scheda e al suo tipo. */
 type ContestoScheda = {
   vocabolari: { [id: string]: any };
-  /** Solo le voci d'anagrafica dei nomi citati dalla scheda. */
   authority: { [chiave: string]: any };
-  /** Segnature delle schede a cui rimanda, per i rimandi esterni della copia. */
   segnatureRelazioni: { [id: string]: string };
 };
 
-/**
- * Il contratto. `crossArchiveIpc.ts` conosce SOLO questo: memoria, worker, indice
- * invertito o indice su disco sono dettagli di chi lo implementa.
- */
 interface IndiceArchivi {
   sincronizza(archivi: ArchivioRif[]): Promise<StatoArchivio[]>;
   cerca(q: Query, segnale?: AbortSignal): Promise<PaginaRisultati>;
@@ -101,12 +64,9 @@ interface IndiceArchivi {
   chiudi?(): Promise<void>;
 }
 
-// --- Implementazione -------------------------------------------------------------
-
 const LIMITE_PREDEFINITO = 50;
 const LIMITE_MASSIMO = 200;
 const MAX_RISULTATI = 2000;
-/** Ogni quante voci la scansione cede il turno, così un `annulla` può arrivare. */
 const PASSO_CESSIONE = 2000;
 const CONTESTO_ESTRATTO = 70;
 
@@ -124,11 +84,6 @@ type Archivio = {
   normalizzazione: number;
 };
 
-/**
- * Una corrispondenza prima di diventare `Risultato`. L'estratto costa (rimappatura sul testo
- * originale, copie di stringhe) e serve solo per la pagina mostrata: con 2.000 corrispondenze e
- * pagine da 50, calcolarlo per tutte significherebbe fare quaranta volte il lavoro necessario.
- */
 type Corrispondenza = { archivioId: string; voce: any; campo: any; termine: string; punteggio: number };
 
 type FsLike = {
@@ -138,9 +93,7 @@ type FsLike = {
 
 type OpzioniIndice = {
   fs?: FsLike;
-  /** Archivi tenuti in memoria oltre a quelli richiesti dall'ultima sincronizzazione. */
   maxArchivi?: number;
-  /** Caratteri di trascrizione/OCR indicizzati per scheda. 0 = nessun limite. */
   limiteTesto?: number;
 };
 
@@ -150,8 +103,6 @@ function erroreAnnullato() {
   return e;
 }
 
-// Un solo Collator: `localeCompare` con opzioni ne ricrea uno a ogni confronto, e su 2.000
-// corrispondenze da ordinare è la voce di costo più alta della ricerca.
 const COLLATOR = new Intl.Collator('it', { numeric: true, sensitivity: 'base' });
 function confrontaSegnature(a: string, b: string): number {
   return COLLATOR.compare(a, b);
@@ -191,11 +142,6 @@ function estratto(orig: string, norm: string, termine: string): Estratto {
   };
 }
 
-/**
- * Vocabolari, voci d'anagrafica dei nomi citati e segnature dei rimandi. L'anagrafica si
- * filtra per chiave: tutti i valori testuali della scheda, provati come persona e come luogo,
- * senza dover sapere qui quali campi sono dichiarati tali (lo decide la copia).
- */
 function contestoScheda(db: any, m: any): ContestoScheda {
   const ana = Model.authority(db);
   const authority: { [k: string]: any } = {};
@@ -226,7 +172,6 @@ class IndiceMemoria implements IndiceArchivi {
   private percorsi = new Map<string, string>();
   private attivi: string[] = [];
   private inCorso = new Map<string, Promise<StatoArchivio>>();
-  /** Cresce a ogni cambiamento dei dati: invalida cursori e risultati in cache. */
   private generazione = 0;
   private ultimaRicerca: { chiave: string; generazione: number; risultati: Corrispondenza[]; troncato: boolean } | null = null;
 
@@ -247,7 +192,6 @@ class IndiceMemoria implements IndiceArchivi {
   }
 
   private sincronizzaUno(a: ArchivioRif): Promise<StatoArchivio> {
-    // Due ricerche ravvicinate non devono leggere due volte lo stesso file.
     const gia = this.inCorso.get(a.id);
     if (gia) return gia;
     const p = this.caricaArchivio(a).finally(() => this.inCorso.delete(a.id));
@@ -274,7 +218,6 @@ class IndiceMemoria implements IndiceArchivi {
     try {
       st = await this.fs.stat(file);
     } catch (e) {
-      // Cartella presente ma senza database: un archivio appena creato, non un errore.
       if (e && e.code === 'ENOENT') return this.scarta(a.id, vuoto());
       return this.scarta(a.id, vuoto('illeggibile'));
     }
@@ -294,7 +237,6 @@ class IndiceMemoria implements IndiceArchivi {
     }
     let db;
     try {
-      // `migraDatabase` lavora sull'oggetto appena letto: il file non viene toccato.
       const esito = Model.migraDatabase(JSON.parse(grezzo));
       db = esito.db;
       db.__futuro = esito.futuro;
@@ -304,8 +246,6 @@ class IndiceMemoria implements IndiceArchivi {
     grezzo = null;
 
     const ctx = contestoArchivio(db);
-    // Incrementale per scheda: si riusa la voce di una scheda con lo stesso `lastModified`,
-    // purché nulla di ciò che la voce eredita dall'archivio (tipi, anagrafica) sia cambiato.
     const riusabili = prima && prima.firma === ctx.firma && prima.formato === INDICE_FORMATO &&
       prima.normalizzazione === NORMALIZZAZIONE_VERSIONE ? prima.perId : null;
     const voci: any[] = [];
@@ -349,7 +289,6 @@ class IndiceMemoria implements IndiceArchivi {
     return s;
   }
 
-  /** LRU: oltre il tetto escono gli archivi non richiesti usati meno di recente. */
   private sfoltisci() {
     if (this.archivi.size <= this.maxArchivi) return;
     const attivi = new Set(this.attivi);
@@ -449,7 +388,6 @@ class IndiceMemoria implements IndiceArchivi {
     return { risultati, troncato };
   }
 
-  /** Ogni termine deve stare in almeno un campo (AND, anche su campi diversi, come la griglia). */
   private provaCampi(voce: any, termini: string[]) {
     let punteggio = 0;
     let primo: { campo: any; termine: string } | null = null;
@@ -467,25 +405,19 @@ class IndiceMemoria implements IndiceArchivi {
       if (!primo) primo = { campo: migliore, termine: t };
       comune = comune ? new Set([...comune].filter(c => contenenti.has(c))) : contenenti;
     }
-    // Tutti i termini nello stesso campo ("luca abete" dentro un solo nome) vale più degli
-    // stessi termini sparsi fra note e trascrizione.
     if (termini.length > 1 && comune && comune.size) punteggio += PESO.campo;
-    if (!primo) return null;   // nessun termine: nessuna corrispondenza
+    if (!primo) return null;
     return { campo: primo.campo, termine: primo.termine, punteggio };
   }
 
-  /** La voce cita esattamente quella persona/quel luogo (stessa chiave d'anagrafica). */
   private provaChiave(voce: any, chiave: string) {
     const n = voce.anagrafica.find((a: any) => a.chiave === chiave);
     if (!n) return null;
-    // L'estratto dal campo che contiene il nome: la chiave è normalizzata come `normalizza`
-    // più il collasso degli spazi, quindi si cerca la parte dopo il tipo.
     const termine = normalizza(chiave.slice(chiave.indexOf(':') + 1));
     const campo = voce.campi.find((c: any) => c.peso === PESO.anagrafica && c.norm.indexOf(termine) !== -1) || null;
     return { campo, termine, punteggio: PESO.anagrafica };
   }
 
-  /** Solo i nomi di persone e luoghi (filtro "solo anagrafica" della ricerca). */
   private provaAnagrafica(voce: any, termini: string[]) {
     if (!voce.anagrafica.length) return null;
     for (const t of termini) {
@@ -498,8 +430,6 @@ class IndiceMemoria implements IndiceArchivi {
   async scheda(archivioId: string, schedaId: string) {
     const percorso = this.percorsi.get(String(archivioId));
     if (!percorso) return null;
-    // Rilettura dal disco: l'indice non tiene le schede intere (sarebbe il doppio della
-    // memoria per servire un'anteprima ogni tanto).
     try {
       const db = Model.migraDatabase(JSON.parse(await this.fs.readFile(path.join(percorso, FILE_DATABASE), 'utf8'))).db;
       const m = (db.manoscritti || []).find((x: any) => x && String(x.id) === String(schedaId));

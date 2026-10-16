@@ -1,9 +1,3 @@
-// IPC dell'OCR (Fase 2.3).
-//
-// Sottile per scelta: dialoghi e stato stanno nel renderer, il lavoro in `src/main/ocr/`.
-// L'unica cosa che vive qui è l'inoltro dell'avanzamento alla finestra, perché il canale
-// verso il renderer è del main e non deve entrare nei moduli di calcolo.
-
 import { ipcMain, dialog } from 'electron';
 import { state } from '../workspaceManager';
 import { listaLingue, installaLingua, rimuoviLingua } from '../ocr/ocrLangs';
@@ -62,13 +56,9 @@ function setupOcrIpc() {
 
   ipcMain.handle('ocr-stato', () => ({ ok: true, occupato: occupato() }));
 
-  // PDF ricercabile: il renderer propone solo un nome, la destinazione la sceglie il dialogo
-  // qui e resta nel main. Un canale che accettasse un percorso dal renderer sarebbe una
-  // scrittura arbitraria su disco a portata di qualunque XSS.
   ipcMain.handle('ocr-pdf-inizia', async (event, nomeSuggerito, titolo) => {
     try {
       if (occupato()) return { ok: false, codice: 'occupato' };
-      // Una sessione rimasta aperta (renderer ricaricato a metà) si scarta, non si riprende.
       if (pdfRicercabile.attiva()) await pdfRicercabile.concludi(true);
       const base = nomeFileSicuro(String(nomeSuggerito || '').replace(/\.pdf$/i, ''), 'OCR');
       const opzioni = {

@@ -1,15 +1,3 @@
-// ArchiScanner — i lotti già ricevuti, in `<workspace>/.archiview/scanner/arrivo/<id>/`
-// (Fase 2 di PIANO-SCANNER.md): elenco per il pannello, copia delle pagine fra gli allegati,
-// unione in un PDF, uscita dall'area d'arrivo.
-//
-// Solo file system: la scheda la scrive il renderer (è lui che possiede il database). Per
-// questo l'assegnazione è in due passi: `copiaInAllegati` restituisce le voci `allegati`, il
-// renderer le salva, e SOLO DOPO chiama `togliDaArrivo`. Se il salvataggio fallisce il lotto
-// resta in arrivo e i file copiati sono orfani (li ripulisce la pulizia degli allegati).
-//
-// Nessun percorso arriva dal renderer: solo un id di lotto e nomi di pagina, controllati con
-// il validatore del contratto, e un id di scheda ripulito come fa `salva-allegato`.
-
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
@@ -23,7 +11,6 @@ function cartellaLotto(c: CartelleScanner, id: unknown): string {
   return path.join(c.arrivo, id as string);
 }
 
-/** Manifest di un lotto in arrivo, rivalidato: su disco potrebbe averlo toccato chiunque. */
 async function leggiLotto(c: CartelleScanner, id: unknown): Promise<any> {
   const testo = await fsp.readFile(path.join(cartellaLotto(c, id), ScannerLotto.NOME_MANIFEST), 'utf8');
   const esito = ScannerLotto.valida(JSON.parse(testo));
@@ -32,7 +19,6 @@ async function leggiLotto(c: CartelleScanner, id: unknown): Promise<any> {
   return esito.lotto;
 }
 
-/** I lotti in arrivo, dal più vecchio. Uno illeggibile si salta (e si segnala), non blocca gli altri. */
 async function elencaArrivo(c: CartelleScanner): Promise<any[]> {
   let nomi: string[];
   try {
@@ -52,13 +38,11 @@ async function elencaArrivo(c: CartelleScanner): Promise<any[]> {
   return out;
 }
 
-/** Percorso di una pagina del lotto, per la miniatura. */
 function percorsoPagina(c: CartelleScanner, id: unknown, file: unknown): string {
   if (!ScannerLotto.nomeFileValido(file)) throw new Error('file_non_valido');
   return path.join(cartellaLotto(c, id), file as string);
 }
 
-/** Stessa pulizia dell'id di `salva-allegato`: l'id arriva dal vault, anche condiviso. */
 function prefissoScheda(schedaId: unknown): string {
   const pulito = typeof schedaId === 'string' || typeof schedaId === 'number'
     ? String(schedaId).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64)
@@ -69,11 +53,6 @@ function prefissoScheda(schedaId: unknown): string {
 
 type VoceAllegato = { nome: string; tipo: 'immagine' | 'pdf'; originalName: string; hash: string };
 
-/**
- * Copia le pagine fra gli allegati come `<scheda>_<lotto>_p0001.jpg`. Mai sovrascrivere: un
- * nome già preso è un errore (il lotto è già stato assegnato a quella scheda).
- * L'hash è quello del manifest, verificato all'arrivo e rivalidato sopra.
- */
 async function copiaInAllegati(c: CartelleScanner, id: unknown, schedaId: unknown, cartellaAllegati: string): Promise<VoceAllegato[]> {
   const lotto = await leggiLotto(c, id);
   const prefisso = prefissoScheda(schedaId) + '_' + lotto.id + '_';
@@ -89,16 +68,11 @@ async function copiaInAllegati(c: CartelleScanner, id: unknown, schedaId: unknow
     }
     return voci;
   } catch (e) {
-    // Tutto o niente: mezza copia lascerebbe file orfani e un'assegnazione da ripetere a mano.
     await Promise.all(copiati.map(p => fsp.rm(p, { force: true }).catch(() => {})));
     throw e;
   }
 }
 
-/**
- * Un solo PDF con tutte le pagine, nell'ordine del lotto. pdf-lib incorpora JPEG e PNG così
- * come sono (nessuna ricompressione); la pagina prende le misure dell'immagine.
- */
 async function unisciInPdf(c: CartelleScanner, id: unknown, schedaId: unknown, cartellaAllegati: string): Promise<VoceAllegato> {
   const lotto = await leggiLotto(c, id);
   const { PDFDocument } = require('pdf-lib');
@@ -123,10 +97,6 @@ async function unisciInPdf(c: CartelleScanner, id: unknown, schedaId: unknown, c
   }
 }
 
-/**
- * Il lotto esce dall'area d'arrivo (assegnato o scartato). Prima il segno nel registro, poi la
- * cancellazione: se questa fallisce, al giro dopo il lotto non torna da Drive.
- */
 async function togliDaArrivo(c: CartelleScanner, id: unknown): Promise<void> {
   const dir = cartellaLotto(c, id);
   await fsp.mkdir(c.assegnati, { recursive: true });

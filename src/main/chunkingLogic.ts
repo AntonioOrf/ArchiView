@@ -3,12 +3,8 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { scriviAtomico } from './scritturaAtomica';
 
-const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024;
 
-// --- Mappa dei chunk ---------------------------------------------------------
-// `<workspace>/.archiview-chunkmap.json`: chiave → { mtimeMs, size, valore }. Una sync senza
-// modifiche non rilegge né rihasha gli allegati invariati. Sta fuori dalle cartelle di cache,
-// che si cancellano a fine sync.
 // ponytail: le voci di allegati cancellati restano nella mappa (pochi byte l'una); potarle se cresce.
 type MappaChunk = Record<string, { mtimeMs: number; size: number; valore: any }>;
 
@@ -20,14 +16,13 @@ export function leggiMappaChunk(workspacePath: string): MappaChunk {
     try {
         const m = JSON.parse(fs.readFileSync(percorsoMappaChunk(workspacePath), 'utf8'));
         if (!m || typeof m !== 'object' || Array.isArray(m)) return {};
-        // Gli hash diventano percorsi in cache da caricare: solo hash validi, come per index.json.
         for (const k of Object.keys(m)) {
             const v = m[k] && m[k].valore;
             if (!Array.isArray(v) || !v.every(isChunkHash)) delete m[k];
         }
         return m;
     } catch {
-        return {}; // assente o corrotta: si ricalcola tutto
+        return {};
     }
 }
 
@@ -39,7 +34,6 @@ export async function scriviMappaChunk(workspacePath: string, mappa: MappaChunk)
     }
 }
 
-/** `calcola()` solo se il file è cambiato (mtime o dimensione) rispetto alla voce `chiave`. */
 export async function conMappaChunk<T>(mappa: MappaChunk, chiave: string, filePath: string,
                                        calcola: () => Promise<T>): Promise<{ valore: T; ricalcolato: boolean }> {
     const st = await fs.promises.stat(filePath);
@@ -50,15 +44,6 @@ export async function conMappaChunk<T>(mappa: MappaChunk, chiave: string, filePa
     return { valore, ricalcolato: true };
 }
 
-/**
- * Splits a file into chunks of a specified size, computes the SHA-256 hash for each chunk,
- * and saves them locally. Returns an array of the chunk hashes.
- * 
- * @param filePath Path to the original file
- * @param cacheDir Directory where chunks should be saved
- * @param chunkSize Size of each chunk in bytes (default 5MB)
- * @returns Array of SHA-256 hashes representing the chunks in order
- */
 export async function splitFileIntoChunks(filePath: string, cacheDir: string, chunkSize: number = DEFAULT_CHUNK_SIZE): Promise<string[]> {
     if (!fs.existsSync(cacheDir)) {
         fs.mkdirSync(cacheDir, { recursive: true });
@@ -83,7 +68,6 @@ export async function splitFileIntoChunks(filePath: string, cacheDir: string, ch
             const hash = crypto.createHash('sha256').update(actualBuffer).digest('hex');
             const chunkPath = path.join(cacheDir, hash);
             
-            // Write chunk to disk only if it doesn't already exist to save I/O
             if (!fs.existsSync(chunkPath)) {
                 await fs.promises.writeFile(chunkPath, actualBuffer);
             }
@@ -98,13 +82,6 @@ export async function splitFileIntoChunks(filePath: string, cacheDir: string, ch
     return chunkHashes;
 }
 
-/**
- * Reassembles a file from an array of chunk hashes.
- * 
- * @param chunkHashes Array of SHA-256 hashes
- * @param cacheDir Directory where chunks are stored
- * @param destinationFilePath Output path for the reassembled file
- */
 const SHA256_HEX_RE = /^[a-f0-9]{64}$/;
 const CACHE_DIR_MAX = 50;
 const resolvedCacheDirCache = new Map<string, string>();
@@ -113,12 +90,6 @@ export function isChunkHash(hash: unknown): hash is string {
     return typeof hash === 'string' && SHA256_HEX_RE.test(hash);
 }
 
-/**
- * Tiene di un indice remoto (`index.json` su Drive, scrivibile da ogni collaboratore) solo le
- * voci con una lista di hash ben formati. Gli hash diventano nomi di file nella cache: una voce
- * con un "hash" come `../../x.bat` farebbe scaricare un file fuori dalla cache, quindi la voce
- * intera viene scartata, non ripulita (un file ricomposto senza un chunk sarebbe corrotto).
- */
 export function filtraIndiceChunk(indice: unknown): { indice: Record<string, string[]>; scartate: string[] } {
     const pulito: Record<string, string[]> = {};
     const scartate: string[] = [];
@@ -130,7 +101,6 @@ export function filtraIndiceChunk(indice: unknown): { indice: Record<string, str
     return { indice: pulito, scartate };
 }
 
-/** SHA-256 di un file letto in streaming (i chunk arrivano a 5 MB: niente buffer interi). */
 export async function hashFile(filePath: string): Promise<string> {
     const hash = crypto.createHash('sha256');
     for await (const blocco of fs.createReadStream(filePath)) hash.update(blocco as Buffer);
@@ -161,8 +131,6 @@ export async function assembleFileFromChunks(chunkHashes: string[], cacheDir: st
         fs.mkdirSync(destDir, { recursive: true });
     }
 
-    // Validazione PRIMA di aprire la destinazione: un file creato e lasciato vuoto da un chunk
-    // mancante risulterebbe "già presente" alla sync successiva e non verrebbe più riscaricato.
     const chunkPaths = chunkHashes.map((hash) => {
         const chunkPath = safeChunkPath(cacheDir, hash);
         if (!fs.existsSync(chunkPath)) throw new Error(`Chunk mancante nella cache locale: ${hash}`);

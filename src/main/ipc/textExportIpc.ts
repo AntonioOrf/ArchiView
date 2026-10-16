@@ -1,18 +1,9 @@
-// IPC degli export testuali: trascrizione (Fase 2.5) e citazioni (Fase 2.6).
-//
-// Sottile come quello della stampa: legge il DB DAL DISCO (`recordSelection`), chiede la
-// stringa al modulo puro e la scrive dove dice il dialog nativo. Nessuna decisione di
-// formato vive qui — è l'unico modo perché quelle decisioni restino testabili senza avviare
-// Electron.
-
 import { ipcMain, dialog, shell } from 'electron';
 import * as fs from 'fs';
 import { leggiDb, recordsRichiesti, nomeFileSicuro } from './recordSelection';
 import { generaEsportazioneTrascrizione } from '../export/transcriptExport';
 import { generaCitazioni } from '../export/citations';
 
-// Etichetta e filtro del dialog per estensione. Il nome del formato NON arriva tradotto dal
-// renderer perché è un'estensione di file, non una frase: "BibTeX" è "BibTeX" ovunque.
 const FILTRI: { [k: string]: { name: string; extensions: string[] } } = {
   html: { name: 'HTML', extensions: ['html'] },
   md: { name: 'Markdown', extensions: ['md'] },
@@ -21,11 +12,6 @@ const FILTRI: { [k: string]: { name: string; extensions: string[] } } = {
   ris: { name: 'RIS (Zotero, EndNote)', extensions: ['ris'] }
 };
 
-/**
- * Tronco comune ai due handler: risolvi gli id, genera, salva, apri.
- *
- * @param genera (records) => { contenuto, estensione }
- */
 async function esporta(ids: any[], opt: any, genera: (r: any[]) => { contenuto: string; estensione: string }) {
   const db = await leggiDb();
   if (!db) return { success: false, error: 'Database non trovato' };
@@ -44,8 +30,6 @@ async function esporta(ids: any[], opt: any, genera: (r: any[]) => { contenuto: 
   });
   if (scelta.canceled || !scelta.filePath) return { success: false, canceled: true };
 
-  // UTF-8 senza BOM: a differenza del CSV (2.1) qui non c'è Excel da assecondare, e un BOM
-  // in testa a un .bib fa fallire il parser di BibTeX sulla prima voce.
   await fs.promises.writeFile(scelta.filePath, contenuto, 'utf8');
   if (opt.apri) shell.openPath(scelta.filePath).catch(() => {});
   return { success: true, count: records.length, path: scelta.filePath };

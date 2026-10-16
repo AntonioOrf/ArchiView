@@ -11,7 +11,6 @@ function setupExportImportIpc() {
   ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
     if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
     
-    // Leggi il database
     const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
     if (!fs.existsSync(dbPath)) return { success: false, error: 'Database non trovato' };
     
@@ -19,11 +18,9 @@ function setupExportImportIpc() {
     const db = JSON.parse(dbData);
     const manoscritti = db.manoscritti || [];
     
-    // Trova i manoscritti richiesti
     const toExport = manoscritti.filter(m => ids.includes(m.id));
     if (toExport.length === 0) return { success: false, error: 'Nessun manoscritto trovato per l\'esportazione' };
     
-    // Trova gli allegati necessari
     const allegatiDir = state.attachmentsDirPath;
     const requiredAttachments = new Set<string>();
     
@@ -33,7 +30,6 @@ function setupExportImportIpc() {
         }
     }
     
-    // Scegli dove salvare
     const defaultName = ids.length === 1 ? `Esportazione_${toExport[0].segnatura || 'Manoscritto'}.zip` : `Esportazione_Multipla.zip`;
     const result = await dialog.showSaveDialog({
         title: 'Esporta Schedatura',
@@ -43,27 +39,21 @@ function setupExportImportIpc() {
     
     if (result.canceled || !result.filePath) return { success: false, canceled: true };
     
-    // Crea lo zip
     return new Promise((resolve) => {
         const output = fs.createWriteStream(result.filePath);
-        // Lazy require: archiver serve solo qui, non a ogni avvio dell'app.
         const archiver = require('archiver');
         const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
         
         output.on('close', () => resolve({ success: true, count: toExport.length }));
-        // Destinazione non scrivibile o bloccata (EBUSY): senza listener è un'eccezione nel main.
         output.on('error', (err) => { archive.abort(); resolve({ success: false, error: err.message }); });
         archive.on('error', (err) => resolve({ success: false, error: err.message }));
         
         archive.pipe(output);
         
-        // Aggiungi il JSON con solo i manoscritti filtrati
         archive.append(JSON.stringify({ manoscritti: toExport }, null, 2), { name: 'schedatura.json' });
         
-        // Aggiungi gli allegati
         if (fs.existsSync(allegatiDir)) {
             for (const att of requiredAttachments) {
-                // Puliamo il nome dell'allegato se è un path assoluto (dovrebbe essere solo il nome)
                 const attName = path.basename(att);
                 const attPath = path.join(allegatiDir, attName);
                 if (fs.existsSync(attPath)) {
@@ -76,8 +66,6 @@ function setupExportImportIpc() {
     });
   });
 
-  // Fase 2.1 — Export CSV/TSV. Il main resta l'unico a toccare il disco; etichette e nomi
-  // dei tipi arrivano dal renderer perché la i18n vive solo lì.
   ipcMain.handle('export-csv', async (event, ids, opzioni) => {
     if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
     const opt = opzioni || {};
@@ -86,8 +74,6 @@ function setupExportImportIpc() {
     try {
       const db = await leggiDb();
       if (!db) return { success: false, error: 'Database non trovato' };
-      // L'ordine della selezione arriva dal renderer: preservarlo rende l'export
-      // riproducibile rispetto a quello che l'utente vede a schermo (`recordSelection`).
       const toExport = recordsRichiesti(db, ids);
       if (toExport.length === 0) return { success: false, error: "Nessun record trovato per l'esportazione" };
 
@@ -114,16 +100,6 @@ function setupExportImportIpc() {
     }
   });
 
-  // Fase 2.4 — Import CSV. Il main fa SOLO ciò che il renderer non può fare: il dialogo e la
-  // lettura del file. L'analisi e la costruzione delle schede stanno in `shared/csvImport.ts`,
-  // che gira nel renderer, così il wizard ricalcola l'anteprima a ogni tendina cambiata senza
-  // un giro di IPC per volta — e soprattutto perché l'anteprima e l'import definitivo devono
-  // passare per lo STESSO codice, o il dry-run non prova nulla.
-  //
-  // ⚠️ Il file viene letto come UTF-8 con una riserva su Windows: i CSV salvati da Excel in
-  // "CSV (delimitato da separatore di elenco)" sono in ANSI/Windows-1252, e letti come UTF-8
-  // riempirebbero di caratteri di sostituzione proprio le diacritiche di un archivio italiano.
-  // Il riconoscimento è per presenza di U+FFFD, che in un UTF-8 valido non compare mai.
   ipcMain.handle('import-csv-leggi', async (event, titolo) => {
     if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
     const result = await dialog.showOpenDialog({
@@ -139,8 +115,6 @@ function setupExportImportIpc() {
     const percorso = result.filePaths[0];
     try {
       const buffer = await fs.promises.readFile(percorso);
-      // 40 MB: un CSV di schedatura sta in pochi MB, e oltre questa soglia il costo non è il
-      // file ma le decine di migliaia di righe da rendere nell'anteprima del wizard.
       if (buffer.length > 40 * 1024 * 1024) return { success: false, error: 'File troppo grande (oltre 40 MB)' };
 
       let testo = buffer.toString('utf8');
@@ -166,12 +140,9 @@ function setupExportImportIpc() {
     
     const zipPath = result.filePaths[0];
     const nome = path.basename(zipPath);
-    // `codice` lo traduce il renderer (la i18n vive lì); `error` resta per chi legge il testo.
     const nonArchiview = (dettaglio) => ({ success: false, codice: 'non_archiview', error: dettaglio, dettaglio });
 
     try {
-        // Estrazione in streaming (yauzl, lazyEntries): l'archivio non viene mai caricato
-        // interamente in RAM, requisito su macchine con 4GB dove AdmZip mandava in swap.
         const estratto = await extractZipStreaming(zipPath, state.attachmentsDirPath, {
             avanzamento: (fatte, totale) => {
                 if (event && event.sender && !event.sender.isDestroyed()) event.sender.send('import-zip-avanzamento', { nome, fatte, totale });
@@ -227,8 +198,6 @@ function setupExportImportIpc() {
           if (clone.segnatura) clone.segnatura += ' (Copia)';
           if (targetFolder) clone.cartella = targetFolder;
           
-          // Ogni allegato con un file ne riceve una copia propria; l'oggetto (tipo, trascrizione,
-          // pagine) resta. Senza file (carta IIIF remota, allegato mancante) si copia così com'è.
           if (Array.isArray(clone.allegati)) {
               for (const att of clone.allegati) {
                   if (!att || typeof att.nome !== 'string' || !att.nome) continue;
@@ -246,7 +215,6 @@ function setupExportImportIpc() {
           duplicatedCount++;
       }
       
-      // Lo stesso file che va sul cloud: mai troncato (invariante 4 del CODEMAP).
       await scriviAtomico(dbPath, JSON.stringify(db));
       return { success: true, count: duplicatedCount };
   });

@@ -1,13 +1,3 @@
-// Ricerca tra archivi — IPC (Fase 1 di PIANO-RICERCA-ARCHIVI.md).
-//
-// ⚠️ CONFINE DI SICUREZZA. Il renderer non passa MAI un percorso: chiede per testo o per
-// `archivioId`, e qui l'id viene risolto contro `recentWorkspaces` delle impostazioni. Un
-// renderer compromesso può quindi leggere solo archivi che l'utente ha già aperto in questa
-// app, non una cartella qualsiasi del disco.
-//
-// Dipende solo dal contratto `IndiceArchivi`: che sotto ci sia un worker, il ripiego in
-// memoria o un domani un indice su disco, qui non cambia nulla.
-
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
@@ -17,7 +7,6 @@ import { readVaultConfig, assicuraArchivioId } from '../vaultConfig';
 import { leggiPerfConfig } from '../perfConfig';
 import { IndiceWorker } from '../crossArchive/client';
 import { safeAttachmentPathOrNull, safeAttachmentPath } from './pathSafety';
-// sha256 in streaming: un PDF da centinaia di MB non deve passare tutto in memoria.
 import { hashFile } from '../chunkingLogic';
 
 import type { IndiceArchivi } from '../crossArchive/indiceMemoria';
@@ -26,7 +15,6 @@ type ArchivioConsultabile = { id: string; percorso: string; nome: string; tipo: 
 
 let indice: IndiceArchivi | null = null;
 
-/** Solo formati che Chromium sa disegnare: un TIFF arriverebbe come immagine rotta. */
 const MIME_IMMAGINI: { [ext: string]: string } = {
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif',
   '.webp': 'image/webp', '.bmp': 'image/bmp', '.avif': 'image/avif'
@@ -54,10 +42,6 @@ function idDaPercorso(p: string): string {
   return 'percorso:' + crypto.createHash('sha1').update(chiavePercorso(p)).digest('hex').slice(0, 16);
 }
 
-/**
- * Gli archivi recenti tranne quello aperto, con la loro identità. Gli esclusi compaiono con
- * `escluso: true` (servono al pannello delle impostazioni) e vengono filtrati da chi cerca.
- */
 function archiviRecenti(): ArchivioConsultabile[] {
   const settings = getAllSettings();
   const recenti = Array.isArray(settings.recentWorkspaces) ? settings.recentWorkspaces : [];
@@ -81,15 +65,13 @@ function archiviRecenti(): ArchivioConsultabile[] {
     if (!id) {
       const generato = assicuraArchivioId(p, settings);
       if (generato) { id = generato; idPerPercorso.set(chiave, id); }
-      else id = idDaPercorso(p); // cartella sparita o non scrivibile: non si memorizza
+      else id = idDaPercorso(p);
     }
-    // Una cartella copiata a mano porta con sé lo stesso id dell'originale: la seconda
-    // ricade sul percorso, o le due si contenderebbero i risultati.
     if (visti.has(id)) id = idDaPercorso(p);
     visti.add(id);
 
     let tipo = 'local';
-    try { tipo = readVaultConfig(p, settings).vaultType || 'local'; } catch (e) { /* cartella sparita */ }
+    try { tipo = readVaultConfig(p, settings).vaultType || 'local'; } catch (e) {}
     out.push({ id, percorso: p, nome: path.basename(p), tipo, escluso: esclusi.has(id) });
   }
   return out;
@@ -100,11 +82,8 @@ function pubblico(a: ArchivioConsultabile) {
 }
 
 function setupCrossArchiveIpc() {
-  // Elenco per le impostazioni (esclusioni): nessuna lettura dei database.
   ipcMain.handle('cross-archive-archivi', () => {
     try {
-      // `raggiungibile`: la cartella c'è. Basta un existsSync per archivio (sono pochi) e serve
-      // al form per non offrire l'apertura di un rimando verso un disco scollegato.
       return { ok: true, archivi: archiviRecenti().map(a => ({ ...pubblico(a), escluso: a.escluso, raggiungibile: fs.existsSync(a.percorso) })) };
     } catch (e) {
       console.error('[ricerca-archivi] elenco archivi:', e);
@@ -123,12 +102,7 @@ function setupCrossArchiveIpc() {
       limite: Number.isFinite(r.limite) ? r.limite : undefined
     };
 
-    // Una nuova ricerca dalla stessa finestra E dallo stesso canale annulla la precedente:
-    // digitando, solo l'ultima risposta conta. Canali diversi (sezione dell'elenco, selettore
-    // dei rimandi, suggerimento nel form) non si annullano a vicenda.
     const canale = typeof r.canale === 'string' && /^[a-z]{1,20}$/.test(r.canale) ? r.canale : 'ricerca';
-    // Il canale 'suggerimento' non annulla: ogni campo del form fa una domanda diversa (il
-    // luogo, poi la persona), e la seconda non deve far perdere la risposta alla prima.
     const esclusivo = canale !== 'suggerimento';
     const finestra = (event && event.sender ? event.sender.id : 0) + ':' + canale;
     const precedente = esclusivo ? ricercheInCorso.get(finestra) : null;
@@ -145,7 +119,6 @@ function setupCrossArchiveIpc() {
       const perId = new Map(stati.map(s => [s.id, s]));
       return {
         ok: true,
-        // Diagnostica: 'ripiego' vuol dire che il worker non è partito e la ricerca occupa il main.
         motore: (idx as any).inRipiego ? 'ripiego' : 'worker',
         archivi: archivi.map(a => {
           const s: any = perId.get(a.id) || {};
@@ -168,15 +141,12 @@ function setupCrossArchiveIpc() {
   ipcMain.handle('cross-archive-get', async (event: any, archivioId: any, schedaId: any) => {
     if (!idValido(archivioId) || !idValido(schedaId)) return { ok: false, error: 'Parametri non validi' };
     try {
-      // Il worker può essere stato riavviato o chiuso per inattività: `archivioConsultabile`
-      // gli ricorda dove stanno gli archivi.
       const archivio = await archivioConsultabile(archivioId);
       if (!archivio) return { ok: false, error: 'Archivio non consultabile' };
       const esito = await ottieniIndice().scheda(archivioId, schedaId);
       if (!esito) return { ok: false, error: 'Scheda non trovata' };
       return {
         ok: true, archivio: pubblico(archivio), scheda: esito.scheda, tipo: esito.tipo, contesto: esito.contesto,
-        // Per la finestra di copia ("4 file, 12 MB"): null = file assente su questo computer.
         dimensioniAllegati: await dimensioniAllegati(archivio.percorso, esito.scheda)
       };
     } catch (e) {
@@ -185,10 +155,6 @@ function setupCrossArchiveIpc() {
     }
   });
 
-  // Copia dei file allegati di una scheda di un altro archivio nella cartella allegati
-  // dell'archivio APERTO (Fase 3). Stesse garanzie dell'anteprima: posizioni, mai nomi; il
-  // nome sorgente passa da safeAttachmentPath, quello nuovo lo decide il main.
-  // La scheda la costruisce poi il renderer (shared/copiaScheda.ts) con i nomi restituiti qui.
   ipcMain.handle('cross-archive-copia-allegati', async (event: any, archivioId: any, schedaId: any, posizioni: any, prefisso: any) => {
     if (!idValido(archivioId) || !idValido(schedaId) || !Array.isArray(posizioni) || posizioni.length > 2000 ||
         !posizioni.every((p: any) => Number.isInteger(p) && p >= 0 && p <= 10000)) {
@@ -208,8 +174,6 @@ function setupCrossArchiveIpc() {
       const copiati: any[] = [];
       const errori: any[] = [];
       let fatti = 0;
-      // In sequenza: copie parallele sullo stesso disco non vanno più veloci e rendono
-      // l'avanzamento illeggibile.
       for (const p of posizioni) {
         const a = allegati[p];
         try {
@@ -217,8 +181,6 @@ function setupCrossArchiveIpc() {
           const da = safeAttachmentPath(cartellaAllegati(archivio.percorso), a.nome);
           const nome = await nomeLibero(dest, pref, a.originalName || a.nome);
           const verso = safeAttachmentPath(dest, nome);
-          // COPYFILE_EXCL: se nel frattempo il nome è stato preso, meglio un errore che
-          // sovrascrivere l'allegato di un'altra scheda.
           await fs.promises.copyFile(da, verso, fs.constants.COPYFILE_EXCL);
           copiati.push({ posizione: p, nome, hash: await hashFile(verso) });
         } catch (e) {
@@ -234,10 +196,6 @@ function setupCrossArchiveIpc() {
     }
   });
 
-  // Immagine di un allegato per l'anteprima. Il renderer indica scheda e POSIZIONE
-  // dell'allegato, mai un nome di file: si può leggere solo ciò che una scheda di un archivio
-  // consultabile cita, e il nome passa comunque da `safeAttachmentPath` (il database di un
-  // archivio condiviso è scritto anche da altri).
   ipcMain.handle('cross-archive-allegato', async (event: any, archivioId: any, schedaId: any, posizione: any) => {
     if (!idValido(archivioId) || !idValido(schedaId) || !Number.isInteger(posizione) || posizione < 0 || posizione > 10000) {
       return { ok: false, error: 'Parametri non validi' };
@@ -250,8 +208,6 @@ function setupCrossArchiveIpc() {
       if (!allegato || allegato.remoto || typeof allegato.nome !== 'string') return { ok: false, error: 'Allegato non disponibile' };
       const mime = MIME_IMMAGINI[path.extname(allegato.nome).toLowerCase()];
       if (!mime) return { ok: false, error: 'Formato non visualizzabile' };
-      // Cartella predefinita dell'archivio: `customAttachmentsPath` è un'impostazione globale
-      // pensata per l'archivio aperto, e applicarla qui leggerebbe gli allegati di un altro.
       const file = safeAttachmentPathOrNull(path.join(archivio.percorso, 'allegati_manoscritti'), allegato.nome);
       if (!file) return { ok: false, error: 'Nome allegato non valido' };
       const st = await fs.promises.stat(file);
@@ -265,7 +221,6 @@ function setupCrossArchiveIpc() {
   });
 }
 
-/** Risolve un archivio consultabile e ricorda al worker dove stanno tutti (solo `stat`). */
 async function archivioConsultabile(archivioId: string) {
   const archivi = archiviRecenti().filter(a => !a.escluso);
   const archivio = archivi.find(a => a.id === archivioId);
@@ -288,7 +243,6 @@ async function dimensioniAllegati(percorso: string, scheda: any): Promise<(numbe
   }));
 }
 
-/** Nome libero nella cartella allegati dell'archivio aperto, con lo stesso schema di `salva-allegato`. */
 async function nomeLibero(dir: string, prefisso: string, originale: string): Promise<string> {
   const ext = path.extname(originale).toLowerCase().replace(/[^a-z0-9.]/g, '').substring(0, 16);
   const base = path.basename(originale, path.extname(originale)).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50) || 'allegato';

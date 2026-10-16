@@ -1,12 +1,3 @@
-// ArchiScanner — adattatore Google Drive della ricezione (`SorgenteLotti`).
-//
-// Struttura su Drive (docs/scanner/CONTRATTO.md):
-//   ArchiView/Scansioni in arrivo/lotti/<id>/{p0001.jpg, …, lotto.json}
-// Scope `drive.file`, stesso progetto Google Cloud dell'app: desktop e telefono vedono le
-// cartelle create da entrambi e nient'altro del Drive.
-//
-// Solo I/O: validazione, verifica e scrittura stanno in `arrivoLotti.ts`.
-
 import { driveState } from '../ipc/drive/auth';
 const { getOrCreateFolder, downloadFile, withDriveRetry, escapeDriveQuery } = require('../ipc/drive/fileOps');
 const ScannerLotto = require('../../shared/scannerLotto');
@@ -18,7 +9,6 @@ const MIME_CARTELLA = 'application/vnd.google-apps.folder';
 
 type FileDrive = { id: string; name: string; size?: string; parents?: string[]; mimeType?: string };
 
-/** `files.list` con tutte le pagine di risultati. */
 async function elencaTutti(q: string, fields: string): Promise<FileDrive[]> {
   const out: FileDrive[] = [];
   let pageToken: string | undefined;
@@ -37,18 +27,12 @@ async function elencaTutti(q: string, fields: string): Promise<FileDrive[]> {
   return out;
 }
 
-/** Cartella `lotti` (creata se manca: il telefono la troverà già pronta). */
 async function cartellaLotti(): Promise<string> {
   const radice = await withDriveRetry(() => getOrCreateFolder(CARTELLA_RADICE));
   const arrivo = await withDriveRetry(() => getOrCreateFolder(CARTELLA_ARRIVO, radice));
   return withDriveRetry(() => getOrCreateFolder(CARTELLA_LOTTI, arrivo));
 }
 
-/**
- * Crea la sorgente. Va chiamata con Drive già autenticato (`authenticateDrive`).
- * Tiene in memoria, per la durata di una ricezione, gli id delle cartelle dei lotti e dei
- * loro file: un `files.list` per lotto invece di uno per pagina.
- */
 async function creaSorgenteDrive() {
   if (!driveState.drive) throw new Error('drive_non_autenticato');
   const idLotti = await cartellaLotti();
@@ -71,8 +55,6 @@ async function creaSorgenteDrive() {
       cartelle.clear();
       contenuti.clear();
       for (const c of sottocartelle) cartelle.set(c.name, c.id);
-      // Un'unica query per tutti i manifest (con drive.file sono solo quelli dell'app):
-      // un lotto è completo se fra i suoi file c'è `lotto.json`.
       const manifest = await elencaTutti(`name='${escapeDriveQuery('lotto.json')}' and trashed=false`, 'id, parents');
       const conManifest = new Set<string>();
       for (const m of manifest) for (const p of m.parents || []) conManifest.add(p);
@@ -91,18 +73,15 @@ async function creaSorgenteDrive() {
     },
 
     async scaricaPagina(id: string, pagina: { file: string; byte: number }, destinazione: string): Promise<void> {
-      // Il telefono elimina le copie parziali, ma se una ne rimane l'omonimo giusto è quello
-      // con la dimensione del manifest; la verifica dello sha256 resta in arrivoLotti.
       const candidati = (await fileDel(id)).filter(f => f.name === pagina.file);
       const scelto = candidati.find(f => Number(f.size) === pagina.byte) || candidati[0];
       if (!scelto) throw new Error('pagina_assente');
-      await downloadFile(scelto.id, destinazione); // riprova da sé (fileOps)
+      await downloadFile(scelto.id, destinazione);
     },
 
     async rimuovi(id: string): Promise<void> {
       const idCartella = cartelle.get(id);
       if (!idCartella) throw new Error('lotto_sconosciuto');
-      // Cestino, non eliminazione: per 30 giorni il lotto resta recuperabile da Drive.
       await withDriveRetry(() => driveState.drive.files.update({
         fileId: idCartella,
         requestBody: { trashed: true },
@@ -112,14 +91,8 @@ async function creaSorgenteDrive() {
   };
 }
 
-/**
- * Testi dei `lotto.json` ancora su Drive, senza scaricare pagine né creare cartelle: serve al
- * controllo all'apertura dell'archivio, che non deve lasciare tracce su chi non usa lo scanner.
- * Un manifest oltre `maxByte` si salta. Va chiamata con Drive già autenticato.
- */
 async function manifestSuDrive(maxByte: number): Promise<string[]> {
   if (!driveState.drive) throw new Error('drive_non_autenticato');
-  // Il cestino di una cartella cestina anche i figli: i lotti già ricevuti non compaiono.
   const manifest = await elencaTutti(`name='${escapeDriveQuery('lotto.json')}' and trashed=false`, 'id, size');
   const testi: string[] = [];
   for (const m of manifest) {
@@ -133,10 +106,6 @@ async function manifestSuDrive(maxByte: number): Promise<string[]> {
   return testi;
 }
 
-/**
- * Scrive l'elenco delle schede per il telefono (CONTRATTO §4.3) in `Scansioni in arrivo/archivi/`:
- * aggiorna il file se c'è, lo crea altrimenti. Va chiamata con Drive già autenticato.
- */
 async function pubblicaConfig(nome: string, testo: string): Promise<void> {
   if (!driveState.drive) throw new Error('drive_non_autenticato');
   const radice = await withDriveRetry(() => getOrCreateFolder(CARTELLA_RADICE));

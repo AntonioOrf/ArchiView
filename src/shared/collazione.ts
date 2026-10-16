@@ -1,35 +1,14 @@
-// P9 — Collazione tra testimoni: diff per parola fra trascrizioni dello stesso testo.
-//
-// Puro e condiviso come csvImport.ts e copiaScheda.ts: gira nel renderer (dove stanno le
-// trascrizioni) e si testa in Node. Non ha `import`/`export` (è uno script): espone
-// `module.exports` per i test e `window.Collazione` per il renderer. Nomi globali prefissati
-// `avcl`: nel bundle condividono lo scope di model.ts.
-//
-// Le varianti puramente grafiche si ignorano passando come `chiave` la normalizzazione di P3
-// (`window.normalizzaTesto`): una terza copia delle regole divergerebbe dalle altre due.
-//
-// Algoritmo: Myers O((N+M)·D) sulle chiavi delle parole. `diffMergeLogic.ts` confronta campi
-// interi, non sequenze: non c'era un diff da estrarre.
-
 type AvclToken = { testo: string; chiave: string };
 type AvclSegmento = { tipo: 'uguale' | 'variante'; daA: number; aA: number; daB: number; aB: number };
 type AvclLezione = { sigla: string; testo: string; da: number; a: number };
 type AvclVoce = { da: number; a: number; lemma: string; lezioni: AvclLezione[] };
 
-/**
- * Oltre questo numero di differenze i due testi non sono testimoni dello stesso testo, e la
- * traccia di Myers (≈ D² interi) diventerebbe pesante.
- * ponytail: tetto fisso; con testi lunghissimi e molto divergenti serve Myers a spazio lineare.
+/** ponytail: tetto fisso; con testi lunghissimi e molto divergenti serve Myers a spazio lineare.
  */
 const AVCL_MAX_DIFFERENZE = 3000;
 
-/** Lettere, segni combinanti, cifre, & e la nota tironiana ⁊ (che Unicode chiama punteggiatura). */
 const AVCL_BORDO = /^[^\p{L}\p{M}\p{N}&⁊]+|[^\p{L}\p{M}\p{N}&⁊]+$/gu;
 
-/**
- * Parole del testo. La punteggiatura ai bordi non entra nel confronto (nei testimoni
- * medievali è quasi sempre dell'editore o del copista, non del testo); resta in `testo`.
- */
 function avclTokenizza(testo: any, chiave?: (s: string) => string): AvclToken[] {
   const out: AvclToken[] = [];
   for (const t of String(testo || '').split(/\s+/)) {
@@ -40,7 +19,6 @@ function avclTokenizza(testo: any, chiave?: (s: string) => string): AvclToken[] 
   return out;
 }
 
-/** Coppie [i, j] di parole uguali, in ordine. `null` se i testi divergono troppo. */
 function avclAllinea(a: string[], b: string[]): Array<[number, number]> | null {
   const n = a.length;
   const m = b.length;
@@ -51,7 +29,6 @@ function avclAllinea(a: string[], b: string[]): Array<[number, number]> | null {
   let fine = -1;
   for (let d = 0; d <= max && fine === -1; d++) {
     if (d > AVCL_MAX_DIFFERENZE) return null;
-    // Stato del passo d-1 sulle diagonali [-d-1, d+1]: è tutto ciò che serve a ritroso.
     traccia.push(v.slice(off - d - 1, off + d + 2));
     for (let k = -d; k <= d; k += 2) {
       let x = (k === -d || (k !== d && v[off + k - 1] < v[off + k + 1])) ? v[off + k + 1] : v[off + k - 1] + 1;
@@ -79,7 +56,6 @@ function avclAllinea(a: string[], b: string[]): Array<[number, number]> | null {
   return coppie.reverse();
 }
 
-/** Tratti uguali e luoghi varianti fra due sequenze di parole. `null` se troppo diverse. */
 function avclConfronta(a: AvclToken[], b: AvclToken[]): AvclSegmento[] | null {
   const coppie = avclAllinea(a.map(t => t.chiave), b.map(t => t.chiave));
   if (!coppie) return null;
@@ -101,12 +77,6 @@ function avclConfronta(a: AvclToken[], b: AvclToken[]): AvclSegmento[] | null {
   return out;
 }
 
-/**
- * Apparato rispetto a un testimone base: per ogni luogo variante il lemma del base e la
- * lezione di ciascun testimone che se ne discosta. Lemma vuoto = aggiunta del testimone prima
- * della parola `da`; lezione vuota = omissione.
- * `troppoDiversi` elenca le sigle che non si sono potute allineare.
- */
 function avclApparato(base: any, testimoni: { sigla: string; testo: any }[], chiave?: (s: string) => string) {
   const tb = avclTokenizza(base, chiave);
   const perLuogo = new Map<string, AvclVoce>();

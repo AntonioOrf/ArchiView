@@ -1,13 +1,3 @@
-// P10 — collegamento delle voci d'anagrafica a Wikidata (e, tramite Wikidata, a VIAF).
-//
-// Serve a distinguere gli omonimi e a trovare le varianti di un nome, non a pubblicare. Un
-// solo host: il numero VIAF si legge dalla proprietà P214 dell'entità Wikidata, così non
-// serve parlare con viaf.org (la cui API è cambiata nel 2024 senza un'alternativa stabile).
-//
-// Rete da `reteSicura.fetchGuardata`, URL costruiti qui e mai dal renderer, nessun redirect
-// seguito (un 30x verso un altro host sarebbe un'uscita dalla whitelist), corpo a tetto.
-// Codici di errore, non frasi: l'italiano lo aggiunge il renderer.
-
 import { ipcMain } from 'electron';
 import { leggiCorpoLimitato, fetchGuardata } from '../iiif/reteSicura';
 
@@ -46,7 +36,6 @@ async function chiedi(url: string): Promise<any> {
 
 const testo = (v: any, max = 300) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 
-/** Candidati di `wbsearchentities`, ridotti a ciò che il renderer mostra. */
 function leggiCandidati(json: any): Array<{ id: string; etichetta: string; descrizione: string }> {
   const voci = Array.isArray(json && json.search) ? json.search : [];
   return voci
@@ -54,7 +43,6 @@ function leggiCandidati(json: any): Array<{ id: string; etichetta: string; descr
     .map((v: any) => ({ id: String(v.id), etichetta: testo(v.label), descrizione: testo(v.description) }));
 }
 
-/** Etichette e alias nelle lingue utili, senza doppioni. */
 function leggiVarianti(json: any, id: string): string[] {
   const ent = json && json.entities && json.entities[id];
   if (!ent) return [];
@@ -68,7 +56,6 @@ function leggiVarianti(json: any, id: string): string[] {
   return out.filter(s => s && !visti.has(s.toLowerCase()) && visti.add(s.toLowerCase()));
 }
 
-/** Il primo numero VIAF (P214) fra le affermazioni dell'entità. */
 function leggiViaf(json: any): string {
   const affermazioni = (json && json.claims && json.claims.P214) || [];
   for (const c of affermazioni) {
@@ -94,7 +81,6 @@ async function dettagli(id: any) {
     chiedi(urlApi({ action: 'wbgetclaims', entity: qid, property: 'P214' }))
   ]);
   if (!entita.ok) return entita;
-  // Senza VIAF la voce resta collegabile: molte persone d'archivio non ce l'hanno.
   const out: any = { ok: true, wikidata: qid, varianti: leggiVarianti(entita.json, qid) };
   const numero = viaf.ok ? leggiViaf(viaf.json) : '';
   if (numero) out.viaf = numero;

@@ -10,11 +10,6 @@ import { scriviAtomico } from '../scritturaAtomica';
 let watcher: import('fs').FSWatcher | null = null;
 let watcherDebounceTimer: NodeJS.Timeout | undefined;
 
-// N5 — Il watcher riconosce le scritture proprie dal CONTENUTO, non da una finestra di tempo:
-// prima `isSavingSelf` restava attivo 1 s dopo ogni salvataggio, e un cambiamento esterno vero
-// (client Drive desktop, seconda istanza) in quella finestra si perdeva.
-// `contenutiNoti`: hash degli ultimi contenuti scritti o letti da noi. `firmeNote`: dimensione e
-// mtime dopo le nostre scritture, per riconoscerle con uno stat senza rileggere il file.
 const MAX_NOTI = 4;
 const contenutiNoti: string[] = [];
 const firmeNote: string[] = [];
@@ -44,8 +39,6 @@ async function verificaCambiamentoEsterno(percorso: string) {
       state.mainWindow.webContents.send('database-modificato-esterno');
     }
   } catch (error) {
-    // File momentaneamente assente o bloccato (rename in corso, client di sync): il
-    // prossimo evento del watcher riproverà.
     if (error && error.code !== 'ENOENT') console.error("Errore verifica modifica esterna del database:", error);
   }
 }
@@ -73,12 +66,9 @@ function startWatcher() {
   }
 }
 
-// Validazione a basso costo del payload già serializzato: evita di ri-parsare l'intero DB
-// nel main solo per accertarsi che non sia spazzatura (il renderer valida l'oggetto prima
-// di serializzarlo). Controlla involucro + presenza delle due collezioni obbligatorie.
 function isValidSerializedDatabase(json) {
   if (typeof json !== 'string' || json.length < 2) return false;
-  if (json.charCodeAt(0) !== 123 /* { */ || json.charCodeAt(json.length - 1) !== 125 /* } */) return false;
+  if (json.charCodeAt(0) !== 123 || json.charCodeAt(json.length - 1) !== 125) return false;
   return /"manoscritti"\s*:\s*\[/.test(json) && /"cartelle"\s*:\s*\[/.test(json);
 }
 
@@ -89,9 +79,6 @@ function setupDatabaseIpc() {
         startWatcher();
         const data = await fsp.readFile(state.dataFilePath, 'utf8');
         ricorda(contenutiNoti, hashContenuto(data));
-        // O4: si restituisce il testo e lo analizza il renderer (`leggiDatiArchivio` in
-        // state.ts). Un oggetto passerebbe per lo structured clone dell'intero archivio,
-        // e il JSON.parse qui sarebbe solo lavoro in più sul thread del main.
         return data;
       }
     } catch (error) { 
@@ -104,29 +91,19 @@ function setupDatabaseIpc() {
     try {
       if (!state.dataFilePath) throw new Error("Percorso file dati non impostato");
 
-      // Il renderer invia il DB già serializzato (`eseguiSalvataggio`, unico chiamante): una sola
-      // serializzazione invece di structured-clone dell'intero oggetto via IPC + JSON.stringify qui.
       if (!isValidSerializedDatabase(dati)) {
         throw new Error("Dati JSON corrotti. Salvataggio interrotto per prevenire la corruzione del database.");
       }
       const payload = dati;
 
-      // Il contenuto si registra PRIMA del rename: l'evento del watcher può arrivare subito.
       const percorso = state.dataFilePath;
       ricorda(contenutiNoti, hashContenuto(payload));
 
-      // Scrittura atomica (temporaneo univoco + rename) e in coda alle altre dello stesso
-      // file: un crash a metà non tronca il DB, due salvataggi sovrapposti non si mescolano.
       await scriviAtomico(percorso, payload);
       try { ricorda(firmeNote, firma(await fsp.stat(percorso))); } catch (_) {}
 
-      // Il rename sostituisce l'inode: il watcher va riagganciato al nuovo file.
       startWatcher();
 
-      // Fase 4.2 — la fotografia dell'archivio si prende DOPO il rename, sul payload appena
-      // scritto, e senza attenderla: uno snapshot non deve stare fra il salvataggio e il
-      // ritorno del controllo all'utente, e un suo fallimento non deve far fallire il
-      // salvataggio (vedi la decisione 3 in testa a snapshots.ts).
       void forseCreaSnapshotAutomatico(payload);
 
       return { success: true };

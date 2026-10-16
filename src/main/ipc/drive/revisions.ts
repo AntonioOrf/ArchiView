@@ -64,6 +64,4 @@ async function getDriveRevision(fileId: string, revisionId: string): Promise<any
   }
 }
 
-// Il ripristino non sta qui: lo fa il renderer (`ripristinaRevisioneCloud`) con le regole di
-// `ripristinaDatabase` e il caricamento normale con il controllo 409.
 export { getDbFileId, listDriveRevisions, getDriveRevision };

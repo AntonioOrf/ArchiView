@@ -1,19 +1,3 @@
-// Fase 2.2 — Stampa e PDF: lo strato impuro.
-//
-// Qui vivono le tre cose che `printTemplate.ts` non puo' avere: il disco (miniature degli
-// allegati), la finestra che rende il documento, e `printToPDF`/`print`. Nessuna libreria
-// PDF: Electron ha gia' tutto.
-//
-// ⚠️ La finestra NON e' `offscreen: true`, a differenza di quella dell'OCR. `printToPDF`
-// funziona in entrambi i casi, ma `webContents.print()` sull'offscreen rendering (software,
-// senza compositor) e' terreno instabile, e qui le due strade devono passare dalla stessa
-// finestra o la carta e il PDF non coincidono piu'. Una finestra `show: false` normale non
-// e' mai visibile all'utente e ha un renderer completo.
-//
-// ⚠️ Come quella dell'OCR, conta come finestra aperta: viene distrutta a fine lavoro e,
-// per sicurezza, sul `closed` della finestra principale (vedi `main.ts`). Senza, un'app
-// chiusa mentre una stampa e' in coda resterebbe in memoria.
-
 import { BrowserWindow, protocol } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -22,8 +6,6 @@ import { state } from '../workspaceManager';
 
 const SCHEMA = 'print-host';
 
-// Formati che il renderer di Chromium sa disegnare in un `<img>`. Un allegato di altro tipo
-// resta elencato senza miniatura (vedi `miniatureDi` nel template).
 const IMMAGINI = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif']);
 
 const TIPI_MIME = {
@@ -32,21 +14,11 @@ const TIPI_MIME = {
   '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.avif': 'image/avif'
 };
 
-/** Documenti pronti per la finestra, per id di lavoro. Vivono il tempo di un caricamento. */
 const documenti = new Map();
 let contatore = 0;
 
 let finestra: import('electron').BrowserWindow | null = null;
 
-/**
- * UNA sola autorita' (`app`), due radici per percorso — `/doc/<id>` e `/allegato/<nome>` —
- * esattamente come `ocr-host`. Due AUTORITA' diverse sarebbero due origini diverse, e le
- * miniature diventerebbero richieste cross-origin da una pagina con CSP restrittiva: il
- * difetto costato mezza giornata nella 2.3, che qui non si ripete.
- *
- * Non e' invece lo stesso schema dell'OCR: sono due sottosistemi indipendenti, e un errore
- * nel servire una pagina di stampa non deve poter rompere il riconoscimento del testo.
- */
 function registraProtocollo() {
   protocol.handle(SCHEMA, async (request) => {
     try {
@@ -82,23 +54,13 @@ function registraProtocollo() {
   });
 }
 
-/**
- * Miniature: URL per gli allegati stampabili di questi record.
- *
- * Le immagini passano dal protocollo (nessuna copia in memoria: le legge il renderer quando
- * gli servono). I PDF vengono rasterizzati dalla finestra offscreen dell'OCR — e' esattamente
- * la riusabilita' prevista dalla roadmap, e l'alternativa sarebbe una seconda copia di pdf.js.
- *
- * Il tetto per scheda non e' prudenza: un fascicolo da ottanta carte stampato in layout
- * "scheda" genererebbe ottanta rasterizzazioni per un provino grande come un francobollo.
- */
 const MAX_MINIATURE_PER_SCHEDA = 6;
 const DPI_MINIATURA = 110;
 
 async function preparaMiniature(records, { pdf = true } = {}) {
   const mappa = {};
   if (!state.attachmentsDirPath) return mappa;
-  let pdfHost: any = null;   // caricato al primo PDF: la stampa senza PDF non apre l'host
+  let pdfHost: any = null;
 
   for (const m of records) {
     const allegati = Array.isArray(m.allegati) ? m.allegati : [];
@@ -107,9 +69,8 @@ async function preparaMiniature(records, { pdf = true } = {}) {
       if (fatte >= MAX_MINIATURE_PER_SCHEDA) break;
       const file = typeof a === 'string' ? a : (a && (a.nome || a.name)) || '';
       if (!file) continue;
-      if (mappa[file]) { fatte++; continue; }   // stesso file su piu' schede: una sola volta
+      if (mappa[file]) { fatte++; continue; }
 
-      // Carte IIIF remote: scarica o leggi dalla cache locale e includi come data URI
       if (typeof a === 'object' && a.remoto && a.iiif) {
         try {
           const { candidatiDa } = require('../iiif/imageHost');
@@ -153,17 +114,15 @@ async function preparaMiniature(records, { pdf = true } = {}) {
             }
           }
         } catch (errore) {
-          // Una miniatura mancante non deve impedire la stampa: l'allegato resta elencato.
           console.error('[Stampa] Miniatura PDF non generata per', file, errore);
         }
       }
     }
   }
-  if (pdfHost) { try { await pdfHost.chiudiPdf(); } catch (e) { /* noop */ } }
+  if (pdfHost) { try { await pdfHost.chiudiPdf(); } catch (e) {} }
   return mappa;
 }
 
-/** Carica l'HTML nella finestra e restituisce i suoi `webContents`, pronti per la stampa. */
 async function caricaDocumento(html) {
   const id = `j${++contatore}`;
   documenti.set(id, html);
@@ -178,10 +137,8 @@ async function caricaDocumento(html) {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
-        // Il documento e' statico: senza questo, una stampa lanciata mentre la finestra
-        // principale ha il fuoco viene rallentata dal throttling dei timer in background.
         backgroundThrottling: false,
-        javascript: false   // la pagina non ne ha bisogno: e' HTML e CSS, nient'altro
+        javascript: false
       }
     });
     f.on('closed', () => { finestra = null; });
@@ -189,25 +146,16 @@ async function caricaDocumento(html) {
   }
 
   try {
-    // `loadURL` risolve al `did-finish-load`, cioè a sottorisorse caricate: è ciò che
-    // garantisce che le miniature siano già arrivate quando `printToPDF` fotografa la
-    // pagina, senza attese aggiuntive.
-    // ⚠️ Non aggiungere qui una seconda attesa su `did-finish-load`: l'evento è GIÀ
-    // passato, `isLoading()` può nondimeno restituire true un istante dopo, e la promessa
-    // non si risolve mai — la stampa restava appesa per sempre, e l'unico sintomo visibile
-    // era un pulsante disabilitato che non tornava più attivo.
     await f.loadURL(`${SCHEMA}://app/doc/${id}`);
     return f.webContents;
   } finally {
-    // L'HTML non serve piu' una volta caricato: tenerlo significherebbe tenere in RAM ogni
-    // documento stampato nella sessione.
     documenti.delete(id);
   }
 }
 
 function margini(opzioni) {
   const mm = Number(opzioni && opzioni.margine);
-  const cm = (Number.isFinite(mm) && mm >= 0 ? mm : 18) / 25.4;   // printToPDF ragiona in pollici
+  const cm = (Number.isFinite(mm) && mm >= 0 ? mm : 18) / 25.4;
   return { top: cm, bottom: cm, left: cm, right: cm };
 }
 
@@ -224,15 +172,10 @@ function intestazioniPagina(opzioni) {
   };
 }
 
-/** I template di intestazione sono HTML iniettato da Chromium: il nome del fondo va scappato. */
 function escapeTemplate(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/**
- * Genera il PDF. Non scrive nulla: restituisce il buffer, e chi lo salva e' l'IPC — cosi'
- * la stessa funzione serve tanto al salvataggio quanto a un'eventuale anteprima.
- */
 async function generaPdf(html, opzioni: any = {}) {
   const contenuti = await caricaDocumento(html);
   return contenuti.printToPDF(Object.assign({
@@ -245,10 +188,6 @@ async function generaPdf(html, opzioni: any = {}) {
   }, intestazioniPagina(opzioni)));
 }
 
-/**
- * Manda il documento alla stampante. `silent: false` apre il dialogo di sistema: la scelta
- * della stampante e delle copie e' del sistema operativo, non nostra.
- */
 async function stampa(html, opzioni: any = {}) {
   const contenuti = await caricaDocumento(html);
   return new Promise((resolve) => {
@@ -258,7 +197,6 @@ async function stampa(html, opzioni: any = {}) {
       landscape: opzioni.orientamento === 'landscape',
       pageSize: opzioni.formato || 'A4'
     }, (successo, motivo) => {
-      // `cancelled` non e' un errore: e' l'utente che ha chiuso il dialogo di stampa.
       resolve({ success: !!successo, canceled: !successo && motivo === 'cancelled', error: successo ? null : motivo });
     });
   });

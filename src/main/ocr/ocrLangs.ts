@@ -1,30 +1,11 @@
-// Pacchetti lingua dell'OCR (Fase 2.3).
-//
-// I dati di Tesseract NON sono imbarcati nel bundle: sono decine di MB per lingua e il
-// singolo ricercatore ne usa due. Vivono in `userData/ocr-langs/`, si installano su richiesta
-// esplicita dell'utente dal pannello delle impostazioni e si rimuovono allo stesso modo.
-// Sono per macchina, non per workspace: la lingua di un archivio non ha motivo di essere
-// riscaricata per ogni archivio aperto sullo stesso PC.
-//
-// Dopo l'installazione il riconoscimento è completamente offline: la rete serve solo qui.
-
 import { app, net } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 const fsp = require('fs').promises;
 import * as zlib from 'zlib';
 
-// tessdata_fast: la variante che il progetto Tesseract raccomanda per l'uso generale.
-// I modelli "best" sono 3-4 volte più lenti a parità di resa su stampato, e su hardware
-// low-end (il caso che questa applicazione prende sul serio) la differenza si sente.
 const BASE_URL = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/';
 
-/**
- * Lingue proposte nel pannello. L'elenco è volutamente corto e centrato sul dominio:
- * italiano e latino per il testo dei documenti, le tre lingue della bibliografia
- * paleografica europea, l'inglese per gli inventari moderni, e `osd` che non è una lingua
- * ma il rilevatore di orientamento — è ciò che raddrizza una scansione storta.
- */
 const LINGUE_NOTE = [
   { codice: 'ita', nome: 'Italiano' },
   { codice: 'lat', nome: 'Latino' },
@@ -36,7 +17,6 @@ const LINGUE_NOTE = [
   { codice: 'osd', nome: 'Rilevamento orientamento' }
 ];
 
-/** Un codice lingua è `[a-z]{3}` più eventuale suffisso: nient'altro finisce in un path. */
 function codiceValido(codice) {
   return typeof codice === 'string' && /^[a-z]{3}(_[a-z]+)?$/.test(codice);
 }
@@ -60,7 +40,6 @@ function linguaInstallata(codice) {
   }
 }
 
-/** Codici installati sul disco, anche quelli fuori da `LINGUE_NOTE` (copiati a mano dall'utente). */
 function codiciInstallati(): string[] {
   try {
     return fs.readdirSync(cartellaLingue())
@@ -73,7 +52,6 @@ function codiciInstallati(): string[] {
   }
 }
 
-/** Elenco per la UI: le lingue note più quelle trovate sul disco e non previste dall'elenco. */
 function listaLingue() {
   const installate = new Set<string>(codiciInstallati());
   const out = LINGUE_NOTE.map(l => ({
@@ -97,13 +75,6 @@ function dimensioneLingua(codice) {
   }
 }
 
-/**
- * Scarica e installa un pacchetto lingua.
- *
- * Scrittura su `.part` e rename finale: senza, un'interruzione di rete lascerebbe sul disco
- * un `.traineddata` troncato che Tesseract accetta come valido e che fa fallire ogni OCR
- * successivo con un errore incomprensibile. È lo stesso accorgimento di `zipStreaming.ts`.
- */
 async function installaLingua(codice) {
   if (!codiceValido(codice)) return { ok: false, errore: 'codice_non_valido' };
   if (linguaInstallata(codice)) return { ok: true, gia: true };
@@ -112,8 +83,6 @@ async function installaLingua(codice) {
   const temporaneo = destinazione + '.part';
 
   try {
-    // Prima si tenta il `.gz` (circa un terzo del peso), poi il file nudo: non tutte le
-    // lingue del repository hanno l'archivio compresso.
     let dati: Buffer | null = null;
     for (const [url, comprimuto] of [
       [BASE_URL + codice + '.traineddata.gz', true],
@@ -135,7 +104,7 @@ async function installaLingua(codice) {
     return { ok: true, dimensione: dati.length };
   } catch (errore) {
     console.error(`[OCR] Installazione lingua ${codice} fallita:`, errore);
-    try { if (fs.existsSync(temporaneo)) await fsp.unlink(temporaneo); } catch { /* best effort */ }
+    try { if (fs.existsSync(temporaneo)) await fsp.unlink(temporaneo); } catch {}
     return { ok: false, errore: errore && errore.message ? errore.message : 'rete' };
   }
 }

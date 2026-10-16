@@ -9,8 +9,6 @@ const { esaminaPatch } = require('./impostazioniRenderer');
 const userDataPath = app.getPath('userData');
 configuraStore(path.join(userDataPath, 'settings.json'));
 
-// Chiavi che descrivono lo stato del vault: NON devono più stare nel settings.json globale.
-// Coincidono con l'oggetto driveSettings scritto in .archiview-drive.json.
 const VAULT_KEYS = ['isSharedVault', 'isPersonalCloud', 'sharedVaultId', 'driveAutofetch', 'pusherKey', 'pusherCluster', 'pusherWebhook'];
 
 function stripVaultKeys(obj) {
@@ -19,8 +17,6 @@ function stripVaultKeys(obj) {
   return out;
 }
 
-// Stato del vault ATTIVO in formato legacy, derivato dal modello unificato (.archiview-vault.json).
-// Unica fonte di verità per i consumer di sync, al posto dei flag globali.
 function getActiveVaultFlags() {
   const empty = {
     isSharedVault: false, isPersonalCloud: false, sharedVaultId: null,
@@ -37,18 +33,11 @@ const state = {
   mainWindow: null as import('electron').BrowserWindow | null
 };
 
-/**
- * Finestra principale ancora viva, o null. O8: `BrowserWindow.getAllWindows()[0]` non è
- * garantito essere lei quando sono aperti l'host PDF o quello di stampa, e gli eventi di
- * avanzamento finivano a una finestra senza listener.
- */
 function finestraPrincipale() {
   const w = state.mainWindow;
   return w && !w.isDestroyed() ? w : null;
 }
 
-// Cache, .bak e scrittura atomica stanno in settingsStore. Sempre una copia: i chiamanti
-// modificano l'oggetto prima di salvarlo.
 function getAllSettings() {
   return leggiStore();
 }
@@ -60,20 +49,13 @@ function scriviImpostazioni(impostazioni) {
 function saveAllSettings(newSettings) {
   const current = getAllSettings();
   const updated = { ...current, ...newSettings };
-  // Il settings.json globale NON contiene più stato di vault: le vault keys vanno solo nel file del vault.
   scriviImpostazioni(stripVaultKeys(updated));
 
-  // Update attachments directory dynamically if workspace is active
   if (state.workspacePath) {
     applicaCartellaAllegati(updated);
 
-    // Scrivi lo stato del vault (.archiview-drive.json + modello unico) SOLO se newSettings
-    // contiene davvero delle vault keys. Altrimenti un save "globale" (es. lastSyncTime,
-    // syncAttachments, lastSeenVersion) ricostruirebbe .archiview-drive.json con tutti i flag
-    // a false, azzerando lo stato del vault (regressione dopo la rimozione del ponte get-settings).
     const hasVaultKeys = VAULT_KEYS.some(k => Object.prototype.hasOwnProperty.call(newSettings, k));
     if (hasVaultKeys) {
-      // Save drive settings locally to the workspace so they don't bleed into other workspaces
       const driveSettingsPath = path.join(state.workspacePath, '.archiview-drive.json');
       const driveSettings = {
           isSharedVault: updated.isSharedVault || false,
@@ -88,7 +70,6 @@ function saveAllSettings(newSettings) {
           scriviAtomicoSync(driveSettingsPath, JSON.stringify(driveSettings, null, 2));
       } catch(e) { console.error("Errore salvataggio drive settings:", e); }
 
-      // Allinea il modello unificato dopo ogni modifica ai legacy
       syncUnifiedFromLegacy(state.workspacePath, updated);
     }
   }
@@ -96,7 +77,6 @@ function saveAllSettings(newSettings) {
   return updated;
 }
 
-/** Cartella allegati dell'archivio aperto: quella personalizzata o la predefinita. */
 function applicaCartellaAllegati(settings) {
   if (!state.workspacePath) return;
   state.attachmentsDirPath = settings.customAttachmentsPath || path.join(state.workspacePath, 'allegati_manoscritti');
@@ -105,11 +85,6 @@ function applicaCartellaAllegati(settings) {
   }
 }
 
-/**
- * Toglie delle chiavi globali. `saveAllSettings` unisce e quindi non può cancellare: un
- * `delete` fatto nel renderer prima del salvataggio si perdeva (es. il ripristino della
- * cartella allegati predefinita non aveva effetto).
- */
 function rimuoviImpostazioni(chiavi: string[]) {
   const current = getAllSettings();
   for (const k of chiavi) delete current[k];
@@ -118,11 +93,6 @@ function rimuoviImpostazioni(chiavi: string[]) {
   return current;
 }
 
-/**
- * Patch del renderer: scrive solo le chiavi ammesse e valide, toglie quelle inviate a `null`.
- * Ogni patch tocca solo le sue chiavi, quindi due salvataggi vicini (lastSyncTime dal sync,
- * username dal pannello) non si sovrascrivono più a vicenda.
- */
 function patchSettings(grezze) {
   const { valori, daRimuovere, rifiutate } = esaminaPatch(grezze);
   if (Object.keys(valori).length) saveAllSettings(valori);
@@ -156,14 +126,11 @@ function initWorkspace(folderPath) {
   const currentSettings = getAllSettings();
   let recentWorkspaces = currentSettings.recentWorkspaces || [];
   
-  // Rimuovi se esiste già, poi metti in cima
   recentWorkspaces = recentWorkspaces.filter(p => p !== folderPath);
   recentWorkspaces.unshift(folderPath);
   
-  // Tieni gli ultimi 5
   recentWorkspaces = recentWorkspaces.slice(0, 5);
 
-  // Load drive settings specific to this workspace
   const driveSettingsPath = path.join(folderPath, '.archiview-drive.json');
   let workspaceDriveSettings = {
       isSharedVault: false,
@@ -180,7 +147,6 @@ function initWorkspace(folderPath) {
           workspaceDriveSettings = JSON.parse(fs.readFileSync(driveSettingsPath, 'utf8'));
       } catch(e) { console.error("Errore parsing drive settings locali:", e); }
   } else {
-      // If no local config exists, but this is the SAME workspace as the global one, migrate global settings to local
       if (currentSettings.workspacePath === folderPath && (currentSettings.isSharedVault || currentSettings.isPersonalCloud)) {
           workspaceDriveSettings = {
               isSharedVault: currentSettings.isSharedVault || false,
@@ -197,8 +163,6 @@ function initWorkspace(folderPath) {
       }
   }
 
-  // Il settings.json globale NON eredita più i flag del vault (niente "bleeding"):
-  // lo stato del vault vive in .archiview-vault.json / .archiview-drive.json.
   const updatedGlobal = {
       ...stripVaultKeys(currentSettings),
       workspacePath: folderPath,
@@ -207,24 +171,19 @@ function initWorkspace(folderPath) {
 
   scriviImpostazioni(updatedGlobal);
 
-  // Migrazione/refresh del modello unificato (.archiview-vault.json), legacy mantenuti.
-  // Passiamo currentSettings (non strippato) come fallback per il vault attivo durante l'upgrade.
   syncUnifiedFromLegacy(folderPath, { ...currentSettings, workspacePath: folderPath, ...workspaceDriveSettings });
 }
 
-// I segreti (repoKey/encKey) NON vanno mai scritti in chiaro nel file di vault, che può
-// finire in una cartella sincronizzata: vivono in cloudTokenStore (DPAPI, userData), keyed per repoId.
 function saveHubConfig(config) {
   if (!state.workspacePath) return false;
   const p = path.join(state.workspacePath, '.archiview-hub.json');
   try {
-    const { saveHubSecrets } = require('./cloudTokenStore'); // lazy: evita ciclo con cloudTokenStore
+    const { saveHubSecrets } = require('./cloudTokenStore');
     const { repoKey, encKey, ...publicCfg } = config || {};
     if (publicCfg.repoId && (repoKey || encKey)) {
       saveHubSecrets(publicCfg.repoId, { repoKey, encKey });
     }
     fs.writeFileSync(p, JSON.stringify(publicCfg, null, 2), 'utf8');
-    // Allinea il modello unificato (provider 'hub')
     syncUnifiedFromLegacy(state.workspacePath, getAllSettings());
     return true;
   } catch (e) {
@@ -233,9 +192,6 @@ function saveHubConfig(config) {
   }
 }
 
-// Scollega il vault dall'Hub: rimuove .archiview-hub.json + i segreti in cloudTokenStore,
-// poi ricalcola il modello unificato (che tornerà a provider google/none dai legacy Drive).
-// I dati locali e l'eventuale config Drive dormiente (.archiview-drive.json) restano intatti.
 function disconnectHub() {
   if (!state.workspacePath) return false;
   const p = path.join(state.workspacePath, '.archiview-hub.json');
@@ -243,9 +199,9 @@ function disconnectHub() {
     let repoId = null;
     try {
       if (fs.existsSync(p)) repoId = (JSON.parse(fs.readFileSync(p, 'utf8')) || {}).repoId || null;
-    } catch (e) { /* best-effort */ }
+    } catch (e) {}
     if (repoId) {
-      const { clearHubSecrets } = require('./cloudTokenStore'); // lazy: evita ciclo
+      const { clearHubSecrets } = require('./cloudTokenStore');
       clearHubSecrets(repoId);
     }
     if (fs.existsSync(p)) fs.unlinkSync(p);
@@ -264,18 +220,14 @@ function loadHubConfig() {
     if (!fs.existsSync(p)) return null;
     const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
     if (!cfg || !cfg.repoId) return cfg || null;
-    const { saveHubSecrets, loadHubSecrets } = require('./cloudTokenStore'); // lazy: evita ciclo
+    const { saveHubSecrets, loadHubSecrets } = require('./cloudTokenStore');
 
-    // Migrazione one-shot: se il file legacy contiene ancora la chiave in chiaro,
-    // spostala in cloudTokenStore e riscrivi il file senza segreti.
     if (cfg.repoKey || cfg.encKey) {
       saveHubSecrets(cfg.repoId, { repoKey: cfg.repoKey, encKey: cfg.encKey });
       const { repoKey, encKey, ...publicCfg } = cfg;
-      try { fs.writeFileSync(p, JSON.stringify(publicCfg, null, 2), 'utf8'); } catch (e) { /* best-effort */ }
+      try { fs.writeFileSync(p, JSON.stringify(publicCfg, null, 2), 'utf8'); } catch (e) {}
     }
 
-    // Ri-merge dei segreti dal token store: SOLO per il main (hubIpc, hubAttachments).
-    // Il renderer riceve loadHubConfigPubblica().
     const secrets = loadHubSecrets(cfg.repoId) || {};
     const { repoKey: _rk, encKey: _ek, ...publicCfg } = cfg;
     return { ...publicCfg, repoKey: secrets.repoKey || null, encKey: secrets.encKey || null };
@@ -285,18 +237,12 @@ function loadHubConfig() {
   return null;
 }
 
-// Vista per il renderer: senza repoKey/encKey, con un flag che dice
-// se il vault può ancora parlare con l'Hub (segreti presenti nel token store).
 function loadHubConfigPubblica() {
   const cfg = loadHubConfig();
   if (!cfg) return null;
   const { repoKey, encKey, ...publicCfg } = cfg;
   return { ...publicCfg, hasRepoKey: !!repoKey, hasEncKey: !!encKey };
 }
-
-// Il renderer aggiorna solo stato della sync e preferenze (version, lastLoadedAt, attachmentsMode,
-// name). hubUrl/repoId no: un renderer compromesso punterebbe l'Hub a un server suo e il main gli
-// invierebbe la repoKey. Né i segreti: li scrivono solo creazione e join, nel main.
 
 function aggiornaHubConfigDalRenderer(parziale: any): boolean {
   const attuale = loadHubConfig();

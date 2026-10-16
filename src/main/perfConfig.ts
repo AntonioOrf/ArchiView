@@ -3,9 +3,6 @@ import * as path from 'path';
 import { getAllSettings, saveAllSettings } from './workspaceManager';
 import { migraPerfConfig } from './settingsStore';
 
-// "Prestazioni ridotte" è letto prima di app.ready (`app.disableHardwareAcceleration()`):
-// è l'unica lettura di settings.json fatta al boot, sincrona. Prima stava in perf-config.json,
-// migrato qui alla prima lettura.
 function leggiPerfConfig() {
   migraPerfConfig(path.join(app.getPath('userData'), 'perf-config.json'));
   return { lowPerf: !!getAllSettings().lowPerf };
