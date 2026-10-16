@@ -1,6 +1,3 @@
-// Audit A13: una sola ricerca del database su Drive per pull e controllo aggiornamenti.
-// Con un archivio aperto non si ripiega mai sul database di un altro vault: prima
-// checkUpdatesFromDrive, con la cartella del vault vuota, prendeva il più recente dell'account.
 const path = require('path');
 const assert = require('assert');
 

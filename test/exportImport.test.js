@@ -1,6 +1,3 @@
-// Audit A3/A7: export ZIP e duplicazione leggono gli allegati come oggetti `{ nome, … }`.
-// Prima leggevano `name`: l'export di una scheda con allegati lanciava, la duplicazione
-// toglieva tutti gli allegati (e le loro trascrizioni).
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -25,7 +22,6 @@ stub(require.resolve('electron'), {
   app: { getPath: () => os.tmpdir() }
 });
 const state = { workspacePath: ws, dataFilePath: path.join(ws, 'database_manoscritti.json'),
-  // Audit A4: cartella allegati personalizzata, fuori dall'archivio (es. NAS).
   attachmentsDirPath: fs.mkdtempSync(path.join(os.tmpdir(), 'av-allegati-')) };
 stub(require.resolve(path.join(OUT, 'workspaceManager.js')), { state, getAllSettings: () => ({}) });
 
@@ -78,7 +74,6 @@ function elencoZip(file) {
   assert.strictEqual(fs.readFileSync(path.join(state.attachmentsDirPath, a.nome), 'utf8'), 'immagine');
   assert.strictEqual(db.manoscritti.find(m => m.id === 'm1').allegati[0].nome, 'carta1.jpg', 'l\'originale non cambia');
   console.log('✅ Test 2: la duplicazione copia allegati e trascrizioni.');
-  // Audit A9: destinazione non scrivibile (qui una cartella) → esito d'errore, non eccezione né attesa infinita.
   destinazione = ws;
   const errore = await handlers['export-zip']({}, ['m1']);
   assert.strictEqual(errore.success, false);

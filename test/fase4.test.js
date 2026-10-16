@@ -1,7 +1,3 @@
-// Fase 4 — sicurezza del dato: merge campo per campo (4.4), rotazione degli snapshot (4.2)
-// e scadenza del cestino (4.1). Sono le tre funzioni pure della fase: vivono in
-// `shared/model.ts` proprio per essere provate qui, con `node` e senza Electron, sul BUILD
-// reale in `out/` — non su una copia che può divergere (vedi searchNormalize.test.js).
 const assert = require('assert');
 const M = require('../out/shared/model');
 
@@ -13,10 +9,6 @@ function test(nome, fn) {
 }
 
 console.log('fase4.test.js — merge per campo, rotazione snapshot, scadenza cestino');
-
-// =============================================================================
-// 4.4 — Merge campo per campo
-// =============================================================================
 
 function scheda(extra) {
   return Object.assign({
@@ -33,10 +25,8 @@ test('campi diversi toccati dalle due parti: nessun conflitto, entrambe le modif
 
   const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
   assert.deepStrictEqual(conflitti, []);
-  assert.strictEqual(fuso.notaio, 'Bianchi');          // il mio
-  assert.strictEqual(fuso.trascrizione, '<p>due</p>'); // il suo
-  // Il record fuso è nuovo: porta il timestamp più alto, o al confronto successivo il lato
-  // rimasto indietro rientrerebbe.
+  assert.strictEqual(fuso.notaio, 'Bianchi');
+  assert.strictEqual(fuso.trascrizione, '<p>due</p>');
   assert.strictEqual(fuso.lastModified, 3000);
 });
 
@@ -63,9 +53,6 @@ test('un campo aggiunto solo dall\'esterno entra nel fuso; uno tolto solo dall\'
   const conNuovo = scheda({ dataCronica: '1345' });
   assert.strictEqual(M.fondiRecord(base, locale, conNuovo).fuso.dataCronica, '1345');
 
-  // Le chiavi che esistono solo quando hanno contenuto (`relazioni`, 3.5) si cancellano
-  // togliendo la chiave: il merge deve saperlo esprimere, o l'ultimo collegamento tolto da
-  // un collega tornerebbe in piedi al primo sync.
   const conRelazioni = scheda({ relazioni: [{ id: 'r2' }] });
   const senza = scheda();
   const esito = M.fondiRecord(conRelazioni, conRelazioni, senza);
@@ -79,7 +66,6 @@ test('i timestamp e la firma non sono contenuto: non generano conflitti', () => 
   const esterno = scheda({ lastModified: 9000, modificatoDa: 'Caio' });
   const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
   assert.deepStrictEqual(conflitti, []);
-  // Nessun contenuto è arrivato dall'esterno: la firma resta quella locale.
   assert.strictEqual(fuso.modificatoDa, 'Tizio');
 });
 
@@ -91,9 +77,6 @@ test('allegatoTipo segue allegati e non si fonde da solo', () => {
   assert.strictEqual(fuso.allegatoTipo, 'pdf');
 });
 
-// --- Allegati carta per carta (verifica preliminare di P6/P7) ---------------------------
-// `allegati` è un elenco: fuso come valore unico, due colleghi che lavorano su carte DIVERSE
-// della stessa scheda finivano in conflitto sull'elenco intero.
 const carta = (nome, extra) => Object.assign({ nome, tipo: 'immagine' }, extra || {});
 
 test('carte diverse toccate dalle due parti: nessun conflitto, entrambe le modifiche restano', () => {
@@ -117,7 +100,7 @@ test('stessa carta, stesso campo, valori diversi: conflitto su allegati, nel fus
 test('carte aggiunte dalle due parti entrano entrambe; una tolta da un lato sparisce', () => {
   const base = scheda({ allegati: [carta('a'), carta('b')] });
   const locale = scheda({ allegati: [carta('a'), carta('b'), carta('mia')] });
-  const esterno = scheda({ allegati: [carta('a'), carta('sua')] });   // ha tolto b
+  const esterno = scheda({ allegati: [carta('a'), carta('sua')] });
   const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
   assert.deepStrictEqual(conflitti, []);
   assert.deepStrictEqual(fuso.allegati.map(a => a.nome), ['a', 'mia', 'sua']);
@@ -139,11 +122,9 @@ test('la trascrizione della scheda derivata dalle carte non genera un conflitto 
   const { fuso, conflitti } = M.fondiRecord(base, locale, esterno);
   assert.deepStrictEqual(conflitti, []);
   assert.deepStrictEqual(fuso.allegati.map(a => a.trascrizione), ['<p>A2</p>', '<p>B2</p>']);
-  // La forma derivata la ricompone il renderer (componiTrascrizioneRecord): il modello lo segnala.
   assert.strictEqual(M.trascrizioneDerivata(fuso), true);
 });
 
-// P6 — le regioni sono un elenco dentro la carta: si fondono per id, come i campi propri.
 const reg = (id, testo, x = 0.1) => Object.assign({ id, xywh: [x, 0.1, 0.2, 0.2] }, testo ? { testo } : {});
 
 test('P6: regioni aggiunte sulla stessa carta dalle due parti entrano entrambe', () => {
@@ -163,7 +144,6 @@ test('P6: stessa regione cambiata in modi diversi è un conflitto; tolta da un l
     scheda({ allegati: [carta('a', { annotazioni: [reg('r1', 'là')] })] }));
   assert.deepStrictEqual(conflitti, ['allegati']);
   assert.deepStrictEqual(fuso.allegati[0].annotazioni.map(r => [r.id, r.testo]), [['r1', 'qui']]);
-  // Tutte tolte da un lato, nessuna aggiunta dall'altro: la chiave sparisce, non resta [].
   const tolte = M.fondiRecord(base,
     scheda({ allegati: [carta('a', { annotazioni: [reg('r1'), reg('r2')] , stato: 'rivista' })] }),
     scheda({ allegati: [carta('a')] }));
@@ -184,14 +164,9 @@ test('una scheda vecchia, con la trascrizione solo sulla scheda, la fonde ancora
   assert.deepStrictEqual(conflitti, ['trascrizione']);
 });
 
-// =============================================================================
-// 4.2 — Rotazione degli snapshot
-// =============================================================================
-
 const GIORNO = 86400000;
-const ORA_FISSA = new Date(2026, 8, 10, 12, 0, 0).getTime(); // 10 settembre 2026, ora locale
+const ORA_FISSA = new Date(2026, 8, 10, 12, 0, 0).getTime();
 
-/** Uno snapshot a `giorniFa` giorni e `oreFa` ore dall'istante di riferimento. */
 function snap(nome, giorniFa, oreFa) {
   return { nome, creatoIl: ORA_FISSA - giorniFa * GIORNO - (oreFa || 0) * 3600000 };
 }
@@ -200,7 +175,6 @@ test('i primi N snapshot si tengono a prescindere dall\'età', () => {
   const voci = [snap('a', 0), snap('b', 0, 1), snap('c', 0, 2), snap('d', 400), snap('e', 401)];
   const { tenere, eliminare } = M.rotazioneSnapshot(voci, { recenti: 3, giorni: 0, ora: ORA_FISSA });
   assert.deepStrictEqual(tenere, ['a', 'b', 'c']);
-  // I due vecchi cadono: nessuno dei due criteri li salva.
   assert.deepStrictEqual(eliminare.sort(), ['d', 'e']);
 });
 
@@ -210,7 +184,6 @@ test('di ogni giorno resta il più recente, per i giorni dichiarati', () => {
     snap('ieri-tardi', 1), snap('ieri-presto', 1, 6),
     snap('vecchio', 10)
   ];
-  // `recenti: 0` isola il secondo criterio: senza, i primi N lo maschererebbero.
   const { tenere } = M.rotazioneSnapshot(voci, { recenti: 0, giorni: 30, ora: ORA_FISSA });
   assert.deepStrictEqual(tenere.sort(), ['ieri-tardi', 'oggi-tardi', 'vecchio'].sort());
 });
@@ -223,7 +196,6 @@ test('oltre la finestra dei giorni non si tiene nulla', () => {
 });
 
 test('i due criteri si sommano, non si escludono', () => {
-  // Il più vecchio è fuori dalla finestra dei giorni ma dentro i "recenti": sopravvive.
   const voci = [snap('a', 0), snap('b', 100)];
   const { tenere, eliminare } = M.rotazioneSnapshot(voci, { recenti: 5, giorni: 30, ora: ORA_FISSA });
   assert.deepStrictEqual(tenere.sort(), ['a', 'b']);
@@ -235,10 +207,6 @@ test('un elenco vuoto non elimina nulla e non lancia', () => {
   assert.deepStrictEqual(esito.tenere, []);
   assert.deepStrictEqual(esito.eliminare, []);
 });
-
-// =============================================================================
-// 4.1 — Scadenza del cestino
-// =============================================================================
 
 function voce(id, giorniFa) {
   return { deletedAt: ORA_FISSA - giorniFa * GIORNO, record: { id } };

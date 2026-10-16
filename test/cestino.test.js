@@ -1,6 +1,3 @@
-// Audit A8: le operazioni sul cestino leggono, modificano e riscrivono `cestino.json`. Senza
-// coda, due eliminazioni sovrapposte leggevano lo stesso file e la seconda cancellava la voce
-// della prima (o si scontravano sullo stesso `.tmp`).
 const path = require('path');
 const fs = require('fs');
 const os = require('os');

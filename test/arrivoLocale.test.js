@@ -1,4 +1,3 @@
-// ArchiScanner: lotti già ricevuti → allegati, PDF, registro (src/main/scanner/arrivoLocale.ts).
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -12,7 +11,6 @@ console.log('Running arrivoLocale tests...');
 
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
-/** PNG 1×1 valido: basta a pdf-lib, nessuna dipendenza. */
 function png() {
   const blocco = (tipo, dati) => {
     const len = Buffer.alloc(4); len.writeUInt32BE(dati.length);
@@ -52,7 +50,6 @@ function preparaArrivo(id, etichette) {
 (async () => {
   const id = '20261009-100000-abcd';
 
-  // Elenco: lotto valido incluso, cartella estranea ignorata.
   {
     const { c } = preparaArrivo(id, ['1r', '']);
     fs.mkdirSync(path.join(c.arrivo, 'estranea'));
@@ -62,7 +59,6 @@ function preparaArrivo(id, etichette) {
     assert.deepStrictEqual(await arrivo.elencaArrivo({ arrivo: path.join(c.arrivo, 'manca'), assegnati: c.assegnati }), []);
   }
 
-  // Copia fra gli allegati: nomi, etichette, hash del manifest; mai sovrascrivere.
   {
     const { c, allegati } = preparaArrivo(id, ['1r', '']);
     const voci = await arrivo.copiaInAllegati(c, id, 'sch-1', allegati);
@@ -73,12 +69,10 @@ function preparaArrivo(id, etichette) {
     assert.strictEqual(voci[0].hash, sha(png()));
     assert.ok(fs.existsSync(path.join(allegati, voci[1].nome)));
     await assert.rejects(arrivo.copiaInAllegati(c, id, 'sch-1', allegati), e => e.code === 'EEXIST');
-    // L'id della scheda non porta fuori dalla cartella allegati.
     const v2 = await arrivo.copiaInAllegati(c, id, '..\\..\\x', allegati);
     assert.ok(v2.every(v => !v.nome.includes('\\') && !v.nome.includes('/')));
   }
 
-  // Copia a metà che fallisce: nessun file lasciato.
   {
     const { c, allegati } = preparaArrivo(id, ['', '']);
     fs.rmSync(path.join(c.arrivo, id, 'p0002.png'));
@@ -86,7 +80,6 @@ function preparaArrivo(id, etichette) {
     assert.deepStrictEqual(fs.readdirSync(allegati), []);
   }
 
-  // Id e nomi dal renderer: solo quelli del contratto.
   {
     const { c, allegati } = preparaArrivo(id, ['']);
     await assert.rejects(arrivo.copiaInAllegati(c, '..', 'x', allegati), /id_non_valido/);
@@ -95,7 +88,6 @@ function preparaArrivo(id, etichette) {
     await assert.rejects(arrivo.copiaInAllegati(c, id, '', allegati), /scheda_non_valida/);
   }
 
-  // PDF unico: un file, valido, una pagina per foto.
   {
     const { c, allegati } = preparaArrivo(id, ['1r', '1v', '2r']);
     const v = await arrivo.unisciInPdf(c, id, 'sch-3', allegati);
@@ -107,7 +99,6 @@ function preparaArrivo(id, etichette) {
     assert.strictEqual((await PDFDocument.load(byte)).getPageCount(), 3);
   }
 
-  // Togli + registro: il lotto ancora su Drive non si riscarica.
   {
     const { c } = preparaArrivo(id, ['']);
     await arrivo.togliDaArrivo(c, id);

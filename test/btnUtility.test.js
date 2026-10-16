@@ -1,10 +1,3 @@
-// Audit front-end P2-4 — guardia sulla cascata.
-//
-// style.css è fuori da @layer: `.btn-primary/-secondary/-ghost/-danger/-danger-ghost`
-// impongono colore e fondo e vincono sulle utility Tailwind (layered) scritte accanto.
-// Un `btn-ghost text-red-600` dichiara un rosso che lo schermo non mostra. Passano solo le
-// utility rimappate con !important in style.css (stone-*, white, amber-50/100/800/900)
-// e senza varianti: `hover:`/`dark:` non sono mai rimappate. Per il pericolo: .btn-danger-ghost.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -22,7 +15,6 @@ function file(dir) {
 }
 
 const STRINGA_BTN = /(["'`])([^"'`]*\bbtn-(?:primary|secondary|ghost|danger|danger-ghost)\b[^"'`]*)\1/g;
-// Nome di colore da 3+ lettere: esclude i lati (`border-l-0`, `border-x-2`).
 const COLORE = /^(?:[a-z-]+:)*(?:text|bg|border)-[a-z]{3,}-\d+(?:\/\d+)?$/;
 const RIMAPPATA = /^(?:text|bg|border)-(?:stone-\d+|amber-(?:50|100|800|900))(?:\/50)?$/;
 

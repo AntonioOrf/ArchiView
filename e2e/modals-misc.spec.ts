@@ -51,9 +51,6 @@ test.describe('Modali minori', () => {
   test('il changelog mostra la versione in esecuzione e contenuto non vuoto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Modals');
 
-    // Il changelog era HTML scritto a mano e mostrava una versione vecchia (2.4.3 su
-    // un'app 2.4.5). Ora è generato da RELEASE_NOTES.md: qui si verifica che il titolo
-    // segua davvero la versione dell'app e che il corpo non sia rimasto vuoto.
     const versione = await page.evaluate(() => (window as any).apiBrowser.getVersion());
     await page.evaluate(() => (window as any).apriChangelogModal());
     await expect(page.locator('#changelog-modal')).toBeVisible();

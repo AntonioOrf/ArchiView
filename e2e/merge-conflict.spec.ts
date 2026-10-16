@@ -38,8 +38,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
 
-    // Il campo in conflitto di default è proprio "segnatura": la card in lista
-    // mostra il valore locale (quello con cui la risoluzione parte precompilata).
     await expect(page.locator('#conflict-list')).toContainText('Valore Locale');
     await expect(page.locator('#conflict-detail')).toContainText('Valore Locale');
     await expect(page.locator('#conflict-detail')).toContainText('Valore Cloud');
@@ -87,14 +85,12 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
 
-    // Clic sul corpo della scheda locale (div[data-resolve-card]) e NON sul button
     const cardLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]').first();
     await expect(cardLocale).toBeVisible();
     await cardLocale.click();
 
     await expect(page.locator('#btn-resolve-all')).toBeEnabled();
 
-    // Clic sul corpo della scheda cloud per cambiare scelta
     const cardCloud = page.locator('div[data-resolve-card="true"][data-resolve-scelta="external"]').first();
     await expect(cardCloud).toBeVisible();
     await cardCloud.click();
@@ -106,8 +102,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(resolved[0].segnatura).toBe('Valore Cloud');
   });
 
-  // Audit front-end P1-1: il pulsante "scelto" portava bg-amber-500/text-white, ma .btn-secondary
-  // (style.css, fuori da @layer) vince sulle utility v4 e lo rendeva identico all'altro.
   test('la scelta fatta si vede in ogni tema e si annuncia con aria-pressed', async ({ page, userDataDir }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
@@ -123,9 +117,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await expect(btnCloud).toHaveAttribute('aria-pressed', 'false');
 
     for (const tema of ['light', 'dark', 'amber-light', 'blue-dark']) {
-      // Il cambio di tema avvia transizioni di colore: anche a 0,01 ms (reduced motion) il primo
-      // getComputedStyle può cadere prima del frame che le chiude e leggere il tema precedente.
-      // Sotto il carico della suite completa succedeva. Si aspetta che finiscano.
       await page.evaluate(async (t) => {
         (window as any).applicaTema(t);
         await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {})));
@@ -141,7 +132,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
         return {
           diversi: s.backgroundColor !== a.backgroundColor,
           testo: ratio(rgb(s.color), rgb(s.backgroundColor)),
-          // il pulsante scelto deve staccarsi da quello non scelto (1.4.11: 3:1)
           stacco: ratio(rgb(s.backgroundColor), rgb(a.backgroundColor)),
         };
       });
@@ -151,9 +141,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     }
   });
 
-  // Audit front-end P1-2: la card era role="button" con un <button> dentro (controllo annidato,
-  // due pulsanti annunciati per la stessa scelta). Ora il controllo è solo il pulsante, e dopo
-  // la scelta il fuoco resta lì invece di cadere sul body col re-render.
   test('accessibilità da tastiera: la scelta si fa col pulsante, senza controlli annidati, e il fuoco resta', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
@@ -193,7 +180,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await expect(page.locator('#deletion-conflict-modal')).toBeVisible();
     await expect(page.locator('#btn-resolve-deletions')).toBeDisabled();
 
-    // Clicca Mantieni sul primo e Elimina sul secondo
     const btnMantieni = page.locator('button[data-deletion-id="del-1"][data-deletion-action="keep"]');
     const btnElimina = page.locator('button[data-deletion-id="del-2"][data-deletion-action="delete"]');
 
@@ -201,10 +187,10 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await expect(btnElimina).toBeVisible();
 
     await btnMantieni.click();
-    await expect(page.locator('#btn-resolve-deletions')).toBeDisabled(); // Ancora 1 pendente
+    await expect(page.locator('#btn-resolve-deletions')).toBeDisabled();
 
     await btnElimina.click();
-    await expect(page.locator('#btn-resolve-deletions')).toBeEnabled(); // Tutti risolti!
+    await expect(page.locator('#btn-resolve-deletions')).toBeEnabled();
 
     await page.locator('#btn-resolve-deletions').click();
     await expect(page.locator('#deletion-conflict-modal')).toBeHidden();
@@ -237,29 +223,24 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
         lastModified: 2000
       };
 
-      // Avvia la sincronizzazione in background
       w.sincronizzaEUnisciDati({
         manoscritti: [externalCard],
         cartelle: []
       });
     });
 
-    // Il conflitto viene rilevato e il modale si apre per chiedere all'utente invece di sovrascrivere alla cieca!
     await expect(page.locator('#merge-conflict-modal')).toBeVisible();
 
-    // Clicca sulla scheda locale per ciascun campo in conflitto per mantenere il lavoro locale
     const cardsLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]');
     const count = await cardsLocale.count();
     for (let i = 0; i < count; i++) {
       await cardsLocale.nth(i).click();
     }
 
-    // Applica risoluzione
     await expect(page.locator('#btn-resolve-all')).toBeEnabled();
     await page.locator('#btn-resolve-all').click();
     await expect(page.locator('#merge-conflict-modal')).toBeHidden();
 
-    // Verifica che i dati locali siano preservati intatti
     const merged = await page.evaluate(() => {
       const w = window as any;
       return w.appData.manoscritti.find((m: any) => m.id === 'test-safe-1');
@@ -269,8 +250,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(merged.trascrizione).toContain('Trascrizione preziosa');
   });
 
-  // Audit sync S1: chiudere un modale di risoluzione lasciava partire l'upload del DB locale non
-  // fuso, che sovrascriveva su Drive tutte le modifiche dei colleghi.
   for (const avvio of ['sincronizzaGoogleDrive', 'caricaSulCloud']) {
     for (const caso of ['conflitti', 'cancellazioni']) {
       test(`${avvio}: annullare il modale delle ${caso} non carica nulla su Drive`, async ({ page, userDataDir }) => {
@@ -281,8 +260,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
           const locale = { id: 'ann-1', segnatura: 'Locale', cartella: '', lastModified: 1000 };
           const remoto = caso === 'conflitti'
             ? { manoscritti: [{ ...locale, segnatura: 'Remoto' }], cartelle: [] }
-            // Una cartella nuova dal remoto: annullando non deve entrare nell'archivio (prima
-            // la struttura si fondeva subito, prima della domanda sulle cancellazioni).
             : { manoscritti: [], cartelle: ['Remota'], deletedIds: ['ann-1'] };
           w.appData.manoscritti = [locale];
           w.appData.baseObjects = {};
@@ -344,9 +321,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     });
   }
 
-  // Audit sync S2/S10: il merge proprio dell'Hub scartava le schede remote più vecchie
-  // dell'ultimo pull e ignorava vocabolari e authority; il push successivo li cancellava dal server.
-  // contextBridge congela apiBrowser: l'Hub si simula sugli handler IPC del main.
   const simulaHub = (electronApp: any, database: any) => electronApp.evaluate(({ ipcMain }: any, database: any) => {
     const g = globalThis as any;
     const h: Record<string, (...a: any[]) => any> = {
@@ -384,9 +358,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(pushed.vocabolari['voc-x'].valori).toEqual(['pergamena']);
   });
 
-  // Audit A6: il ripristino di una versione Hub segue le regole del ripristino locale
-  // (`ripristinaDatabase`): schede rifirmate e tombstone per quelle nate dopo, o il merge dei
-  // colleghi le terrebbe com'erano.
   test('Hub: ripristinare una versione rifirma le schede e mette i tombstone', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await electronApp.evaluate(({ ipcMain }: any) => {
@@ -418,9 +389,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(pushed.deletedIds).toContain('v-2');
   });
 
-  // Prova manuale M3.10 (Hub locale, 12/10): dopo un invio riuscito la base non si aggiornava.
-  // Una scheda creata e inviata da me, poi modificata, alla ricezione successiva era "senza
-  // base" e ogni differenza dal server diventava un conflitto sulla MIA scheda.
   test('Hub: una scheda inviata e poi modificata non diventa un conflitto alla ricezione', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await electronApp.evaluate(({ ipcMain }: any) => {
@@ -448,7 +416,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
       await w.inviaModificheHub();
       w.appData.manoscritti[0] = { ...w.appData.manoscritti[0], titolo: 'Dopo l\'invio', lastModified: 2000 };
     });
-    // Un collega aggiunge una scheda sopra la mia versione.
     await electronApp.evaluate(() => {
       const g = globalThis as any;
       g.__e2eHub.database.manoscritti.push({ id: 'coll', segnatura: 'Collega', cartella: '', lastModified: 3000 });
@@ -474,7 +441,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
       w.appData.baseHashes = {};
       w.hubConfig = null;
       w.hasFetchedBeforeDownload = true;
-      // Il main carica il DB dal disco: qui basta lo stato in memoria al momento del caricamento.
       w.__e2eDrive = { manoscritti: [], cartelle: [] };
       w.getApiCloud = async () => ({
         pull: async () => ({ database: structuredClone(w.__e2eDrive), driveModifiedTime: 5000 }),
@@ -529,13 +495,10 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
       w.appData.baseObjects = { 'upl-1': { ...remoto } };
       w.appData.baseHashes = { 'upl-1': w.getRecordHash(remoto) };
 
-      // Sync 1: la base viene salvata, il caricamento sul server NON avviene
-      // (sincronizzaEUnisciDati non carica: simula offline / upload fallito).
       await w.sincronizzaEUnisciDati({ manoscritti: [{ ...remoto }], cartelle: [] });
       const dopoPrima = w.appData.manoscritti.find((m: any) => m.id === 'upl-1').segnatura;
       const base = w.appData.baseObjects['upl-1'].segnatura;
 
-      // Sync 2: il remoto è rimasto quello di prima.
       await w.sincronizzaEUnisciDati({ manoscritti: [{ ...remoto }], cartelle: [] });
       const dopoSeconda = w.appData.manoscritti.find((m: any) => m.id === 'upl-1').segnatura;
       return { dopoPrima, base, dopoSeconda };
@@ -543,7 +506,6 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
 
     await expect(page.locator('#merge-conflict-modal')).toBeHidden();
     expect(esito.dopoPrima).toBe('Modifica locale');
-    // La base è la versione remota, non lo stato fuso
     expect(esito.base).toBe('Originale');
     expect(esito.dopoSeconda).toBe('Modifica locale');
   });

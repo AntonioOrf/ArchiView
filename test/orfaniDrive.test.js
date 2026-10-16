@@ -1,5 +1,3 @@
-// Audit sync S3: la pulizia degli allegati orfani su Drive deve considerare anche il DB remoto,
-// o cestina i chunk degli allegati dei colleghi non ancora ricevuti in locale.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -19,7 +17,6 @@ function preparaWorkspace() {
   const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'av-orfani-'));
   fs.writeFileSync(path.join(ws, 'database_manoscritti.json'),
     JSON.stringify({ manoscritti: [{ id: 'm1', allegati: [{ nome: 'mio.jpg' }] }] }));
-  // Audit A1: una scheda nel cestino (fuori dal DB) conserva i suoi allegati.
   const allegati = path.join(ws, 'allegati_manoscritti');
   fs.mkdirSync(allegati);
   for (const f of ['mio.jpg', 'cestinato.jpg', 'vecchio.jpg']) fs.writeFileSync(path.join(allegati, f), f);
@@ -30,7 +27,6 @@ function preparaWorkspace() {
   return ws;
 }
 
-/** Drive finto: `remoto` è il DB su Drive (o una funzione che lancia). Registra i cestinati. */
 function driveFinto(remoto) {
   const cestinati = [];
   const indice = { 'mio.jpg': [H_MIO], 'collega.jpg': [H_COLLEGA], 'vecchio.jpg': [H_ORFANO] };
@@ -45,7 +41,7 @@ function driveFinto(remoto) {
     get: async ({ fileId }) => {
       if (fileId === 'idx') return { data: JSON.stringify(indice) };
       if (fileId === 'db') { if (typeof remoto === 'function') return remoto(); return { data: remoto }; }
-      return { data: { id: fileId } }; // probe della cartella vault
+      return { data: { id: fileId } };
     },
     update: async ({ fileId }) => { cestinati.push(fileId.slice(2)); return {}; }
   };

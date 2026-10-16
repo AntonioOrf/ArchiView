@@ -1,5 +1,3 @@
-// Ottimizzazione O6: salvataggi ravvicinati mentre il primo snapshot si comprime non devono
-// crearne altri. Ogni doppione occupa uno dei posti "recenti" e fa uscire uno snapshot vecchio.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -16,8 +14,6 @@ const payload = JSON.stringify({ manoscritti: [{ id: 'm1', testo: 'x'.repeat(200
 
 (async () => {
   console.log('Running snapshotAuto tests...');
-  // L'orologio avanza di 1,5 s a ogni lettura: senza, tre snapshot nello stesso secondo
-  // avrebbero lo stesso nome e il doppione si nasconderebbe nella sovrascrittura.
   const veroNow = Date.now;
   let t = veroNow();
   Date.now = () => (t += 1500);

@@ -1,5 +1,3 @@
-// Fase 2.2 — Stampa e PDF. Il template e' un modulo puro nel main: si testa il build in
-// out/, senza Electron e senza stampante (stesso metodo di csvExport.test.js).
 const assert = require('assert');
 const {
   generaHtmlStampa, sanificaHtml, formattaValoreStampa, campiDaStampare, colonneTabella
@@ -20,7 +18,6 @@ function scheda(extra) {
 let test = 0;
 function ok(cond, msg) { assert.ok(cond, msg); }
 
-// --- Fase 3.7: campi propri della scheda ---------------------------------------
 {
   test++;
   const m = scheda({
@@ -34,24 +31,18 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   ok(!campi.includes('campiPropri'), 'Fase 3.7: le definizioni non sono una riga della scheda');
 
   const html = generaHtmlStampa([m], tipi, { layout: 'scheda', etichette: { autore: 'Autore/i' } });
-  // L'etichetta viene dal campo stesso: il catalogo del renderer non conosce un campo
-  // inventato su una scheda sola, e senza questa regola sulla carta comparirebbe l'id.
   ok(html.includes('Filigrana') && html.includes('unicorno'), 'Fase 3.7: etichetta e valore sulla carta');
 }
 
-// --- Fase 3.8: l'ordine dei campi della scheda ---------------------------------
 {
   test++;
   const m = scheda({ autore: 'Anonimo', titolo: 'Vendita', note: 'Nota', ordineCampi: ['note', 'titolo'] });
   const campi = campiDaStampare(m, tipi, false);
-  // La stampa "scheda" guarda UNA scheda per volta, quindi può seguire l'ordine scelto lì;
-  // la tabella no, perché le colonne sono comuni a tutte le schede.
   ok(campi[0] === 'note' && campi[1] === 'titolo', 'Fase 3.8: ordine della scheda rispettato');
   ok(campi.includes('autore'), 'Fase 3.8: ciò che non è elencato resta, in coda');
   ok(!campi.includes('ordineCampi'), 'Fase 3.8: l elenco degli id non è una riga della scheda');
 }
 
-// --- Test 1: i tre layout producono documenti diversi e riconoscibili ----------
 {
   test++;
   const records = [scheda({ autore: 'Anonimo', titolo: 'Vendita di una casa' })];
@@ -66,15 +57,10 @@ function ok(cond, msg) { assert.ok(cond, msg); }
 
   const t = generaHtmlStampa(records, tipi, Object.assign({ layout: 'tabella', colonne: ['autore'] }, comuni));
   ok(t.includes('<table class="tabella"') && t.includes('<th>Autore/i</th>'), 'Test 1: layout tabella');
-  // Un layout ignoto non deve produrre una pagina vuota: si ricade sulla scheda.
   const f = generaHtmlStampa(records, tipi, Object.assign({ layout: 'inventato' }, comuni));
   ok(f.includes('class="scheda"'), 'Test 1: layout sconosciuto → scheda');
 }
 
-// --- Test 2: la trascrizione e' sanificata ------------------------------------
-//
-// E' contenuto NON fidato: arriva da un contenteditable e puo' arrivare dal sync, cioe'
-// dalla macchina di un collega. Nel documento di stampa non deve poter eseguire nulla.
 {
   test++;
   const sporco = '<p>Testo</p><script>alert(1)</script><img src=x onerror="alert(2)">'
@@ -86,17 +72,14 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   ok(!/onerror|onclick/i.test(pulito), 'Test 2: nessun gestore di evento sopravvive');
   ok(!/javascript:/i.test(pulito), 'Test 2: href javascript: scartato');
   ok(pulito.includes('<p>Testo</p>'), 'Test 2: il testo legittimo resta');
-  // La classe dell'OCR va conservata: e' cio' che distingue una bozza da una rilettura.
   ok(pulito.includes('class="ocr-incerto"') && pulito.includes('dubbio'), 'Test 2: class ammessa');
 
   const doc = generaHtmlStampa([scheda({ trascrizione: sporco })], tipi,
     { layout: 'scheda', includiTrascrizione: true });
   ok(!/<script|onerror=/i.test(doc), 'Test 2: il documento completo e\' pulito');
-  // Seconda barriera indipendente dalla whitelist.
   ok(doc.includes("default-src 'none'"), 'Test 2: CSP nella pagina generata');
 }
 
-// --- Test 3: i campi vuoti non si stampano, se non richiesto ------------------
 {
   test++;
   const m = scheda({ autore: 'Anonimo', titolo: '', note: '   ' });
@@ -104,17 +87,11 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   assert.deepStrictEqual(senza, ['autore'], 'Test 3: solo i campi valorizzati');
   const con = campiDaStampare(m, tipi, true);
   ok(con.includes('titolo') && con.includes('note'), 'Test 3: includiVuoti li riporta');
-  // `allegati` e' una chiave di servizio: non e' mai una riga "campo: valore".
   ok(!con.includes('allegati'), 'Test 3: le chiavi di servizio non sono campi');
-  // Un campo valorizzato che il tipo non prevede piu' non deve sparire in silenzio.
   const orfano = campiDaStampare(scheda({ campo_orfano: 'valore' }), tipi, false);
   ok(orfano.includes('campo_orfano'), 'Test 3: campo orfano recuperato');
 }
 
-// --- Test 4: la data e' leggibile, non ISO ------------------------------------
-//
-// E' la differenza rispetto al CSV: un foglio di calcolo deve poter ORDINARE la data,
-// un foglio di carta deve poterla LEGGERE.
 {
   test++;
   const v = formattaValoreStampa('lastModified', Date.UTC(2026, 5, 2), 'it-IT');
@@ -127,7 +104,6 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   );
 }
 
-// --- Test 5: escaping dei dati utente in ogni layout --------------------------
 {
   test++;
   const cattivo = scheda({ segnatura: '<img src=x onerror=alert(1)>', autore: '"virgolette" & <b>' });
@@ -138,9 +114,6 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   }
 }
 
-// --- Test 6: miniature — un allegato senza immagine resta ELENCATO -------------
-//
-// Una scheda che dichiara tre carte e ne mostra due mentirebbe sul proprio contenuto.
 {
   test++;
   const m = scheda({ allegati: [
@@ -156,7 +129,6 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   ok(doc.includes('mini-assente'), 'Test 6: segnaposto per la carta senza miniatura');
 }
 
-// --- Test 7: frontespizio ------------------------------------------------------
 {
   test++;
   const opz = { layout: 'regesto', intestazione: { fondo: 'ASP Notarile', autore: 'M. Rossi', data: 'giugno 2026' } };
@@ -165,25 +137,20 @@ function ok(cond, msg) { assert.ok(cond, msg); }
     'Test 7: frontespizio con fondo e autore');
   const senza = generaHtmlStampa([scheda({})], tipi, opz);
   ok(!senza.includes('class="cover"'), 'Test 7: senza frontespizio non c\'e\' copertina');
-  // Ma il nome del fondo apre comunque l'elenco: un inventario anonimo non e' citabile.
   ok(senza.includes('titolo-elenco') && senza.includes('ASP Notarile'), 'Test 7: titolo in testa all\'elenco');
 }
 
-// --- Test 8: colonne della tabella --------------------------------------------
 {
   test++;
   const records = [scheda({ autore: 'A', titolo: 'T', note: 'N' })];
   assert.deepStrictEqual(colonneTabella(records, tipi, { colonne: ['titolo'] }), ['titolo'],
     'Test 8: vincono le colonne passate dal renderer (vista tabella della 1.1)');
-  // Senza colonne il documento non deve ridursi alla sola segnatura.
   const derivate = colonneTabella(records, tipi, {});
   ok(derivate.length >= 2 && derivate.includes('autore'), 'Test 8: fallback sui campi valorizzati');
-  // Le chiavi di servizio non diventano mai colonne, nemmeno se richieste.
   assert.deepStrictEqual(colonneTabella(records, tipi, { colonne: ['id', 'trascrizione'] }).length, 3,
     'Test 8: colonne di servizio scartate → si ricade sul calcolo automatico');
 }
 
-// --- Test 9: elenco vuoto -----------------------------------------------------
 {
   test++;
   const doc = generaHtmlStampa([], tipi, { layout: 'scheda', testi: { print_no_records: 'Vuoto.' } });
@@ -191,10 +158,6 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   ok(!doc.includes('class="cover"'), 'Test 9: nessun frontespizio per zero schede');
 }
 
-// --- Test 10: la i18n arriva dal renderer -------------------------------------
-//
-// Il main non conosce la i18n (lezione della 2.1): se `testi` non passasse, il documento
-// uscirebbe in italiano dentro un'applicazione in inglese.
 {
   test++;
   const doc = generaHtmlStampa([scheda({
@@ -209,11 +172,10 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   ok(!doc.includes('Allegati') && !doc.includes('Trascrizione'), 'Test 10: nessuna stringa italiana residua');
 }
 
-// --- Test 11: trascrizione salvata solo negli allegati viene stampata ---------
 {
   test++;
   const m = scheda({
-    trascrizione: '', // vuota a livello radice
+    trascrizione: '',
     allegati: [
       { nome: 'c1.jpg', originalName: 'Carta 1r', trascrizione: '<p>Testo da carta 1</p>' }
     ]
@@ -222,7 +184,6 @@ function ok(cond, msg) { assert.ok(cond, msg); }
   ok(doc.includes('Testo da carta 1'), 'Test 11: trascrizione negli allegati stampata anche con m.trascrizione vuota');
 }
 
-// --- Test 12: regesto include attori ------------------------------------------
 {
   test++;
   const m = scheda({

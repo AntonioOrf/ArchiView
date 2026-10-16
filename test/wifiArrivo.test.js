@@ -1,4 +1,3 @@
-// ArchiScanner: Wi-Fi diretto, server HTTP sulla LAN (src/main/scanner/wifiArrivo.ts).
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -9,8 +8,6 @@ const { avviaServerWifi, urlAbbinamento, indirizziLan } = require('../out/main/s
 
 console.log('Running wifiArrivo tests...');
 
-// Il primo indirizzo va nel QR, e il telefono accetta solo IPv4 privati (mobile/src/qr.ts).
-// Con una VPN (Radmin, 26.x) elencata prima del Wi-Fi il QR non abbinava mai (prova M8.14, 12/10).
 {
   const v4 = (address, internal = false) => ({ family: 'IPv4', address, internal });
   const schede = {
@@ -58,13 +55,11 @@ function richiesta(porta, metodo, percorso, corpo, token) {
   try {
     assert.match(urlAbbinamento('192.168.1.5', s.porta, t), /^archiview-scanner:\/\/abbina\?h=192\.168\.1\.5&p=\d+&t=[0-9a-f]{64}$/);
 
-    // Senza token, o con un token sbagliato, niente.
     assert.strictEqual((await richiesta(s.porta, 'GET', '/ping')).stato, 401);
     assert.strictEqual((await richiesta(s.porta, 'GET', '/ping', null, 'x'.repeat(64))).stato, 401);
     const ping = await richiesta(s.porta, 'GET', '/ping', null, t);
     assert.deepStrictEqual([ping.stato, JSON.parse(ping.corpo).archivio], [200, 'Prova']);
 
-    // Solo id e nomi del contratto nell'URL.
     const id = '20261009-140000-wifi';
     const pagina = Buffer.from('foto finta');
     assert.strictEqual((await richiesta(s.porta, 'PUT', `/lotti/..%2F..%2Fx/p0001.jpg`, pagina, t)).stato, 400);
@@ -72,7 +67,6 @@ function richiesta(porta, metodo, percorso, corpo, token) {
     assert.strictEqual((await richiesta(s.porta, 'DELETE', `/lotti/${id}/p0001.jpg`, null, t)).stato, 404);
     assert.strictEqual((await richiesta(s.porta, 'PUT', `/lotti/${id}/p0001.jpg`, null, t)).stato, 411);
 
-    // Pagina, poi manifest sbagliato (sha diverso) → 422 e niente in arrivo.
     assert.strictEqual((await richiesta(s.porta, 'PUT', `/lotti/${id}/p0001.jpg`, pagina, t)).stato, 204);
     const manifest = (hash) => Buffer.from(JSON.stringify({
       formato: 'archiview-scanner/lotto', versione: 1, id, creatoIl: '2026-10-09T14:00:00+02:00',
@@ -83,7 +77,6 @@ function richiesta(porta, metodo, percorso, corpo, token) {
     assert.deepStrictEqual(JSON.parse(male.corpo).falliti, ['sha256_diverso']);
     assert.ok(!fs.existsSync(path.join(o.cartellaArrivo, id)));
 
-    // Rimandato per bene → 201, lotto in arrivo, parcheggio vuoto, evento.
     assert.strictEqual((await richiesta(s.porta, 'PUT', `/lotti/${id}/p0001.jpg`, pagina, t)).stato, 204);
     assert.strictEqual((await richiesta(s.porta, 'PUT', `/lotti/${id}/lotto.json`, manifest(sha(pagina)), t)).stato, 201);
     assert.ok(fs.existsSync(path.join(o.cartellaArrivo, id, 'p0001.jpg')));
@@ -92,7 +85,6 @@ function richiesta(porta, metodo, percorso, corpo, token) {
   } finally {
     await s.ferma();
   }
-  // Server spento: il token non apre più nulla.
   await assert.rejects(richiesta(s.porta, 'GET', '/ping', null, t));
 
   console.log('✓ wifiArrivo: token, URL, verifica e arrivo');

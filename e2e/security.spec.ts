@@ -6,14 +6,11 @@ test.describe('Security Regression Tests', () => {
 
   test('CSP senza unsafe-inline: nessun handler inline nel DOM e nessuna violazione', async ({ page, electronApp, userDataDir }) => {
     test.setTimeout(120_000);
-    // La policy stessa: se qualcuno rimette 'unsafe-inline' fra gli script, qui si vede.
     const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]')!.getAttribute('content') || '');
     const scriptSrc = (/script-src([^;]*)/.exec(csp) || [])[1] || '';
     expect(scriptSrc).not.toContain('unsafe-inline');
     expect(scriptSrc).not.toContain('unsafe-eval');
 
-    // Chromium segnala un on*="" bloccato solo quando l'evento scatta: il controllo forte è
-    // che nel DOM non ne resti nessuno, schermata per schermata.
     const inline = (dove: string) => page.evaluate((dove) => {
       const out: string[] = [];
       document.querySelectorAll('*').forEach(el => {
@@ -29,7 +26,6 @@ test.describe('Security Regression Tests', () => {
     const path = await import('path');
     const trovati: string[] = [...await inline('benvenuto')];
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Csp');
-    // Dopo la creazione: aprire il workspace ricarica la finestra.
     await page.evaluate(() => {
       (window as any).__violazioniCsp = [];
       document.addEventListener('securitypolicyviolation', (e) =>
@@ -62,7 +58,7 @@ test.describe('Security Regression Tests', () => {
       trovati.push(...await inline(s.nome));
       await s.chiudi();
     }
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const id = await page.evaluate(() => appData.manoscritti[0].id);
     await page.evaluate((id) => (window as any).apriTrascrizione(id), id);
     await expect(page.locator('#trascrizione-editor')).toBeVisible();
@@ -73,23 +69,19 @@ test.describe('Security Regression Tests', () => {
   });
 
   test('cloneWorkspaceHub IPC deve bloccare i tentativi di directory traversal', async ({ page, userDataDir }) => {
-    // Usiamo il preload apiBrowser per simulare una chiamata malevola dal renderer
-    // Tentiamo di fargli scrivere fuori dalla directory consentita (userDataDir)
     const result = await page.evaluate(async (basePath) => {
       const api = (window as any).apiBrowser;
       if (!api || !api.cloneWorkspaceHub) {
         return 'API non disponibile';
       }
       try {
-        // Tentativo di path traversal: nome cartella con '../' per evadere dal basePath
         const res = await api.cloneWorkspaceHub(basePath, '../../cartella-malevola', {}, {});
-        return res; // Ci aspettiamo che ritorni false grazie alla mitigazione introdotta
+        return res;
       } catch (e: any) {
         return e.message;
       }
     }, userDataDir);
 
-    // Deve ritornare false (azione bloccata dal controllo newPath.startsWith)
     expect(result).toBe(false);
   });
 
@@ -99,25 +91,20 @@ test.describe('Security Regression Tests', () => {
       if (msg.text() === 'XSS-PAYLOAD-TRIGGERED') xssFired = true; 
     });
 
-    // Testiamo la VERA barriera protettiva dell'app: il sistema di sanitizzazione.
-    // Simuliamo che un dato compromesso (proveniente dal DB o dall'Hub) arrivi alla vista.
     const resultHtml = await page.evaluate(() => {
         const payload = '<img src="x" onerror="console.log(\'XSS-PAYLOAD-TRIGGERED\')"> <b onclick="alert(1)">Test</b>';
-        // Se utils.ts / DOMPurify è configurato correttamente, gli attributi 'onerror' e 'onclick' verranno rimossi.
         if (typeof (window as any).sanitizeHTML === 'function') {
             return (window as any).sanitizeHTML(payload);
         }
         return 'sanitizeHTML_non_trovata';
     });
 
-    // Verifichiamo che DOMPurify abbia strappato via l'attributo malevolo
     expect(resultHtml).not.toContain('onerror');
     expect(resultHtml).not.toContain('XSS-PAYLOAD-TRIGGERED');
     expect(resultHtml).not.toContain('onclick');
     expect(xssFired).toBe(false);
   });
 
-  // Le chiavi dell'Hub restano nel main.
   test('config Hub: nessuna chiave nel renderer, hubUrl e segreti non riscrivibili da lì', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -125,7 +112,6 @@ test.describe('Security Regression Tests', () => {
     const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'HubChiavi');
     const wsPath = typeof ws === 'string' && fs.existsSync(ws) ? ws : await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath());
     const cfgFile = path.join(wsPath, '.archiview-hub.json');
-    // Config legacy con i segreti in chiaro: la prima lettura li sposta nel token store.
     fs.writeFileSync(cfgFile, JSON.stringify({ hubUrl: 'https://hub.example', repoId: 'r1', repoKey: 'CHIAVE-SEGRETA', encKey: 'ENC-SEGRETA', version: 2 }));
 
     const api = (fn: string, ...args: any[]) => page.evaluate(([f, a]) => (window as any).apiBrowser[f as string](...(a as any[])), [fn, args] as const);
@@ -134,20 +120,16 @@ test.describe('Security Regression Tests', () => {
     expect(letta).toMatchObject({ hubUrl: 'https://hub.example', repoId: 'r1', hasRepoKey: true, hasEncKey: true, version: 2 });
     expect(fs.readFileSync(cfgFile, 'utf8')).not.toMatch(/SEGRETA/);
 
-    // Il renderer aggiorna lo stato della sync, non la destinazione né le chiavi.
     expect(await api('saveHubConfig', { hubUrl: 'https://evil.example', repoId: 'altro', repoKey: 'X', encKey: 'Y', version: 5, attachmentsMode: 'off' })).toBe(true);
     expect(await api('loadHubConfig')).toMatchObject({ hubUrl: 'https://hub.example', repoId: 'r1', version: 5, attachmentsMode: 'off', hasRepoKey: true });
 
-    // Il clone dal renderer non accetta più una config Hub (il join passa da hub-join nel main).
     expect(await api('cloneWorkspaceHub', userDataDir, 'Clone', { hubUrl: 'https://evil.example', repoId: 'r', repoKey: 'k' }, {})).toBe(false);
     expect(fs.existsSync(path.join(userDataDir, 'Clone'))).toBe(false);
 
-    // Invito con Hub in chiaro verso un host remoto: rifiutato prima di qualsiasi richiesta.
     const invito = Buffer.from('HUB1|http://evil.example|r1|k|e|||x').toString('base64url');
     expect(await api('hubJoin', invito, userDataDir)).toMatchObject({ ok: false, status: 0 });
   });
 
-  // Il database arriva all'Hub cifrato e torna in chiaro solo nel client.
   test('Hub: database cifrato sul server, decifrato al pull, downgrade in chiaro rifiutato', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -157,7 +139,6 @@ test.describe('Security Regression Tests', () => {
     const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'HubCifrato');
     const wsPath = typeof ws === 'string' && fs.existsSync(ws) ? ws : await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath());
 
-    // Finto Hub: conserva ciò che riceve, come il Worker vero (versioni append-only).
     const versioni: any[] = [{ manoscritti: [] }];
     const server = http.createServer((req, res) => {
       let body = '';
@@ -197,16 +178,13 @@ test.describe('Security Regression Tests', () => {
       expect(pull.ok).toBe(true);
       expect(pull.data).toMatchObject({ version: 1, database: db });
 
-      // Lo snapshot pre-cifratura (v0, in chiaro) resta consultabile nella cronologia.
       expect(await api('hubVersion', 0)).toMatchObject({ ok: true, data: { database: { manoscritti: [] } } });
 
-      // Il server (o un client vecchio) rimette in chiaro la versione corrente: rifiutata.
       versioni.push({ manoscritti: [{ id: 'm1', trascrizione: 'contenuto iniettato' }] });
       const downgrade = await api('hubPull');
       expect(downgrade.ok).toBe(false);
       expect(JSON.stringify(downgrade)).not.toContain('iniettato');
 
-      // Rollback: il server ripresenta la busta della v1 come se fosse la v3. AAD diversa → rifiutata.
       versioni.push(versioni[1]);
       expect((await api('hubPull')).ok).toBe(false);
     } finally {
@@ -214,8 +192,6 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // Realtime Hub su canale privato. SDK locale sotto CSP, firma
-  // chiesta dal main con la repoKey, notifica = solo controllo, il proprio push non è una novità.
   test('realtime Hub: SDK locale, iscrizione autorizzata dal main, evento → solo controllo', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -245,7 +221,6 @@ test.describe('Security Regression Tests', () => {
       await page.evaluate(() => document.addEventListener('securitypolicyviolation',
         (e) => (window as any).segnalaCsp(`${e.violatedDirective} ${e.blockedURI}`)));
 
-      // Avvio come all'apertura del vault: config pubblica, poi autofetch + realtime.
       await page.evaluate(async () => {
         const w = window as any;
         w.hubConfig = await w.apiBrowser.loadHubConfig();
@@ -255,18 +230,15 @@ test.describe('Security Regression Tests', () => {
       const src = await page.evaluate(() => Array.from(document.scripts).map((s) => s.src).filter((s) => /pusher/i.test(s)));
       expect(src.length).toBeGreaterThan(0);
       for (const s of src) expect(s).not.toMatch(/^https?:/);
-      // L5: il renderer non fa più fetch (le chiamate cloud sono nel main): solo il WebSocket Pusher.
       const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]')!.getAttribute('content') || '');
       expect((/connect-src([^;]*)/.exec(csp) || [])[1].trim()).toBe("'self' wss://*.pusher.com");
       expect(csp).not.toContain('js.pusher.com');
 
-      // Il main valida prima di chiamare il Worker: né canali altrui né socket id strani partono.
       const auth = (socketId: string, channel: string) => page.evaluate(([s, c]) => (window as any).apiBrowser.hubRealtimeAuth(s, c), [socketId, channel]);
       expect(await auth('1.2', 'private-repo-altro')).toMatchObject({ ok: false, status: 0 });
       expect(await auth('1.2:x', 'private-repo-repo_rt')).toMatchObject({ ok: false, status: 0 });
       expect(richieste.length).toBe(0);
 
-      // Percorso completo dell'SDK: channelAuthorizer → customHandler → IPC → main → Worker.
       const firma = await page.evaluate(() => new Promise((resolve) => {
         (window as any).pusherInstance.config.channelAuthorizer(
           { socketId: '123.456', channelName: 'private-repo-repo_rt' }, (err: any, data: any) => resolve({ err: err && String(err), data }));
@@ -278,7 +250,6 @@ test.describe('Security Regression Tests', () => {
       expect(JSON.parse(richieste[0].body)).toEqual({ socketId: '123.456', channel: 'private-repo-repo_rt' });
       expect(await page.evaluate(() => JSON.stringify((window as any).hubConfig))).not.toContain('CHIAVE-RT');
 
-      // Evento: versione già nota → niente; più recente → solo il controllo (nessun merge).
       const chiamate = await page.evaluate(async () => {
         const w = window as any;
         let n = 0;
@@ -293,7 +264,6 @@ test.describe('Security Regression Tests', () => {
       });
       expect(chiamate).toEqual([0, 1]);
 
-      // Il proprio push: l'evento arriva prima della risposta, ma non diventa una novità.
       const proprio = await page.evaluate(async () => {
         const w = window as any;
         let n = 0;
@@ -315,7 +285,6 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // L'id della scheda arriva dal vault e finiva nel percorso di copia.
   test('salva-allegato: id ostile resta nella cartella allegati, file interni non allegabili', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -331,16 +300,12 @@ test.describe('Security Regression Tests', () => {
       expect(fs.existsSync(path.join(path.dirname(dir), r.fileName))).toBe(true);
     }
 
-    // Un file dei dati dell'app (userData, fuori dal workspace aperto) non si copia fra gli allegati.
     const interno = path.join(userDataDir, 'segreto-di-prova.json');
     fs.writeFileSync(interno, '{"token":"x"}');
     expect(await page.evaluate((p) => (window as any).apiBrowser.salvaAllegato(p, 'id1'), interno)).toBeNull();
-    // Percorso relativo: rifiutato
     expect(await page.evaluate(() => (window as any).apiBrowser.salvaAllegato('sample.png', 'id1'))).toBeNull();
   });
 
-  // Visualizzatore PDF: il renderer legge byte dal main. Solo PDF della cartella allegati,
-  // solo intervalli sensati, mai un file intero in una richiesta.
   test('pdf-allegato-*: niente traversal, niente non-PDF, intervalli limitati', async ({ page, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -360,9 +325,7 @@ test.describe('Security Regression Tests', () => {
     expect(intervallo.ok).toBe(true);
     expect(Buffer.from(intervallo.dati).toString('latin1')).toBe('%PDF-');
 
-    // Un'immagine è un allegato, ma questa API non la legge.
     expect((await api('pdfAllegatoInfo', rPng.fileName)).ok).toBe(false);
-    // Il percorso si riduce al nome: fuori dalla cartella allegati non si esce.
     expect((await api('pdfAllegatoInfo', '..\\..\\' + rPdf.fileName)).ok).toBe(true);
     expect((await api('pdfAllegatoInfo', 'C:\\Windows\\win.ini')).ok).toBe(false);
     for (const [a, b] of [[-1, 10], [10, 5], [0, 64 * 1024 * 1024], [0.5, 10], ['0', 10]]) {
@@ -370,14 +333,12 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // Un data-on-* in un HTML condiviso non deve diventare un comando.
   test('una trascrizione con data-on-* non chiama funzioni (sanitize, registro, editor)', async ({ page, userDataDir }) => {
     const { createLocalWorkspace, seedItems } = await import('./helpers');
     const path = await import('path');
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Azioni');
     const [id] = await seedItems(page, 1);
 
-    // Spie al posto di una funzione distruttiva (fuori registro) e di una del registro.
     await page.evaluate(() => {
       const w = window as any;
       w.__chiamate = [];
@@ -385,9 +346,8 @@ test.describe('Security Regression Tests', () => {
       w.apriCestino = () => w.__chiamate.push('apriCestino');
     });
 
-    // 1. Sanitize: il payload salvato nella scheda arriva nell'editor senza attributi d'azione.
     await page.evaluate(async (recId) => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico)
+      // @ts-ignore
       const m = appData.manoscritti.find((x: any) => x.id === recId);
       m.trascrizione = '<p id="ostile" data-on-mousedown="svuotaCestino" data-on-click="apriCestino" data-args-click="[1]" '
         + 'style="position:fixed;inset:0;z-index:99999;opacity:0">x</p><p>Incipit</p>';
@@ -400,8 +360,6 @@ test.describe('Security Regression Tests', () => {
     expect(residui).toBe(0);
     await page.mouse.click(300, 300);
 
-    // 2. Editor: anche se un attributo arrivasse nel contenuto per un'altra strada, dentro un
-    //    contenteditable non è un comando, nemmeno con un nome del registro.
     await page.evaluate(() => {
       const p = document.createElement('p');
       p.id = 'iniettato-editor';
@@ -411,8 +369,6 @@ test.describe('Security Regression Tests', () => {
     });
     await page.locator('#iniettato-editor').dispatchEvent('click');
 
-    // 3. Registro: fuori dall'editor un nome non registrato non si esegue, né diretto né
-    //    passando da seEsiste / inSequenza / cliccaElemento.
     await page.evaluate(() => {
       const box = document.createElement('div');
       box.id = 'iniettato-fuori';
@@ -429,7 +385,6 @@ test.describe('Security Regression Tests', () => {
 
     expect(await page.evaluate(() => (window as any).__chiamate)).toEqual([]);
 
-    // Controprova: il registro non ha spento le azioni legittime.
     await page.evaluate(() => {
       const b = document.createElement('button');
       b.id = 'legittimo';
@@ -441,9 +396,6 @@ test.describe('Security Regression Tests', () => {
     expect(await page.evaluate(() => (window as any).__chiamate)).toEqual(['apriCestino']);
   });
 
-  // Un `file://host/…` in un HTML condiviso fa tentare
-  // a Windows una connessione SMB verso host, con l'hash NTLM dell'utente. La CSP non lo ferma
-  // (`img-src 'self'` su una pagina file:// copre ogni file:), quindi due difese indipendenti.
   test('file:// verso un host remoto: tolto dal sanitizer e bloccato dal main', async ({ page }) => {
     const pulito = await page.evaluate(() => (window as any).sanitizeHTML(
       '<p><img src="file://192.0.2.1/s/x.png"><img src="FILE:////192.0.2.1/s/y.png">'
@@ -451,8 +403,6 @@ test.describe('Security Regression Tests', () => {
     expect(pulito).not.toContain('192.0.2.1');
     expect(pulito).toContain('local-asset://ok.png');
 
-    // Rete indipendente dal sanitizer: la richiesta muore subito nel main invece di restare
-    // appesa al tentativo SMB (192.0.2.1 è TEST-NET, nessuno risponde).
     for (const src of ['file://192.0.2.1/s/x.png', 'file:////192.0.2.1/s/x.png']) {
       const esito = await page.evaluate((src) => new Promise<string>((resolve) => {
         const img = new Image();
@@ -465,9 +415,6 @@ test.describe('Security Regression Tests', () => {
     }
   });
 
-  // O3: la finestra principale gira su app://archiview, quindi `'self'` non comprende più
-  // `file:`. Su file:// un'immagine del disco passava la CSP: un HTML condiviso poteva
-  // sondare l'esistenza di file locali (onload/onerror) e rimaneva solo la guardia del main.
   test('origine app://: la CSP non lascia caricare file: nemmeno locali', async ({ page }) => {
     expect(await page.evaluate(() => location.origin)).toBe('app://archiview');
     const src = pathToFileURL(path.resolve(__dirname, 'fixtures', 'sample.png')).href;
@@ -481,7 +428,6 @@ test.describe('Security Regression Tests', () => {
     expect(esito).toBe('bloccata');
   });
 
-  // N3: nessuno script remoto nel renderer (il Picker Google gira nel browser esterno).
   test('nessuno script remoto: CSP senza domini Google, join senza api.js', async ({ page }) => {
     const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]')!.getAttribute('content') || '');
     expect((/script-src([^;]*)/.exec(csp) || [])[1].trim()).toBe("'self'");
@@ -491,9 +437,6 @@ test.describe('Security Regression Tests', () => {
     expect(remoti).toEqual([]);
   });
 
-  // N2: le chiavi che decidono quali cartelle il main legge, copia o cestina non arrivano
-  // dal renderer. Prima un renderer compromesso le scriveva con save-settings e poi mandava
-  // nel cestino una cartella qualsiasi passando da delete-vault-local.
   test('patch-settings: percorsi e chiavi del vault non scrivibili dal renderer', async ({ page, electronApp, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const { stubDialog } = await import('./fixtures');
@@ -521,8 +464,6 @@ test.describe('Security Regression Tests', () => {
 
     expect((await page.evaluate((v) => (window as any).apiBrowser.deleteVaultLocal(v), vittima)).success).toBe(false);
     expect(fs.existsSync(vittima)).toBe(true);
-    // Audit A5: "apri recente" con un percorso che non è fra i recenti l'avrebbe aggiunto ai
-    // recenti, e da lì delete-vault-local l'avrebbe cestinato.
     expect(await page.evaluate((v) => (window as any).apiBrowser.openRecentWorkspace(v), vittima)).toBe(false);
     expect((await page.evaluate(() => (window as any).apiSettings.get())).recentWorkspaces).toEqual(prima.recentWorkspaces);
     const archivi = await page.evaluate(() => (window as any).apiBrowser.crossArchiveArchivi());
@@ -530,7 +471,6 @@ test.describe('Security Regression Tests', () => {
     const allegati = await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'));
     expect(path.dirname(allegati)).not.toBe(vittima);
 
-    // La cartella allegati personalizzata passa da un dialogo aperto dal main, e si ripristina.
     const scelta = path.join(userDataDir, 'allegati-altrove');
     fs.mkdirSync(scelta);
     await stubDialog(electronApp, { canceled: false, filePaths: [scelta] });
@@ -540,7 +480,6 @@ test.describe('Security Regression Tests', () => {
     expect((await page.evaluate(() => (window as any).apiSettings.get())).customAttachmentsPath).toBeUndefined();
     expect(path.basename(path.dirname(await page.evaluate(() => (window as any).apiBrowser.getAllegatoPath('x'))))).toBe('allegati_manoscritti');
 
-    // Una preferenza svuotata si toglie davvero dal file (prima il valore vecchio restava).
     await page.evaluate(async () => {
       const api = (window as any).apiSettings;
       await api.patch({ snapshotRecenti: 10 });
@@ -549,14 +488,12 @@ test.describe('Security Regression Tests', () => {
     expect((await page.evaluate(() => (window as any).apiSettings.get())).snapshotRecenti).toBeUndefined();
   });
 
-  // L2: senza handler Electron concedeva ogni permesso a qualsiasi pagina.
   test('permessi: negati tutti tranne appunti e schermo intero della finestra principale', async ({ page, electronApp }) => {
     expect(await page.evaluate(() => Notification.requestPermission())).toBe('denied');
     const media = await page.evaluate(() => navigator.mediaDevices.getUserMedia({ audio: true }).then(() => 'concesso', (e) => e.name));
     expect(media).not.toBe('concesso');
     expect(await page.evaluate(() => navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((s) => s.state))).toBe('denied');
 
-    // Un webContents secondario (come gli host PDF e stampa) non naviga da solo e non apre finestre.
     const esito = await electronApp.evaluate(async ({ BrowserWindow }) => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       try {
@@ -572,8 +509,6 @@ test.describe('Security Regression Tests', () => {
     expect(esito.finestre).toBe(2);
   });
 
-  // N4: un allegato dichiarato `pdf` che è un .html o un .svg non deve girare come pagina
-  // nell'iframe del modal, e local-asset serve solo immagini e PDF con un tipo fisso.
   test('local-asset: solo immagini e PDF, con header; un "PDF" che non lo è non si apre', async ({ page, electronApp, userDataDir }) => {
     const { createLocalWorkspace } = await import('./helpers');
     const path = await import('path');
@@ -588,7 +523,6 @@ test.describe('Security Regression Tests', () => {
     fs.copyFileSync(path.join(__dirname, 'fixtures', 'sample.pdf'), path.join(dir, 'doc.pdf'));
     fs.writeFileSync(path.join(path.dirname(dir), 'fuori.png'), fs.readFileSync(path.join(__dirname, 'fixtures', 'sample.png')));
 
-    // Risposte del protocollo, lette dal main.
     const chiedi = (url: string) => electronApp.evaluate(async ({ net }, u) => {
       const r = await net.fetch(u);
       return { status: r.status, tipo: r.headers.get('content-type'), nosniff: r.headers.get('x-content-type-options'), csp: r.headers.get('content-security-policy') };
@@ -603,7 +537,6 @@ test.describe('Security Regression Tests', () => {
     const svg = await chiedi('local-asset://ostile.svg');
     expect(svg.csp).toContain("default-src 'none'");
 
-    // Nell'iframe del modal: nessuno script di un allegato gira, qualunque sia la strada.
     await page.evaluate(() => {
       (window as any).__eseguito = 0;
       window.addEventListener('message', (e) => { if (e.data === 'eseguito') (window as any).__eseguito++; });
@@ -614,12 +547,10 @@ test.describe('Security Regression Tests', () => {
     await page.waitForTimeout(1500);
     expect(await page.evaluate(() => (window as any).__eseguito)).toBe(0);
 
-    // Il PDF vero si apre ancora.
     await page.keyboard.press('Escape');
     await page.evaluate(() => (window as any).apriPdfInterno('doc.pdf'));
     await expect(page.locator('#modal-pdf')).toBeVisible();
     expect(await page.locator('#modal-pdf').getAttribute('src')).toContain('local-asset://doc.pdf');
-    // Con gli header nuovi il visualizzatore nativo di Chromium parte ancora.
     await expect.poll(() => page.frames().some((f) => f.url().startsWith('chrome-extension://'))).toBe(true);
   });
 

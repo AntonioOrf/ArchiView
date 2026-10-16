@@ -1,13 +1,9 @@
-// Client Hub nel main. La repoKey va solo all'Hub configurato, su
-// HTTPS (o loopback), mai seguendo un redirect; gli inviti restano compatibili col formato
-// generato finora dal renderer.
 const assert = require('assert');
 const http = require('http');
 const { chiamataHub, hubUrlValido, generaEncKey, codificaInvito, decodificaInvito } = require('../out/main/ipc/hubClient');
 
 console.log('Running hubClient tests...');
 
-// 1. URL dell'Hub: HTTPS, oppure http solo verso la macchina stessa
 assert.strictEqual(hubUrlValido('https://hub.example.workers.dev'), 'https://hub.example.workers.dev');
 assert.strictEqual(hubUrlValido('https://hub.example/base/'), 'https://hub.example/base');
 assert.strictEqual(hubUrlValido('http://127.0.0.1:8787'), 'http://127.0.0.1:8787');
@@ -16,7 +12,6 @@ for (const u of ['http://hub.example', 'ftp://x', 'javascript:alert(1)', 'https:
   assert.strictEqual(hubUrlValido(u), null, `accettato: ${u}`);
 }
 
-// 2. Invito: andata e ritorno, e compatibilità col codice prodotto dal vecchio renderer
 const inv = { hubUrl: 'https://hub.example', repoId: 'repo_1', memberKey: 'mk-segreta', encKey: generaEncKey(),
   pusherKey: 'pk', pusherCluster: 'eu', name: 'Fondo Àngelo | "prova"' };
 assert.deepStrictEqual(decodificaInvito(codificaInvito(inv)), inv);
@@ -27,26 +22,23 @@ const raw = ['HUB1', inv.hubUrl, inv.repoId, inv.memberKey, inv.encKey, inv.push
 assert.deepStrictEqual(decodificaInvito(vecchioRenderer(raw)), inv);
 assert.strictEqual(Buffer.from(generaEncKey(), 'base64url').length, 32);
 
-// 3. Inviti ostili: rifiutati
 const enc = (s) => Buffer.from(s, 'utf8').toString('base64url');
 for (const c of [
-  enc('HUB1|http://evil.example|r|k'),          // chiave in chiaro verso un host remoto
-  enc('HUB1|https://hub.example|../x|k'),        // repoId che cambia la rotta
+  enc('HUB1|http://evil.example|r|k'),
+  enc('HUB1|https://hub.example|../x|k'),
   enc('HUB1|https://hub.example|a/b|k'),
-  enc('HUB1|https://hub.example|r|'),            // senza chiave
+  enc('HUB1|https://hub.example|r|'),
   enc('HUB2|https://hub.example|r|k'),
   'non-base64!!', '', null, 'A'.repeat(9000),
 ]) assert.strictEqual(decodificaInvito(c), null, `accettato: ${c}`);
 
 (async () => {
-  // 4. Config non valida: nessuna richiesta, status 0
   for (const cfg of [null, {}, { hubUrl: 'http://evil.example', repoId: 'r', repoKey: 'k' },
     { hubUrl: 'https://hub.example', repoId: '../x', repoKey: 'k' }, { hubUrl: 'https://hub.example', repoId: 'r', repoKey: '' }]) {
     const r = await chiamataHub(cfg, 'GET', '/pull');
     assert.strictEqual(r.ok, false); assert.strictEqual(r.status, 0);
   }
 
-  // 5. Server locale: Bearer inviato, esiti ed errori riportati senza eccezioni, redirect non seguiti
   const visti = [];
   const server = http.createServer((req, res) => {
     visti.push({ url: req.url, auth: req.headers.authorization || null });
@@ -68,11 +60,9 @@ for (const c of [
     server.close();
   }
 
-  // 6. Hub irraggiungibile: status 0, nessuna eccezione
   const giu = await chiamataHub({ ...cfg, hubUrl: 'http://127.0.0.1:1' }, 'GET', '/pull', { timeoutMs: 2000 });
   assert.strictEqual(giu.ok, false); assert.strictEqual(giu.status, 0);
 
-  // 7. Cifratura del database (S7): il server vede solo la busta
   const { cifraDatabase, decifraDatabase, eDatabaseCifrato } = require('../out/main/ipc/hubClient');
   const k = generaEncKey();
   const db = { nomeArchivio: 'Fondo Rossi', manoscritti: [{ id: 'a1', trascrizione: 'Incipit liber secretus' }] };
@@ -80,10 +70,8 @@ for (const c of [
   assert.ok(eDatabaseCifrato(busta));
   assert.ok(!JSON.stringify(busta).includes('secretus') && !JSON.stringify(busta).includes('Rossi'), 'testo in chiaro nella busta');
   assert.deepStrictEqual(await decifraDatabase(busta, k, 'r1', 7), db);
-  // Due cifrature dello stesso DB non coincidono (nonce casuale)
   assert.notStrictEqual((await cifraDatabase(db, k, 'r1', 7)).dati, busta.dati);
 
-  // Chiave sbagliata, altra versione (rollback del server), altro repo, dati alterati: rifiutati
   await assert.rejects(decifraDatabase(busta, generaEncKey(), 'r1', 7), /decifrare/);
   await assert.rejects(decifraDatabase(busta, k, 'r1', 6), /decifrare/);
   await assert.rejects(decifraDatabase(busta, k, 'r2', 7), /decifrare/);
@@ -94,11 +82,9 @@ for (const c of [
   await assert.rejects(decifraDatabase({ ...busta, archiviewCifrato: 2 }, k, 'r1', 7), /aggiorna/);
   await assert.rejects(cifraDatabase(db, 'corta', 'r1', 1), /Chiave/);
 
-  // Versioni precedenti alla cifratura: passano come sono
   assert.deepStrictEqual(await decifraDatabase(db, k, 'r1', 3), db);
   assert.strictEqual(eDatabaseCifrato(db), false);
 
-  // La chiave del DB è derivata: con la encKey grezza (quella degli allegati) non si decifra
   const crypto = require('crypto');
   const iv = Buffer.from(busta.iv, 'base64'); const dati = Buffer.from(busta.dati, 'base64');
   const d = crypto.createDecipheriv('aes-256-gcm', Buffer.from(k, 'base64url'), iv);

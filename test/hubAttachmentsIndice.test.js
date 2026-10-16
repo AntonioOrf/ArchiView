@@ -1,5 +1,3 @@
-// Audit sync S4/S7: un allegato segnato `deleted` sull'Hub e di nuovo usato in locale (ripristinato
-// dal cestino) va ripubblicato; e l'indice si legge e si scrive solo tramite chiamataHub.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');

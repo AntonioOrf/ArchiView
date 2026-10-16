@@ -7,7 +7,6 @@ test.use({ seedWorkspace: 'Viewer' });
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 const FIXTURE_PDF = path.join(__dirname, 'fixtures', 'sample.pdf');
 
-/** Nome su disco del primo allegato di una scheda (serve per costruire l'URL local-asset). */
 async function nomeAllegato(page: any, segnatura: string): Promise<string> {
   const appData = await getAppData(page);
   const rec = appData.manoscritti.find((m: any) => m.segnatura === segnatura);
@@ -21,7 +20,6 @@ async function apriImmagineNelModal(page: any, segnatura: string) {
   }, nome);
   await expect(page.locator('#image-modal')).toBeVisible();
   await expect(page.locator('#modal-img-viewport')).toBeVisible();
-  // La barra compare solo se il visualizzatore si è attivato davvero.
   await expect(page.locator('#modal-img-viewport .iv-barra')).toBeVisible();
 }
 
@@ -34,7 +32,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await createItemWithAttachment(page, 'MS-IV-001', FIXTURE_PNG);
     await apriImmagineNelModal(page, 'MS-IV-001');
 
-    // Stato iniziale: nessuna trasformazione, 100% dei pixel disponibili.
     expect(await trasformazione(page, '#modal-img')).toContain('scale(1)');
     await expect(page.locator('#modal-img-viewport [data-iv="percento"]')).not.toBeEmpty();
   });
@@ -48,8 +45,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     expect(await trasformazione(page, '#modal-img')).toContain('scale(1.2)');
 
     await page.locator('#modal-img-viewport [data-iv="zoom-out"]').click();
-    // 1.2 / 1.2 torna esattamente a 1 solo in virgola mobile "fortunata": basta che
-    // l'immagine sia tornata sotto la soglia di trascinamento.
     const scala = await page.locator('#modal-img').evaluate((el: HTMLElement) => {
       const m = el.style.transform.match(/scale\(([\d.]+)\)/);
       return m ? Number(m[1]) : NaN;
@@ -88,7 +83,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await page.locator('#modal-img-viewport [data-iv="filtri"]').click();
     await expect(pannello).toBeVisible();
 
-    // Cursori da -100 a 100 col numero accanto; 0 è neutro.
     await page.locator('#modal-img-viewport [data-iv="contrasto"]').fill('60');
     await expect(page.locator('#modal-img-viewport [data-iv="val-contrasto"]')).toHaveText('60');
     await page.locator('#modal-img-viewport [data-iv="luminosita"]').fill('-40');
@@ -98,7 +92,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     expect(filtro).toContain('brightness(80%)');
     expect(filtro).toContain('invert(1)');
 
-    // "Reimposta" nel pannello azzera solo i filtri: il pannello resta aperto, lo zoom resta.
     await page.locator('#modal-img-viewport [data-iv="zoom-in"]').click();
     await page.locator('#modal-img-viewport [data-iv="reset-filtri"]').click();
     await expect(pannello).toBeVisible();
@@ -109,8 +102,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     expect(azzerato.transform).toContain('scale(1.2)');
     await page.locator('#modal-img-viewport [data-iv="contrasto"]').fill('60');
 
-    // Il ripristino chiude il pannello e riporta i filtri a neutro: una carta lasciata in
-    // negativo che riapre in negativo è il difetto classico di questi visualizzatori.
     await page.locator('#modal-img-viewport [data-iv="reset"]').click();
     await expect(pannello).toBeHidden();
     const dopo = await page.locator('#modal-img').evaluate((el: HTMLElement) => el.style.filter);
@@ -128,13 +119,11 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await page.locator('#modal-img-viewport [data-iv="zoom-in"]').click();
     await page.locator('#modal-img-viewport [data-iv="filtri"]').click();
     await page.locator('#modal-img-viewport [data-iv="elaborazione"]').selectOption('dstretch');
-    // Copia elaborata come blob: senza CORS su local-asset il worker non potrebbe leggere i pixel.
     await expect(img).toHaveAttribute('src', /^blob:/);
     await expect(page.locator('#modal-img-viewport')).not.toHaveAttribute('aria-busy', 'true');
     expect(await trasformazione(page, '#modal-img')).toContain('scale(1.2)');
     expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
 
-    // Soglia: compare il suo cursore e l'immagine si rielabora.
     const primo = await img.getAttribute('src');
     await page.locator('#modal-img-viewport [data-iv="elaborazione"]').selectOption('soglia');
     await expect(page.locator('#modal-img-viewport [data-iv="riga-soglia"]')).toBeVisible();
@@ -183,7 +172,7 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
 
     await page.keyboard.press('0');
     const t = await trasformazione(page, '#modal-img');
-    expect(t).toContain('rotate(90deg)'); // "adatta" non raddrizza la carta
+    expect(t).toContain('rotate(90deg)');
     expect(t).not.toContain('scale(1.2)');
   });
 
@@ -212,8 +201,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await page.locator('#trasc-img-viewport [data-iv="rot-cw"]').click();
     expect(await trasformazione(page, '#trasc-img-preview')).toContain('rotate(90deg)');
 
-    // Un PDF usa lo STESSO viewport (pdfViewer.ts vi disegna la pagina): passando al
-    // secondo allegato la barra resta, ma la rotazione della carta precedente no.
     await page.locator('#trasc-file-input').setInputFiles(FIXTURE_PDF);
     await expect(page.locator('#trasc-carte-totale')).toHaveText('/ 2');
     await page.locator('#btn-next-allegato').click();
@@ -222,7 +209,6 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await expect(page.locator('#trasc-img-viewport .iv-barra')).toBeVisible();
     await expect.poll(() => trasformazione(page, '#trasc-img-preview')).toContain('rotate(0deg)');
 
-    // Tornando all'immagine, la rotazione precedente NON deve essere sopravvissuta.
     await page.locator('#btn-prev-allegato').click();
     await expect(page.locator('#trasc-img-viewport')).toBeVisible();
     expect(await trasformazione(page, '#trasc-img-preview')).toContain('rotate(0deg)');
@@ -235,16 +221,12 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
     await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), id);
     await expect(page.locator('#trasc-img-viewport')).toBeVisible();
 
-    // "r0+1-" contiene tutte le scorciatoie del visualizzatore: nell'editor devono restare
-    // testo. È il motivo per cui l'handler è sul viewport e non sul document.
     await page.locator('#trascrizione-editor').click();
     await page.keyboard.type('r0+1-');
     await expect(page.locator('#trascrizione-editor')).toContainText('r0+1-');
     expect(await trasformazione(page, '#trasc-img-preview')).toContain('scale(1)');
   });
 
-  // Il pan era limitato al solo debordo: una pagina PDF adattata e ingrandita di uno scatto si
-  // spostava di pochi pixel, e il trascinamento col sinistro sembrava rotto.
   test('una pagina PDF si trascina col sinistro, anche poco o per nulla ingrandita', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Viewer');
     const id = await createItemWithAttachment(page, 'MS-IV-PAN', path.join(__dirname, 'fixtures', 'multipage.pdf'));
@@ -265,17 +247,14 @@ test.describe('Visualizzatore immagini (Fase 1.2)', () => {
       await page.mouse.up();
     };
 
-    // Senza zoom: la pagina segue il cursore.
     await trascina(120, 80);
     expect(await traslazione()).toEqual({ x: 120, y: 80 });
 
-    // Uno scatto di zoom: il trascinamento resta pieno, non ridotto al debordo.
     await page.locator('#trasc-img-viewport [data-iv="fit"]').click();
     await page.locator('#trasc-img-viewport [data-iv="zoom-in"]').click();
     await trascina(-150, 0);
     expect((await traslazione()).x).toBeLessThanOrEqual(-149);
 
-    // Trascinata lontanissimo, un quarto della pagina resta comunque in vista.
     await trascina(-5000, -5000);
     const img = (await page.locator('#trasc-img-preview').boundingBox())!;
     const vp = (await page.locator('#trasc-img-viewport').boundingBox())!;

@@ -1,4 +1,3 @@
-// Audit sync S8: un allegato invariato non si rilegge a ogni sync; uno toccato sì.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');

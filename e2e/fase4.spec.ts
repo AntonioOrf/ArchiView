@@ -4,18 +4,8 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Fase4' });
 
-// `appData` vive nello scope del bundle del renderer, non su `window`: dentro page.evaluate
-// e' una variabile globale come le altre, e va solo dichiarata al compilatore dello spec.
 declare const appData: any;
 
-// Fase 4 — sicurezza del dato. Copre le quattro cose che prima non esistevano:
-// il cestino (4.1), gli snapshot locali con ripristino (4.2), la cronologia di UNA scheda
-// (4.3) e la fusione campo per campo (4.4), più il redo (4.5).
-//
-// In ogni semina c'è una scheda-esca che NON deve essere toccata: senza, un'asserzione su
-// un conteggio passerebbe anche a operazione inerte.
-
-/** Elimina una scheda per segnatura passando dal percorso reale (modale di conferma). */
 async function eliminaPerSegnatura(page: any, segnatura: string): Promise<string> {
   const id = await page.evaluate((seg: string) => {
     const m = appData.manoscritti.find((x: any) => x.segnatura === seg);
@@ -29,7 +19,6 @@ async function eliminaPerSegnatura(page: any, segnatura: string): Promise<string
   return id;
 }
 
-/** Le segnature presenti in archivio, ordinate. */
 async function segnature(page: any): Promise<string[]> {
   return page.evaluate(() => appData.manoscritti.map((m: any) => String(m.segnatura)).sort());
 }
@@ -50,7 +39,6 @@ test.describe('Cestino (4.1)', () => {
     await eliminaPerSegnatura(page, 'DA-BUTTARE');
     expect(await segnature(page)).toEqual(['ESCA']);
 
-    // Nel cestino c'è la scheda eliminata e SOLO quella: l'esca non deve esserci.
     await page.evaluate(() => (window as any).apriCestino());
     await expect(page.locator('#cestino-modal')).toBeVisible();
     await expect(page.locator('#cestino-list')).toContainText('DA-BUTTARE');
@@ -60,10 +48,8 @@ test.describe('Cestino (4.1)', () => {
     await expectToast(page);
     expect(await segnature(page)).toEqual(['DA-BUTTARE', 'ESCA']);
 
-    // Il tombstone se n'è andato con il ripristino, o il primo sync rieliminerebbe la scheda.
     const dati = await getAppData(page);
     expect(dati.deletedIds || []).not.toContain('a1');
-    // …e la cartella è tornata insieme alla scheda, che altrimenti sarebbe irraggiungibile.
     expect(dati.cartelle).toContain('Notarile');
     await expect(page.locator('#cestino-list')).not.toContainText('DA-BUTTARE');
   });
@@ -73,7 +59,6 @@ test.describe('Cestino (4.1)', () => {
     await seedItems(page, 2);
     const id = await eliminaPerSegnatura(page, 'Seed-000');
 
-    // Prima c'è: senza questa riga il test passerebbe anche con il cestino inerte.
     const prima = await page.evaluate(() => (window as any).elencaCestino());
     expect(prima.map((v: any) => String(v.record.id))).toContain(id);
 
@@ -83,7 +68,6 @@ test.describe('Cestino (4.1)', () => {
 
     const voci = await page.evaluate(() => (window as any).elencaCestino());
     expect(voci.map((v: any) => String(v.record.id))).not.toContain(id);
-    // …e non torna in archivio: l'eliminazione definitiva non è un ripristino mancato.
     expect(await segnature(page)).toEqual(['Seed-001']);
   });
 
@@ -96,7 +80,6 @@ test.describe('Cestino (4.1)', () => {
         { id: 'f2', cartella: '', tipoDocumento: 'imbreviature', segnatura: 'ESCA', tags: '', allegati: [], lastModified: Date.now() }
       );
       await (window as any).Store.commit();
-      // `mostraBottomConfirm` chiede conferma: nel test si esegue direttamente il ramo di sì.
       (window as any).mostraBottomConfirm = (_msg: string, ok: any) => ok();
       await (window as any).eliminaCartellaDaSidebar('Fondo');
     });
@@ -123,7 +106,6 @@ test.describe('Snapshot locali (4.2)', () => {
       return res.voci.length;
     }).toBeGreaterThan(0);
 
-    // Il mondo cambia DOPO lo snapshot: una scheda in più e una segnatura riscritta.
     await page.evaluate(async () => {
       appData.manoscritti.find((m: any) => m.id === 's1').segnatura = 'DOPO';
       appData.manoscritti.push({ id: 's2', cartella: '', tipoDocumento: 'imbreviature', segnatura: 'NATA-DOPO', tags: '', allegati: [], lastModified: Date.now() });
@@ -143,10 +125,7 @@ test.describe('Snapshot locali (4.2)', () => {
 
     expect(await segnature(page)).toEqual(['PRIMA']);
     const dati = await getAppData(page);
-    // La scheda nata dopo lo snapshot non basta toglierla: senza tombstone tornerebbe dal
-    // cloud al primo sync.
     expect(dati.deletedIds).toContain('s2');
-    // La scheda riportata indietro è stata rifirmata, o il primo sync la riscriverebbe.
     expect(dati.manoscritti[0].lastModified).toBeGreaterThan(0);
   });
 
@@ -154,7 +133,6 @@ test.describe('Snapshot locali (4.2)', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase4');
     await page.evaluate(() => (window as any).switchSidebarTab('history'));
     await page.evaluate(() => (window as any).renderHistoryList());
-    // Prima della 4.2 il pannello sapeva dire soltanto "collegati a Google Drive".
     await expect(page.locator('#history-list')).toContainText('Snapshot locali');
     await expect(page.locator('#btn-snapshot-now')).toBeVisible();
   });
@@ -173,7 +151,6 @@ test.describe('Cronologia della scheda (4.3)', () => {
       await (window as any).flushSalvataggio();
       await (window as any).apiSicurezza.snapshotCrea('manuale');
 
-      // Snapshot senza toccare h1: NON deve produrre una tappa.
       appData.manoscritti.find((m: any) => m.id === 'esca').segnatura = 'ESCA-2';
       await (window as any).Store.commit();
       await (window as any).flushSalvataggio();
@@ -189,7 +166,6 @@ test.describe('Cronologia della scheda (4.3)', () => {
       const res = await (window as any).apiSicurezza.storiaRecord('h1');
       return res.tappe.map((t: any) => (t.record ? t.record.segnatura : null));
     });
-    // Due tappe, non tre: lo snapshot di mezzo non ha cambiato questa scheda.
     expect(tappe).toEqual(['V2', 'V1']);
   });
 
@@ -238,9 +214,7 @@ test.describe('Merge campo per campo (4.4)', () => {
       return w.rilevaConflitti([locale], [esterno], 0, { c1: w.getRecordHash(base) }, { c1: base });
     });
     expect(conflitti).toHaveLength(1);
-    // `segnatura` l'ha cambiata solo il locale: non è in conflitto e non va chiesta.
     expect(conflitti[0].campiConflitto).toEqual(['notaio']);
-    // La scheda già fusa viaggia nel conflitto: il modale parte da lì.
     expect(conflitti[0].fusa.segnatura).toBe('ASP 2');
   });
 });

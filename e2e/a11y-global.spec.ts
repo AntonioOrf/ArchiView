@@ -4,13 +4,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'A11yG' });
 
-// Fase 6 — effetti globali delle regole a11y introdotte con il Cloud modal.
-// Coprono superfici che vanno oltre il modal: live region condivisa, focus ring su
-// controlli non-.btn, prefers-reduced-motion, e i rami di driveLogic che nessun test
-// raggiungeva perché richiedono l'autenticazione Google.
-//
-// apiSettings/apiBrowser arrivano da contextBridge e NON sono ridefinibili nel renderer
-// (Cannot redefine property): i finti si installano sostituendo l'handler nel main.
 test.describe('Accessibilità: effetti globali', () => {
 
   test('6.1 — i toast finiscono nella live region giusta per priorità', async ({ page, userDataDir }) => {
@@ -26,8 +19,6 @@ test.describe('Accessibilità: effetti globali', () => {
   test('6.2 — due annunci identici consecutivi vengono ri-annunciati', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 
-    // Una live region che riceve lo stesso testo due volte resta muta: l'helper deve
-    // svuotarla e ripopolarla. Si verifica osservando che il reset avviene davvero.
     const passaggi = await page.evaluate(async () => {
       const el = document.getElementById('a11y-live-polite')!;
       const visti: string[] = [];
@@ -41,7 +32,6 @@ test.describe('Accessibilità: effetti globali', () => {
       return visti;
     });
 
-    // Almeno un reset a vuoto tra i due annunci identici.
     expect(passaggi).toContain('(vuoto)');
     expect(passaggi.filter(t => t === 'Sincronizzazione completata').length).toBeGreaterThanOrEqual(2);
   });
@@ -57,19 +47,14 @@ test.describe('Accessibilità: effetti globali', () => {
   test('6.4 — checkbox, radio e summary hanno un focus ring visibile', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 
-    // Il Cloud modal contiene sia una checkbox sia un summary; i radio stanno altrove,
-    // ma la regola è la stessa: si verifica che non restino senza indicatore.
     await page.evaluate(() => (window as any).apriCloudModal());
     await page.evaluate(() => {
       document.getElementById('cloud-local-section')!.classList.add('hidden-tab');
       document.getElementById('cloud-shared-section')!.classList.remove('hidden-tab');
     });
 
-    // :focus-visible non si attiva con .focus() da script: Chrome lo concede solo quando
-    // l'ultima interazione è da tastiera. Si arriva quindi sull'elemento con Tab.
     for (const sel of ['#cloud-sync-attachments', '#cloud-shared-section summary']) {
       await page.locator(sel).evaluate((el: HTMLElement) => {
-        // Porta il fuoco all'elemento precedente, poi ci si arriva con un Tab reale.
         const tutti = Array.from(document.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), input:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'))
           .filter(e => e.offsetParent !== null);
@@ -93,10 +78,7 @@ test.describe('Accessibilità: effetti globali', () => {
       expect(stile.attivo, `${sel} non ha ricevuto il fuoco`).toBe(true);
       expect(stile.focusVisible, `${sel} non è in :focus-visible`).toBe(true);
       expect(stile.stile, `outline-style di ${sel}`).not.toBe('none');
-      // 1.5 e non 2: l'outline viene agganciato ai pixel fisici, e con devicePixelRatio
-      // 1.25 i nostri 2px CSS risultano 1.6px (stesso motivo del 31.9 nel test 5.4).
       expect(stile.larghezza, `outline-width di ${sel}`).toBeGreaterThanOrEqual(1.5);
-      // Prova che il ring è il nostro e non quello di default del browser.
       expect(stile.colore, `outline-color di ${sel} non è --color-primary`).not.toBe('');
     }
   });
@@ -104,8 +86,6 @@ test.describe('Accessibilità: effetti globali', () => {
   test('6.4b — focus:outline-none di Tailwind non toglie il focus ring ai controlli senza .btn', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 
-    // Stesso markup dei bottoni-pill di typesLogic e degli input di shareModal: nessuna
-    // regola dedicata in style.css, solo utility che azzerano l'outline.
     await page.evaluate(() => {
       const box = document.createElement('div');
       box.id = 'focus-probe';
@@ -139,8 +119,7 @@ test.describe('Accessibilità: effetti globali', () => {
       expect(schema, `color-scheme del tema ${tema}`).toBe(atteso);
     }
 
-    // Le date erano scritte con 'it-IT' fisso: in inglese restavano in formato italiano.
-    const data = Date.UTC(2026, 2, 5, 12, 0, 0); // 5 marzo 2026
+    const data = Date.UTC(2026, 2, 5, 12, 0, 0);
     const formato = (lingua: string) => page.evaluate((args) => {
       (window as any).linguaAttuale = args.lingua;
       return new Date(args.data).toLocaleDateString((window as any).localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -159,8 +138,6 @@ test.describe('Accessibilità: effetti globali', () => {
     expect(durata).toBeLessThan(0.05);
     await page.evaluate(() => (window as any).nascondiProgressoCloud());
 
-    // Audit front-end P3-4: le dissolvenze che orientano restano, brevi e senza spostamento;
-    // le transizioni non muovono (niente transform), il colore cambia subito.
     const dissolvenza = await page.evaluate(() => {
       const d = document.createElement('div');
       d.className = 'fade-in';
@@ -174,7 +151,6 @@ test.describe('Accessibilità: effetti globali', () => {
     expect(dissolvenza.durata).toBeGreaterThanOrEqual(0.1);
     expect(dissolvenza.transizioni).toBe('opacity');
 
-    // La riduzione del movimento non deve rompere ciò che dipende dalle transizioni.
     await page.evaluate(() => (window as any).apriImpostazioni());
     await expect(page.locator('#settings-modal')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -187,14 +163,8 @@ test.describe('Accessibilità: effetti globali', () => {
   test('6.6 — il bottone di stato cloud applica hover e colori di stato', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 
-    // Regole rimaste a lungo inerti: le precedeva un commento CSS che si chiudeva
-    // in anticipo su "text-*/", invalidando la dichiarazione successiva.
     const btn = page.locator('#cloud-status-btn');
     const sfondoBase = await btn.evaluate(el => getComputedStyle(el).backgroundColor);
-    // Poll e non lettura secca, e hover RIPETUTO a ogni giro: (1) la regola globale
-    // `transition: background-color .25s` su button fa sì che subito dopo l'hover il colore
-    // sia ancora quello di partenza; (2) il bottone può essere ridisegnato dallo stato cloud
-    // appena dopo l'avvio, e il nodo nuovo non è in :hover finché il mouse non si muove.
     await expect.poll(async () => {
       await page.mouse.move(0, 0);
       await btn.hover();
@@ -202,14 +172,11 @@ test.describe('Accessibilità: effetti globali', () => {
       return btn.evaluate(el => getComputedStyle(el).backgroundColor);
     }).not.toBe(sfondoBase);
 
-    // Ogni stato deve avere un colore proprio, non ereditare quello del precedente.
     const colori: string[] = [];
     for (const stato of ['ok', 'entrata', 'pendenti', 'errore']) {
       await page.evaluate((s) => {
         document.getElementById('cloud-status-btn')!.setAttribute('data-stato', s);
       }, stato);
-      // .btn ha `transition: all .2s`: senza attesa si legge il colore a metà dissolvenza
-      // e due stati diversi possono risultare identici.
       await page.waitForTimeout(300);
       colori.push(await btn.evaluate(el => getComputedStyle(el).color));
     }
@@ -230,7 +197,6 @@ test.describe('Accessibilità: effetti globali', () => {
     await page.evaluate(() => (window as any).apriCloudModal());
     await page.evaluate(() => {
       document.getElementById('cloud-shared-section')!.classList.remove('hidden-tab');
-      // La conferma è un banner: qui interessa lo stato del pulsante, non il dialogo.
       (window as any).mostraBottomConfirm = (_m: string, ok: () => void) => ok();
       (window as any).pulisciAllegatiOrfani();
     });
@@ -259,8 +225,6 @@ test.describe('Accessibilità: effetti globali', () => {
     const prima = await cb.isChecked();
     await page.evaluate((v) => (window as any).toggleSyncAttachments(!v), prima);
 
-    // Lo stato mostrato deve corrispondere a quello salvato: un salvataggio fallito
-    // non può lasciare la casella su un valore che non è mai stato scritto.
     await expect(cb).toBeChecked({ checked: prima });
     await expect(page.locator('#toast-container')).toContainText(/Errore/i);
   });
@@ -306,7 +270,7 @@ test.describe('Accessibilità: effetti globali', () => {
         const t = (window as any).t;
         return ks.filter((k: string) => {
           const v = t(k);
-          return !v || v === k; // l'id grezzo a schermo significa chiave mancante
+          return !v || v === k;
         });
       }, chiavi);
       expect(grezze, `chiavi non tradotte in ${lingua}`).toEqual([]);
@@ -317,8 +281,6 @@ test.describe('Accessibilità: effetti globali', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
     await page.evaluate(() => (window as any).cambiaLingua('en'));
 
-    // Modali iniettati al caricamento (anche nascosti): ogni testo fisso deve stare sotto un
-    // data-i18n, altrimenti resta nella lingua del sorgente (audit front-end P2-7).
     const cablati = await page.evaluate(() => {
       const out: string[] = [];
       for (const finestra of document.querySelectorAll('.modal-window')) {
@@ -327,7 +289,6 @@ test.describe('Accessibilità: effetti globali', () => {
           const testo = (n.textContent || '').trim();
           if (!/[a-zà-ù]{3,}/i.test(testo)) continue;
           const el = n.parentElement!;
-          // Le note di rilascio (titolo e corpo) arrivano da RELEASE_NOTES.md, solo in italiano.
           if (el.closest('[data-i18n], [translate="no"], script, style, option, #changelog-content, .changelog-titolo')) continue;
           const modale = finestra.closest('[id]');
           out.push(`${modale ? modale.id : '?'}: ${testo.slice(0, 60)}`);
@@ -341,12 +302,7 @@ test.describe('Accessibilità: effetti globali', () => {
   test('6.11 — il variant dark è agganciato ai temi scuri e solo a quelli', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
 
-    // Senza @custom-variant in input.css le utility dark:* seguono prefers-color-scheme
-    // e restano inerti con i temi dell'app: questo test impedisce la regressione.
     const misura = await page.evaluate(() => {
-      // Tailwind genera solo le utility presenti nei sorgenti: questa coppia è usata
-      // davvero (shareModal), quindi esiste nel CSS compilato. Una classe inventata
-      // darebbe "nessuna regola" e il test misurerebbe il nulla.
       const sonda = document.createElement('div');
       sonda.className = 'bg-emerald-100 dark:bg-emerald-900/20';
       document.body.appendChild(sonda);
@@ -368,13 +324,11 @@ test.describe('Accessibilità: effetti globali', () => {
 
     expect(misura.dark).not.toBe(misura.chiaro);
     expect(misura.blueDark).not.toBe(misura.chiaro);
-    expect(misura.amberLight).toBe(misura.chiaro); // tema chiaro: non deve attivare dark:
+    expect(misura.amberLight).toBe(misura.chiaro);
   });
 
   test('6.12 — il Cloud modal resta leggibile in tutti e quattro i temi', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11yG');
-    // Il body ha `transition: color .25s`: senza azzerare il movimento si misurano
-    // i colori a metà dissolvenza, cioè quelli del tema precedente.
     await page.emulateMedia({ reducedMotion: 'reduce' });
 
     for (const tipo of ['backup', 'shared']) {
@@ -387,8 +341,6 @@ test.describe('Accessibilità: effetti globali', () => {
         await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
         await page.locator('#settings-theme').selectOption(tema);
         await page.evaluate(() => (window as any).chiudiImpostazioni());
-        // cambiaTemaSelezionato applica la classe solo dopo due round-trip IPC: senza
-        // questa attesa si misurano i colori del tema precedente.
         await page.waitForFunction((t) => {
           const c = document.documentElement.classList;
           const scuri = ['dark-theme', 'blue-dark-theme', 'amber-light-theme'];
@@ -399,17 +351,12 @@ test.describe('Accessibilità: effetti globali', () => {
           const a = attesa[t];
           return a ? c.contains(a) : scuri.every(x => !c.contains(x));
         }, tema);
-        // La classe cambia subito, i colori no: body ha `transition: color .25s`.
-        // Va attesa la fine della dissolvenza, altrimenti si misura il tema precedente.
         await page.waitForTimeout(400);
 
         await page.evaluate(() => (window as any).apriCloudModal());
         await expect(page.locator('#cloud-shared-section')).toBeVisible();
 
         const esiti = await page.evaluate(() => {
-          // Tailwind v4 dichiara i colori in oklch() e getComputedStyle li restituisce così:
-          // leggere i numeri con una regex darebbe valori senza senso. La canvas li converte
-          // in RGB reali qualunque sia la notazione di partenza.
           const cv = document.createElement('canvas');
           cv.width = cv.height = 1;
           const ctx = cv.getContext('2d', { willReadFrequently: true })!;
@@ -429,8 +376,6 @@ test.describe('Accessibilità: effetti globali', () => {
             });
             return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
           };
-          // Lo sfondo effettivo va cercato risalendo i genitori: i pannelli usano
-          // fondi semitrasparenti o ereditati, e un rgba(0,0,0,0) darebbe un falso 21:1.
           const sfondo = (el: Element): number[] => {
             let n: Element | null = el;
             while (n) {

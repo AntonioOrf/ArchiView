@@ -6,24 +6,11 @@ import * as fs from 'fs';
 
 test.use({ seedWorkspace: 'Stampa' });
 
-/**
- * Fase 2.2 — stampa e PDF.
- *
- * Il dialogo nativo è stubbato nel main (stubDialog) e il PDF viene scritto DAVVERO su
- * disco: si asserisce sul file, non sulla chiamata IPC. È l'unico modo per accorgersi che
- * la finestra di rendering non ha caricato il documento — un errore che a livello di IPC
- * si presenterebbe comunque come "success: true".
- *
- * ⚠️ `print-direct` non è coperto qui di proposito: apre il dialogo di stampa del sistema
- * operativo, che Playwright non può chiudere e che appenderebbe la suite. La sua unica
- * logica propria è la chiamata a `webContents.print`; tutto il resto del percorso —
- * ambito, opzioni, generazione del documento — è lo stesso di `print-pdf` ed è coperto.
- */
 type Riga = { segnatura: string; cartella?: string; [k: string]: any };
 
 async function seed(page, righe: Riga[]) {
   await page.evaluate(async (righe) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const data = appData;
     for (const r of righe) {
       data.manoscritti.push(Object.assign({
@@ -43,7 +30,6 @@ async function seed(page, righe: Riga[]) {
   }, righe);
 }
 
-/** Un PDF vero comincia per %PDF- e non è un file vuoto. */
 async function leggiPdf(percorso: string): Promise<Buffer> {
   await expect.poll(() => fs.existsSync(percorso), { timeout: 20_000 }).toBe(true);
   await expect.poll(() => (fs.existsSync(percorso) ? fs.statSync(percorso).size : 0), { timeout: 20_000 })
@@ -79,8 +65,6 @@ test.describe('Stampa e PDF', () => {
     const out = path.join(userDataDir, 'schede.pdf');
     await stubDialog(electronApp, { canceled: false, filePath: out });
 
-    // Il risultato dell'IPC: `count` è il numero di schede finite nel documento. La scheda
-    // esca non è nell'ambito e non deve essere contata — con un ambito inerte sarebbero 3.
     const esito = await stampaPdf(page, ids, { layout: 'scheda' });
     expect(esito.success).toBe(true);
     expect(esito.count).toBe(2);
@@ -91,8 +75,6 @@ test.describe('Stampa e PDF', () => {
 
   test('2.2.2 — i tre layout producono tre documenti', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Stampa');
-    // Venti schede: in "scheda singola" sono venti pagine, in regesto o in tabella una o
-    // due. È la differenza che rende il confronto delle dimensioni significativo.
     await seed(page, Array.from({ length: 20 }, (_, i) => ({
       segnatura: `L-${i + 1}`, autore: 'Anonimo', titolo: 'Atto di vendita numero ' + (i + 1), note: 'Nota lunga. '.repeat(20)
     })));
@@ -109,9 +91,6 @@ test.describe('Stampa e PDF', () => {
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       dimensioni[layout] = pdf.length;
     }
-    // Una scheda per pagina occupa più carta di un elenco: se i tre layout collassassero
-    // sullo stesso documento (per esempio perché il layout non arriva al main) i tre file
-    // sarebbero identici.
     expect(dimensioni.scheda).toBeGreaterThan(dimensioni.regesto);
     expect(dimensioni.scheda).toBeGreaterThan(dimensioni.tabella);
   });
@@ -126,7 +105,6 @@ test.describe('Stampa e PDF', () => {
     await stampaPdf(page, [dati.manoscritti[0].id]);
 
     expect(fs.existsSync(out)).toBe(false);
-    // Nessun messaggio di errore: annullare è una scelta, non un guasto.
     await expect(page.locator('#toast-container')).not.toContainText('Stampa non riuscita');
   });
 
@@ -148,9 +126,7 @@ test.describe('Stampa e PDF', () => {
     const modal = page.locator('#print-modal');
     await expect(modal).toBeVisible();
 
-    // Con una selezione l'ambito predefinito è la selezione: una sola scheda.
     await expect(page.locator('#print-count')).toContainText('1');
-    // Cambiando ambito il conteggio deve cambiare davvero, o il selettore è inerte.
     await page.locator('#print-scope').selectOption('cartella');
     await expect(page.locator('#print-count')).toContainText('3');
 
@@ -168,8 +144,6 @@ test.describe('Stampa e PDF', () => {
     await page.locator('#print-layout-regesto').check();
     await page.evaluate(() => (window as any).chiudiStampa());
 
-    // Le impostazioni di stampa vivono in appState (settings.json del workspace) e NON in
-    // appData: non devono finire nel database né nella sincronizzazione.
     const stato = await page.evaluate(async () => {
       const s = await (window as any).apiSettings.get();
       const d = (window as any).appData || {};
@@ -186,11 +160,8 @@ test.describe('Stampa e PDF', () => {
     await seed(page, [{ segnatura: 'MENU-P' }]);
 
     await page.locator('#context-overflow-slot button').click();
-    // La stampa sta nel gruppo "Esporta": è la stessa domanda degli altri export (portare
-    // fuori il lavoro) con destinazione la carta.
     await page.locator('#custom-context-menu button', { hasText: /^Esporta$/ }).click();
     const sub = page.locator('#custom-context-menu-1');
-    // Etichetta breve nel menu, dizione estesa nel `title`.
     await expect(sub).toContainText('Stampa');
     await expect(sub.locator('button[title="Stampa e PDF"]')).toHaveCount(1);
     await page.keyboard.press('Escape');

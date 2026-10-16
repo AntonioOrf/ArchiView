@@ -4,13 +4,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Filtri' });
 
-/**
- * Semina schede con proprietà CONTROLLATE per i filtri della Fase 1.3.
- * `seedItems` di helpers.ts non basta: genera record tutti uguali, cioè un seme su cui
- * un filtro inerte passerebbe lo stesso. Ogni test qui semina almeno una scheda-esca
- * che NON deve corrispondere, così l'asserzione sul conteggio distingue davvero il
- * filtro attivo dal filtro assente.
- */
 type Riga = {
   segnatura: string;
   cartella?: string;
@@ -24,7 +17,7 @@ type Riga = {
 
 async function seed(page, righe: Riga[]) {
   await page.evaluate(async (righe) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const data = appData;
     for (const r of righe) {
       data.manoscritti.push(
@@ -51,7 +44,6 @@ async function seed(page, righe: Riga[]) {
   }, righe);
 }
 
-/** Segnature effettivamente renderizzate, griglia o tabella che sia. */
 async function segnature(page): Promise<string[]> {
   return page.evaluate(() =>
     Array.from(document.querySelectorAll('.card-scheda')).map((el) => {
@@ -62,14 +54,9 @@ async function segnature(page): Promise<string[]> {
 }
 
 async function cerca(page, testo: string) {
-  // Il campo di ricerca vive in un pannello della sidebar: se il pannello attivo è un
-  // altro, l'input esiste ma non è raggiungibile. `apriSidebarTab` e NON l'helper
-  // `openSidebarPanel`: quello passa da `switchSidebarTab`, che è un TOGGLE, e alla
-  // seconda ricerca dello stesso test richiuderebbe il pannello appena aperto.
   await page.evaluate(() => (window as any).apriSidebarTab('search'));
   await expect(page.locator('#sidebar-search')).toBeVisible();
   await page.locator('#search-input').fill(testo);
-  // Il render della ricerca è debounced a 150 ms.
   await page.waitForTimeout(300);
 }
 
@@ -79,9 +66,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await seed(page, [{ segnatura: 'MS 1' }]);
     await page.setViewportSize({ width: 1280, height: 800 });
 
-    // Una riga sola = la barra è alta quanto il suo figlio più alto. Confrontare le
-    // altezze e non i `top` dei figli: `items-center` li allinea a 1-2px di scarto, e un
-    // confronto esatto fallirebbe su una barra che sta perfettamente su una riga.
     const misura = async () => page.evaluate(() => {
       const barra = document.getElementById('context-actions')!;
       const figli = Array.from(barra.children) as HTMLElement[];
@@ -94,14 +78,10 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     let m = await misura();
     expect(m.barra).toBe(m.figlioPiuAlto);
 
-    // Regge anche su una finestra da portatile stretto: è la larghezza a cui la barra
-    // andava a capo prima che "Filtri" perdesse l'etichetta e il cestino finisse nel "⋯".
     await page.setViewportSize({ width: 1100, height: 800 });
     m = await misura();
     expect(m.barra).toBe(m.figlioPiuAlto);
 
-    // "Filtri" resta un'icona sola, ma con un nome accessibile: senza, per uno screen
-    // reader il pulsante sarebbe muto.
     await expect(page.locator('#btn-filtri')).toHaveAttribute('aria-label', /Filtri|Filters/);
   });
 
@@ -115,8 +95,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     const pannello = page.locator('#pannello-filtri');
     await expect(pannello).toBeVisible();
     await expect(page.locator('#btn-filtri')).toHaveAttribute('aria-expanded', 'true');
-    // I cinque controlli devono essere davvero raggiungibili, non solo presenti nel DOM:
-    // è la trappola già vista con il viewport delle immagini (un contenitore che ritaglia).
     for (const id of ['#filtro-tipo', '#filtro-sottocartelle', '#filtro-da-data', '#filtro-a-data', '#filtro-allegati', '#filtro-trascrizione']) {
       await expect(pannello.locator(id)).toBeVisible();
     }
@@ -130,7 +108,7 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
     await seed(page, [
       { segnatura: 'CON', allegati: [{ nome: 'a.jpg', tipo: 'image/jpeg' }] },
-      { segnatura: 'SENZA' }, // esca
+      { segnatura: 'SENZA' },
     ]);
     await expect.poll(() => segnature(page)).toEqual(['CON', 'SENZA']);
 
@@ -148,7 +126,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await seed(page, [{ segnatura: 'SENZA-1' }, { segnatura: 'SENZA-2' }]);
     await expect.poll(() => segnature(page)).toEqual(['SENZA-1', 'SENZA-2']);
 
-    // Nessuna scheda ha allegati: il filtro le esclude tutte, ma la cartella è piena.
     await page.locator('#btn-filtri').click();
     await page.locator('#filtro-allegati').selectOption('si');
     const testo = page.locator('#empty-state-text');
@@ -156,7 +133,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await expect(testo).toHaveAttribute('data-i18n', 'no_filter_match');
     await expect(testo).not.toContainText('vuota');
 
-    // Tolto il filtro, le schede tornano e lo stato vuoto sparisce.
     await page.locator('#filtro-allegati').selectOption('');
     await expect.poll(() => segnature(page)).toEqual(['SENZA-1', 'SENZA-2']);
     await expect(testo).toBeHidden();
@@ -166,8 +142,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
     await seed(page, [
       { segnatura: 'TRASCRITTA', trascrizione: '<p>In nomine Domini</p>' },
-      // Esca: aperta in trascrizione e richiusa senza scrivere nulla. Senza lo strip
-      // dei tag risulterebbe trascritta come la prima.
       { segnatura: 'VUOTA', trascrizione: '<p><br></p>' },
     ]);
 
@@ -187,7 +161,7 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
 
     await seed(page, [
       { segnatura: 'PRIMO', tipoDocumento: tipi[0] },
-      { segnatura: 'SECONDO', tipoDocumento: tipi[1] }, // esca
+      { segnatura: 'SECONDO', tipoDocumento: tipi[1] },
     ]);
 
     await page.locator('#btn-filtri').click();
@@ -205,14 +179,10 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await page.locator('#btn-filtri').click();
     const pannello = page.locator('#pannello-filtri');
     await expect(pannello).toBeVisible();
-    // Il filtro svuota la lista: <main> torna a scrollTop 0 e il browser emette `scroll`.
-    // Prima quell'evento chiudeva il pannello a ogni scelta.
     await page.locator('#filtro-allegati').selectOption('si');
     await expect.poll(() => page.evaluate(() => document.querySelector('main')!.scrollTop)).toBe(0);
     await page.waitForTimeout(300);
     await expect(pannello).toBeVisible();
-    // ...e resta attaccato al suo pulsante, che nel frattempo si è spostato: la posizione
-    // è quella che avrebbe riaprendolo da zero in questo stato (sotto, sopra o accostato).
     const dopoFiltro = await pannello.boundingBox();
     await page.keyboard.press('Escape');
     await expect(pannello).toHaveCount(0);
@@ -226,14 +196,13 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
     await seed(page, [
       { segnatura: 'DENTRO', lastModified: Date.parse('2026-03-10T12:00:00') },
-      { segnatura: 'PRIMA', lastModified: Date.parse('2026-01-01T12:00:00') }, // esca
-      { segnatura: 'DOPO', lastModified: Date.parse('2026-06-01T12:00:00') }, // esca
+      { segnatura: 'PRIMA', lastModified: Date.parse('2026-01-01T12:00:00') },
+      { segnatura: 'DOPO', lastModified: Date.parse('2026-06-01T12:00:00') },
     ]);
 
     await page.locator('#btn-filtri').click();
     await page.locator('#filtro-da-data').fill('2026-03-10');
     await page.locator('#filtro-a-data').fill('2026-03-10');
-    // `fill` su input[type=date] non emette sempre `change` da solo.
     await page.locator('#filtro-a-data').dispatchEvent('change');
     await page.locator('#filtro-da-data').dispatchEvent('change');
 
@@ -245,7 +214,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await seed(page, [
       { segnatura: 'PADRE', cartella: 'Notarile' },
       { segnatura: 'FIGLIA', cartella: 'Notarile/Imbreviature' },
-      // Esca: prefisso simile ma ramo diverso, non deve entrare.
       { segnatura: 'ALTRO', cartella: 'Notarile2' },
     ]);
     await page.evaluate(() => {
@@ -302,8 +270,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
     await seed(page, [
       { segnatura: 'NOTAIO', extra: { Notaio: 'Giovanni Rossi' } },
-      // Esca: contiene "rossi", ma in un altro campo. Una ricerca libera la troverebbe;
-      // `notaio:rossi` no. È la differenza che questa sintassi esiste per fare.
       { segnatura: 'ESCA', extra: { titolo: 'terreno dei Rossi' } },
     ]);
 
@@ -335,7 +301,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await expect(page.locator('#elenco-ricerche-salvate button', { hasText: 'Notarile con allegati' })).toHaveCount(1);
     await page.keyboard.press('Escape');
 
-    // Si distrugge il contesto: altra cartella e nessun filtro.
     await page.evaluate(() => {
       (window as any).azzeraFiltriAvanzati();
       (window as any).cartellaAttuale = 'Fiscale';
@@ -343,7 +308,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     });
     await expect.poll(() => segnature(page)).toEqual(['ESCA-ALTRA-CARTELLA']);
 
-    // ...e lo si ripristina con un click sulla ricerca salvata.
     await page.locator('#btn-filtri').click();
     await page.locator('#elenco-ricerche-salvate button', { hasText: 'Notarile con allegati' }).click();
 
@@ -364,7 +328,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await expect.poll(async () => (await nomi()).length).toBe(2);
     const ordine = await nomi();
 
-    // Si elimina la PRIMA dell'elenco: l'annullo deve rimetterla lì, non in coda.
     const id = await page.evaluate(() => (window as any).ricercheSalvate[0].id);
     await page.evaluate((id) => (window as any).eliminaRicercaSalvata(id), id);
     await expect.poll(nomi).toEqual([ordine[1]]);
@@ -385,8 +348,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await page.locator('#btn-salva-ricerca').click();
     await page.keyboard.press('Escape');
 
-    // Store.commit() non scrive subito su disco, e appState passa da apiSettings.patch:
-    // senza flush il riavvio rileggerebbe lo stato precedente.
     await page.evaluate(async () => {
       const w = window as any;
       if (typeof w.flushSalvataggio === 'function') await w.flushSalvataggio();
@@ -424,8 +385,6 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
 
     await page.locator('#active-filters button', { hasText: /Azzera tutti i filtri|Clear all filters/ }).click();
 
-    // Lasciare in piedi il filtro avanzato dopo un "azzera tutto" è il modo più rapido
-    // per far credere all'utente che l'archivio si sia svuotato.
     await expect.poll(async () => (await segnature(page)).slice().sort()).toEqual(['CON', 'SENZA']);
     await expect(page.locator('#badge-filtri')).toBeHidden();
   });

@@ -5,9 +5,6 @@ import * as path from 'path';
 test.use({ seedWorkspace: 'Schede' });
 
 test.describe('Schede (manoscritti)', () => {
-  // N5: il watcher riconosce le scritture proprie dal contenuto. Prima ignorava ogni modifica
-  // per 1 s dopo un salvataggio, e un cambiamento esterno vero (client Drive, seconda istanza)
-  // arrivato in quella finestra si perdeva.
   test('una modifica esterna subito dopo un salvataggio arriva lo stesso', async ({ page, userDataDir }) => {
     const { seedItems } = await import('./helpers');
     const fs = await import('fs');
@@ -27,12 +24,10 @@ test.describe('Schede (manoscritti)', () => {
   test('crea, cerca e modifica una scheda', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schede');
 
-    // Apri il form "Nuova Scheda".
     await page.locator('#btn-tab-add').click();
     await expect(page.locator('#view-add')).toBeVisible();
     await expect(page.locator('#manoscritto-form')).toBeVisible();
 
-    // Senza cartelle create resta comunque l'opzione radice, più i tipi di default.
     await expect(page.locator('#form-cartella option')).not.toHaveCount(0);
     await expect(page.locator('#form-tipo-documento option')).not.toHaveCount(0);
 
@@ -40,16 +35,13 @@ test.describe('Schede (manoscritti)', () => {
     await page.locator('#form-segnatura').fill(segnatura);
     await page.locator('#btn-submit-form').click();
 
-    // Dopo il salvataggio si torna alla lista: la scheda è visibile nel pannello principale.
     await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
 
-    // Ricerca globale: la scheda viene trovata.
     await page.locator('header button[data-tab="search"]').click();
     await expect(page.locator('#sidebar-search')).toBeVisible();
     await page.locator('#search-input').fill('MS-E2E');
     await expect(page.locator('#search-suggestions')).toContainText(segnatura, { timeout: 10_000 });
 
-    // Modifica: cambia la segnatura e risalva.
     await page.locator('main').getByText(segnatura, { exact: false }).first().scrollIntoViewIfNeeded();
     await page.locator('main button', { hasText: /Modifica|Edit/i }).first().click();
     await expect(page.locator('#view-add')).toBeVisible();

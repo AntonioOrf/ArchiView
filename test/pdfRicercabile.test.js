@@ -1,9 +1,3 @@
-// PDF ricercabile (OCR → copia dell'allegato con il testo invisibile sopra).
-// Si testa il build in out/ senza Electron né Tesseract: i "livelli di testo" sono PDF di una
-// pagina costruiti qui con pdf-lib, della stessa forma di quelli che produce il motore
-// (pagina orientata come la vede pdf.js). La verifica passa da pdf.js, cioè da come un
-// lettore vero ritrova il testo: una parola scritta in alto a sinistra della carta deve
-// restare in alto a sinistra anche su pagine con /Rotate e CropBox spostato.
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -12,11 +6,8 @@ const { PDFDocument, StandardFonts, degrees } = require('pdf-lib');
 const pdfR = require('../out/main/ocr/pdfRicercabile');
 
 const ROTAZIONI = [0, 90, 180, 270];
-// CropBox volutamente diverso dal MediaBox e non quadrato: un errore di assi o di origine
-// si vede come testo fuori pagina o nel quadrante sbagliato.
 const MEDIA = [0, 0, 600, 800];
 const CROP = { x: 50, y: 100, width: 450, height: 600 };
-// JPEG 1×1 minimo: pdf-lib ne legge solo le intestazioni, il contenuto non conta.
 const JPEG_1x1 = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
 
 async function sorgente() {
@@ -29,7 +20,6 @@ async function sorgente() {
   return doc.save();
 }
 
-/** Livello di testo come lo vede il lettore: dimensioni già ruotate, parola in alto a sinistra. */
 async function livello(r, parola) {
   const doc = await PDFDocument.create();
   const verticale = r === 90 || r === 270;
@@ -48,14 +38,12 @@ async function livello(r, parola) {
     const src = path.join(dir, 'sorgente.pdf');
     fs.writeFileSync(src, await sorgente());
 
-    // --- Test 1: pagine copiate, testo solo dove c'è un livello, posizione giusta ----
     {
       const out = path.join(dir, 'uscita.pdf');
       await pdfR.apri(out);
       assert.strictEqual(pdfR.attiva(), true);
       const livelli = new Map();
       for (let i = 0; i < ROTAZIONI.length; i++) livelli.set(i + 1, await livello(ROTAZIONI[i], 'CARTA' + ROTAZIONI[i]));
-      // Una pagina in più senza livello: deve esserci, senza testo.
       const conExtra = await PDFDocument.load(fs.readFileSync(src));
       conExtra.addPage([300, 300]);
       fs.writeFileSync(src, await conExtra.save());
@@ -78,7 +66,6 @@ async function livello(r, parola) {
         const voce = testo.items.find(it => it.str === 'CARTA' + ROTAZIONI[i]);
         assert.ok(voce, `testo ritrovabile a ${ROTAZIONI[i]}°`);
         const [vx, vy] = vp.convertToViewportPoint(voce.transform[4], voce.transform[5]);
-        // Riga di base a 30 pt dal bordo alto e 10 pt da sinistra, nella pagina come si vede.
         assert.ok(Math.abs(vx - 10) < 1 && Math.abs(vy - 30) < 1,
           `posizione a ${ROTAZIONI[i]}°: ${vx.toFixed(1)},${vy.toFixed(1)}`);
       }
@@ -87,7 +74,6 @@ async function livello(r, parola) {
       await doc.loadingTask.destroy();
     }
 
-    // --- Test 2: immagine non incorporabile → pagina completa del motore -------------
     {
       const out = path.join(dir, 'immagine.pdf');
       await pdfR.apri(out);
@@ -100,7 +86,6 @@ async function livello(r, parola) {
       await doc.loadingTask.destroy();
     }
 
-    // --- Test 3: annullamento e sessione vuota non scrivono nulla ----------------------
     {
       const out = path.join(dir, 'scartato.pdf');
       await pdfR.apri(out);
@@ -115,7 +100,6 @@ async function livello(r, parola) {
       await assert.rejects(() => pdfR.aggiungiPdf(src, new Map()), /Nessun PDF/);
     }
 
-    // --- Test 4: PDF cifrato → codice dedicato, sessione ancora utilizzabile ---------
     {
       const cifrato = path.join(dir, 'cifrato.pdf');
       const byte = Buffer.from(fs.readFileSync(src).toString('latin1')
@@ -126,9 +110,7 @@ async function livello(r, parola) {
       await pdfR.concludi(true);
     }
 
-    // --- Test 4-bis: pagine raddrizzate (/Rotate sommato, testo dritto) -------------
     {
-      // Sorgente senza /Rotate e con /Rotate 90: il raddrizzamento si SOMMA a quello esistente.
       const base = await PDFDocument.create();
       for (const r of [0, 90]) {
         const p = base.addPage([MEDIA[2], MEDIA[3]]);
@@ -140,7 +122,6 @@ async function livello(r, parola) {
 
       const out = path.join(dir, 'raddrizzate.pdf');
       await pdfR.apri(out);
-      // Tesseract ha letto la pagina GIÀ raddrizzata: il livello ha l'orientamento finale.
       await pdfR.aggiungiPdf(srcR,
         new Map([[1, await livello(270, 'PRIMA')], [2, await livello(270, 'SECONDA')]]),
         new Map([[1, 270], [2, 180]]));
@@ -159,13 +140,11 @@ async function livello(r, parola) {
       await doc.loadingTask.destroy();
     }
 
-    // --- Test 4-ter: JPEG incorporato e raddrizzato con /Rotate ---------------------
     {
       const jpg = path.join(dir, 'carta.jpg');
       fs.writeFileSync(jpg, Buffer.from(JPEG_1x1, 'base64'));
       const out = path.join(dir, 'jpeg.pdf');
       await pdfR.apri(out);
-      // Livello 450×600 (verticale, già dritto); il JPEG nel file è orizzontale: 600×450.
       const liv = await PDFDocument.create();
       const pl = liv.addPage([450, 600]);
       pl.drawText('DRITTA', { x: 10, y: 570, size: 12, font: await liv.embedFont(StandardFonts.Helvetica) });
@@ -184,13 +163,11 @@ async function livello(r, parola) {
       await doc.loadingTask.destroy();
     }
 
-    // --- Test 5: quali immagini si incorporano tali e quali --------------------------
     {
       const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]);
       assert.strictEqual(pdfR.immagineIncorporabile(jpeg), true);
       const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
       assert.strictEqual(pdfR.immagineIncorporabile(png), false);
-      // JPEG con EXIF Orientation = 6 (big-endian): Tesseract lo raddrizza, pdf-lib no.
       const exif = Buffer.concat([jpeg, Buffer.from([0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x06])]);
       assert.strictEqual(pdfR.immagineIncorporabile(exif), false);
     }

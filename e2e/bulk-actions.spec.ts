@@ -4,17 +4,11 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Massa' });
 
-/**
- * Fase 1.5 — azioni in massa, selezione dell'intero risultato e scorciatoie.
- *
- * Ogni seme contiene una scheda-ESCA che l'azione NON deve toccare: un'asserzione su un
- * conteggio che coincide con lo stato di partenza passerebbe anche ad azione inerte.
- */
 type Riga = { segnatura: string; cartella?: string; tags?: string; tipoDocumento?: string; titolo?: string };
 
 async function seed(page, righe: Riga[]) {
   await page.evaluate(async (righe) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const data = appData;
     for (const r of righe) {
       data.manoscritti.push({
@@ -36,7 +30,6 @@ async function seed(page, righe: Riga[]) {
   }, righe);
 }
 
-/** Il record con quella segnatura, letto da appData (non dal DOM). */
 async function record(page, segnatura: string) {
   return page.evaluate((s) => {
     // @ts-ignore
@@ -54,7 +47,6 @@ async function seleziona(page, segnature: string[]) {
   }, segnature);
 }
 
-/** Applica l'azione del modale in massa e attende che si richiuda. */
 async function applica(page) {
   await page.locator('#bulk-confirm').click();
   await expect(page.locator('#bulk-modal')).toBeHidden();
@@ -63,8 +55,6 @@ async function applica(page) {
 test.describe('Azioni in massa', () => {
   test('Ctrl+A seleziona tutti i risultati, non solo quelli a schermo', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Massa');
-    // 60 schede: oltre la pagina da 50, così "tutti i risultati" e "tutte le card
-    // renderizzate" danno numeri DIVERSI — senza questo il test sarebbe vacuo.
     const righe = Array.from({ length: 60 }, (_, i) => ({ segnatura: 'MS ' + (i + 1) }));
     await seed(page, righe);
     await dismissOverlays(page);
@@ -72,7 +62,7 @@ test.describe('Azioni in massa', () => {
     const renderizzate = await page.locator('.card-scheda').count();
     expect(renderizzate).toBeLessThan(60);
 
-    await page.locator('#titolo-cartella-attuale').click();   // fuoco fuori dai campi di testo
+    await page.locator('#titolo-cartella-attuale').click();
     await page.keyboard.press('Control+a');
 
     const selezionate = await page.evaluate(() => (window as any).selectedRecords.length);
@@ -90,7 +80,6 @@ test.describe('Azioni in massa', () => {
     await page.locator('#search-input').focus();
     await page.keyboard.press('Control+a');
 
-    // Dentro la ricerca Ctrl+A deve selezionare il TESTO, non le schede.
     expect(await page.evaluate(() => (window as any).selectedRecords.length)).toBe(0);
   });
 
@@ -110,8 +99,6 @@ test.describe('Azioni in massa', () => {
     expect((await record(page, 'A')).cartella).toBe('Notarile');
     expect((await record(page, 'B')).cartella).toBe('Notarile');
     expect((await record(page, 'ESCA')).cartella).toBe('');
-    // La scheda toccata è marcata come modificata, l'esca no: senza questa asserzione un
-    // `lastModified` scritto su tutta la selezione passerebbe inosservato fino al sync.
     expect((await record(page, 'ESCA')).lastModified).toBe(1);
     expect((await record(page, 'A')).lastModified).toBeGreaterThan(1);
   });
@@ -130,7 +117,6 @@ test.describe('Azioni in massa', () => {
     await page.locator('#bulk-tag-input').fill('Pergamena, notarile');
     await applica(page);
 
-    // "Pergamena" non si aggiunge dove c'è già "pergamena": il tag esistente vince.
     expect((await record(page, 'A')).tags).toBe('pergamena, notarile');
     expect((await record(page, 'B')).tags).toBe('Pergamena, notarile');
     expect((await record(page, 'ESCA')).tags).toBe('');
@@ -141,7 +127,6 @@ test.describe('Azioni in massa', () => {
     await page.locator('#bulk-tag-input').fill('not');
     await applica(page);
 
-    // "not" NON deve portarsi via "notarile": la rimozione è per corrispondenza esatta.
     expect((await record(page, 'A')).tags).toBe('pergamena, notarile');
   });
 
@@ -150,7 +135,7 @@ test.describe('Azioni in massa', () => {
     await seed(page, [
       { segnatura: 'ASP 1' },
       { segnatura: 'ASP 2' },
-      { segnatura: 'ASF 3' },   // esca: nessuna occorrenza
+      { segnatura: 'ASF 3' },
     ]);
     await dismissOverlays(page);
 
@@ -158,7 +143,6 @@ test.describe('Azioni in massa', () => {
     await page.evaluate(() => (window as any).apriAzioneMassa('sostituisci'));
     await expect(page.locator('#bulk-modal')).toBeVisible();
 
-    // A ricerca vuota il pulsante è disabilitato: applicare "niente" non è un'azione.
     await expect(page.locator('#bulk-confirm')).toBeDisabled();
 
     await page.locator('#bulk-cerca').fill('ASP');
@@ -171,7 +155,6 @@ test.describe('Azioni in massa', () => {
     expect((await record(page, 'ASPg 1'))).toBeTruthy();
     expect((await record(page, 'ASF 3'))).toBeTruthy();
 
-    // L'undo riporta indietro TUTTE le schede toccate, in un colpo solo.
     await page.evaluate(() => (window as any).gestoreAnnullamento.annullaUltimaAzione());
     await expect.poll(async () => !!(await record(page, 'ASP 1'))).toBe(true);
     expect((await record(page, 'ASP 2'))).toBeTruthy();
@@ -182,7 +165,6 @@ test.describe('Azioni in massa', () => {
     await seed(page, [{ segnatura: 'A' }, { segnatura: 'ESCA' }]);
     await dismissOverlays(page);
 
-    // Un secondo tipo deve esistere, altrimenti il test cambierebbe tipo verso se stesso.
     const secondo = await page.evaluate(() => {
       // @ts-ignore
       const altri = appData.tipiDocumento.filter((t) => t.id !== 'manoscritto');
@@ -220,8 +202,6 @@ test.describe('Azioni in massa', () => {
 
     await page.keyboard.press('Escape');
     await expect(page.locator('#bulk-modal')).toBeHidden();
-    // Il primo Esc chiude il modale e NON tocca la selezione: costruirla costa,
-    // perderla per una finestra chiusa sarebbe una punizione.
     expect(await page.evaluate(() => (window as any).selectedRecords.length)).toBe(2);
 
     await page.locator('#titolo-cartella-attuale').click();
@@ -255,11 +235,8 @@ test.describe('Azioni in massa', () => {
     const corpo = page.locator('#shortcuts-body');
     await expect(corpo).toBeVisible();
 
-    // Le combinazioni implementate in app.ts e la tabella che le documenta possono
-    // divergere in silenzio: qui si verifica almeno che il gruppo nuovo ci sia tutto.
     const righe = await corpo.locator('kbd').evaluateAll((els) => els.map((e) => e.textContent!.trim()));
     for (const tasto of ['Canc', 'F2', 'Maiusc']) expect(righe).toContain(tasto);
-    // Nessuna chiave i18n grezza a schermo: una chiave mancante si vede così.
     await expect(corpo).not.toContainText('shortcut_bulk');
   });
 });

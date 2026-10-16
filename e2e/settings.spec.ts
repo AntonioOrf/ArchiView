@@ -5,7 +5,6 @@ import * as fs from 'fs';
 
 test.use({ seedWorkspace: 'Impostazioni' });
 
-/** PIANO-IMPOSTAZIONI.md: tab accessibili, preferenze nuove, validazione dei numeri. */
 test.describe('Impostazioni', () => {
   test('tab da tastiera: frecce, Home/End, roving tabindex e ultima tab ricordata', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
@@ -36,7 +35,6 @@ test.describe('Impostazioni', () => {
     await expect(page.locator('#tab-general-btn')).toHaveAttribute('tabindex', '0');
     await expect(page.locator('#tab-system-btn')).toHaveAttribute('tabindex', '-1');
 
-    // Senza argomento si riapre sull'ultima tab usata.
     await page.locator('#tab-documents-btn').click();
     await page.evaluate(() => (window as any).chiudiImpostazioni());
     await page.evaluate(() => (window as any).apriImpostazioni());
@@ -44,8 +42,6 @@ test.describe('Impostazioni', () => {
     await expect(page.locator('#tab-documents-btn')).toHaveAttribute('aria-selected', 'true');
   });
 
-  // Il pulsante chiamava `apiBrowser.invoke`, che il preload non espone: il backup falliva
-  // sempre con "invoke is not a function". Trovato tipizzando le API del preload (PIANO-REFACTOR Fase 10).
   test('Backup in ZIP: il pulsante scrive davvero il file', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
     const out = path.join(userDataDir, 'backup.zip');
@@ -70,7 +66,6 @@ test.describe('Impostazioni', () => {
     await expect(campo).toHaveValue('45');
     expect((await page.evaluate(() => (window as any).apiSettings.get())).cestinoGiorni).toBe(45);
 
-    // Il valore valido successivo toglie la segnalazione.
     await campo.fill('60');
     await campo.press('Tab');
     await expect(campo).not.toHaveAttribute('aria-invalid', 'true');
@@ -80,8 +75,6 @@ test.describe('Impostazioni', () => {
   test('zoom da tastiera e dal pannello: stessa chiave, applicato alla finestra', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
     const fattore = () => electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomFactor());
-    // L'input sintetico di Playwright (CDP) non passa da before-input-event: si emette
-    // l'evento che Electron manda per un tasto vero.
     const tasto = (key: string) => electronApp.evaluate(({ BrowserWindow }, key) => {
       BrowserWindow.getAllWindows()[0].webContents.emit('before-input-event', { preventDefault() {} }, { type: 'keyDown', control: true, meta: false, alt: false, key });
     }, key);
@@ -125,7 +118,6 @@ test.describe('Impostazioni', () => {
         theme: 'blue-dark', zoomInterfaccia: 120, fontTrascrizione: 'junicode', dimensioneTrascrizione: 22,
         pdfRisoluzione: 2000, pdfZoomIniziale: 'larghezza', aggiornamentiAutomatici: false
       });
-      // Tema scuro non predefinito riconosciuto anche all'avvio (temaIniziale.ts).
       await expect(page2.locator('html')).toHaveClass(/blue-dark-theme/);
       await expect.poll(() => app2.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomFactor())).toBeCloseTo(1.2);
       const stile = await page2.evaluate(() => ({
@@ -136,7 +128,6 @@ test.describe('Impostazioni', () => {
       expect(stile.font).toContain('Junicode');
       expect(stile.dim.trim()).toBe('22px');
       expect(stile.pdf).toBe(2000);
-      // Junicode è nel pacchetto: il font si carica da 'self'.
       expect(await page2.evaluate(async () => { await document.fonts.load("16px 'Junicode'"); return document.fonts.check("16px 'Junicode'"); })).toBe(true);
     } finally {
       await closeApp(app2);

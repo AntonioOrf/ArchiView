@@ -15,18 +15,15 @@ test.describe('Allegati', () => {
     await expect(page.locator('#manoscritto-form')).toBeVisible();
     await page.locator('#form-segnatura').fill('MS-ATT-001');
 
-    // Il file input reale bypassa il dialog nativo: nessuno stub necessario.
     await page.locator('#form-allegato').setInputFiles(FIXTURE_PNG);
 
-    // Anteprima del file in coda di upload.
     await expect(page.locator('#form-allegati-new-preview')).toContainText('sample.png');
 
     await page.locator('#btn-submit-form').click();
     await expect(page.locator('main')).toContainText('MS-ATT-001', { timeout: 10_000 });
 
-    // La pipeline main (salvaAllegato → hash → store) ha persistito l'allegato sul record.
     const allegatiCount = await page.evaluate(() => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+      // @ts-ignore
       const rec = appData?.manoscritti?.find((m: any) => m.segnatura === 'MS-ATT-001');
       return rec?.allegati?.length ?? 0;
     });

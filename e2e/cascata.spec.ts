@@ -4,8 +4,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Cascata' });
 
-// Audit front-end, Fase 3 (P2-4, P2-5): style.css è fuori da @layer e vince sulle utility
-// Tailwind scritte accanto nel markup. Si misura il rendering, non il sorgente.
 test.describe('Cascata style.css / utility', () => {
 
   test('P2-5 — nessuna transizione globale fuori dal cambio tema; transition-transform intatto', async ({ page, userDataDir }) => {
@@ -16,7 +14,6 @@ test.describe('Cascata style.css / utility', () => {
       document.body.appendChild(div);
       const durata = getComputedStyle(div).transitionDuration;
       div.remove();
-      // Fuori da ogni regola dedicata: <i> e <span> come quelli dei template.
       const i = document.createElement('i');
       i.className = 'transition-transform';
       document.body.appendChild(i);
@@ -38,7 +35,7 @@ test.describe('Cascata style.css / utility', () => {
         const r = document.documentElement;
         r.classList.remove('dark-theme', 'amber-light-theme', 'blue-dark-theme');
         if (t) r.classList.add(t);
-        document.getAnimations().forEach(a => a.finish()); // .btn ha la sua transition: color 0.2s
+        document.getAnimations().forEach(a => a.finish());
         const sonda = document.createElement('span');
         sonda.style.color = 'var(--color-danger-text)';
         document.body.appendChild(sonda);

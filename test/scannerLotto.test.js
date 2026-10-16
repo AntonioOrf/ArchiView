@@ -1,4 +1,3 @@
-// ArchiScanner: validatore condiviso del lotto (src/shared/scannerLotto.ts, CONTRATTO.md v1).
 const assert = require('assert');
 const L = require('../out/shared/scannerLotto');
 
@@ -18,7 +17,6 @@ function lotto(extra) {
 }
 const codici = (esito) => esito.ok ? [] : esito.errori.map(e => e.codice + '@' + e.percorso);
 
-// 1. Lotto minimo valido; la copia normalizzata non è lo stesso oggetto
 {
   const sorgente = lotto();
   const e = L.valida(sorgente);
@@ -28,7 +26,6 @@ const codici = (esito) => esito.ok ? [] : esito.errori.map(e => e.codice + '@' +
   assert.notStrictEqual(e.lotto.pagine[0], sorgente.pagine[0]);
 }
 
-// 2. Chiavi sconosciute eliminate (radice, destinazione, pagina, doppia); ordine fisso
 {
   const e = L.valida(lotto({
     extra: 1, titolo: '  Registro 12  ', nota: '',
@@ -42,7 +39,6 @@ const codici = (esito) => esito.ok ? [] : esito.errori.map(e => e.codice + '@' +
   assert.deepStrictEqual(e.lotto.pagine[0], { file: 'p0001.jpg', sha256: SHA, byte: 1, modalita: 'raffica', etichetta: '12v', doppia: { lato: 'sx' } });
 }
 
-// 3. Formato e versione
 assert.deepStrictEqual(codici(L.valida(null)), ['non_oggetto@']);
 assert.deepStrictEqual(codici(L.valida([])), ['non_oggetto@']);
 assert.deepStrictEqual(codici(L.valida(lotto({ formato: 'altro' }))), ['formato_sconosciuto@formato']);
@@ -50,7 +46,6 @@ assert.deepStrictEqual(codici(L.valida(lotto({ versione: 2 }))), ['versione_futu
 assert.deepStrictEqual(codici(L.valida(lotto({ versione: '1' }))), ['versione_non_valida@versione']);
 assert.deepStrictEqual(codici(L.valida(lotto({ versione: 0 }))), ['versione_non_valida@versione']);
 
-// 4. Id: forma, data e ora reali
 for (const id of ['20261005-143022-K3F9', '20261005-143022-k3f', '2026105-143022-k3f9', '20261305-143022-k3f9',
   '20260230-143022-k3f9', '20261005-243022-k3f9', '20261005-146022-k3f9', '../20261005-143022-k3f9', 20261005]) {
   assert.strictEqual(L.idValido(id), false, 'id ' + id);
@@ -59,21 +54,18 @@ assert.strictEqual(L.idValido('20240229-000000-0000'), true);
 assert.strictEqual(L.idValido('20250229-000000-0000'), false);
 assert.deepStrictEqual(codici(L.valida(lotto({ id: 'x' }))), ['id_non_valido@id']);
 
-// 5. creatoIl: ISO 8601 con fuso obbligatorio
 assert.strictEqual(L.valida(lotto({ creatoIl: '2026-10-05T12:30:22Z' })).ok, true);
 assert.strictEqual(L.valida(lotto({ creatoIl: '2026-10-05T12:30:22.123Z' })).ok, true);
 for (const d of ['2026-10-05T14:30:22', '2026-10-05', 'ieri', 1728131422000, '2026-13-05T14:30:22Z']) {
   assert.deepStrictEqual(codici(L.valida(lotto({ creatoIl: d }))), ['data_non_valida@creatoIl'], String(d));
 }
 
-// 6. Nomi di file: solo piatti, minuscoli, estensioni ammesse
 for (const f of ['../p0001.jpg', 'a/p0001.jpg', 'p0001.JPG', 'P0001.jpg', 'p001.jpg', 'p00001.jpg', 'p0001.tif',
   'p0001.jpg ', 'p0001.jpg\u0000', 'lotto.json', '']) {
   assert.strictEqual(L.nomeFileValido(f), false, JSON.stringify(f));
 }
 for (const f of ['p0001.jpg', 'p9999.jpeg', 'p0042.png']) assert.strictEqual(L.nomeFileValido(f), true, f);
 
-// 7. Pagine: elenco, duplicati, hash, byte, modalità, dimensioni, doppia
 assert.deepStrictEqual(codici(L.valida(lotto({ pagine: [] }))), ['pagine_vuote@pagine']);
 assert.deepStrictEqual(codici(L.valida(lotto({ pagine: {} }))), ['pagine_non_valide@pagine']);
 {
@@ -92,7 +84,6 @@ assert.deepStrictEqual(codici(L.valida(lotto({ pagine: {} }))), ['pagine_non_val
   ]);
 }
 
-// 7b. Nota della pagina (F8 dello scanner): ripulita, vuota = assente, oltre 500 rifiutata
 {
   const pg = (x) => ({ file: 'p0001.jpg', sha256: SHA, byte: 10, modalita: 'documento', ...x });
   assert.strictEqual(L.valida(lotto({ pagine: [pg({ nota: '  rifilata  ' })] })).lotto.pagine[0].nota, 'rifilata');
@@ -106,7 +97,6 @@ assert.deepStrictEqual(codici(L.valida(lotto({ pagine: {} }))), ['pagine_non_val
   assert.strictEqual(L.valida(lotto({ pagine: molte.slice(0, 2000) })).ok, true);
 }
 
-// 8. Destinazione
 assert.deepStrictEqual(codici(L.valida(lotto({ destinazione: undefined }))), ['destinazione_non_valida@destinazione']);
 assert.deepStrictEqual(codici(L.valida(lotto({ destinazione: 'nessuna' }))), ['destinazione_non_valida@destinazione']);
 assert.deepStrictEqual(codici(L.valida(lotto({ destinazione: { tipo: 'altro' } }))), ['destinazione_tipo_sconosciuto@destinazione.tipo']);
@@ -130,11 +120,9 @@ assert.deepStrictEqual(codici(L.valida(lotto({ destinazione: { tipo: 'nuova' } }
   ]);
 }
 {
-  // __proto__ da JSON.parse è una chiave propria: non deve inquinare la copia normalizzata
   const e = L.valida(JSON.parse('{"formato":"archiview-scanner/lotto","versione":1,"id":"20261005-143022-k3f9","creatoIl":"2026-10-05T14:30:22Z","destinazione":{"tipo":"nuova","tipoDocumento":"t","campi":{"__proto__":"x"}},"pagine":[{"file":"p0001.jpg","sha256":"' + SHA + '","byte":1,"modalita":"documento"}]}'));
   assert.deepStrictEqual(codici(e), ['campo_chiave_non_valida@destinazione.campi.__proto__']);
 }
-// Ogni chiave riservata esportata è davvero rifiutata
 for (const k of L.CHIAVI_RISERVATE) {
   if (!/^[A-Za-z]/.test(k)) continue;
   const e = L.valida(lotto({ destinazione: { tipo: 'nuova', tipoDocumento: 't', campi: { [k]: 'x' } } }));
@@ -142,15 +130,12 @@ for (const k of L.CHIAVI_RISERVATE) {
 }
 assert.ok(L.CHIAVI_RISERVATE.indexOf('segnatura') === -1, 'la segnatura si compila dal telefono');
 
-// 9. Testi facoltativi
 assert.deepStrictEqual(codici(L.valida(lotto({ titolo: 5 }))), ['testo_non_valido@titolo']);
 assert.deepStrictEqual(codici(L.valida(lotto({ nota: 'x'.repeat(2001) }))), ['testo_non_valido@nota']);
 assert.strictEqual(L.valida(lotto({ dispositivo: null })).ok, true);
 
-// 10. Errori raccolti tutti insieme (non solo il primo)
 assert.deepStrictEqual(codici(L.valida(lotto({ id: 'x', creatoIl: 'x', pagine: [] }))), ['id_non_valido@id', 'data_non_valida@creatoIl', 'pagine_vuote@pagine']);
 
-// 11. Utilità per il telefono
 assert.strictEqual(L.nuovoId(new Date(2026, 9, 5, 9, 3, 7), 'K3F9'), '20261005-090307-k3f9');
 assert.ok(L.idValido(L.nuovoId(new Date(), '0a0a')));
 assert.throws(() => L.nuovoId(new Date(), 'k3f'), /suffisso_non_valido/);
@@ -162,7 +147,6 @@ assert.throws(() => L.nomePagina(10000), /numero_pagina_non_valido/);
 assert.throws(() => L.nomePagina(1, 'tif'), /estensione_non_valida/);
 assert.ok(L.nomeFileValido(L.nomePagina(9999)));
 
-// 12. Elenco delle schede per il telefono (§5)
 const cfg = (x) => Object.assign({ formato: 'archiview-scanner/config', versione: 1, archivio: 'Podestà', aggiornatoIl: '2026-10-09T10:00:00Z', schede: [] }, x);
 {
   const e = L.validaConfig(cfg({ extra: 1, schede: [{ id: 'a1', segnatura: ' Reg. 12 ', cartella: 'Serie/1', x: 'via' }, { id: 'a2' }] }));
@@ -176,7 +160,6 @@ assert.deepStrictEqual(codici(L.validaConfig(cfg({ archivio: '', aggiornatoIl: '
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: [{ id: '' }, 5] }))), ['scheda_id_non_valido@schede[0].id', 'scheda_non_valida@schede[1]']);
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: 'x' }))), ['schede_non_valide@schede']);
 
-// 12b. Schede «da vedere» (F9 dello scanner): chiave facoltativa, solo `true` resta
 {
   const e = L.validaConfig(cfg({ schede: [{ id: 'a1', daVedere: true }, { id: 'a2', daVedere: false }] }));
   assert.deepStrictEqual(e.config.schede.map(s => s.daVedere), [true, undefined]);
@@ -188,7 +171,6 @@ assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: 'x' }))), ['schede_no
   assert.strictEqual(L.daVedere(undefined), false);
 }
 
-// 13. Archivio e scheda nuova scelti sul telefono (§2.5, chiavi facoltative)
 {
   const e = L.valida(lotto({ archivio: ' Podestà ', archivioNuovo: true, destinazione: { tipo: 'nuova', tipoDocumento: 'registro', schedaId: '3f2a9c1e-0b7d-4e55-9a10-2c4d6e8f0a1b' } }));
   assert.strictEqual(e.ok, true, JSON.stringify(e));
@@ -196,17 +178,14 @@ assert.deepStrictEqual(codici(L.validaConfig(cfg({ schede: 'x' }))), ['schede_no
   assert.strictEqual(e.lotto.archivioNuovo, true);
   assert.deepStrictEqual(Object.keys(e.lotto).slice(0, 6), ['formato', 'versione', 'id', 'creatoIl', 'archivio', 'archivioNuovo']);
   assert.strictEqual(e.lotto.destinazione.schedaId, '3f2a9c1e-0b7d-4e55-9a10-2c4d6e8f0a1b');
-  // archivioNuovo senza archivio, o false: scartato
   assert.strictEqual(L.valida(lotto({ archivioNuovo: true })).lotto.archivioNuovo, undefined);
   assert.strictEqual(L.valida(lotto({ archivio: 'A', archivioNuovo: false })).lotto.archivioNuovo, undefined);
 }
 assert.deepStrictEqual(codici(L.valida(lotto({ archivio: 'x'.repeat(201), archivioNuovo: 'sì' }))), ['testo_non_valido@archivio', 'archivio_non_valido@archivioNuovo']);
-// L'id della scheda nuova diventa un id e un prefisso di file: niente barre, punti o spazi.
 for (const schedaId of ['../../x', 'corto', 'a b c d e f', 5]) {
   assert.deepStrictEqual(codici(L.valida(lotto({ destinazione: { tipo: 'nuova', tipoDocumento: 'r', schedaId } }))), ['scheda_id_non_valido@destinazione.schedaId'], String(schedaId));
 }
 
-// 15. Elenco delle schede: titolo e cartelle anche vuote (§4.3, Fase 14)
 {
   const e = L.validaConfig(cfg({ schede: [{ id: 'a1', titolo: ' Not. Rossi ' }], cartelle: ['Serie', 'Serie/1', 'Mappe'] }));
   assert.strictEqual(e.ok, true);
@@ -218,7 +197,6 @@ assert.deepStrictEqual(codici(L.validaConfig(cfg({ cartelle: 'Serie' }))), ['car
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ cartelle: ['ok', '', 5, 'x'.repeat(501)] }))), ['cartella_non_valida@cartelle[1]', 'cartella_non_valida@cartelle[2]', 'cartella_non_valida@cartelle[3]']);
 assert.deepStrictEqual(codici(L.validaConfig(cfg({ cartelle: new Array(10001).fill('a') }))), ['cartelle_non_valide@cartelle']);
 
-// 14. Identità dell'archivio senza il suffisso della sincronizzazione su Drive
 assert.strictEqual(L.nomeArchivio('Catasto affitti_ArchiView'), 'Catasto affitti');
 assert.strictEqual(L.nomeArchivio(' Catasto affitti '), 'Catasto affitti');
 assert.strictEqual(L.nomeArchivio('_ArchiView'), '_ArchiView');

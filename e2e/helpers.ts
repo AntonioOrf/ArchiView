@@ -2,19 +2,11 @@ import { type ElectronApplication, type Page, expect } from '@playwright/test';
 import * as path from 'path';
 import { seededWorkspaces } from './fixtures';
 
-/**
- * Crea un archivio locale attraverso la welcome modal e attende il reload dell'app.
- * `basePath` deve puntare a una cartella temporanea isolata (es. dentro userDataDir).
- * Ritorna il percorso del workspace creato (basePath/name).
- */
 export async function createLocalWorkspace(
   page: Page,
   basePath: string,
   name = 'TestArchive',
 ): Promise<string> {
-  // Workspace pre-seminato dalla fixture (test.use({ seedWorkspace })): l'app è partita già
-  // dentro l'archivio, resta solo da attendere che sia pronta. Un percorso diverso da quello
-  // seminato è un errore di configurazione dello spec, non un caso da assecondare in silenzio.
   const seeded = seededWorkspaces.get(page);
   if (seeded !== undefined) {
     const richiesto = path.join(basePath, name);
@@ -28,52 +20,34 @@ export async function createLocalWorkspace(
     return seeded;
   }
 
-  // La welcome modal deve essere visibile al primo avvio.
   await expect(page.locator('#welcome-modal')).toBeVisible();
 
-  // ...ma "visibile" non vuol dire "pronta": la modal vive nell'HTML statico, mentre le
-  // funzioni che i test invocano arrivano da script defer caricati dopo. Senza questa
-  // attesa, al primo avvio dopo una build (cache fredda) l'intera suite falliva con
-  // "window.t is not a function" — un rosso che sembra flakiness e non lo è.
   await page.waitForFunction(
     () => typeof (window as any).t === 'function' && typeof (window as any).creaCartellaIniziale === 'function',
     null,
     { timeout: 15_000 },
   );
 
-  // Apri il form "Crea Nuova Cartella Locale".
   await page.locator('#welcome-buttons button', { hasText: 'Crea Nuova Cartella Locale' }).click();
   await expect(page.locator('#welcome-create-form')).toBeVisible();
 
-  // Nome + percorso (input readonly → set via evaluate).
   await page.locator('#welcome-new-folder-name').fill(name);
   await page.locator('#welcome-new-folder-path').evaluate((el, value) => {
     (el as HTMLInputElement).value = value;
   }, basePath);
 
-  // Conferma creazione. creaCartellaIniziale() gestisce l'assenza di `event`.
-  // Lanciata fuori dall'evaluate: finisce con un reload, e se l'evaluate ne attendesse la
-  // promise morirebbe con "Execution context was destroyed" quando il reload arriva prima
-  // della risposta (sistematico con la finestra fuori schermo, che non disegna).
   await page.evaluate(() => { setTimeout(() => (window as any).creaCartellaIniziale(), 0); });
 
-  // Il main process ricarica la finestra: attendi l'app pronta (header + niente welcome).
   await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('#welcome-modal')).toBeHidden();
 
-  // Anche qui l'HTML statico mente: #btn-tab-add sta nel documento dal primo frame.
-  // __appPronta è alzato in coda all'init di app.js, cioè quando ogni script defer ha
-  // girato — l'unico momento in cui invocare le funzioni globali dell'app è sicuro.
   await page.waitForFunction(() => (window as any).__appPronta === true, null, { timeout: 15_000 });
 
-  // Al primo avvio l'app mostra il changelog (versione mai vista) e talvolta un banner
-  // di conferma: entrambi sono overlay che intercettano i click. Vanno chiusi.
   await dismissOverlays(page);
 
   return path.join(basePath, name);
 }
 
-/** Crea una cartella nell'archivio corrente tramite il folder modal. */
 export async function createFolder(page: Page, folderName: string): Promise<void> {
   await page.evaluate(() => (window as any).aggiungiCartella());
   await expect(page.locator('#folder-modal')).toBeVisible();
@@ -82,38 +56,29 @@ export async function createFolder(page: Page, folderName: string): Promise<void
   await expect(page.locator('#folder-modal')).toBeHidden();
 }
 
-/** Chiude changelog, banner di conferma e toast che potrebbero coprire elementi cliccabili. */
 export async function dismissOverlays(page: Page, { attendiChangelog = true } = {}): Promise<void> {
-  // Il changelog è asincrono (dopo avviaApp): dagli il tempo di comparire, poi chiudilo.
-  // Con `lastSeenVersion` già alla versione corrente (workspace seminato) non compare mai:
-  // aspettarlo costerebbe 3s a vuoto per test.
   const changelog = page.locator('#changelog-modal');
   if (attendiChangelog) {
     try {
       await changelog.waitFor({ state: 'visible', timeout: 3_000 });
-    } catch { /* può non comparire: ok */ }
+    } catch {}
   }
 
   await page.evaluate(() => {
     (window as any).chiudiChangelogModal?.();
     (window as any).nascondiMessaggi?.();
-  }).catch(() => { /* noop */ });
+  }).catch(() => {});
 
   await expect(changelog).toBeHidden();
 }
 
-/**
- * Seed rapido di N schede: push diretto in appData.manoscritti + UN SOLO
- * Store.commit() (salva su disco e rende), molto più veloce di N submit form.
- * Ritorna gli id generati.
- */
 export async function seedItems(
   page: Page,
   count: number,
   opts: { cartella?: string; tipoDocumento?: string; tagPrefix?: string } = {},
 ): Promise<string[]> {
   return page.evaluate(async ({ count, opts }) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const data = appData;
     const ids: string[] = [];
     for (let i = 0; i < count; i++) {
@@ -136,7 +101,6 @@ export async function seedItems(
   }, { count, opts });
 }
 
-/** Crea una scheda tramite il form reale (pattern estratto da items.spec.ts). */
 export async function createItemViaForm(page: Page, segnatura: string): Promise<void> {
   await page.locator('#btn-tab-add').click();
   await expect(page.locator('#manoscritto-form')).toBeVisible();
@@ -145,7 +109,6 @@ export async function createItemViaForm(page: Page, segnatura: string): Promise<
   await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
 }
 
-/** Crea una scheda con un allegato locale (pattern da attachments.spec.ts). Ritorna l'id creato. */
 export async function createItemWithAttachment(
   page: Page,
   segnatura: string,
@@ -160,13 +123,12 @@ export async function createItemWithAttachment(
   await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
 
   return page.evaluate((seg) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const rec = appData.manoscritti.find((m: any) => m.segnatura === seg);
     return rec.id;
   }, segnatura);
 }
 
-/** Apre le impostazioni tramite la funzione globale (già usato in ui.spec.ts). */
 export async function openSettings(page: Page): Promise<void> {
   await page.evaluate(() => (window as any).apriImpostazioni());
   await expect(page.locator('#settings-modal')).toBeVisible();
@@ -177,13 +139,11 @@ export async function closeSettings(page: Page): Promise<void> {
   await expect(page.locator('#settings-modal')).toBeHidden();
 }
 
-/** Cambia vista principale (list/add/trascrizione) tramite switchTab e attende il render. */
 export async function openView(page: Page, tab: 'list' | 'add' | 'trascrizione'): Promise<void> {
   await page.evaluate((t) => (window as any).switchTab(t), tab);
   await expect(page.locator(`#view-${tab}`)).toBeVisible();
 }
 
-/** Apre un pannello della sidebar tramite switchSidebarTab. */
 export async function openSidebarPanel(
   page: Page,
   panel: 'folders' | 'search' | 'tags' | 'source-control' | 'history',
@@ -192,13 +152,11 @@ export async function openSidebarPanel(
   await expect(page.locator(`#sidebar-${panel}`)).toBeVisible();
 }
 
-/** Legge la variabile globale `appData` del renderer (non è window.appData: vedi state.ts). */
 export async function getAppData(page: Page): Promise<any> {
-  // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+  // @ts-ignore
   return page.evaluate(() => appData);
 }
 
-/** Attende la comparsa di un toast, opzionalmente con un testo contenuto. */
 export async function expectToast(page: Page, text?: string): Promise<void> {
   const toast = text
     ? page.locator('#toast-container', { hasText: text })
@@ -206,11 +164,6 @@ export async function expectToast(page: Page, text?: string): Promise<void> {
   await expect(toast).toBeVisible({ timeout: 8_000 });
 }
 
-/**
- * Costruisce due versioni divergenti (locale/esterna) di una card rispetto a un
- * baseHash noto e apre il merge conflict modal, catturando la callback di
- * risoluzione su window.__e2eResolved per poterla ispezionare dai test.
- */
 export async function injectConflict(page: Page, campo = 'segnatura'): Promise<void> {
   await page.evaluate((campoConflitto) => {
     const w = window as any;

@@ -1,5 +1,3 @@
-// Audit A10: withDriveRetry riprova anche i 403 di rate limit di Drive (non gli altri 403),
-// rispetta Retry-After, e upload/download lo usano già da dentro fileOps.
 const path = require('path');
 const assert = require('assert');
 

@@ -1,4 +1,3 @@
-// ArchiScanner: ricezione dei lotti con una sorgente finta (src/main/scanner/arrivoLotti.ts).
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -10,7 +9,6 @@ console.log('Running arrivoLotti tests...');
 
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
-/** Lotto remoto: pagine (Buffer per nome) + manifest coerente, modificabile da `ritocca`. */
 function remoto(id, pagine, ritocca) {
   const files = {};
   const manifest = {
@@ -24,7 +22,6 @@ function remoto(id, pagine, ritocca) {
   return files;
 }
 
-/** Sorgente in memoria che registra le chiamate e può fallire a comando. */
 function sorgenteFinta(lotti, guasti) {
   const g = guasti || {};
   const chiamate = { scaricate: [], rimossi: [] };
@@ -62,7 +59,6 @@ function cartelle() {
   const P1 = Buffer.from('pagina uno');
   const P2 = Buffer.from('pagina due, più lunga');
 
-  // 1. Giro completo: valido, in caricamento, corrotto, cartella estranea
   {
     const c = cartelle();
     const lotti = {
@@ -73,7 +69,6 @@ function cartelle() {
     };
     const s = sorgenteFinta(lotti);
     const avanz = [];
-    // Un residuo di un giro interrotto in tmp viene ripulito
     fs.mkdirSync(path.join(c.temp, 'vecchio'), { recursive: true });
     const e = await riceviLotti({ sorgente: s, cartellaArrivo: c.arrivo, cartellaTemp: c.temp, avanzamento: (x) => avanz.push(x) });
 
@@ -90,17 +85,14 @@ function cartelle() {
     assert.strictEqual(scritto.extra, undefined, 'manifest normalizzato');
     assert.strictEqual(scritto.pagine.length, 2);
 
-    // Rimossi dal canale solo i lotti salvati; il corrotto e quello in caricamento restano
     assert.deepStrictEqual(s.chiamate.rimossi, ['20261005-100000-aaaa']);
     assert.ok(lotti['20261005-120000-cccc'] && lotti['20261005-110000-bbbb'] && lotti['Nuova cartella']);
-    // Nessun lotto a metà in arrivo, nessun residuo in tmp
     assert.deepStrictEqual(fs.readdirSync(c.arrivo), ['20261005-100000-aaaa']);
     assert.deepStrictEqual(fs.readdirSync(c.temp), []);
     assert.deepStrictEqual(avanz.map(a => a.fatte + '/' + a.totali), ['1/2', '2/2']);
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 2. Rimozione fallita: lotto salvato, al giro dopo già presente e non riscaricato
   {
     const c = cartelle();
     const id = '20261005-100000-dddd';
@@ -121,7 +113,6 @@ function cartelle() {
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 3. Manifest sbagliati: ogni lotto fallisce da solo, gli altri passano
   {
     const c = cartelle();
     const ok = '20261005-090000-zzzz';
@@ -150,7 +141,6 @@ function cartelle() {
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 4. Una cartella in arrivo senza manifest non conta come ricevuta e viene sostituita
   {
     const c = cartelle();
     const id = '20261005-100000-ffff';
@@ -163,7 +153,6 @@ function cartelle() {
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 5. Id duplicato nel canale (due cartelle omonime): la seconda non si tocca
   {
     const c = cartelle();
     const id = '20261005-100000-gggg';
@@ -176,7 +165,6 @@ function cartelle() {
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 6. Pagine scaricate in parallelo (al più 3) e tutte verificate
   {
     const c = cartelle();
     const id = '20261005-100000-hhhh';
@@ -197,7 +185,6 @@ function cartelle() {
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 7. Filtro per archivio (CONTRATTO §2.5): il lotto di un altro archivio resta sul canale
   {
     const c = cartelle();
     const mio = '20261011-100000-mmmm', altro = '20261011-100000-oooo', libero = '20261011-100000-llll';
@@ -216,7 +203,6 @@ function cartelle() {
     fs.rmSync(c.base, { recursive: true, force: true });
   }
 
-  // 8. Archivio ripristinato da Drive: cartella locale "<nome>_ArchiView", lotto con "<nome>"
   {
     const c = cartelle();
     const id = '20261011-110000-ssss';

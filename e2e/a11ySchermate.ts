@@ -4,16 +4,6 @@ import * as path from 'path';
 import { stubDialog } from './fixtures';
 import { createItemWithAttachment } from './helpers';
 
-/**
- * Schermate secondarie per i test di accessibilità (contrasto 7.1, nomi 5.6, bersagli 5.9):
- * welcome, wizard di import CSV, IIIF, OCR, stampa, condivisione. Un unico elenco, così un
- * modale nuovo si aggiunge qui e finisce in tutte e tre le misure.
- *
- * Va chiamata subito dopo aver creato il workspace, con la lista a schermo: crea una scheda
- * con un'immagine allegata (serve a OCR e stampa). Stubba nel main il dialogo di apertura
- * (il wizard CSV chiede il file prima di aprirsi) e l'elenco delle lingue OCR: senza lingue
- * installate il modale OCR mostra solo l'avviso, e la sua parte principale non si misura.
- */
 export type Schermata = { nome: string; radice: string; apri: () => Promise<void>; chiudi: () => Promise<void> };
 
 export const modaliAperti = (page: Page) => page.evaluate(() =>
@@ -22,12 +12,11 @@ export const modaliAperti = (page: Page) => page.evaluate(() =>
 
 export async function preparaSchermateSecondarie(page: Page, app: ElectronApplication, dir: string): Promise<Schermata[]> {
   const id = await createItemWithAttachment(page, 'A11Y-ALLEGATO', path.join(__dirname, 'fixtures', 'sample.png'));
-  // Scheda senza allegati: la trascrizione mostra lo stato vuoto del pannello immagini.
   await page.locator('#btn-tab-add').click();
   await page.locator('#form-segnatura').fill('A11Y-VUOTA');
   await page.locator('#btn-submit-form').click();
   await expect(page.locator('main')).toContainText('A11Y-VUOTA');
-  // @ts-ignore -- `appData` è una `let` globale (script classico).
+  // @ts-ignore
   const vuota: string = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'A11Y-VUOTA').id);
 
   const csv = path.join(dir, 'a11y-import.csv');
@@ -58,7 +47,6 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
     },
   });
   const w = (f: string, ...args: unknown[]) => page.evaluate(([f, args]) => (window as any)[f as string](...(args as unknown[])), [f, args] as const);
-  // La trascrizione è una vista a tutto schermo, non un .modal-overlay.
   const trascrizione = (nome: string, rid: string): Schermata => ({
     nome, radice: '#view-trascrizione',
     apri: async () => {
@@ -80,7 +68,6 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
       await expect(page.locator('#import-csv-step-mappatura')).toBeVisible();
     }),
     modale('iiif', '#iiif-modal', () => w('apriImportIiif')),
-    // apriOcrModal è asincrona: il pulsante si abilita dopo aver letto le lingue dal main.
     modale('ocr', '#ocr-modal', () => w('apriOcrModal', id, 0),
       () => expect(page.locator('#ocr-confirm')).toBeEnabled()),
     modale('stampa', '#print-modal', () => page.evaluate((rid) => {
@@ -88,31 +75,23 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
       (window as any).apriStampa('selezione');
     }, id)),
     modale('condivisione', '#share-modal', () => w('apriShareModal')),
-    // Audit front-end, Fase 5: superfici che lo scanner non apriva.
     modale('grafo', '#grafo-modal', () => w('apriGrafo')),
     modale('anagrafiche', '#authority-modal', () => w('apriAnagrafica')),
     modale('esporta-testo', '#export-text-modal', () => w('apriEsportaTesto', 'tutto')),
-    // P5: senza trascrizione aperta i due lati restano vuoti, con la sola ricerca.
     modale('confronto-carte', '#confronto-modal', () => w('apriConfrontoCarte')),
-    // PIANO-SCANNER Fase 12: pannello laterale «Dal telefono» (vuoto: senza Drive né lotti).
     modale('scansioni', '#scanner-modal', () => w('apriScansioni')),
-    // Import da ZIP: i tre stati del modale di avanzamento ed esito.
     modale('import-zip-esito', '#import-zip-modal',
       () => w('importZipRiuscito', { schede: 136, cartelle: 31, copiati: 430, saltati: 0, primaScheda: null })),
     modale('import-zip-errore', '#import-zip-modal',
       () => w('importZipFallito', { codice: 'spazio', dettaglio: 'ENOSPC: no space left on device' }),
-      // Aperti senza clic: il puntatore resterebbe sulla barra di zoom della trascrizione,
-      // misurata subito dopo a metà della sua dissolvenza.
       () => page.evaluate(() => { (document.querySelector('.iz-dettagli') as HTMLDetailsElement).open = true; })),
     {
-      // Esc non chiude l'avanzamento: si passa all'esito, che si chiude.
       ...modale('import-zip-corso', '#import-zip-modal',
         () => w('importZipAvanzamento', { nome: 'genius scan - per ArchiView.zip', fatte: 120, totale: 431 })),
       chiudi: async () => { await w('importZipFallito', { codice: 'altro' }); await chiudi(); },
     },
     trascrizione('trascrizione', id),
     trascrizione('trascrizione-senza-allegati', vuota),
-    // PIANO-SCHEDA-AFFIANCATA: il modulo nel tab «Scheda» e il documento accanto al modulo.
     {
       nome: 'trascrizione-scheda', radice: '#view-trascrizione',
       apri: async () => {

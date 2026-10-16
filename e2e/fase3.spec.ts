@@ -4,15 +4,7 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Fase3' });
 
-// `appData` vive nello scope del bundle del renderer, non su `window`: dentro page.evaluate
-// è una variabile globale come le altre, e va solo dichiarata al compilatore dello spec.
 declare const appData: any;
-
-// Fasi 3.3 (vocabolari controllati), 3.5 (relazioni e anagrafica) e 3.6 (segnature
-// ripetute), provate nell'app vera.
-//
-// In ogni semina c'è una scheda-esca che NON deve corrispondere: senza, un'asserzione su un
-// conteggio passerebbe anche a operazione inerte.
 
 async function semina(page: any, righe: any[]) {
   await page.evaluate(async (dati: any[]) => {
@@ -27,7 +19,6 @@ async function semina(page: any, righe: any[]) {
   }, righe);
 }
 
-/** Lega un campo del tipo `imbreviature` a un vocabolario d'archivio. */
 async function legaCampo(page: any, campo: string, vocabolario: string) {
   await page.evaluate(async (arg: any) => {
     const w = window as any;
@@ -46,8 +37,6 @@ async function scheda(page: any, segnatura: string) {
 
 test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
 
-  // --- 3.3 -------------------------------------------------------------------
-
   test('3.3 — l\'archivio nasce con i vocabolari predefiniti, non legati a nessun campo', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     const esito = await page.evaluate(() => {
@@ -56,8 +45,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       return {
         versione: appData.schemaVersion,
         ids: Object.keys(w.Model.vocabolari(appData)).sort(),
-        // `tipo_di_atto` è un campo del modello predefinito: deve essere rimasto TESTO,
-        // o ogni valore già scritto in archivio risulterebbe "non previsto".
         tipoCampo: w.Model.definizioneCampo(tipo, 'tipo_di_atto', w.CONFIG_CAMPI, appData).tipo
       };
     });
@@ -74,7 +61,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await page.evaluate(() => (window as any).switchTab('add'));
     const select = page.locator('#dyn-supporto');
     await expect(select).toBeVisible();
-    // Prima voce vuota + i valori del vocabolario predefinito (4).
     await expect(select.locator('option')).toHaveCount(5);
     await expect(select.locator('option', { hasText: 'pergamena' })).toHaveCount(1);
   });
@@ -88,7 +74,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     });
     const valori = await page.evaluate(() => (window as any).Model.valoriVocabolario(appData, 'supporto'));
     expect(valori).toContain('cartapecora');
-    // Un doppione di sola maiuscola non deve allungare la lista.
     const dopo = await page.evaluate(async () => {
       await (window as any).aggiungiValoreVocabolario('supporto', 'Cartapecora');
       return (window as any).Model.valoriVocabolario(appData, 'supporto').length;
@@ -111,13 +96,11 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     expect(prima.legame).toBe('supporto');
     const annulla = page.locator('#toast-container button', { hasText: /annulla/i }).last();
 
-    // Un valore: tolto dall'elenco, poi rimesso.
     await page.evaluate(() => (window as any).eliminaValoreVocabolario('supporto', 'pergamena'));
     expect((await stato()).valori).not.toContain('pergamena');
     await annulla.click();
     await expect.poll(async () => (await stato()).valori).toEqual(prima.valori);
 
-    // L'intero vocabolario: il campo diventa un elenco proprio; annullando torna legato.
     await page.evaluate(() => (window as any).eliminaVocabolarioArchivio('supporto'));
     const dopo = await stato();
     expect(dopo.legame).toBeNull();
@@ -132,8 +115,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await semina(page, [
       { segnatura: 'A', supporto: 'pergamena' },
       { segnatura: 'B', supporto: 'pergamena' },
-      // L'esca porta lo STESSO valore, ma in un campo che al vocabolario non è legato:
-      // una rinomina che spazzasse tutti i campi di testo la toccherebbe lo stesso.
       { segnatura: 'ESCA', oggetto: 'pergamena' }
     ]);
 
@@ -164,15 +145,13 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await expect(page.locator('#vocab-modal')).toBeHidden();
   });
 
-  // --- 3.6 -------------------------------------------------------------------
-
   test('3.6 — il rilevatore trova le segnature ripetute e ignora le altre', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     await semina(page, [
       { segnatura: 'ASP 12' },
-      { segnatura: 'asp  12' },   // stessa segnatura: maiuscole e spazi doppi non contano
+      { segnatura: 'asp  12' },
       { segnatura: 'ESCA' },
-      { segnatura: '' }           // le schede non ancora inventariate non sono duplicate fra loro
+      { segnatura: '' }
     ]);
 
     await page.evaluate(() => (window as any).apriDuplicati());
@@ -181,8 +160,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await expect(page.locator('#duplicati-list .dup-gruppo').first()).toContainText('ASP 12');
     await expect(page.locator('#duplicati-list')).not.toContainText('ESCA');
   });
-
-  // --- 3.5 -------------------------------------------------------------------
 
   test('3.5 — il rimando si scrive su una scheda sola e il verso opposto si calcola', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
@@ -196,7 +173,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       const risolte = w.relazioniRisolte(b.id);
       return {
         uscentiA: w.Model.relazioni(a).length,
-        // La scheda di arrivo NON viene toccata: il verso opposto è calcolato.
         chiaveSuB: Object.prototype.hasOwnProperty.call(b, 'relazioni'),
         entrantiB: risolte.entranti.map((r: any) => r.scheda.segnatura + '|' + r.tipo),
         entrantiEsca: w.relazioniRisolte(appData.manoscritti.find((m: any) => m.segnatura === 'ESCA').id).entranti.length
@@ -248,8 +224,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       return m ? (m.relazioni || []).length : 0;
     }).toBe(1);
 
-    // Riaprendola, il collegamento deve tornare nel form: se non tornasse, il primo
-    // salvataggio successivo lo cancellerebbe senza che nessuno se ne accorga.
     const id = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'NUOVA').id);
     await page.evaluate((rid: string) => (window as any).editItem(rid), id);
     await expect(page.locator('#form-relazioni-list .rel-riga')).toHaveCount(1);
@@ -260,7 +234,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await semina(page, [
       { segnatura: 'A', attori_dinamici: [{ k: 'Venditore', v: 'Bartolo' }], dataTopica: 'Perugia' },
       { segnatura: 'B', attori_dinamici: [{ k: 'Teste', v: 'bartolo' }], dataTopica: 'Perùgia' },
-      // Esca: il ruolo NON deve finire in anagrafica, e un campo non marcato nemmeno.
       { segnatura: 'ESCA', oggetto: 'Bartolo' }
     ]);
 
@@ -305,7 +278,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       await w.collegaSchede(copia.id, orig.id, 'copia di');
     });
 
-    // Dal lato che PORTA il rimando: compare fra gli uscenti.
     await page.evaluate(() => {
       const w = window as any;
       w.apriCollegamenti(appData.manoscritti.find((m: any) => m.segnatura === 'COPIA').id);
@@ -314,8 +286,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await expect(page.locator('#relazioni-body')).toContainText('ORIGINALE');
     await expect(page.locator('#relazioni-body')).not.toContainText('ESCA');
 
-    // Dal lato PUNTATO: il rimando non è nel suo record, eppure deve vedersi. È
-    // l'asserzione che distingue un backlink calcolato da un dato mai mostrato.
     await page.evaluate(() => {
       const w = window as any;
       w.chiudiCollegamenti();
@@ -325,7 +295,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await expect(entranti).toHaveCount(1);
     await expect(entranti.first()).toContainText('COPIA');
 
-    // E porta davvero alla scheda: il collegamento serve a arrivarci.
     await entranti.first().click();
     await expect(page.locator('#relazioni-modal')).toBeHidden();
     await expect(page.locator('#form-segnatura')).toHaveValue('COPIA');
@@ -341,8 +310,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       await w.collegaSchede(a.id, b.id, 'copia di');
     });
 
-    // "Con collegamenti" deve prendere DUE schede: A, che porta il rimando, e B, che è solo
-    // puntata — se ne prendesse una, il filtro guarderebbe il solo verso uscente.
     await page.evaluate(() => (window as any).applicaFiltriAvanzati({ collegamenti: 'si' }));
     await expect(page.locator('.card-scheda')).toHaveCount(2);
     await expect(page.locator('#main-view, #manoscritti-grid')).not.toContainText('ESCA');
@@ -361,7 +328,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       await w.collegaSchede(a.id, b.id, 'copia di');
     });
 
-    // Due badge: uno sulla scheda che rimanda, uno su quella richiamata.
     await expect(page.locator('.card-scheda .card-badge-link')).toHaveCount(2);
     const idEsca = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'ESCA').id);
     await expect(page.locator('#card-' + idEsca + ' .card-badge-link')).toHaveCount(0);
@@ -381,22 +347,15 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await page.evaluate((rid: string) => (window as any).editItem(rid), idA);
     await expect(page.locator('#form-relazioni-list .rel-riga')).toHaveCount(1);
 
-    // Si toglie l'unico collegamento e si salva.
     await page.locator('#form-relazioni-list .rel-riga button').click();
     await expect(page.locator('#form-relazioni-list .rel-riga')).toHaveCount(0);
     await page.locator('#btn-submit-form').click();
 
-    // ⚠️ L'asserzione della regressione: il salvataggio di una scheda esistente è un MERGE,
-    // e un merge non sa esprimere una cancellazione. Senza il contratto "undefined = togli
-    // la chiave" (vedi Store.updateManoscritto), `relazioni` restava quella vecchia e il
-    // rimando ricompariva — dal record, dal badge e dal backlink dell'altra scheda.
     await expect.poll(async () => {
       const m = await scheda(page, 'A');
       return m ? (m.relazioni || []).length : -1;
     }).toBe(0);
 
-    // E sparisce anche il verso entrante, che è calcolato: se restasse, vorrebbe dire che
-    // il dato è ancora lì.
     const entranti = await page.evaluate(() => {
       const w = window as any;
       const b = appData.manoscritti.find((m: any) => m.segnatura === 'B');
@@ -416,7 +375,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       const bersaglio = appData.manoscritti.find((m: any) => m.segnatura === 'BERSAGLIO');
       const esca = appData.manoscritti.find((m: any) => m.segnatura === 'ESCA');
       await w.collegaSchede(a.id, bersaglio.id, 'copia di');
-      // L'esca: un secondo rimando da A che NON deve sparire con l'eliminazione dell'altro.
       await w.collegaSchede(a.id, esca.id, 'stessa mano');
       await w.Store.deleteManoscritto(bersaglio.id);
 
@@ -428,13 +386,9 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     });
 
     expect(esito.tombstone).toBe(true);
-    // Resta solo il rimando all'esca: un elenco di collegamenti che non portano da nessuna
-    // parte avrebbe lo stesso aspetto di quelli buoni.
     expect(esito.restanti).toEqual(['stessa mano']);
   });
 
-  // Ottimizzazione O4: l'eliminazione multipla e quella di una cartella seguono la stessa
-  // regola di quella singola (`Store.eliminaSchede`).
   for (const via of ['selezione', 'cartella']) {
     test(`3.5 — eliminare per ${via} toglie i rimandi che puntavano alle schede eliminate`, async ({ page, userDataDir }) => {
       await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
@@ -482,19 +436,15 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await page.evaluate(() => (window as any).apriGrafo());
     await expect(page.locator('#grafo-modal')).toBeVisible();
 
-    // Tre nodi e due archi: la scheda ISOLATA non entra, o su un archivio vero il grafo
-    // sarebbe una nuvola di puntini fermi intorno alla figura che interessa.
     await expect(page.locator('#grafo-svg .grafo-nodo')).toHaveCount(3);
     await expect(page.locator('#grafo-svg .grafo-arco')).toHaveCount(2);
     await expect(page.locator('#grafo-svg')).not.toContainText('ISOLATA');
     await expect(page.locator('#grafo-riassunto')).toContainText('3');
 
-    // Un clic su A la sceglie: A e il PERNO restano accesi, B si spegne.
     const idA = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'A').id);
     await page.locator('#grafo-svg .grafo-nodo[data-id="' + idA + '"] circle').click();
     await expect(page.locator('#grafo-svg .grafo-nodo.scelto')).toHaveCount(1);
     await expect(page.locator('#grafo-svg .grafo-nodo.spento')).toHaveCount(1);
-    // Il riquadro laterale dice a che cosa è collegata, nei due versi.
     await expect(page.locator('#grafo-dettaglio')).toContainText('PERNO');
   });
 
@@ -518,20 +468,15 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await semina(page, [{ segnatura: 'A' }, { segnatura: 'B' }]);
 
     await page.evaluate(() => (window as any).apriGrafo());
-    // Una tela vuota è indistinguibile da un errore: il messaggio dice anche DOVE si
-    // aggiungono i collegamenti.
     await expect(page.locator('#grafo-avviso')).toBeVisible();
     await expect(page.locator('#grafo-svg .grafo-nodo')).toHaveCount(0);
   });
-
-  // --- P9 / P10 --------------------------------------------------------------
 
   test('P9 — collazione dalle schede collegate: luoghi varianti, apparato e varianti grafiche', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     await semina(page, [
       { segnatura: 'TEST-A', trascrizione: '<p>In principio erat</p><p>uerbum et uerbum</p>' },
       { segnatura: 'TEST-B', trascrizione: '<p>In principio fuit</p><p>verbum et verbum dei</p>' },
-      // Esca: collegata ma senza testo, non è un testimone.
       { segnatura: 'ESCA' }
     ]);
     await page.evaluate(async () => {
@@ -546,28 +491,23 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     const modal = page.locator('#collazione-modal');
     await expect(modal).toBeVisible();
     await page.keyboard.press('Escape');
-    // Anche dal menu della scheda, sottomenu "Vedi".
     await expect(modal).toBeHidden();
     await page.locator('.card-scheda', { hasText: 'TEST-A' }).locator('.card-overflow-btn').click();
     await page.locator('#custom-context-menu button', { hasText: /^Vedi$/ }).click();
     await page.locator('#custom-context-menu-1 button', { hasText: /Collazione/ }).click();
     await expect(modal).toBeVisible();
     await expect(page.locator('#coll-testimoni input')).toHaveCount(2);
-    // erat/fuit e l'aggiunta "dei"; uerbum/verbum è grafica e non conta.
     const voci = page.locator('#coll-apparato li');
     await expect(voci).toHaveCount(2);
     await expect(voci.nth(0)).toHaveText('erat ] fuit TEST-B');
     await expect(voci.nth(1)).toHaveText('add. ] dei TEST-B');
     await expect(page.locator('#coll-testi .collazione-colonna')).toHaveCount(2);
-    // Il confine fra paragrafi resta uno spazio: "erat uerbum", non "eratuerbum".
     await expect(page.locator('#coll-testi .collazione-colonna').first()).toContainText('erat');
     await expect(page.locator('#coll-testi .collazione-var').first()).toHaveText('erat');
 
-    // Senza normalizzazione uerbum/verbum è una differenza, e si salda ai luoghi vicini.
     await page.locator('#coll-grafiche').uncheck();
     await expect(voci.nth(0)).toHaveText('erat uerbum ] fuit verbum TEST-B');
 
-    // Base TEST-B: la stessa aggiunta diventa un'omissione.
     await page.locator('#coll-grafiche').check();
     await page.locator('#coll-base').selectOption({ label: 'TEST-B' });
     await expect(voci.nth(1)).toHaveText('dei ] om. TEST-A');
@@ -579,7 +519,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
   test('P10 — una voce d\'anagrafica si collega a Wikidata (e VIAF) e si scollega', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     await semina(page, [{ segnatura: 'A', attori_dinamici: [{ k: 'Teste', v: 'Bartolo' }] }]);
-    // Niente rete nei test: il main risponde con dati finti.
     await electronApp.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('authority-cerca');
       ipcMain.removeHandler('authority-dettagli');
@@ -590,13 +529,11 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
       ipcMain.handle('authority-dettagli', (_e: any, id: string) => ({ ok: true, wikidata: id, viaf: '100185495', varianti: ['Bartolus de Saxoferrato'] }));
     });
 
-    // Dalla sidebar, accanto a "Gestione tag": non solo dalla command palette.
     await page.locator('#btn-tab-tags').click();
     await page.locator('#btn-anagrafica').click();
     await page.locator('#authority-list .tag-manager-row button[aria-label^="Collega a Wikidata"]').click();
     const candidati = page.locator('#authority-collega-risultati button');
     await expect(candidati).toHaveCount(2);
-    // La descrizione è testo, non HTML.
     await expect(candidati.nth(1)).toContainText('<img');
     await candidati.nth(0).click();
 
@@ -608,7 +545,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     const voce = await page.evaluate(() => (window as any).Model.voceAuthority(appData, 'persona', 'Bartolo'));
     expect([voce.wikidata, voce.viaf]).toEqual(['Q312599', '100185495']);
 
-    // Rete giù: il messaggio lo dice, la voce resta com'era.
     await electronApp.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('authority-cerca');
       ipcMain.handle('authority-cerca', () => ({ ok: false, codice: 'rete' }));

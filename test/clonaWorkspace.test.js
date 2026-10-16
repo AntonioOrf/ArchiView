@@ -1,5 +1,3 @@
-// Audit A2: join Hub e ripristino Drive non devono sovrascrivere un archivio esistente con lo
-// stesso nome di cartella: il database del server finisce in una cartella nuova.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -38,7 +36,6 @@ try {
   assert.deepStrictEqual(aperti, [nuova]);
   console.log('✅ Test 1: cartella con un database → si usa "Nome (2)".');
 
-  // Una cartella vuota con quel nome (creata a mano) si usa così com'è.
   fs.mkdirSync(path.join(base, 'Vuota'));
   assert.strictEqual(clonaWorkspace(base, 'Vuota', null, remoto), true);
   assert.strictEqual(aperti[1], path.join(base, 'Vuota'));

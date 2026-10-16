@@ -1,6 +1,3 @@
-// Gli hash di index.json su Drive diventano nomi di file nella cache
-// dei chunk. index.json è scrivibile da ogni collaboratore, quindi un "hash" come
-// `../../Startup/x.bat` non deve mai produrre un percorso fuori dalla cache.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -28,12 +25,10 @@ const ostili = [
   42,
 ];
 
-// 1. isChunkHash: solo 64 caratteri esadecimali minuscoli
 assert.ok(isChunkHash(H1));
 assert.ok(isChunkHash(H2));
 for (const h of ostili) assert.ok(!isChunkHash(h), `accettato come hash: ${String(h)}`);
 
-// 2. filtraIndiceChunk: la voce con un hash ostile sparisce per intero, le altre restano
 {
   const { indice, scartate } = filtraIndiceChunk({
     'buono.pdf': [H1, H2],
@@ -45,12 +40,10 @@ for (const h of ostili) assert.ok(!isChunkHash(h), `accettato come hash: ${Strin
   assert.deepStrictEqual(scartate.sort(), ['misto.pdf', 'non-lista.pdf']);
 }
 
-// 3. Indici non oggetto: nessuna eccezione, indice vuoto
 for (const x of [null, undefined, 'x', 3, [H1]]) {
   assert.deepStrictEqual(filtraIndiceChunk(x).indice, {});
 }
 
-// 4. safeChunkPath: ogni nome ostile lancia, un hash valido resta nella cache
 const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'av-chunks-'));
 assert.strictEqual(safeChunkPath(cacheDir, H1), path.join(path.resolve(cacheDir), H1));
 for (const h of ostili) {
@@ -59,16 +52,13 @@ for (const h of ostili) {
 
 (async () => {
   try {
-    // 5. hashFile: coincide con lo sha256 del contenuto (base della verifica post-download)
     const dati = Buffer.from('carta 12r');
     const h = crypto.createHash('sha256').update(dati).digest('hex');
     fs.writeFileSync(path.join(cacheDir, h), dati);
     assert.strictEqual(await hashFile(path.join(cacheDir, h)), h);
-    fs.writeFileSync(path.join(cacheDir, H1), dati); // nome che NON corrisponde al contenuto
+    fs.writeFileSync(path.join(cacheDir, H1), dati);
     assert.notStrictEqual(await hashFile(path.join(cacheDir, H1)), H1);
 
-    // 6. assembleFileFromChunks con un chunk mancante non crea la destinazione:
-    //    un file vuoto risulterebbe "già scaricato" alla sync successiva.
     const dest = path.join(cacheDir, 'out', 'ricomposto.pdf');
     await assert.rejects(assembleFileFromChunks([h, H2], cacheDir, dest));
     assert.ok(!fs.existsSync(dest), 'destinazione creata nonostante il chunk mancante');

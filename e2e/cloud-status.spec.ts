@@ -4,8 +4,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'CloudState' });
 
-// Fase 3 — il controllo cloud unico. Gli stati si pilotano da window.statoCloud senza
-// bisogno di un account reale: qui si verifica la mappatura stato → etichetta → azioni.
 async function impostaStato(page: any, patch: Record<string, unknown>, extra: Record<string, unknown> = {}) {
   await page.evaluate(({ patch, extra }) => {
     Object.assign((window as any).statoCloud, patch);
@@ -47,7 +45,7 @@ test.describe('Controllo cloud unico', () => {
   test('modifiche locali: lo stato dice quante ne restano da inviare', async ({ page }) => {
     await page.evaluate(() => {
       (window as any).ultimoCaricamento = 1000;
-      // @ts-ignore -- appData è una let globale
+      // @ts-ignore
       appData.manoscritti.push({ id: 'p1', cartella: '', segnatura: 'P1', lastModified: 5000, allegati: [] });
       (window as any).statoCloud.vaultCloud = true;
       (window as any).statoCloud.autenticato = true;
@@ -69,7 +67,6 @@ test.describe('Controllo cloud unico', () => {
     await page.locator('#cloud-status-btn').click();
     await expect(page.locator('#custom-context-menu')).toContainText('quota superata');
 
-    // Un fetch riuscito deve riportarlo a "Sincronizzato": l'errore non è appiccicoso.
     await page.keyboard.press('Escape');
     await page.evaluate(() => (window as any).azzeraErroreCloud());
     await expect(page.locator('#cloud-status-btn')).toHaveAttribute('data-stato', 'ok');
@@ -85,7 +82,6 @@ test.describe('Controllo cloud unico', () => {
     for (const testo of ['Controlla aggiornamenti', 'Ricevi modifiche', 'Invia modifiche']) {
       await expect(menu.locator('[role="menuitem"]', { hasText: testo })).toBeDisabled();
     }
-    // Vedi modifiche / Storico restano usabili: sono sola lettura.
     await expect(menu.locator('[role="menuitem"]', { hasText: 'Storico versioni' })).toBeEnabled();
   });
 
@@ -93,7 +89,6 @@ test.describe('Controllo cloud unico', () => {
     const azione = page.locator('#cloud-primary-action');
     const etichetta = page.locator('#cloud-primary-action-label');
 
-    // Allineato: l'unica cosa sensata da fare è ricontrollare.
     await impostaStato(page, { vaultCloud: true, autenticato: true, inEntrata: false, pendenti: false, errore: null });
     await expect(azione).toBeVisible();
     await expect(etichetta).toHaveText('Controlla');
@@ -107,7 +102,6 @@ test.describe('Controllo cloud unico', () => {
     await impostaStato(page, { errore: 'rete assente' });
     await expect(etichetta).toHaveText('Riprova');
 
-    // Durante la sync non c'è nulla da premere: il pulsante sparisce invece di mentire.
     await impostaStato(page, { errore: null, occupato: true });
     await expect(azione).toBeHidden();
   });
@@ -115,7 +109,6 @@ test.describe('Controllo cloud unico', () => {
   test('il bottone di stato dichiara di essere apribile', async ({ page }) => {
     await impostaStato(page, { vaultCloud: true, autenticato: true });
     const btn = page.locator('#cloud-status-btn');
-    // chevron: senza, il controllo si legge come una semplice etichetta di stato
     await expect(btn.locator('svg')).toHaveCount(2);
     await expect(btn).toHaveAttribute('aria-haspopup', 'menu');
     await expect(btn).toHaveAttribute('title', /clicca per le azioni/);

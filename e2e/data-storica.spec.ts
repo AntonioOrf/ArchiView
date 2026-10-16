@@ -4,19 +4,9 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Date' });
 
-/**
- * Fase 3.2 — data storica fuzzy.
- *
- * Il parser è coperto da `test/dataStorica.test.js`; qui si verifica che quella lettura
- * arrivi davvero dove serve: l'ordine della lista, il filtro per periodo e il riscontro
- * sotto il campo. Sono tre punti in cui una datazione può tornare a essere una stringa
- * senza che nulla lo segnali — la lista continuerebbe a mostrare le stesse schede, solo
- * nell'ordine sbagliato.
- */
-
 async function seed(page, righe: any[]) {
   await page.evaluate(async (righe) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico).
+    // @ts-ignore
     const data = appData;
     for (const r of righe) {
       data.manoscritti.push(Object.assign({
@@ -35,7 +25,6 @@ async function seed(page, righe: any[]) {
   }, righe);
 }
 
-/** Le segnature nell'ordine in cui la griglia le sta mostrando. */
 async function segnature(page): Promise<string[]> {
   return page.evaluate(() =>
     (window as any).getManoscrittiFiltrati().map((m: any) => m.segnatura));
@@ -50,17 +39,13 @@ test.describe('Data storica fuzzy', () => {
       { segnatura: 'B', dataCronica: '3 aprile 1290' },
       { segnatura: 'C', dataCronica: 'sec. XIV' },
       { segnatura: 'D', dataCronica: 'c. 1400' },
-      { segnatura: 'E', dataCronica: 'pergamena' },   // non è una data
-      { segnatura: 'F', dataCronica: '' }             // vuota
+      { segnatura: 'E', dataCronica: 'pergamena' },
+      { segnatura: 'F', dataCronica: '' }
     ]);
 
     await page.evaluate(() => (window as any).impostaOrdinamento('dataCronica', 'asc'));
-    // ⚠️ Il difetto che la fase esiste per risolvere: in ordine alfabetico "12 maggio 1340"
-    // precede "3 aprile 1290", perché 1 viene prima di 3.
     expect(await segnature(page)).toEqual(['B', 'C', 'A', 'D', 'E', 'F']);
 
-    // Invertendo, i valori senza data restano comunque in fondo: sono schede incomplete,
-    // non le più antiche né le più recenti.
     await page.evaluate(() => (window as any).impostaOrdinamento('dataCronica', 'desc'));
     const desc = await segnature(page);
     expect(desc.slice(0, 4)).toEqual(['D', 'A', 'C', 'B']);
@@ -80,11 +65,7 @@ test.describe('Data storica fuzzy', () => {
 
     await page.evaluate(() => (window as any).applicaFiltriAvanzati({ daAnno: '1301', aAnno: '1400' }));
     const dentro = (await segnature(page)).sort();
-    // La scheda a cavallo dei due secoli va MOSTRATA: escluderla perché sborda nasconderebbe
-    // proprio i documenti di passaggio, che sono quelli che si cercano.
     expect(dentro).toEqual(['CAVALLO', 'TRE-1', 'TRE-2']);
-    // Una datazione che l'app non ha capito non appartiene a nessun periodo: mostrarla
-    // direbbe che è del Trecento senza saperlo.
     expect(dentro).not.toContain('IGNOTA');
 
     await page.evaluate(() => (window as any).applicaFiltriAvanzati({ daAnno: '', aAnno: '' }));
@@ -99,15 +80,11 @@ test.describe('Data storica fuzzy', () => {
     await expect(page.locator('#filtro-secolo')).toBeVisible();
     await page.locator('#filtro-secolo').selectOption('14');
 
-    // "sec. XIV" è il modo in cui la domanda viene posta davvero: comporre 1301/1400 a mano
-    // ogni volta è l'attrito che fa smettere di usare un filtro.
     await expect(page.locator('#filtro-da-anno')).toHaveValue('1301');
     await expect(page.locator('#filtro-a-anno')).toHaveValue('1400');
     const f = await page.evaluate(() => (window as any).filtriAvanzati);
     expect(f.daAnno).toBe('1301');
     expect(f.aAnno).toBe('1400');
-    // ⚠️ Il periodo storico NON deve toccare l'intervallo di ultima modifica: sono due date
-    // diverse, e confonderle filtrerebbe per quando la scheda è stata scritta a computer.
     expect(f.daData).toBe('');
     expect(f.aData).toBe('');
   });
@@ -128,12 +105,10 @@ test.describe('Data storica fuzzy', () => {
     await expect(riscontro).toContainText('1301');
     await expect(riscontro).toContainText('1325');
 
-    // Se non è stata capita bisogna saperlo PRIMA, non scoprirlo fra mille schede.
     await page.locator('#dyn-dataCronica').fill('pergamena');
     await expect(riscontro).toContainText('non interpretata');
     await expect(riscontro).toHaveClass(/non-letta/);
 
-    // ⚠️ Il testo non viene mai riscritto: l'incertezza è essa stessa un dato.
     await page.locator('#dyn-dataCronica').fill('c. 1340');
     await expect(page.locator('#dyn-dataCronica')).toHaveValue('c. 1340');
   });
@@ -152,9 +127,6 @@ test.describe('Data storica fuzzy', () => {
     await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
     const m = (await getAppData(page)).manoscritti[0];
     expect(m.dataCronica).toBe('sec. XIV in.');
-    // ⚠️ Nessun intervallo salvato accanto al testo: sarebbe un dato derivato dentro un file
-    // sincronizzato, resterebbe quello sbagliato di oggi dopo ogni correzione del parser, e
-    // cambierebbe l'impronta del record facendolo apparire modificato a ogni collega.
     const derivate = Object.keys(m).filter(k => k !== 'dataCronica' && /datacronica/i.test(k));
     expect(derivate).toEqual([]);
     expect(JSON.stringify(m)).not.toContain('13010101');

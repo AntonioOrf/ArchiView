@@ -1,4 +1,3 @@
-// Ricerca tra archivi, Fase 3: copia di una scheda da un altro archivio (shared/copiaScheda.ts).
 const assert = require('assert');
 const Model = require('../out/shared/model');
 const Copia = require('../out/shared/copiaScheda');
@@ -66,14 +65,12 @@ function opzioni(extra) {
 
 console.log('Running copiaScheda tests...');
 
-// 1. Tipo corrispondente: per id, poi per nome normalizzato, altrimenti nessuno.
 const dest0 = destinazione();
 assert.strictEqual(Copia.tipoCorrispondente({ id: 'notarile', nome: 'x' }, dest0.tipiDocumento), 'notarile');
 assert.strictEqual(Copia.tipoCorrispondente(sorgente().tipo, dest0.tipiDocumento), 'giud2');
 assert.strictEqual(Copia.tipoCorrispondente({ id: 'zz', nome: 'Estimo' }, dest0.tipiDocumento), null);
 assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
 
-// 2. Tipo diverso: i campi che il notarile non ha diventano campi propri, nessun valore perso.
 {
   const src = sorgente();
   const prima = JSON.stringify(src);
@@ -95,12 +92,10 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.strictEqual(propri.condanne.label, 'Condanne');
   assert.strictEqual(propri.condanne.tipo, 'textarea');
   assert.strictEqual(propri.dataTopica.authority, 'luogo', 'un campo persona/luogo resta tale');
-  // Enum legato a un vocabolario della sorgente: opzioni scritte sopra, nessun legame.
   assert.deepStrictEqual([propri.stato.tipo, propri.stato.opzioni, propri.stato.vocabolario], ['enum', ['ottimo', 'buono', 'pessimo'], undefined]);
   assert.ok(p.avvisi.includes('vocabolario_esplicitato'));
   assert.deepStrictEqual(Object.keys(dest.vocabolari || {}), [], 'i vocabolari dell\'archivio aperto non si toccano');
 
-  // Relazioni → rimandi esterni verso l'archivio sorgente; niente relazioni interne.
   assert.strictEqual(s.relazioni, undefined);
   assert.deepStrictEqual(s.rimandiEsterni, [
     { archivioId: 'arch-A', archivioNome: 'Giudiziario San Miniato', schedaId: 'a7', segnatura: 'Podestà 12, c. 4r', tipo: 'prosegue' },
@@ -108,28 +103,21 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   ]);
   assert.strictEqual(p.rimandi, 2);
   assert.deepStrictEqual(s.provenienza, { archivioId: 'arch-A', archivioNome: 'Giudiziario San Miniato', schedaId: 'a1', segnatura: 'Podestà 12, c. 3r', copiataIl: 1000 });
-  // Le due chiavi nuove sono di servizio: fuori da CSV e stampa.
   assert.ok(Model.CHIAVI_SERVIZIO.includes('provenienza') && Model.CHIAVI_SERVIZIO.includes('rimandiEsterni'));
 
-  // Ordine dei campi: si porta, limitato ai campi che esistono.
   assert.deepStrictEqual(s.ordineCampi, ['note', 'attori_dinamici']);
 
-  // Anagrafica: Luca è già citato nell'archivio aperto, Nanni no; la voce di Nanni (grafia
-  // scelta e note) arriva dalla sorgente. San Miniato (luogo) è nuovo.
   const ana = Object.fromEntries(p.anagrafica.map(a => [a.chiave, a.esistente]));
   assert.deepStrictEqual(ana, { "persona:luca d'abete": true, 'persona:nanni di piero': false, 'luogo:san miniato': false });
   assert.deepStrictEqual(p.vociNuove, [{ tipo: 'persona', nome: 'Nanni di Piero', grafia: 'Nanni di Piero da Fucecchio', note: 'Oste' }]);
 
-  // Tag: "azzardo" esiste già, "San Miniato" no.
   assert.deepStrictEqual(p.tagNuovi, ['San Miniato']);
 
-  // Senza allegati: le carte non arrivano, la trascrizione resta sulla scheda.
   assert.deepStrictEqual(s.allegati, []);
   assert.strictEqual(s.trascrizione, '[c. 3r] Item Lucas de Abete');
   assert.deepStrictEqual(p.allegati, { copiati: 0, remoti: 0, mancanti: 0, omessi: 3 });
   assert.ok(p.avvisi.includes('trascrizione_senza_allegati'));
 
-  // Applica: unica scrittura, nell'archivio aperto.
   Copia.applica(dest, p);
   assert.strictEqual(dest.manoscritti.length, 2);
   assert.notStrictEqual(dest.manoscritti[1], p.scheda, 'si inserisce una copia del piano');
@@ -140,7 +128,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.strictEqual(dest.authority['persona:nanni di piero'].note, 'Oste');
 }
 
-// 3. Stesso tipo (per nome): i campi del modello restano campi del modello.
 {
   const dest = destinazione();
   const p = Copia.pianifica(sorgente(), dest, opzioni({ tipoDestinazione: 'giud2' }));
@@ -148,8 +135,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.strictEqual(p.tipo.nome, 'atti  GIUDIZIARI');
 }
 
-// 4. Con gli allegati: copiati con il nome deciso dal main, le carte IIIF come riferimento,
-//    quelli non copiati segnalati.
 {
   const p = Copia.pianifica(sorgente(), destinazione(), opzioni({
     copiaAllegati: true,
@@ -166,7 +151,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.ok(!p.avvisi.includes('trascrizione_senza_allegati'));
 }
 
-// 5. Voce d'anagrafica già presente nell'archivio aperto: vince quella, nessuna voce nuova.
 {
   const dest = destinazione();
   dest.authority = { 'persona:nanni di piero': { chiave: 'persona:nanni di piero', nome: 'Giovanni di Piero', tipo: 'persona' } };
@@ -175,7 +159,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.strictEqual(p.anagrafica.find(x => x.chiave === 'persona:nanni di piero').esistente, true);
 }
 
-// 6. Scheda minima: nessun rimando, nessuna chiave vuota che cambierebbe l'impronta.
 {
   const p = Copia.pianifica({ archivio: { id: 'B', nome: 'B' }, tipo: null, scheda: { id: 'x', segnatura: 'S' } }, destinazione(), opzioni());
   assert.strictEqual('rimandiEsterni' in p.scheda, false);
@@ -185,7 +168,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.deepStrictEqual(p.avvisi, []);
 }
 
-// 7. Nessuna forma derivata e nessun allegato copiato: la trascrizione si ricompone dalle carte.
 {
   const src = sorgente({ trascrizione: undefined });
   src.scheda.allegati[1].trascrizione = '<p>Secunda carta</p>';
@@ -196,8 +178,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.ok(p.avvisi.includes('trascrizione_senza_allegati'));
 }
 
-// 8. Alcune carte arrivano e altre no: il testo di quelle rimaste indietro va in un campo
-//    proprio, perché la forma derivata verrà ricalcolata dalle sole carte presenti.
 {
   const src = sorgente();
   src.scheda.allegati[1].trascrizione = '<p>Secunda<br>carta</p>';
@@ -210,7 +190,6 @@ assert.strictEqual(Copia.tipoCorrispondente(null, dest0.tipiDocumento), null);
   assert.ok(p.campiPropri.some(c => c.id === campo));
 }
 
-// 9. Modello: normalizzazione e scrittura dei rimandi esterni.
 {
   const grezzi = [
     { archivioId: ' A ', schedaId: '1', archivioNome: 'Fondo A', segnatura: 'S1', tipo: '' },

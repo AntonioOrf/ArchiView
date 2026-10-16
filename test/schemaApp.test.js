@@ -1,5 +1,3 @@
-// Schema app:// della finestra principale: si serve
-// solo la cartella del renderer, e solo i tipi di file in elenco.
 const assert = require('assert');
 const path = require('path');
 const { percorsoRichiesto, URL_INDEX } = require('../out/main/schemaApp');
@@ -9,14 +7,12 @@ function runTests() {
   const radice = path.resolve(__dirname, '..', 'out', 'renderer');
   const dentro = (...p) => path.join(radice, ...p);
 
-  // Richieste legittime.
   assert.strictEqual(percorsoRichiesto(radice, URL_INDEX), dentro('index.html'));
   assert.strictEqual(percorsoRichiesto(radice, 'app://archiview/js/app.bundle.js'), dentro('js', 'app.bundle.js'));
   assert.strictEqual(percorsoRichiesto(radice, 'app://archiview/pdf/pdf.worker.min.mjs?v=1#x'), dentro('pdf', 'pdf.worker.min.mjs'));
   assert.strictEqual(percorsoRichiesto(radice, 'app://archiview/css/nome%20con%20spazi.css'), dentro('css', 'nome con spazi.css'));
   console.log('✅ Test 1: file del renderer serviti dal percorso giusto.');
 
-  // Nessuna via d'uscita dalla radice: ogni forma di risalita resta dentro (o è rifiutata).
   const ostili = [
     'app://archiview/../main/main.js',
     'app://archiview/%2e%2e/%2e%2e/package.json',
@@ -32,7 +28,6 @@ function runTests() {
   }
   console.log('✅ Test 2: nessun percorso fuori da out/renderer.');
 
-  // Altre autorità, altri schemi, tipi non serviti, byte nulli, URL malformati.
   for (const url of [
     'app://altro/index.html',
     'file:///C:/Windows/win.ini',

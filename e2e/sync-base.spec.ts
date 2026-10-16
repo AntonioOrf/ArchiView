@@ -2,8 +2,6 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
-// PIANO-OTTIMIZZAZIONE, Fase 1: la base del merge a tre vie non deve mai cambiare insieme
-// alle schede vive, e un ripristino Drive segue le regole di `ripristinaDatabase`.
 test.use({ seedWorkspace: 'SyncBase' });
 
 test.describe('Base del merge e ripristini', () => {
@@ -14,14 +12,12 @@ test.describe('Base del merge e ripristini', () => {
       const w = window as any;
       const scheda = (trascrizione: string) => ({ id: 'b-1', segnatura: 'A', cartella: '', lastModified: 1000,
         allegati: [{ nome: 'b-1_c1.jpg', tipo: 'image', trascrizione }] });
-      // Un collega ha trascritto la carta: gli allegati del fuso arrivano dal remoto.
       const remoto = () => scheda('del collega');
       w.appData.manoscritti = [scheda('vecchia')];
       w.appData.baseObjects = { 'b-1': scheda('vecchia') };
       w.appData.baseHashes = { 'b-1': w.getRecordHash(scheda('vecchia')) };
 
       await w.sincronizzaEUnisciDati({ manoscritti: [remoto()], cartelle: [] });
-      // Come l'editor della trascrizione: scrive sul record vivo.
       const m = w.appData.manoscritti.find((x: any) => x.id === 'b-1');
       w.scriviTrascrizioneAllegato(m, 0, 'nuova', 0);
 
@@ -44,13 +40,12 @@ test.describe('Base del merge e ripristini', () => {
         m.trascrizione = w.componiTrascrizioneRecord(m);
         return m;
       };
-      w.appData.manoscritti = [scheda('<p>mia</p>', '<p>due</p>')];          // io: carta 1
+      w.appData.manoscritti = [scheda('<p>mia</p>', '<p>due</p>')];
       w.appData.baseObjects = { 'b-2': scheda('<p>uno</p>', '<p>due</p>') };
       w.appData.baseHashes = { 'b-2': w.getRecordHash(scheda('<p>uno</p>', '<p>due</p>')) };
       let modale = false;
       const apri = w.apriMergeConflictModal;
       w.apriMergeConflictModal = (...a: any[]) => { modale = true; return apri(...a); };
-      // Il collega: carta 2, testo e stato.
       await w.sincronizzaEUnisciDati({ manoscritti: [scheda('<p>uno</p>', '<p>sua</p>', 'rivista')], cartelle: [] });
       w.apriMergeConflictModal = apri;
       const m = w.appData.manoscritti.find((x: any) => x.id === 'b-2');

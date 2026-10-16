@@ -1,10 +1,3 @@
-// Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md). Fase 1: IPC end-to-end nel vero main, con il
-// worker. Fase 2: interruttore nella ricerca, risultati sotto la griglia, anteprima.
-// Fase 3: copia della scheda intera e di singoli campi nell'archivio aperto.
-// Fase 4: rimandi ad altri archivi e provenienza nel form.
-//
-// Con ARCHIVIEW_E2E_EXE=dist/win-unpacked/ArchiView.exe lo stesso spec verifica che il worker
-// parta dall'interno di app.asar dell'app impacchettata.
 import { expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,7 +5,6 @@ import * as crypto from 'crypto';
 import { test, launchApp, closeApp } from './fixtures';
 import { openSidebarPanel, getAppData } from './helpers';
 
-// PNG 1×1: basta a verificare che l'immagine arrivi davvero al renderer come blob.
 const PNG_1PX = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 const versione: string = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
@@ -26,7 +18,6 @@ function scriviArchivio(dir: string, manoscritti: any[], tipi: any[] = [GIUDIZIA
   }));
 }
 
-/** Tre archivi recenti: quello aperto, uno con Luca d'Abete, uno sparito. */
 function semina(userDataDir: string, extraN1: any = {}) {
   const ws = path.join(userDataDir, 'ws');
   const attivo = path.join(ws, 'Notarile');
@@ -38,7 +29,6 @@ function semina(userDataDir: string, extraN1: any = {}) {
   scriviArchivio(giudiziario, [{
     id: 'a1', tipoDocumento: 'giudiziario', segnatura: 'Podestà 12, c. 3r', lastModified: 1,
     attori_dinamici: [{ k: 'Imputato', v: 'Luca d’Abete' }], dataTopica: 'San Miniato', note: "Gioco d'azzardo",
-    // La trascrizione arriva da un altro archivio (magari condiviso): l'HTML ostile va ripulito.
     allegati: [{ nome: 'carta-3r.png', tipo: 'immagine', originalName: 'c. 3r',
       trascrizione: '<p>Lucas de <i>Abete</i> ludens</p><img src="x" onerror="window.__xss = 1">' }]
   }]);
@@ -59,17 +49,14 @@ test('ricerca, anteprima ed esclusione di un altro archivio dal main', async ({ 
     const esito: any = await page.evaluate(() => (window as any).apiBrowser.crossArchiveSearch({ testo: "luca d'abete" }));
     expect(esito.ok).toBe(true);
     expect(esito.motore).toBe('worker');
-    // L'archivio aperto non compare: la sua scheda la trova già la ricerca normale.
     expect(esito.archivi.map((a: any) => a.nome)).toEqual(['Giudiziario San Miniato', 'Sparito']);
     const [g, s] = esito.archivi;
     expect(g).toMatchObject({ raggiungibile: true, schede: 1, tipo: 'local' });
     expect(s).toMatchObject({ raggiungibile: false, errore: 'assente' });
     expect(esito.risultati).toHaveLength(1);
     expect(esito.risultati[0]).toMatchObject({ archivioId: g.id, schedaId: 'a1', campo: 'attori_dinamici', tipoNome: 'Giudiziario' });
-    // Nessun percorso attraversa il ponte.
     expect(JSON.stringify(esito)).not.toContain(userDataDir.replace(/\\/g, '\\\\'));
 
-    // L'identità dell'archivio è scritta nel suo file di vault, non nel database.
     const vault = JSON.parse(fs.readFileSync(path.join(giudiziario, '.archiview-vault.json'), 'utf8'));
     expect(vault.archivioId).toBe(g.id);
 
@@ -78,14 +65,12 @@ test('ricerca, anteprima ed esclusione di un altro archivio dal main', async ({ 
     expect(anteprima.scheda.dataTopica).toBe('San Miniato');
     expect(anteprima.tipo.id).toBe('giudiziario');
 
-    // Id inventati o malformati: rifiutati, nessuna lettura fuori dagli archivi recenti.
     const ostili: any[] = await page.evaluate(async () => {
       const api = (window as any).apiBrowser;
       return [await api.crossArchiveGet('percorso:../../etc', 'a1'), await api.crossArchiveGet({ x: 1 }, 'a1'), await api.crossArchiveGet('x'.repeat(500), 'a1')];
     });
     for (const o of ostili) expect(o.ok).toBe(false);
 
-    // Esclusione dalle impostazioni: l'archivio sparisce da ricerca e anteprima.
     await page.evaluate((id) => (window as any).apiSettings.patch({ crossArchiveEsclusi: [id] }), g.id);
     const dopo: any = await page.evaluate(() => (window as any).apiBrowser.crossArchiveSearch({ testo: "luca d'abete" }));
     expect(dopo.risultati).toHaveLength(0);
@@ -108,7 +93,6 @@ test('interruttore nella ricerca, risultati raggruppati e anteprima in sola lett
     const sezione = page.locator('#altri-archivi');
     const interruttore = page.locator('#search-altri-archivi');
 
-    // Spento di default: si cerca solo nell'archivio aperto.
     await expect(interruttore).not.toBeChecked();
     await page.locator('#search-input').fill("luca d'abete");
     await expect(page.locator('#card-n1')).toBeVisible();
@@ -124,22 +108,18 @@ test('interruttore nella ricerca, risultati raggruppati e anteprima in sola lett
     await expect(risultato).toHaveCount(1);
     await expect(risultato).toContainText('Podestà 12, c. 3r');
     await expect(risultato.locator('mark')).toHaveText('Luca');
-    // La scheda dell'archivio aperto resta nella griglia e non compare fra gli "altri".
     await expect(sezione).not.toContainText('N1');
     await expect(sezione.locator('.altri-archivi-assenti')).toContainText('Sparito');
 
-    // Le schede esterne non entrano mai nei dati dell'archivio aperto.
     const dati = await getAppData(page);
     expect(dati.manoscritti.map((m: any) => m.id)).toEqual(['n1']);
 
-    // Una nuova ricerca sostituisce i risultati (debounce + risposte vecchie scartate).
     await page.locator('#search-input').fill('azzardo');
     await expect(risultato).toContainText('Gioco');
     await page.locator('#search-input').fill('nessunacorrispondenza');
     await expect(page.locator('#altri-archivi-stato')).toContainText('Nessuna scheda negli altri archivi');
     await expect(sezione.locator('.altri-archivi-risultato')).toHaveCount(0);
 
-    // Anteprima: campi, immagine dell'allegato (blob), trascrizione ripulita.
     await page.locator('#search-input').fill("luca d'abete");
     await risultato.click();
     const modal = page.locator('#altro-archivio-modal');
@@ -157,13 +137,11 @@ test('interruttore nella ricerca, risultati raggruppati e anteprima in sola lett
     await expect(modal.locator('.altri-archivi-trascrizione')).toContainText('Lucas de Abete ludens');
     expect(await modal.locator('.altri-archivi-trascrizione [onerror]').count()).toBe(0);
     expect(await page.evaluate(() => (window as any).__xss)).toBeUndefined();
-    // Nessun campo modificabile: è un'anteprima.
     expect(await modal.locator('input, textarea, select, [contenteditable="true"]').count()).toBe(0);
 
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
 
-    // Spento di nuovo: la sezione sparisce e la scelta resta per la prossima apertura.
     await interruttore.uncheck();
     await expect(sezione).toBeHidden();
     expect(await page.evaluate(() => localStorage.getItem('archiview.ricercaAltriArchivi'))).toBe('0');
@@ -172,7 +150,6 @@ test('interruttore nella ricerca, risultati raggruppati e anteprima in sola lett
   }
 });
 
-/** Apre l'anteprima della scheda a1 dell'archivio giudiziario passando dalla ricerca. */
 async function apriAnteprimaA1(page: any) {
   await openSidebarPanel(page, 'search');
   await page.locator('#search-altri-archivi').check();
@@ -192,12 +169,10 @@ test('copia della scheda intera: riepilogo, allegati, provenienza, annullamento'
     await expect(dialogo).toBeVisible();
     await expect(page.locator('#copia-archivio-origine')).toContainText('Giudiziario San Miniato · Podestà 12, c. 3r');
 
-    // Stesso tipo (per id): nessun campo proprio.
     const riepilogo = page.locator('#copia-archivio-riepilogo');
     await expect(page.locator('#copia-archivio-tipo')).toHaveValue('giudiziario');
     await expect(riepilogo).toContainText('Tipo di documento: Giudiziario');
     await expect(riepilogo).not.toContainText('campi propri');
-    // Il notarile non ha la data topica: diventa un campo proprio, e San Miniato resta un luogo.
     await page.locator('#copia-archivio-tipo').selectOption('notarile');
     await expect(riepilogo).toContainText('Un campo diventa campo proprio della scheda: Data Topica');
     await expect(riepilogo).toContainText('San Miniato (nuovo)');
@@ -221,7 +196,6 @@ test('copia della scheda intera: riepilogo, allegati, provenienza, annullamento'
     expect(copia.dataTopica).toBe('San Miniato');
     expect(copia.campiPropri.map((d: any) => d.id)).toEqual(['dataTopica']);
     expect(copia.provenienza).toMatchObject({ archivioNome: 'Giudiziario San Miniato', schedaId: 'a1', segnatura: 'Podestà 12, c. 3r' });
-    // L'allegato è un file NUOVO nella cartella dell'archivio aperto, con l'hash giusto.
     expect(copia.allegati).toHaveLength(1);
     const nome = copia.allegati[0].nome;
     expect(nome.startsWith(String(copia.id).replace(/[^a-zA-Z0-9_-]/g, '_'))).toBe(true);
@@ -230,13 +204,11 @@ test('copia della scheda intera: riepilogo, allegati, provenienza, annullamento'
     expect(fs.existsSync(file)).toBe(true);
     expect(copia.allegati[0].hash).toBe(crypto.createHash('sha256').update(PNG_1PX).digest('hex'));
 
-    // Salvata su disco, non solo in memoria.
     await expect.poll(() => {
       const db = JSON.parse(fs.readFileSync(path.join(attivo, 'database_manoscritti.json'), 'utf8'));
       return db.manoscritti.some((m: any) => m.id === copia.id);
     }).toBe(true);
 
-    // Annullabile come ogni altra azione.
     await page.evaluate(() => (window as any).gestoreAnnullamento.annullaUltimaAzione());
     await expect.poll(async () => (await getAppData(page)).manoscritti.map((m: any) => m.id)).toEqual(['n1']);
   } finally {
@@ -251,7 +223,6 @@ test('copia di un singolo campo: negli appunti e dentro la scheda aperta', async
     await page.waitForFunction(() => (window as any).__appPronta === true, null, { timeout: 15_000 });
     await apriAnteprimaA1(page);
 
-    // Senza form aperto: si può solo copiare negli appunti.
     const modal = page.locator('#altro-archivio-modal');
     await expect(modal.locator('[data-inserisci]')).toHaveCount(0);
     await expect(modal.locator('.altri-archivi-azione svg').first()).toBeVisible();
@@ -260,7 +231,6 @@ test('copia di un singolo campo: negli appunti e dentro la scheda aperta', async
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
 
-    // Con una nuova scheda aperta nel form: "Inserisci" mette il valore nel campo, senza salvare.
     const { id } = await page.evaluate(async () => {
       const r = await (window as any).apiBrowser.crossArchiveSearch({ testo: "luca d'abete" });
       return { id: r.risultati[0].archivioId };
@@ -269,22 +239,18 @@ test('copia di un singolo campo: negli appunti e dentro la scheda aperta', async
     await expect(page.locator('#view-add')).toBeVisible();
     await page.evaluate((archivioId) => (window as any).apriAnteprimaAltroArchivio(archivioId, 'a1'), id);
     await expect(modal.locator('.altri-archivi-campi')).toBeVisible();
-    // Il form di una scheda nuova usa il modello predefinito: "Note" non c'è, la data topica sì.
     await expect(modal.locator('[data-inserisci="note"]')).toHaveCount(0);
     await modal.locator('[data-inserisci="dataTopica"]').click();
     await expect(page.locator('#dyn-dataTopica')).toHaveValue('San Miniato');
-    // Un campo già compilato non si sovrascrive senza conferma.
     await page.locator('#dyn-dataTopica').fill('Firenze');
     await modal.locator('[data-inserisci="dataTopica"]').click();
     await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
     await expect(page.locator('#dyn-dataTopica')).toHaveValue('Firenze');
     await page.locator('#btn-bottom-confirm-yes').click();
     await expect(page.locator('#dyn-dataTopica')).toHaveValue('San Miniato');
-    // Le persone si aggiungono in coda alla lista.
     await modal.locator('[data-inserisci="attori_dinamici"]').click();
     await expect(page.locator('#container-attori_dinamici .dynamic-list-row')).toHaveCount(1);
     await expect(page.locator('#container-attori_dinamici input').nth(1)).toHaveValue('Luca d’Abete');
-    // Nulla è stato salvato: l'archivio aperto ha sempre e solo la sua scheda.
     expect((await getAppData(page)).manoscritti.map((m: any) => m.id)).toEqual(['n1']);
   } finally {
     await closeApp(app);
@@ -295,7 +261,6 @@ test('rimandi ad altri archivi e provenienza nel form', async ({ userDataDir }) 
   semina(userDataDir, {
     lastModified: 1,
     rimandiEsterni: [{ archivioId: 'xx', archivioNome: 'Sparito', schedaId: 's1', segnatura: 'S1' }],
-    // Id generato su un altro computer: si ritrova l'archivio per nome.
     provenienza: { archivioId: 'id-di-un-altro-pc', archivioNome: 'Giudiziario San Miniato', schedaId: 'a1',
       segnatura: 'Podestà 12, c. 3r', copiataIl: Date.UTC(2026, 9, 1, 12) }
   });
@@ -305,7 +270,6 @@ test('rimandi ad altri archivi e provenienza nel form', async ({ userDataDir }) 
     await page.evaluate(() => (window as any).editItem('n1'));
     await expect(page.locator('#view-add')).toBeVisible();
 
-    // Provenienza: da dove viene la scheda, e il ritorno all'originale.
     const prov = page.locator('#form-provenienza');
     await expect(prov).toBeVisible();
     await expect(prov).toContainText('Copiata da Giudiziario San Miniato · Podestà 12, c. 3r');
@@ -315,13 +279,11 @@ test('rimandi ad altri archivi e provenienza nel form', async ({ userDataDir }) 
     await page.keyboard.press('Escape');
     await expect(anteprima).toBeHidden();
 
-    // Un rimando a un archivio che qui non c'è: resta, con i suoi dati, ma non si apre.
     const sparito = page.locator('[data-rimando="xx:s1"]');
     await expect(sparito).toContainText('S1 · Sparito');
     await expect(sparito).toContainText('archivio non disponibile su questo computer');
     await expect(sparito.locator('[data-apri-rimando]')).toHaveCount(0);
 
-    // Nuovo rimando dal selettore.
     await page.locator('#btn-rimando-esterno').click();
     const selettore = page.locator('#rimando-esterno-modal');
     await expect(selettore).toBeVisible();
@@ -337,7 +299,6 @@ test('rimandi ad altri archivi e provenienza nel form', async ({ userDataDir }) 
     await expect(anteprima).toBeVisible();
     await page.keyboard.press('Escape');
 
-    // Tolgo quello irraggiungibile e salvo.
     await sparito.locator('[data-togli-rimando]').click();
     await expect(sparito).toHaveCount(0);
     await page.evaluate(() => (document.getElementById('manoscritto-form') as HTMLFormElement)
@@ -347,9 +308,8 @@ test('rimandi ad altri archivi e provenienza nel form', async ({ userDataDir }) 
       return n1.rimandiEsterni;
     }).toEqual([expect.objectContaining({ archivioNome: 'Giudiziario San Miniato', schedaId: 'a1', segnatura: 'Podestà 12, c. 3r', tipo: 'citato in' })]);
     const n1 = (await getAppData(page)).manoscritti.find((m: any) => m.id === 'n1');
-    expect(n1.provenienza.schedaId).toBe('a1'); // il form non la tocca, il merge la conserva
+    expect(n1.provenienza.schedaId).toBe('a1');
 
-    // Riaperto: la scheda già collegata non si collega due volte.
     await page.evaluate(() => (window as any).editItem('n1'));
     await expect(nuovo).toBeVisible();
     await page.locator('#btn-rimando-esterno').click();
@@ -359,7 +319,6 @@ test('rimandi ad altri archivi e provenienza nel form', async ({ userDataDir }) 
     await page.keyboard.press('Escape');
     await expect(selettore).toBeHidden();
 
-    // Tolto anche l'ultimo: la chiave sparisce dal record, non resta un [] vuoto.
     await nuovo.locator('[data-togli-rimando]').click();
     await page.evaluate(() => (document.getElementById('manoscritto-form') as HTMLFormElement)
       .dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })));
@@ -377,21 +336,17 @@ test('suggerimento nel form: lo stesso nome negli altri archivi', async ({ userD
     await page.evaluate(() => (window as any).switchTab('add'));
     await expect(page.locator('#view-add')).toBeVisible();
 
-    // Campo luogo: lasciando il campo compare il pulsante sotto di esso.
     const luogo = page.locator('#dyn-dataTopica');
     await luogo.fill('San Miniato');
     await luogo.press('Tab');
     const chipLuogo = page.locator('[data-suggerimento="dataTopica"]');
     await expect(chipLuogo).toHaveText('Trovato in un altro archivio');
-    // Cambiando il valore sparisce subito, e un nome che altrove non c'è non ne produce uno.
     await luogo.fill('Firenze');
     await expect(chipLuogo).toHaveCount(0);
     await luogo.press('Tab');
     await page.waitForTimeout(800);
     await expect(chipLuogo).toHaveCount(0);
 
-    // Due campi valutati di fila: i due pulsanti convivono. (La gara fra le due richieste, che
-    // il canale 'suggerimento' non annulla, qui è coperta solo in parte: la cache ne evita una.)
     await luogo.fill('San Miniato');
     await luogo.press('Tab');
     await page.evaluate(() => (window as any).aggiungiElementoDinamico('attori_dinamici', '', ''));
@@ -402,13 +357,11 @@ test('suggerimento nel form: lo stesso nome negli altri archivi', async ({ userD
     await expect(chipLuogo).toBeVisible();
     await prima.locator('button[aria-label]').first().click();
 
-    // Riga di una lista di persone: basta smettere di scrivere; maiuscole e apostrofi non contano.
     await page.evaluate(() => (window as any).aggiungiElementoDinamico('attori_dinamici', '', ''));
     const riga = page.locator('#container-attori_dinamici .dynamic-list-row').last();
     await riga.locator('.list-val').fill('luca d’ABETE');
     const chipPersona = riga.locator('[data-suggerimento="attori_dinamici"]');
     await expect(chipPersona).toBeVisible();
-    // Solo la stessa persona: un nome più lungo che la contiene non conta.
     await riga.locator('.list-val').fill('Luca');
     await expect(chipPersona).toHaveCount(0);
     await page.waitForTimeout(800);
@@ -416,7 +369,6 @@ test('suggerimento nel form: lo stesso nome negli altri archivi', async ({ userD
     await riga.locator('.list-val').fill("Luca d'Abete");
     await expect(chipPersona).toBeVisible();
 
-    // La finestra dei nomi: anteprima e collegamento come rimando.
     await chipPersona.click();
     const omonimi = page.locator('#omonimi-modal');
     await expect(omonimi).toBeVisible();
@@ -426,7 +378,6 @@ test('suggerimento nel form: lo stesso nome negli altri archivi', async ({ userD
     await expect(voce.locator('.omonimi-collega')).toBeDisabled();
     await expect(page.locator('#form-rimandi-esterni-list .rel-riga', { hasText: 'Podestà 12, c. 3r' })).toBeVisible();
 
-    // L'anteprima si apre SOPRA la finestra dei nomi; Esc chiude una finestra alla volta.
     await voce.locator('.altri-archivi-risultato').click();
     const anteprima = page.locator('#altro-archivio-modal');
     await expect(anteprima).toBeVisible();
@@ -436,13 +387,10 @@ test('suggerimento nel form: lo stesso nome negli altri archivi', async ({ userD
     await page.keyboard.press('Escape');
     await expect(omonimi).toBeHidden();
 
-    // Togliendo la riga se ne va anche il pulsante.
     await riga.locator('button[aria-label]').first().click();
     await expect(page.locator('[data-suggerimento="attori_dinamici"]')).toHaveCount(0);
 
-    // Disattivato dalle impostazioni: nessun suggerimento.
     await page.evaluate(() => (window as any).apiSettings.patch({ suggerimentiAltriArchivi: false }));
-    // Anche a form aperto: l'impostazione si rilegge dopo pochi secondi.
     await page.waitForTimeout(2100);
     await page.locator('#dyn-dataTopica').fill('San Miniato');
     await page.locator('#dyn-dataTopica').press('Tab');
@@ -458,7 +406,6 @@ test('impostazioni: archivi in cui cercare e suggerimento nel form', async ({ us
   const { app, page } = await launchApp(userDataDir);
   try {
     await page.waitForFunction(() => (window as any).__appPronta === true, null, { timeout: 15_000 });
-    // La sezione dei risultati è aperta: deve aggiornarsi da sola quando cambiano le esclusioni.
     await openSidebarPanel(page, 'search');
     await page.locator('#search-altri-archivi').check();
     await page.locator('#search-input').fill("luca d'abete");
@@ -470,30 +417,25 @@ test('impostazioni: archivi in cui cercare e suggerimento nel form', async ({ us
     const giudiziario = lista.locator('label', { hasText: 'Giudiziario San Miniato' }).locator('input');
     await expect(giudiziario).toBeChecked();
     await expect(lista.locator('label', { hasText: 'Sparito' })).toContainText('cartella non trovata');
-    await expect(lista).not.toContainText('Notarile'); // l'archivio aperto non è fra gli "altri"
+    await expect(lista).not.toContainText('Notarile');
     const sugg = page.locator('#settings-cross-suggerimenti');
     await expect(sugg).toBeChecked();
 
-    // Escludo il giudiziario: chiave scritta, ricerca e sezione aggiornate.
     await giudiziario.uncheck();
     await expect.poll(async () => (await page.evaluate(() => (window as any).apiSettings.get())).crossArchiveEsclusi?.length).toBe(1);
-    // Canale proprio: sul canale della sezione questa chiamata annullerebbe la sua ricerca.
     const r: any = await page.evaluate(() => (window as any).apiBrowser.crossArchiveSearch({ testo: "luca d'abete", canale: 'prova' }));
     expect(r.risultati).toHaveLength(0);
     await expect(page.locator('#altri-archivi-stato')).toContainText('Nessuna scheda negli altri archivi');
 
-    // Riammesso: l'elenco si svuota davvero.
     await giudiziario.check();
     await expect.poll(async () => (await page.evaluate(() => (window as any).apiSettings.get())).crossArchiveEsclusi).toEqual([]);
     await expect(page.locator('#altri-archivi-stato')).toHaveText('1 scheda in un altro archivio');
 
-    // Suggerimento: spento = false, riacceso = true.
     await sugg.uncheck();
     await expect.poll(async () => (await page.evaluate(() => (window as any).apiSettings.get())).suggerimentiAltriArchivi).toBe(false);
     await sugg.check();
     await expect.poll(async () => (await page.evaluate(() => (window as any).apiSettings.get())).suggerimentiAltriArchivi).toBe(true);
 
-    // Riaperte, le impostazioni mostrano lo stato salvato.
     await giudiziario.uncheck();
     await page.keyboard.press('Escape');
     await page.evaluate(() => (window as any).apriImpostazioni());

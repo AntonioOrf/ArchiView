@@ -1,5 +1,3 @@
-// Guardia di PIANO-PESO: le esclusioni dall'installer valgono solo nell'exe impacchettato,
-// quindi né la build né gli e2e (che girano su out/) si accorgerebbero se sparissero.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -18,13 +16,10 @@ function sorgentiTs(dir) {
 function runTests() {
   console.log('Running pesoBuild (esclusioni dall\'installer) tests...');
 
-  // Test 1 — pdfjs-dist serve solo alla build (copy-ocr-host.js): fra le dependencies
-  // tirerebbe dentro anche @napi-rs/canvas, ~70 MB in tutto.
   assert.ok(!pkg.dependencies['pdfjs-dist'], 'pdfjs-dist deve stare fra le devDependencies.');
   assert.ok(pkg.devDependencies['pdfjs-dist'], 'pdfjs-dist manca dalle devDependencies.');
   console.log('✅ Test 1: pdfjs-dist solo fra le devDependencies.');
 
-  // Test 2 — di Google solo il client Drive: googleapis intero sono ~34 MB.
   assert.ok(!pkg.dependencies.googleapis, 'googleapis non va fra le dependencies: usare @googleapis/drive.');
   const colpevoli = sorgentiTs(path.join(radice, 'src'))
     .filter(f => /require\(\s*['"]googleapis[/'"]|from\s+['"]googleapis[/'"]/.test(fs.readFileSync(f, 'utf8')))
@@ -32,7 +27,6 @@ function runTests() {
   assert.deepStrictEqual(colpevoli, [], `src/ richiede googleapis: ${colpevoli.join(', ')}.`);
   console.log('✅ Test 2: src/ non richiede googleapis.');
 
-  // Test 3 — le esclusioni di build.files e le lingue di Chromium.
   const files = pkg.build.files;
   for (const voce of [
     '!**/*.map',
@@ -50,7 +44,6 @@ function runTests() {
   assert.deepStrictEqual(pkg.build.electronLanguages, ['it', 'en-US'], 'build.electronLanguages deve essere ["it", "en-US"].');
   console.log('✅ Test 3: esclusioni di build.files ed electronLanguages presenti.');
 
-  // Test 4 — pdf.js una volta sola: il visualizzatore usa la copia dell'host OCR.
   const copia = fs.readFileSync(path.join(radice, 'scripts', 'copy-pdf-viewer.js'), 'utf8');
   assert.ok(!/sorgentePdfjs|pdfjs-dist/.test(copia), 'copy-pdf-viewer.js non deve copiare pdf.js.');
   console.log('✅ Test 4: pdf.js non duplicato in out/renderer/pdf.');

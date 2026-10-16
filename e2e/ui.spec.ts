@@ -18,7 +18,6 @@ test.describe('UI: impostazioni, lingua, tema', () => {
   test('il cambio lingua aggiorna il DOM', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');
 
-    // Baseline: titolo sidebar in italiano.
     const struttura = page.locator('[data-i18n="title_structure"]').first();
     await expect(struttura).toHaveText('Struttura');
 

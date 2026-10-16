@@ -1,9 +1,3 @@
-// Ricerca tra archivi — prova di carico (PIANO-RICERCA-ARCHIVI.md, Fase 1, punto 9).
-//
-// 10 archivi × 5.000 schede con trascrizioni, attraverso il WORKER reale. Le soglie sono
-// il segnale per cambiare backend: se una salta, si passa a un indice invertito dietro lo
-// stesso contratto invece di ottimizzare la scansione lineare.
-// Le soglie hanno margine per macchine lente e CI; i tempi misurati vengono stampati.
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -20,8 +14,6 @@ const LUOGHI = ['San Miniato', 'Firenze', 'Prato', 'Pistoia', 'Empoli', 'Fucecch
 const PAROLE = 'item die predicto in civitate coram domino potestate comparuit dictus accusatus de ludo taxillorum contra formam statutorum et condempnatus fuit in libris decem denariorum'.split(' ');
 
 let seme = 42;
-// LCG in aritmetica a 32 bit: con la moltiplicazione in virgola mobile i bit bassi si
-// azzerano e la sequenza collassa su poche parole, cioè su un testo irrealistico.
 const caso = (n) => { seme = (Math.imul(seme, 1103515245) + 12345) >>> 0; return (seme >>> 8) % n; };
 const frase = (n) => Array.from({ length: n }, () => PAROLE[caso(PAROLE.length)]).join(' ');
 
@@ -76,7 +68,6 @@ async function runTests() {
     assert.strictEqual(primo.v.reduce((s, x) => s + x.schede, 0), ARCHIVI * SCHEDE);
     assert.strictEqual(w.inRipiego, false);
 
-    // Indice caldo: sincronizza (solo stat) + ricerca, cioè ciò che fa ogni ricerca dall'IPC.
     await w.cerca({ testo: 'riscaldamento' });
     const tempi = [];
     for (const q of ["luca d'abete", 'taxillorum condempnatus', 'san miniato', 'busta 3.12', 'parolachenonce']) {
@@ -86,7 +77,6 @@ async function runTests() {
     assert.ok(anagrafica.v.totale > 0);
     const caldo = Math.max(...tempi, anagrafica.ms);
 
-    // Una scheda modificata in un archivio: rilettura del file, una sola voce ricalcolata.
     const f = path.join(rif[3].percorso, 'database_manoscritti.json');
     const db = JSON.parse(fs.readFileSync(f, 'utf8'));
     db.manoscritti[10].note = 'parolanuovissima';

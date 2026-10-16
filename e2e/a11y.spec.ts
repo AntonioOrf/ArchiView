@@ -5,7 +5,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'A11y' });
 
-// Fase 5 — coerenza tecnica e accessibilità.
 test.describe('Accessibilità e scala z-index', () => {
   test('5.1 — nessun z-index numerico fuori scala e ordine dei livelli rispettato', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
@@ -21,7 +20,6 @@ test.describe('Accessibilità e scala z-index', () => {
         critical: val('--z-modal-critical'),
         toast: val('--z-toast'),
         menu: val('--z-menu'),
-        // Un modale reale deve pescare dalla scala, non da un numero scritto a mano.
         settings: getComputedStyle(document.getElementById('settings-modal')!).zIndex,
         conflitto: getComputedStyle(document.getElementById('merge-conflict-modal')!).zIndex,
         toastBox: getComputedStyle(document.getElementById('toast-container')!).zIndex,
@@ -50,19 +48,16 @@ test.describe('Accessibilità e scala z-index', () => {
     await page.evaluate(() => (window as any).switchSidebarTab('tags'));
     await expect(page.locator('#btn-tab-tags')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#btn-tab-folders')).toHaveAttribute('aria-selected', 'false');
-    // Roving tabindex: solo il tab selezionato è in sequenza di tabulazione.
     await expect(page.locator('#btn-tab-tags')).toHaveAttribute('tabindex', '0');
     await expect(page.locator('#btn-tab-folders')).toHaveAttribute('tabindex', '-1');
 
     await page.locator('#btn-tab-tags').focus();
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('#btn-tab-search')).toBeFocused();
-    // Manual activation: la freccia sposta il fuoco ma non cambia pannello.
     await expect(page.locator('#btn-tab-tags')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Enter');
     await expect(page.locator('#btn-tab-search')).toHaveAttribute('aria-selected', 'true');
 
-    // Sidebar chiusa: nessun tab selezionato, ma il gruppo resta raggiungibile da Tab.
     await page.evaluate(() => (window as any).switchSidebarTab('search'));
     await expect(page.locator('#btn-tab-search')).toHaveAttribute('aria-selected', 'false');
     await expect(page.locator('#btn-tab-folders')).toHaveAttribute('tabindex', '0');
@@ -94,7 +89,6 @@ test.describe('Accessibilità e scala z-index', () => {
     const finestra = overlay.locator('.modal-window');
     await expect(overlay).toBeVisible();
 
-    // Semantica applicata da a11yModal via MutationObserver: nessun codice dedicato.
     await expect(finestra).toHaveAttribute('role', 'dialog');
     await expect(finestra).toHaveAttribute('aria-modal', 'true');
     const titolo = await finestra.evaluate((el) =>
@@ -103,7 +97,6 @@ test.describe('Accessibilità e scala z-index', () => {
     await expect.poll(() => page.evaluate(() =>
       document.getElementById('accesso-negato-overlay')!.contains(document.activeElement))).toBe(true);
 
-    // Il Tab gira tra i due pulsanti e non raggiunge l'app sotto.
     for (let i = 0; i < 4; i++) {
       await page.keyboard.press('Tab');
       const dentro = await page.evaluate(() =>
@@ -111,7 +104,6 @@ test.describe('Accessibilità e scala z-index', () => {
       expect(dentro, `Tab #${i + 1} è uscito dall'overlay`).toBe(true);
     }
 
-    // Esc non deve lasciare l'utente davanti a un vault non autorizzato.
     await page.keyboard.press('Escape');
     await expect(overlay).toBeVisible();
   });
@@ -121,8 +113,6 @@ test.describe('Accessibilità e scala z-index', () => {
     const secondarie = await preparaSchermateSecondarie(page, electronApp, userDataDir);
     await page.evaluate(() => (window as any).renderMain());
 
-    // Lucide mette aria-hidden sulle icone da sé (v1.x): il rischio vero è il bottone che
-    // contiene SOLO un'icona e nessun nome, annunciato come "pulsante" e basta (4.1.2).
     const scansiona = () => page.evaluate(() => {
       const problemi: string[] = [];
       document.querySelectorAll('svg.lucide').forEach(s => {
@@ -148,8 +138,6 @@ test.describe('Accessibilità e scala z-index', () => {
       ['impostazioni', 'apriImpostazioni'], ['cloud', 'apriCloudModal'], ['tag', 'apriGestioneTag'],
       ['nuovo-tipo', 'apriNewTypeModal'], ['cestino', 'apriCestino'],
     ] as const) {
-      // Attese su condizioni e non a tempo: sotto il carico della suite completa il modale
-      // precedente poteva essere ancora aperto e la scansione ne vedeva due sovrapposti.
       await page.evaluate((f) => (window as any)[f](), apri);
       await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay')).filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(1);
       await raccogli(dove);
@@ -167,7 +155,6 @@ test.describe('Accessibilità e scala z-index', () => {
   test('5.7 — WCAG 3.2.2: scorrere i tipi con le frecce non cancella ciò che si è scritto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
 
-    // Form della scheda: su Windows ogni freccia su una <select> chiusa emette `change`.
     await page.evaluate(() => (window as any).switchTab('add'));
     const tipo = page.locator('#form-tipo-documento');
     const iniziale = await tipo.inputValue();
@@ -182,13 +169,10 @@ test.describe('Accessibilità e scala z-index', () => {
     await expect(page.locator('#' + idCampo)).toHaveValue('Ser Piero di Antonio');
     await expect(tipo).toBeFocused();
 
-    // La memoria vale per UNA compilazione: una scheda nuova riparte vuota.
     await page.evaluate(() => (window as any).resetForm?.());
     await page.evaluate(() => (window as any).switchTab('add'));
     if (await page.locator('#' + idCampo).count()) await expect(page.locator('#' + idCampo)).toHaveValue('');
 
-    // Nuovo tipo: passare su un modello predefinito e tornare a "personalizzato" ritrova
-    // nome e campi in costruzione.
     await page.evaluate(() => (window as any).apriNewTypeModal());
     await page.locator('#custom-type-name').fill('Registro dei battesimi');
     await page.locator('#custom-type-extra-input').fill('Padrino');
@@ -206,7 +190,6 @@ test.describe('Accessibilità e scala z-index', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
     const link = page.locator('.skip-link');
 
-    // A riposo è fuori dallo schermo.
     expect((await link.boundingBox())!.y).toBeLessThan(0);
 
     await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); window.focus(); });
@@ -216,7 +199,6 @@ test.describe('Accessibilità e scala z-index', () => {
 
     await page.keyboard.press('Enter');
     await expect(page.locator('#contenuto-principale')).toBeFocused();
-    // Il Tab successivo prosegue DENTRO il contenuto, non torna all'intestazione.
     await page.keyboard.press('Tab');
     expect(await page.evaluate(() => document.getElementById('contenuto-principale')!.contains(document.activeElement))).toBe(true);
   });
@@ -227,15 +209,10 @@ test.describe('Accessibilità e scala z-index', () => {
     await seedItems(page, 3, { tagPrefix: 't' });
     await page.evaluate(() => (window as any).renderMain());
 
-    // Regola del criterio: sotto 24×24 va bene solo se un cerchio da 24px centrato sul
-    // bersaglio non tocca altri bersagli. Esclusi i link dentro il testo e i controlli
-    // sr-only (il bersaglio vero è la loro etichetta visibile).
     const scansiona = (dove: string) => page.evaluate((dove) => {
       const sel = 'button, a[href], input:not([type=hidden]), select, textarea, [role=button], [role=tab], [role=menuitem], [tabindex]:not([tabindex="-1"])';
       const tutti = Array.from(document.querySelectorAll(sel))
         .filter((e: any) => e.getClientRects().length && !e.closest('[aria-hidden="true"], .hidden-tab, [inert]') && getComputedStyle(e).visibility !== 'hidden')
-        // Un controllo dentro un <label> si attiva anche cliccando l'etichetta: il bersaglio
-        // è l'etichetta intera (è anche la regola "label + controllo, un solo bersaglio").
         .map((e: any) => ({ e, r: (e.closest('label') || e).getBoundingClientRect() as DOMRect }))
         .filter(x => x.r.width > 1 && x.r.height > 1);
       const out: string[] = [];
@@ -283,9 +260,6 @@ test.describe('Accessibilità e scala z-index', () => {
 
   test('5.10 — ogni vista ha un solo h1 e i titoli non saltano livelli', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
-    // La sidebar precede <main> nel DOM, quindi il primo titolo del documento è un h2: è
-    // una risalita di livello, permessa. Ciò che conta è un solo h1 visibile e nessun SALTO
-    // in discesa (h2 → h4) dentro una stessa regione.
     const titoli = () => page.evaluate(() => {
       const dentro = (h: Element) => (h.closest('main') && 'main') || (h.closest('aside') && 'aside') || (h.closest('header') && 'header') || 'altro';
       return Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
@@ -312,9 +286,6 @@ test.describe('Accessibilità e scala z-index', () => {
     await seedItems(page, 3);
     await page.evaluate(() => (window as any).renderMain());
 
-    // Un traduttore del browser riscriverebbe "Seed-001" o "Reg. 12 c. 4v" come testo
-    // qualunque. Ogni nodo di testo che È una segnatura deve stare sotto un translate="no";
-    // si misura sul DOM reale perché la sidebar passa da DOMPurify, che potrebbe toglierlo.
     const scoperte = () => page.evaluate(() => {
       const out: string[] = [];
       const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -337,7 +308,6 @@ test.describe('Accessibilità e scala z-index', () => {
 
   test('5.12 — WCAG 1.4.10: un nome di cartella lungo non fa scorrere la vista in orizzontale', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
-    // Senza spazi: è il caso in cui un figlio flex senza min-width:0 non si restringe più.
     const cartella = 'Fondo' + '_Notarile_Antecosimiano'.repeat(4);
     await createFolder(page, cartella);
     await seedItems(page, 2, { cartella });
@@ -371,12 +341,10 @@ test.describe('Accessibilità e scala z-index', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
     await seedItems(page, 1);
 
-    // 31.9 e non 32: 2rem arrotondati dal layout danno 31.999984
     const overflowCard = await page.locator('.card-scheda .card-overflow-btn').first().boundingBox();
     expect(overflowCard!.width).toBeGreaterThanOrEqual(31.9);
     expect(overflowCard!.height).toBeGreaterThanOrEqual(31.9);
 
-    // L'albero mostra solo cartelle: senza crearne una non ci sono righe da misurare.
     await createFolder(page, 'Notarile');
     const riga = page.locator('#folder-list .sidebar-row').first();
     await riga.hover();
@@ -400,7 +368,6 @@ test.describe('Accessibilità e scala z-index', () => {
       document.getElementById('cloud-modal')!.contains(document.activeElement));
     expect(dentro).toBe(true);
 
-    // aria-labelledby deve puntare a un titolo con testo reale, non a un id orfano.
     const win = page.locator('#cloud-modal .modal-window');
     await expect(win).toHaveAttribute('role', 'dialog');
     await expect(win).toHaveAttribute('aria-modal', 'true');
@@ -422,7 +389,6 @@ test.describe('Accessibilità e scala z-index', () => {
     await page.evaluate(() => (window as any).apriCloudModal());
     await expect(page.locator('#cloud-modal')).toBeVisible();
 
-    // lucide sostituisce <i data-lucide> con <svg>: controlliamo entrambe le forme.
     const senzaAriaHidden = await page.evaluate(() =>
       Array.from(document.querySelectorAll('#cloud-modal i[data-lucide], #cloud-modal svg'))
         .filter(el => el.getAttribute('aria-hidden') !== 'true').length);
@@ -438,7 +404,6 @@ test.describe('Accessibilità e scala z-index', () => {
     await page.evaluate(() => (window as any).mostraProgressoCloud('Backup', 'Caricamento dati'));
     await expect(live).toHaveText('Backup — Caricamento dati');
 
-    // L'overlay non deve avere una live region propria: competerebbe con quella condivisa.
     const liveInterne = await page.evaluate(() =>
       document.querySelectorAll('#cloud-progress-overlay [aria-live], #cloud-progress-overlay [role="status"]').length);
     expect(liveInterne).toBe(0);
@@ -450,7 +415,6 @@ test.describe('Accessibilità e scala z-index', () => {
   test('5.5 — le opzioni avanzate sono un target utilizzabile', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'A11y');
 
-    // La sezione avanzata vive nel ramo "cloud attivo": la mostriamo senza toccare il vault.
     await page.evaluate(() => (window as any).apriCloudModal());
     await page.evaluate(() => {
       document.getElementById('cloud-local-section')!.classList.add('hidden-tab');
@@ -461,7 +425,6 @@ test.describe('Accessibilità e scala z-index', () => {
     const box = await summary.boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(24);
 
-    // <details> espone lo stato nativamente: deve aprirsi da tastiera.
     await summary.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#btn-disconnect-cloud')).toBeVisible();

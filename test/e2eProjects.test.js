@@ -23,9 +23,6 @@ function runTests() {
   const suDisco = specEsistenti();
   const neiGruppi = specRaggruppati();
 
-  // Test 1 — nessuno spec fuori dai gruppi.
-  // È il fallimento silenzioso da cui questa guardia difende: con i `projects`, un file che
-  // non corrisponde a nessun testMatch non viene eseguito e il run resta verde lo stesso.
   const orfani = suDisco.filter(s => !neiGruppi.includes(s));
   assert.deepStrictEqual(
     orfani, [],
@@ -34,7 +31,6 @@ function runTests() {
   );
   console.log('✅ Test 1: ogni spec E2E appartiene a un progetto.');
 
-  // Test 2 — nessun gruppo cita un file inesistente (rinominato o cancellato).
   const fantasmi = neiGruppi.filter(s => !suDisco.includes(s));
   assert.deepStrictEqual(
     fantasmi, [],
@@ -42,8 +38,6 @@ function runTests() {
   );
   console.log('✅ Test 2: nessun gruppo punta a spec inesistenti.');
 
-  // Test 3 — nessuno spec in due gruppi: farebbe girare gli stessi test due volte
-  // nel run completo, gonfiando il tempo che questa suddivisione vuole ridurre.
   const duplicati = neiGruppi.filter((s, i) => neiGruppi.indexOf(s) !== i);
   assert.deepStrictEqual(
     duplicati, [],

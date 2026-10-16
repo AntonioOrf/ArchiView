@@ -2,11 +2,6 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
-// Esercita il REALE wrapper di serializzazione di syncHubAttachments.
-// Il modulo non è importabile (tira dentro electron e lo state del main), quindi si estrae
-// il sorgente del wrapper da hubAttachments.ts, si spogliano le annotazioni di tipo e lo si
-// valuta contro un'implementazione finta. Se la forma cambia, l'estrazione fallisce in modo
-// rumoroso invece di testare una copia divergente.
 const SRC = path.join(__dirname, '..', 'src', 'main', 'ipc', 'hubAttachments.ts');
 
 function estraiWrapper() {
@@ -29,11 +24,9 @@ function estraiWrapper() {
 
   const corpo = src.substring(inizio, i + 1);
 
-  // Le due variabili di stato che il wrapper usa devono esistere nel sorgente.
   assert.ok(src.includes('let runInCorso'), 'runInCorso non trovato');
   assert.ok(src.includes('let runAccodato'), 'runAccodato non trovato');
 
-  // Spoglia le annotazioni di tipo TS: il wrapper è JS puro a parte queste.
   const codice = ('let runInCorso = null; let runAccodato = null;\n' + corpo)
     .replace(/: Promise<SyncAttachmentsResult> \| null/g, '')
     .replace(/: Promise<SyncAttachmentsResult>/g, '');
@@ -48,7 +41,6 @@ function carica(impl) {
   return new Function('syncHubAttachmentsImpl', codice)(impl);
 }
 
-/** Impl finta: traccia chiamate e concorrenza massima osservata. */
 function implTracciante({ ritardoMs = 20, falliscoAllaChiamata = -1 } = {}) {
   const stato = { chiamate: 0, attive: 0, maxAttive: 0 };
   const impl = () => {
@@ -70,7 +62,6 @@ function implTracciante({ ritardoMs = 20, falliscoAllaChiamata = -1 } = {}) {
 async function runTests() {
   console.log('Running hubAttachmentsSerial tests...');
 
-  // 1) Chiamata singola: passa dritta all'implementazione.
   {
     const { impl, stato } = implTracciante();
     const sync = carica(impl);
@@ -80,8 +71,6 @@ async function runTests() {
     console.log('✅ Test 1: la chiamata singola esegue una sola sync.');
   }
 
-  // 2) Due chiamate sovrapposte: MAI due run insieme. È l'invariante che protegge
-  //    plainCache/encCache dal cleanup di un run concorrente (ENOENT sui chunk cifrati).
   {
     const { impl, stato } = implTracciante();
     const sync = carica(impl);
@@ -91,7 +80,6 @@ async function runTests() {
     console.log('✅ Test 2: due chiamate sovrapposte vengono serializzate, nessuna persa.');
   }
 
-  // 3) Raffica di chiamate: al più una accodata, il lavoro non si moltiplica.
   {
     const { impl, stato } = implTracciante();
     const sync = carica(impl);
@@ -101,8 +89,6 @@ async function runTests() {
     console.log('✅ Test 3: una raffica di 5 trigger produce 2 run, non 5.');
   }
 
-  // 4) Il fallimento del run in corso non deve impedire quello accodato: gli allegati
-  //    arrivati nel frattempo verrebbero altrimenti ignorati fino al riavvio.
   {
     const { impl, stato } = implTracciante({ falliscoAllaChiamata: 1 });
     const sync = carica(impl);
@@ -116,7 +102,6 @@ async function runTests() {
     console.log('✅ Test 4: un run fallito non blocca quello accodato.');
   }
 
-  // 5) Dopo che tutto si è esaurito, lo stato torna pulito: una nuova chiamata riparte.
   {
     const { impl, stato } = implTracciante();
     const sync = carica(impl);

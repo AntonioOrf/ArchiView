@@ -6,20 +6,11 @@ import * as fs from 'fs';
 
 test.use({ seedWorkspace: 'Export' });
 
-/**
- * Fasi 2.5 e 2.6 — export della trascrizione (HTML, Markdown, RTF) e citazioni (BibTeX, RIS).
- *
- * Come per il CSV (2.1) e la stampa (2.2), il dialogo nativo è stubbato nel main e il file
- * viene scritto DAVVERO su disco: si asserisce sul contenuto. È l'unico modo di accorgersi
- * che il main ha letto il database di prima del salvataggio, o che la trascrizione è
- * arrivata al file senza passare dal sanificatore — due difetti che a livello di IPC si
- * presentano entrambi come `success: true`.
- */
 type Riga = { segnatura: string; cartella?: string; [k: string]: any };
 
 async function seed(page, righe: Riga[]) {
   await page.evaluate(async (righe) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const data = appData;
     for (const r of righe) {
       data.manoscritti.push(Object.assign({
@@ -46,7 +37,6 @@ async function leggiFile(percorso: string): Promise<string> {
   return fs.readFileSync(percorso, 'utf8');
 }
 
-/** Apre il modale sulla selezione, sceglie il formato ed esporta. */
 async function esporta(page, ids: string[], formato: string) {
   return page.evaluate(async ({ ids, formato }) => {
     const w = window as any;
@@ -72,11 +62,11 @@ test.describe('Export della trascrizione e citazioni', () => {
     await stubDialog(electronApp, { canceled: false, filePath: out });
     const esito = await esporta(page, ids, 'html');
     expect(esito.success).toBe(true);
-    expect(esito.count).toBe(2);   // con un ambito inerte sarebbero 3
+    expect(esito.count).toBe(2);
 
     const testo = await leggiFile(out);
     expect(testo.startsWith('<!DOCTYPE html>')).toBe(true);
-    expect(testo).toContain("default-src 'none'");   // seconda difesa dopo la whitelist
+    expect(testo).toContain("default-src 'none'");
     expect(testo).toContain('In nomine <b>Domini</b>');
     expect(testo).toContain('TX-2');
     expect(testo).not.toContain('fuori ambito');
@@ -85,7 +75,6 @@ test.describe('Export della trascrizione e citazioni', () => {
 
   test('2.5.2 — Markdown e RTF dallo stesso testo, con le carte separate', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Export');
-    // Trascrizione per allegato (2.3-bis): due carte, due sezioni nel file.
     await seed(page, [{
       segnatura: 'CARTE-1',
       dataTopica: 'Perùgia',
@@ -106,8 +95,8 @@ test.describe('Export della trascrizione e citazioni', () => {
     expect(testoMd).toContain('### c1r.jpg');
     expect(testoMd).toContain('### c1v.jpg');
     expect(testoMd).toContain('*recto*');
-    expect(testoMd).toContain('Perùgia');           // l'intestazione è attiva per default
-    expect(testoMd).not.toContain('forma derivata'); // non si legge la concatenazione
+    expect(testoMd).toContain('Perùgia');
+    expect(testoMd).not.toContain('forma derivata');
 
     const rtf = path.join(userDataDir, 'trascrizione.rtf');
     await stubDialog(electronApp, { canceled: false, filePath: rtf });
@@ -115,7 +104,6 @@ test.describe('Export della trascrizione e citazioni', () => {
     const testoRtf = await leggiFile(rtf);
     expect(testoRtf.startsWith('{\\rtf1\\ansi')).toBe(true);
     expect(testoRtf).toContain('Testo del');
-    // La ù non può viaggiare come byte grezzo: Word leggerebbe un carattere a caso.
     expect(testoRtf).toContain('\\u249?');
     expect(testoRtf).not.toContain('Perùgia');
   });
@@ -130,8 +118,6 @@ test.describe('Export della trascrizione e citazioni', () => {
     const dati = await getAppData(page);
     const ids = [dati.manoscritti[0].id];
 
-    // Il fondo viene dalle impostazioni di stampa: è la stessa intestazione, compilata una
-    // volta sola. Se qui arrivasse vuoto, `organization` sparirebbe dalla voce.
     await page.evaluate(() => { (window as any).impostazioniStampa.fondo = 'ASP'; });
 
     const bib = path.join(userDataDir, 'citazione.bib');
@@ -161,8 +147,6 @@ test.describe('Export della trascrizione e citazioni', () => {
     const dati = await getAppData(page);
     const id = dati.manoscritti[0].id;
 
-    // Modifica pendente nell'editor, come dopo aver battuto una riga senza salvare: il main
-    // legge il DB dal disco, e senza il salvataggio esporterebbe la versione precedente.
     await page.evaluate((id) => {
       const w = window as any;
       w.apriTrascrizione(id);
@@ -218,13 +202,11 @@ test.describe('Export della trascrizione e citazioni', () => {
     }, uno);
 
     await expect(page.locator('#export-text-modal')).toBeVisible();
-    // Due numeri: quante schede e quante hanno testo. Con l'ambito inerte non cambierebbero.
     await expect(page.locator('#tx-count')).toContainText('1');
     await page.locator('#tx-scope').selectOption('cartella');
     await expect(page.locator('#tx-count')).toContainText('3');
-    await expect(page.locator('#tx-count')).toContainText('1');   // solo una ha trascrizione
+    await expect(page.locator('#tx-count')).toContainText('1');
 
-    // Passando a una citazione l'intestazione sparisce: in BibTeX i metadati SONO il file.
     await page.locator('#tx-format-bibtex').check();
     await expect(page.locator('#tx-opt-header')).toHaveCount(0);
 

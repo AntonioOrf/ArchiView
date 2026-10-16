@@ -6,17 +6,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-// Prove M3 di PIANO-PROVE-MANUALI.md contro il Worker VERO in locale (`wrangler dev`, D1 locale):
-// due istanze dell'app, A proprietario e B membro, sullo stesso repository. Senza Google: gli
-// allegati Hub (link Drive) e le notifiche Pusher restano fuori.
-//
-//   cd cloudflare-hub && npm run migrate:local
-//   npx wrangler d1 execute archiview-hub --local --command "DELETE FROM rate_counters"   (quota 20 repo/giorno per IP)
-//   npx wrangler dev --local --port 8787 --ip 127.0.0.1 --var CREATE_SECRET:dev-secret
-//   ARCHIVIEW_HUB_LOCALE=http://127.0.0.1:8787 npx playwright test --project=manuali hub-locale
-//
-// Il Worker limita a 5 creazioni di repository al minuto per IP: un repository per test.
-
 const HUB = process.env.ARCHIVIEW_HUB_LOCALE || '';
 const SEGRETO = process.env.ARCHIVIEW_HUB_SECRET || 'dev-secret';
 
@@ -42,7 +31,6 @@ async function creaRepo(): Promise<Repo> {
   return { repoId, ownerKey, memberId, memberKey, encKey: crypto.randomBytes(32).toString('base64url') };
 }
 
-/** Collega l'archivio aperto al repository e carica la config nel renderer (come all'avvio). */
 async function collega(page: Page, ws: string, repo: Repo, chiave: string) {
   fs.writeFileSync(path.join(ws, '.archiview-hub.json'), JSON.stringify({
     hubUrl: HUB, repoId: repo.repoId, repoKey: chiave, encKey: repo.encKey, version: 0, attachmentsMode: 'off',
@@ -50,7 +38,6 @@ async function collega(page: Page, ws: string, repo: Repo, chiave: string) {
   await page.evaluate(async () => { const w = window as any; w.hubConfig = await w.apiBrowser.loadHubConfig(); });
 }
 
-/** Seconda istanza (B) con il suo archivio, già pronta. */
 async function apriB(): Promise<{ app: ElectronApplication; page: Page; dir: string; ws: string }> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archiview-e2e-b-'));
   const ws = path.join(dir, 'ws', 'HubB');
@@ -80,7 +67,7 @@ test.describe('Hub locale, due istanze', () => {
   test.afterEach(async () => {
     if (!B) return;
     await closeApp(B.app);
-    try { fs.rmSync(B.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* lock */ }
+    try { fs.rmSync(B.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch {}
     B = null;
   });
 
@@ -92,7 +79,6 @@ test.describe('Hub locale, due istanze', () => {
     B = await apriB();
     await collega(B.page, B.ws, repo, repo.memberKey);
 
-    // M3.8: A crea una scheda e un valore di vocabolario, invia; B riceve.
     await scheda(page, 'a1', { segnatura: 'HUB-A1', titolo: 'Base' });
     await page.evaluate(async () => {
       const w = window as any;
@@ -104,7 +90,6 @@ test.describe('Hub locale, due istanze', () => {
     await w(B.page, 'riceviModificheHub');
     await expect.poll(() => segnature(B!.page)).toEqual(['HUB-A1']);
     expect(await B.page.evaluate(() => (window as any).appData.vocabolari?.['voc-hub']?.valori)).toEqual(['pergamena']);
-    // Poi B invia una sua scheda; A riceve e ha ancora la sua scheda e il valore.
     await scheda(B.page, 'b1', { segnatura: 'HUB-B1' });
     await w(B.page, 'inviaModificheHub');
     await toast(B.page, 'Modifiche inviate');
@@ -112,12 +97,9 @@ test.describe('Hub locale, due istanze', () => {
     await expect.poll(() => segnature(page)).toEqual(['HUB-A1', 'HUB-B1']);
     expect(await page.evaluate(() => (window as any).appData.vocabolari?.['voc-hub']?.valori)).toEqual(['pergamena']);
 
-    // M3.10: A e B inviano quasi insieme da versioni uguali: uno passa, l'altro riceve il 409.
     expect(await versione(page)).toBe(await versione(B.page));
     await scheda(page, 'a1', { titolo: 'Da A' });
     await scheda(B.page, 'b1', { titolo: 'Da B' });
-    // Prima del fix (12/10) chi perdeva era B, la ricezione apriva un conflitto falso su HUB-B1
-    // (scheda sua, inviata e poi modificata, senza base): ora nessun modale.
     await Promise.all([w(page, 'inviaModificheHub'), w(B.page, 'inviaModificheHub')]);
     const vA = await versione(page), vB = await versione(B.page);
     expect(vA === vB, 'una sola delle due versioni avanza').toBe(false);
@@ -129,13 +111,11 @@ test.describe('Hub locale, due istanze', () => {
     await toast(perde, 'Modifiche inviate');
     await w(vince, 'riceviModificheHub');
     for (const p of [page, B.page]) {
-      // Nessun pull ha svuotato l'archivio: entrambe le modifiche ci sono, da entrambe le parti.
       expect(await segnature(p)).toEqual(['HUB-A1', 'HUB-B1']);
       expect(await campo(p, 'a1', 'titolo')).toBe('Da A');
       expect(await campo(p, 'b1', 'titolo')).toBe('Da B');
     }
 
-    // M3.9: stesso campo modificato dai due; B riceve e annulla il modale dei conflitti.
     await scheda(page, 'a1', { titolo: 'Versione di A' });
     await w(page, 'inviaModificheHub');
     await toast(page, 'Modifiche inviate');
@@ -165,7 +145,6 @@ test.describe('Hub locale, due istanze', () => {
     await scheda(page, 'a2', { segnatura: 'STORICO-2' });
     await w(page, 'inviaModificheHub');
     await expect.poll(() => versione(page)).toBeGreaterThan(v1);
-    // Il collega ha già ricevuto la versione con entrambe le schede.
     B = await apriB();
     await collega(B.page, B.ws, repo, repo.memberKey);
     await w(B.page, 'riceviModificheHub');
@@ -176,7 +155,6 @@ test.describe('Hub locale, due istanze', () => {
     const snap = await w(page, 'caricaVersioneHub', v1) as any;
     expect(snap.database.manoscritti.map((m: any) => m.segnatura)).toEqual(['STORICO-1']);
 
-    // Ripristino dal pannello: conferma, Esc annulla; poi il ripristino vero.
     await page.evaluate((v) => (window as any).apriConfermaRipristino('v' + v, () => (window as any).ripristinaVersioneHub(v)), v1);
     const conferma = page.locator('#history-restore-confirm');
     await expect(conferma).toBeVisible();
@@ -188,8 +166,6 @@ test.describe('Hub locale, due istanze', () => {
     const dopo = await w(page, 'elencaVersioniHub') as any;
     expect(dopo.currentVersion).toBeGreaterThan(v1 + 1);
 
-    // Il collega riceve il ripristino: la scheda nata dopo arriva come eliminata sul server
-    // (tombstone) e, come ogni eliminazione remota, chiede conferma (M6.4).
     await B!.page.evaluate(() => { (window as any).__e2eFine = (window as any).riceviModificheHub(); });
     const eliminate = B!.page.locator('#deletion-conflict-modal');
     await expect(eliminate).toContainText('STORICO-2', { timeout: 10_000 });
@@ -219,7 +195,6 @@ test.describe('Hub locale, due istanze', () => {
 
     const pull = await B.page.evaluate(() => (window as any).apiBrowser.hubPull());
     expect(pull.ok).toBe(false);
-    // 403, non 401: l'app distingue "accesso revocato" da "chiave non valida".
     expect(pull.status).toBe(403);
     await w(B.page, 'riceviModificheHub');
     await toast(B.page, 'revocato');

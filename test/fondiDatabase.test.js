@@ -1,8 +1,5 @@
 const assert = require('assert');
 
-// PIANO-REFACTOR Fase 3: il merge del database è una funzione pura del modello. Prima viveva
-// dentro `sincronizzaEUnisciDati` (state.ts) insieme a modali e scritture e lo provavano solo
-// gli e2e. Si carica il modello COMPILATO, quello che gira nell'app.
 const Model = require('../out/shared/model');
 
 console.log('Running fondiDatabase tests...');
@@ -10,7 +7,6 @@ console.log('Running fondiDatabase tests...');
 const scheda = (id, extra = {}) => ({ id, segnatura: id, lastModified: 1, ...extra });
 const ids = (lista) => lista.map(m => m.id).sort();
 
-// Test 1: non tocca i due database in ingresso.
 {
   const locale = { cartelle: ['A'], manoscritti: [scheda('r1')], deletedIds: [] };
   const esterno = { cartelle: ['B'], manoscritti: [scheda('r2')], deletedIds: [] };
@@ -22,7 +18,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 1: locale ed esterno restano intatti.');
 }
 
-// Test 2: cartelle in unione, meno quelle eliminate da almeno un lato.
 {
   const esito = Model.fondiDatabase(
     { cartelle: ['A', 'B'], deletedCartelle: [] },
@@ -32,7 +27,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 2: cartelle fuse, eliminazioni rispettate.');
 }
 
-// Test 3: modelli, vince il remoto sullo stesso id; quelli solo locali restano.
 {
   const esito = Model.fondiDatabase(
     { tipiDocumento: [{ id: 't1', nome: 'vecchio' }, { id: 't2', nome: 'solo locale' }] },
@@ -41,7 +35,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 3: modelli fusi.');
 }
 
-// Test 4: con la base, campi diversi cambiati dai due lati si fondono entrambi.
 {
   const base = scheda('r1', { titolo: 'T', note: 'N' });
   const esito = Model.fondiDatabase(
@@ -53,23 +46,18 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 4: fusione per campo con la base.');
 }
 
-// Test 5: con la sola impronta, a tre vie sull'intera scheda.
 {
   const base = scheda('r1', { titolo: 'base' });
   const baseHashes = { r1: Model.improntaRecord(base) };
-  // Locale invariato → vince il remoto.
   let esito = Model.fondiDatabase({ manoscritti: [base], baseHashes }, { manoscritti: [{ ...base, titolo: 'remoto' }] });
   assert.strictEqual(esito.schede[0].titolo, 'remoto');
-  // Remoto invariato → vince il locale.
   esito = Model.fondiDatabase({ manoscritti: [{ ...base, titolo: 'locale' }], baseHashes }, { manoscritti: [base] });
   assert.strictEqual(esito.schede[0].titolo, 'locale');
-  // Cambiate entrambe (conflitto sfuggito al modale) → resta il locale.
   esito = Model.fondiDatabase({ manoscritti: [{ ...base, titolo: 'locale' }], baseHashes }, { manoscritti: [{ ...base, titolo: 'remoto' }] });
   assert.strictEqual(esito.schede[0].titolo, 'locale');
   console.log('✅ Test 5: tre vie sull\'impronta.');
 }
 
-// Test 6: senza base né impronta vince il timestamp più recente (a pari, il locale).
 {
   let esito = Model.fondiDatabase(
     { manoscritti: [scheda('r1', { titolo: 'L', lastModified: 5 })] },
@@ -82,7 +70,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 6: timestamp senza base.');
 }
 
-// Test 7: le eliminazioni che chiedono una scelta restano fuori dalle schede.
 {
   const esito = Model.fondiDatabase(
     { manoscritti: [scheda('loc-tolta-dal-remoto'), scheda('comune')], deletedIds: ['remota-tolta-in-locale'] },
@@ -93,7 +80,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 7: eliminazioni da confermare separate.');
 }
 
-// Test 8: le schede risolte nel modale vincono su tutto.
 {
   const scelta = scheda('r1', { titolo: 'scelta' });
   const esito = Model.fondiDatabase(
@@ -104,7 +90,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 8: le risolte vincono.');
 }
 
-// Test 9: una scheda con carte fuse diverse dalle locali va ricomposta; una intatta no.
 {
   const base = scheda('r1', { allegati: [{ nome: 'a.jpg', trascrizione: '<p>x</p>' }] });
   const conCartaNuova = { ...base, allegati: [...base.allegati, { nome: 'b.jpg', trascrizione: '<p>y</p>' }] };
@@ -115,7 +100,6 @@ const ids = (lista) => lista.map(m => m.id).sort();
   console.log('✅ Test 9: ricomposizione solo quando le carte cambiano.');
 }
 
-// Test 10: l'impronta ignora timestamp e firme, ma non il contenuto né l'ordine delle chiavi.
 {
   const a = { id: 'x', titolo: 'T', note: 'N', lastModified: 1, modificatoDa: 'A' };
   const b = { note: 'N', titolo: 'T', id: 'x', lastModified: 9, creatoDa: 'B' };

@@ -4,17 +4,9 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Sort' });
 
-/**
- * Semina schede con segnature e date di modifica CONTROLLATE.
- * `seedItems` di helpers.ts non basta qui: genera segnature già ordinate
- * (Seed-000, Seed-001…) e `lastModified` quasi identici, cioè un seme su cui
- * un ordinamento inerte passerebbe lo stesso. Le segnature sono deliberatamente
- * in ordine sbagliato e con numeri a più cifre, che è il caso che rompe
- * l'ordinamento lessicografico.
- */
 async function seedSegnature(page, righe: Array<{ segnatura: string; lastModified?: number; titolo?: string }>) {
   await page.evaluate(async (righe) => {
-    // @ts-ignore -- `appData` è una `let` globale (script classico), non window.appData.
+    // @ts-ignore
     const data = appData;
     for (const r of righe) {
       data.manoscritti.push({
@@ -34,7 +26,6 @@ async function seedSegnature(page, righe: Array<{ segnatura: string; lastModifie
   }, righe);
 }
 
-/** Segnature nell'ordine in cui sono renderizzate, griglia o tabella che sia. */
 async function segnatureRenderizzate(page): Promise<string[]> {
   return page.evaluate(() =>
     Array.from(document.querySelectorAll('.card-scheda')).map((el) => {
@@ -51,7 +42,6 @@ test.describe('Ordinamento e vista tabella', () => {
       { segnatura: 'MS 10' },
       { segnatura: 'MS 2' },
       { segnatura: 'MS 1' },
-      // Esca: lessicograficamente finirebbe fra "MS 1" e "MS 2"; naturalmente sta in coda.
       { segnatura: 'MS 100' },
     ]);
 
@@ -102,7 +92,6 @@ test.describe('Ordinamento e vista tabella', () => {
     await expect(page.locator('#manoscritti-table-wrap')).toBeVisible();
     await expect(page.locator('#manoscritti-grid')).toBeHidden();
     await expect(page.locator('#manoscritti-table tbody tr')).toHaveCount(3);
-    // L'ordinamento è lo stesso della griglia: è lo stesso elenco, mostrato diversamente.
     await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 1', 'MS 2', 'MS 10']);
   });
 
@@ -117,7 +106,6 @@ test.describe('Ordinamento e vista tabella', () => {
     await page.locator('#manoscritti-table thead th', { hasText: /Modificato|Modified/ }).click();
     await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 2', 'MS 1']);
 
-    // Ri-cliccare la stessa colonna inverte, non riordina da capo.
     await page.locator('#manoscritti-table thead th', { hasText: /Modificato|Modified/ }).click();
     await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 1', 'MS 2']);
   });
@@ -137,7 +125,6 @@ test.describe('Ordinamento e vista tabella', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
     await seedSegnature(page, [{ segnatura: 'MS 1' }, { segnatura: 'MS 2' }]);
 
-    // Nella vista a schede non ci sono intestazioni da cliccare: i controlli servono.
     await expect(page.locator('#select-ordinamento')).toBeVisible();
     await expect(page.locator('#btn-ordinamento-dir')).toBeVisible();
 
@@ -146,7 +133,6 @@ test.describe('Ordinamento e vista tabella', () => {
     await expect(page.locator('#select-ordinamento')).toBeHidden();
     await expect(page.locator('#btn-ordinamento-dir')).toBeHidden();
 
-    // ...e il loro compito lo fa l'intestazione: primo click ordina, secondo inverte.
     const header = page.locator('#manoscritti-table thead th', { hasText: /Segnatura/i });
     await header.click();
     await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 2', 'MS 1']);
@@ -159,11 +145,9 @@ test.describe('Ordinamento e vista tabella', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
     await seedSegnature(page, [{ segnatura: 'MS 1' }]);
 
-    // Restano per esteso solo le due azioni quotidiane più i controlli di vista.
     await expect(page.locator('#btn-tab-add')).toBeVisible();
     await expect(page.locator('#btn-nuova-scheda-tipo')).toBeVisible();
 
-    // Le azioni rare non sono più pulsanti a sé: stanno nel "⋯".
     const barra = page.locator('#context-actions');
     await expect(barra.locator('button', { hasText: /^Importa$/ })).toHaveCount(0);
 
@@ -173,23 +157,14 @@ test.describe('Ordinamento e vista tabella', () => {
     for (const voce of [/Nuova cartella/, /Elimina quest/]) {
       await expect(menu.locator('button', { hasText: voce })).toHaveCount(1);
     }
-    // Fase 4.1: il cestino sta accanto all'eliminazione dell'archivio, non fra gli export.
     await expect(menu.locator('button', { hasText: /^Cestino$/ })).toHaveCount(1);
-    // "Colonne visibili" compare solo dove esistono colonne: qui siamo a schede.
     await expect(menu.locator('button', { hasText: /Colonne/ })).toHaveCount(0);
 
-    // MENU_GROUPING_TODO: import ed export sono due gruppi, non sette voci di primo livello.
-    // Fase 2.4: gli import sono due (ZIP di ArchiView e CSV), e come per gli export si
-    // distinguono dal `title`, non dall'etichetta — che il menu tronca a 280px.
     await menu.locator('button', { hasText: /^Importa$/ }).click();
     const subImport = page.locator('#custom-context-menu-1');
     await expect(subImport.locator('button[title="Importa un backup ZIP di ArchiView"]')).toHaveCount(1);
     await expect(subImport.locator('button[title="Importa da CSV"]')).toHaveCount(1);
 
-    // Fasi 2.1 e 2.5/2.6: gli export sono quattro (ZIP, CSV, TSV, testo) più la stampa, e
-    // devono esserci tutti. Le etichette sono corte perche' il menu tronca a 280px; la
-    // dizione estesa sta nel `title`, ed e' quella che l'asserzione controlla, cosi' il
-    // test non passerebbe con quattro voci "Esporta" indistinguibili.
     await menu.locator('button', { hasText: /^Esporta$/ }).click();
     const subExport = page.locator('#custom-context-menu-1');
     await expect(subExport.locator('button', { hasText: /Esporta/ })).toHaveCount(4);
@@ -211,11 +186,8 @@ test.describe('Ordinamento e vista tabella', () => {
     await expect(page.locator('#btn-vista-tabella')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#btn-vista-griglia')).toHaveAttribute('aria-pressed', 'false');
 
-    // Lo stato attivo deve reggere anche col puntatore sopra: `.btn-ghost:hover` ha
-    // specificità 0,2,0 e batteva la classe semplice, spegnendo l'evidenziazione proprio
-    // sul segmento appena cliccato — cioè quando si guarda per capire se il click è andato.
     await page.locator('#btn-vista-tabella').hover();
-    await page.waitForTimeout(300); // .btn ha transition 0.2s: prima si legge l'animazione
+    await page.waitForTimeout(300);
     const sfondi = await page.evaluate(() => ({
       attivo: getComputedStyle(document.getElementById('btn-vista-tabella')).backgroundColor,
       inattivo: getComputedStyle(document.getElementById('btn-vista-griglia')).backgroundColor,
@@ -227,7 +199,7 @@ test.describe('Ordinamento e vista tabella', () => {
   test('il chevron di Nuova scheda apre il form già sul tipo scelto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
     await page.evaluate(async () => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      // @ts-ignore
       appData.tipiDocumento.push({ id: 'fiscali-test', nome: 'Fiscali test', campi: ['dichiarante'] });
       await (window as any).Store.commit();
     });
@@ -236,18 +208,14 @@ test.describe('Ordinamento e vista tabella', () => {
     await page.locator('#custom-context-menu button', { hasText: 'Fiscali test' }).click();
 
     await expect(page.locator('#view-add')).toBeVisible();
-    // Il tipo è già quello scelto: è il passaggio che prima andava fatto a mano nel form.
     await expect(page.locator('#form-tipo-documento')).toHaveValue('fiscali-test');
-    // E i campi mostrati sono quelli di QUEL tipo, non del precedente.
     await expect(page.locator('#form-dynamic-fields')).toContainText(/Dichiarante/i);
   });
 
   test('si ordina anche per una colonna non prevista dal menu a tendina', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
-    // `dichiarante` è un campo del tipo documento, non uno dei criteri del menu:
-    // in tabella deve essere ordinabile lo stesso, cliccandone l'intestazione.
     await page.evaluate(async () => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      // @ts-ignore
       const data = appData;
       data.tipiDocumento.push({ id: 'fiscali-test', nome: 'Fiscali test', campi: ['dichiarante'] });
       for (const [seg, dich] of [['MS 1', 'Zanobi'], ['MS 2', 'Alberto'], ['MS 3', 'Michele']]) {
@@ -263,18 +231,13 @@ test.describe('Ordinamento e vista tabella', () => {
     await page.locator('#btn-vista-tabella').click();
     await page.locator('#manoscritti-table thead th', { hasText: /Dichiarante/i }).click();
 
-    // Ordine per dichiarante: Alberto, Michele, Zanobi → MS 2, MS 3, MS 1.
-    // Le segnature sono deliberatamente in ordine inverso, così un ordinamento
-    // rimasto sulla segnatura non produrrebbe comunque questa sequenza.
     await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 2', 'MS 3', 'MS 1']);
   });
 
   test('il menu di ordinamento elenca i campi delle schede presenti, non altri', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
-    // Tipo con `dichiarante` e SENZA `autore`: "Autore" nel menu sarebbe un criterio
-    // inerte, che ordina tutto per un valore che nessuna di queste schede possiede.
     await page.evaluate(async () => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      // @ts-ignore
       const data = appData;
       data.tipiDocumento.push({ id: 'fiscali-test', nome: 'Fiscali test', campi: ['dichiarante'] });
       data.manoscritti.push({
@@ -291,9 +254,7 @@ test.describe('Ordinamento e vista tabella', () => {
       );
 
     await expect.poll(criteri).toContain('dichiarante');
-    // L'esca: il campo che il vecchio elenco fisso proponeva sempre.
     await expect.poll(criteri).not.toContain('autore');
-    // I criteri universali restano: esistono su qualunque scheda.
     expect(await criteri()).toEqual(expect.arrayContaining(['segnatura', 'lastModified', 'allegati']));
   });
 
@@ -313,14 +274,10 @@ test.describe('Ordinamento e vista tabella', () => {
     expect(await intestazioni()).toContain('Titolo / Cont.');
     await expect(page.locator('#manoscritti-table tbody td', { hasText: 'Rogito notarile' })).toBeVisible();
 
-    // In tabella il "⋯" guadagna la voce Colonne, che a schede non c'è.
     await page.locator('#context-overflow-slot button').click();
     await page.locator('#custom-context-menu button', { hasText: /Colonne/ }).click();
-    // Sottomenu (non più un secondo menu riancorato a mano al pulsante "⋯").
     await page.locator('#custom-context-menu-1 button', { hasText: 'Titolo / Cont.' }).click();
 
-    // La colonna sparisce: l'asserzione è sull'intestazione, non sul conteggio delle righe,
-    // che resterebbe identico anche con il toggle inerte.
     await expect.poll(intestazioni).not.toContain('Titolo / Cont.');
     expect(await page.evaluate(() => (window as any).colonneTabella)).toBeTruthy();
   });
@@ -331,8 +288,6 @@ test.describe('Ordinamento e vista tabella', () => {
 
     await page.evaluate(() => (window as any).impostaOrdinamento('segnatura', 'desc'));
     await page.locator('#btn-vista-tabella').click();
-    // salvaStatoPosizione scrive su settings.json, Store.commit() no: senza il flush
-    // il riavvio può leggere un DB vecchio e il test diventa flaky sotto carico.
     await page.evaluate(async () => {
       await (window as any).flushSalvataggio();
       await (window as any).salvaStatoPosizione();

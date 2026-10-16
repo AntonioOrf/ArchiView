@@ -1,16 +1,9 @@
-// window.azione — attributi data-on-*/data-args-* al posto degli handler inline (logic/azioni.ts).
-//
-// Con onclick="fn('${v}')" un valore del vault condiviso attraversava due parser (HTML, poi
-// JS) e poteva diventare codice. Ora attraversa HTML e poi JSON.parse: il test riproduce la
-// catena sugli stessi payload ostili del vecchio test di jsArg e verifica che ogni valore
-// torni IDENTICO (tipo compreso) e che nessun carattere possa chiudere l'attributo.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
 const RADICE = path.join(__dirname, '..');
 const UTILS = path.join(RADICE, 'src', 'renderer', 'js', 'logic', 'utils.ts');
-// Il sorgente di azioni.ts ha annotazioni di tipo: si legge il JS compilato (pretest:unit = tsc).
 const AZIONI = path.join(RADICE, 'out', 'renderer', 'js', 'logic', 'azioni.js');
 
 function estraiFunzione(sorgente, nome, file) {
@@ -37,18 +30,15 @@ new Function('window', [
   estraiFunzione(fs.readFileSync(AZIONI, 'utf8'), 'azione', 'azioni.js'),
 ].join('\n'))(window);
 
-// Decodifica delle entità di un attributo HTML: un solo passaggio, come il tokenizer.
 const ENTITA = { amp: '&', lt: '<', gt: '>', quot: '"', '#039': "'", '#39': "'" };
 const decodificaAttributo = (s) => s.replace(/&(amp|lt|gt|quot|#039|#39);/g, (_, e) => ENTITA[e]);
 
-// <button ${azione('click', nome, ...args)}>: legge gli attributi come farebbe il browser.
 function attributi(markup) {
   const out = {};
   const re = /([a-z-]+)="([^"]*)"/g;
   let m;
   let letto = '';
   while ((m = re.exec(markup))) { out[m[1]] = decodificaAttributo(m[2]); letto += m[0] + ' '; }
-  // Tutto il markup deve essere fatto di attributi ben chiusi: un " in un valore lo spezzerebbe.
   assert.strictEqual(letto.trim(), markup.trim(), `markup non ben formato: ${markup}`);
   return out;
 }
@@ -62,7 +52,6 @@ function attraversa(...args) {
 let test = 0;
 function ok(nome) { console.log(`  ok ${++test} — ${nome}`); }
 
-// --- Test 1: payload ostili arrivano intatti come dati -----------------------
 {
   const payload = [
     "x');alert(1);//",
@@ -80,14 +69,12 @@ function ok(nome) { console.log(`  ok ${++test} — ${nome}`); }
   ok('payload ostili ricevuti identici, attributo mai spezzato');
 }
 
-// --- Test 2: i tipi si conservano (con jsArg i numeri diventavano stringhe) ---
 {
   assert.deepStrictEqual(attraversa('ms-1718293847-ab12', 3, -1, true, null), ['ms-1718293847-ab12', 3, -1, true, null]);
   assert.deepStrictEqual(attraversa('Cod. Vat. lat. 3225 — f. 12ʳ'), ['Cod. Vat. lat. 3225 — f. 12ʳ']);
   ok('stringhe, numeri, booleani e null');
 }
 
-// --- Test 3: senza argomenti niente data-args; il nome è a sua volta protetto -
 {
   const a = attributi(window.azione('change', 'aggiorna'));
   assert.deepStrictEqual(a, { 'data-on-change': 'aggiorna' });

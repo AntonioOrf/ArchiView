@@ -6,10 +6,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Imp' });
 
-// Import da ZIP: il modale di avanzamento ed esito (importZipModal.ts). L'estrazione ha i suoi
-// unit (test/zipStreaming.test.js); qui si prova ciò che vede l'utente.
-
-/** Scrive uno ZIP nella cartella del test e stubba il dialogo del main per sceglierlo. */
 async function preparaZip(electronApp: any, dir: string, voci: Record<string, string | Buffer>): Promise<void> {
   const archiver = require('archiver');
   const percorso = path.join(dir, 'import.zip');

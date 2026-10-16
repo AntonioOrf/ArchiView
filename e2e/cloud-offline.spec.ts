@@ -3,8 +3,6 @@ import { createLocalWorkspace } from './helpers';
 import * as path from 'path';
 
 test.describe('Cloud: stati UI offline', () => {
-  // Fase 3: niente più gruppo Fetch/Pull/Push né indicatori separati. Il controllo unico
-  // resta visibile anche in locale (3.5) e dichiara "Solo locale" invece di sparire.
   test('senza cloud configurato i tab cloud sono nascosti e lo stato è "Solo locale"', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'CloudOff');
 
@@ -47,7 +45,6 @@ test.describe('Cloud: stati UI offline', () => {
   });
 
   test('welcome join: un codice invito non valido mostra un errore, senza chiamate di rete', async ({ page, userDataDir }) => {
-    // Nessun createLocalWorkspace: la welcome modal è già visibile al primo avvio.
     await expect(page.locator('#welcome-modal')).toBeVisible();
     await page.evaluate(() => (window as any).mostraJoinForm());
     await expect(page.locator('#welcome-join-form')).toBeVisible();

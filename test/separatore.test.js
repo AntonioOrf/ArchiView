@@ -1,7 +1,3 @@
-// PIANO-SCHEDA-AFFIANCATA, Fase 3 — la regola del separatore fra colonne.
-//
-// `proporzioneSeparatore` vive in utils.ts: si ESTRAE il sorgente reale e lo si valuta, come
-// in trascrizioneAllegati.test.js, invece di copiarne una versione che può divergere.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');

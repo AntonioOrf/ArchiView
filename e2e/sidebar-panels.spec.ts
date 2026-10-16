@@ -72,7 +72,6 @@ test.describe('Pannelli sidebar', () => {
   test('cambio tra due archivi tramite il vault switcher', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'wsA'), 'ArchivioA');
 
-    // Crea un secondo archivio: passa direttamente al workspace B (reload della finestra).
     await page.evaluate((basePath) =>
       (window as any).apiBrowser.createWorkspaceInPath(basePath, 'ArchivioB', null),
     path.join(userDataDir, 'wsB'));
@@ -85,7 +84,6 @@ test.describe('Pannelli sidebar', () => {
     await expect(page.locator('#vault-switcher-list')).toContainText('ArchivioA');
     await expect(page.locator('#vault-switcher-list')).toContainText('ArchivioB');
 
-    // Torna al primo archivio cliccando la voce nella lista.
     await page.locator('#vault-switcher-list div', { hasText: 'ArchivioA' }).first().click();
 
     await expect(page.locator('#btn-tab-add')).toBeVisible({ timeout: 15_000 });
@@ -112,7 +110,6 @@ test.describe('Pannelli sidebar', () => {
     await expect(modale).toContainText(path.join(userDataDir, 'wsA', 'ArchivioSpostato'));
     await expect(page.locator('#current-vault-name')).toContainText('ArchivioB4');
 
-    // Una cartella che non è un archivio viene rifiutata dentro il modale, che resta aperto.
     const { stubDialog } = await import('./fixtures');
     const cerca = modale.getByRole('button', { name: /cerca cartella|locate folder/i });
     await stubDialog(electronApp, { canceled: false, filePaths: [userDataDir] });
@@ -150,7 +147,6 @@ test.describe('Pannelli sidebar', () => {
   });
 
   test('elimina anche i file rimuove l\'archivio dal disco e chiude il modal', async ({ page, electronApp, userDataDir }) => {
-    // Il main chiede conferma con un dialogo nativo (A5): qui risponde "Sposta nel cestino".
     const { stubDialog } = await import('./fixtures');
     await stubDialog(electronApp, { canceled: true });
     await createLocalWorkspace(page, path.join(userDataDir, 'wsA'), 'ArchivioDaCancellare');
@@ -170,21 +166,14 @@ test.describe('Pannelli sidebar', () => {
     await expect(page.locator('#vault-delete-modal')).toBeVisible();
     await page.locator('#btn-delete-files').click();
 
-    // Il ramo distruttivo non era coperto: verifica che il modal si chiuda davvero
-    // (non resti a coprire lo schermo) e che la voce sparisca dall'elenco.
     await expect(page.locator('#vault-delete-modal')).toBeHidden();
     await expect(page.locator('#vault-switcher-list')).not.toContainText('ArchivioDaCancellare');
     await expect.poll(() => fs.existsSync(percorso)).toBe(false);
   });
 
-  // --- Etichetta secondaria delle schede nell'albero -------------------------
-  //
-  // Seminare via `appData` + `Store.commit()` è il pattern di sort-table.spec: il campo
-  // `dichiarante` appartiene a un tipo documento, e crearlo dal form costerebbe tre volte
-  // i passaggi senza coprire nulla di più.
   async function seminaFiscali(page: any) {
     await page.evaluate(async () => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      // @ts-ignore
       const data = appData;
       data.tipiDocumento.push({ id: 'fiscali-test', nome: 'Fiscali test', campi: ['dichiarante'] });
       for (const [seg, dich] of [['165, 579', 'Antonio di Salvestro'], ['165, 623', 'Biagio Cecco']]) {
@@ -195,8 +184,6 @@ test.describe('Pannelli sidebar', () => {
         });
       }
       await (window as any).Store.commit();
-      // La radice è un nodo collassabile come gli altri: senza espanderla le schede
-      // non archiviate non hanno una riga nell'albero.
       (window as any).cartelleEspanse.add('');
       (window as any).renderSidebar();
     });
@@ -227,10 +214,8 @@ test.describe('Pannelli sidebar', () => {
     await page.evaluate(() => (window as any).impostaAlberoSecondario('campo', 'dichiarante'));
     await expect(page.locator('#folder-list')).toContainText('Antonio di Salvestro');
 
-    // Senza l'etichetta nella firma della sidebar il render verrebbe SALTATO e l'albero
-    // resterebbe sul valore vecchio: è l'unico modo di accorgersene.
     await page.evaluate(async () => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      // @ts-ignore
       const m = appData.manoscritti.find((r: any) => r.segnatura === '165, 579');
       m.dichiarante = 'Giovanni Rinieri';
       m.lastModified = Date.now() + 1;
@@ -245,10 +230,8 @@ test.describe('Pannelli sidebar', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Albero');
     await seminaFiscali(page);
 
-    // Terza scheda: segnatura ULTIMA, dichiarante PRIMO. Senza, l'ordine per dichiarante
-    // coinciderebbe con quello per segnatura e il test non proverebbe nulla.
     await page.evaluate(async () => {
-      // @ts-ignore -- `appData` è una `let` globale (script classico).
+      // @ts-ignore
       appData.manoscritti.push({
         id: 'rec-700', cartella: '', tipoDocumento: 'fiscali-test',
         segnatura: '165, 700', dichiarante: 'Alberto Neri', tags: '', allegati: [],

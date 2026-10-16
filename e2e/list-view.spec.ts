@@ -111,7 +111,6 @@ test.describe('Vista Lista', () => {
       (window as any).renderMain();
     });
 
-    // Non è più un pulsante a sé nella barra: azione rara e distruttiva, vive nel "...".
     await expect(page.locator('#btn-delete-folder')).toHaveCount(0);
     await page.locator('#context-overflow-slot button').click();
     await page.locator('#custom-context-menu button', { hasText: /Elimina quest|Delete this/ }).click();

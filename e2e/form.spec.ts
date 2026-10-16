@@ -5,8 +5,6 @@ import * as path from 'path';
 test.use({ seedWorkspace: 'Form' });
 
 test.describe('Vista Form (add/edit)', () => {
-  // Prova manuale M7.4: da tastiera, Invio su "Nuova scheda" lasciava il fuoco su <body> e il
-  // giro del Tab ripartiva dall'inizio della pagina invece che dal form.
   test('Invio su "Nuova scheda" porta il fuoco sulla segnatura', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Form');
     await page.locator('#btn-tab-add').focus();
@@ -59,8 +57,6 @@ test.describe('Vista Form (add/edit)', () => {
     await page.locator('#form-segnatura').fill('MS-FORM-MODIFICATO');
     await page.locator('#btn-cancel-edit').click();
 
-    // Il campo modificato ha marcato il form come "dirty": la stessa guardia
-    // di switchTab scatta anche per Annulla e mostra la conferma di uscita.
     await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
     await page.locator('#btn-bottom-confirm-yes').click();
 
@@ -79,11 +75,9 @@ test.describe('Vista Form (add/edit)', () => {
     await page.evaluate(() => (window as any).switchTab('list'));
     await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
 
-    // Annulla: resta sul form.
     await page.locator('#bottom-confirm-banner button', { hasText: /Annulla/i }).click();
     await expect(page.locator('#view-add')).toBeVisible();
 
-    // Riprova e conferma uscita.
     await page.evaluate(() => (window as any).switchTab('list'));
     await expect(page.locator('#bottom-confirm-banner')).toBeVisible();
     await page.locator('#btn-bottom-confirm-yes').click();

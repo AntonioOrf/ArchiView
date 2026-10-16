@@ -6,29 +6,12 @@ import * as os from 'os';
 import * as path from 'path';
 import { test, expect, seedWorkspaceOnDisk, stubDialog } from './fixtures';
 
-/**
- * Prove M15 (PIANO-PESO) sull'app impacchettata: le esclusioni di `build.files` valgono solo
- * lì, quindi su out/ questi test non direbbero nulla e si saltano. Si lanciano con
- * `npm run test:e2e:pacchetto` dopo `npx electron-builder --win --dir`.
- *
- * Due modi di arrivarci:
- * - **exe vero** (`dist/win-unpacked/ArchiView.exe`): i fuse impediscono a Playwright di
- *   collegarsi al main, ma `--remote-debugging-port` è uno switch di Chromium e resta: ci si
- *   collega al renderer via CDP e si passa dalle stesse IPC del preload che usa l'app.
- * - **asar** (fixture con ARCHIVIEW_E2E_ASAR): lo stesso app.asar caricato dall'Electron di
- *   sviluppo, con il main raggiungibile. Serve dove c'è un dialogo nativo da sostituire.
- *
- * Il motore OCR qui è quello VERO (tesseract dall'app.asar.unpacked): le lingue `eng` e
- * `osd` si scaricano una volta in e2e/.cache/tessdata, la stessa fonte di `ocrLangs.ts`.
- */
-
 const asar = process.env.ARCHIVIEW_E2E_ASAR ? path.resolve(__dirname, '..', process.env.ARCHIVIEW_E2E_ASAR) : '';
 const radicePacchetto = asar ? path.resolve(path.dirname(asar), '..') : '';
 const exe = radicePacchetto && path.join(radicePacchetto, 'ArchiView.exe');
 
 test.skip(!asar, 'Solo sull\'app impacchettata: npm run test:e2e:pacchetto');
 test.use({ seedWorkspace: 'Pacchetto' });
-// OCR vero e avvii dell'exe: più lenti del resto della suite.
 test.setTimeout(120_000);
 
 const TESTO = [
@@ -37,9 +20,6 @@ const TESTO = [
   'the archive keeps old letters',
   'and manuscripts in order.',
 ];
-
-// ---------------------------------------------------------------------------------------
-// Lingue OCR
 
 const cacheLingue = path.join(__dirname, '.cache', 'tessdata');
 
@@ -54,8 +34,6 @@ async function lingua(codice: string): Promise<string> {
     throw new Error(`Download della lingua ${codice} fallito (serve la rete la prima volta): ${(e as Error).message}`);
   }
   if (!risposta.ok) throw new Error(`Download della lingua ${codice}: HTTP ${risposta.status}`);
-  // Scrittura atomica: un download interrotto non deve restare in cache come file buono. Il
-  // temporaneo è per processo, perché più worker possono scaricare la stessa lingua insieme.
   const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(tmp, Buffer.from(await risposta.arrayBuffer()));
   try {
@@ -72,9 +50,6 @@ async function installaLingue(userDataDir: string) {
   fs.mkdirSync(dir, { recursive: true });
   for (const c of ['eng', 'osd']) fs.copyFileSync(await lingua(c), path.join(dir, `${c}.traineddata`));
 }
-
-// ---------------------------------------------------------------------------------------
-// Immagini di prova, disegnate dal renderer (in Node non c'è un canvas)
 
 async function pngConTesto(page: Page, ruotata: boolean): Promise<Buffer> {
   const base64 = await page.evaluate(({ righe, ruotata }) => {
@@ -94,7 +69,6 @@ async function pngConTesto(page: Page, ruotata: boolean): Promise<Buffer> {
   return Buffer.from(base64, 'base64');
 }
 
-/** Un PDF senza livello testo, solo l'immagine: è il caso che passa dall'host pdf.js + OCR. */
 async function pdfScansione(png: Buffer): Promise<Buffer> {
   const { PDFDocument } = require('pdf-lib');
   const doc = await PDFDocument.create();
@@ -108,9 +82,6 @@ const riconosciuto = (piano: string) => {
   const t = String(piano || '').toLowerCase();
   return ['quick', 'brown', 'lazy', 'archive', 'manuscripts'].filter(p => t.includes(p)).length;
 };
-
-// ---------------------------------------------------------------------------------------
-// exe vero via CDP
 
 async function portaLibera(): Promise<number> {
   return new Promise((risolvi, rifiuta) => {
@@ -163,7 +134,6 @@ async function chiudiExe(e: Exe | undefined) {
   await new Promise(r => setTimeout(r, 500));
 }
 
-/** Prepara userData per l'exe: workspace seminato, lingue OCR, file negli allegati. */
 async function preparaExe(userDataDir: string, allegati: Record<string, Buffer> = {}) {
   const dir = path.join(userDataDir, 'exe');
   const ws = seedWorkspaceOnDisk(dir, 'PacchettoExe');
@@ -189,7 +159,6 @@ test.describe('M15 — exe impacchettato', () => {
         e = await avviaExe(ud, [`--lang=${lang}`]);
         await expect(e.page.locator('#btn-tab-add')).toBeVisible();
         expect(await e.page.title()).toBe('ArchiView');
-        // Il ripiego di Chromium: mai una lingua di cui manca il .pak.
         expect(['it', 'en-US']).toContain(await e.page.evaluate(() => navigator.language));
       } finally {
         await chiudiExe(e);
@@ -228,7 +197,6 @@ test.describe('M15 — exe impacchettato', () => {
     try {
       e = await avviaExe(await preparaExe(userDataDir));
       const esito = await e.page.evaluate(async (b64) => {
-        // Come pdfViewer.ts: il modulo di avvio iniettato alla prima apertura di un PDF.
         const s = document.createElement('script');
         s.type = 'module';
         s.src = 'pdf/avvioPdfjs.mjs';
@@ -257,7 +225,6 @@ test.describe('M15 — exe impacchettato', () => {
   });
 
   test('M15.1 — OCR vero: immagine, foto ruotata raddrizzata, PDF scansionato', async ({ page, userDataDir }) => {
-    // Le immagini le disegna la finestra della fixture (stesso asar), l'OCR lo fa l'exe.
     await page.waitForFunction(() => (window as any).__appPronta === true);
     const dritta = await pngConTesto(page, false);
     const ruotata = await pngConTesto(page, true);
@@ -301,13 +268,12 @@ test.describe('M15 — exe impacchettato', () => {
       e = await avviaExe(await preparaExe(userDataDir));
       const esito = await e.page.evaluate(() => {
         const p = (window as any).apiBrowser.loadTutorialWorkspace();
-        // Il main ricarica la finestra subito dopo: la promessa può non tornare mai.
         return Promise.race([p, new Promise(r => setTimeout(() => r({ ricaricata: true }), 5000))]);
       }).catch(() => ({ ricaricata: true }));
       expect((esito as any).success === true || (esito as any).ricaricata === true, JSON.stringify(esito)).toBe(true);
       await e.page.waitForFunction(() => (window as any).__appPronta === true, null, { timeout: 30_000 });
       const schede = await e.page.evaluate(() => {
-        // @ts-ignore -- `appData` è una `let` globale
+        // @ts-ignore
         return appData.manoscritti.length;
       });
       expect(schede).toBeGreaterThan(0);
@@ -343,7 +309,6 @@ test.describe('M15 — asar impacchettato, main raggiungibile', () => {
     expect(esito.ocr.ok, JSON.stringify(esito)).toBe(true);
     expect(esito.ocr.pdfErrore ?? null).toBeNull();
 
-    // Il testo si estrae dal PDF scritto: è il livello invisibile di Tesseract.
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const doc = await pdfjs.getDocument({ data: new Uint8Array(fs.readFileSync(uscita)) }).promise;
     const contenuto = await (await doc.getPage(1)).getTextContent();
@@ -353,15 +318,12 @@ test.describe('M15 — asar impacchettato, main raggiungibile', () => {
 
   test('M15.5 — client Drive del pacchetto: URL di login e rinnovo del token verso Google', async ({ electronApp }) => {
     const esito = await electronApp.evaluate(async ({ app }) => {
-      // `require` come lo vede il main dell'app: risolve dentro app.asar.
       const { createRequire } = (process as any).mainModule.require('module');
       const req = createRequire(app.getAppPath() + '/out/main/main.js');
       const g = req('@googleapis/drive');
       const versioneAuth = req('google-auth-library/package.json').version;
       const o = new g.auth.OAuth2('123-prova.apps.googleusercontent.com', 'segreto-finto', 'http://127.0.0.1:1/');
       const url = o.generateAuthUrl({ access_type: 'offline', scope: ['https://www.googleapis.com/auth/drive.file'] });
-      // Solo il refresh token: la prima chiamata deve passare dal rinnovo (google-auth-library
-      // → gaxios → oauth2.googleapis.com), che con credenziali finte Google rifiuta.
       o.setCredentials({ refresh_token: 'finto' });
       const d = g.drive({ version: 'v3', auth: o });
       try {

@@ -4,17 +4,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Propri' });
 
-/**
- * Fase 3.7 — campi propri della scheda.
- *
- * Il modello puro è coperto da `test/campiPropri.test.js`; qui si verifica il giro che quel
- * test non può vedere: il campo dichiarato dal modale → il controllo nel form → il valore
- * nel record insieme alla sua definizione → e di nuovo nel form riaprendo la scheda. È il
- * percorso in cui una definizione può restare nel form senza arrivare al record (o
- * viceversa), e nessun errore lo direbbe.
- */
-
-/** Dichiara un campo proprio passando dal modale vero. */
 async function aggiungiCampoProprio(page, nome: string, tipo = 'text') {
   await page.evaluate(() => (window as any).apriCampoProprioModal());
   await expect(page.locator('#campo-proprio-modal')).toBeVisible();
@@ -38,7 +27,6 @@ test.describe('Campi propri della scheda', () => {
     await page.locator('#form-segnatura').fill('PRO-1');
     await aggiungiCampoProprio(page, 'Filigrana');
 
-    // Il campo è nel form, marcato: senza il segno non si distingue da uno del modello.
     await expect(page.locator('#dyn-Filigrana')).toBeVisible();
     await expect(page.locator('.form-group.campo-proprio')).toHaveCount(1);
     await page.locator('#dyn-Filigrana').fill('unicorno');
@@ -48,11 +36,9 @@ test.describe('Campi propri della scheda', () => {
     const m = (await getAppData(page)).manoscritti[0];
     expect(m.Filigrana).toBe('unicorno');
     expect(m.campiPropri.map((d: any) => d.id)).toEqual(['Filigrana']);
-    // Il MODELLO non cambia: è tutto il punto della fase.
     const tipo = (await getAppData(page)).tipiDocumento.find((t: any) => t.id === m.tipoDocumento);
     expect(tipo.campi).not.toContain('Filigrana');
 
-    // Riaprendo la scheda il campo torna, con il suo valore.
     await page.evaluate((id) => (window as any).editItem(id), m.id);
     await expect(page.locator('#dyn-Filigrana')).toHaveValue('unicorno');
   });
@@ -62,8 +48,6 @@ test.describe('Campi propri della scheda', () => {
 
     await page.evaluate(() => (window as any).switchTab('add'));
     await page.locator('#form-segnatura').fill('PRO-2');
-    // Un campo del modello compilato PRIMA di aggiungerne uno proprio: il ridisegno azzera
-    // il contenitore, e senza rileggere/rimettere i valori la scheda si svuoterebbe a metà.
     await page.locator('#dyn-Notaio').fill('Pietro di Bencivenne');
     await aggiungiCampoProprio(page, 'Filigrana');
     await expect(page.locator('#dyn-Notaio')).toHaveValue('Pietro di Bencivenne');
@@ -79,8 +63,6 @@ test.describe('Campi propri della scheda', () => {
     await salvaScheda(page);
     await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
 
-    // Il campo appartiene alla SCHEDA: restare nel form vorrebbe dire ritrovarselo addosso
-    // su ogni scheda creata dopo.
     await page.evaluate(() => (window as any).switchTab('add'));
     await expect(page.locator('#dyn-Filigrana')).toHaveCount(0);
     await page.locator('#form-segnatura').fill('PRO-4');
@@ -102,7 +84,6 @@ test.describe('Campi propri della scheda', () => {
     const id = (await getAppData(page)).manoscritti[0].id;
 
     await page.evaluate((x) => (window as any).editItem(x), id);
-    // La conferma passa dal banner in basso; qui si accetta.
     await page.evaluate(() => (window as any).rimuoviCampoProprio('Filigrana'));
     await page.locator('#btn-bottom-confirm-yes').click();
     await expect(page.locator('#dyn-Filigrana')).toHaveCount(0);
@@ -123,7 +104,6 @@ test.describe('Campi propri della scheda', () => {
     await page.locator('#dyn-Filigrana').fill('unicorno');
     await page.evaluate(() => (window as any).promuoviCampoProprio('Filigrana'));
 
-    // Il campo resta nel form — ora come campo del modello — e il valore non si perde.
     await expect(page.locator('#dyn-Filigrana')).toHaveValue('unicorno');
     await expect(page.locator('.form-group.campo-proprio')).toHaveCount(0);
     await salvaScheda(page);
@@ -134,7 +114,6 @@ test.describe('Campi propri della scheda', () => {
     const tipo = d.tipiDocumento.find((t: any) => t.id === m.tipoDocumento);
     expect(tipo.campi).toContain('Filigrana');
     expect(m.Filigrana).toBe('unicorno');
-    // Niente doppione: la definizione propria sparisce alla prima riscrittura della scheda.
     expect(m.campiPropri).toBeUndefined();
   });
 
@@ -148,8 +127,6 @@ test.describe('Campi propri della scheda', () => {
     await salvaScheda(page);
     await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
 
-    // Il campo entra fra i criteri di ordinamento offerti dall'elenco, che è il segno che
-    // le colonne si costruiscono dai RECORD e non dai soli modelli.
     await page.evaluate(() => (window as any).switchTab('list'));
     await expect.poll(async () => page.locator('#select-ordinamento option[value="Filigrana"]').count(),
       { timeout: 10_000 }).toBe(1);
@@ -175,17 +152,14 @@ test.describe('Campi propri della scheda', () => {
     const prima = await ordineForm();
     await page.evaluate(() => (window as any).apriRiordinoCampi());
     await expect(page.locator('#form-riordino')).toBeVisible();
-    // I campi restano nel DOM, solo nascosti: un salvataggio a elenco aperto scrive comunque.
     await expect(page.locator('#dyn-Notaio')).toHaveValue('Pietro');
 
-    // Il secondo campo sale in testa, dalla tastiera (l'alternativa accessibile al trascinamento).
     await page.locator('#form-riordino-lista .riordino-riga').nth(1).locator('button').first().click();
     await page.evaluate(() => (window as any).chiudiRiordinoCampi());
     await expect(page.locator('#form-riordino')).toBeHidden();
 
     const dopo = await ordineForm();
     expect(dopo[0]).toBe(prima[1]);
-    // Il valore già scritto non si perde nel ridisegno.
     await expect(page.locator('#dyn-Notaio')).toHaveValue('Pietro');
 
     await salvaScheda(page);
@@ -193,11 +167,9 @@ test.describe('Campi propri della scheda', () => {
     const d = await getAppData(page);
     const m = d.manoscritti[0];
     expect(m.ordineCampi[0]).toBeTruthy();
-    // Il modello resta com'era: l'ordine è una scelta di questa scheda sola.
     const tipo = d.tipiDocumento.find((t: any) => t.id === m.tipoDocumento);
     expect(tipo.campi[0]).toBe('Marginalia');
 
-    // Riaprendo la scheda l'ordine torna quello scelto.
     await page.evaluate((id) => (window as any).editItem(id), m.id);
     expect((await ordineForm())[0]).toBe(dopo[0]);
   });
@@ -214,8 +186,6 @@ test.describe('Campi propri della scheda', () => {
     await salvaScheda(page);
 
     await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
-    // Un elenco che ripete l'ordine già noto sarebbe una chiave in più nell'impronta del
-    // record: mezzo archivio "modificato" al prossimo sync di ogni collega.
     expect((await getAppData(page)).manoscritti[0].ordineCampi).toBeUndefined();
   });
 });

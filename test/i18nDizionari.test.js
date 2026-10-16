@@ -1,7 +1,3 @@
-// PIANO-OTTIMIZZAZIONE, Fase 4: i dizionari di i18n.ts sono l'unica fonte delle traduzioni.
-// Guardie: nessuna chiave doppia (in un letterale vince l'ultima, in silenzio) e nessun avanzo
-// di file .po incollato in un valore (il catalogo Lingui ne aveva uno: l'inglese mostrava mezzo
-// file .po come segnaposto di un campo).
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
@@ -26,8 +22,6 @@ for (const nome of ['customEn', 'customIt']) {
   assert.deepStrictEqual(sporche, [], nome + ': valori con avanzi di .po');
   console.log(`✅ ${nome}: ${elenco.length} voci, nessuna doppia né sporca.`);
 }
-// Audit front-end P2-7: una chiave usata senza voce in customEn mostra in inglese il ripiego
-// italiano scritto nel codice. Si cercano t('chiave', …) e data-i18n*="chiave" nel renderer.
 const inglese = new Set(voci('customEn').map(([k]) => k));
 const senzaInglese = [];
 const scorri = (dir) => {

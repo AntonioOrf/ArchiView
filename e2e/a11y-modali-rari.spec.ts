@@ -6,10 +6,6 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Rari' });
 
-// Audit front-end, Fase 2: i modali che si vedono di rado (conflitti di sync, schede eliminate
-// sul server, accesso negato, storico delle revisioni) e il chip di stato cloud. Erano dipinti a
-// mano con palette del tema chiaro o con utility fuori dal remap: lo scanner 7.1 non li apre.
-
 type Schermata = { nome: string; radice: string; apri: () => Promise<void>; chiudi: () => Promise<void> };
 
 const w = (page: Page, f: string, ...args: unknown[]) =>
@@ -29,9 +25,6 @@ function schermate(page: Page): Schermata[] {
     chiudi: async () => { await w(page, 'aggiornaCloudStatus'); },
   });
 
-  // Condivisione con un hub attivo (audit front-end, Fase 5): ruolo, membri e stato di Drive
-  // sono finti nel renderer. Il proprietario senza Drive vede la card "collega Drive" e i
-  // membri (uno revocato); il membro con Drive collegato vede il toggle degli allegati.
   const condivisioneHub = (ruolo: 'owner' | 'member'): Schermata => ({
     nome: `condivisione-hub-${ruolo}`, radice: '#share-modal',
     apri: async () => {
@@ -60,8 +53,6 @@ function schermate(page: Page): Schermata[] {
 
   return [
     {
-      // Due schede in conflitto (lista: attiva e non attiva), due campi sulla prima: uno
-      // scelto e uno ancora da scegliere, così si vedono badge, etichette e contatore.
       nome: 'conflitti-merge', radice: '#merge-conflict-modal',
       apri: async () => {
         await page.evaluate(() => {
@@ -121,8 +112,6 @@ function schermate(page: Page): Schermata[] {
       chiudi: () => rimuovi('history-restore-confirm'),
     },
     {
-      // Elenco delle versioni Hub (riga attuale, badge, snapshot locali): il pannello vive nella
-      // sidebar nascosta, quindi l'elenco si sposta per la misura in un contenitore visibile.
       nome: 'storico-elenco', radice: '#storico-prova',
       apri: async () => {
         await page.evaluate(async () => {
@@ -226,7 +215,6 @@ test.describe('Modali rari: contrasto, temi e lingua', () => {
     await modale.locator('#hist-next-btn').focus();
     await page.keyboard.press('Enter');
     await expect(modale).toContainText('B2');
-    // Prima il modale veniva rimosso e ricreato a ogni passo: il fuoco cadeva sul body.
     await expect.poll(() => page.evaluate(() =>
       document.getElementById('history-diff-modal')?.contains(document.activeElement))).toBe(true);
     await page.keyboard.press('Escape');
@@ -237,17 +225,15 @@ test.describe('Modali rari: contrasto, temi e lingua', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Rari');
     const elenco = schermate(page).find(s => s.nome === 'storico-elenco')!;
     await elenco.apri();
-    // Prima era un <div> disegnato a mano (fondo #1c1917 in ogni tema), senza ruoli né Esc.
     await page.locator('#storico-prova .storico-riga.is-attuale').click();
     const menu = page.locator('#custom-context-menu[role="menu"]');
     await expect(menu).toBeVisible();
-    // Versione attuale: confronta con l'attuale e con la precedente, niente ripristino.
     await expect(menu.locator('[role="menuitem"]')).toHaveCount(2);
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
 
     await page.locator('#storico-prova .storico-riga:not(.is-attuale)').click();
-    await expect(menu.locator('[role="menuitem"]')).toHaveCount(2); // confronta + ripristina (v1 non c'è)
+    await expect(menu.locator('[role="menuitem"]')).toHaveCount(2);
     await page.keyboard.press('Escape');
     await elenco.chiudi();
   });
@@ -256,7 +242,6 @@ test.describe('Modali rari: contrasto, temi e lingua', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Rari');
     await page.evaluate(() => (window as any).cambiaLingua('en'));
 
-    // Parole che in un'interfaccia inglese non hanno ragione di comparire.
     const italiano = /\b(Accesso|Negato|Cambia|Scegli|Altro|Archivio|account .* non è|Eliminati|Server da|Mantieni|Mantenuto|Elimina|Da eliminare|Conferma|Annulla|Ricezione|verificare|verificate|Storico|Campo|Chiudi|Prec\.|Succ\.|scheda|schede|differenze|Visualizzando|Ripristina|revisione|sovrascriverà|Vuoto|Senza Titolo|corrente)\b/;
     const testi: Record<string, string> = {};
     for (const s of schermate(page).filter(s => !s.nome.startsWith('cloud-'))) {

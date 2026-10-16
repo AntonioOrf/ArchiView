@@ -1,23 +1,9 @@
-// Scanner di contrasto sul rendering reale, condiviso da a11y-contrast (7.1) e a11y-modali-rari.
-// Le classi Tailwind da sole non dicono nulla: style.css rimappa .text-stone-* sui token del
-// tema (con !important) e i modali scuri hanno un secondo remap. Si misura quindi il colore
-// CALCOLATO contro lo sfondo EFFETTIVO, risalendo gli antenati e componendo le trasparenze.
-
 export const TEMI = ['light', 'dark', 'amber-light', 'blue-dark'] as const;
 export const TEMI_SCURI: readonly string[] = ['dark', 'blue-dark'];
 
 export type Violazione = { schermata: string; elemento: string; testo: string; fg: string; bg: string; ratio: number; minimo: number };
 
-// Eseguita nella pagina (passarla a page.evaluate). Modi:
-// - 'testo' (1.4.3): testi e placeholder sotto il minimo;
-// - 'bordi' (1.4.11): campi di input il cui contorno non si stacca di 3:1 dall'intorno;
-// - 'sfondi': testi su un fondo chiaro in un tema scuro. Il contrasto può anche reggere (blu
-//   scuro su pastello), ma è la palette del tema chiaro rimasta cablata: il segno che un
-//   componente ignora il tema. Esenti i fondi pieni dei token d'accento (pulsanti primari e
-//   di pericolo), che nei temi scuri sono chiari per scelta.
 export function scansiona({ radiceSel, modo }: { radiceSel: string; modo: 'testo' | 'bordi' | 'sfondi' }): Omit<Violazione, 'schermata'>[] {
-  // Tailwind v4 calcola i colori in oklch(): nessun parsing a mano, li converte il browser
-  // disegnandoli su un canvas 1×1 (sRGB), qualunque sia la sintassi (oklch, color-mix, rgb).
   const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
   const cache = new Map<string, any>();
   const parse = (c: string) => {
@@ -41,7 +27,6 @@ export function scansiona({ radiceSel, modo }: { radiceSel: string; modo: 'testo
   };
   const hex = (c: any) => '#' + [c.r, c.g, c.b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
 
-  // Sfondo effettivo: pila dei background-color dagli antenati fino al primo opaco.
   function sfondo(el: Element): any | 'immagine' {
     const pila: any[] = [];
     for (let n: Element | null = el; n; n = n.parentElement) {
@@ -71,9 +56,6 @@ export function scansiona({ radiceSel, modo }: { radiceSel: string; modo: 'testo
   const contrasto = (a: any, b: any) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
   if (modo === 'bordi') {
-    // Il campo si riconosce dal bordo OPPURE dal fondo diverso dall'intorno: basta uno dei
-    // due a 3:1. Un campo senza né bordo né fondo propri (la ricerca, bg-transparent) ha il
-    // contorno sul contenitore: si misura quello, fino a due livelli sopra.
     const bordoVisibile = (st: CSSStyleDeclaration) => ['Top', 'Right', 'Bottom', 'Left']
       .filter(l => parseFloat((st as any)['border' + l + 'Width']) >= 1 && (st as any)['border' + l + 'Style'] !== 'none')
       .map(l => parse((st as any)['border' + l + 'Color'])).filter(c => c && c.a > 0);
@@ -122,7 +104,6 @@ export function scansiona({ radiceSel, modo }: { radiceSel: string; modo: 'testo
     if (!i.value) candidati.push({ el, testo: i.placeholder, placeholder: true });
   });
 
-  // Fondi pieni d'accento ammessi nei temi scuri (modo 'sfondi').
   const root = getComputedStyle(document.documentElement);
   const accenti = ['--color-primary', '--color-primary-hover', '--color-danger', '--color-danger-hover', '--color-warning']
     .map(n => parse(root.getPropertyValue(n).trim())).filter(Boolean).map(hex);
@@ -131,7 +112,7 @@ export function scansiona({ radiceSel, modo }: { radiceSel: string; modo: 'testo
     if (!el.getClientRects().length) continue;
     const s = getComputedStyle(el);
     if (s.visibility === 'hidden' || el.closest('[aria-hidden="true"], .sr-only')) continue;
-    if ((el as HTMLButtonElement).disabled || el.closest(':disabled, [aria-disabled="true"]')) continue; // esenti (1.4.3)
+    if ((el as HTMLButtonElement).disabled || el.closest(':disabled, [aria-disabled="true"]')) continue;
     const bg = sfondo(el);
     if (bg === 'immagine') continue;
     if (modo === 'sfondi') {

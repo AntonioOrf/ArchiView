@@ -1,17 +1,3 @@
-// L10 — guardia statica sui sink HTML del renderer.
-//
-// Ogni `innerHTML =`, `innerHTML +=`, `outerHTML =` e `insertAdjacentHTML(_, x)` in
-// src/renderer/js e src/shared deve ricevere un valore DIMOSTRABILMENTE sicuro dall'AST:
-//   - letterali stringa o template senza interpolazioni;
-//   - `escapeHTML(…)`, `sanitizeHTML(…)`, `DOMPurify.sanitize(…)` (con o senza `window.`);
-//   - `t('chiave')` / `window.t('chiave')` (cataloghi del repo) se gli eventuali parametri
-//     sono a loro volta sicuri: i segnaposto si sostituiscono senza escape;
-//   - numeri, `String(numero)`, `.length`, `toLocaleString()`;
-//   - composizioni dei casi sopra: `+`, template, ternari, `a || b`, `.map(x => …).join(…)`,
-//     e costanti locali (`const html = …`, anche costruite con `+=`) il cui valore è sicuro.
-// Il resto va in ECCEZIONI con il motivo: file + testo esatto del sink (non il numero di
-// riga, che si sposta). Un'eccezione che non trova più il suo sink fa fallire il test,
-// così l'elenco non accumula voci morte.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -23,16 +9,11 @@ const CARTELLE = ['src/renderer/js', 'src/shared'];
 const FUNZIONI_SICURE = new Set(['escapeHTML', 'sanitizeHTML', 'sanitize', 'escapeAttr']);
 const FUNZIONI_NUMERICHE = new Set(['toLocaleString', 'toLocaleDateString', 'toLocaleTimeString','toFixed', 'round', 'floor', 'ceil', 'min', 'max', 'Number', 'parseInt', 'parseFloat']);
 
-/** Funzioni globali del renderer verificate a mano, con il motivo. */
 const FUNZIONI_VERIFICATE = {
   chipTagHTML: 'logic/tagsLogic.ts: escapeHTML(tag); la classe viene da Model.coloreTag, che accetta solo AV_COLORI_TAG',
   contaFiltriAvanzati: 'logic/utils.ts: restituisce un numero',
 };
 
-/**
- * Eccezioni verificate a mano. Chiave: percorso relativo + '::' + inizio del testo del sink
- * (normalizzato negli spazi, primi 80 caratteri). Valore: perché è sicuro.
- */
 const ECCEZIONI = {
   'src/renderer/js/components/mainView.ts::div.innerHTML = ` <div class="text-xs font-bold text-stone-800 truncate mb-1" tr':
     'match.snippet viene da buildSnippet(), che passa ogni pezzo da escapeHTML e aggiunge solo <mark>',
@@ -62,7 +43,6 @@ function nomeChiamata(callee) {
   return '';
 }
 
-/** Dichiarazioni `const|let nome = …` e assegnazioni `nome += …` nel file, per nome. */
 function indiceVariabili(sf) {
   const dichiarazioni = new Map();
   const aggiunte = new Map();
@@ -104,10 +84,9 @@ function creaVerifica(sf) {
   const { dichiarazioni, aggiunte, funzioni } = indiceVariabili(sf);
   const inCorso = new Set();
 
-  /** Funzione locale (dichiarata o `const f = () => …`): sicura se lo sono tutti i return. */
   function funzioneLocaleSicura(nome) {
     const chiave = 'fn:' + nome;
-    if (inCorso.has(chiave)) return true; // ricorsione: decidono gli altri return
+    if (inCorso.has(chiave)) return true;
     const candidati = [...(funzioni.get(nome) || []),
       ...(dichiarazioni.get(nome) || []).filter((i) => ts.isArrowFunction(i) || ts.isFunctionExpression(i))];
     if (!candidati.length) return false;
@@ -120,7 +99,6 @@ function creaVerifica(sf) {
     } finally { inCorso.delete(chiave); }
   }
 
-  // Prima foglia non dimostrabile (la più interna): serve solo all'elenco diagnostico.
   let fallita = null;
   function sicuro(e) {
     const esito = sicuroNodo(e);
@@ -141,13 +119,12 @@ function creaVerifica(sf) {
     if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e)) return sicuro(e.expression);
     if (ts.isTemplateExpression(e)) return e.templateSpans.every((s) => sicuro(s.expression));
     if (ts.isConditionalExpression(e)) return sicuro(e.whenTrue) && sicuro(e.whenFalse);
-    if (ts.isPrefixUnaryExpression(e)) return true; // -x, +x, !x: numeri o booleani
+    if (ts.isPrefixUnaryExpression(e)) return true;
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
       if (op === ts.SyntaxKind.PlusToken || op === ts.SyntaxKind.BarBarToken
         || op === ts.SyntaxKind.QuestionQuestionToken) return sicuro(e.left) && sicuro(e.right);
       if (op === ts.SyntaxKind.AmpersandAmpersandToken) return sicuro(e.right);
-      // - * / % confronti: risultato numerico o booleano
       return op !== ts.SyntaxKind.EqualsToken && op !== ts.SyntaxKind.PlusEqualsToken;
     }
     if (ts.isPropertyAccessExpression(e) && e.name.text === 'length') return true;
@@ -155,7 +132,6 @@ function creaVerifica(sf) {
       const nome = nomeChiamata(e.expression);
       if (FUNZIONI_SICURE.has(nome) || FUNZIONI_NUMERICHE.has(nome)) return true;
       if (Object.prototype.hasOwnProperty.call(FUNZIONI_VERIFICATE, nome)) return true;
-      // stringaSicura.replace(x, sostituzioneSicura): il pattern (anche regex) non entra nell'output
       if ((nome === 'replace' || nome === 'replaceAll') && ts.isPropertyAccessExpression(e.expression)) {
         return e.arguments.length === 2 && sicuro(e.expression.expression) && sicuro(e.arguments[1]);
       }
@@ -165,8 +141,6 @@ function creaVerifica(sf) {
             : ts.isShorthandPropertyAssignment(p) ? sicuro(p.name) : false)
           : sicuro(a));
       if (nome === 'String' && e.arguments.length === 1) return sicuro(e.arguments[0]);
-      // window.azione('click', nome, ...args): nome e argomenti passano da escapeHTML
-      // (logic/azioni.ts); il tipo evento no, quindi deve essere un letterale.
       if (nome === 'azione') return e.arguments.length > 0 && ts.isStringLiteralLike(e.arguments[0]);
       if (nome === 'join' && ts.isPropertyAccessExpression(e.expression)) {
         const sorgente = e.expression.expression;
@@ -182,7 +156,7 @@ function creaVerifica(sf) {
       return false;
     }
     if (ts.isIdentifier(e)) {
-      if (inCorso.has(e.text)) return true; // `html += …` ricorsivo: il resto lo verificano le altre voci
+      if (inCorso.has(e.text)) return true;
       const valori = [...(dichiarazioni.get(e.text) || []), ...(aggiunte.get(e.text) || [])];
       if (!valori.length) return false;
       inCorso.add(e.text);
@@ -219,7 +193,6 @@ function trovaSink(file, testo = fs.readFileSync(file, 'utf8')) {
   return sink;
 }
 
-/** La guardia stessa: casi sintetici che deve accettare e casi ostili che deve rifiutare. */
 function autoverifica() {
   const esito = (codice) => trovaSink(path.join(RADICE, 'sintetico.ts'), codice).map((s) => s.ok);
   const accettati = [

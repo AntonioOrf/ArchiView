@@ -7,13 +7,9 @@ import * as path from 'path';
 
 test.use({ seedWorkspace: 'Contrasto' });
 
-// WCAG 1.4.3 — contrasto del testo misurato sul rendering reale, nei quattro temi.
-// Lo scanner (colore calcolato contro lo sfondo effettivo) sta in ./contrasto.
-
 test.describe('Accessibilità: contrasto del testo', () => {
   test('7.1 — nessun testo sotto il minimo WCAG AA in nessuno dei quattro temi', async ({ page, electronApp, userDataDir }) => {
     test.setTimeout(180_000);
-    // Transizioni di colore azzerate: altrimenti dopo il cambio tema si misurano valori a metà.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Contrasto');
     await seedItems(page, 6, { tagPrefix: 'notarile' });
@@ -50,9 +46,6 @@ test.describe('Accessibilità: contrasto del testo', () => {
         apri: async () => { await page.evaluate(() => (window as any).apriCommandPalette()); await expect(page.locator('.cp-box')).toBeVisible(); },
         chiudi: async () => { await page.keyboard.press('Escape'); },
       },
-      // Stati hover: la scansione a riposo non li vede, ed è lì che i remap per tema mancano
-      // più facilmente (hover:bg-stone-100 in sidebar era quasi bianco nei temi scuri).
-      // Il puntatore resta sull'elemento durante la scansione: page.evaluate non lo sposta.
       {
         nome: 'sidebar-riga-hover', radice: '[data-sonda-hover]',
         apri: async () => { await openSidebarPanel(page, 'folders'); await sonda(page.locator('#sidebar-folders .group.cursor-pointer', { hasText: 'Seed-001' }).first()); },
@@ -74,7 +67,6 @@ test.describe('Accessibilità: contrasto del testo', () => {
         chiudi: async () => { await page.evaluate(() => (window as any).cambiaVistaLista('griglia')); },
       },
       {
-        // Conferma distruttiva: l'unica superficie comune con .btn-danger.
         nome: 'conferma-elimina', radice: '#bottom-confirm-banner',
         apri: async () => { await page.evaluate(() => (window as any).mostraBottomConfirm('Eliminare la scheda? Operazione irreversibile.',() => {})); await expect(page.locator('#bottom-confirm-banner')).toBeVisible(); },
         chiudi: async () => { await page.keyboard.press('Escape'); },
@@ -95,11 +87,10 @@ test.describe('Accessibilità: contrasto del testo', () => {
         chiudi: async () => { await page.keyboard.press('Escape'); },
       },
       ...await preparaSchermateSecondarie(page, electronApp, userDataDir),
-      // I due pulsanti di eliminazione con hover:bg-red-50 (fondo rosa anche nei temi scuri).
       {
         nome: 'allegato-rimuovi-hover', radice: '[data-sonda-hover]',
         apri: async () => {
-          // @ts-ignore -- `appData` è una `let` globale (script classico).
+          // @ts-ignore
           await page.evaluate(() => (window as any).editItem(appData.manoscritti.find((m: any) => m.segnatura === 'A11Y-ALLEGATO').id));
           await sonda(page.locator('[data-on-click="rimuoviAllegatoForm"]').first());
         },
@@ -122,7 +113,6 @@ test.describe('Accessibilità: contrasto del testo', () => {
     const anelli: string[] = [];
     for (const tema of TEMI) {
       await page.evaluate((t) => (window as any).applicaTema(t), tema);
-      // Anello di focus (1.4.11): --color-primary contro ogni sfondo su cui può cadere.
       anelli.push(...await page.evaluate((t) => {
         const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
         const rgb = (c: string) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); return Array.from(ctx.getImageData(0, 0, 1, 1).data); };
@@ -139,19 +129,16 @@ test.describe('Accessibilità: contrasto del testo', () => {
       const lista: Violazione[] = [];
       for (const s of schermate) {
         await s.apri();
-        await page.waitForTimeout(150); // transizioni di colore (0.2s) concluse o quasi
+        await page.waitForTimeout(150);
         const v = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'testo' as const });
         lista.push(...v.map(x => ({ schermata: s.nome, ...x })));
         const b = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'bordi' as const });
         bordi.push(...b.map(x => ({ schermata: s.nome, tema, ...x })));
-        // Fondi del tema chiaro rimasti nei temi scuri (sistemico 2 dell'audit front-end).
         if (TEMI_SCURI.includes(tema)) {
           const f = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'sfondi' as const });
           sfondi.push(...f.map(v => `${tema} · ${s.nome} · ${v.elemento} «${v.testo}» su fondo chiaro ${v.bg}`));
         }
         if (s.chiudi) await s.chiudi();
-        // Sotto carico il modale appena chiuso poteva essere ancora a schermo alla schermata
-        // successiva: si aspetta che non ce ne sia più nessuno.
         await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.modal-overlay, .cp-box, #pannello-filtri'))
           .filter(m => m.getClientRects().length && !m.classList.contains('hidden-tab')).length)).toBe(0);
       }
@@ -163,8 +150,6 @@ test.describe('Accessibilità: contrasto del testo', () => {
     if (dest) fs.writeFileSync(dest, JSON.stringify(risultati, null, 2));
     for (const t of TEMI) console.log(`[contrasto] ${t}: ${risultati[t].length} violazioni`);
 
-    // Un elenco leggibile nel messaggio d'errore vale più di un conteggio: dice subito
-    // quale token del tema correggere.
     const righe = TEMI.flatMap(t => risultati[t].map(v =>
       `${t} · ${v.schermata} · ${v.elemento} «${v.testo}» ${v.fg} su ${v.bg} = ${v.ratio}:1 (min ${v.minimo})`));
     expect.soft([...new Set(righe)], 'testi sotto il contrasto minimo').toEqual([]);
