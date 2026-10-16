@@ -1,30 +1,9 @@
-// Import IIIF — il modale.
-//
-// Tre strati come per l'import CSV (2.4): la lettura del manifest sta nel main
-// (`main/iiif/fetchManifest.ts`), l'interpretazione in `shared/iiifManifest.ts` (pura e
-// unit-testata), e qui c'e' solo la raccolta delle scelte e il disegno.
-//
-// ⚠️ L'ANTEPRIMA E' L'IMPORT. `confermaImportIiif` inserisce esattamente le carte che la
-// griglia mostra spuntate, costruite dalla stessa `costruisciAllegati`. Un'anteprima
-// calcolata da un secondo percorso mentirebbe proprio sui manifest storti, che sono quelli
-// per cui l'anteprima esiste.
-//
-// DUE MODALITA'. `nuova` crea una scheda; `aggiungi` accoda le carte a una scheda che
-// esiste gia' — il caso di chi sta trascrivendo e si accorge che gli manca un fascicolo, e
-// che dalla vista trascrizione non avrebbe altro modo di procurarselo se non creando una
-// seconda scheda dello stesso codice.
-//
-// PREFISSO `_ii` sugli helper privati: gli script del renderer non sono moduli e il bundle
-// li concatena in UN UNICO scope.
-
 function _iiT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
-/** Lo stato del modale: vive finche' e' aperto. */
 let _iiStato = null;
 
-/** I codici di `fetchManifest.ts` e di `normalizza()` tradotti. Il modello non parla italiano. */
 function _iiMotivo(codice, extra?) {
     switch (codice) {
         case 'url_non_valido': return _iiT('iiif_err_url', "L'indirizzo non e' valido: serve un URL http o https.");
@@ -42,14 +21,12 @@ function _iiMotivo(codice, extra?) {
     }
 }
 
-/** Gli avvisi che impediscono l'import, distinti da quelli che si limitano a informare. */
 function _iiBloccante(avvisi) {
     return (avvisi || []).some(a => a === 'collection' || a === 'nessuna_carta' || a === 'non_manifest');
 }
 
 function _iiEl(id) { return document.getElementById(id); }
 
-/** Il lato scelto per i download. `0` e' "massima disponibile", non "non scelto". */
 function _iiLatoScelto() {
     const n = Number(_iiEl('iiif-lato').value);
     return Number.isFinite(n) && n >= 0 ? n : 2000;
@@ -61,7 +38,6 @@ function _iiMostraErrore(testo) {
     box.classList.toggle('hidden-tab', !testo);
 }
 
-/** Le opzioni del menu a tendina dei modelli, come in importPanel. */
 function _iiNomeTipo(t) {
     const chiave = 'model_' + t.id;
     const tradotto = window.t(chiave);
@@ -72,13 +48,6 @@ function _iiEtichettaCarta(c, i) {
     return (c && c.etichetta) || _iiT('iiif_page_n', 'Carta {var0}').replace('{var0}', String(i + 1));
 }
 
-/**
- * Apre il modale.
- *
- * `opzioni.idScheda` attiva la modalita' "aggiungi": le carte si accodano a quella scheda e
- * i campi della scheda nuova (segnatura, modello, cartella) spariscono, perche' non c'e'
- * niente da decidere.
- */
 window.apriImportIiif = function(opzioni) {
     const modal = _iiEl('iiif-modal');
     if (!modal) return;
@@ -92,8 +61,6 @@ window.apriImportIiif = function(opzioni) {
     (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = true;
     _iiMostraErrore('');
 
-    // In modalita' "aggiungi" la scheda c'e' gia': chiedere di nuovo segnatura, modello e
-    // cartella sarebbe chiedere di ridecidere cose gia' decise.
     _iiEl('iiif-campi-scheda').classList.toggle('hidden-tab', _iiStato.modalita === 'aggiungi');
     _iiEl('iiif-titolo-modale').textContent = _iiStato.modalita === 'aggiungi'
         ? _iiT('iiif_title_add', 'Aggiungi carte da un manifest IIIF')
@@ -118,8 +85,6 @@ window.apriImportIiif = function(opzioni) {
         if (window.cartellaAttuale) selCartella.value = window.cartellaAttuale;
     }
 
-    // La risoluzione di una scheda esistente e' gia' stata scelta una volta: cambiarla a
-    // meta' codice darebbe un facsimile con le carte a due misure diverse.
     if (scheda && Number.isFinite(Number(scheda.iiifLato))) _iiEl('iiif-lato').value = String(Number(scheda.iiifLato));
 
     modal.classList.remove('hidden-tab');
@@ -128,7 +93,6 @@ window.apriImportIiif = function(opzioni) {
     _iiEl('iiif-url').focus();
 };
 
-/** Scorciatoia per la vista trascrizione: aggiunge carte alla scheda aperta. */
 window.aggiungiCarteIiifATrascrizione = function() {
     const campo = document.getElementById('trascrizione-id');
     if (!campo || !campo.value) return;
@@ -141,7 +105,6 @@ window.chiudiImportIiif = function() {
     _iiStato = null;
 };
 
-/** Legge il manifest e disegna l'anteprima. */
 window.leggiManifestIiif = async function(event) {
     if (event) event.preventDefault();
     if (!_iiStato) return;
@@ -174,8 +137,6 @@ window.leggiManifestIiif = async function(event) {
 
         _iiStato.url = esito.url || url;
         _iiStato.norm = norm;
-        // Si parte da tutte selezionate: e' il caso normale, e chi deve scartare i piatti
-        // della legatura toglie due caselle invece di spuntarne cinquecento.
         _iiStato.selezione = new Set(norm.carte.map((_, i) => i));
         _iiDisegnaAnteprima();
     } catch (e) {
@@ -198,8 +159,6 @@ function _iiDisegnaAnteprima() {
     if (norm.licenza) riga.push(norm.licenza);
     _iiEl('iiif-diritti').textContent = riga.join(' — ');
 
-    // Gli avvisi non bloccanti si dicono, non si nascondono: "la risoluzione scelta verra'
-    // ignorata" spiega in anticipo un risultato che altrimenti sembrerebbe un difetto.
     const avvisi = (norm.avvisi || []).filter(a => a !== 'collection' && a !== 'nessuna_carta');
     const boxAvvisi = _iiEl('iiif-avvisi');
     boxAvvisi.textContent = avvisi.map(a => _iiMotivo(a)).join(' ');
@@ -207,10 +166,6 @@ function _iiDisegnaAnteprima() {
 
     _iiEl('iiif-intervallo').value = '';
 
-    // ⚠️ Le miniature sono `loading="lazy"`: la griglia contiene TUTTE le carte — su un
-    // codice di Gallica sono cinquecento — ma il browser chiede al server solo quelle che
-    // entrano nel riquadro visibile. Senza, aprire l'anteprima sarebbe cinquecento richieste
-    // in un colpo solo a un server di biblioteca, che e' il modo giusto per farsi bloccare.
     const griglia = _iiEl('iiif-miniature');
     griglia.innerHTML = window.sanitizeHTML(norm.carte.map((c, i) => {
         const src = window.srcAllegato({ remoto: true, iiif: c }, { lato: 140 });
@@ -235,8 +190,6 @@ function _iiDisegnaAnteprima() {
         if (!etichetta) return;
         const i = Number(etichetta.dataset.indice);
         if (casella.checked) _iiStato.selezione.add(i); else _iiStato.selezione.delete(i);
-        // L'intervallo scritto non descrive piu' la selezione: lasciarlo a video farebbe
-        // credere che comandi ancora lui.
         _iiEl('iiif-intervallo').value = '';
         _iiAggiornaConteggio();
     };
@@ -245,7 +198,6 @@ function _iiDisegnaAnteprima() {
     _iiEl('iiif-anteprima').classList.remove('hidden-tab');
 }
 
-/** Riallinea le caselle allo stato, senza ridisegnare le immagini (che si riscaricherebbero). */
 function _iiSincronizzaCaselle() {
     for (const etichetta of _iiEl('iiif-miniature').querySelectorAll('.iiif-carta')) {
         const casella = etichetta.querySelector('input[type=checkbox]');
@@ -261,13 +213,10 @@ function _iiAggiornaConteggio() {
     (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = n === 0;
 }
 
-/** L'espressione `1-10, 25, 40-60` comanda le caselle. */
 window.applicaIntervalloIiif = function() {
     if (!_iiStato || !_iiStato.norm) return;
     const testo = _iiEl('iiif-intervallo').value;
     const totale = _iiStato.norm.carte.length;
-    // Campo vuoto = nessun vincolo, quindi tutte: il contrario (nessuna carta) renderebbe
-    // il pulsante di conferma inutilizzabile appena si cancella quel che si e' scritto.
     const indici = testo.trim()
         ? window.IiifManifest.indiciDaIntervallo(testo, totale)
         : _iiStato.norm.carte.map((_, i) => i);
@@ -284,11 +233,6 @@ window.selezionaTutteIiif = function(tutte) {
     _iiAggiornaConteggio();
 };
 
-/**
- * Crea la scheda, o accoda le carte a quella aperta. Le carte entrano come allegati REMOTI:
- * nessun file viene scaricato qui, e l'archivio non cresce di un byte finche' l'utente non
- * chiede di materializzare una carta.
- */
 window.confermaImportIiif = async function() {
     if (!_iiStato || !_iiStato.norm) return;
     const { norm, url, modalita } = _iiStato;
@@ -308,8 +252,6 @@ window.confermaImportIiif = async function() {
             const prima = JSON.parse(JSON.stringify(m.allegati || []));
             const nuovi = window.IiifManifest.costruisciAllegati(norm.carte, m.id, {
                 indici,
-                // I nomi gia' in uso nella scheda, IIIF o no: prendersi il nome di un
-                // allegato esistente ne sovrascriverebbe il file.
                 nomiEsistenti: (m.allegati || []).map(a => a && a.nome).filter(Boolean)
             });
 
@@ -340,8 +282,6 @@ window.confermaImportIiif = async function() {
             }
 
             window.chiudiImportIiif();
-            // La vista trascrizione sta mostrando la scheda: va ridisegnata, o le carte
-            // nuove esisterebbero nel dato e non a video.
             if (typeof window.renderBarraCarte === 'function') window.renderBarraCarte(m.id);
             if (typeof renderMain === 'function') renderMain();
             mostraMessaggio(
@@ -367,10 +307,6 @@ window.confermaImportIiif = async function() {
             tipoDocumento: _iiEl('iiif-tipo').value,
             segnatura: _iiEl('iiif-segnatura').value.trim() || norm.etichetta || '',
             allegati: window.IiifManifest.costruisciAllegati(norm.carte, id, { indici }),
-            // Chiavi di servizio sulla radice, come il resto dei campi (la scheda e' flat):
-            // il manifest serve a rileggere le carte, l'attribuzione e' un obbligo della
-            // licenza e il lato tiene omogenee le carte scaricate in momenti diversi.
-            // 0 significa "massima disponibile" e va conservato come 0.
             iiifManifestUrl: url,
             iiifAttribuzione: norm.attribuzione || '',
             iiifLato: lato,

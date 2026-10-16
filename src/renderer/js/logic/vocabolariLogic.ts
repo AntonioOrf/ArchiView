@@ -1,13 +1,3 @@
-// Fasi 3.3, 3.5 e 3.6 — le operazioni d'archivio su vocabolari controllati, anagrafica di
-// persone e luoghi, relazioni fra schede e duplicati della segnatura.
-//
-// Stessa divisione in tre strati di `tagsLogic.ts`, e per la stessa ragione: l'aritmetica
-// (chiavi, propagazioni, unioni) sta in `shared/model.ts`, qui restano stato, salvataggio,
-// undo e i18n — le tre cose che il modello non può conoscere — e i modali stanno nei
-// componenti.
-//
-// PREFISSO `_vc` sugli helper privati: il bundle concatena tutti gli script in UNO scope.
-
 function _vcT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
@@ -22,11 +12,6 @@ async function _vcAutore() {
     }
 }
 
-/**
- * Fotografia profonda delle schede indicate più delle tre anagrafiche di primo livello.
- * È ciò che l'undo rimette a posto: copiare l'intero archivio per una rinomina che tocca
- * quattro schede sarebbe uno spreco proporzionale alla dimensione del vault.
- */
 function _vcFotografia(ids) {
     const set = new Set((ids || []).map(String));
     return {
@@ -46,8 +31,6 @@ async function _vcApplica(descrizione, messaggio, schedeToccate, foto) {
         ripristinaSchede(foto.schede);
         appData.vocabolari = JSON.parse(JSON.stringify(foto.vocabolari));
         appData.authority = JSON.parse(JSON.stringify(foto.authority));
-        // Solo i campi fotografati, non tutto tipiDocumento: un modello modificato nel
-        // frattempo per altre ragioni non torna indietro.
         for (const c of foto.campi || []) {
             const tipo = (appData.tipiDocumento || []).find(x => x && String(x.id) === c.tipo);
             if (tipo && tipo.campiDef && tipo.campiDef[c.campo]) tipo.campiDef[c.campo] = JSON.parse(JSON.stringify(c.def));
@@ -59,9 +42,6 @@ async function _vcApplica(descrizione, messaggio, schedeToccate, foto) {
     registraAnnullabile(descrizione, String(messaggio).replace('{var0}', String(schedeToccate)), ripristina);
 }
 
-// --- Vocabolari controllati (3.3) ---------------------------------------------
-
-/** Tutti i vocabolari, in ordine alfabetico di nome. */
 window.elencoVocabolari = function() {
     const voc = window.Model.vocabolari(appData);
     return Object.keys(voc)
@@ -76,10 +56,6 @@ window.salvaVocabolarioArchivio = async function(voc) {
     return true;
 };
 
-/**
- * L'"aggiungi al volo" del form. Non passa da `_vcApplica`: non tocca alcun record — il
- * vocabolario è una chiave di primo livello — quindi non c'è niente da fotografare.
- */
 window.aggiungiValoreVocabolario = async function(id, valore) {
     if (!window.Model.aggiungiValoreVocabolario(appData, id, valore)) return false;
     await window.Store.commit();
@@ -87,8 +63,6 @@ window.aggiungiValoreVocabolario = async function(id, valore) {
 };
 
 window.rinominaValoreVocabolario = async function(id, da, a) {
-    // I bersagli si calcolano PRIMA: dopo la rinomina nessuna scheda porta più il valore
-    // vecchio, e la fotografia sarebbe vuota.
     const bersagli = window.Model.campiDelVocabolario(appData, id);
     const chiave = window.Model.chiaveTesto(da);
     const ids = (appData.manoscritti || []).filter(m => m && bersagli.some(b =>
@@ -108,10 +82,8 @@ window.rinominaValoreVocabolario = async function(id, da, a) {
 };
 
 window.eliminaValoreVocabolario = async function(id, valore) {
-    // Nessuna scheda cambia: si fotografa solo l'elenco, per l'annullo.
     const foto = _vcFotografia([]);
     if (!window.Model.eliminaValoreVocabolario(appData, id, valore)) return false;
-    // Le schede che portavano quel valore lo conservano: dirlo evita la domanda "l'ho perso?".
     await _vcApplica(
         _vcT('undo_vocab_value_delete', 'Eliminazione di un valore'),
         _vcT('msg_vocab_value_removed', 'Valore tolto dall\'elenco. Le schede che lo contengono lo conservano.'),
@@ -122,9 +94,6 @@ window.eliminaValoreVocabolario = async function(id, valore) {
 };
 
 window.eliminaVocabolarioArchivio = async function(id) {
-    // Un clic cancellava un elenco curato, magari di centinaia di voci, senza conferma né
-    // annullo. L'eliminazione converte anche i campi che lo usavano in elenchi propri:
-    // vanno fotografati PRIMA, per riagganciarli al vocabolario se si annulla.
     const foto: any = _vcFotografia([]);
     foto.campi = window.Model.campiDelVocabolario(appData, id).map(b => {
         const tipo = (appData.tipiDocumento || []).find(x => x && String(x.id) === b.tipo);
@@ -141,9 +110,6 @@ window.eliminaVocabolarioArchivio = async function(id) {
     return true;
 };
 
-// --- Duplicati della segnatura (3.6) ------------------------------------------
-
-/** I gruppi di schede con la stessa segnatura, ognuno con le schede vere (non i soli id). */
 window.duplicatiSegnatura = function() {
     const perId = new Map((appData.manoscritti || []).map(m => [String(m.id), m]));
     return window.Model.gruppiDuplicati(appData.manoscritti, 'segnatura')
@@ -151,15 +117,6 @@ window.duplicatiSegnatura = function() {
         .filter(g => g.schede.length > 1);
 };
 
-// --- Relazioni fra schede (3.5) -----------------------------------------------
-
-/**
- * Le relazioni di una scheda, uscenti ed entranti, già risolte in schede vere.
- *
- * Gli id che non corrispondono a nessuna scheda si SALTANO senza cancellarli dal dato: su un
- * archivio condiviso la scheda può esistere sulla copia di un collega e non ancora sulla
- * nostra, e ripulire d'ufficio un rimando romperebbe il collegamento per tutti.
- */
 window.relazioniRisolte = function(id) {
     const perId = new Map((appData.manoscritti || []).map(m => [String(m.id), m]));
     const m = perId.get(String(id));
@@ -185,19 +142,11 @@ window.collegaSchede = async function(idA, idB, tipo) {
     return true;
 };
 
-// --- Authority record: persone e luoghi (3.5) ---------------------------------
-
-/**
- * La funzione `(tipoDocumento) => definizioni` che il modello si fa passare per sapere quali
- * campi alimentano l'anagrafica. Il modello non può risolverla da sé: le definizioni dei
- * campi base stanno in `CONFIG_CAMPI`, cioè nel renderer, insieme alla i18n.
- */
 function _vcCampiDi(tipoId) {
     const tipo = (appData.tipiDocumento || []).find(t => t && t.id === tipoId);
     return window.Model.campiDelTipo(tipo, window.CONFIG_CAMPI, appData);
 }
 
-/** Persone e luoghi ricavati dalle schede, con quante schede li citano. */
 window.elencoAuthority = function(tipo) {
     const voci = window.Model.vociAuthority(appData.manoscritti, _vcCampiDi, appData);
     return tipo ? voci.filter(v => v.tipo === tipo) : voci;
@@ -223,10 +172,6 @@ window.rinominaAuthorityArchivio = async function(tipo, da, a) {
     return esito.schede;
 };
 
-/**
- * P10 — scrive (o toglie, con valori vuoti) Wikidata, VIAF e varianti sulla voce. Tocca solo
- * l'anagrafica, nessuna scheda: l'undo ripristina la fotografia dell'anagrafica.
- */
 window.collegaAuthorityArchivio = async function(tipo, nome, dati) {
     const foto = _vcFotografia([]);
     if (!window.Model.salvaVoceAuthority(appData, tipo, nome, dati)) return false;

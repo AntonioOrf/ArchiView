@@ -1,5 +1,4 @@
 window.apriPdfInterno = async function(fileName) {
-    // N4: il tipo `pdf` arriva dal vault, il nome decide cosa finisce nell'iframe.
     if (typeof fileName !== 'string' || !/\.pdf$/i.test(fileName)) {
         console.warn('[Allegati] Non è un PDF, non si apre nel visualizzatore:', fileName);
         return;
@@ -22,9 +21,6 @@ function apriModal(sorgente, tipo = 'img') {
         modalPdf.classList.remove('hidden');
         document.getElementById('image-modal').classList.remove('hidden-tab');
     } else {
-        // L'overlay va reso visibile PRIMA di assegnare la sorgente: il visualizzatore
-        // calcola l'adattamento sull'evento `load`, e a viewport nascosto le dimensioni
-        // di layout sono zero (fit sbagliato, immagine fuori campo al primo zoom).
         document.getElementById('image-modal').classList.remove('hidden-tab');
         if (viewport) {
             viewport.classList.remove('hidden-tab');
@@ -78,7 +74,6 @@ window.apriModalDocumenti = async function(id) {
     container.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">${escapeHTML(window.t('label_loading', 'Caricamento...'))}</div>`;
     document.getElementById('docs-modal').classList.remove('hidden-tab');
 
-    // Usa helper condiviso invece di duplicare il pattern
     const allegatiRender = normalizzaAllegati(m);
 
     container.innerHTML = '';
@@ -152,7 +147,6 @@ window.apriModalDocumenti = async function(id) {
                 </div>
             `;
         } else {
-            // Come in form.ts: miniatura piccola dal server IIIF, immagine grande al click.
             let src = '', srcPieno = '';
             if (window.apiBrowser) {
                 src = window.srcAllegato(al, { lato: 320 });
@@ -194,13 +188,6 @@ window.chiudiModalDocumenti = function() {
     document.getElementById('docs-modal').classList.add('hidden-tab');
 }
 
-/**
- * Fase 4.5 — le operazioni sugli allegati fatte dal modale "Documenti" scrivono DIRETTAMENTE
- * sul record (a differenza di quelle nel form, che passano dal salvataggio e sono già coperte
- * dall'annullamento della modifica): rinomina e riordino avevano quindi il difetto opposto a
- * ogni altra azione dell'app, cioè nessuna via di ritorno. Qui si registra l'array di prima e
- * quello di dopo, che è l'intero stato dell'operazione.
- */
 function _mdRegistraUndoAllegati(id, descrizione, prima, dopo) {
     if (!window.gestoreAnnullamento) return;
     const applica = async (stato) => {
@@ -220,7 +207,6 @@ function _mdRegistraUndoAllegati(id, descrizione, prima, dopo) {
 window.rinominaAllegatoDaModal = function(id, index) {
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m) return;
-    // Usa helper condiviso
     const allegatiRender = normalizzaAllegati(m);
     const nomeAttuale = allegatiRender[index].originalName || '';
     const prima = JSON.parse(JSON.stringify(allegatiRender));
@@ -242,7 +228,6 @@ window.rinominaAllegatoDaModal = function(id, index) {
     });
 }
 
-// P2.4 — alternativa accessibile (da tastiera) al riordino drag&drop nel docs-modal.
 window.spostaAllegatoDaModal = async function(id, index, direction) {
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m || !Array.isArray(m.allegati)) return;
@@ -262,12 +247,10 @@ window.spostaAllegatoDaModal = async function(id, index, direction) {
     if (typeof renderMain === 'function') renderMain();
     await window.apriModalDocumenti(id);
 
-    // Riporta il focus sulla riga spostata per la navigazione da tastiera.
     const container = document.getElementById('docs-modal-content');
     const rows = container ? container.querySelectorAll(':scope > div') : [];
     const moved = rows[target];
     if (moved) {
-        // L'ultimo argomento di spostaAllegatoDaModal è la direzione: [id, indice, ±1].
         const btn = moved.querySelector(`button[data-on-click="spostaAllegatoDaModal"][data-args-click$="${direction > 0 ? ',1]' : ',-1]'}"]`);
         if (btn) btn.focus();
     }
@@ -294,7 +277,6 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null,
         checkboxContainer.classList.add('hidden-tab');
     }
     
-    // Rimuovi vecchi listener clonando i pulsanti
     const newBtn = btnYes.cloneNode(true) as HTMLElement;
     btnYes.parentNode.replaceChild(newBtn, btnYes);
     

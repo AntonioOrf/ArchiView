@@ -1,6 +1,3 @@
-// Modal "Condivisione" — Hub-first. Consolida la gestione di inviti, membri e stato
-// del repository (prima sparsa tra cloudModal, settingsModal e welcomeModal).
-// Quattro stati mutuamente esclusivi: locale (crea Hub), Drive legacy (migra), membro, owner.
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('share-modal')) return;
@@ -194,13 +191,9 @@
         const modal = document.getElementById('share-modal');
         if (!modal) return;
 
-        // La config va letta PRIMA di rivelare il modal: un vault Drive viene dirottato sul suo
-        // modal dedicato, e mostrarlo prima di deciderlo lo farebbe lampeggiare a vuoto.
         const vaultConfig = window.apiBrowser?.getVaultConfig ? await window.apiBrowser.getVaultConfig() : { vaultType: 'local' };
         const isHub = !!window.hubConfig || vaultConfig.provider === 'hub';
 
-        // Vault Google Drive: la gestione vive interamente nel modal Drive (inclusa la
-        // migrazione all'archivio condiviso, sotto Opzioni avanzate).
         if (!isHub && vaultConfig.vaultType && vaultConfig.vaultType !== 'local') {
             if (typeof window.apriCloudModal === 'function') await window.apriCloudModal();
             return;
@@ -212,7 +205,6 @@
         if (isHub && window.hubConfig) {
             mostraStatoShare('share-state-loading');
             const role = await window.getHubRole();
-            // Mai il repoId: nome scelto dall'owner e condiviso via invito.
             const repoName = window.hubConfig.name
                 || (window.appData && window.appData.nomeArchivio)
                 || window.t("hub_fallback_name", "Archivio condiviso");
@@ -234,7 +226,6 @@
             if (role === 'owner') {
                 const nameEl = document.getElementById('share-owner-reponame');
                 nameEl.textContent = repoName;
-                // Click sul nome (solo owner) → rinomina inline: propaga a locale + membri.
                 nameEl.style.cursor = 'pointer';
                 nameEl.title = window.t("share_owner_rename_hint", "Clicca per rinominare l'archivio");
                 nameEl.onclick = () => window.avviaRinominaVaultHub(nameEl);
@@ -244,7 +235,6 @@
                 mostraStatoShare('share-state-owner');
                 await window.renderMembriShare();
             } else {
-                // 'member' o 'unknown' (offline/errore): vista membro, nessun controllo inviti.
                 document.getElementById('share-member-reponame').textContent = repoName;
                 document.getElementById('share-member-meta').textContent = meta;
                 window.renderAttachmentsBoxShare('share-member', attachmentsOn, true);
@@ -265,8 +255,6 @@
         document.getElementById('share-modal')?.classList.add('hidden-tab');
     };
 
-    // Rinomina inline del nome archivio nella vista owner: sostituisce l'etichetta con un input,
-    // commit su Enter/blur, annulla su Esc. Delega la persistenza+push a rinominaVaultHub.
     window.avviaRinominaVaultHub = function(labelEl) {
         if (!labelEl || labelEl.dataset.editing === '1') return;
         const current = labelEl.textContent || '';
@@ -283,12 +271,12 @@
             delete labelEl.dataset.editing;
         };
         const commit = async () => {
-            if (done) return; // già annullato via Esc
+            if (done) return;
             const next = input.value.trim();
             if (!next || next === current) { restore(current); return; }
-            restore(next); // ottimistico
+            restore(next);
             const ok = await window.rinominaVaultHub(next);
-            if (!ok) labelEl.textContent = current; // rollback visuale se fallisce
+            if (!ok) labelEl.textContent = current;
         };
         input.onkeydown = (e) => {
             if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
@@ -306,11 +294,9 @@
         const nameInput = document.getElementById('share-hub-name');
         const chosen = nameInput && nameInput.value.trim();
         window.chiudiShareModal();
-        // chosen o null → creaRepositoryHub usa il basename della cartella come default.
         await window.creaRepositoryHub(chosen || null);
     };
 
-    // Salva le impostazioni autofetch dal modal Condivisione e riavvia il timer.
     window.salvaAutofetchShare = async function(prefix) {
         if (!window.apiSettings) return;
         const cb = document.getElementById(prefix + '-autofetch');
@@ -412,9 +398,6 @@
         else doRevoke();
     };
 
-    // Disegna la card Allegati nello stato owner/member: toggle diretto se Google Drive è già
-    // collegato, altrimenti una card di collegamento guidata al posto dell'errore hard-fail
-    // (senza Drive i chunk dell'uploader non possono essere caricati sull'Hub).
     window.renderAttachmentsBoxShare = function(prefix, attachmentsOn, isMember) {
         const box = document.getElementById(prefix + '-attachments-box');
         if (!box) return;
@@ -450,8 +433,6 @@
         if (window.lucide) lucide.createIcons({ nodes: [box] });
     };
 
-    // Avvia il login Google Drive esistente (Impostazioni) direttamente dalla card guidata;
-    // al successo abilita subito il toggle allegati, senza passare da un errore.
     window.collegaDriveDaShare = async function(prefix, isMember) {
         if (typeof window.loginGoogleDrive !== 'function') return;
         await window.loginGoogleDrive();
@@ -464,7 +445,6 @@
         if (!window.hubConfig) return;
         window.hubConfig.attachmentsMode = checked ? 'drive-links' : 'off';
         if (window.apiBrowser?.saveHubConfig) await window.apiBrowser.saveHubConfig(window.hubConfig);
-        // Mantieni allineata la checkbox gemella (owner/member).
         ['share-owner', 'share-member'].forEach(p => {
             if (p !== prefix) window.renderAttachmentsBoxShare(p, checked, p === 'share-member');
         });
@@ -472,14 +452,11 @@
         if (checked && typeof window.sincronizzaAllegatiHub === 'function') window.sincronizzaAllegatiHub(false);
     };
 
-    // Pannello di migrazione Drive legacy -> archivio condiviso (lo apre cloudModal con
-    // `mostraStatoShare('share-state-migrate')`): spiega le conseguenze prima di procedere.
     window.confermaMigrazioneShare = async function() {
         window.chiudiShareModal();
         if (typeof window.migraVaultSuHub === 'function') await window.migraVaultSuHub(true);
     };
 
-    // Abbandono da collaboratore: il PC conserva la copia locale, ma smette di sincronizzare.
     window.abbandonaArchivioShare = function() {
         const msg = window.t("share_member_leave_confirm", "Il tuo PC conserverà una copia locale, ma non riceverai più gli aggiornamenti dei colleghi.");
         if (typeof window.mostraBottomConfirm === 'function') window.mostraBottomConfirm(msg, () => window.scollegaCloud());

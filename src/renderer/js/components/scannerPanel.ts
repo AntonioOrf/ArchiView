@@ -1,19 +1,3 @@
-// ArchiScanner — il pannello "Dal telefono" (PIANO-SCANNER Fasi 2, 10a, 12).
-//
-// I lotti ricevuti dal telefono stanno nell'area d'arrivo del main finché non diventano carte
-// di una scheda: esistente (quella scelta sul telefono, o quella cercata qui) o nuova
-// (segnatura = titolo del lotto, note = nota). Quelli con archivio e scheda scelti sul telefono
-// entrano da soli; nel pannello restano solo quelli da smistare.
-//
-// Il pannello sta a destra e lascia vedere l'elenco delle schede. Aprendolo si controlla Drive
-// (senza login) e si scarica se c'è qualcosa per questo archivio; le scansioni di altri archivi
-// sono una sezione del pannello, non più un avviso a parte.
-//
-// Ordine dell'assegnazione: il main copia i file → qui si aggiorna la scheda e si SALVA → solo
-// allora il main toglie il lotto dall'arrivo. Un salvataggio fallito lascia il lotto dov'era.
-// Tutto il testo del lotto (titolo, nota, etichette) è dato del telefono: solo textContent.
-// PREFISSO `_sc` sugli helper privati: il bundle concatena tutti gli script in UNO scope.
-
 function _scT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
@@ -29,15 +13,11 @@ function _scPagine(n) {
     return n === 1 ? _scT('scan_page_one', '1 pagina') : _scT('scan_pages', '{var0} pagine').replace('{var0}', String(n));
 }
 
-/** Miniature caricate per lotto: le altre si contano. */
 const _SC_MINIATURE = 12;
 
 let _scOccupato = false;
-/** Ultimo esito di `controllaDrive` ({ collegato, qui, altri }) con l'ora del controllo. */
 let _scDrive = null;
-/** Schede che hanno ricevuto pagine in questa sessione: id → { pagine, nuova }. */
 const _scImportate = new Map();
-/** Preferenza «Unisci in un PDF» (Impostazioni → Documenti), letta all'apertura del pannello. */
 let _scPdf = false;
 
 function _scStato(testo) {
@@ -73,13 +53,9 @@ window.apriScansioni = async function() {
 
 window.chiudiScansioni = function() {
     document.getElementById('scanner-modal')?.classList.add('hidden-tab');
-    // Il server Wi-Fi vive solo con il pannello aperto (CONTRATTO §4.2).
     if (_scWifiAttivo) window.attivaWifiScansioni();
 };
 
-// --- Drive -------------------------------------------------------------------------
-
-/** Riepilogo di Drive senza scaricare; con `scarica` e lotti per questo archivio, li riceve. */
 async function _scControllaDrive(scarica) {
     if (!window.apiScanner || !window.apiScanner.controllaDrive) return null;
     let r;
@@ -96,7 +72,6 @@ async function _scControllaDrive(scarica) {
     return _scDrive;
 }
 
-/** Riga di stato di Drive in testa al pannello e sezione "Per altri archivi". */
 function _scDisegnaDrive() {
     const testo = document.getElementById('scan-drive-testo');
     const etichetta = document.getElementById('scan-ricevi-label');
@@ -155,15 +130,12 @@ async function _scCreaArchivio(nome) {
         const base = await window.apiBrowser.selectBaseDirectory(_scT('dialog_select_folder', 'Seleziona la posizione per la nuova cartella'));
         if (!base) return;
         await window.salvaTutto();
-        // Riapre la finestra sull'archivio nuovo: lì l'avviso all'apertura propone di importare.
         if (!await window.apiBrowser.createWorkspaceInPath(base, nome, null)) throw new Error('archivio_non_creato');
     } catch (e) {
         console.error('[scanner] archivio non creato:', nome, e);
         mostraMessaggio(_scErrore(e && e.message), 'error');
     }
 }
-
-// --- Wi-Fi diretto (Fase 7) ---------------------------------------------------
 
 let _scWifiAttivo = false;
 
@@ -209,8 +181,6 @@ window.attivaWifiScansioni = async function() {
     }
 };
 
-// --- Ricezione ------------------------------------------------------------------
-
 window.riceviScansioni = async function() {
     if (_scOccupato) return;
     _scOccupato = true;
@@ -225,11 +195,7 @@ window.riceviScansioni = async function() {
         if (r.inCaricamento.length) parti.push(_scT('scan_uploading', 'Ancora in caricamento dal telefono: {var0}.').replace('{var0}', String(r.inCaricamento.length)));
         if (r.falliti.length) parti.push(_scT('scan_failed', 'Non ricevuti: {var0} (dettagli nel log).').replace('{var0}', String(r.falliti.length)));
         _scStato(parti.join(' '));
-        // Stesso giro, verso il telefono: l'elenco delle schede. Non si aspetta: un Drive lento
-        // non deve tenere il pannello "occupato" (i pulsanti dei lotti non risponderebbero).
-        // Il titolo è testo libero: accorciato ai 500 caratteri di CONTRATTO §4.3, o il main rifiuterebbe l'elenco intero.
         const titolo = m => String((typeof window.titoloScheda === 'function' && window.titoloScheda(m)) || '').slice(0, 500);
-        // `tags`: il main ne ricava `daVedere` (F9 dello scanner, CONTRATTO §4.3) e non li pubblica.
         const schede = appData.manoscritti.map(m => ({ id: String(m.id), segnatura: String(m.segnatura || ''), cartella: String(m.cartella || ''), titolo: titolo(m), tags: m.tags }));
         window.apiScanner.pubblicaSchede(schede, (appData.cartelle || []).filter(c => typeof c === 'string' && c && c.length <= 500))
             .then(p => { if (!p || !p.success) console.warn('[scanner] elenco schede non pubblicato:', p && p.error); })
@@ -246,7 +212,6 @@ window.riceviScansioni = async function() {
     await _scControllaDrive(false);
 };
 
-/** Mentre si scarica, l'elenco vuoto non deve dire "niente da smistare": i lotti compaiono alla fine. */
 function _scInRicezione(attiva) {
     const lista = document.getElementById('scan-lista');
     if (!lista) return;
@@ -256,9 +221,6 @@ function _scInRicezione(attiva) {
     lista.prepend(_scEl('p', 'scan-ricezione scan-sotto italic', _scT('scan_receiving_list', 'Ricezione da Drive in corso: le scansioni compaiono qui appena scaricate.')));
 }
 
-// --- Elenco -----------------------------------------------------------------------
-
-/** La scheda proposta: quella scelta sul telefono se esiste ancora, altrimenti la selezionata. */
 function _scDestinazione(lotto) {
     const trova = (id) => appData.manoscritti.find(m => String(m.id) === String(id));
     if (lotto.destinazione && lotto.destinazione.tipo === 'esistente') {
@@ -296,7 +258,6 @@ window.disegnaScansioni = async function() {
     for (const lotto of r.lotti) lista.appendChild(_scScheda(lotto));
 };
 
-/** Sezione "Importate ora": le schede che hanno ricevuto pagine in questa sessione. */
 function _scDisegnaImportate() {
     const box = document.getElementById('scan-importate');
     const lista = document.getElementById('scan-importate-lista');
@@ -324,16 +285,12 @@ function _scDisegnaImportate() {
 function _scSegnaImportate(id, pagine, nuova) {
     const prima = _scImportate.get(id);
     _scImportate.set(id, { pagine: (prima ? prima.pagine : 0) + pagine, nuova: (prima ? prima.nuova : false) || nuova });
-    // Il «+N» nell'albero si legge da qui: la sidebar va ridisegnata dopo, non al commit
-    // (`versione` entra nella sua firma, o il ridisegno verrebbe saltato).
     window.carteDalTelefono.versione++;
     if (typeof renderSidebar === 'function') renderSidebar();
 }
 
-/** Fase 12 — carte arrivate dal telefono in questa sessione nella scheda `id` (0 se nessuna). */
 window.carteDalTelefono = Object.assign((id) => (_scImportate.get(String(id)) || { pagine: 0 }).pagine, { versione: 0 });
 
-/** Voce mostrata nella ricerca → id della scheda. Segnatura + cartella per distinguere i doppioni. */
 let _scVociSchede = new Map();
 
 function _scPreparaSchede(lista) {
@@ -354,7 +311,6 @@ function _scPreparaSchede(lista) {
 
 function _scScheda(lotto) {
     const box = _scEl('section', 'scan-lotto');
-    // Senza titolo (pagine "da smistare") la prima riga della nota dice cosa sono, meglio dell'id.
     const primaRiga = (lotto.nota || '').split('\n')[0].trim();
     const nome = lotto.titolo || primaRiga.slice(0, 120) || lotto.id;
     box.setAttribute('aria-label', nome);
@@ -366,7 +322,6 @@ function _scScheda(lotto) {
         _scEl('span', 'scan-meta', [_scPagine(lotto.pagine.length), isNaN(quando.getTime()) ? lotto.creatoIl : quando.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })].join(' · '))
     );
     box.appendChild(testa);
-    // La nota intera, se il titolo non la ripete già.
     if (lotto.nota && (lotto.titolo || lotto.nota.trim() !== primaRiga)) box.appendChild(_scEl('p', 'scan-nota', lotto.nota));
 
     const miniature = _scEl('div', 'scan-miniature');
@@ -392,7 +347,6 @@ function _scScheda(lotto) {
         aggiungi.textContent = _scT('scan_add_to', 'Aggiungi a «{var0}»').replace('{var0}', dest.segnatura || String(dest.id));
         aggiungi.onclick = () => _scAssegna(lotto, dest, box);
     } else {
-        // L'elenco delle schede resta visibile a sinistra; qui la si cerca (datalist condiviso).
         const cerca = _scEl('input', 'form-input text-xs') as HTMLInputElement;
         cerca.type = 'search';
         cerca.setAttribute('list', 'scan-schede');
@@ -421,13 +375,6 @@ function _scScheda(lotto) {
     return box;
 }
 
-// --- Assegnazione -------------------------------------------------------------------
-
-/**
- * Copia il lotto nella scheda `id` e salva; poi lo toglie dall'arrivo. Se la scheda non c'è la
- * crea con `datiNuova` (null = deve esistere). Così il secondo lotto di una "scheda nuova" del
- * telefono (stesso `schedaId`) si aggiunge alla scheda creata dal primo.
- */
 async function _scApplica(lotto, id, comePdf, datiNuova) {
     const notePagine = _scNotePagine(lotto);
     const r = await window.apiScanner.assegna(lotto.id, id, { pdf: !!comePdf });
@@ -452,11 +399,9 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
             creatoDa: username
         })));
         window.Store.togliTombstone([id]);
-        // Cartella scelta sul telefono e poi tolta qui: senza registrarla la scheda non comparirebbe nell'albero.
         if (datiNuova.cartella && !appData.cartelle.includes(datiNuova.cartella)) appData.cartelle.push(datiNuova.cartella);
     } else {
         if (!vivo.allegati) vivo.allegati = [];
-        // Scheda antecedente agli allegati multipli: il vecchio allegato singolo resta il primo.
         if (vivo.allegato && vivo.allegati.length === 0) {
             vivo.allegati.push({ nome: vivo.allegato, tipo: vivo.allegatoTipo, originalName: 'Allegato' });
         }
@@ -471,7 +416,6 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
         vivo.modificatoDa = username;
     }
     await window.Store.commit();
-    // Il lotto lascia l'arrivo solo con la scheda già su disco.
     await window.salvaTutto();
     const t = await window.apiScanner.togli(lotto.id);
     if (!t || !t.success) console.warn('[scanner] lotto assegnato ma rimasto in arrivo:', lotto.id, t && t.error);
@@ -479,17 +423,14 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
     return { allegati: r.allegati, creata: !vivo };
 }
 
-/** Note delle pagine (CONTRATTO §2.1) per il campo Note: una riga per pagina, `1v: testo` (`p. 3` senza etichetta). */
 function _scNotePagine(lotto) {
     return lotto.pagine.map((pg, i) => pg.nota ? `${pg.etichetta || 'p. ' + (i + 1)}: ${pg.nota}` : '').filter(Boolean).join('\n');
 }
 
-/** Testi non vuoti separati da una riga vuota. */
 function _scUnisciNote(...testi) {
     return testi.filter(t => t && String(t).trim()).join('\n\n');
 }
 
-/** La scheda nuova compilata sul telefono: i campi, poi segnatura e note con il ripiego sul lotto. */
 function _scDatiNuova(lotto) {
     const d = lotto.destinazione || {};
     const campi = d.campi || {};
@@ -501,7 +442,6 @@ function _scDatiNuova(lotto) {
     });
 }
 
-/** Archivio scelto sul telefono + scheda nota: si importa senza passare dal pannello (CONTRATTO §2.5). */
 function _scAutomatico(lotto) {
     const d = lotto.destinazione;
     if (!lotto.archivio || !d) return false;
@@ -509,11 +449,9 @@ function _scAutomatico(lotto) {
     return d.tipo === 'esistente' && appData.manoscritti.some(m => String(m.id) === String(d.schedaId));
 }
 
-/** Lotti la cui importazione automatica è fallita: restano nel pannello, non si riprovano in loop. */
 const _scAutoFalliti = new Set();
 
 async function _scImportaAutomatici(lotti) {
-    // Per id (= ora di scatto): il primo lotto di una scheda nuova la crea, i successivi aggiungono.
     const auto = lotti.filter(l => !_scAutoFalliti.has(l.id) && _scAutomatico(l)).sort((a, b) => a.id < b.id ? -1 : 1);
     if (!auto.length || _scOccupato) return false;
     _scOccupato = true;
@@ -589,9 +527,6 @@ function _scScarta(lotto) {
     else if (confirm(msg)) esegui();
 }
 
-// --- Avviso all'apertura dell'archivio (Fase 10a, rifatto in Fase 12) -----------------
-
-/** Lotti di questo archivio raggruppati: per scheda (entrano da soli) e da smistare. */
 function _scRiepilogoQui(qui) {
     const perScheda = new Map();
     let daSmistare = 0;
@@ -616,7 +551,6 @@ function _scRigaRiepilogo(n, ...parti) {
     return riga;
 }
 
-/** Riempie e mostra l'avviso; risolve { importa, sempre }. «Più tardi» ed Esc = non importa. */
 function _scAvviso(drive): Promise<{ importa: boolean; sempre: boolean }> {
     const modal = document.getElementById('scan-avviso');
     if (!modal) return Promise.resolve({ importa: false, sempre: false });
@@ -652,7 +586,6 @@ function _scAvviso(drive): Promise<{ importa: boolean; sempre: boolean }> {
     sempre.closest('label')?.classList.toggle('hidden-tab', !drive.qui.length);
     const si = document.getElementById('scan-avviso-si');
     const no = document.getElementById('scan-avviso-no');
-    // Solo archivi di altri: niente da importare qui, il pulsante apre il pannello.
     si.textContent = drive.qui.length ? _scT('scan_import_now', 'Importa ora') : _scT('scan_check_show', 'Mostra');
     modal.classList.remove('hidden-tab');
     si.focus();
@@ -667,11 +600,6 @@ function _scAvviso(drive): Promise<{ importa: boolean; sempre: boolean }> {
     });
 }
 
-/**
- * All'apertura dell'archivio: un solo avviso con tutto ciò che è su Drive (questo archivio, gli
- * altri, quelli nuovi). Rimandato, non torna finché non arriva qualcosa di nuovo; con
- * «Non chiedere» le scansioni di questo archivio si importano da sole.
- */
 window.controllaScansioniAllApertura = async function() {
     if (navigator.onLine === false) return;
     const drive = await _scControllaDrive(false);
@@ -688,7 +616,6 @@ window.controllaScansioniAllApertura = async function() {
         window.apriScansioni();
         return;
     }
-    // Impronta di ciò che si propone: gli archivi altrui non nuovi non bastano a riproporre l'avviso.
     const impronta = [...drive.qui.map(l => l.id), ...nuovi.map(a => '+' + a.nome)].sort().join('|').slice(0, 8000);
     if (s.scannerRimandato === impronta) return;
     const esito = await _scAvviso(drive);
@@ -699,8 +626,6 @@ window.controllaScansioniAllApertura = async function() {
     }
     if (esito.importa) window.apriScansioni();
 };
-
-// --- Markup -------------------------------------------------------------------
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {

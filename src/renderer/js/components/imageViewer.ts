@@ -1,38 +1,15 @@
-// Fase 1.2 — Visualizzatore immagini (zoom, pan, rotazione, filtri paleografici).
-//
-// UN SOLO componente per i due percorsi che mostrano un allegato immagine — il modal
-// #image-modal e il pannello affiancato alla trascrizione — perché finora erano due
-// <img object-contain> indipendenti, destinati a divergere a ogni ritocco.
-// L'host fornisce solo un viewport (il contenitore con overflow nascosto) e la sua <img>:
-// barra dei comandi, eventi e stato li costruisce e li possiede questo file.
-//
-// Nessuna dipendenza: la trasformazione è una `transform` CSS su GPU, i filtri sono
-// `filter: brightness()/contrast()/invert()`. Su hardware low-end (.perf-low) la
-// transizione è disattivata dal CSS, non da qui.
 (function () {
     const SCALA_MIN = 0.1;
     const SCALA_MAX = 12;
     const PASSO_ZOOM = 1.2;
-    // Frazione dell'immagine (o del viewport, se più piccolo) che il pan lascia sempre in vista.
     const QUOTA_VISIBILE = 0.25;
 
-    /**
-     * Scala richiesta da una modalità di adattamento. Funzione PURA (nessun DOM): è il solo
-     * pezzo con aritmetica non banale, ed è quello coperto dal test unit.
-     *
-     * `cw`/`ch` sono le dimensioni di LAYOUT dell'immagine (già contenute dal max-width/height
-     * del CSS, quindi a scala 1 l'immagine è per definizione "adattata" alla pagina), `nw` la
-     * larghezza naturale in pixel, `rot` la rotazione in gradi.
-     * Con rotazione di 90/270 le due dimensioni si scambiano: senza questo scambio "adatta
-     * alla larghezza" su una carta ruotata dà una scala che sborda dal viewport.
-     */
     window.calcolaScalaFit = function (modo, d) {
         const vw = d.vw || 0, vh = d.vh || 0;
         const cw = d.cw || 0, ch = d.ch || 0;
         if (!vw || !vh || !cw || !ch) return 1;
 
         if (modo === 'reale') {
-            // 1:1 = un pixel dell'immagine per un pixel dello schermo.
             return d.nw ? d.nw / cw : 1;
         }
 
@@ -108,12 +85,6 @@
         </div>
     `;
 
-    /**
-     * P6 — da un punto dello schermo alla posizione nella carta, in frazioni 0..1 del riquadro
-     * dell'immagine. Inverte la `transform` di `applica()` (traslazione, rotazione attorno al
-     * centro, scala). Funzione PURA: è il conto che il test unit verifica.
-     * `px`/`py`: punto rispetto all'angolo del viewport; `ox`/`oy`/`cw`/`ch`: riquadro di layout dell'immagine.
-     */
     window.puntoInCarta = function (px, py, d) {
         const dx = px - (d.ox + d.cw / 2) - d.tx;
         const dy = py - (d.oy + d.ch / 2) - d.ty;
@@ -123,25 +94,18 @@
         return { x: (rx / d.scala + d.cw / 2) / d.cw, y: (ry / d.scala + d.ch / 2) / d.ch };
     };
 
-    // P4 — un solo worker per tutti i visualizzatori, creato al primo uso. Lato massimo della
-    // copia elaborata: oltre, la memoria del worker cresce più del dettaglio che si guadagna.
     // ponytail: niente elaborazione "a piena risoluzione su richiesta"; alzare LATO_MAX se serve.
     const LATO_MAX = 3000;
     let _worker = null;
     let _richiesta = 0;
     const _inAttesa = new Map();
 
-    /** Copia elaborata di `sorgente` come Blob JPEG. */
     window.elaboraImmagine = async function (sorgente, modo, soglia) {
-        // crossOrigin: local-asset e iiif-img rispondono con Access-Control-Allow-Origin per
-        // l'app, e solo così la bitmap non è "tainted" e il worker può leggerne i pixel.
         const im = new Image();
         im.crossOrigin = 'anonymous';
         im.src = sorgente;
         await im.decode();
         const k = Math.min(1, LATO_MAX / Math.max(im.naturalWidth, im.naturalHeight));
-        // Riduzione su un canvas e non con createImageBitmap(img): in Electron quella fallisce
-        // ("could not be allocated") anche su immagini leggibili.
         const tela = new OffscreenCanvas(Math.max(1, Math.round(im.naturalWidth * k)), Math.max(1, Math.round(im.naturalHeight * k)));
         const ctx = tela.getContext('2d');
         ctx.imageSmoothingQuality = 'high';
@@ -167,11 +131,6 @@
         });
     };
 
-    /**
-     * Attiva il visualizzatore su un viewport. Idempotente: due chiamate sullo stesso
-     * elemento restituiscono lo stesso controller (gli host la invocano a ogni cambio di
-     * allegato senza doversi ricordare se l'avevano già fatto).
-     */
     window.attivaVisualizzatoreImmagini = function (viewport, img) {
         if (!viewport || !img) return null;
         if (viewport._imageViewer) return viewport._imageViewer;
@@ -186,23 +145,17 @@
         const pannelloFiltri = q('pannello-filtri');
         const etichettaPercento = q('percento');
         const pannelloRegioni = q('pannello-regioni');
-        // P6 — le regioni stanno su un velo grande quanto l'immagine e trasformato come lei:
-        // zoom, pan e rotazione le portano con sé senza ricalcolare nulla.
         const strato = document.createElement('div');
         strato.className = 'iv-regioni hidden-tab';
         img.insertAdjacentElement('afterend', strato);
 
-        // luminosita/contrasto: valore del cursore, -100..100, 0 = neutro (vedi percentuale()).
         const stato = { scala: 1, tx: 0, ty: 0, rot: 0, luminosita: 0, contrasto: 0, inverti: false, elaborazione: '', soglia: 128 };
 
-        // P4 — la copia elaborata prende il posto dell'immagine (stesso <img>: zoom, pan,
-        // rotazione e filtri CSS restano com'erano). `srcOriginale` è ciò che l'host aveva
-        // messo; un `load` di un src diverso da questi due è una carta nuova.
         let srcOriginale = null;
         let urlElaborato = null;
         let generazioneElab = 0;
         let timerSoglia = null;
-        let ripristino = false;   // il prossimo load è il ritorno all'originale, non una carta nuova
+        let ripristino = false;
 
         function tornaAllOriginale() {
             if (!urlElaborato) return;
@@ -262,11 +215,6 @@
             };
         }
 
-        // Il pan è libero a qualunque scala, ma una parte dell'immagine resta sempre nel
-        // viewport: portarla del tutto fuori (e non ritrovarla più) è il modo classico di
-        // rompere uno zoom. Il limite precedente — il solo debordo reale — era troppo stretto:
-        // una carta adattata alla pagina e ingrandita di uno o due scatti si spostava di
-        // poche decine di pixel, e il trascinamento sembrava non funzionare.
         function limitaTraslazione() {
             const d = dimensioni();
             const ruotato = Math.abs((stato.rot % 180 + 180) % 180 - 90) < 1;
@@ -290,23 +238,16 @@
                 strato.style.width = img.clientWidth + 'px';
                 strato.style.height = img.clientHeight + 'px';
                 strato.style.transform = img.style.transform;
-                // Bordi sempre di 2 px a schermo, a qualunque ingrandimento.
                 strato.style.setProperty('--iv-scala', String(stato.scala));
             }
 
             const d = dimensioni();
             const percento = d.nw && d.cw ? Math.round(stato.scala * (d.cw / d.nw) * 100) : Math.round(stato.scala * 100);
             if (etichettaPercento) etichettaPercento.textContent = percento + '%';
-            // P5 — chi affianca due visualizzatori sincronizza la vista da qui.
             const ctrl = viewport._imageViewer;
             if (ctrl && typeof ctrl.onVista === 'function') ctrl.onVista();
         }
 
-        /**
-         * Zoom ancorato a un punto del viewport: il pixel sotto il puntatore resta fermo.
-         * Vale anche con l'immagine ruotata — la rotazione agisce dopo la traslazione, quindi
-         * non entra in questo conto (t' = c(1-k) + k·t).
-         */
         function zoomVerso(fattore, clientX?, clientY?) {
             const nuova = limita(stato.scala * fattore, SCALA_MIN, SCALA_MAX);
             const k = nuova / stato.scala;
@@ -323,10 +264,6 @@
         function adatta(modo) {
             stato.scala = limita(window.calcolaScalaFit(modo, dimensioni()), SCALA_MIN, SCALA_MAX);
             stato.tx = 0;
-            // "Adatta alla larghezza" su una carta alta serve proprio a leggerla dall'alto:
-            // riportare la vista in cima è ciò che ci si aspetta, non centrarla.
-            // Il bordo superiore sul bordo del viewport: il debordo, non il limite del pan, che
-            // ora lascerebbe la carta a metà schermo.
             stato.ty = 0;
             if (modo === 'larghezza') {
                 const d = dimensioni();
@@ -343,12 +280,10 @@
             applica();
         }
 
-        /** Cursore -100..100 → percentuale CSS: sotto lo zero fino a 50%, sopra fino a 100+`su`%. */
         function percentuale(v, su) {
             return v < 0 ? 100 + v / 2 : 100 + v * su / 100;
         }
 
-        /** Solo i filtri, la vista resta dov'è: è il "Reimposta" dentro il pannello. */
         function reimpostaFiltri() {
             stato.luminosita = 0;
             stato.contrasto = 0;
@@ -382,10 +317,7 @@
             applica();
         }
 
-        // --- P6: regioni della carta ---------------------------------------------
-        // `regioni` è null quando l'host non le gestisce (modale, confronto, pagine PDF): niente
-        // pulsante, niente velo. L'host passa l'elenco e riceve ogni modifica in `onCambia`.
-        let regioni = null;          // { lista, onCambia, scelta }
+        let regioni = null;
         let disegno = false;
         let timerRegioni = null;
         const PASSO_REGIONE = 0.01;
@@ -394,7 +326,6 @@
         const btnRegioni = q('regioni');
         const elencoRegioni = q('elenco-regioni');
 
-        /** Il salvataggio dell'host non parte a ogni freccia: si raccoglie, e `imposta` lo forza prima di cambiare carta. */
         function notificaRegioni(subito = false) {
             if (!regioni) return;
             clearTimeout(timerRegioni);
@@ -501,7 +432,6 @@
             viewport.focus();
         }
 
-        /** Sposta (dx, dy) o allarga (dw, dh) una regione restando dentro la carta. */
         function modificaRegione(r, dx, dy, dw, dh, base = r.xywh) {
             const w = tra(base[2] + dw, LATO_MIN, 1);
             const h = tra(base[3] + dh, LATO_MIN, 1);
@@ -541,7 +471,6 @@
             applica();
         }
 
-        // Tastiera sulla regione: l'alternativa al trascinamento (stessa idea delle cartelle).
         strato.addEventListener('keydown', (e) => {
             const el = (e.target as HTMLElement).closest('[data-regione]') as HTMLElement;
             const r = el && regioni && regioni.lista.find(x => x.id === el.dataset.regione);
@@ -609,11 +538,6 @@
             });
         }
 
-        /**
-         * Puntatore sulle regioni: con «Disegna» si traccia un rettangolo nuovo; sulla regione già
-         * scelta si sposta (o si ridimensiona dalla maniglia); su un'altra la si sceglie e il pan
-         * continua. Restituisce true quando il gesto è suo e il pan non deve partire.
-         */
         let opRegione = null;
         function inizioRegione(e) {
             if (!regioni) return false;
@@ -664,7 +588,6 @@
             }
         }
 
-        // --- Comandi della barra --------------------------------------------------
         const azioni = {
             'zoom-in': () => zoomVerso(PASSO_ZOOM),
             'zoom-out': () => zoomVerso(1 / PASSO_ZOOM),
@@ -676,8 +599,6 @@
             'reset': reimposta,
             'filtri': () => {
                 if (!pannelloFiltri) return;
-                // toggle() ritorna true quando la classe è stata AGGIUNTA, cioè quando il
-                // pannello è appena stato chiuso.
                 const chiuso = pannelloFiltri.classList.toggle('hidden-tab');
                 const btn = q('filtri');
                 if (btn) btn.setAttribute('aria-expanded', chiuso ? 'false' : 'true');
@@ -694,8 +615,6 @@
             barra.addEventListener('click', (e) => {
                 const btn = e.target.closest('[data-iv]');
                 if (!btn || !azioni[btn.getAttribute('data-iv')]) return;
-                // La barra vive dentro il viewport: senza stop, il click risalirebbe al
-                // backdrop del modal e lo chiuderebbe a ogni zoom.
                 e.stopPropagation();
                 azioni[btn.getAttribute('data-iv')]();
             });
@@ -720,7 +639,6 @@
                     elabora();
                     return;
                 } else if (nome === 'soglia') {
-                    // Il cursore manda decine di eventi al secondo: si elabora quando si ferma.
                     stato.soglia = Number(e.target.value);
                     clearTimeout(timerSoglia);
                     timerSoglia = setTimeout(elabora, 200);
@@ -731,13 +649,11 @@
             });
         }
 
-        // --- Rotella: zoom ---------------------------------------------------------
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
             zoomVerso(e.deltaY < 0 ? PASSO_ZOOM : 1 / PASSO_ZOOM, e.clientX, e.clientY);
         }, { passive: false });
 
-        // --- Trascinamento ---------------------------------------------------------
         let trascino = null;
         viewport.addEventListener('pointerdown', (e) => {
             if (e.button !== 0 || e.target.closest('.iv-barra, .iv-pannello-filtri, .iv-pannello-regioni')) return;
@@ -759,30 +675,25 @@
         const fineTrascinamento = (e) => {
             if (opRegione) {
                 fineRegione();
-                try { viewport.releasePointerCapture(e.pointerId); } catch { /* già rilasciato */ }
+                try { viewport.releasePointerCapture(e.pointerId); } catch {}
                 return;
             }
             if (!trascino) return;
             trascino = null;
             viewport.classList.remove('iv-in-trascinamento');
-            try { viewport.releasePointerCapture(e.pointerId); } catch { /* già rilasciato */ }
+            try { viewport.releasePointerCapture(e.pointerId); } catch {}
         };
         viewport.addEventListener('pointerup', fineTrascinamento);
         viewport.addEventListener('pointercancel', fineTrascinamento);
 
-        // Doppio click: alterna vista adattata e 2× sul punto guardato.
         viewport.addEventListener('dblclick', (e) => {
             if (disegno || e.target.closest('.iv-barra, .iv-pannello-filtri, .iv-pannello-regioni')) return;
             if (stato.scala > 1.001) adatta('pagina');
             else zoomVerso(2, e.clientX, e.clientY);
         });
 
-        // --- Tastiera --------------------------------------------------------------
-        // Solo sul viewport (che è focusabile), MAI sul document: l'editor di trascrizione
-        // è un contenteditable a fianco, e un handler globale gli mangerebbe i tasti.
         viewport.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.altKey || e.metaKey) return;
-            // Nella nota di una regione i tasti sono testo, non zoom.
             if (e.target.closest('.iv-pannello-regioni')) return;
             const passo = 40;
             const tasti = {
@@ -800,9 +711,6 @@
             tasti[e.key]();
         });
 
-        // Ogni nuova immagine riparte pulita: filtri e rotazione della carta precedente
-        // applicati a quella dopo sarebbero incomprensibili.
-        // P4: i load provocati dall'elaborazione (copia elaborata, ritorno all'originale) no.
         img.addEventListener('load', () => {
             if (urlElaborato && img.src === urlElaborato) return;
             if (ripristino) { ripristino = false; return; }
@@ -811,8 +719,6 @@
         });
         img.addEventListener('error', () => { ripristino = false; });
 
-        // Il pannello della trascrizione è ridimensionabile: al restringersi del viewport
-        // la traslazione va ri-limitata, o l'immagine resta ferma fuori campo.
         if (typeof ResizeObserver !== 'undefined') {
             new ResizeObserver(() => applica()).observe(viewport);
         }

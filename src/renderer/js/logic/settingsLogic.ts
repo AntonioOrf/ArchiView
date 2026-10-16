@@ -1,8 +1,3 @@
-// Pannello Impostazioni: popolamento (apriImpostazioni) e salvataggio di ogni preferenza.
-// Il markup sta in components/modals/settingsModal.ts. Ogni salvataggio scrive SOLO la sua
-// chiave con apiSettings.patch e passa da notificaSalvataggio per il riscontro.
-
-// Predefiniti delle preferenze nuove: un solo posto nel renderer (il main valida i limiti).
 const PREDEFINITI_IMPOSTAZIONI = Object.freeze({
     zoomInterfaccia: 100,
     fontTrascrizione: 'serif',
@@ -19,10 +14,6 @@ const _FAMIGLIE_TRASCRIZIONE = {
     junicode: "'Junicode', 'Segoe UI Historic', Georgia, serif"
 };
 
-/**
- * Esito unico di ogni salvataggio: toast breve (il contenitore dei toast è già aria-live).
- * `esito` è la risposta di apiSettings.patch, o un errore.
- */
 window.notificaSalvataggio = function(esito?: any) {
     if (esito instanceof Error || (esito && esito.ok === false)) {
         const dettaglio = esito instanceof Error ? esito.message : (esito.rifiutate || []).join(', ');
@@ -33,7 +24,6 @@ window.notificaSalvataggio = function(esito?: any) {
     return true;
 };
 
-/** patch + riscontro; mai lancia. true se salvata. */
 async function _salvaPreferenze(parziale: any) {
     if (!window.apiSettings) return false;
     try {
@@ -44,7 +34,6 @@ async function _salvaPreferenze(parziale: any) {
     }
 }
 
-/** Applica le preferenze di aspetto e documenti (all'avvio e a ogni cambio). */
 window.applicaPreferenzeTesto = function(s: any) {
     const P = PREDEFINITI_IMPOSTAZIONI;
     const radice = document.documentElement.style;
@@ -83,7 +72,6 @@ window.apriImpostazioni = async function(tab?: string) {
     const username = _campo('settings-username');
     if (username) username.value = settings.username || '';
 
-    // Aspetto
     const zoom = _campo<HTMLSelectElement>('settings-zoom-select');
     if (zoom) zoom.value = String(settings.zoomInterfaccia || P.zoomInterfaccia);
     const font = _campo<HTMLSelectElement>('settings-font-trascrizione');
@@ -91,7 +79,6 @@ window.apriImpostazioni = async function(tab?: string) {
     const dim = _campo('settings-dim-trascrizione');
     if (dim) { dim.value = String(settings.dimensioneTrascrizione || P.dimensioneTrascrizione); _validoCampo(dim); }
 
-    // Documenti
     const pdfRis = _campo<HTMLSelectElement>('settings-pdf-risoluzione');
     if (pdfRis) pdfRis.value = String(settings.pdfRisoluzione || P.pdfRisoluzione);
     const pdfZoom = _campo<HTMLSelectElement>('settings-pdf-zoom');
@@ -102,12 +89,10 @@ window.apriImpostazioni = async function(tab?: string) {
     const scanSempre = _campo('settings-scanner-sempre');
     if (scanSempre) scanSempre.checked = settings.scannerImportaSempre === true;
 
-    // Ricerca tra archivi: interruttore del suggerimento ed elenco degli archivi.
     const sugg = _campo('settings-cross-suggerimenti');
     if (sugg) sugg.checked = settings.suggerimentiAltriArchivi !== false;
     if (window.popolaArchiviRicerca) window.popolaArchiviRicerca();
 
-    // Sistema
     const perfToggle = _campo('settings-low-perf');
     if (perfToggle) perfToggle.checked = !!window.modalitaPrestazioniRidotte;
     const aggAuto = _campo('settings-aggiornamenti-auto');
@@ -115,8 +100,6 @@ window.apriImpostazioni = async function(tab?: string) {
     const versione = _campo('settings-versione');
     if (versione && window.apiBrowser.getVersion) versione.textContent = await window.apiBrowser.getVersion();
 
-    // Conservazione di snapshot e cestino. I predefiniti vengono dal modello condiviso e non
-    // da letterali qui: il main applica quelli stessi quando la chiave manca.
     const M: Partial<typeof ArchiViewModel> = window.Model || {};
     const auto = _campo('settings-snapshot-auto');
     if (auto) auto.checked = settings.snapshotAutomatici !== false;
@@ -131,7 +114,6 @@ window.apriImpostazioni = async function(tab?: string) {
 
     await _mostraCartellaAllegati(settings);
 
-    // Sezione Hub & Drive
     const hubSection = _campo('settings-hub-section');
     const driveSection = _campo('settings-drive-section');
     const disabledText = _campo('settings-hub-disabled');
@@ -141,8 +123,6 @@ window.apriImpostazioni = async function(tab?: string) {
         if (window.hubConfig) {
             _campo('settings-hub-url').textContent = window.hubConfig.hubUrl;
             _campo('settings-hub-repoid').textContent = window.hubConfig.repoId;
-            // Google Drive personale per gli allegati: indipendente dal Drive del vault
-            // condiviso (che per un vault Hub non esiste).
             if (typeof window.aggiornaStatoDriveHub === 'function') window.aggiornaStatoDriveHub();
             hubSection.classList.remove('hidden');
             isAnySyncActive = true;
@@ -152,7 +132,6 @@ window.apriImpostazioni = async function(tab?: string) {
     }
 
     if (driveSection) {
-        // Un vault Hub ha vaultType='shared' ma NON è Drive: la sezione Drive non va mostrata.
         const isHubVault = !!window.hubConfig || vaultConfig.provider === 'hub';
         if (vaultConfig.vaultType !== 'local' && !isHubVault) {
             driveSection.classList.remove('hidden');
@@ -174,7 +153,6 @@ window.apriImpostazioni = async function(tab?: string) {
     if (disabledText) disabledText.classList.toggle('hidden', isAnySyncActive);
 }
 
-/** Percorso allegati come lo usa il main: nessun percorso composto nel renderer. */
 async function _mostraCartellaAllegati(settings?: any) {
     const div = _campo('settings-attachments-path');
     const btnRestore = _campo('btn-restore-attachments');
@@ -190,11 +168,6 @@ async function _mostraCartellaAllegati(settings?: any) {
     if (btnRestore) btnRestore.classList.toggle('hidden-tab', !settings.customAttachmentsPath);
 }
 
-// --- Campi numerici --------------------------------------------------------------------------
-// Un numero non valido NON si salva e non si scarta in silenzio: il campo resta segnato
-// (aria-invalid + messaggio sotto) e torna all'ultimo valore valido. Salvare `NaN` per il
-// cestino vorrebbe dire un cestino che non conserva nulla.
-
 function _validoCampo(el: HTMLInputElement) {
     el.dataset.ultimoValido = el.value;
     el.removeAttribute('aria-invalid');
@@ -202,7 +175,6 @@ function _validoCampo(el: HTMLInputElement) {
     if (errore) { errore.textContent = ''; errore.classList.add('hidden'); }
 }
 
-/** Intero in [min, max] o null; il campo vuoto vale `vuoto` (undefined = non ammesso). */
 function _leggiIntero(el: HTMLInputElement, vuoto?: null): number | null | undefined {
     if (el.value.trim() === '') {
         if (vuoto === null) { _validoCampo(el); return null; }
@@ -228,22 +200,16 @@ window.salvaImpostazioniSicurezza = async function() {
     for (const [id, chiave] of [['settings-snapshot-recenti', 'snapshotRecenti'], ['settings-snapshot-giorni', 'snapshotGiorni'], ['settings-cestino-giorni', 'cestinoGiorni']]) {
         const el = _campo(id);
         if (!el) continue;
-        // Vuoto = null: il main toglie la chiave e torna al predefinito del modello.
         const v = _leggiIntero(el, null);
         if (v !== undefined) parziale[chiave] = v;
     }
     await _salvaPreferenze(parziale);
 };
 
-// --- Generali --------------------------------------------------------------------------------
-
 window.salvaNomeCollaboratore = async function(valore: string) {
     await _salvaPreferenze({ username: String(valore || '').trim() });
 };
 
-// --- Aspetto ---------------------------------------------------------------------------------
-
-// Lo zoom lo applica il main (webContents.setZoomFactor) quando la chiave cambia.
 window.cambiaZoomInterfaccia = async function(valore: string) {
     await _salvaPreferenze({ zoomInterfaccia: parseInt(valore, 10) });
 };
@@ -260,9 +226,6 @@ window.salvaTestoTrascrizione = async function() {
     if (await _salvaPreferenze(parziale)) window.applicaPreferenzeTesto(await window.apiSettings.get());
 };
 
-// --- Documenti -------------------------------------------------------------------------------
-
-/** Caselle delle lingue OCR installate; spuntate quelle preselezionate. */
 window.popolaLingueOcrPredefinite = async function(preferite?: string[]) {
     const lista = _campo('settings-ocr-lingue');
     if (!lista) return;
@@ -322,13 +285,10 @@ window.salvaPreferenzeScanner = async function() {
     await _salvaPreferenze({ scannerPdf: !!(pdf && pdf.checked), scannerImportaSempre: !!(sempre && sempre.checked) });
 };
 
-// --- Sistema ---------------------------------------------------------------------------------
-
 window.cambiaAggiornamentiAutomatici = async function(attivo: boolean) {
     await _salvaPreferenze({ aggiornamentiAutomatici: !!attivo });
 };
 
-/** Il main avvisa quando cambia una preferenza fuori dal pannello (zoom da tastiera). */
 if (window.apiSettings && window.apiSettings.onCambiate) {
     window.apiSettings.onCambiate((chiavi: string[]) => {
         if (!Array.isArray(chiavi) || !chiavi.includes('zoomInterfaccia')) return;
@@ -338,12 +298,6 @@ if (window.apiSettings && window.apiSettings.onCambiate) {
         }).catch((e) => console.error('Zoom non riletto:', e));
     });
 }
-
-// --- Ricerca tra archivi ---------------------------------------------------------------------
-//
-// Due chiavi in settings.json, entrambe di QUESTO computer:
-//   crossArchiveEsclusi       — id degli archivi da non interrogare (assente o [] = nessuno)
-//   suggerimentiAltriArchivi  — false spegne l'avviso nel form (assente o true = attivo)
 
 window.popolaArchiviRicerca = async function() {
     const lista = document.getElementById('settings-cross-archivi');
@@ -371,11 +325,9 @@ window.popolaArchiviRicerca = async function() {
         box.type = 'checkbox';
         box.checked = !a.escluso;
         box.dataset.archivio = a.id;
-        // Nessun handler qui: il change sale fino a #settings-cross-archivi, che ha l'azione
-        // dichiarativa (data-on-change) nel markup statico.
         label.appendChild(box);
         const nome = document.createElement('span');
-        nome.textContent = a.nome;   // dato: textContent
+        nome.textContent = a.nome;
         nome.translate = false;
         label.appendChild(nome);
         if (a.tipo === 'shared') {
@@ -402,8 +354,6 @@ window.salvaArchiviRicerca = async function() {
         const caselle = lista ? Array.from(lista.querySelectorAll('input[type="checkbox"][data-archivio]')) as HTMLInputElement[] : [];
         const mostrati = new Set(caselle.map(c => c.dataset.archivio));
         const settings = await window.apiSettings.get();
-        // Le esclusioni di archivi che ora non compaiono (usciti dai recenti) restano: se
-        // l'archivio torna, torna escluso come l'aveva lasciato l'utente.
         const prima = Array.isArray(settings.crossArchiveEsclusi) ? settings.crossArchiveEsclusi.map(String) : [];
         const esclusi = prima.filter(id => !mostrati.has(id))
             .concat(caselle.filter(c => !c.checked).map(c => c.dataset.archivio));
@@ -423,12 +373,9 @@ window.salvaSuggerimentiAltriArchivi = async function() {
     }
 };
 
-// --- Archivio dati ---------------------------------------------------------------------------
-
 window.cambiaCartellaAllegati = async function() {
     if (!window.apiSettings || !window.apiSettings.scegliCartellaAllegati) return;
     try {
-        // Dialogo e salvataggio nel main: il renderer non scrive percorsi nelle impostazioni.
         const scelta = await window.apiSettings.scegliCartellaAllegati(window.t("dialog_select_folder", "Seleziona la posizione per la nuova cartella"));
         if (!scelta) return;
         await _mostraCartellaAllegati();
@@ -512,9 +459,6 @@ window.cambiaCartellaLavoro = async function() {
     }
 }
 
-// Macchina a stati esplicita per il banner aggiornamenti: idle -> available -> downloading -> downloaded -> installing,
-// con 'error' raggiungibile da qualunque stato attivo. Un solo punto di rendering (renderUpdateBanner) evita che gli
-// handler asincroni (progress/downloaded/error) lascino il bottone in uno stato incoerente tra loro.
 window._updateState = window._updateState || { status: 'idle' };
 
 function mapErrorCodeToMessage(errorCode, rawError) {
@@ -573,9 +517,6 @@ function renderUpdateBanner() {
         case 'error':
             banner.classList.add('bg-red-600', 'border-red-700');
             text.textContent = mapErrorCodeToMessage(s.errorCode, s.errorMessage);
-            // Se è fallito il CONTROLLO non c'è nulla da scaricare: "Scarica" rifaceva il controllo
-            // di nascosto e, se nel frattempo la release era completa, scaricava davvero — il
-            // messaggio d'errore e il download riuscito sembravano contraddirsi.
             if (s.fase === 'check') {
                 btn.textContent = window.t("btn_update_retry");
                 btn.onclick = () => window.controllaAggiornamenti(true);
@@ -585,7 +526,7 @@ function renderUpdateBanner() {
             }
             banner.classList.remove('hidden-tab');
             break;
-        default: // idle
+        default:
             banner.classList.add('hidden-tab');
     }
 }
@@ -610,7 +551,7 @@ function setupUpdateEventListeners() {
     if (window._updateListenersSetup || !window.apiBrowser || !window.apiBrowser.onUpdateProgress) return;
 
     window.apiBrowser.onUpdateProgress((progressObj) => {
-        if (window._updateState.status !== 'downloading') return; // Evita di sovrascrivere uno stato più recente
+        if (window._updateState.status !== 'downloading') return;
         window._updateState = { ...window._updateState, percent: Math.round(progressObj.percent) };
         renderUpdateBanner();
     });
@@ -622,10 +563,6 @@ function setupUpdateEventListeners() {
 
     if (window.apiBrowser.onUpdateError) {
         window.apiBrowser.onUpdateError((payload) => {
-            // Errore asincrono (rete caduta a metà download, checksum non valido, ecc.).
-            // electron-updater emette 'error' ANCHE quando fallisce il controllo, che però arriva
-            // già come risultato di checkForUpdates: qui conta solo durante download/installazione,
-            // altrimenti un controllo automatico fallito diventava un banner rosso con "Scarica".
             const s = window._updateState.status;
             if (s !== 'downloading' && s !== 'installing') return;
             window._updateState = { ...window._updateState, status: 'error', fase: 'download', errorCode: payload && payload.errorCode, errorMessage: payload && payload.error };
@@ -641,7 +578,6 @@ window.controllaAggiornamenti = async function(mostraAvvisi = true) {
 
     setupUpdateEventListeners();
 
-    // Un download/installazione in corso non deve essere interrotto da un ri-check silenzioso periodico
     if (window._updateState.status === 'downloading' || window._updateState.status === 'installing') return;
 
     if (mostraAvvisi) mostraMessaggio(window.t("msg_check_updates"), "info");
@@ -649,10 +585,8 @@ window.controllaAggiornamenti = async function(mostraAvvisi = true) {
     const result = await window.apiBrowser.checkForUpdates();
 
     if (result.devMode) {
-        return; // Build non pacchettizzata: nessun canale di update disponibile
+        return;
     } else if (result.error) {
-        // Nel controllo automatico gli errori passeggeri (niente rete, release in pubblicazione,
-        // nessuna release) non meritano un banner rosso: il prossimo controllo li risolve da sé.
         const passeggero = ['offline', 'release-incomplete', 'no-release'].includes(result.errorCode);
         if (!mostraAvvisi && passeggero) {
             window._updateState = { status: 'idle' };
@@ -686,7 +620,6 @@ window.mostraNoteRilascio = function() {
     const modal = document.getElementById('release-notes-modal');
     const body = document.getElementById('release-notes-body');
     if (!modal || !body) return;
-    // releaseNotes arriva dal body della GitHub Release (contenuto remoto non fidato): sanitizzato prima dell'inserimento nel DOM.
     body.innerHTML = notes ? window.sanitizeHTML(notes) : window.escapeHTML(window.t("msg_no_release_notes"));
     modal.classList.remove('hidden-tab');
     if (window.lucide) lucide.createIcons({ nodes: [modal] });

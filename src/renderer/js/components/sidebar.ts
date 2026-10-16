@@ -1,6 +1,3 @@
-// --- SIDEBAR ---
-
-/** Il nome dell'archivio (vault) aperto: la cartella su disco, o il nome scelto su Hub. */
 function nomeArchivioCorrente() {
     if (window.hubConfig && window.hubConfig.name) return String(window.hubConfig.name);
     const percorso = window.percorsoWorkspace || '';
@@ -9,33 +6,13 @@ function nomeArchivioCorrente() {
 }
 window.nomeArchivioCorrente = nomeArchivioCorrente;
 
-/**
- * Etichetta della radice del percorso '' — e cioè **il nome dell'archivio**.
- *
- * Nel dato la radice virtuale resta: un record senza cartella ha `cartella: ''`, e ce ne
- * saranno sempre (li producono l'import ZIP, l'import CSV e i merge da versioni precedenti).
- * Ciò che sparisce è la parola "Radice" nell'interfaccia, che non diceva nulla a nessuno e
- * lasciava l'albero vuoto — cioè senza un posto dove vedere le schede non archiviate.
- *
- * ⚠️ Questo ribalta due decisioni precedenti, e vale la pena sapere quali: la 2.4.1 tolse la
- * riga radice dall'albero, e un commento qui sopra escludeva di usare il nome del vault
- * perché "è già nel selettore in fondo alla sidebar". Entrambe reggevano finché la riga si
- * chiamava "Radice": ripetere il nome dell'archivio è meno peggio di un albero che non
- * mostra dove stanno venticinque schede appena importate.
- */
 function etichettaRadice() {
     return nomeArchivioCorrente() || window.t('folder_root_label', 'Radice');
 }
 window.etichettaRadice = etichettaRadice;
 
-// --- Memoizzazione dell'albero ------------------------------------------------
-// La sidebar veniva ricostruita da zero a ogni commit dello Store, anche per il CRUD di
-// un singolo record: con migliaia di schede sono migliaia di nodi DOM buttati e rifatti.
-// Calcoliamo una firma economica di tutto ciò che l'albero disegna davvero; se è
-// invariata, il DOM esistente è già corretto e il render viene saltato.
 let _sidebarSignature = null;
 
-// Separatori non stampabili: non possono comparire nei dati e mantengono la firma compatta.
 const SEP_CAMPO = String.fromCharCode(1);
 const SEP_RIGA = String.fromCharCode(2);
 const SEP_BLOCCO = String.fromCharCode(3);
@@ -44,27 +21,10 @@ window.invalidaCacheSidebar = function() {
     _sidebarSignature = null;
 };
 
-// --- Etichetta secondaria delle schede nell'albero ---------------------------
-//
-// La riga di una scheda mostrava solo `segnatura || titolo`: in un catasto è "165, 579",
-// cioè un numero che non dice chi ha dichiarato. Qui si aggiunge un secondo rigo con il
-// valore di UN campo, scelto dall'utente.
-//
-// ⚠️ Preferenza LOCALE (appState per workspace, come colonne/ordinamento/vista), non
-// `appData`: sincronizzarla citerebbe campi di tipi che sull'altro PC possono non esistere
-// e produrrebbe diff inutili fra collaboratori.
-//
-// Un solo campo e non una mappa tipo→campo: l'archivio mescola modelli (fiscali →
-// dichiarante, imbreviature → Notaio) e `auto` copre il caso misto senza raddoppiare la UI.
 window.alberoSecondario = window.alberoSecondario || { modo: 'nessuno', campo: '', ordina: 'segnatura' };
 
-// Ordine di ricerca di `auto`: i campi che in un archivio notarile/fiscale portano il nome
-// della persona. `titolo` chiude la lista perché è l'ultimo ripiego leggibile.
 const AV_AUTO_SECONDARIO = ['dichiarante', 'Notaio', 'autore', 'attori_dinamici', 'titolo'];
 
-// Memo: `campiDellaScheda` non è gratis e l'etichetta serve a OGNI record a ogni firma
-// (cioè a ogni commit dello Store, anche quando il render viene saltato). La chiave
-// include `lastModified`, quindi una scheda modificata si ricalcola da sola.
 let _cacheSecondario = new Map();
 
 function _tipoDiSchedaSidebar(m) {
@@ -73,15 +33,10 @@ function _tipoDiSchedaSidebar(m) {
         || { campi: ['titolo', 'autore', 'note'] };
 }
 
-/** Definizioni dei campi di una scheda (tipo + campi propri della 3.7). */
 function _definizioniScheda(m) {
     return window.Model.campiDellaScheda(m, _tipoDiSchedaSidebar(m), window.CONFIG_CAMPI, appData);
 }
 
-/**
- * Riduce a UNA riga il valore di un campo. Delle `dynamic_list` prende il primo valore non
- * vuoto e non l'elenco intero: cinque beni sotto una segnatura sono rumore, non contesto.
- */
 function _testoSecondario(v) {
     if (v === null || v === undefined) return '';
     if (typeof v === 'boolean') return window.testoBooleano(v);
@@ -105,34 +60,28 @@ function _testoSecondario(v) {
 
 function _calcolaSecondario(m, pref) {
     if (pref.modo === 'campo') return pref.campo ? _testoSecondario(m[pref.campo]) : '';
-    // `auto`: prima la lista di priorità, che costa una lettura di proprietà per campo.
     for (const campo of AV_AUTO_SECONDARIO) {
         const t = _testoSecondario(m[campo]);
         if (t) return t;
     }
-    // Solo se nessuno dei noti è valorizzato si paga la risoluzione delle definizioni:
-    // serve a un archivio con campi propri o rinominati, che altrimenti resterebbe muto.
     try {
         for (const def of _definizioniScheda(m)) {
             if (def.authority !== 'persona') continue;
             const t = _testoSecondario(m[def.id]);
             if (t) return t;
         }
-    } catch (e) { /* definizioni non risolvibili: l'etichetta è un di più, non un blocco */ }
+    } catch (e) {}
     return '';
 }
 
-/** Il «titolo» di una scheda per il telefono (CONTRATTO §4.3): la riga secondaria automatica, a prescindere dalla preferenza. */
 window.titoloScheda = (m) => _calcolaSecondario(m, { modo: 'auto' });
 
-/** L'etichetta secondaria di una scheda, '' se disattivata o se il campo è vuoto. */
 function etichettaSecondaria(m) {
     const pref = window.alberoSecondario || {};
     if (pref.modo !== 'auto' && pref.modo !== 'campo') return '';
     const chiave = m.id + SEP_CAMPO + (m.lastModified || 0) + SEP_CAMPO + pref.modo + SEP_CAMPO + (pref.campo || '');
     const memo = _cacheSecondario.get(chiave);
     if (memo !== undefined) return memo;
-    // Cambio di preferenza o archivio grande: la mappa non deve crescere senza fine.
     if (_cacheSecondario.size > 4000) _cacheSecondario.clear();
     const val = _calcolaSecondario(m, pref) || '';
     _cacheSecondario.set(chiave, val);
@@ -142,21 +91,16 @@ function etichettaSecondaria(m) {
 function calcolaFirmaSidebar() {
     const parti = [
         window.linguaAttuale || '',
-        // Il nome dell'archivio E' la riga in testa all'albero: se cambia, l'albero cambia.
         nomeArchivioCorrente(),
         window.cartellaAttuale || '',
         (appData.cartelle || []).join('|'),
         Array.from(window.cartelleEspanse || []).join('|'),
         (window.selectedRecords || []).join('|'),
-        // L'etichetta secondaria cambia sia le righe sia il loro ordine: senza queste due
-        // chiavi, cambiarla lascerebbe l'albero identico fino al prossimo commit.
         (window.alberoSecondario && window.alberoSecondario.modo) || 'nessuno',
         (window.alberoSecondario && window.alberoSecondario.campo) || '',
         (window.alberoSecondario && window.alberoSecondario.ordina) || 'segnatura',
-        // Fase 12: il «+N» delle carte dal telefono cambia le righe senza toccare i record.
         String(window.carteDalTelefono ? window.carteDalTelefono.versione : 0)
     ];
-    // Dei record contano solo id, cartella ed etichette mostrate nell'albero.
     let righe = '';
     for (const m of (appData.manoscritti || [])) {
         righe += m.id + SEP_CAMPO + (m.cartella || '') + SEP_CAMPO + (m.segnatura || m.titolo || '')
@@ -171,7 +115,6 @@ function renderSidebar() {
 
     const firma = calcolaFirmaSidebar();
     if (firma === _sidebarSignature && container.childElementCount > 0) {
-        // Lo stato di sync non fa parte della firma: quel pannello si aggiorna comunque.
         if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
         return;
     }
@@ -179,10 +122,8 @@ function renderSidebar() {
 
     container.innerHTML = window.sanitizeHTML('');
 
-    // Normalizza cartelle PRIMA del render (non come side-effect nel mezzo)
     normalizzaCartelle();
 
-    // Costruisci l'albero
     const root = {};
     appData.cartelle.forEach(percorso => {
         const parti = percorso.split('/');
@@ -194,7 +135,6 @@ function renderSidebar() {
         });
     });
 
-    // Index pre-computato: path → manoscritti[], evita filter O(n) per ogni nodo
     const folderIndex = new Map<string, any[]>();
     for (const m of appData.manoscritti) {
         const key = m.cartella || '';
@@ -202,9 +142,6 @@ function renderSidebar() {
         folderIndex.get(key)!.push(m);
     }
 
-    // Ordinare per etichetta secondaria è l'altra metà del "trovare prima": vedere il
-    // dichiarante non basta se le schede dello stesso dichiarante restano sparse.
-    // A parità (o con etichetta vuota) si ricade sulla segnatura, che è sempre presente.
     const perSecondario = (window.alberoSecondario || {}).ordina === 'secondario';
     const fileOrdinati = (path) => {
         const files = (folderIndex.get(path) || []).slice();
@@ -219,8 +156,6 @@ function renderSidebar() {
         return files;
     };
 
-    // Riga di un record nell'albero. Estratta da renderNode perché la usa anche la
-    // radice virtuale, che non è un nodo dell'albero delle cartelle.
     function creaRigaFile(m, fullPath, profondita) {
         const fileRow = document.createElement('div');
         const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
@@ -243,20 +178,14 @@ function renderSidebar() {
             e.stopPropagation();
             if (window.cartellaAttuale !== fullPath) {
                 window.cartellaAttuale = fullPath;
-                // Il record deve comparire nella vista della sua cartella
                 window.azzeraFiltriRicerca();
             }
-            // Sempre, non solo al cambio cartella: si può arrivare qui dal tab
-            // 'add' o 'trascrizione', dove la griglia non è nemmeno visibile.
             if (typeof switchTab === 'function') switchTab('list');
 
             if (typeof window.selectItem === 'function') {
-                window.selectItem(m.id, e); // ri-renderizza sidebar + griglia (sincrono)
+                window.selectItem(m.id, e);
             }
 
-            // In multi-selezione (ctrl/shift) lo scroll disorienterebbe.
-            // switchTab può abortire su form sporco: in quel caso view-list è
-            // ancora nascosta e non c'è nulla da rivelare.
             const vList = document.getElementById('view-list');
             const isListaVisibile = vList && !vList.classList.contains('hidden-tab');
             if (!e.ctrlKey && !e.metaKey && !e.shiftKey && isListaVisibile) {
@@ -274,11 +203,6 @@ function renderSidebar() {
         };
         fileRow.ondragend = () => fileRow.classList.remove('opacity-50');
 
-        // Etichetta secondaria: secondo rigo, mai al posto della segnatura. Il `title`
-        // serve perché a 288px di sidebar entrambe le righe vengono tagliate.
-        // DOM costruito a mano invece di innerHTML + sanitizeHTML: una riga per record, e su
-        // migliaia di record DOMPurify era la voce più pesante del render della sidebar.
-        // textContent rende i valori inerti senza bisogno di escape.
         const secondaria = etichettaSecondaria(m);
         const icona = document.createElement('i');
         icona.setAttribute('data-lucide', 'file-text');
@@ -299,7 +223,6 @@ function renderSidebar() {
         } else {
             fileRow.append(icona, titolo);
         }
-        // Fase 12 — «+N»: carte appena arrivate dal telefono (stessa fonte di «Importate ora»).
         const dalTelefono = window.carteDalTelefono ? window.carteDalTelefono(m.id) : 0;
         if (dalTelefono) {
             const segno = document.createElement('span');
@@ -312,19 +235,12 @@ function renderSidebar() {
         return fileRow;
     }
 
-    // Funzione ricorsiva per renderizzare
     function renderNode(nodeName, nodeObj, parentEl, profondita) {
         const fullPath = nodeObj.path;
-        // La radice ('') è un nodo come gli altri, con due sole differenze: non si trascina
-        // (non è una cartella, non si può spostare dentro nulla) e ha l'icona dell'archivio.
-        // Tutto il resto — click, espansione, drop, menu — è identico, ed è esattamente il
-        // motivo per cui passa di qui invece di avere una funzione sua da tenere allineata.
         const isRadice = fullPath === '';
         const filesInFolder = fileOrdinati(fullPath);
         const hasChildren = Object.keys(nodeObj.children).length > 0 || filesInFolder.length > 0;
         const isAttuale = fullPath === window.cartellaAttuale;
-
-        // Rimosso il force-expand per permettere di collassare la cartella attuale
 
         const div = document.createElement('div');
         div.className = "flex flex-col";
@@ -333,14 +249,12 @@ function renderSidebar() {
         riga.className = `group flex items-center gap-1 p-1.5 rounded-sm cursor-pointer transition-colors text-sm sidebar-row ${isAttuale ? 'active' : ''}`;
         riga.style.paddingLeft = `${profondita * 1.25 + 0.25}rem`;
 
-        // Context Menu for Pasting
         riga.oncontextmenu = (e) => {
             if (typeof window.showSidebarFolderContextMenu === 'function') {
                 window.showSidebarFolderContextMenu(e, fullPath);
             }
         };
 
-        // Drag and Drop Logic
         riga.draggable = !isRadice;
         riga.ondragstart = (e) => {
             e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'folder', path: fullPath }));
@@ -373,7 +287,6 @@ function renderSidebar() {
             } catch(err) { console.error(err); }
         };
 
-        // Icona espansione (Chevron)
         const spanToggle = document.createElement('span');
         spanToggle.className = "w-5 h-5 flex items-center justify-center shrink-0";
         if (hasChildren) {
@@ -388,7 +301,6 @@ function renderSidebar() {
             };
         }
 
-        // Icona: l'archivio ha la sua, la stessa del selettore in fondo alla sidebar.
         const icona = isRadice ? 'library' : (isAttuale ? 'folder-open' : 'folder');
         const testo = document.createElement('span');
         testo.className = "truncate flex items-center gap-1.5 flex-1 select-none";
@@ -397,10 +309,6 @@ function renderSidebar() {
         riga.appendChild(spanToggle);
         riga.appendChild(testo);
         
-        // Fase 4.1 — un solo "⋯" al posto di rinomina+elimina: apre lo STESSO menu del
-        // tasto destro, quindi rinomina, apri in Esplora, copia/taglia/incolla e "crea
-        // scheda qui" smettono di essere raggiungibili solo col tasto destro.
-        // opacity-0 su hover ma focus-within lo rivela: resta raggiungibile da tastiera.
         const actionContainer = document.createElement('div');
         actionContainer.className = "opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center transition-opacity";
 
@@ -419,8 +327,6 @@ function renderSidebar() {
         riga.onclick = () => {
             window.cartellaAttuale = fullPath;
             window.cartelleEspanse.add(fullPath);
-            // Navigare l'albero esce dalla ricerca globale (testo E tag): finché uno dei
-            // due è attivo, getManoscrittiFiltrati ignora del tutto la cartella scelta.
             window.azzeraFiltriRicerca();
             switchTab('list');
             renderSidebar();
@@ -429,14 +335,12 @@ function renderSidebar() {
 
         div.appendChild(riga);
 
-        // Nodi Figli
         if (hasChildren && window.cartelleEspanse.has(fullPath)) {
             const childContainer = document.createElement('div');
             Object.keys(nodeObj.children).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(childName => {
                 renderNode(childName, nodeObj.children[childName], childContainer, profondita + 1);
             });
 
-            // Render dei file
             filesInFolder.forEach(m => {
                 childContainer.appendChild(creaRigaFile(m, fullPath, profondita + 1));
             });
@@ -447,21 +351,13 @@ function renderSidebar() {
         parentEl.appendChild(div);
     }
 
-    // L'albero mostra SOLO cartelle: la radice ('') non ha una riga propria (scelta della
-    // 2.4.1). Per tornare alla radice basta cliccare l'area vuota; per creare la prima
-    // cartella, il tasto destro lì dentro.
     const fragment = document.createDocumentFragment();
 
-    // La radice è la RIGA IN TESTA, col nome dell'archivio, e le cartelle sono i suoi figli.
-    // Prima l'albero mostrava solo cartelle: senza cartelle restava vuoto, e le schede non
-    // archiviate non avevano un posto in cui vederle — chi ne importava venticinque nella
-    // radice vedeva l'elenco pieno e la Struttura bianca.
     renderNode(etichettaRadice(), { path: '', children: root }, fragment, 0);
 
     container.appendChild(fragment);
     if (window.lucide) lucide.createIcons({ nodes: [container] });
 
-    // Imposta l'intera zona del container come drop per il root
     container.ondragover = (e) => { e.preventDefault(); container.classList.add('bg-stone-100'); };
     container.ondragleave = () => { container.classList.remove('bg-stone-100'); };
     container.ondrop = (e) => {
@@ -470,16 +366,12 @@ function renderSidebar() {
         try {
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
             if (data.type === 'folder' && typeof spostaCartella !== 'undefined') spostaCartella(data.path, 'ROOT');
-            // Trascinare una scheda fuori da ogni cartella la riporta alla radice:
-            // senza una riga radice, questo è l'unico gesto che lo consente.
             else if (data.type === 'manoscritto' && typeof spostaManoscritto !== 'undefined') spostaManoscritto(data.id, '');
         } catch(err) {}
     };
 
     const sidebarFoldersContainer = document.getElementById('sidebar-folders');
     if (sidebarFoldersContainer) {
-        // Click nel vuoto = esci da ogni cartella. Senza una riga radice sarebbe
-        // altrimenti impossibile tornare a vedere le schede non archiviate.
         sidebarFoldersContainer.onclick = (e) => {
             if ((e.target as Element).closest('.sidebar-row') || (e.target as Element).closest('button')) return;
             if (window.cartellaAttuale === '') return;
@@ -491,7 +383,6 @@ function renderSidebar() {
             if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
         };
         sidebarFoldersContainer.oncontextmenu = (e) => {
-            // Seleziona il click solo se non è all'interno di una sidebar-row
             const closestRow = (e.target as Element).closest('.sidebar-row');
             if (!closestRow) {
                 e.preventDefault();
@@ -507,12 +398,6 @@ function renderSidebar() {
     if (typeof window.renderSourceControl === 'function') window.renderSourceControl();
 }
 
-/**
- * Campi offerti dal menu: l'unione dei campi di TUTTE le schede dell'archivio, non della
- * pagina corrente come in tabella — la preferenza vale per l'albero intero, che mostra
- * anche cartelle che non si stanno guardando. `dynamic_list` resta inclusa (al contrario
- * della tabella): "Persone / Attori" è proprio uno dei campi che si vogliono vedere qui.
- */
 function campiSecondariDisponibili() {
     const campi = [];
     const visti = new Set();
@@ -547,8 +432,6 @@ function _applicaPreferenzaAlbero(patch) {
 
 window.impostaAlberoSecondario = function(modo, campo) {
     const patch: Record<string, string> = { modo: modo, campo: modo === 'campo' ? String(campo || '') : '' };
-    // Spegnendo l'etichetta l'ordinamento per etichetta non avrebbe più un criterio:
-    // tornerebbe a ordinare per stringa vuota, cioè a un ordine apparentemente casuale.
     if (modo === 'nessuno') patch.ordina = 'segnatura';
     _applicaPreferenzaAlbero(patch);
 };
@@ -557,10 +440,6 @@ window.impostaOrdineAlbero = function(ordina) {
     _applicaPreferenzaAlbero({ ordina: ordina === 'secondario' ? 'secondario' : 'segnatura' });
 };
 
-/**
- * Menu della preferenza. Riusa `apriMenuContestuale` (frecce, Esc, click fuori, ancoraggio)
- * come il selettore delle colonne: un secondo tipo di popover qui non aggiungerebbe nulla.
- */
 window.apriMenuEtichettaAlbero = function(ancora) {
     const pref = window.alberoSecondario || {};
     const spunta = (attiva) => attiva ? 'check' : 'minus';
@@ -609,7 +488,6 @@ function aggiornaSelectCartelle() {
     const select = document.getElementById('form-cartella');
     select.innerHTML = window.sanitizeHTML('');
 
-    // Radice come prima opzione: si può salvare una scheda senza sceglierle una cartella
     const optRadice = document.createElement('option');
     optRadice.value = '';
     optRadice.textContent = etichettaRadice();
@@ -619,7 +497,6 @@ function aggiornaSelectCartelle() {
     [...appData.cartelle].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c;
-        // Sostituisce la barra con una freccia per estetica nel menu a tendina
         opt.textContent = c.replace(/\//g, ' ⮞ ');
         if (c === window.cartellaAttuale) opt.selected = true;
         select.appendChild(opt);
@@ -628,13 +505,9 @@ function aggiornaSelectCartelle() {
 
 let _currentSidebarTab = 'folders';
 
-/** Apre il pannello richiesto senza mai chiuderlo (switchSidebarTab e' un toggle). */
-// --- Fase 5.2: i 5 pulsanti dell'header sono un tablist vero ---
-// `tabName === null` = sidebar chiusa: nessun tab selezionato, ma il gruppo resta
-// raggiungibile con Tab perché il primo pulsante conserva tabindex 0 (roving tabindex).
 function tabSidebar() {
     return Array.from(document.querySelectorAll<HTMLElement>('#sidebar-tablist [role="tab"]'))
-        .filter(b => b.offsetParent !== null);   // i tab cloud sono nascosti su vault locale
+        .filter(b => b.offsetParent !== null);
 }
 
 function aggiornaStatoTab(tabName) {
@@ -643,8 +516,6 @@ function aggiornaStatoTab(tabName) {
         const attivo = btn.dataset.tab === tabName;
         btn.classList.toggle('tab-active', attivo);
         btn.setAttribute('aria-selected', attivo ? 'true' : 'false');
-        // aria-expanded resta accanto ad aria-selected: qui dice anche se il pannello
-        // (cioè l'intera sidebar) è aperto, informazione che aria-selected da solo non dà.
         btn.setAttribute('aria-expanded', attivo ? 'true' : 'false');
         btn.tabIndex = attivo ? 0 : -1;
     });
@@ -669,9 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (e.key === 'End') prossimo = visibili.length - 1;
         else return;
         e.preventDefault();
-        // Manual activation: le frecce spostano solo il fuoco, l'apertura resta a
-        // Invio/Spazio. Aprire un pannello a ogni freccia farebbe partire renderHistoryList
-        // (che interroga il cloud) mentre l'utente sta solo scorrendo.
         visibili.forEach(b => { b.tabIndex = -1; });
         visibili[prossimo].tabIndex = 0;
         visibili[prossimo].focus();
@@ -688,16 +556,12 @@ function switchSidebarTab(tabName) {
     const sidebar = document.getElementById('sidebar');
     const isCurrentlyHidden = sidebar.classList.contains('hidden-tab');
 
-    // Se clicco la stessa tab e la sidebar è aperta, la chiudo
     if (tabName === _currentSidebarTab && !isCurrentlyHidden) {
         sidebar.classList.add('hidden-tab');
-        // L'active state deve seguire la visibilità reale del pannello: lasciarlo acceso
-        // su una sidebar chiusa fa sembrare "rotto" il pulsante (nulla cambia al click).
         aggiornaStatoTab(null);
         return;
     }
 
-    // Altrimenti apro la sidebar e cambio tab
     sidebar.classList.remove('hidden-tab');
     _currentSidebarTab = tabName;
     aggiornaStatoTab(tabName);
@@ -910,10 +774,6 @@ function renderTagList() {
     const container = document.getElementById('tag-list');
     container.innerHTML = window.sanitizeHTML('');
 
-    // Fase 3.4 — il conteggio lo fa il modello, che raggruppa per CHIAVE normalizzata e
-    // restituisce la grafia dell'anagrafica. Prima si contava per `toLowerCase()`, quindi
-    // i nomi propri perdevano le maiuscole in elenco ("Notai di Perugia" → "notai di
-    // perugia") e accenti diversi producevano due voci per lo stesso tag.
     const voci = window.Model.conteggiTag(appData.manoscritti, appData);
 
     if (voci.length === 0) {
@@ -925,7 +785,6 @@ function renderTagList() {
 
     document.getElementById('btn-clear-tag').classList.toggle('hidden', window.activeTags.size === 0);
 
-    // Filtro live: mostra solo i tag che contengono il testo digitato (l'input non è più readonly)
     const filtro = window.Model.chiaveTag(document.getElementById('global-tag-search')?.value || '');
     const visibili = filtro ? voci.filter(v => v.chiave.includes(filtro)) : voci;
 
@@ -935,8 +794,6 @@ function renderTagList() {
     }
 
     const fragment = document.createDocumentFragment();
-    // `activeTags` contiene le grafie mostrate, non le chiavi: il confronto per attivo
-    // deve quindi passare dalla chiave, o un tag rinominato resterebbe "attivo" invisibile.
     const attive = new Set(Array.from(window.activeTags).map(t => window.Model.chiaveTag(t)));
     visibili.forEach(voce => {
         const btn = document.createElement('button');
@@ -945,8 +802,6 @@ function renderTagList() {
         btn.className = `tag-filtro w-full text-left px-3 py-2 rounded-sm text-sm font-medium transition-colors flex justify-between items-center ${isActive ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-stone-50 text-stone-700 hover:bg-stone-200 border border-transparent'}`;
         if (colore) btn.classList.add('tag-bordo-' + colore);
         btn.onclick = () => {
-            // Si toglie per CHIAVE e si aggiunge la grafia canonica: cliccare due volte
-            // deve spegnere il filtro anche se il tag è stato nel frattempo rinominato.
             for (const t of Array.from(window.activeTags)) {
                 if (window.Model.chiaveTag(t) === voce.chiave) window.activeTags.delete(t);
             }
@@ -954,8 +809,6 @@ function renderTagList() {
             renderMain();
             renderTagList();
         };
-        // Il conteggio era già calcolato ma mai reso: senza, non si distingue un tag
-        // usato una volta per errore da uno che descrive mezzo archivio.
         btn.innerHTML = window.sanitizeHTML(
             `<span class="truncate">#${escapeHTML(voce.nome)}</span>` +
             `<span class="shrink-0 ml-2 text-xs tabular-nums ${isActive ? 'text-amber-700' : 'text-stone-400'}">${voce.conteggio}</span>`
@@ -965,8 +818,6 @@ function renderTagList() {
     });
     container.appendChild(fragment);
 }
-
-// --- VAULT SWITCHER ---
 
 window.toggleVaultSwitcher = function(e) {
     if (e) {
@@ -1013,7 +864,6 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     
     return new Promise<void>((resolve) => {
         const finishRemoval = async () => {
-            // La lista dei recenti la scrive il main (N2): qui si chiede solo di togliere una voce.
             if (await window.apiSettings.rimuoviArchivioRecente(pathToRemove)) window.aggiornaListaVault();
         };
 
@@ -1021,7 +871,6 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
             modal.remove();
             if (window.apiBrowser && window.apiBrowser.deleteVaultLocal) {
                 const esito = await window.apiBrowser.deleteVaultLocal(pathToRemove);
-                // Annullato nella conferma del main: l'archivio resta, anche nell'elenco.
                 if (esito && esito.canceled) { resolve(); return; }
             }
             await finishRemoval();
@@ -1041,7 +890,6 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     });
 };
 
-// Archivio recente la cui cartella non esiste più (spostata o rinominata su disco).
 window.archivioRecenteNonTrovato = function(percorso) {
     const nome = percorso.split(/[\\/]/).pop();
     document.body.insertAdjacentHTML('beforeend', `
@@ -1068,7 +916,7 @@ window.archivioRecenteNonTrovato = function(percorso) {
     document.getElementById('btn-vault-locate').onclick = async () => {
         try {
             const esito = await window.apiBrowser.ricollegaArchivioRecente(percorso, window.t('dialog_cerca_cartella_archivio', 'Seleziona la nuova cartella dell\'archivio'));
-            if (esito?.ok) modal.remove(); // la finestra si ricarica sull'archivio ritrovato
+            if (esito?.ok) modal.remove();
             else if (esito?.motivo === 'non-archivio') mostraErrore(window.t('msg_cartella_non_archivio', 'La cartella scelta non contiene un archivio ArchiView.'));
             else if (esito?.motivo) mostraErrore(window.t('msg_errore', 'Errore: ') + esito.motivo);
         } catch (e) {
@@ -1103,11 +951,10 @@ window.aggiornaListaVault = async function() {
                     
                     if (!isCurrent) {
                         divContainer.onclick = async () => {
-                            // false = cartella spostata/rinominata su disco: senza toast il clic non fa nulla.
                             if (!(await window.apiBrowser.openRecentWorkspace(path))) window.archivioRecenteNonTrovato(path);
                         };
                     } else {
-                        divContainer.onclick = (e) => { e.stopPropagation(); }; // Non fa nulla
+                        divContainer.onclick = (e) => { e.stopPropagation(); };
                     }
                     
                     const nameSpan = document.createElement('span');
@@ -1145,7 +992,6 @@ window.aggiornaListaVault = async function() {
             }
         }
         
-        // Aggiorna anche il nome nel pulsante
         const nameEl = document.getElementById('current-vault-name');
         if (nameEl && currentPath) {
             let vaultName = currentPath.split(/[\\/\\\\]/).pop();
@@ -1155,7 +1001,6 @@ window.aggiornaListaVault = async function() {
             const isCurrentPersonal = currentVaultInfo && currentVaultInfo.isPersonal;
 
             if (isCurrentHub) {
-                // Hub: mostra il nome scelto (condiviso via invito), non il nome cartella.
                 const hubName = (window.hubConfig && window.hubConfig.name) || vaultName;
                 nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${escapeHTML(hubName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
@@ -1177,7 +1022,6 @@ window.aggiornaListaVault = async function() {
 document.addEventListener('click', function(e) {
     const popover = document.getElementById('vault-switcher-popover');
     if (popover && !popover.classList.contains('hidden-tab')) {
-        // Chiudi se clicchi fuori
         if (!(e.target as Element).closest('#vault-switcher-popover') && !(e.target as Element).closest('.btn-ghost.w-full.justify-between')) {
             popover.classList.add('hidden-tab');
         }

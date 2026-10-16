@@ -31,7 +31,7 @@
     });
 
     let activeDeletions = [];
-    let deletionResolutions = {}; // id -> 'keep' o 'delete'
+    let deletionResolutions = {};
     let onResolvedDeletionsCallback = null;
 
     window.apriDeletionConflictModal = function(deletions, onResolved) {
@@ -68,7 +68,6 @@
                 badgeHtml = `<span class="text-xs font-bold testo-pericolo flex items-center justify-end gap-1"><i data-lucide="trash" class="w-4 h-4"></i> ${escapeHTML(window.t('deletion_to_delete', 'Da eliminare'))}</span>`;
             }
 
-            // La scelta fatta si legge da aria-pressed (e dal badge), non solo dal colore (1.4.1).
             const scelta = (azione: string, testo: string) =>
                 `<button type="button" data-deletion-id="${escapeHTML(card.id)}" data-deletion-action="${azione}" aria-pressed="${chosenAction === azione ? 'true' : 'false'}" class="eliminazione-scelta btn btn-secondary py-1 px-3 text-xs">${escapeHTML(testo)}</button>`;
 
@@ -86,7 +85,6 @@
                 </div>
             `);
 
-            // I listener vengono aggiunti via addEventListener dopo sanitizeHTML per evitare la rimozione da parte di DOMPurify
             div.querySelectorAll('button[data-deletion-id]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-deletion-id');
@@ -105,7 +103,6 @@
         deletionResolutions[id] = action;
         renderDeletionList();
         aggiornaStatoFooterDeletions();
-        // Il re-render sostituisce i pulsanti: senza, il fuoco da tastiera cadeva sul body.
         const btn = document.querySelector(`#deletion-list button[data-deletion-id="${CSS.escape(String(id))}"][data-deletion-action="${CSS.escape(String(action))}"]`) as HTMLElement;
         if (btn) btn.focus();
     };

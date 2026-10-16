@@ -1,25 +1,9 @@
-// Fase 2.4 — Il wizard di import CSV.
-//
-// Tre strati, come per i tag (3.4), le azioni in massa (1.5) e il cestino (4.1): l'analisi e
-// la costruzione delle schede stanno in `shared/csvImport.ts` (pura, condivisa, unit-testata),
-// il main legge il file, e questo file raccoglie le scelte e disegna.
-//
-// ⚠️ L'ANTEPRIMA È L'IMPORT. `_ipRicalcola` chiama `CsvImport.costruisciSchede`, e la conferma
-// inserisce esattamente l'array che l'anteprima ha appena mostrato — non lo ricostruisce con
-// altri parametri. È l'unica forma di dry-run che significhi qualcosa: due percorsi diversi
-// divergerebbero proprio sui casi storti, che sono quelli per cui il dry-run esiste.
-//
-// PREFISSO `_ip` sugli helper privati: gli script del renderer non sono moduli e il bundle
-// li concatena in UN UNICO scope.
-
 function _ipT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
-/** Lo stato del wizard: vive finché il modale è aperto. */
 let _ipStato = null;
 
-/** L'ultimo modello usato, se esiste ancora; altrimenti il primo dell'archivio. */
 function _ipTipoPredefinito() {
     const tipi = appData.tipiDocumento || [];
     const ultimo = typeof leggiUltimoTipoDocumento === 'function' ? leggiUltimoTipoDocumento() : null;
@@ -27,14 +11,12 @@ function _ipTipoPredefinito() {
     return (tipi[0] || {}).id || '';
 }
 
-/** Il nome del tipo come lo si vede altrove: tradotto per i predefiniti, proprio per gli altri. */
 function _ipNomeTipo(t) {
     const chiave = 'model_' + t.id;
     const tradotto = window.t(chiave);
     return tradotto !== chiave ? tradotto : (t.nome || t.id);
 }
 
-/** I codici di problema di `csvImport.ts` tradotti. Il modello non parla italiano (2.1). */
 function _ipMotivo(p) {
     const campo = p.campo ? p.campo + ': ' : '';
     switch (p.codice) {
@@ -71,17 +53,11 @@ window.apriImportCsv = async function() {
         nome: res.nome || 'CSV',
         testo: res.testo,
         analisi,
-        // Il tipo predefinito è quello con cui l'utente lavora di solito: la STESSA memoria
-        // che precompila la scheda nuova (`leggiUltimoTipoDocumento`, form.ts). Proporre
-        // sempre il primo dell'elenco costringerebbe a cambiarlo a ogni import.
         tipo: _ipTipoPredefinito(),
         cartella: window.cartellaAttuale || '',
         aggiorna: false,
-        /** 'modello' → 'mappatura': la scelta del modello è il PRIMO passo, non una tendina. */
         passo: 'modello',
-        /** Il modello inventato qui: esiste solo nel wizard finché non si conferma. */
         modelloNuovo: null,
-        /** I campi inventati qui dentro: esistono solo nel wizard finché non si conferma. */
         campiNuovi: [],
         colonne: [],
         mappatura: [],
@@ -93,30 +69,18 @@ window.apriImportCsv = async function() {
     _ipDisegna();
 };
 
-/**
- * Ricalcola le destinazioni offerte e, se richiesto, la mappatura proposta.
- *
- * `riproponi` è vero quando cambia ciò da cui la proposta dipende — l'apertura del file e la
- * riga di intestazione — e falso quando cambia solo l'elenco dei campi disponibili: lì
- * riproporre butterebbe via le scelte già fatte a mano dall'utente.
- */
 function _ipAggiornaColonne(riproponi) {
     const s = _ipStato;
     const etichette = window.etichetteColonneExport ? window.etichetteColonneExport() : {};
-    // Fase 3.7 — anche i campi propri già usati in archivio, o un CSV appena esportato non
-    // sarebbe reimportabile: le loro colonne resterebbero senza destinazione.
     const propri = window.campiPropriArchivio ? window.campiPropriArchivio() : [];
     s.colonne = window.CsvImport.colonneImportabili(_ipTipiConNuovo(), etichette, s.campiNuovi, propri);
     if (riproponi) {
         s.mappatura = window.CsvImport.proponiMappatura(s.analisi.intestazioni, s.colonne);
     } else {
-        // Le colonne del file possono essere cambiate di numero (altra riga d'intestazione):
-        // la mappatura si allinea invece di restare più corta o più lunga.
         s.mappatura = s.analisi.intestazioni.map((h, i) => s.mappatura[i] || '');
     }
 }
 
-/** Rilegge il file scegliendo un'altra riga come intestazione. */
 window.impostaRigaIntestazioniImport = function(indice) {
     const s = _ipStato;
     if (!s) return;
@@ -132,18 +96,6 @@ window.chiudiImportCsv = function() {
 };
 
 
-// --- Passo 1: il modello (Fase 2.4) ------------------------------------------
-//
-// Il wizard comincia da QUI e non dalla mappatura. La ragione è che il modello decide tutto
-// il resto — quali campi si possono scegliere, come si convertono i valori, quali sono
-// obbligatori — e trovarlo come una tendina fra le altre, già riempita con l'ultimo usato,
-// significa che nove import su dieci finiscono nel modello sbagliato senza che nessuno abbia
-// deciso niente. Una domanda esplicita, prima, costa un clic e toglie quel silenzio.
-//
-// Il modello nuovo NON viene creato qui: come i campi nuovi, esiste solo nel wizard finché
-// non si conferma l'import. È la stessa promessa dell'anteprima.
-
-/** Il tipo "in prova", cioè quello che il wizard userà anche se non esiste ancora. */
 function _ipTipiConNuovo() {
     const s = _ipStato;
     const tipi = (appData.tipiDocumento || []).slice();
@@ -180,8 +132,6 @@ function _ipDisegnaPassoModello() {
             () => { s.modelloNuovo = null; s.tipo = t.id; _ipAggiornaColonne(false); _ipDisegna(); }));
     }
 
-    // Il nome proposto è quello del file senza estensione: è come l'utente chiama già quel
-    // materiale, e riscriverlo a mano è il primo attrito di chi arriva da un foglio di calcolo.
     const nomeProposto = String(s.nome || '').replace(/\.[^.]+$/, '') || _ipT('imp_model_new', 'Nuovo modello');
     cont.appendChild(scelta('__nuovo__', _ipT('imp_model_new', 'Crea un modello nuovo'),
         _ipT('imp_model_new_desc', 'I campi li costruisci dalle colonne del file, al passo successivo.'),
@@ -206,8 +156,6 @@ function _ipDisegnaPassoModello() {
         inp.id = 'import-csv-nome-modello';
         inp.className = 'form-input';
         inp.value = s.modelloNuovo.nome;
-        // `oninput` e non `onchange`: ridisegnare a ogni tasto perderebbe il fuoco, ma il
-        // valore va tenuto aggiornato o "Continua" premuto senza sfocare userebbe il vecchio.
         inp.oninput = () => { s.modelloNuovo.nome = inp.value; };
         riga.appendChild(et);
         riga.appendChild(inp);
@@ -233,7 +181,6 @@ window.importCsvIndietro = function() {
     _ipDisegna();
 };
 
-/** Ricostruisce le schede con la mappatura corrente. È anche ciò che verrà importato. */
 function _ipRicalcola() {
     const s = _ipStato;
     if (!s) return;
@@ -263,14 +210,6 @@ function _ipSelect(valore, opzioni, onChange, className?) {
     return sel;
 }
 
-/**
- * Le destinazioni offerte per una colonna: "non importare", le colonne libere raggruppate
- * (campi della scheda / campi dei modelli / campi nuovi) e la voce che ne crea uno.
- *
- * Il raggruppamento non è decorazione: con venti campi di quattro modelli diversi, una
- * tendina piatta costringe a leggerla tutta per scoprire se ciò che si cerca esiste già —
- * ed è così che nascono i doppioni "Note"/"note"/"Annotazioni".
- */
 function _ipOpzioniDestinazione(indice) {
     const s = _ipStato;
     const prese = new Set(s.mappatura.filter((m, i) => m && i !== indice));
@@ -278,8 +217,6 @@ function _ipOpzioniDestinazione(indice) {
     const campi = [];
     const nuovi = [];
     for (const c of s.colonne) {
-        // Una destinazione già presa non si offre due volte: due colonne sullo stesso campo
-        // significherebbero che la seconda sovrascrive la prima senza dirlo.
         if (prese.has(c.chiave)) continue;
         const voce = { value: c.chiave, label: c.etichetta };
         if (c.nuovo) nuovi.push(voce);
@@ -295,7 +232,6 @@ function _ipOpzioniDestinazione(indice) {
     ];
 }
 
-/** Una tendina con i gruppi (`<optgroup>`): i gruppi vuoti non compaiono. */
 function _ipSelectGruppi(valore, opzioni, onChange, className) {
     const sel = document.createElement('select');
     sel.className = className || 'form-input';
@@ -324,13 +260,6 @@ function _ipSelectGruppi(valore, opzioni, onChange, className) {
     return sel;
 }
 
-/**
- * Il modulo per inventare un campo, aperto DENTRO la riga della colonna.
- *
- * In riga e non in un modale sopra il modale: un secondo livello di finestra per scrivere un
- * nome è sproporzionato, e su Esc non si saprebbe quale dei due si sta chiudendo. È la stessa
- * scelta della rinomina in loco del pannello dei tag (3.4).
- */
 function _ipApriNuovoCampo(riga, indice) {
     const s = _ipStato;
     if (riga.querySelector('.import-nuovo-campo')) return;
@@ -341,8 +270,6 @@ function _ipApriNuovoCampo(riga, indice) {
     const nome = document.createElement('input');
     nome.type = 'text';
     nome.className = 'form-input';
-    // Il nome della colonna è quasi sempre il nome che si vuole dare al campo: proporlo
-    // risparmia la digitazione e, soprattutto, tiene il campo e la colonna chiamati uguali.
     nome.value = s.analisi.intestazioni[indice] || '';
     nome.setAttribute('aria-label', _ipT('imp_new_field_name', 'Nome del campo'));
 
@@ -385,8 +312,6 @@ function _ipApriNuovoCampo(riga, indice) {
     conferma.onclick = crea;
     nome.onkeydown = (e) => {
         if (e.key === 'Enter') { e.preventDefault(); crea(); }
-        // Esc annulla la SOLA creazione: senza stopPropagation chiuderebbe anche il wizard,
-        // buttando via la mappatura di venti colonne per un tasto solo.
         else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); annullaCreazione(); }
     };
 
@@ -411,17 +336,13 @@ function _ipDisegnaMappatura(contenitore) {
         sinistra.className = 'import-map-source';
         const nome = document.createElement('span');
         nome.className = 'import-map-name';
-        nome.textContent = h;                       // textContent: viene dal file dell'utente
+        nome.textContent = h;
         sinistra.appendChild(nome);
 
-        // Il primo valore non vuoto della colonna, non il primo e basta: su un foglio reale
-        // le prime righe sono spesso vuote, e un esempio vuoto non aiuta a decidere.
         const campione = (s.analisi.righe.find(r => String(r[i] || '').trim() !== '') || [])[i] || '';
         if (campione) {
             const esempio = document.createElement('span');
             esempio.className = 'import-map-sample';
-            // "es." davanti: senza, il valore d'esempio si legge come una seconda parte del
-            // nome della colonna — che è esattamente l'equivoco della prima versione.
             esempio.textContent = _ipT('imp_sample', 'es.') + ' ' + String(campione).slice(0, 48);
             sinistra.appendChild(esempio);
         }
@@ -454,8 +375,6 @@ function _ipDisegnaAnteprima(contenitore) {
     contenitore.innerHTML = '';
     const r = s.esito.riepilogo;
 
-    // Il riepilogo come tessere e non come frase: quattro numeri in una riga di prosa si
-    // leggono uno per volta, e quello che conta — gli scarti — è l'ultimo a farsi notare.
     const tessere = document.createElement('div');
     tessere.className = 'import-summary';
     const tessera = (valore, etichetta, classe) => {
@@ -492,9 +411,6 @@ function _ipDisegnaAnteprima(contenitore) {
         contenitore.appendChild(p);
     }
 
-    // Le prime righe, come dice la roadmap: l'anteprima serve a riconoscere un errore di
-    // mappatura, e per quello ne bastano poche. Le righe con problemi però si mostrano
-    // TUTTE (fino a un tetto), perché è l'elenco su cui l'utente dovrà tornare a lavorare.
     const conProblemi = s.esito.esiti.filter(e => e.problemi.length > 0);
     const primi = s.esito.esiti.slice(0, 6);
     const daMostrare = primi.concat(conProblemi.filter(e => primi.indexOf(e) === -1)).slice(0, 40);
@@ -520,7 +436,6 @@ function _ipDisegnaAnteprima(contenitore) {
         segn.translate = false;
         const numero = document.createElement('span');
         numero.className = 'import-preview-row-n';
-        // +2: la riga 1 del file è l'intestazione, e l'utente conta come conta Excel.
         numero.textContent = ' · ' + _ipT('imp_row', 'riga {var0}').replace('{var0}', String(e.riga + 2 + s.analisi.rigaIntestazioni));
         testa.appendChild(segn);
         testa.appendChild(numero);
@@ -546,26 +461,11 @@ function _ipDisegnaAnteprima(contenitore) {
     }
 }
 
-/**
- * ⚠️ La destinazione dev'essere un archivio CHE ESISTE. `cartellaAttuale` può non stare in
- * `appData.cartelle` — un record può avere una `cartella` mai registrata come archivio — e in
- * quel caso il `<select>` non trovava l'opzione, mostrava "Radice", e intanto ogni scheda
- * finiva nel percorso invisibile, che l'anteprima annunciava come archivio da creare: il
- * comando diceva una cosa e ne faceva un'altra. Va fatto PRIMA del ricalcolo, o l'anteprima
- * verrebbe costruita sulla destinazione sbagliata.
- */
 function _ipNormalizzaCartella() {
     const s = _ipStato;
     if (s.cartella && !(appData.cartelle || []).includes(s.cartella)) s.cartella = '';
 }
 
-/**
- * Il ridisegno ricostruisce i controlli del passo: una freccia su una tendina (che su
- * Windows emette `change` anche a tendina chiusa) o Invio su una scelta di modello
- * riportavano il fuoco al <body>, e chi usa la tastiera ripartiva dall'inizio del modale.
- * La chiave è il contenitore con id più vicino più la posizione fra i controlli dello
- * stesso tipo: stabile, perché le righe della mappatura mantengono l'ordine.
- */
 function _ipChiaveFuoco() {
     const a = document.activeElement as HTMLElement | null;
     const modal = document.getElementById('import-csv-modal');
@@ -577,7 +477,6 @@ function _ipChiaveFuoco() {
 }
 
 function _ipRipristinaFuoco(k) {
-    // Solo se il fuoco si è davvero perso: un controllo sopravvissuto al ridisegno lo tiene.
     if (!k || (document.activeElement && document.activeElement !== document.body)) return;
     const cont = k.cont ? document.getElementById(k.cont) : null;
     const el = (k.id ? document.getElementById(k.id) : cont && cont.querySelectorAll(k.tag)[k.indice]) as HTMLElement | null;
@@ -604,8 +503,6 @@ function _ipDisegnaPasso() {
             (s.analisi.delimitatore === '\t' ? 'TAB' : s.analisi.delimitatore);
     }
 
-    // I due passi vivono nello stesso modale e si scambiano il posto: separarli in due
-    // finestre farebbe perdere il file gia' letto a ogni passo indietro.
     const primoPasso = s.passo === 'modello';
     const blocco = (id, visibile) => {
         const el = document.getElementById(id);
@@ -649,17 +546,11 @@ function _ipDisegnaPasso() {
         aggiorna.onchange = () => { s.aggiorna = aggiorna.checked; _ipDisegna(); };
     }
 
-    // La riga di intestazione è un'IPOTESI del programma (vedi `rigaIntestazioni` in
-    // csvImport.ts) e va mostrata come tale: un foglio che comincia con un titolo in una
-    // cella sola manderebbe altrimenti tutto storto — colonne senza nome, tendine tutte su
-    // "non importare" e la vera intestazione importata come una scheda — senza dire perché.
     const rigaSlot = document.getElementById('import-csv-riga-slot');
     if (rigaSlot) {
         rigaSlot.innerHTML = '';
         const opzioni = (s.analisi.tutte || []).slice(0, 10).map((r, i) => ({
             value: i,
-            // L'anteprima della riga nella tendina: si sceglie riconoscendo il contenuto,
-            // non contando le righe a memoria.
             label: (i + 1) + ' · ' + r.filter(c => String(c).trim() !== '').slice(0, 4).join(' | ').slice(0, 50)
         }));
         rigaSlot.appendChild(_ipSelect(s.analisi.rigaIntestazioni, opzioni,
@@ -688,11 +579,6 @@ function _ipDisegnaPasso() {
     }
 }
 
-/**
- * Applica l'import: inserisce le schede NUOVE, applica le patch a quelle da aggiornare, crea
- * gli archivi mancanti e registra i tag. Un'unica azione annullabile: importare duecento
- * schede e poterle togliere solo una per una sarebbe una trappola, non una funzione.
- */
 window.confermaImportCsv = async function() {
     const s = _ipStato;
     if (!s || !s.esito) return;
@@ -710,9 +596,6 @@ window.confermaImportCsv = async function() {
         else nuove.push(scheda);
     }
 
-    // Lo stato PRIMA, per l'annullamento: le schede aggiornate vanno fotografate intere,
-    // perché la patch ne cambia solo alcune chiavi e ricostruirle a ritroso dai valori nuovi
-    // sarebbe indovinare (vedi la regola 3 del gestore di annullamento in state.ts).
     const primaDi = new Map();
     for (const p of patch) {
         const vivo = appData.manoscritti.find(m => String(m.id) === String(p.id));
@@ -721,11 +604,6 @@ window.confermaImportCsv = async function() {
     const cartellePrima = (appData.cartelle || []).slice();
     const idNuovi = nuove.map(m => String(m.id));
 
-    // I campi inventati nel wizard esistono solo qui dentro finché non si conferma: è la
-    // stessa promessa dell'anteprima ("nulla viene scritto finché non premi Importa"), e un
-    // campo aggiunto al modello mentre si guarda l'anteprima l'avrebbe già tradita.
-    // Il modello inventato al passo 1 nasce QUI, non prima: come i campi nuovi, esiste
-    // solo nel wizard finche' non si conferma l'import.
     const modelloNuovo = s.modelloNuovo && s.tipo === s.modelloNuovo.id ? s.modelloNuovo : null;
     if (modelloNuovo && !(appData.tipiDocumento || []).some(t => t.id === modelloNuovo.id)) {
         appData.tipiDocumento.push({ id: modelloNuovo.id, nome: modelloNuovo.nome, campi: [] });
@@ -736,9 +614,6 @@ window.confermaImportCsv = async function() {
 
     const applicaCampi = () => {
         if (!tipoBersaglio || campiNuovi.length === 0) return;
-        // Si passa da `impostaCampi` e non si scrive `campi`/`campiDef` a mano: è l'unico
-        // posto che conosce la forma su disco di un tipo (3.1), e due modi di scriverla
-        // divergerebbero al primo campo con un vincolo.
         const definizioni = window.Model.campiDelTipo(tipoBersaglio, window.CONFIG_CAMPI || {}, appData);
         for (const c of campiNuovi) {
             if (definizioni.some(d => d.id === c.id)) continue;
@@ -753,8 +628,6 @@ window.confermaImportCsv = async function() {
         }
         applicaCampi();
         for (const m of nuove) appData.manoscritti.push(JSON.parse(JSON.stringify(m)));
-        // La scheda importata è esplicitamente voluta: se il suo id era fra i tombstone
-        // (reimport di qualcosa eliminato), toglierlo o il primo sync la ricancellerebbe.
         window.Store.togliTombstone(nuove.map(m => m.id));
         for (const p of patch) {
             const vivo = appData.manoscritti.find(m => String(m.id) === String(p.id));

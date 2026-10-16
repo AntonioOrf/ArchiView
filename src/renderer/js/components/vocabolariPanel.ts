@@ -1,17 +1,7 @@
-// Fase 3.3 — il pannello "Vocabolari" — e Fase 3.6 — il rilevatore di segnature duplicate.
-//
-// Stanno nello stesso file perché sono due modali piccoli e senza stato condiviso con il
-// resto: le mutazioni sono in `logic/vocabolariLogic.ts`, qui c'è solo il DOM.
-//
-// PREFISSO `_vp` sugli helper privati: il bundle concatena tutti gli script in UNO scope.
-
 function _vpT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
-// --- Vocabolari (3.3) ---------------------------------------------------------
-
-/** Id del vocabolario mostrato nel riquadro di destra. */
 let _vpAperto = null;
 
 window.apriVocabolari = function(idDaAprire) {
@@ -45,7 +35,7 @@ window.disegnaVocabolari = function() {
         btn.onclick = () => { _vpAperto = voc.id; window.disegnaVocabolari(); };
         const nome = document.createElement('span');
         nome.className = 'truncate';
-        nome.textContent = voc.nome;   // textContent: è dato utente
+        nome.textContent = voc.nome;
         const conta = document.createElement('span');
         conta.className = 'shrink-0 ml-2 text-xs tabular-nums text-stone-400';
         conta.textContent = String((voc.valori || []).length);
@@ -67,8 +57,6 @@ window.disegnaVocabolari = function() {
         return;
     }
 
-    // Quante schede usano ciascun valore: senza il numero, togliere un valore è una
-    // scommessa su quanto materiale ne dipende.
     const bersagli = window.Model.campiDelVocabolario(appData, corrente.id);
     const conteggio = {};
     for (const m of appData.manoscritti || []) {
@@ -123,7 +111,6 @@ function _vpRigaValore(voc, valore, usi) {
     return riga;
 }
 
-/** Come nel pannello dei tag: si rinomina nella riga, non in un modale sopra il modale. */
 function _vpRinominaInLoco(riga, voc, valore) {
     rinominaInLoco(riga, '.vocab-valore-nome', valore, async (nuovo) => {
         if (nuovo && nuovo !== valore) await window.rinominaValoreVocabolario(voc.id, valore, nuovo);
@@ -163,8 +150,6 @@ window.eliminaVocabolarioDalPannello = async function() {
     _vpAperto = null;
     window.disegnaVocabolari();
 };
-
-// --- Duplicati della segnatura (3.6) ------------------------------------------
 
 window.apriDuplicati = function() {
     const modal = document.getElementById('duplicati-modal');
@@ -212,8 +197,6 @@ window.disegnaDuplicati = function() {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'dup-scheda';
-            // Cartella e data distinguono due schede che per definizione hanno la stessa
-            // segnatura: senza, l'elenco sarebbe N righe identiche.
             const dove = m.cartella || _vpT('folder_root_label', 'Archivio');
             const quando = m.lastModified ? new Date(m.lastModified).toLocaleDateString(window.localeAttuale()) : '';
             btn.textContent = dove + (quando ? ' · ' + quando : '');
@@ -226,8 +209,6 @@ window.disegnaDuplicati = function() {
         lista.appendChild(box);
     }
 };
-
-// --- Markup -------------------------------------------------------------------
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {

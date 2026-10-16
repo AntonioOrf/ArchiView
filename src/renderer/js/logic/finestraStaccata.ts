@@ -1,17 +1,7 @@
-// PIANO-SCHEDA-AFFIANCATA, Fasi 4–5 — scheda o documento in una finestra a parte.
-//
-// Lo stesso file gira nelle due finestre:
-//  - la PRINCIPALE stacca, risponde alle richieste della staccata (`salva`, `record`) e al main
-//    (`zona`, per il riaggancio trascinando), e rimette tutto al suo posto quando la staccata
-//    si chiude;
-//  - la STACCATA (`?finestra=scheda|documento`) non avvia l'app: parte dalla fotografia
-//    dell'archivio ricevuta dalla principale e non scrive mai su disco. `Store` qui manda ogni
-//    salvataggio alla principale, che fonde gli allegati a tre vie come per il tab «Scheda»
-//    (Fase 1): il testo trascritto nel frattempo nella principale non si perde.
 (function() {
     const TIPO_STACCATA = new URLSearchParams(location.search).get('finestra');
-    let _staccata = null;   // nella principale: 'scheda' | 'documento' | null
-    let _zona = null;       // ultima zona di riaggancio dichiarata al main
+    let _staccata = null;
+    let _zona = null;
 
     const pref = (k, v?) => window.prefLocale(k, v);
     const clona = (x) => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
@@ -20,7 +10,6 @@
     window.schedaStaccata = () => _staccata === 'scheda';
     window.documentoStaccato = () => _staccata === 'documento';
 
-    /** La fotografia per la staccata: l'archivio senza le basi del merge, che lì non servono. */
     window.datiFinestraStaccata = function(id, extra?) {
         const db = { ...appData, baseObjects: {}, baseHashes: {} };
         return { db: clona(db), id, percorso: window.percorsoWorkspace || '', ...(extra || {}) };
@@ -50,7 +39,6 @@
     window.staccaScheda = async function() {
         if (!window.apiFinestre || window.finestraSatellite) return;
         const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
-        // Il modulo lascia il tab già salvato: da qui in poi lo scrive solo la staccata.
         if (!(await window.lasciaSchedaTrascrizione())) return;
         _staccata = 'scheda';
         await window.mostraSchedaTrascrizione('scheda');
@@ -65,29 +53,23 @@
         if (!(await stacca('documento', window.datiFinestraStaccata(doc.id, doc)))) window.aggiornaDocumentoScheda();
     };
 
-    /** «Riporta qui» nel tab: la staccata salva e si chiude, il modulo torna nel tab. */
     window.riportaSchedaQui = function() {
         if (_staccata) window.apiFinestre.messaggio('riaggancia');
     };
 
-    /** La principale lascia la vista: la staccata salva e si chiude, ma resta "da staccare". */
     window.chiudiFinestraStaccata = function(tipo) {
         if (_staccata !== tipo) return;
         _staccata = null;
         window.apiFinestre.messaggio('chiudi');
     };
 
-    /** Prima che l'app si chiuda: ciò che la staccata ha in sospeso va su disco. */
     window.svuotaFinestraStaccata = async function() {
         if (_staccata) await window.apiFinestre.messaggio('svuota');
     };
 
-    // --- Principale: richieste dalla staccata e dal main --------------------------------
-
     async function salvaDallaStaccata({ id, patch, allegatiPrima }) {
         const vivo = trova(id);
         if (!vivo) throw new Error('scheda non trovata');
-        // Il testo nell'editor della principale entra nel record prima della fusione.
         if (String((document.getElementById('trascrizione-id') as HTMLInputElement)?.value) === String(id) && window.salvaEditorTrascrizioneInMemoria) {
             window.salvaEditorTrascrizioneInMemoria();
         }
@@ -102,7 +84,6 @@
         return clona(salvato);
     }
 
-    /** Dove rilasciare la staccata per riagganciarla, in px CSS della finestra principale. */
     function zona(tipo) {
         let r = null;
         if (tipo === 'scheda' && !document.getElementById('view-trascrizione').classList.contains('hidden-tab')) {
@@ -152,22 +133,18 @@
         });
         api.onZona(mostraZona);
         api.onPosizione((tipo, b) => { if (tipo && b) pref('finestraStaccata:posizione:' + tipo, JSON.stringify(b)); });
-        // Chiusa dall'utente (X, «Riaggancia», trascinata sulla zona): il contenuto torna qui.
         api.onChiusa(async (tipo) => {
             mostraZona(false);
             if (_staccata === tipo) _staccata = null;
             pref('finestraStaccata:' + tipo, '0');
             if (tipo === 'scheda' && !document.getElementById('view-trascrizione').classList.contains('hidden-tab')) {
                 const trascrizioneId = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
-                // Il record della principale è già aggiornato dalle richieste `salva`.
                 if (trascrizioneId) await window.mostraSchedaTrascrizione('scheda');
             } else if (tipo === 'documento' && !document.getElementById('view-add').classList.contains('hidden-tab')) {
                 window.aggiornaDocumentoScheda();
             }
         });
     }
-
-    // --- Staccata ----------------------------------------------------------------------
 
     async function svuotaStaccata() {
         if (TIPO_STACCATA !== 'scheda') return true;
@@ -195,8 +172,6 @@
         const api = window.apiFinestre;
         window.finestraSatellite = TIPO_STACCATA;
         document.documentElement.classList.add('finestra-staccata', 'finestra-staccata-' + TIPO_STACCATA);
-        // Quel che resta dell'app sotto la vista non si raggiunge da tastiera. Il pannello del
-        // documento sta dentro <main> (accanto a #view-add): lì si escludono solo i fratelli.
         const sotto = TIPO_STACCATA === 'scheda'
             ? 'body > header, body > div.flex-1'
             : 'body > header, #sidebar, #contenuto-principale > :not(#doc-scheda)';
@@ -205,8 +180,6 @@
         if (window.initPreferenzeTesto) await window.initPreferenzeTesto();
         if (window.initLang) await window.initLang();
 
-        // Un solo scrittore dell'archivio: la principale. Qui niente disco e niente annulla
-        // (ripristinerebbe la copia locale, non il record vero).
         window.gestoreAnnullamento = null;
         window.salvaTutto = async () => {};
         window.salvaTuttoDifferito = () => {};
@@ -242,20 +215,17 @@
         if (window.lucide) lucide.createIcons();
     }
 
-    /** «Riaggancia» nella staccata: salva, poi la finestra si chiude e il contenuto torna al suo posto. */
     window.riagganciaFinestra = async function() {
         if (!window.finestraSatellite) return;
         if (await svuotaStaccata()) window.apiFinestre.riaggancia();
     };
 
-    /** Chiamata da app.ts al posto dell'avvio normale quando la pagina è una finestra staccata. */
     window.avviaFinestraStaccata = function() {
         return TIPO_STACCATA === 'scheda' || TIPO_STACCATA === 'documento' ? avviaStaccata().then(() => true) : Promise.resolve(false);
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         if (!window.apiFinestre) {
-            // Fuori da Electron (o senza preload) non c'è nulla da staccare.
             document.documentElement.classList.add('senza-finestre');
             return;
         }

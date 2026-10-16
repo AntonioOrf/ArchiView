@@ -3,9 +3,6 @@ window.autofetchIntervalId = null;
 
 window.modificheInEntrata = false;
 
-// Fase 3.4 — non esiste più un indicatore separato nell'header: lo stato vive qui e il
-// bottone cloud unico lo legge. Prima renderSourceControl deduceva "ci sono aggiornamenti"
-// dalla classe CSS di un div, cioè dalla presentazione.
 window.impostaModificheInEntrata = function(stato) {
     window.modificheInEntrata = !!stato;
     if (window.statoCloud) window.statoCloud.inEntrata = !!stato;
@@ -34,10 +31,6 @@ window.toggleSyncProgress = function(show, titleKey = 'sync_in_progress') {
         }
     }
 
-    // P3.6 — durante un'operazione cloud le voci Fetch/Scarica/Carica sono disabilitate
-    // (evita doppi-click). Ora passa dallo stato: il popover le legge quando si apre e il
-    // bottone mostra "Sincronizzazione…". Se il popover è già aperto va chiuso, altrimenti
-    // resterebbe a video con voci che non corrispondono più allo stato.
     if (window.statoCloud) window.statoCloud.occupato = !!show;
     if (show && typeof window.chiudiMenuContestuale === 'function') window.chiudiMenuContestuale(false);
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
@@ -55,16 +48,13 @@ window.updateSyncProgress = function(percent, text) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inizializza lo stato all'avvio
     window.driveAuthPromise = aggiornaStatoDrive();
     
-    // Check rapido all'avvio senza attendere la rete
     if (window.apiDrive && window.apiDrive.checkAuth) {
         window.apiDrive.checkAuth().then(isAuth => {
             if (isAuth) {
                 console.log("Frontend detected existing valid tokens for this workspace!");
                 window.driveStatus.isAuthenticated = true;
-                // Aggiorna visivamente i tasti bypassando il lungo check di rete
                 const statusText = document.getElementById('settings-drive-status');
                 const loginBtn = document.getElementById('btn-drive-login');
                 const logoutBtn = document.getElementById('btn-drive-logout');
@@ -78,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Ascolta notifiche IPC dal Main Process
     if (window.apiDrive && window.apiDrive.onStatusUpdated) {
         window.apiDrive.onStatusUpdated((data) => {
             if (data.authenticated) {
@@ -90,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Ascolta eventi di progresso sincrono (se l'IPC lo espone)
     if (window.apiDrive && window.apiDrive.onSyncProgress) {
         window.apiDrive.onSyncProgress((data) => {
             if (data.percent !== undefined) {
@@ -100,13 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Unico provider cloud "a file": Google Drive (OneDrive rimosso, vedi vaultConfig.ts).
 window.getApiCloud = async function() {
     return window.apiDrive;
 };
 
 window.controllaModificheInEntrata = async function(manual = false) {
-    // Coesistenza: su un vault Hub i pulsanti header instradano alle funzioni Hub (percorso Drive intatto).
     if (window.hubConfig) { if (window.controllaModificheHub) await window.controllaModificheHub(manual); return; }
     const apiCloud = await window.getApiCloud();
     if (apiCloud && window.driveStatus && window.driveStatus.isAuthenticated) {
@@ -117,7 +103,6 @@ window.controllaModificheInEntrata = async function(manual = false) {
         try {
             const remoteModifiedTime = await apiCloud.checkUpdates();
             if (remoteModifiedTime && remoteModifiedTime > (window.ultimoCaricamento || 0)) {
-                // Ci sono aggiornamenti sul server più recenti dell'ultimo nostro pull
                 window.impostaModificheInEntrata(true);
                 if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "success");
                 
@@ -149,8 +134,6 @@ window.controllaModificheInEntrata = async function(manual = false) {
             window.azzeraErroreCloud();
         } catch (e) {
             console.error("Errore controllo aggiornamenti in entrata", e);
-            // Anche l'autofetch silenzioso deve lasciare traccia: il toast lo vede solo chi
-            // ha premuto Fetch, il bottone di stato lo vede sempre.
             window.impostaErroreCloud(e.message);
             if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_il_fetch", "Errore durante il fetch: ") + e.message, "error");
         } finally {
@@ -162,12 +145,10 @@ window.controllaModificheInEntrata = async function(manual = false) {
 window.avviaAutofetchDrive = async function() {
     if (window.autofetchIntervalId) clearInterval(window.autofetchIntervalId);
     
-    // Esegue il controllo (solo notifica) ogni 5 minuti (300000 ms)
     window.autofetchIntervalId = setInterval(() => {
         window.controllaModificheInEntrata();
     }, 300000);
     
-    // Fai un controllo iniziale dopo 5 secondi
     setTimeout(() => window.controllaModificheInEntrata(), 5000);
 };
 
@@ -182,7 +163,6 @@ async function aggiornaStatoDrive() {
             unauthorizedVault: statusResult?.unauthorizedVault || false
         };
 
-        // Un vault Hub non passa da Drive: lì l'autenticazione è la presenza di hubConfig.
         window.statoCloud.autenticato = window.driveStatus.isAuthenticated || !!window.hubConfig;
         if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 
@@ -212,8 +192,6 @@ async function aggiornaStatoDrive() {
     }
 }
 
-// Stato dell'account nelle Impostazioni: data-i18n perché il modale resta nel DOM e va
-// ritradotto al cambio di lingua (audit front-end P2-7).
 function _statoDriveHtml() {
     if (window.driveStatus && window.driveStatus.isAuthenticated) {
         return `<span class="testo-successo font-semibold"><span data-i18n="settings_drive_connected_as">${escapeHTML(window.t('settings_drive_connected_as', 'Connesso come:'))}</span> ${escapeHTML(window.driveStatus.user || '')}</span>`;
@@ -221,8 +199,6 @@ function _statoDriveHtml() {
     return `<span class="text-stone-500" data-i18n="settings_drive_not_connected">${escapeHTML(window.t('settings_drive_not_connected', 'Non connesso'))}</span>`;
 }
 
-// Aggiorna il blocco "Google Drive personale (per gli allegati)" nella sezione Hub delle
-// Impostazioni. Indipendente dal Drive del vault condiviso: serve solo per gli allegati.
 window.aggiornaStatoDriveHub = function() {
     const statusText = document.getElementById('settings-hub-drive-status');
     const loginBtn = document.getElementById('btn-hub-drive-login');
@@ -258,21 +234,10 @@ window.loginGoogleDrive = async function(forceLocal = false) {
     await window.loginCloud('google', forceLocal);
 };
 
-// Riconnessione dallo stato "Non connesso" della barra di sync: porta DIRETTAMENTE al login nel
-// browser. Prima quel bottone apriva il modal Cloud, che per un vault già cloud non espone alcun
-// controllo di accesso: un vicolo cieco.
-//
-// forceLocal=true è deliberato: attiva skipCheck in authenticateDrive e forza
-// prompt='select_account consent', quindi il browser si apre SEMPRE. Senza, un token residuo ma
-// inservibile farebbe risolvere l'auth dallo short-circuit "già autenticato" senza aprire nulla —
-// esattamente il sintomo da cui nasce questa richiesta. Essendo lo stato già "non connesso",
-// non stiamo sacrificando un refresh silenzioso utile.
 window.connettiAccountCloud = async function() {
     await window.loginCloud('google', true);
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 
-    // Se il login è partito dal modal Cloud, il suo riepilogo mostra ancora "Non connesso":
-    // riaprirlo lo ripopola con lo stato appena aggiornato.
     const modal = document.getElementById('cloud-modal');
     if (modal && !modal.classList.contains('hidden-tab') && typeof window.apriCloudModal === 'function') {
         await window.apriCloudModal();
@@ -285,9 +250,6 @@ window.logoutGoogleDrive = async function() {
         try {
             await apiCloud.logout();
 
-            // Reset esplicito dello stato locale: aggiornaStatoDrive() da solo non basta se il
-            // main risponde lentamente, e soprattutto l'autofetch continuava a girare dopo la
-            // disconnessione interrogando il cloud con un account che non c'è più.
             window.driveStatus = { isAuthenticated: false, user: null, unauthorizedVault: false };
             if (window.autofetchIntervalId) {
                 clearInterval(window.autofetchIntervalId);
@@ -303,10 +265,6 @@ window.logoutGoogleDrive = async function() {
     }
 };
 
-// Ricollega QUESTO workspace a una cartella già presente sotto ArchiView/ nel Drive dell'utente.
-// Scenario tipico: due PC dello stesso account finiti su cartelle Drive diverse, quindi ognuno
-// sincronizza con un archivio che l'altro non vede. Riscrive il solo sharedVaultId: set-vault-type
-// accetta già un id esplicito, quindi non serve nuovo IPC né si tocca il tipo di vault.
 window.collegaArchivioEsistenteDrive = async function() {
     if (!window.apiDrive || !window.apiBrowser) return;
     const section = document.getElementById('cloud-relink-section');
@@ -360,8 +318,6 @@ window.collegaArchivioEsistenteDrive = async function() {
 };
 
 function confermaCollegamentoArchivio(vault, cfg) {
-    // Il ricollegamento cambia la sorgente dati del workspace: la prima sync dopo il cambio
-    // fonde il contenuto remoto con quello locale, quindi va confermato esplicitamente.
     const msg = window.t("msg_dlg_ricollega_archivio", "Collegare questo archivio alla cartella Drive \"") + (vault.name || '') +
         window.t("msg_dlg_ricollega_archivio2", "\"? Alla prossima sincronizzazione i dati verranno uniti a quelli di quella cartella.");
     const esegui = async () => {
@@ -390,8 +346,6 @@ window.chiudiCollegaArchivioDrive = function() {
     if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
 };
 
-// "Sincronizza" e "Invia" fanno la stessa cosa (pull, merge, upload, allegati): cambiano solo
-// i pulsanti in attesa e i messaggi. Una sola funzione, così le guardie valgono per entrambi.
 const TESTI_SYNC_DRIVE = {
     sync: {
         progresso: 'sync_in_progress',
@@ -407,25 +361,18 @@ const TESTI_SYNC_DRIVE = {
     }
 };
 
-// Pull + merge + upload. Ritorna false se l'utente ha annullato la risoluzione dei conflitti:
-// in quel caso il merge non è avvenuto e caricare il DB locale sovrascriverebbe su Drive le
-// modifiche dei colleghi, perché il parent appena scaricato fa passare il controllo del 409.
 async function scaricaUnisciCarica(apiCloud, silent) {
     const driveData = await apiCloud.pull();
     if (driveData && driveData.database) {
         if (await window.sincronizzaEUnisciDati(driveData.database) === false) return false;
         window.lastDriveModifiedTime = driveData.driveModifiedTime;
     } else if (!silent && typeof mostraMessaggio === 'function') {
-        // Il download non ha trovato nulla: legittimo alla prima pubblicazione, ma se
-        // l'archivio esiste già su un altro PC è il sintomo di una cartella Drive sbagliata.
         mostraMessaggio(window.t("msg_nessun_db_sul_cloud", "Nessun database trovato sul Cloud: viene caricata la copia locale. Se questo archivio esiste già su un altro PC, verifica dal menu Cloud di essere collegato alla stessa cartella Drive."), "warning");
     }
     return caricaDopoMerge(apiCloud, driveData, silent);
 }
 
-// Carica il DB fuso con il parent dell'ultimo pull (409 se un collega ha scritto nel frattempo).
 async function caricaDopoMerge(apiCloud, driveData, silent) {
-    // L'upload legge il DB dal disco: il salvataggio differito va forzato prima.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const inviate = structuredClone(appData.manoscritti);
     const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
@@ -443,13 +390,10 @@ async function caricaDopoMerge(apiCloud, driveData, silent) {
         : (driveData && driveData.driveModifiedTime) || Date.now());
     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
     window.azzeraErroreCloud();
-    // Dopo una sync riuscita lo stato auth è certo (all'avvio un token drive.file può averlo
-    // lasciato a false).
     if (window.driveStatus) window.driveStatus.isAuthenticated = true;
     return true;
 }
 
-/** Dopo un merge riuscito: orario dell'ultimo caricamento, niente più modifiche in entrata. */
 async function registraSyncAvvenuta(ora) {
     window.ultimoCaricamento = ora;
     if (window.apiSettings) {
@@ -475,8 +419,6 @@ async function sincronizzaDrive(silent, modo) {
     if (!apiCloud) return;
 
     const btn = modo === 'sync' ? document.getElementById('btn-drive-sync') as HTMLButtonElement : null;
-    // Anche il gemello nel modal Cloud: senza stato di attesa lì il click sembra non fare nulla
-    // e nulla impedisce di lanciare due sync sovrapposte.
     const btnModal = modo === 'sync' ? document.getElementById('btn-cloud-drive-sync') : null;
     if (btn) btn.disabled = true;
     if (btnModal && window.impostaStatoCaricamentoCloud) {
@@ -505,8 +447,6 @@ async function sincronizzaDrive(silent, modo) {
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_vault_unauthorized_hint', 'Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.'), 'error');
             if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
         } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
-            // Errore di autenticazione: apri il cloud modal per guidare l'utente al login
-            // (es. primo avvio dopo upgrade scope drive.file → drive per vault condivisi)
             if (typeof window.apriCloudModal === 'function') {
                 window.apriCloudModal();
             } else if (!silent && typeof mostraMessaggio === 'function') {
@@ -532,7 +472,6 @@ window.scaricaDalCloud = async function(silent = false) {
     if (window.hubConfig) { if (window.riceviModificheHub) await window.riceviModificheHub(silent); return; }
     if (!silent && !window.hasFetchedBeforeDownload && typeof window.mostraBottomConfirm === 'function') {
         window.mostraBottomConfirm(window.t("confirm_pull_no_fetch", "Attenzione: stai per scaricare le modifiche dal Cloud senza aver prima verificato di cosa si tratta (Fetch). Vuoi procedere comunque?"), () => {
-            // Se accetta, procediamo forzando silent a true per bypassare questo stesso blocco, o mettiamo un flag
             eseguiScaricamentoDalCloud(silent);
         });
         return;
@@ -551,7 +490,6 @@ async function eseguiScaricamentoDalCloud(silent = false) {
         try {
             const driveData = await apiCloud.pull();
             if (driveData && driveData.database) {
-                // Annullato: niente merge, quindi le modifiche in entrata restano da ricevere.
                 if (await window.sincronizzaEUnisciDati(driveData.database) === false) return avvisaSyncDriveAnnullata(silent);
                 window.lastDriveModifiedTime = driveData.driveModifiedTime;
                 await registraSyncAvvenuta(driveData.driveModifiedTime || Date.now());
@@ -587,7 +525,6 @@ window.trasformaInCondiviso = () => trasformaArchivio('shared', 'btn-trasforma-c
 window.trasformaInPersonale = () => trasformaArchivio('backup', 'btn-trasforma-personale',
     window.t("prog_conf_backup", "Impostazione Backup Personale…"));
 
-/** Archivio locale → condiviso (`shared`) o backup personale (`backup`): accesso, tipo, prima sync. */
 async function trasformaArchivio(vaultType, idBottone, testoConfigurazione) {
     const btn = document.getElementById(idBottone) as HTMLButtonElement;
     if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, true, window.t('btn_activating', 'Attivazione in corso...'));
@@ -609,8 +546,6 @@ async function trasformaArchivio(vaultType, idBottone, testoConfigurazione) {
         }
 
         if (window.apiBrowser && window.apiBrowser.setVaultType) {
-            // Il main gestisce il reset dello sharedVaultId sulla transizione local→cloud
-            // e la conservazione dell'id sullo switch shared<->backup.
             await window.apiBrowser.setVaultType({ vaultType, driveAutofetch: true });
             if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
         }
@@ -626,8 +561,6 @@ async function trasformaArchivio(vaultType, idBottone, testoConfigurazione) {
     } catch(e) {
         mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
     } finally {
-        // Ripristino sempre, anche a buon fine: il bottone resta nel DOM (solo nascosto)
-        // e riemergeva disabilitato se in seguito si tornava a un vault locale.
         if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, false);
         else if (btn) btn.disabled = false;
         if (typeof nascondiProgressoCloud === 'function') {
@@ -636,11 +569,6 @@ async function trasformaArchivio(vaultType, idBottone, testoConfigurazione) {
     }
 }
 
-// ─── MIGRAZIONE Drive → Hub (one-way) ─────────────────────────────────────────
-// Pull finale da Drive (per non perdere modifiche remote) → crea repo Hub + push v1 +
-// upload allegati (i chunk sono già locali) → riscrive il vault come provider 'hub'.
-// La config Drive (.archiview-drive.json + sharedVaultId) resta come backup dormiente.
-// I permessi Drive NON sono convertibili: l'owner dovrà re-invitare i collaboratori.
 window.migraVaultSuHub = async function(skipConfirm = false) {
     if (window.hubConfig) { mostraMessaggio(window.t("msg_gia_su_hub", "Questo archivio è già collegato ad un Hub."), "info"); return; }
     if (typeof window.creaRepositoryHub !== 'function') return;
@@ -650,7 +578,6 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
             mostraProgressoCloud(window.t("prog_migrate_title", "Migrazione su Hub"), window.t("prog_migrate_pull", "Scarico le ultime modifiche da Google Drive…"));
         }
         try {
-            // 1. Pull finale da Drive per fondere eventuali modifiche remote non ancora scaricate.
             const apiCloud = await window.getApiCloud();
             if (apiCloud && window.driveStatus?.isAuthenticated) {
                 try {
@@ -661,18 +588,12 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
                 } catch (e) { console.warn("Pull Drive pre-migrazione fallito (procedo con i dati locali):", e); }
             }
 
-            // Flag per mostrare il promemoria "re-invita i collaboratori" dopo il reload.
             if (window.apiSettings) {
                 try {
                     await window.apiSettings.patch({ hubJustMigrated: true });
-                } catch (e) { /* best-effort */ }
+                } catch (e) {}
             }
 
-            // 2. Crea repo + push v1 + salva config (provider→'hub') + upload allegati + reload.
-            //    creaRepositoryHub gestisce i propri errori (toast, nessun throw), mostra il proprio
-            //    overlay "preparazione" e ricarica da sola in caso di successo: nascondiamo il nostro
-            //    overlay solo se fallisce, altrimenti resterebbe visibile fino al reload.
-            // null → creaRepositoryHub usa il basename della cartella come nome vault.
             const ok = await window.creaRepositoryHub(null);
             if (!ok && typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
         } catch (e) {
@@ -681,9 +602,6 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
         }
     };
 
-    // Il pannello dedicato in shareModal (stato drive) spiega già le conseguenze prima di
-    // chiamare questa funzione con skipConfirm=true; la conferma testuale resta come fallback
-    // per eventuali altri chiamanti diretti (es. cloudModal "Avanzate").
     if (skipConfirm) { await esegui(); return; }
     const msg = window.t("confirm_migrate_hub", "Vuoi passare questo archivio da Google Drive all'archivio condiviso di ArchiView? I dati e gli allegati verranno caricati online. La connessione a Google Drive resterà come backup, ma dovrai re-invitare i collaboratori con un nuovo link di invito. L'operazione non è reversibile automaticamente.");
     if (typeof mostraBottomConfirm === 'function') mostraBottomConfirm(msg, esegui);
@@ -691,8 +609,6 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
 };
 
 window.scollegaCloud = async function() {
-    // Coesistenza: scollegare un vault Hub deve rimuovere .archiview-hub.json + i segreti,
-    // altrimenti il modello unificato tornerebbe a derivare provider 'hub' dal file legacy.
     if (window.hubConfig) {
         const scollega = async () => {
             if (typeof mostraProgressoCloud === 'function') {
@@ -742,12 +658,6 @@ window.scollegaCloud = async function() {
 
 
 
-// ─── STORICO VERSIONI CLOUD ───────────────────────────────────────────────────
-
-/**
- * Recupera il fileId del database su Drive e la lista delle revisioni.
- * Restituisce { fileId, revisions[] } oppure lancia un errore.
- */
 window.elencaRevisioniCloud = async function() {
     if (!window.apiDrive) throw new Error("Non sei connesso al Cloud.");
     const fileId = await window.apiDrive.getDbFileId();
@@ -755,21 +665,11 @@ window.elencaRevisioniCloud = async function() {
     return { fileId, revisions };
 };
 
-/**
- * Scarica il contenuto JSON di una revisione specifica.
- */
 window.caricaRevisioneCloud = async function(fileId, revisionId) {
     if (!window.apiDrive) throw new Error("Non sei connesso al Cloud.");
     return await window.apiDrive.getRevision(fileId, revisionId);
 };
 
-/**
- * Ripristina il vault locale e cloud a una revisione specifica, con le regole dell'Hub
- * (`ripristinaVersioneHub`): prima ci si allinea al cloud, poi `ripristinaDatabase` rifirma le
- * schede e mette i tombstone di quelle nate dopo, infine si carica col parent del pull.
- * Senza, le schede create dopo la revisione tornavano al primo caricamento.
- * Ritorna false se l'utente annulla la risoluzione dei conflitti del pull.
- */
 window.ripristinaRevisioneCloud = async function(fileId, revisionId) {
     const apiCloud = await window.getApiCloud();
     if (!apiCloud) throw new Error("Non sei connesso al Cloud.");

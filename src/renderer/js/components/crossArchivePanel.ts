@@ -1,30 +1,16 @@
-// Ricerca tra archivi — Fase 2 di PIANO-RICERCA-ARCHIVI.md: interruttore nella ricerca,
-// risultati degli altri archivi sotto la griglia, anteprima in sola lettura.
-//
-// ⚠️ Le schede degli altri archivi NON entrano mai in `appData.manoscritti`: vivono solo qui,
-// in `_caStato`, e nel DOM di questa sezione. Una scheda esterna nell'array dell'archivio
-// aperto finirebbe in sync, export, cestino e conteggi come se fosse sua.
-//
-// Tutto il testo che arriva dagli altri archivi va nel DOM via `textContent`; l'unico HTML
-// (la trascrizione) passa da `sanitizeHTML`: il database di un archivio condiviso lo
-// scrivono anche altri.
-//
-// PREFISSO `_ca` sugli helper privati: il bundle concatena tutti gli script in UNO scope.
-
 function _caT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
 const _CA_CHIAVE_LS = 'archiview.ricercaAltriArchivi';
 const _CA_DEBOUNCE_MS = 300;
-/** Stessa query entro questo intervallo: niente nuova richiesta (renderMain gira spesso). */
 const _CA_VALIDITA_MS = 30_000;
 const _CA_PAGINA = 30;
 
 let _caTimer = null;
 let _caSeq = 0;
 let _caUltima = { chiave: '', quando: 0 };
-let _caStato = null; // { testo, archivi, risultati, cursore, totale, troncato }
+let _caStato = null;
 let _caUrlAnteprima = [];
 
 function _caAttiva() {
@@ -43,7 +29,6 @@ function _caEl(tag, classe?, testo?) {
     return el;
 }
 
-/** Etichetta leggibile del campo che ha dato il risultato. */
 function _caEtichettaCampo(r) {
     if (r.campo === '#trascrizione') return _caT('cross_field_transcription', 'Trascrizione');
     if (r.campo === '#ocr') return _caT('cross_field_ocr', 'Testo riconosciuto (OCR)');
@@ -55,27 +40,20 @@ function _caEtichettaCampo(r) {
     return typeof window.etichettaCampo === 'function' ? window.etichettaCampo(r.campo) : r.campo;
 }
 
-// --- Interruttore ---------------------------------------------------------------
-
 window.impostaRicercaAltriArchivi = function(attiva) {
-    try { localStorage.setItem(_CA_CHIAVE_LS, attiva ? '1' : '0'); } catch (e) { /* solo comodità */ }
+    try { localStorage.setItem(_CA_CHIAVE_LS, attiva ? '1' : '0'); } catch (e) {}
     const box = document.getElementById('search-altri-archivi') as HTMLInputElement;
     if (box) box.checked = !!attiva;
     window.aggiornaRicercaAltriArchivi(true);
 };
 
-/**
- * Chiamata da `renderMain` a ogni ridisegno e dall'interruttore. Decide da sé se serve una
- * richiesta: la sezione si vede solo con l'interruttore acceso e un testo da cercare, e la
- * stessa query non si ripete prima di `_CA_VALIDITA_MS`.
- */
 window.aggiornaRicercaAltriArchivi = function(forza) {
     const sezione = document.getElementById('altri-archivi');
     if (!sezione || !window.apiBrowser || typeof window.apiBrowser.crossArchiveSearch !== 'function') return;
     const testo = _caTestoRicerca();
     if (!_caAttiva() || !testo) {
         clearTimeout(_caTimer);
-        _caSeq++; // una risposta in volo non deve più disegnare
+        _caSeq++;
         _caUltima = { chiave: '', quando: 0 };
         _caStato = null;
         sezione.classList.add('hidden');
@@ -97,12 +75,8 @@ async function _caCerca(testo, cursore, ripetuta = false) {
     } catch (e) {
         r = { ok: false, error: e && e.message ? e.message : String(e) };
     }
-    // Una risposta arrivata dopo una ricerca più recente non deve sovrascriverla.
     if (seq !== _caSeq) return;
     if (!r || !r.ok) {
-        // Annullata dal main ma nessuna ricerca più recente è partita da qui (seq invariato):
-        // l'ha annullata un altro chiamante sullo stesso canale. Senza ripetere, la sezione
-        // resterebbe ferma su "Ricerca…" per sempre.
         if (r && r.annullata) { if (!ripetuta) return _caCerca(testo, cursore, true); return; }
         _caUltima = { chiave: '', quando: 0 };
         _caImpostaStato(_caT('cross_error', 'Ricerca negli altri archivi non riuscita: {var0}').replace('{var0}', (r && r.error) || '?'));
@@ -135,8 +109,6 @@ function _caImpostaStato(testo, inCorso?) {
         if (lista) lista.setAttribute('aria-busy', 'true');
     }
 }
-
-// --- Risultati ------------------------------------------------------------------
 
 function _caDisegna() {
     const lista = document.getElementById('altri-archivi-lista');
@@ -172,8 +144,6 @@ function _caDisegna() {
         frammento.appendChild(_caGruppo(a, risultati));
     }
 
-    // Gli archivi irraggiungibili si dicono, ma in coda e in piccolo: non sono un errore
-    // della ricerca, sono un disco staccato o una cartella spostata.
     const assenti = s.archivi.filter(a => !a.raggiungibile);
     if (assenti.length) {
         const p = _caEl('p', 'altri-archivi-assenti text-xs text-stone-500 dark:text-stone-400 mt-3');
@@ -236,8 +206,6 @@ function _caRiga(archivio, r) {
     return li;
 }
 
-// --- Anteprima in sola lettura ----------------------------------------------------
-
 function _caRilasciaImmagini() {
     for (const u of _caUrlAnteprima) URL.revokeObjectURL(u);
     _caUrlAnteprima = [];
@@ -268,7 +236,7 @@ window.apriAnteprimaAltroArchivio = async function(archivioId, schedaId) {
     } catch (e) {
         r = { ok: false, error: e && e.message ? e.message : String(e) };
     }
-    if (modal.classList.contains('hidden-tab')) return; // chiusa nel frattempo
+    if (modal.classList.contains('hidden-tab')) return;
     if (!r || !r.ok) {
         document.getElementById('altro-archivio-titolo').textContent = _caT('cross_preview_error', 'Anteprima non disponibile');
         corpo.appendChild(_caEl('p', 'text-sm text-stone-600 dark:text-stone-300', (r && r.error) || ''));
@@ -277,7 +245,6 @@ window.apriAnteprimaAltroArchivio = async function(archivioId, schedaId) {
     _caDisegnaAnteprima(r, corpo);
 };
 
-/** Un valore di campo come testo: liste dinamiche "ruolo: nome", booleani leggibili, niente HTML. */
 function _caTestoValore(def, v) {
     if (v === null || v === undefined || v === '') return '';
     if (typeof v === 'boolean') return window.testoBooleano ? window.testoBooleano(v) : String(v);
@@ -300,8 +267,6 @@ function _caDisegnaAnteprima(r, corpo) {
         _caT('cross_read_only', 'sola lettura')
     ].filter(Boolean).join(' · ');
 
-    // Stesse definizioni del form (campi del tipo + campi propri, nell'ordine della scheda):
-    // CONFIG_CAMPI dà etichette e tipi dei campi base.
     const defs = window.Model.campiDellaScheda(m, r.tipo, typeof CONFIG_CAMPI !== 'undefined' ? CONFIG_CAMPI : undefined);
     const dl = _caEl('dl', 'altri-archivi-campi');
     const mostrati = new Set(['segnatura']);
@@ -319,7 +284,6 @@ function _caDisegnaAnteprima(r, corpo) {
         mostrati.add(d.id);
         aggiungi(d.label || (window.etichettaCampo ? window.etichettaCampo(d.id) : d.id), _caTestoValore(d, m[d.id]), d.id);
     }
-    // Campi rimasti da un tipo cambiato: sono dati scritti dal ricercatore, si mostrano.
     const servizio = new Set(window.Model.CHIAVI_SERVIZIO);
     for (const k of Object.keys(m)) {
         if (servizio.has(k) || mostrati.has(k)) continue;
@@ -331,8 +295,6 @@ function _caDisegnaAnteprima(r, corpo) {
     else corpo.appendChild(_caEl('p', 'text-sm italic text-stone-500', _caT('cross_preview_empty', 'Nessun campo compilato.')));
 
     _caDisegnaAllegati(r, corpo);
-    // Le icone dei pulsanti per campo nascono qui, dopo il disegno: senza, i pulsanti
-    // "copia"/"inserisci" sarebbero rettangoli vuoti.
     if (window.lucide) lucide.createIcons({ nodes: [corpo] });
 
     _caAnteprima = r;
@@ -340,9 +302,6 @@ function _caDisegnaAnteprima(r, corpo) {
     if (copia) copia.classList.remove('hidden');
 }
 
-// --- Copia di singoli campi ------------------------------------------------------------
-
-/** Il form di una scheda è aperto (nuova o in modifica): i valori si possono inserire lì. */
 function _caFormAperto() {
     const vista = document.getElementById('view-add');
     return !!(vista && !vista.classList.contains('hidden-tab') && !vista.classList.contains('hidden') && vista.getClientRects().length);
@@ -379,7 +338,6 @@ function _caAzioniCampo(etichetta, testo, campoId, valore, formAperto) {
     return box;
 }
 
-/** Il controllo del form per quel campo: un input/textarea/select, o il contenitore di una lista. */
 function _caControlloForm(campoId) {
     const lista = document.getElementById('container-' + campoId);
     if (lista) return { tipo: 'lista', el: lista };
@@ -389,11 +347,6 @@ function _caControlloForm(campoId) {
     return null;
 }
 
-/**
- * Mette il valore nel form APERTO, senza salvare: la scheda si salva come sempre, quando il
- * ricercatore lo decide. Un campo già compilato non si sovrascrive senza conferma; una lista
- * (persone, beni) riceve le righe in coda, perché lì aggiungere non toglie niente.
- */
 function _caInserisciNelForm(campoId, valore, testo, etichetta) {
     const c = _caControlloForm(campoId);
     if (!c) return;
@@ -425,17 +378,14 @@ function _caInserisciNelForm(campoId, valore, testo, etichetta) {
     }
 }
 
-// --- Copia della scheda intera -------------------------------------------------------------
-
-let _caAnteprima = null;   // ultima risposta di crossArchiveGet mostrata
-let _caCopia = null;       // { tipo, allegati, inCorso }
+let _caAnteprima = null;
+let _caCopia = null;
 
 function _caDimensione(byte) {
     if (byte < 1024 * 1024) return Math.max(1, Math.round(byte / 1024)) + ' KB';
     return (byte / (1024 * 1024)).toFixed(byte < 10 * 1024 * 1024 ? 1 : 0) + ' MB';
 }
 
-/** Gli allegati che si possono davvero copiare: file presenti su questo computer. */
 function _caAllegatiCopiabili(r) {
     const allegati = Array.isArray(r.scheda.allegati) ? r.scheda.allegati : [];
     const dim = Array.isArray(r.dimensioniAllegati) ? r.dimensioniAllegati : [];
@@ -477,14 +427,12 @@ window.apriCopiaAltroArchivio = async function() {
         ? _caT('cross_copy_attachments', 'Copia anche gli allegati ({var0} file, {var1})').replace('{var0}', String(copiabili.length)).replace('{var1}', _caDimensione(byte))
         : _caT('cross_copy_no_attachments', 'Nessun allegato da copiare su questo computer');
 
-    // Avviso di visibilità: da un archivio non condiviso a uno condiviso la scheda diventa
-    // visibile ai colleghi. Si dice prima, non dopo.
     const avviso = document.getElementById('copia-archivio-visibilita');
     avviso.classList.add('hidden');
     try {
         const cfg = await window.apiBrowser.getVaultConfig();
         if (cfg && cfg.vaultType === 'shared' && r.archivio.tipo !== 'shared') avviso.classList.remove('hidden');
-    } catch (e) { /* senza configurazione nessun avviso: l'archivio è locale */ }
+    } catch (e) {}
 
     document.getElementById('copia-archivio-progresso').textContent = '';
     _caAbilitaCopia(true);
@@ -493,7 +441,7 @@ window.apriCopiaAltroArchivio = async function() {
 };
 
 window.chiudiCopiaAltroArchivio = function() {
-    if (_caCopia && _caCopia.inCorso) return; // non si abbandona una copia di file a metà
+    if (_caCopia && _caCopia.inCorso) return;
     const modal = document.getElementById('copia-archivio-modal');
     if (modal) modal.classList.add('hidden-tab');
 };
@@ -521,13 +469,10 @@ function _caOpzioniCopia(autore, nuovoId, allegatiCopiati) {
     };
 }
 
-/** Il riepilogo è il piano vero, calcolato con gli stessi parametri della copia. */
 function _caRiepilogoCopia() {
     const r = _caAnteprima;
     const ul = document.getElementById('copia-archivio-riepilogo');
     if (!r || !ul || !_caCopia) return;
-    // In anteprima i file non sono ancora copiati: si simula l'esito con i file presenti,
-    // così i conteggi dicono ciò che succederà.
     const simulati = {};
     for (const a of _caAllegatiCopiabili(r)) simulati[a.posizione] = { nome: '…' };
     const piano = window.CopiaScheda.pianifica(r, appData, _caOpzioniCopia('', 'anteprima', simulati));
@@ -573,7 +518,7 @@ window.confermaCopiaAltroArchivio = async function() {
     let stacca = null;
     try {
         let autore = 'Anonimo';
-        try { autore = (await window.apiSettings.get()).username || 'Anonimo'; } catch (e) { /* autore anonimo */ }
+        try { autore = (await window.apiSettings.get()).username || 'Anonimo'; } catch (e) {}
         const nuovoId = window.Model.nuovoId();
 
         const allegatiCopiati = {};
@@ -597,9 +542,6 @@ window.confermaCopiaAltroArchivio = async function() {
             window.CopiaScheda.applica(appData, piano);
             await window.Store.commit();
         };
-        // Annullare toglie la scheda; tag e voci d'anagrafica registrati restano (sono voci
-        // senza schede, innocue). I file copiati diventano orfani e li toglie la pulizia
-        // degli allegati non più citati.
         const annulla = async () => {
             appData.manoscritti = appData.manoscritti.filter(m => String(m.id) !== String(nuovoId));
             await window.Store.commit();
@@ -658,11 +600,8 @@ function _caDisegnaAllegati(r, corpo) {
             img.alt = nome;
             img.className = 'altri-archivi-immagine';
             blocco.appendChild(img);
-            // Una per volta e solo quando serve: un fascicolo da cento carte non deve
-            // caricare cento immagini per un'occhiata.
             _caCaricaImmagine(r.archivio.id, m.id, i, img, blocco);
         } else if (a.remoto && a.iiif && window.srcAllegato) {
-            // Una carta IIIF non sta nella cartella di nessun archivio: il suo URL vale ovunque.
             const img = document.createElement('img');
             img.alt = nome;
             img.className = 'altri-archivi-immagine';
@@ -698,7 +637,7 @@ async function _caCaricaImmagine(archivioId, schedaId, posizione, img, blocco) {
     } catch (e) {
         r = { ok: false, error: e && e.message ? e.message : String(e) };
     }
-    if (!img.isConnected) return; // anteprima chiusa o cambiata
+    if (!img.isConnected) return;
     if (!r || !r.ok) {
         img.remove();
         blocco.appendChild(_caEl('p', 'text-xs text-stone-500', (r && r.error) || ''));
@@ -709,15 +648,7 @@ async function _caCaricaImmagine(archivioId, schedaId, posizione, img, blocco) {
     img.src = url;
 }
 
-// --- Rimandi ad altri archivi nel form (Fase 4) ----------------------------------------------
-//
-// Come le relazioni: l'elenco in modifica vive in un campo nascosto (#form-rimandi-esterni) e
-// si scrive nel record solo al salvataggio (itemsLogic → Model.scriviRimandiEsterni).
-// Un rimando a un archivio che qui non c'è NON si cancella: su un altro computer quell'archivio
-// può esistere, e il rimando porta con sé nome dell'archivio e segnatura per dire di che cosa si
-// tratta anche dove non si può aprire.
-
-let _caArchiviCache = null;   // { quando, archivi }
+let _caArchiviCache = null;
 let _caProvenienzaForm = null;
 let _caSeqRimandi = 0;
 
@@ -732,11 +663,6 @@ async function _caArchiviConsultabili() {
     return archivi;
 }
 
-/**
- * L'archivio di un rimando fra quelli consultabili: per id e, se l'id non c'è (archivio
- * clonato su un altro computer, che ha generato il suo), per nome — ma solo se il nome è
- * univoco, altrimenti si aprirebbe la scheda sbagliata.
- */
 function _caRisolviArchivio(rif, archivi) {
     const perId = archivi.find(a => a.id === rif.archivioId);
     if (perId) return perId;
@@ -761,8 +687,8 @@ function _caScriviRimandiForm(lista) {
 window.caricaRimandiEsterniForm = function(m) {
     _caScriviRimandiForm(m ? window.Model.rimandiEsterni(m) : []);
     _caProvenienzaForm = m && m.provenienza && typeof m.provenienza === 'object' ? m.provenienza : null;
-    _caArchiviCache = null; // gli archivi recenti possono essere cambiati dall'ultima apertura
-    _caSuggAttivo = null;   // ...e l'impostazione del suggerimento
+    _caArchiviCache = null;
+    _caSuggAttivo = null;
     _caSuggCache.clear();
     window.renderRimandiEsterniForm();
 };
@@ -773,7 +699,7 @@ window.renderRimandiEsterniForm = async function() {
     const seq = ++_caSeqRimandi;
     const rimandi = window.rimandiEsterniForm();
     const archivi = (rimandi.length || _caProvenienzaForm) ? await _caArchiviConsultabili() : [];
-    if (seq !== _caSeqRimandi) return; // nel frattempo il form è cambiato
+    if (seq !== _caSeqRimandi) return;
 
     box.innerHTML = '';
     if (!rimandi.length) box.appendChild(_caEl('p', 'text-xs text-stone-400 italic', _caT('cross_links_none', 'Nessun rimando.')));
@@ -821,7 +747,6 @@ function _caRigaRimando(rif, archivio) {
     return riga;
 }
 
-/** "Copiata da …": la provenienza di una scheda copiata, con il ritorno all'originale. */
 function _caDisegnaProvenienza(archivi) {
     const p = document.getElementById('form-provenienza');
     if (!p) return;
@@ -845,8 +770,6 @@ function _caDisegnaProvenienza(archivi) {
         p.appendChild(btn);
     }
 }
-
-// --- Selettore del rimando ---------------------------------------------------------------
 
 let _caPickerTimer = null;
 let _caPickerSeq = 0;
@@ -937,10 +860,6 @@ async function _caCercaPerRimando(testo) {
     }
 }
 
-/**
- * Le Impostazioni hanno cambiato archivi esclusi o suggerimento: niente risposte vecchie.
- * La sezione dei risultati, se è visibile, si ricalcola subito.
- */
 window.invalidaCacheAltriArchivi = function() {
     _caArchiviCache = null;
     _caSuggAttivo = null;
@@ -949,21 +868,11 @@ window.invalidaCacheAltriArchivi = function() {
     window.aggiornaRicercaAltriArchivi(true);
 };
 
-// --- Suggerimento nel form (Fase 5) -------------------------------------------------------
-//
-// Su un campo che alimenta l'anagrafica (persona/luogo, anche dentro una lista dinamica),
-// quando il ricercatore smette di scrivere o lascia il campo, si chiede al main se QUEL nome
-// (stessa chiave d'anagrafica, non una somiglianza) compare negli altri archivi. Se sì,
-// compare sotto il campo un pulsante discreto. Nessun popup, nessun focus rubato.
-// ⚠️ Nessuna identità dichiarata (decisione del piano): il pulsante dice che il NOME esiste
-// altrove; se è la stessa persona lo decide chi scheda.
-
 const _CA_SUGG_MS = 600;
 const _CA_SUGG_VALIDITA_MS = 30_000;
-const _caSuggCache = new Map();   // chiave d'anagrafica → { quando, risposta }
-let _caSuggAttivo = null;         // impostazione, riletta dopo _CA_SUGG_IMPOSTAZIONE_MS
+const _caSuggCache = new Map();
+let _caSuggAttivo = null;
 let _caSuggLetta = 0;
-/** Breve: chi spegne il suggerimento dalle impostazioni a form aperto deve vederlo sparire. */
 const _CA_SUGG_IMPOSTAZIONE_MS = 2000;
 let _caSuggTimer = null;
 
@@ -976,7 +885,6 @@ async function _caSuggerimentiAttivi() {
     return _caSuggAttivo;
 }
 
-/** La definizione del campo a cui appartiene un controllo del form, se è persona/luogo. */
 function _caDefAuthority(el) {
     if (!el || typeof window.campiDefinitiDelForm !== 'function') return null;
     let id = null;
@@ -1002,7 +910,7 @@ async function _caValutaSuggerimento(el) {
     const nome = String(el.value || '').trim();
     const chiave = window.Model.chiaveAuthority(def.authority, nome);
     if (!chiave || window.Model.chiaveTesto(nome).length < 3) { _caTogliSuggerimento(el); el._caUltimo = null; return; }
-    if (el._caUltimo === chiave) return; // già valutato, chip (o assenza di chip) già giusti
+    if (el._caUltimo === chiave) return;
     _caTogliSuggerimento(el);
     el._caUltimo = chiave;
 
@@ -1015,7 +923,6 @@ async function _caValutaSuggerimento(el) {
         catch (e) { r = null; }
         if (r && r.ok) _caSuggCache.set(chiave, { quando: Date.now(), risposta: r });
     }
-    // Nel frattempo il valore è cambiato o il campo è sparito: questa risposta non vale più.
     if (!el.isConnected || el._caUltimo !== chiave) return;
     if (!r || !r.ok || !r.totale) return;
     _caMostraSuggerimento(el, def, nome, r);
@@ -1035,8 +942,6 @@ function _caMostraSuggerimento(el, def, nome, r) {
     chip.innerHTML = '<i data-lucide="library" class="w-3.5 h-3.5" aria-hidden="true"></i>';
     chip.appendChild(_caEl('span', '', testo));
     chip.onclick = () => window.apriOmonimiAltriArchivi(nome, r);
-    // In una lista dinamica il pulsante sta DENTRO la riga (che va a capo): togliendo la riga
-    // se ne va anche lui, invece di restare orfano sotto la riga successiva.
     const riga = el.classList.contains('list-val') ? el.closest('.dynamic-list-row') : null;
     if (riga) { riga.classList.add('flex-wrap'); riga.appendChild(chip); }
     else el.insertAdjacentElement('afterend', chip);
@@ -1044,8 +949,6 @@ function _caMostraSuggerimento(el, def, nome, r) {
     if (window.lucide) lucide.createIcons({ nodes: [chip] });
     if (window.annunciaA11y) window.annunciaA11y(testo + ': ' + nome);
 }
-
-// --- Finestra delle schede con lo stesso nome ---------------------------------------------
 
 window.apriOmonimiAltriArchivi = function(nome, r) {
     const modal = document.getElementById('omonimi-modal');
@@ -1103,8 +1006,6 @@ window.chiudiOmonimiAltriArchivi = function() {
     if (modal) modal.classList.add('hidden-tab');
 };
 
-// --- Montaggio ----------------------------------------------------------------------
-
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         const box = document.getElementById('search-altri-archivi') as HTMLInputElement;
@@ -1117,7 +1018,6 @@ window.chiudiOmonimiAltriArchivi = function() {
         const rimando = document.getElementById('btn-rimando-esterno');
         if (rimando) rimando.addEventListener('click', () => window.apriSelettoreRimando());
 
-        // Suggerimento: delega sul form, perché le righe delle liste nascono e muoiono al volo.
         const form = document.getElementById('manoscritto-form');
         if (form) {
             form.addEventListener('input', (e) => {
@@ -1136,8 +1036,6 @@ window.chiudiOmonimiAltriArchivi = function() {
         }
 
         if (document.getElementById('altro-archivio-modal')) return;
-        // ⚠️ L'ordine nel DOM è l'ordine di sovrapposizione (stesso z-index): la finestra dei
-        // nomi sta PRIMA dell'anteprima, che da lì si apre e deve comparirle sopra.
         const html = `
     <div id="omonimi-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-xl">

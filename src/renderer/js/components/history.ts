@@ -1,7 +1,3 @@
-// ─── STORICO VERSIONI CLOUD ─────────────────────────────────────────────────
-
-// Menu delle versioni sul componente comune (contextMenu.ts): tastiera, Esc e colori del
-// tema. Prima era disegnato a mano con un fondo #1c1917 fisso anche nei temi chiari (P2-10).
 function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurrent) {
     e.stopPropagation();
     const label = `${dataStr} ${oraStr} – ${autore}`;
@@ -15,18 +11,6 @@ function apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurre
     ]);
 }
 
-// ─── Rendering lista revisioni ───────────────────────────────────────────────
-
-/**
- * Fase 4.2 — Il pannello mostra DUE cronologie, sempre entrambe: quella del cloud (Hub o
- * Drive, o l'invito a collegarsi se non c'è) e quella locale degli snapshot.
- *
- * Non sono in alternativa perché non rispondono alla stessa domanda: il cloud sa cosa hanno
- * fatto i colleghi, gli snapshot sanno cos'è successo su QUESTO computer — comprese le
- * modifiche mai inviate, che nel cloud non compaiono per definizione. Mostrare i soli
- * snapshot a chi lavora offline e le sole versioni cloud a tutti gli altri avrebbe lasciato
- * senza rete proprio il caso più frequente: l'errore fatto e salvato prima di sincronizzare.
- */
 window.renderHistoryList = async function() {
     const list = document.getElementById('history-list');
     if (!list) return;
@@ -35,11 +19,8 @@ window.renderHistoryList = async function() {
 };
 
 async function renderCronologiaCloud(list) {
-    // Vault Hub: cronologia GitHub-style (versioni append-only, autore+data, diff on-click).
-    // Percorso Drive legacy sotto invariato per i vault non ancora migrati.
     if (window.hubConfig) return renderHubHistoryList(list);
 
-    // Controllo se connesso
     if (!window.driveStatus || !window.driveStatus.isAuthenticated) {
         list.innerHTML = `
             <li class="p-6 text-center flex flex-col items-center gap-3">
@@ -50,7 +31,6 @@ async function renderCronologiaCloud(list) {
         return;
     }
 
-    // Loader
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
             <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -68,7 +48,6 @@ async function renderCronologiaCloud(list) {
         list.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
-        // Istruzione contestuale
         const hint = document.createElement('li');
         hint.className = 'storico-intestazione px-3 py-2 text-[11px] italic';
         hint.textContent = window.t("history_click_hint", "Click a version to compare or restore.");
@@ -98,7 +77,6 @@ async function renderCronologiaCloud(list) {
                 ${isCurrent ? `<span class="storico-badge shrink-0">${escapeHTML(window.t('history_current', 'ATTUALE'))}</span>` : ''}
             `;
 
-            // Tasto sinistro o destro → menu contestuale
             const handleActionMenu = (e) => {
                 apriHistoryContextMenu(e, fileId, rev, dataStr, oraStr, autore, isCurrent);
             };
@@ -120,10 +98,6 @@ async function renderCronologiaCloud(list) {
     }
 }
 
-// ─── Confronta una revisione con lo stato attuale ───────────────────────────
-
-// Diff record-per-record tra due elenchi manoscritti (per id), a prescindere dalla loro
-// provenienza (revisione Drive vs attuale, o due snapshot Hub arbitrari).
 function calcolaDiffsManoscritti(oldList, newList) {
     const oldMap = {};
     (oldList || []).forEach(m => { oldMap[m.id] = m; });
@@ -173,13 +147,8 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
     const t = window.t;
     let idx = 0;
 
-    // Struttura e colori dei modali comuni (token del tema): prima era dipinto a mano con una
-    // palette che conosceva solo dark-theme, e blue-dark riceveva quella chiara (audit P2-1).
-    // Il modale si costruisce UNA volta: ricrearlo a ogni ←/→ faceva cadere il fuoco sul body.
     const overlay = document.createElement('div');
     overlay.id = 'history-diff-modal';
-    // Fase 5.3 — classe modal-overlay: focus trap, Esc e ripristino del fuoco
-    // arrivano dal gestore centralizzato invece di mancare del tutto.
     overlay.className = 'modal-overlay';
     overlay.innerHTML = window.sanitizeHTML(`
         <div class="modal-window max-w-2xl">
@@ -256,8 +225,6 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
 
         btnPrev.disabled = idx === 0;
         btnNext.disabled = idx >= diffs.length - 1;
-        // Arrivati in fondo (o in cima) il pulsante appena premuto si disabilita e perderebbe
-        // il fuoco: passa all'altro, che è l'unica direzione ancora possibile.
         const attivo = document.activeElement;
         if (attivo === btnNext && btnNext.disabled) btnPrev.focus();
         else if (attivo === btnPrev && btnPrev.disabled) btnNext.focus();
@@ -274,16 +241,10 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
     renderDiff();
 }
 
-// ─── Ripristina con modale di conferma ──────────────────────────────────────
-
 async function ripristinaRevisioneConConferma(fileId, revisionId, label) {
     apriConfermaRipristino(label, () => window.ripristinaRevisioneCloud(fileId, revisionId));
 }
 
-// Modale di conferma generico: `onConfirm` esegue il ripristino vero e proprio
-// (Drive: ripristinaRevisioneCloud; Hub: ripristinaVersioneHub) e può lanciare per segnalare
-// un fallimento (mostrato all'utente); un ritorno `false` esplicito indica un abort silenzioso
-// già notificato da onConfirm stesso (es. conflitto di versione Hub).
 async function apriConfermaRipristino(label, onConfirm) {
     const esistente = document.getElementById('history-restore-confirm');
     if (esistente) esistente.remove();
@@ -291,8 +252,6 @@ async function apriConfermaRipristino(label, onConfirm) {
     const t = window.t;
     const overlay = document.createElement('div');
     overlay.id = 'history-restore-confirm';
-    // .modal-overlay: ruolo dialog, fuoco e focus-trap da a11yModal; Esc clicca il
-    // [data-modal-cancel]. Livello di conferma distruttiva (prima z-index 400, quello dei menu).
     overlay.className = 'modal-overlay z-modal-alert';
     overlay.innerHTML = window.sanitizeHTML(`
         <div class="modal-window max-w-md">
@@ -319,8 +278,6 @@ async function apriConfermaRipristino(label, onConfirm) {
         overlay.remove();
         if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'download_in_progress');
         try {
-            // `onConfirm` ritorna `false` per un abort già notificato all'utente (es. conflitto
-            // di versione Hub): in quel caso non mostriamo un secondo messaggio di successo.
             const esito = await onConfirm();
             if (esito !== false) {
                 if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_vault_ripristinato_alla_v", 'Archivio ripristinato alla versione selezionata.'), "success");
@@ -334,8 +291,6 @@ async function apriConfermaRipristino(label, onConfirm) {
         }
     };
 }
-
-// ─── Cronologia GitHub-style (Hub) ───────────────────────────────────────────
 
 function formatRelativeDate(ts) {
     const diffSec = Math.round((ts - Date.now()) / 1000);
@@ -354,7 +309,6 @@ function formatRelativeDate(ts) {
 }
 
 async function renderHubHistoryList(list) {
-    // Loader
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
             <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -399,7 +353,6 @@ async function renderHubHistoryList(list) {
             col.className = 'flex flex-col min-w-0 flex-1';
             const line1 = document.createElement('span');
             line1.className = 'storico-riga-titolo text-xs font-semibold text-stone-700 truncate';
-            // entry.version arriva dall'Hub: un server di terzi può restituire qualsiasi cosa.
             line1.innerHTML = `<span style="font-family:monospace;">v${escapeHTML(String(entry.version))}</span> · ${escapeHTML(autore)}`;
             const line2 = document.createElement('span');
             line2.className = 'text-[11px] text-stone-500 truncate';
@@ -461,7 +414,6 @@ function apriHubHistoryContextMenu(e, entry, versionSet, currentVersion) {
     ]);
 }
 
-// Confronta due snapshot Hub: `newVersionOrNull === null` → confronto con appData corrente.
 async function apriDiffVersioneHub(oldVersion, newVersionOrNull, label) {
     if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_caricamento_revisione", "Caricamento revisione…"), "info");
     try {
@@ -495,14 +447,6 @@ async function apriDiffVersioneHub(oldVersion, newVersionOrNull, label) {
 async function ripristinaVersioneHubConConferma(version, label) {
     apriConfermaRipristino(label, () => window.ripristinaVersioneHub(version));
 }
-
-// ─── Snapshot locali (Fase 4.2) ──────────────────────────────────────────────
-//
-// Il pannello riusa ciò che c'era già: `calcolaDiffsManoscritti` per il confronto,
-// `apriDiffRevisioneModal` per mostrarlo, `apriConfermaRipristino` per la conferma. La
-// differenza rispetto al cloud è solo la provenienza dei dati — un file gzip in
-// `.archiview/snapshots/` invece di una revisione remota — e questo è esattamente il motivo
-// per cui la 4.2 costa poco: la parte difficile (diff e ripristino) esisteva dal principio.
 
 function _snEtichettaMotivo(motivo) {
     switch (motivo) {
@@ -645,9 +589,6 @@ window.confrontaSnapshot = async function(nome, label) {
 
 window.ripristinaSnapshot = function(nome, label) {
     apriConfermaRipristino(label, async () => {
-        // La rete PRIMA della rete: si fotografa lo stato corrente prima di sostituirlo, o
-        // un ripristino sbagliato — quello che riporta indietro di tre settimane invece che
-        // di tre ore — sarebbe irreversibile quanto l'errore che voleva rimediare.
         try {
             await window.apiSicurezza.snapshotCrea('prima-ripristino');
         } catch (err) {
@@ -658,15 +599,12 @@ window.ripristinaSnapshot = function(nome, label) {
         if (typeof mostraMessaggio === 'function') {
             mostraMessaggio(window.t('snap_restored', 'Archivio riportato allo snapshot: {var0} schede.').replace('{var0}', String(esito.schede)), 'success');
         }
-        // `false`: il messaggio di esito l'abbiamo già dato noi, con il conteggio.
         return false;
     });
 };
 
 window.creaSnapshotOra = async function() {
     try {
-        // Il differito potrebbe non essere ancora sul disco, e lo snapshot fotografa il
-        // FILE: senza questo si fotograferebbe lo stato di qualche secondo fa.
         if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
         const res = await window.apiSicurezza.snapshotCrea('manuale');
         if (!res || res.success === false) throw new Error((res && res.error) || 'Creazione non riuscita');
@@ -693,17 +631,6 @@ window.eliminaSnapshot = function(nome) {
     if (typeof window.mostraBottomConfirm === 'function') window.mostraBottomConfirm(msg, procedi);
     else procedi();
 };
-
-// ─── Cronologia di UNA scheda (Fase 4.3) ─────────────────────────────────────
-//
-// La cronologia esisteva solo a livello di intero database: per sapere com'era una scheda la
-// settimana scorsa bisognava confrontare due archivi interi e cercare la riga giusta fra le
-// altre. Qui il punto d'ingresso è la scheda, e le tappe arrivano già filtrate dal main
-// (`snapshots.storiaRecord`), che scarta i momenti in cui quella scheda non è cambiata.
-//
-// ⚠️ Il ripristino agisce SOLO su questa scheda. È la differenza che giustifica l'esistenza
-// della voce: riportare indietro una scheda senza toccare le altre trecento è esattamente
-// ciò che il ripristino dell'intero snapshot non sa fare.
 
 window.apriStoriaRecord = async function(id) {
     if (!window.apiSicurezza) return;
@@ -771,8 +698,6 @@ function _srApriModal(id, etichetta, tappe, corrente) {
         quando.textContent = formatRelativeDate(t.creatoIl);
         const stato = document.createElement('span');
         stato.className = 'text-xs text-stone-500';
-        // Una tappa senza record è il momento in cui la scheda ANCORA non esisteva (o non
-        // esisteva più): è un'informazione, non un buco da nascondere.
         stato.textContent = '  ·  ' + (t.record
             ? _snEtichettaMotivo(t.motivo)
             : window.t('rec_history_absent', 'scheda non presente'));
@@ -832,11 +757,6 @@ function _srApriModal(id, etichetta, tappe, corrente) {
     if (window.lucide) lucide.createIcons({ nodes: [overlay] });
 }
 
-/**
- * Riporta UNA scheda a una versione passata. Passa dal gestore di annullamento come
- * qualsiasi altra modifica: un ripristino è una modifica, e deve poter essere annullato
- * esattamente come quello che ha rimediato.
- */
 window.ripristinaVersioneRecord = async function(id, versione, quando) {
     const indice = appData.manoscritti.findIndex(x => String(x.id) === String(id));
     if (indice === -1) {
@@ -853,8 +773,6 @@ window.ripristinaVersioneRecord = async function(id, versione, quando) {
         if (i === -1) return;
         const nuovo = JSON.parse(JSON.stringify(stato));
         if (rifirma) {
-            // Il record torna indietro nel CONTENUTO, non nel tempo: con il `lastModified`
-            // d'allora il primo sync lo rimetterebbe com'era (vedi ripristinaDatabase).
             nuovo.lastModified = Date.now();
             nuovo.modificatoDa = username;
         }

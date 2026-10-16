@@ -1,29 +1,8 @@
-// --- Trascrizione per allegato (Fase 2.3-bis) --------------------------------
-//
-// L'editor di sinistra è agganciato all'allegato mostrato a destra, non più alla scheda:
-// cambiando carta il testo segue. Lo stato di aggancio vive qui, in due variabili sole.
-//
-// ⚠️ Il record va memorizzato INSIEME all'indice. Con il solo indice, aprire la scheda B
-// dopo aver lasciato la scheda A sull'allegato 2 scriverebbe il testo di A dentro
-// l'allegato 2 di B: `window.currentAllegatoIndex` sopravvive al cambio di scheda.
-// Il prefisso `_ta` è obbligatorio come altrove: il bundle di produzione concatena tutti
-// gli script del renderer in un unico scope.
 let _taRecordCorrente = null;
 let _taIndiceCorrente = 0;
-// Pagina del PDF agganciata all'editor, da 1. Zero quando la carta non è un PDF — o è un PDF
-// che non si è potuto aprire, e allora l'editor lavora sul testo dell'allegato intero.
 let _taPaginaCorrente = 0;
-// Cambiare carta è asincrono (verifica dell'hash, apertura del PDF): cliccando in fretta,
-// la continuazione di una richiesta vecchia NON deve agganciare l'editor alla sua carta
-// dopo che quella nuova lo ha già fatto. Ogni richiesta prende un numero; vince l'ultimo.
 let _taGenerazioneCarta = 0;
 
-/**
- * Travasa ciò che è nell'editor nell'allegato a cui è agganciato. Va chiamata PRIMA di
- * ogni cambio di carta e prima del salvataggio: senza, passare da una carta all'altra
- * butterebbe via quanto appena battuto, che è il modo più rapido di rendere inutilizzabile
- * una funzione pensata per lavorare su più carte.
- */
 function _taSalvaEditorInMemoria() {
     if (_taRecordCorrente === null) return;
     const editor = document.getElementById('trascrizione-editor');
@@ -33,11 +12,6 @@ function _taSalvaEditorInMemoria() {
     window.scriviTrascrizioneAllegato(m, _taIndiceCorrente, editor.innerHTML, _taPaginaCorrente);
 }
 
-/**
- * Mentre un PDF si apre l'editor mostra ancora la carta precedente: se accettasse testo,
- * quanto battuto in quell'istante verrebbe sostituito dalla pagina nuova e perso. Lo si
- * blocca finché l'aggancio non è deciso; `_taCaricaEditor` lo sblocca sempre.
- */
 let _taFuocoPrimaDelBlocco = false;
 function _taBloccaEditor(bloccato) {
     const editor = document.getElementById('trascrizione-editor');
@@ -50,11 +24,6 @@ function _taBloccaEditor(bloccato) {
     else editor.removeAttribute('aria-busy');
 }
 
-/**
- * Carica nell'editor il testo della carta `indice` (e della pagina `pagina`, se PDF). NON
- * tocca `trascrizioneNonSalvata`: le modifiche pendenti su un'altra carta restano pendenti,
- * e il flag deve continuare a dire la verità finché non si salva davvero.
- */
 function _taCaricaEditor(m, indice, pagina = 0) {
     const editor = document.getElementById('trascrizione-editor');
     if (!editor || !m) return;
@@ -67,13 +36,10 @@ function _taCaricaEditor(m, indice, pagina = 0) {
     _taPaginaCorrente = pagina;
     _taBloccaEditor(false);
     _taFuocoPrimaDelBlocco = false;
-    // Il blocco durante l'apertura del PDF toglie il fuoco all'editor: chi sfogliava con
-    // Alt+freccia deve poter continuare a scrivere senza tornare a cliccare nel testo.
     if (avevaFuoco) editor.focus();
     _taAggiornaEtichetta(m, indice);
 }
 
-/** Dice QUALE carta si sta trascrivendo: senza, con più allegati non si sa dove si scrive. */
 function _taAggiornaEtichetta(m, indice) {
     const barra = document.getElementById('trascrizione-carta');
     if (!barra) return;
@@ -98,23 +64,14 @@ function _taAggiornaEtichetta(m, indice) {
     barra.classList.remove('hidden-tab');
 }
 
-/** Riaggancio dall'esterno (l'OCR scrive sul record e vuole vedere l'editor aggiornato). */
 window.ricaricaEditorTrascrizione = function(m, indice) {
     if (!m || String(_taRecordCorrente) !== String(m.id)) return false;
-    // La pagina resta quella aperta: dopo un riordino l'indice cambia ma il PDF è lo stesso.
     _taCaricaEditor(m, typeof indice === 'number' ? indice : _taIndiceCorrente, _taPaginaCorrente);
     return true;
 };
 
 window.salvaEditorTrascrizioneInMemoria = _taSalvaEditorInMemoria;
 window.indiceCartaCorrente = function() { return _taIndiceCorrente; };
-
-// --- TAB «SCHEDA» DELLA TRASCRIZIONE (PIANO-SCHEDA-AFFIANCATA) ---
-//
-// Il modulo è uno solo: il tab ci sposta dentro #manoscritto-form e lo rimette in #view-add
-// all'uscita, così ogni controllo e ogni handler del modulo valgono anche qui. Si salva da sé
-// dopo una pausa; il "sporco" si intercetta sul setter di `isFormDirty`, che tutti i punti
-// del modulo già alzano (input, change, collegamenti, campi propri, riordino, allegati).
 
 const _TA_CHIAVE_TAB = 'trascrizioneTab';
 const _TA_PAUSA_SALVATAGGIO = 800;
@@ -150,23 +107,17 @@ function _taProgrammaSalvataggio() {
     _taTimerScheda = setTimeout(() => window.salvaSchedaTrascrizioneOra(), _TA_PAUSA_SALVATAGGIO);
 }
 
-/** Salva subito ciò che è in sospeso nel tab «Scheda». `true` se non resta nulla da salvare. */
 window.salvaSchedaTrascrizioneOra = async function() {
     clearTimeout(_taTimerScheda);
     _taTimerScheda = null;
-    // Uno alla volta: due salvataggi in volo fonderebbero gli allegati sulla stessa base.
     while (_taSalvataggioScheda) await _taSalvataggioScheda;
     if (!window.isFormDirty || !window.moduloInTrascrizione()) return !window.isFormDirty;
     _taSalvataggioScheda = (async () => {
-        // Pulito PRIMA di leggere il modulo: ciò che si scrive durante il salvataggio lo
-        // risporca e riprogramma il giro successivo invece di andare perso.
         window.isFormDirty = false;
         _taStatoScheda(window.t('trasc_record_saving', 'Salvataggio…'));
         try {
             const esito = await salvaSchedaDalForm(true);
             if (esito.ok) {
-                // Il testo dell'editor è passato in memoria all'apertura del tab ed è andato su
-                // disco con le carte fuse: non c'è più nulla di non salvato.
                 window.trascrizioneNonSalvata = false;
                 const ora = new Date().toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
                 _taStatoScheda(window.t('trasc_record_saved', 'Salvata alle {var0}').replace('{var0}', ora), 'testo-successo');
@@ -178,7 +129,6 @@ window.salvaSchedaTrascrizioneOra = async function() {
             console.error('Salvataggio automatico della scheda non riuscito:', err);
             _taStatoScheda(window.t('trasc_record_save_error', 'Scheda non salvata: riprova.'), 'testo-pericolo');
         }
-        // Resta sporca senza riprogrammare: un campo invalido riproverebbe in loop.
         _taSenzaProgramma = true;
         window.isFormDirty = true;
         _taSenzaProgramma = false;
@@ -195,7 +145,6 @@ function _taMostraPannello(scheda) {
     _taApplicaLarghezza();
 }
 
-// Fase 3 — la proporzione delle colonne si ricorda per tab: la scheda vuole spazio, il testo no.
 function _taChiaveLarghezza() {
     return 'larghezzaTrascrizione:' + (window.moduloInTrascrizione() ? 'scheda' : 'testo');
 }
@@ -206,7 +155,6 @@ window.ricordaLarghezzaTrascrizione = function(p) {
 
 function _taApplicaLarghezza() {
     const editorPanel = document.getElementById('trascrizione-editor-panel');
-    // Senza carte l'editor prende tutto (apriTrascrizione) e il separatore non c'è.
     if (!editorPanel || document.getElementById('trascrizione-allegato-panel').classList.contains('hidden-tab')) return;
     const scheda = window.moduloInTrascrizione();
     const salvata = window.prefLocale(_taChiaveLarghezza()) || (scheda ? null : appData.trascrizioneEditorWidth);
@@ -215,7 +163,6 @@ function _taApplicaLarghezza() {
     document.getElementById('trascrizione-resizer')?.setAttribute('aria-valuenow', String(Math.round(p)));
 }
 
-/** Rimette il modulo in #view-add, vuoto. Chi chiama ha già salvato o rinunciato. */
 function _taRiponiModulo() {
     clearTimeout(_taTimerScheda);
     _taTimerScheda = null;
@@ -228,17 +175,12 @@ function _taRiponiModulo() {
     _taMostraPannello(false);
 }
 
-/** Uscita sincrona quando non c'è nulla da salvare: `false` = serve `lasciaSchedaTrascrizione`. */
 window.riponiModuloSePulito = function() {
     if (window.isFormDirty || _taSalvataggioScheda) return false;
     _taRiponiModulo();
     return true;
 };
 
-/**
- * Prima di lasciare il tab (altra vista, altra scheda): salva, e se non si può chiede se
- * rinunciare. `true` = si può proseguire, il modulo è già tornato al suo posto.
- */
 window.lasciaSchedaTrascrizione = async function() {
     if (!window.moduloInTrascrizione()) return true;
     if (await window.salvaSchedaTrascrizioneOra()) {
@@ -255,9 +197,7 @@ window.lasciaSchedaTrascrizione = async function() {
 
 window.mostraSchedaTrascrizione = async function(tab) {
     const scheda = tab === 'scheda';
-    // La finestra staccata condivide il localStorage: le preferenze le scrive solo la principale.
     if (!window.finestraSatellite) window.prefLocale(_TA_CHIAVE_TAB, scheda ? 'scheda' : 'testo');
-    // Fase 4 — scheda in un'altra finestra: il tab dice dov'è e la porta in primo piano.
     const staccata = !!(window.schedaStaccata && window.schedaStaccata());
     document.getElementById('trasc-scheda-staccata').classList.toggle('hidden-tab', !staccata);
     if (staccata) {
@@ -277,7 +217,6 @@ window.mostraSchedaTrascrizione = async function(tab) {
         if (await window.lasciaSchedaTrascrizione()) document.getElementById('tab-trasc-testo').focus();
         return;
     }
-    // Il testo della carta in vista va in memoria: il salvataggio della scheda fonde le carte vive.
     _taSalvaEditorInMemoria();
     aggiornaSelectCartelle();
     aggiornaSelectTipiDocumento();
@@ -288,7 +227,6 @@ window.mostraSchedaTrascrizione = async function(tab) {
     if (window.lucide) lucide.createIcons();
 };
 
-/** Nella finestra staccata: la scheda `id` nel tab, al posto di quella che c'era (già salvata). */
 window.caricaSchedaStaccata = async function(id) {
     if (window.moduloInTrascrizione()) window.riponiModuloSePulito();
     document.getElementById('trascrizione-id').value = id;
@@ -302,22 +240,13 @@ window.alternaSchedaTrascrizione = function() {
 async function apriTrascrizione(id) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m) return;
-    // Il tab «Scheda» aperto su un'altra scheda (o sulla stessa, da ricaricare): prima si salva.
     if (!(await window.lasciaSchedaTrascrizione())) return;
 
     document.getElementById('trascrizione-id').value = m.id;
     document.getElementById('trascrizione-subtitle').textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
 
-    // Migrazione in memoria della vecchia trascrizione unica sulla prima carta. Si fa qui e
-    // non al salvataggio perché l'editor deve mostrare subito il testo giusto; è idempotente,
-    // e finisce su disco al primo salvataggio della scheda — non prima, così aprire una
-    // scheda per leggerla non la marca come modificata e non innesca una sincronizzazione.
     window.migraTrascrizioneSuAllegati(m);
 
-    // L'aggancio parte SEMPRE dalla prima carta: `cambiaAllegatoTrascrizione` più sotto
-    // conferma o cambia l'indice, e senza questa riga il primo travaso finirebbe
-    // sull'indice lasciato dalla scheda precedente.
-    // Invalida anche un cambio di carta ancora in volo sulla scheda precedente.
     _taGenerazioneCarta++;
     _taRecordCorrente = m.id;
     _taIndiceCorrente = 0;
@@ -330,8 +259,6 @@ async function apriTrascrizione(id) {
     const editorPanel = document.getElementById('trascrizione-editor-panel');
     const btnCarica = document.getElementById('btn-carica-allegato-trasc');
     const btnCollapse = document.getElementById('btn-collapse-editor');
-    // Fase 2.3: senza allegati non c'è nulla da riconoscere, e un pulsante che apre solo
-    // un avviso è peggio di un pulsante assente.
     const btnOcr = document.getElementById('btn-ocr-trasc');
     
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
@@ -344,7 +271,6 @@ async function apriTrascrizione(id) {
 
     document.getElementById('trasc-carte-bar').classList.add('hidden-tab');
     
-    // Usa helper condiviso per normalizzare la lista allegati
     const allegatiM = normalizzaAllegati(m);
     
     if (allegatiM.length > 0 && window.apiBrowser) {
@@ -374,30 +300,21 @@ async function apriTrascrizione(id) {
         }
         btnCarica.classList.remove('hidden');
         btnCarica.style.display = 'flex';
-        // `hidden-tab` e non `hidden`: `.btn` imposta display:inline-flex e batte l'utility
-        // Tailwind a parità di specificità (lezione della 1.1, style.css:257).
         if (btnOcr) btnOcr.classList.add('hidden-tab');
         if (btnCollapse) btnCollapse.classList.add('hidden');
     }
 
     switchTab('trascrizione');
-    // La finestra staccata segue la scheda aperta qui.
     if (window.schedaStaccata && window.schedaStaccata()) window.apiFinestre.messaggio('carica', window.datiFinestraStaccata(m.id));
     if (window.prefLocale(_TA_CHIAVE_TAB) === 'scheda') await window.mostraSchedaTrascrizione('scheda');
     else _taMostraPannello(false);
     if (window.lucide) lucide.createIcons();
 }
 
-/**
- * P3 — dal risultato di ricerca alla carta (e pagina) che contiene la parola, con la parola
- * selezionata nell'editor. `parola` è nella forma originale del testo, non normalizzata.
- */
 window.apriTrascrizioneSuCarta = async function(id, carta, pagina, parola) {
     await apriTrascrizione(id);
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     const a = m && m.allegati ? m.allegati[carta] : null;
-    // Si aspetta SEMPRE il proprio cambio di carta: supera quello lanciato da apriTrascrizione,
-    // che altrimenti ricaricherebbe l'editor dopo e toglierebbe la selezione.
     if (a) await window.cambiaAllegatoTrascrizione(a.nome, a.tipo, carta, pagina);
     const editor = document.getElementById('trascrizione-editor');
     if (!editor || !parola) return;
@@ -424,7 +341,6 @@ window.apriTrascrizioneSuCarta = async function(id, carta, pagina, parola) {
     (range.startContainer.parentElement || editor).scrollIntoView({ block: 'center', behavior: window.comportamentoScroll() });
 };
 
-/** Barra delle carte (più di un allegato): numero, totale e nome della carta in vista. */
 function _taAggiornaBarraCarte(m, index) {
     const barra = document.getElementById('trasc-carte-bar');
     if (!barra) return;
@@ -450,13 +366,11 @@ function _taAggiornaBarraCarte(m, index) {
     barra.classList.remove('hidden-tab');
 }
 
-/** Dopo un'aggiunta o una rimozione di allegati: il totale cambia, la carta in vista no. */
 window.renderBarraCarte = function(id) {
     const m = appData.manoscritti.find(x => x.id === id);
     if (m) _taAggiornaBarraCarte(m, window.currentAllegatoIndex || 0);
 };
 
-/** Carta `n` (1-based) dalla barra: a differenza delle frecce sull'immagine, salta le pagine. */
 function _taVaiACarta(n) {
     const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
@@ -484,7 +398,6 @@ window.rinominaCartaCorrente = function() {
     if (!al) return;
     window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
         al.originalName = nuovoNome;
-        // Senza `lastModified` il merge a tre vie non vede la modifica (vedi materializzazione IIIF).
         m.lastModified = Date.now();
         await salvaTutto();
         if (typeof renderMain === 'function') renderMain();
@@ -493,7 +406,6 @@ window.rinominaCartaCorrente = function() {
     });
 };
 
-/** P2 — stato della carta in vista; '' toglie la chiave, che resta assente e non vuota. */
 window.impostaStatoCarta = async function(valore) {
     const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
@@ -511,11 +423,6 @@ window.impostaStatoCarta = async function(valore) {
     if (typeof renderMain === 'function') renderMain();
 };
 
-/**
- * Frecce sopra l'allegato. Sono continue: dentro un PDF scorrono le pagine, al bordo passano
- * alla carta vicina — il codice si sfoglia come una sequenza sola, qualunque sia la forma in
- * cui le carte sono arrivate.
- */
 function _taAggiornaNavigazione(m, index) {
     const btnPrev = document.getElementById('btn-prev-allegato');
     const btnNext = document.getElementById('btn-next-allegato');
@@ -533,17 +440,9 @@ function _taAggiornaNavigazione(m, index) {
     }
 }
 
-/**
- * `pagina` vale solo per i PDF: omessa è la prima, -1 è l'ultima (ci si arriva tornando
- * indietro dalla carta successiva).
- */
 window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
     const generazione = ++_taGenerazioneCarta;
     const superata = () => generazione !== _taGenerazioneCarta;
-    // Fase 2.3-bis: il travaso deve precedere `_taCaricaEditor`, che è ciò che sposta
-    // `_taIndiceCorrente` sulla carta nuova. Senza questa riga, quanto battuto sulla carta
-    // che si sta lasciando non verrebbe mai messo al sicuro e sparirebbe al primo cambio:
-    // togliendola, due E2E di `trascrizione.spec.ts` diventano rossi.
     _taSalvaEditorInMemoria();
 
     window.currentAllegatoIndex = index;
@@ -551,7 +450,6 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
     const m = appData.manoscritti.find(x => x.id === id);
     const isPdf = tipo === 'pdf';
     if (m) {
-        // Un PDF si aggancia solo quando se ne conosce la pagina, cioè dopo averlo aperto.
         if (isPdf) _taBloccaEditor(true);
         else _taCaricaEditor(m, index);
         _taAggiornaNavigazione(m, index);
@@ -567,8 +465,6 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
 
-    // Se il PDF non si può mostrare, l'editor lavora sul testo dell'allegato intero: meglio
-    // una trascrizione con i marcatori di pagina in vista che un editor bloccato.
     const agganciaSenzaPagine = () => { if (m && isPdf) _taCaricaEditor(m, index, 0); };
 
     if (!nome) {
@@ -618,10 +514,6 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
                     btnHub.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> ${window.t("attachment_downloading", "Download in corso…")}`;
                     if (window.lucide) lucide.createIcons({ nodes: [btnHub] });
                     try {
-                        // sincronizzaAllegatiHub mostra già i toast aggregati (caricati/scaricati/
-                        // chiave errata/non ancora pubblicato). Qui copriamo solo il caso residuo in
-                        // cui non ritorna nulla (es. attachmentsMode disattivato): nessun toast
-                        // sarebbe altrimenti mostrato e il pannello si richiuderebbe in silenzio.
                         const r = await window.sincronizzaAllegatiHub(false);
                         if (!r) {
                             const check = await window.apiBrowser.verificaHashAllegato(nome, expectedHash);
@@ -634,8 +526,6 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
                         console.error("Errore download allegato Hub:", e);
                         mostraMessaggio(e.message || "Errore durante il download dall'Hub.", "error");
                     } finally {
-                        // Ri-renderizza la vista: se il download è riuscito mostrerà l'anteprima,
-                        // altrimenti questo stesso pannello "non disponibile".
                         window.cambiaAllegatoTrascrizione(nome, tipo, index);
                     }
                 };
@@ -670,13 +560,9 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
         const altName = allegato.originalName || window.t('attachment_image', 'Immagine');
         imgPreview.alt = altName;
         window.mostraAnteprimaImmagine();
-        // P6 — regioni solo sulle carte immagine (le pagine PDF passano da nascondiAnteprimaImmagine, che le spegne).
         const viewer = (document.getElementById('trasc-img-viewport') as any)?._imageViewer;
         if (viewer && m) viewer.impostaRegioni(window.Model.annotazioni(allegato), (lista) => _taSalvaRegioni(m.id, allegato.nome, lista));
 
-        // Una carta remota puo' non arrivare: server lento, rete assente, misura che
-        // quell'implementazione non sa calcolare. Senza questo, il viewport resta
-        // semplicemente vuoto e non si capisce se sia un difetto dell'app o della rete.
         imgPreview.onerror = () => {
             imgPreview.onerror = null;
             if (!allegato.remoto) return;
@@ -690,17 +576,11 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
             if (window.lucide) lucide.createIcons({ nodes: [noAllegato] });
         };
 
-        // Sorgente DOPO aver reso visibile il viewport: l'adattamento si calcola sul `load`
-        // e a pannello nascosto le dimensioni di layout sono zero.
-        // 2000 px di larghezza per una carta IIIF: regge lo zoom del visualizzatore senza
-        // chiedere al server il facsimile intero a ogni cambio carta.
         imgPreview.src = window.srcAllegato(allegato, { cacheBuster: true, lato: 2000 });
     }
 
     window.aggiornaBarraIiif(m, index);
 };
-
-// --- PDF: pagina per pagina ---------------------------------------------------
 
 function _taNascondiBarraPdf() {
     const barra = document.getElementById('trasc-pdf-bar');
@@ -722,7 +602,6 @@ function _taMostraErrorePdf() {
     if (window.lucide) lucide.createIcons({ nodes: [noAllegato] });
 }
 
-/** Disegna la pagina `n` e allinea la barra. Il testo dell'editor lo aggancia il chiamante. */
 async function _taMostraPaginaPdf(m, index, n) {
     const barra = document.getElementById('trasc-pdf-bar');
     const campo = document.getElementById('trasc-pdf-pagina') as HTMLInputElement;
@@ -748,9 +627,8 @@ async function _taMostraPaginaPdf(m, index, n) {
     window.mostraAnteprimaImmagine();
     try {
         const mostrata = await window.PdfViewer.mostraPagina(n, img, viewport);
-        // Zoom iniziale da Impostazioni → Documenti; "pagina" è già la vista di reimposta().
         if (mostrata && window.pdfZoomIniziale === 'larghezza' && (viewport as any)._imageViewer) {
-            await img.decode().catch(() => { /* immagine non decodificabile: resta la pagina intera */ });
+            await img.decode().catch(() => {});
             (viewport as any)._imageViewer.adatta('larghezza');
         }
     } catch (e) {
@@ -759,10 +637,6 @@ async function _taMostraPaginaPdf(m, index, n) {
     }
 }
 
-/**
- * Cambio di pagina dentro il PDF aperto. Stessa regola del cambio di carta: prima si mette
- * al sicuro il testo della pagina che si lascia, poi si aggancia quella nuova.
- */
 window.cambiaPaginaPdf = async function(pagina) {
     const id = document.getElementById('trascrizione-id').value;
     const m = appData.manoscritti.find(x => x.id === id);
@@ -772,7 +646,6 @@ window.cambiaPaginaPdf = async function(pagina) {
     if (!a || a.tipo !== 'pdf' || !totale || _taPaginaCorrente < 1) return;
     const n = Math.min(Math.max(1, Math.floor(Number(pagina)) || 1), totale);
     if (n === _taPaginaCorrente) return;
-    // Un cambio di carta ancora in volo non deve poi riagganciare l'editor sopra questo.
     _taGenerazioneCarta++;
     _taSalvaEditorInMemoria();
     _taCaricaEditor(m, index, n);
@@ -792,12 +665,6 @@ window.vaiAPaginaPdfDaCampo = function() {
     window.cambiaPaginaPdf(n);
 };
 
-// --- PDF: ricerca --------------------------------------------------------------
-//
-// Cerca in due testi: il livello testo del PDF (vuoto sulle scansioni non passate da un OCR)
-// e le trascrizioni per pagina. Il secondo è quello che conta su un manoscritto: il PDF di
-// una riproduzione non contiene parole, la trascrizione sì.
-
 let _taTimerRicercaPdf = null;
 
 function _taChiudiRisultatiPdf() {
@@ -812,20 +679,15 @@ function _taStatoPdf(testo) {
     if (stato) stato.textContent = testo || '';
 }
 
-/** Pagine della trascrizione che contengono `q`, con estratto. Solo testo, niente markup. */
 function _taCercaNelleTrascrizioni(m, index, q) {
     const a = m && m.allegati ? m.allegati[index] : null;
     if (!a) return [];
     window.migraTrascrizionePdfSuPagine(a);
     const pagine = Array.isArray(a.pagine) ? a.pagine : [];
     const out = [];
-    // <template> e non <div>: il suo contenuto è inerte, un <img> dentro una trascrizione non
-    // parte a caricare solo perché la si sta cercando.
     const contenitore = document.createElement('template');
     for (let k = 0; k < pagine.length; k++) {
         if (!window.trascrizioneHaTesto(pagine[k])) continue;
-        // Testo dal DOM, non regex sui tag: le entità (&amp;, &nbsp;) vanno decodificate o
-        // "Pietro &amp; Paolo" non si troverebbe cercando "&".
         contenitore.innerHTML = window.sanitizeHTML(pagine[k]);
         const testo = contenitore.content.textContent || '';
         const i = window.normalizzaTesto(testo).indexOf(q);
@@ -842,7 +704,6 @@ async function _taEseguiRicercaPdf(query) {
     const q = window.normalizzaTesto(query).trim();
     if (!m || !lista || !q || _taPaginaCorrente < 1) { _taChiudiRisultatiPdf(); _taStatoPdf(''); return; }
 
-    // Il testo che l'utente sta battendo fa parte della ricerca.
     _taSalvaEditorInMemoria();
     const index = _taIndiceCorrente;
     const daTrascrizione = _taCercaNelleTrascrizioni(m, index, q);
@@ -850,7 +711,7 @@ async function _taEseguiRicercaPdf(query) {
     const risultatiPdf = await window.PdfViewer.cerca(query, (n, tot) => {
         _taStatoPdf(window.t('pdf_searching', 'Ricerca… {var0}/{var1}').replace('{var0}', String(n)).replace('{var1}', String(tot)));
     });
-    if (risultatiPdf === null) return; // superata da una ricerca più recente
+    if (risultatiPdf === null) return;
 
     const voci = [
         ...daTrascrizione.map(r => ({ ...r, fonte: 'trascrizione' })),
@@ -873,7 +734,6 @@ async function _taEseguiRicercaPdf(query) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'w-full text-left px-2 py-1.5 border-b border-stone-100 text-xs';
-        // textContent ovunque: estratti e fonti vengono da un file e da una trascrizione.
         const testa = document.createElement('span');
         testa.className = 'font-semibold';
         testa.textContent = 'p. ' + v.pagina;
@@ -896,7 +756,6 @@ async function _taEseguiRicercaPdf(query) {
     if (campo) campo.setAttribute('aria-expanded', 'true');
 }
 
-/** Ascoltatori della barra PDF: una volta sola, la vista è creata una volta sola. */
 function _taAgganciaBarraPdf() {
     const campo = document.getElementById('trasc-pdf-cerca') as HTMLInputElement;
     if (!campo || campo.dataset.agganciato) return;
@@ -932,7 +791,6 @@ function _taAgganciaBarraPdf() {
             else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); _taChiudiRisultatiPdf(); campo.focus(); }
         });
     }
-    // PagSu/PagGiù sul visualizzatore: sfogliano come le frecce, attraversando le carte.
     const viewport = document.getElementById('trasc-img-viewport');
     if (viewport) {
         viewport.addEventListener('keydown', (e) => {
@@ -944,13 +802,6 @@ function _taAgganciaBarraPdf() {
 }
 document.addEventListener('DOMContentLoaded', () => setTimeout(_taAgganciaBarraPdf, 0));
 
-// --- Import IIIF: carte remote ------------------------------------------------
-
-/**
- * La barra della carta remota. Sta sopra l'immagine e non nel pannello "allegato mancante"
- * perché la carta remota NON è un allegato mancante: si vede benissimo, semplicemente non è
- * su questo disco. Il pannello di errore direbbe il contrario di quel che succede.
- */
 window.aggiornaBarraIiif = function(m, index) {
     const barra = document.getElementById('trasc-iiif-bar');
     if (!barra) return;
@@ -972,11 +823,6 @@ window.aggiornaBarraIiif = function(m, index) {
     if (window.lucide) lucide.createIcons({ nodes: [barra] });
 };
 
-/**
- * L'avanzamento arriva dal main sulla barra di sincronizzazione, che e' gia' la barra di
- * tutte le operazioni lunghe. Registrato una volta sola: `onProgress` aggiunge un listener a
- * ogni chiamata, e dopo dieci download la stessa percentuale verrebbe scritta dieci volte.
- */
 let _taProgressoIiifAgganciato = false;
 function _taAscoltaProgressoIiif() {
     if (_taProgressoIiifAgganciato || !window.apiIiif || !window.apiIiif.onProgress) return;
@@ -987,14 +833,6 @@ function _taAscoltaProgressoIiif() {
     });
 }
 
-/**
- * Scarica le carte indicate (o tutte le remote) e le trasforma in allegati veri.
- *
- * ⚠️ Il record si aggiorna PER IDENTITÀ dell'allegato, non per indice: fra la richiesta e la
- * risposta l'utente può riordinare le carte dalla striscia (che è drag&drop), e scrivere
- * l'hash sull'indice vecchio lo attribuirebbe alla carta sbagliata — cioè a un file che non
- * corrisponde, che è esattamente ciò che la verifica dell'hash esiste per impedire.
- */
 window.materializzaCarteIiif = async function(idScheda, indici) {
     const m = appData.manoscritti.find(x => x.id === idScheda);
     if (!m || !window.apiIiif) return;
@@ -1005,14 +843,7 @@ window.materializzaCarteIiif = async function(idScheda, indici) {
         : indici.map(i => allegati[i]).filter(a => a && a.remoto);
     if (!daScaricare.length) return;
 
-    // Il lato scelto all'import viaggia con la scheda: scaricare la carta 200 a una misura
-    // diversa dalla 1 darebbe un facsimile disomogeneo, e nessuno se ne accorgerebbe finche'
-    // non le mette una accanto all'altra.
-    // `0` e' una scelta ("massima disponibile"), non un valore mancante: un `|| 2000`
-    // scaricherebbe carte piu' piccole di quelle chieste all'import, senza dirlo.
     const lato = Number.isFinite(Number(m.iiifLato)) ? Number(m.iiifLato) : 2000;
-    // La catena di ripieghi, non un URL solo: se il server non sa servire la misura chiesta
-    // la carta si scarica alla massima disponibile invece di non scaricarsi.
     const richieste = daScaricare.map(a => ({
         nome: a.nome,
         urls: window.IiifManifest.candidatiAllegato(a, { lato })
@@ -1039,8 +870,6 @@ window.materializzaCarteIiif = async function(idScheda, indici) {
         }
 
         if (fatte) {
-            // La scheda e' cambiata davvero: gli hash delle carte materializzate devono
-            // arrivare ai collaboratori, e senza `lastModified` il merge non se ne accorge.
             m.lastModified = Date.now();
             await salvaTutto();
             if (typeof renderMain === 'function') renderMain();
@@ -1063,25 +892,16 @@ window.materializzaCarteIiif = async function(idScheda, indici) {
     }
 };
 
-// Visibilità dell'anteprima immagine della trascrizione. Sta qui, in un solo punto, perché
-// il viewport (Fase 1.2) va commutato con `hidden-tab` e va attivato al primo uso: i tre
-// call site che prima facevano `imgPreview.classList.add('hidden')` avrebbero dovuto
-// ricordarsene ciascuno.
 window.nascondiAnteprimaImmagine = function() {
     const viewport = document.getElementById('trasc-img-viewport') as HTMLElement & { _imageViewer?: any };
     if (!viewport) return;
     viewport.classList.add('hidden-tab');
     if (viewport._imageViewer) {
         viewport._imageViewer.reimposta();
-        // Salva subito un'eventuale modifica in sospeso e spegne le regioni della carta lasciata.
         viewport._imageViewer.impostaRegioni(null);
     }
 };
 
-/**
- * P6 — le regioni della carta `nome` della scheda `id`. Si cerca per nome e non per indice né
- * per riferimento: dopo un riordino o un merge l'oggetto della carta può essere un altro.
- */
 async function _taSalvaRegioni(id, nome, lista) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     const al = m && Array.isArray(m.allegati) ? m.allegati.find(a => a && a.nome === nome) : null;
@@ -1097,7 +917,6 @@ async function _taSalvaRegioni(id, nome, lista) {
     }
 }
 
-/** P6 — dal risultato di ricerca: apre la carta e sceglie la regione. */
 window.apriRegioneSuCarta = async function(id, carta, regione) {
     await window.apriTrascrizioneSuCarta(id, carta);
     const viewer = (document.getElementById('trasc-img-viewport') as any)?._imageViewer;
@@ -1122,7 +941,6 @@ window.cambiaAllegatoRelativo = function(dir) {
     
     let allegatiRender = m.allegati || [];
     const corrente = allegatiRender[window.currentAllegatoIndex || 0];
-    // Dentro un PDF si scorrono prima le pagine; al bordo si passa alla carta vicina.
     if (corrente && corrente.tipo === 'pdf' && _taPaginaCorrente > 0) {
         const n = _taPaginaCorrente + dir;
         if (n >= 1 && n <= window.PdfViewer.numeroPagine()) {
@@ -1133,7 +951,6 @@ window.cambiaAllegatoRelativo = function(dir) {
     let newIndex = (window.currentAllegatoIndex || 0) + dir;
     if (newIndex >= 0 && newIndex < allegatiRender.length) {
         const al = allegatiRender[newIndex];
-        // Tornando indietro su un PDF si entra dalla sua ultima pagina, come voltando carta.
         window.cambiaAllegatoTrascrizione(al.nome, al.tipo, newIndex, dir < 0 && al.tipo === 'pdf' ? -1 : undefined);
     }
 };
@@ -1146,7 +963,7 @@ window.toggleFullscreenAllegato = function() {
     
     if (!editorPanel) return;
     if (panelAllegato && panelAllegato.classList.contains('hidden-tab')) {
-        return; // Impossibile collassare se non c'è l'allegato
+        return;
     }
 
     if (editorPanel.classList.contains('hidden')) {
@@ -1181,12 +998,10 @@ window.confermaUscitaTrascrizione = function() {
         switchTab('list');
     }
     
-    // Il PDF aperto tiene worker, documento e pagine disegnate: fuori dalla vista non serve.
     _taGenerazioneCarta++;
     _taNascondiBarraPdf();
     window.PdfViewer.chiudi();
     
-    // Resetta l'espansione dell'editor prima di tornare indietro
     const editorPanel = document.getElementById('trascrizione-editor-panel');
     const btnToggle = document.getElementById('btn-collapse-editor');
     const resizer = document.getElementById('trascrizione-resizer');
@@ -1211,7 +1026,6 @@ function chiudiTrascrizione() {
 }
 
 async function salvaTrascrizione() {
-    // Dal tab «Scheda» (pulsante o Ctrl+S): anche il modulo, senza aspettare la pausa.
     if (window.moduloInTrascrizione()) await window.salvaSchedaTrascrizioneOra();
     const id = document.getElementById('trascrizione-id').value;
     const editor = document.getElementById('trascrizione-editor');
@@ -1221,12 +1035,7 @@ async function salvaTrascrizione() {
 
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (m) {
-        // Il testo a schermo appartiene alla carta corrente; le altre carte possono avere
-        // modifiche pendenti in memoria, ed è per questo che si salva l'intero record e non
-        // solo ciò che si vede.
         _taSalvaEditorInMemoria();
-        // `m.trascrizione` resta la forma derivata: la ricalcolano solo i salvataggi, mai
-        // i cambi di carta (vedi il commento in utils.ts).
         m.trascrizione = window.componiTrascrizioneRecord(m);
         m.lastModified = Date.now();
         m.modificatoDa = username;
@@ -1245,9 +1054,6 @@ async function caricaAllegatoTrascrizione(e) {
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m) return;
 
-    // Quello che è nell'editor va messo al sicuro PRIMA di aggiungere l'allegato: la scheda
-    // passa da "senza allegati" (testo su `m.trascrizione`) a "con allegati" (testo sulla
-    // prima carta), e `apriTrascrizione` più sotto ricarica tutto da capo.
     _taSalvaEditorInMemoria();
 
     try {
@@ -1274,7 +1080,6 @@ async function caricaAllegatoTrascrizione(e) {
 
             await salvaTutto();
             
-            // Ricarica la vista trascrizione per mostrare il nuovo file
             apriTrascrizione(id);
         }
     } catch (error) {
@@ -1282,7 +1087,6 @@ async function caricaAllegatoTrascrizione(e) {
         mostraMessaggio(window.t("msg_attachment_error"), "error");
     }
     
-    // Resetta l'input
     e.target.value = '';
 }
 

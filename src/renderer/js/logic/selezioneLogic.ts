@@ -1,6 +1,3 @@
-// Selezione multipla delle schede e appunti (copia, taglia, incolla di schede e cartelle).
-// Spostato da app.ts (PIANO-REFACTOR Fase 6).
-
 window.lastSelectedId = null;
 window.selectedRecords = window.selectedRecords || [];
 window.copiedRecordIds = window.copiedRecordIds || [];
@@ -9,9 +6,7 @@ window.cutRecordIds = window.cutRecordIds || [];
 window.selectItem = function(id, event) {
     if (!event) event = window.event || {};
     
-    // Lista di id renderizzati corrente
     const currentRenderedIds = Array.from(document.querySelectorAll('.card-scheda')).map(el => el.id.replace('card-', ''));
-    // Se stiamo operando dalla sidebar e l'elemento non è in currentRenderedIds, non possiamo fare shift select
     const isShift = event.shiftKey;
     const isCtrl = event.ctrlKey || event.metaKey;
 
@@ -54,12 +49,6 @@ window.selectItem = function(id, event) {
     window.aggiornaStatoSelezione();
 };
 
-/**
- * Aggiorna il solo indicatore testuale della selezione, accanto al contatore risultati.
- * Sostituisce la vecchia barra di azioni multiple, che compariva sopra la lista a ogni
- * selezione spingendo in basso le schede: le azioni ora vivono tutte nel menu del tasto
- * destro (e nel "⋯" della card, che è lo stesso menu) — vedi vociMenuRecord.
- */
 window.aggiornaStatoSelezione = function() {
     const ind = document.getElementById('selection-indicator');
     if (!ind) return;
@@ -85,7 +74,6 @@ window.azzeraSelezione = function() {
 window.esportaSelezionati = async function() {
     if (window.selectedRecords.length === 0) return;
     if (!window.apiBrowser || !window.apiBrowser.exportZip) return;
-    // Il main legge il DB dal disco: flush del salvataggio differito.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.exportZip(window.selectedRecords);
     if (res.success) {
@@ -104,11 +92,9 @@ window.eliminaSelezionati = async function() {
     const count = window.selectedRecords.length;
     
     const procediEliminazione = async () => {
-        // Salviamo i record da eliminare
         const recordDaEliminare = appData.manoscritti.filter(m => window.selectedRecords.includes(m.id));
         const recordSalvati = JSON.parse(JSON.stringify(recordDaEliminare));
 
-        // Fase 4.1 — copia nel cestino prima della rimozione (vedi logic/cestinoLogic.ts).
         if (typeof window.cestinaRecord === 'function') {
             await window.cestinaRecord(recordSalvati, window.origineCestino(count));
         }
@@ -124,7 +110,6 @@ window.eliminaSelezionati = async function() {
             await window.Store.commit();
         };
 
-        // Fase 4.5 — ripetizione: rielimina gli id ancora presenti, ricopiandoli nel cestino.
         const rifaiFn = async () => {
             const vivi = appData.manoscritti.filter(m => idsEliminati.includes(String(m.id)));
             if (vivi.length === 0) return;
@@ -187,7 +172,7 @@ window.copiaCartella = function(folderPath) {
 };
 
 window.tagliaCartella = function(folderPath) {
-    if (!folderPath) return; // la radice virtuale non si taglia
+    if (!folderPath) return;
     window.cutFolderPath = folderPath;
     window.copiedFolderPath = null;
     window.cutRecordIds = [];
@@ -195,13 +180,10 @@ window.tagliaCartella = function(folderPath) {
     if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_cartella_tagliata_tasto_d", "Cartella tagliata. Tasto destro per spostarla."), "info");
 };
 window.incollaRecord = async function(targetFolderOverride) {
-    // ?? e non ||: '' è la radice, una destinazione valida, non un valore "assente".
     const targetFolder = targetFolderOverride ?? window.cartellaAttuale ?? '';
 
-    // Se stiamo spostando un intero archivio (Taglia Archivio)
     if (window.cutFolderPath) {
         if (typeof spostaCartella === 'function') {
-            // spostaCartella parla il dialetto 'ROOT' per la radice
             await spostaCartella(window.cutFolderPath, targetFolder === '' ? 'ROOT' : targetFolder);
             window.cutFolderPath = null;
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_spostato_con_suc", 'Archivio spostato.'), "success");
@@ -209,9 +191,7 @@ window.incollaRecord = async function(targetFolderOverride) {
         return;
     }
 
-    // Se stiamo copiando un intero archivio (Copia Archivio)
     if (window.copiedFolderPath) {
-        // Estraiamo gli ID dei record della cartella copiata
         const prefix = window.copiedFolderPath + '/';
         const manoscrittiDaCopiare = appData.manoscritti.filter(m => m.cartella === window.copiedFolderPath || (m.cartella && m.cartella.startsWith(prefix)));
         
@@ -223,17 +203,14 @@ window.incollaRecord = async function(targetFolderOverride) {
 
         const idsToCopy = manoscrittiDaCopiare.map(m => m.id);
         
-        // Determiniamo la cartella destinazione (sotto-cartella del target con il nome dell'archivio copiato)
         const nomeArchivioCopiato = window.copiedFolderPath.split('/').pop();
         const baseTarget = (targetFolder === 'ROOT' || targetFolder === '') ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
 
         if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
-        // Il main legge il DB dal disco: flush del salvataggio differito.
         if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
         const res = await window.apiBrowser.duplicateRecords(idsToCopy, baseTarget);
 
         if (res.success) {
-            // Assicuriamoci che la nuova cartella esista nel db
             if (!appData.cartelle.includes(baseTarget)) {
                 appData.cartelle.push(baseTarget);
             }
@@ -248,12 +225,8 @@ window.incollaRecord = async function(targetFolderOverride) {
         return;
     }
 
-    // Se stiamo incollando record tagliati (Spostamento singolo/multiplo)
     if (window.cutRecordIds && window.cutRecordIds.length > 0) {
         let movedCount = 0;
-        // Fase 4.5 — si annota da DOVE veniva ogni scheda, non solo quante ne sono state
-        // spostate: uno spostamento multiplo può pescare da cartelle diverse, e riportarle
-        // tutte in una sola sarebbe un secondo spostamento sbagliato spacciato per undo.
         const provenienza = [];
         appData.manoscritti.forEach(m => {
             if (window.cutRecordIds.includes(m.id)) {
@@ -279,16 +252,14 @@ window.incollaRecord = async function(targetFolderOverride) {
             }
             await window.Store.commit();
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_spostati_con_s", '{var0} schede spostate.').replace("{var0}", String(movedCount)), "success");
-            window.cutRecordIds = []; // Reset dopo lo spostamento
+            window.cutRecordIds = [];
         }
         return;
     }
 
-    // Se stiamo incollando record copiati (Duplicazione singolo/multiplo)
     if (!window.copiedRecordIds || window.copiedRecordIds.length === 0) return;
     if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
     
-    // Il main legge il DB dal disco: flush del salvataggio differito.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const res = await window.apiBrowser.duplicateRecords(window.copiedRecordIds, targetFolder);
     

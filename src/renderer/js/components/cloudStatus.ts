@@ -1,18 +1,10 @@
-// --- CONTROLLO CLOUD UNICO (Fase 3) ---
-// Prima lo stato cloud era spalmato su 6 superfici: due indicatori nell'header
-// (#incoming-updates-indicator, #pending-changes-indicator), il gruppo Fetch/Scarica/Carica
-// (hidden md:flex), un menu compatto duplicato (md:hidden), più i tab Controllo Modifiche e
-// Storico. Qui c'è una sola fonte di verità (window.statoCloud) e un solo comando in Zona 2.
-//
-// I due tab restano, ma come dettaglio: sono raggiungibili DAL popover, non sono lo stato.
-
 window.statoCloud = {
-    vaultCloud: false,     // il vault è collegato a Drive/OneDrive/Hub
-    autenticato: false,    // sessione cloud valida
-    inEntrata: false,      // il server ha qualcosa di più recente
-    pendenti: false,       // ci sono modifiche locali non inviate
-    occupato: false,       // operazione di sync in corso
-    errore: null           // ultimo errore di sync, azzerato al primo successo
+    vaultCloud: false,
+    autenticato: false,
+    inEntrata: false,
+    pendenti: false,
+    occupato: false,
+    errore: null
 };
 
 function _contaInEntrata() {
@@ -22,16 +14,11 @@ function _contaInEntrata() {
 }
 
 function _contaPendenti() {
-    // Stessa regola del pannello Controllo Modifiche: modificati dopo l'ultimo allineamento.
     if (typeof appData === 'undefined' || !appData.manoscritti) return 0;
     const loadedAt = window.ultimoCaricamento || 0;
     return appData.manoscritti.filter(m => (m.lastModified || 0) > loadedAt).length;
 }
 
-/**
- * Stato prevalente, in ordine di urgenza: quello che l'utente deve sapere per primo.
- * Ritorna { chiave, label, icona, spin }. Il colore lo mette il CSS su [data-stato].
- */
 window.calcolaStatoCloud = function() {
     const s = window.statoCloud;
 
@@ -67,24 +54,15 @@ window.calcolaStatoCloud = function() {
     return { chiave: 'ok', label: window.t('cloud_state_synced', 'Sincronizzato'), icona: 'cloud-check' };
 };
 
-// Avvio del login cloud, con l'apertura del modal come ripiego se driveLogic non fosse ancora
-// caricato. Usato sia dall'azione principale che dalla voce di popover: una sola destinazione.
 function avviaConnessioneCloud() {
     if (typeof window.connettiAccountCloud === 'function') return window.connettiAccountCloud();
     if (typeof window.apriCloudModal === 'function') return window.apriCloudModal();
 }
 
-/**
- * L'azione che quello stato richiede, quella che l'utente vorrebbe fare adesso.
- * Sta nell'header con l'etichetta scritta: le altre due restano nel popover.
- * `null` = non c'è nulla di sensato da offrire (offline, sync in corso).
- */
 window.azionePrincipaleCloud = function(chiave) {
     switch (chiave) {
         case 'locale':
             return { label: window.t('cloud_action_enable_short', 'Attiva cloud'), icon: 'cloud-cog', onSelect: () => window.apriCloudModal && window.apriCloudModal() };
-        // "Connetti" porta direttamente al login nel browser: per un vault già cloud il modal
-        // non espone alcun controllo di accesso, quindi mandarci l'utente era un vicolo cieco.
         case 'disconnesso':
             return { label: window.t('cloud_action_connect_short', 'Connetti'), icon: 'cloud-cog', onSelect: () => avviaConnessioneCloud() };
         case 'errore':
@@ -96,20 +74,10 @@ window.azionePrincipaleCloud = function(chiave) {
         case 'ok':
             return { label: window.t('cloud_action_check', 'Controlla'), icon: 'refresh-cw', onSelect: () => window.controllaModificheInEntrata(true) };
         default:
-            return null;   // offline, occupato
+            return null;
     }
 };
 
-/**
- * Cambia il glifo di un'icona lucide già renderizzata.
- *
- * L'elemento va SEMPRE riletto dal DOM qui dentro, mai passato dall'esterno: lucide
- * conserva `data-lucide` sull'`<svg>` che produce, quindi ogni successiva
- * `createIcons()` — anche quella di un'altra icona — lo ritrova e lo rimpiazza con un
- * nodo nuovo. Un riferimento catturato prima diventa un nodo staccato, e `replaceWith`
- * su un nodo senza genitore non fa nulla: era il motivo per cui l'icona di stato restava
- * su "cloud-off" mentre l'etichetta diceva già "3 in entrata".
- */
 function scambiaIcona(idIcona, nome, spin) {
     const icona = document.getElementById(idIcona);
     if (!icona) return;
@@ -134,8 +102,6 @@ function aggiornaAzionePrincipale(chiave) {
     if (!btn || !label) return;
 
     const azione = window.azionePrincipaleCloud(chiave);
-    // display inline e non la classe .hidden: `.btn` è definita in style.css, caricato
-    // dopo tailwind.css, quindi il suo display vincerebbe sulla utility.
     btn.style.display = azione ? 'inline-flex' : 'none';
     if (!azione) return;
 
@@ -155,7 +121,6 @@ window.aggiornaCloudStatus = function() {
     const stato = window.calcolaStatoCloud();
     label.textContent = stato.label;
     btn.dataset.stato = stato.chiave;
-    // Il tooltip dice esplicitamente che il click apre altro: lo stato da solo non lo suggerisce.
     btn.title = stato.label + ' — ' + window.t('cloud_click_hint', 'clicca per le azioni di sincronizzazione');
     btn.setAttribute('aria-label', window.t('tooltip_cloud_sync', 'Sincronizzazione cloud') + ': ' + stato.label);
     aggiornaAzionePrincipale(stato.chiave);
@@ -175,16 +140,12 @@ window.azzeraErroreCloud = function() {
     window.aggiornaCloudStatus();
 };
 
-// --- POPOVER (Fase 3.2) ---
-// Riusa il menu contestuale unificato della Fase 4.3: tastiera, Esc e focus restore
-// sono già risolti lì, e il popover non è più un dropdown a parte come #cloud-menu-dropdown.
 window.apriPopoverCloud = function(btn) {
     const s = window.statoCloud;
     const stato = window.calcolaStatoCloud();
     const voci: any[] = [{ heading: true, label: stato.label }];
 
     if (!s.vaultCloud) {
-        // 3.5 — su vault locale il controllo non sparisce: offre come attivarlo.
         voci.push({
             label: window.t('cloud_action_enable', 'Attiva il cloud per questo archivio'),
             icon: 'cloud-cog',
@@ -233,8 +194,6 @@ window.apriPopoverCloud = function(btn) {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.aggiornaCloudStatus();
-    // La perdita di rete non genera eventi cloud: senza questi listener lo stato resterebbe
-    // "Sincronizzato" mentre ogni operazione fallisce.
     window.addEventListener('online', () => window.aggiornaCloudStatus());
     window.addEventListener('offline', () => window.aggiornaCloudStatus());
 });

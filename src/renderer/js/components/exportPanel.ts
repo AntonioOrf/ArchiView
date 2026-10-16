@@ -1,18 +1,3 @@
-// Fasi 2.5 e 2.6 — Esportazione della trascrizione e citazioni bibliografiche: superficie.
-//
-// UN SOLO modale per cinque formati (HTML, Markdown, RTF, BibTeX, RIS) e non due, perché la
-// domanda dell'utente è una sola — "porta fuori questa scheda" — e cambia solo la
-// destinazione: un editor di testo o Zotero. Due modali significherebbero due volte l'ambito
-// da scegliere, due volte le impostazioni da tenere allineate e due voci in ogni menu.
-//
-// Qui non si genera nulla: i documenti nascono in `src/main/export/{transcriptExport,
-// citations}.ts`, moduli puri, e il file lo scrive `ipc/textExportIpc.ts`. È la divisione
-// della 2.1, della 2.2 e della 2.3.
-//
-// NOMI PRIVATI COL PREFISSO `_x`: il bundle di produzione concatena TUTTI gli script del
-// renderer in un unico scope (scripts/build-renderer-bundle.js), quindi una `function _riga`
-// qui sostituirebbe l'omonima di un altro file per l'intero bundle, senza errori in console.
-
 const _xFORMATI = [
     { id: 'html', gruppo: 'trascrizione', chiave: 'tx_fmt_html', label: 'HTML', desc: 'Pagina autonoma, apribile in qualsiasi browser e allegabile a un messaggio.' },
     { id: 'md', gruppo: 'trascrizione', chiave: 'tx_fmt_md', label: 'Markdown', desc: 'Testo semplice con la formattazione conservata: per Obsidian, Pandoc, GitHub.' },
@@ -26,18 +11,10 @@ function _xTipoFormato(id) {
     return f ? f.gruppo : 'trascrizione';
 }
 
-// --- Impostazioni persistenti -------------------------------------------------
-//
-// Il nome del fondo, l'autore e la data NON sono duplicati qui: si leggono da
-// `window.impostazioniStampa` (2.2). Sono lo stesso dato — chi ha schedato e quale fondo —
-// e una seconda copia divergerebbe al primo cambio, con la stampa che dice un fondo e il
-// file BibTeX un altro. Qui restano solo le due scelte proprie di questi export.
-
 const _xDEFAULT = { formato: 'html', intestazione: true };
 
 window.impostazioniExportTesto = Object.assign({}, _xDEFAULT);
 
-/** Ripristino chiave per chiave: un appState scritto da una versione futura non entra. */
 window.ripristinaImpostazioniExportTesto = function(salvate) {
     if (!salvate || typeof salvate !== 'object') return;
     const o = window.impostazioniExportTesto;
@@ -51,14 +28,6 @@ function _xSalvaImpostazioni() {
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 }
 
-// --- Ambito -------------------------------------------------------------------
-
-/**
- * Gli ambiti sono ESATTAMENTE quelli della stampa (`window.ambitiSelezione`, esposta da
- * printPanel): selezione, scheda aperta, risultati dei filtri, cartella corrente. Ricalcolarli
- * qui significherebbe due definizioni di "risultati correnti" da tenere allineate, e la
- * seconda sbaglierebbe il giorno in cui i filtri cambiano.
- */
 function _xAmbiti() {
     if (typeof window.ambitiSelezione === 'function') return window.ambitiSelezione();
     const ids = (typeof window.getManoscrittiFiltrati === 'function' ? window.getManoscrittiFiltrati() : []).map(m => m.id);
@@ -70,7 +39,6 @@ function _xIdsAmbito(id) {
     return voce ? voce.ids : [];
 }
 
-/** Quante delle schede scelte hanno davvero del testo: è l'unico numero che conta qui. */
 function _xConTrascrizione(ids) {
     const indice = new Map<string, any>((appData.manoscritti || []).map(m => [String(m.id), m]));
     let n = 0;
@@ -83,8 +51,6 @@ function _xConTrascrizione(ids) {
     }
     return n;
 }
-
-// --- Controlli ----------------------------------------------------------------
 
 function _xRiga(etichetta, controllo) {
     const wrap = document.createElement('label');
@@ -155,7 +121,6 @@ function _xRiempi() {
 
     corpo.appendChild(_xRiga(_xT('tx_format', 'Formato'), _xBloccoFormati(o.formato)));
 
-    // L'intestazione ha senso solo per il testo: in BibTeX e RIS i metadati SONO il file.
     if (_xTipoFormato(o.formato) === 'trascrizione') {
         const wrap = document.createElement('label');
         wrap.className = 'flex items-center gap-2 text-sm cursor-pointer';
@@ -178,11 +143,6 @@ function _xRiempi() {
     _xAggiornaConteggio();
 }
 
-/**
- * Il conteggio dice DUE numeri quando servono: quante schede e quante hanno testo. Un
- * export di venti schede di cui tre trascritte non è un errore, ma saperlo prima evita di
- * cercare per mezz'ora la trascrizione che non è mai stata scritta.
- */
 function _xAggiornaConteggio() {
     const nota = document.getElementById('tx-count');
     if (!nota) return;
@@ -197,8 +157,6 @@ function _xAggiornaConteggio() {
     nota.textContent = _xT('tx_count', '{var0} schede, di cui {var1} con trascrizione.')
         .replace('{var0}', String(ids.length)).replace('{var1}', String(conTesto));
 }
-
-// --- Apertura e chiusura ------------------------------------------------------
 
 window.apriEsportaTesto = function(ambito, formato) {
     const modal = document.getElementById('export-text-modal');
@@ -218,24 +176,18 @@ window.chiudiEsportaTesto = function() {
     _xSalvaImpostazioni();
 };
 
-// --- Esecuzione ---------------------------------------------------------------
-
 function _xOpzioniIpc() {
     const o = window.impostazioniExportTesto;
     const stampa = window.impostazioniStampa || {};
     return {
         formato: o.formato,
         intestazione: o.intestazione,
-        // Fondo, autore e data vengono dalle impostazioni di stampa: sono la stessa
-        // intestazione, compilata una volta sola (vedi la nota in testa al file).
         fondo: stampa.fondo || '',
         intestazioneDocumento: { fondo: stampa.fondo || '', autore: stampa.autore || '', data: stampa.data || '' },
         etichette: typeof window.etichetteColonneExport === 'function' ? window.etichetteColonneExport() : {},
         nomiTipi: typeof window.nomiTipiExport === 'function' ? window.nomiTipiExport() : {},
         apri: true,
         titolo: _xT('dialog_export_text', 'Esporta'),
-        // Il main non conosce la i18n (lezione della 2.1): i testi fissi del documento
-        // viaggiano nel messaggio, o un export in inglese conterrebbe intestazioni italiane.
         testi: {
             tx_doc_title: _xT('tx_doc_title', 'Trascrizioni'),
             tx_field_folder: _xT('th_folder', 'Archivio'),
@@ -264,11 +216,6 @@ window.esportaTesto = async function() {
     const bottone = document.getElementById('tx-export') as HTMLButtonElement;
     if (bottone) bottone.disabled = true;
     try {
-        // L'export si fa DAL DISCO, e l'editor della trascrizione vive in memoria finché non
-        // si salva: senza questo, esportare mentre si scrive produrrebbe il testo di prima
-        // dell'ultima riga battuta — un file che sembra giusto e non lo è. Si salva, e il
-        // toast di `salvaTrascrizione` lo dice; il flush copre poi il salvataggio differito
-        // di tutto il resto (contratto della 2.4.2).
         if (window.trascrizioneNonSalvata && typeof window.salvaTrascrizione === 'function') {
             await window.salvaTrascrizione();
         }
@@ -297,8 +244,6 @@ window.esportaTesto = async function() {
         _xAggiornaConteggio();
     }
 };
-
-// --- Markup -------------------------------------------------------------------
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {

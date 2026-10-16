@@ -1,13 +1,7 @@
 function aggiungiCartella() {
     const input = document.getElementById('folder-name-input') as HTMLInputElement;
-    // Radice ('') → nessun prefisso: la nuova cartella nasce al primo livello
     input.value = window.cartellaAttuale ? window.cartellaAttuale + '/' : '';
     document.getElementById('folder-modal').classList.remove('hidden-tab');
-    // Focus immediato: il modal è già visibile a questo punto. Con il vecchio
-    // setTimeout(100) il campo restava non focalizzato per un decimo di secondo — quanto
-    // basta per perdere i primi caratteri di chi digita subito, e per far cadere lo
-    // spostamento del cursore in mezzo a una scrittura già in corso (il cursore tornava
-    // in fondo e il testo digitato finiva accodato al prefisso).
     input.focus();
     const len = input.value.length;
     input.setSelectionRange(len, len);
@@ -31,8 +25,6 @@ async function confermaAggiungiCartella() {
             appData.cartelle.push(percorsoPulito);
             if (appData.deletedCartelle) appData.deletedCartelle = appData.deletedCartelle.filter(c => c !== percorsoPulito);
 
-            // Seleziona e rivela la cartella appena creata: senza espandere gli antenati
-            // un percorso annidato resterebbe invisibile nell'albero.
             window.cartellaAttuale = percorsoPulito;
             window.espandiAntenati(percorsoPulito);
             window.azzeraFiltriRicerca();
@@ -48,9 +40,8 @@ async function confermaAggiungiCartella() {
 
 
 async function spostaCartella(pathSorgente, pathDestinazioneBase) {
-    if (!pathSorgente) return; // la radice virtuale non si sposta
+    if (!pathSorgente) return;
     if (pathSorgente === pathDestinazioneBase || pathDestinazioneBase.startsWith(pathSorgente + '/')) {
-        // Impossibile spostare una cartella dentro se stessa o dentro una sua sottocartella
         return;
     }
 
@@ -62,8 +53,6 @@ async function spostaCartella(pathSorgente, pathDestinazioneBase) {
         return;
     }
 
-    // Spostare è cambiare percorso: stessa aritmetica della rinomina, compresi cartella
-    // corrente ed espansione, che prima qui non seguivano lo spostamento.
     await window.applicaRinominaCartella(pathSorgente, nuovoPath);
 }
 
@@ -73,9 +62,8 @@ async function eliminaCartellaAttuale() {
 }
 
 window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
-    if (!pathDaEliminare) return; // la radice virtuale non è eliminabile
+    if (!pathDaEliminare) return;
 
-    // Controlla se ci sono manoscritti dentro la cartella o nelle sue sottocartelle
     const prefix = pathDaEliminare + '/';
     const manoscrittiDaEliminare = appData.manoscritti.filter(m => m.cartella === pathDaEliminare || (m.cartella && m.cartella.startsWith(prefix)));
     const haManoscritti = manoscrittiDaEliminare.length > 0;
@@ -88,19 +76,13 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
     }
 
     window.mostraBottomConfirm(messaggioConferma, async () => {
-        // Salviamo lo stato per l'undo
         const cartelleDaEliminare = appData.cartelle.filter(c => c === pathDaEliminare || c.startsWith(prefix));
         const recordSalvati = JSON.parse(JSON.stringify(manoscrittiDaEliminare));
 
-        // Fase 4.1 — le schede travolte dall'eliminazione dell'archivio finiscono nel
-        // cestino come quelle eliminate una per una: è anzi il caso in cui la rete serve di
-        // più, perché qui l'utente ne cancella molte con un gesto solo e il conteggio nella
-        // conferma è tutto ciò che ha visto di loro.
         if (typeof window.cestinaRecord === 'function' && recordSalvati.length) {
             await window.cestinaRecord(recordSalvati, nomeVisivo);
         }
 
-        // Elimina anche tutte le sottocartelle
         const foldersToDel = appData.cartelle.filter(c => c === pathDaEliminare || c.startsWith(prefix));
         appData.cartelle = appData.cartelle.filter(c => !foldersToDel.includes(c));
         
@@ -113,7 +95,6 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
             window.cartellaAttuale = '';
             if (typeof switchTab === 'function') switchTab('list');
         }
-        // Le schede dentro escono come nell'eliminazione singola: tombstone e rimandi tolti.
         if (haManoscritti) await window.Store.eliminaSchede(manoscrittiDaEliminare.map(m => m.id));
         else await window.Store.commit();
         aggiornaSelectCartelle();
@@ -164,11 +145,6 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
 
         await window.applicaRinominaCartella(vecchioPath, nuovoPath);
 
-        // Fase 4.5 — una rinomina è la sua stessa inversa: annullarla è rinominare
-        // all'indietro. È il motivo per cui il corpo dell'operazione è stato estratto in
-        // `applicaRinominaCartella` invece di essere ricostruito a mano nell'undo — due
-        // copie della stessa aritmetica di percorsi divergerebbero al primo caso strano
-        // (i sotto-archivi, `cartellaAttuale`, i tombstone).
         if (window.gestoreAnnullamento) {
             window.gestoreAnnullamento.registraAzione(
                 window.t('undo_rename_folder', 'Rinomina di "{var0}"').replace('{var0}', String(nomeAttuale)),
@@ -180,10 +156,6 @@ window.rinominaCartellaDaSidebar = async function(vecchioPath) {
     });
 }
 
-/**
- * Il corpo della rinomina: percorsi, record, tombstone, cartella corrente ed espansione.
- * Separato dal modale perché è anche l'operazione inversa di se stesso (vedi sopra).
- */
 window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
     if (!vecchioPath || !nuovoPath || vecchioPath === nuovoPath) return;
     const prefixVecchia = vecchioPath + '/';
@@ -191,7 +163,6 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
     const settings = window.apiSettings ? await window.apiSettings.get() : {};
     const username = settings.username || 'Anonimo';
 
-    // Aggiorna cartelle
     if (!appData.deletedCartelle) appData.deletedCartelle = [];
     appData.cartelle = appData.cartelle.map(c => {
         let nuovoC = c;
@@ -205,7 +176,6 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
         return nuovoC;
     });
 
-    // Aggiorna manoscritti
     appData.manoscritti.forEach(m => {
         if (m.cartella === vecchioPath) {
             m.cartella = nuovoPath;
@@ -223,7 +193,6 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
         window.cartellaAttuale = window.cartellaAttuale.replace(vecchioPath, nuovoPath);
     }
     
-    // Aggiorna espansione
     if (window.cartelleEspanse.has(vecchioPath)) {
         window.cartelleEspanse.delete(vecchioPath);
         window.cartelleEspanse.add(nuovoPath);
@@ -235,12 +204,8 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
 
 
 
-// WCAG 2.5.7 — alternativa senza trascinamento allo spostamento di una cartella: prima il
-// drag nell'albero era l'unico modo. Le destinazioni sono filtrate a monte (niente sé stessa,
-// niente discendenti, niente genitore attuale) invece di rifiutarle dopo la scelta.
-// Markup via createElement/textContent: i nomi delle cartelle sono dati utente.
 window.apriSpostaCartella = function(pathSorgente) {
-    if (!pathSorgente) return; // la radice non si sposta
+    if (!pathSorgente) return;
     const esistente = document.getElementById('sposta-cartella-modal');
     if (esistente) esistente.remove();
 
@@ -272,7 +237,7 @@ window.apriSpostaCartella = function(pathSorgente) {
     const annulla = document.createElement('button');
     annulla.type = 'button';
     annulla.className = 'btn btn-ghost';
-    annulla.setAttribute('data-modal-cancel', ''); // Esc passa di qui (chiudiModaleTop)
+    annulla.setAttribute('data-modal-cancel', '');
     annulla.textContent = window.t('btn_cancel', 'Annulla');
     annulla.onclick = chiudi;
 

@@ -1,26 +1,3 @@
-// Fase 2.3 — OCR degli allegati: superficie utente.
-//
-// Qui non c'è nessun motore: tesseract e pdf.js vivono nel Main (`src/main/ocr/`) e questo
-// file parla solo con `window.apiOcr`. È la stessa divisione della 1.3 (`filtersPanel.ts` è
-// solo superficie, i predicati stanno in `utils.ts`) e della 2.1 (la generazione del CSV è
-// un modulo puro nel main): la logica che si può sbagliare deve stare dove si può testare.
-//
-// NOMI PRIVATI COL PREFISSO `_o`: il bundle di produzione concatena TUTTI gli script del
-// renderer in un unico scope (scripts/build-renderer-bundle.js). Una `function _riga` qui
-// dentro sostituirebbe l'omonima di un altro file per l'intero bundle, senza un errore in
-// console — è già successo nella 1.5 con `_select`, e sette E2E dei filtri sono diventati
-// rossi per quella riga.
-
-// --- Lettura del testo riconosciuto -------------------------------------------
-
-/**
- * Testo OCR di una scheda: la concatenazione di quello dei suoi allegati.
- *
- * È la funzione che rende il riconoscimento *cercabile*. Vive qui e non nell'indice di
- * `mainView.ts` perché la usano tre consumatori — l'indice della griglia, il vincolo
- * `ocr:` della query e la colonna di stato — e tre copie divergerebbero al primo cambio
- * di forma del record.
- */
 window.testoOcrRecord = function(m) {
     if (!m || !Array.isArray(m.allegati)) return '';
     let out = '';
@@ -29,8 +6,6 @@ window.testoOcrRecord = function(m) {
     }
     return out;
 };
-
-// --- Stato del pannello -------------------------------------------------------
 
 const _oStato = {
     recordId: null,
@@ -43,7 +18,6 @@ const _oStato = {
 
 function _oT(k, d) { return window.t(k, d); }
 
-/** Il main manda i nomi in italiano: si traducono per codice, col nome del main come ripiego. */
 function _oNomeLingua(l) { return _oT('ocr_lang_name_' + l.codice, l.nome); }
 
 function _oRecord() {
@@ -59,7 +33,6 @@ async function _oSalva() {
     await window.Store.commit();
 }
 
-/** Lingue installate, in ordine, con l'italiano davanti: è la lingua di chi usa il programma. */
 async function _oCaricaLingue() {
     try {
         const r = await window.apiOcr.lingue();
@@ -72,10 +45,6 @@ async function _oCaricaLingue() {
     return _oStato.lingue;
 }
 
-/**
- * Lingue preferite da settings.json (`ocrLingue`). Una tantum porta lì il vecchio valore di
- * localStorage, che poi si cancella.
- */
 async function _oCaricaLinguePreferite() {
     try {
         const s = await window.apiSettings.get();
@@ -98,31 +67,18 @@ function _oLingueInstallate() {
     return _oStato.lingue.filter(l => l.installata && l.codice !== 'osd');
 }
 
-/**
- * Lingue preselezionate: quelle usate l'ultima volta su questo workspace, altrimenti
- * l'italiano se installato. La scelta va ricordata perché in un fondo si lavora per mesi
- * sulla stessa lingua, e ripeterla a ogni carta è la definizione di attrito.
- */
 function _oLinguePredefinite() {
     const installate = _oLingueInstallate().map(l => l.codice);
-    // La preferenza sta in settings.json e NON in `appData`: finirebbe nel database, quindi
-    // nel sync, e imporrebbe ai colleghi una scelta che dipende dalle lingue installate
-    // sulla LORO macchina — cioè un valore che da loro può non esistere affatto.
     const valide = _oStato.preferite.filter(c => installate.includes(c));
     if (valide.length) return valide;
     if (installate.includes('ita')) return ['ita'];
     return installate.slice(0, 1);
 }
 
-/** Il rilevamento dell'orientamento è una "lingua" a sé (`osd`), da installare come le altre. */
 function _oOsdInstallato() {
     return _oStato.lingue.some(l => l.codice === 'osd' && l.installata);
 }
 
-/**
- * Raddrizzamento attivo di default quando `osd` c'è: chi l'ha installato lo vuole. Si ricorda
- * solo lo spegnimento, in localStorage per la stessa ragione delle lingue.
- */
 function _oRaddrizzaPredefinito() {
     if (!_oOsdInstallato()) return false;
     try {
@@ -146,8 +102,6 @@ function _oRicordaLingue(lingue) {
     window.apiSettings.patch({ ocrLingue: lingue })
         .catch(errore => console.error('[OCR] Lingue preferite non salvate:', errore));
 }
-
-// --- Costruzione del corpo del modale -----------------------------------------
 
 function _oRiga(etichetta, controllo) {
     const wrap = document.createElement('label');
@@ -173,7 +127,7 @@ function _oSelect(id, opzioni, valore) {
     for (const o of opzioni) {
         const opt = document.createElement('option');
         opt.value = String(o.value);
-        opt.textContent = o.label;   // textContent: i nomi degli allegati sono dati utente
+        opt.textContent = o.label;
         if (String(o.value) === String(valore)) opt.selected = true;
         sel.appendChild(opt);
     }
@@ -194,7 +148,6 @@ function _oCheckbox(id, etichetta, spuntato) {
     return wrap;
 }
 
-/** Nome leggibile di un allegato, con il suo indice: il nome su disco non dice nulla. */
 function _oEtichettaAllegato(a, i) {
     const nome = (a && a.originalName) || (a && a.nome) || `${i + 1}`;
     const marca = a && a.ocr && a.ocr.testo ? ' ✓' : '';
@@ -207,8 +160,6 @@ function _oBlocccoLingue(preselezione) {
 
     const installate = _oLingueInstallate();
     if (installate.length === 0) {
-        // Senza dati di lingua l'OCR non può partire, e dirlo con un messaggio d'errore a
-        // riconoscimento avviato sarebbe farglielo scoprire nel modo peggiore.
         const avviso = _oNota(
             _oT('ocr_no_langs', 'Nessuna lingua installata: il riconoscimento ha bisogno almeno di una lingua.'),
             'text-sm text-amber-800 dark:text-amber-300 leading-relaxed'
@@ -244,22 +195,13 @@ function _oLingueScelte() {
         .map(c => c.id.replace('ocr-lang-', ''));
 }
 
-// --- Modale principale --------------------------------------------------------
-
 window.chiudiOcrModal = function() {
     const modal = document.getElementById('ocr-modal');
     if (!modal) return;
-    // Un riconoscimento in corso non va lasciato orfano: chiudere la finestra senza
-    // annullarlo terrebbe occupato il motore e la prossima apertura risponderebbe
-    // "già in corso" senza che l'utente sappia perché.
     if (_oStato.inCorso) window.annullaOcr();
     modal.classList.add('hidden-tab');
 };
 
-/**
- * @param recordId  scheda su cui lavorare (default: quella in trascrizione)
- * @param indice    allegato preselezionato
- */
 window.apriOcrModal = async function(recordId, indice) {
     if (!window.apiOcr) return;
 
@@ -294,7 +236,6 @@ window.apriOcrModal = async function(recordId, indice) {
 
     modal.querySelector('#ocr-subtitle').textContent = `${m.segnatura || ''} ${m.titolo ? '— ' + m.titolo : ''}`.trim();
 
-    // Sorgente
     corpo.appendChild(_oRiga(
         _oT('ocr_source', 'Allegato'),
         _oSelect('ocr-source', [
@@ -303,11 +244,8 @@ window.apriOcrModal = async function(recordId, indice) {
         ], _oStato.indice)
     ));
 
-    // Lingue
     corpo.appendChild(_oRiga(_oT('ocr_langs', 'Lingue'), _oBlocccoLingue(preselezione)));
 
-    // Orientamento: disattivato (non nascosto) senza `osd`, con l'indicazione di dove si
-    // installa — un'opzione che non compare non si scopre.
     const orientamento = document.createElement('div');
     orientamento.className = 'flex flex-col gap-1';
     const raddrizza = _oCheckbox('ocr-raddrizza', _oT('ocr_straighten', 'Raddrizza le pagine scansionate di traverso'), _oRaddrizzaPredefinito());
@@ -322,19 +260,15 @@ window.apriOcrModal = async function(recordId, indice) {
         : _oT('ocr_straighten_missing', 'Per usarlo installa «Rilevamento orientamento» da Gestisci lingue.')));
     corpo.appendChild(_oRiga(_oT('ocr_orientation', 'Orientamento'), orientamento));
 
-    // Destinazione
     const destinazione = document.createElement('div');
     destinazione.className = 'flex flex-col gap-1';
     destinazione.appendChild(_oCheckbox('ocr-dest-bozza', _oT('ocr_dest_draft', 'Inserisci come bozza nella trascrizione'), true));
     destinazione.appendChild(_oCheckbox('ocr-dest-indice', _oT('ocr_dest_index', 'Rendi il testo cercabile'), true));
-    // Spento di default: apre un dialogo di salvataggio, e non deve comparire a chi voleva
-    // solo il testo nella trascrizione.
     destinazione.appendChild(_oCheckbox('ocr-dest-pdf', _oT('ocr_dest_pdf', 'Salva una copia come PDF ricercabile'), false));
     corpo.appendChild(_oRiga(_oT('ocr_destination', 'Destinazione'), destinazione));
     corpo.appendChild(_oNota(_oT('ocr_dest_hint',
         'Il testo cercabile resta legato all\'allegato e non tocca la trascrizione: serve a ritrovare la scheda, non a sostituire il lavoro di lettura.')));
 
-    // Opzioni avanzate: chiuse, perché il valore giusto è quello predefinito.
     const avanzate = document.createElement('details');
     avanzate.className = 'text-sm';
     const riassunto = document.createElement('summary');
@@ -360,7 +294,6 @@ window.apriOcrModal = async function(recordId, indice) {
     avanzate.appendChild(corpoAvanzate);
     corpo.appendChild(avanzate);
 
-    // Avanzamento e risultato: nascosti finché non servono.
     const avanzamento = document.createElement('div');
     avanzamento.id = 'ocr-progress';
     avanzamento.className = 'hidden-tab flex flex-col gap-2';
@@ -382,8 +315,6 @@ window.apriOcrModal = async function(recordId, indice) {
 };
 
 function _oPreparaPulsanti(modal) {
-    // Clonazione per liberarsi dei listener dell'apertura precedente: è il modo già usato
-    // in bulkActions.ts, e da qui in poi si usa solo il nodo nuovo.
     const vecchio = modal.querySelector('#ocr-confirm');
     const conferma = vecchio.cloneNode(true);
     vecchio.parentNode.replaceChild(conferma, vecchio);
@@ -401,9 +332,6 @@ function _oAggiornaAvanzamento(dati) {
 
     const pagine = dati.pagine || 1;
     const pagina = dati.pagina || 1;
-    // Avanzamento composto: la frazione di pagine fatte più la frazione della pagina in
-    // corso. Con la sola percentuale del motore la barra tornerebbe a zero a ogni pagina,
-    // che su un PDF di venti carte si legge come un programma che ricomincia da capo.
     const dentroPagina = typeof dati.progresso === 'number' ? dati.progresso : 0;
     const frazione = Math.min(((pagina - 1) + dentroPagina) / pagine, 1);
     barra.style.width = Math.round(frazione * 100) + '%';
@@ -427,7 +355,6 @@ window.annullaOcr = async function() {
     try { await window.apiOcr.annulla(); } catch (errore) { console.error('[OCR] Annullamento:', errore); }
 };
 
-/** Un solo allegato → risultato del main, già post-processato. */
 async function _oEseguiSuAllegato(m, indice, lingue, opzioni) {
     const a = _oAllegati(m)[indice];
     if (!a) return null;
@@ -475,11 +402,8 @@ window.avviaOcr = async function() {
         return;
     }
 
-    // La scelta delle lingue si ricorda: in un fondo si lavora per mesi sulla stessa.
     _oRicordaLingue(lingue);
 
-    // Il dialogo di salvataggio viene PRIMA dell'OCR: chiederlo dopo minuti di lavoro,
-    // con l'utente magari altrove, lascerebbe il risultato appeso a una finestra modale.
     if (opzioni.pdf) {
         const avvio = await _oIniziaPdf(m, sorgente);
         if (!avvio) return;
@@ -520,8 +444,6 @@ window.avviaOcr = async function() {
 
     document.getElementById('ocr-progress').classList.add('hidden-tab');
 
-    // Un annullamento scarta il PDF: a metà sarebbe un documento con carte mancanti che
-    // non dice di esserlo.
     const pdf = opzioni.pdf ? await _oConcludiPdf(annullato) : null;
 
     if (esiti.length === 0) {
@@ -534,7 +456,6 @@ window.avviaOcr = async function() {
     await _oApplicaEsiti(m, esiti, lingue, opzioni, pdf);
 };
 
-/** Nome proposto: l'allegato scelto, o la segnatura quando il PDF raccoglie tutta la scheda. */
 function _oNomePdf(m, sorgente) {
     const a = sorgente === 'tutti' ? null : _oAllegati(m)[Number(sorgente)];
     const base = a
@@ -556,7 +477,6 @@ async function _oIniziaPdf(m, sorgente) {
     return false;
 }
 
-/** @returns `{ok, pagine, nome}` dal main, oppure `{ok:false}`: mai un'eccezione. */
 async function _oConcludiPdf(scarta) {
     try {
         const r = await window.apiOcr.pdfConcludi(scarta);
@@ -572,17 +492,7 @@ async function _oConcludiPdf(scarta) {
     }
 }
 
-/**
- * Scrittura sul record.
- *
- * Il testo cercabile va sempre sull'allegato: è un dato nuovo e non sovrascrive nulla.
- * La bozza invece tocca `m.trascrizione`, che può contenere ore di lettura: se c'è già
- * qualcosa si CHIEDE, e in mancanza di risposta non si scrive. È la regola che rende la
- * funzione utilizzabile su un archivio vero.
- */
 async function _oApplicaEsiti(m, esiti, lingue, opzioni, pdf?) {
-    // Solo PDF: il record non cambia, e un salvataggio a vuoto sporcherebbe `lastModified`
-    // e il sync per nulla.
     if (!opzioni.indice && !opzioni.bozza) {
         _oMostraRisultato(esiti, false, opzioni, pdf);
         return;
@@ -624,25 +534,6 @@ async function _oApplicaEsiti(m, esiti, lingue, opzioni, pdf?) {
     _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf);
 }
 
-/**
- * Inserisce le bozze, UNA PER CARTA (Fase 2.3-bis).
- *
- * Prima il testo di tutti gli allegati finiva in un blocco unico su `m.trascrizione`: su un
- * fascicolo di dieci carte era esattamente il problema che la trascrizione per allegato
- * risolve. Ora la bozza di ogni allegato va sulla sua carta, e un OCR su "tutti gli
- * allegati" popola dieci trascrizioni distinte in un colpo solo.
- *
- * La conferma di sovrascrittura si chiede **una volta sola** e vale per tutte le carte in
- * conflitto: un modale per carta, su dieci allegati, sarebbe dieci finestre da chiudere per
- * un'operazione che l'utente ha già deciso.
- *
- * @returns true se almeno una bozza è stata scritta.
- */
-/**
- * Dove va ogni bozza. Un PDF si scrive pagina per pagina, ciascuna sulla sua trascrizione:
- * è ciò che rende sfogliabile, a sinistra, un OCR di trenta pagine. Un'immagine resta una
- * scrittura sola sull'allegato (`pagina` 0).
- */
 function _oScritturePerPagina(m, utili) {
     const allegati = _oAllegati(m);
     const out = [];
@@ -653,8 +544,6 @@ function _oScritturePerPagina(m, utili) {
             out.push({ indice: e.indice, pagina: 0, html: e.risultato.html });
             continue;
         }
-        // L'intestazione dell'OCR (lingue, data) sta in testa al blocco unito: va sulla prima
-        // pagina riconosciuta, non ripetuta su tutte.
         const origine = /^<p class="ocr-origine">[\s\S]*?<\/p>\n?/.exec(e.risultato.html);
         pagine.forEach((p, k) => {
             out.push({ indice: e.indice, pagina: p.numero, html: (k === 0 && origine ? origine[0] : '') + p.html });
@@ -667,8 +556,6 @@ async function _oInserisciBozze(m, esiti) {
     const utili = (esiti || []).filter(e => e.risultato && e.risultato.html);
     if (utili.length === 0) return false;
 
-    // Quanto battuto nell'editor e non ancora salvato va messo nel record PRIMA di leggerlo:
-    // "accoda" lo leggerebbe senza, e la ricarica dell'editor alla fine lo cancellerebbe.
     if (window.salvaEditorTrascrizioneInMemoria) window.salvaEditorTrascrizioneInMemoria();
     window.migraTrascrizioneSuAllegati(m);
 
@@ -690,24 +577,14 @@ async function _oInserisciBozze(m, esiti) {
         window.scriviTrascrizioneAllegato(m, s.indice, nuovo, s.pagina);
     }
 
-    // `m.trascrizione` è la forma derivata: va ricalcolata qui, perché questo percorso
-    // salva il record senza passare da `salvaTrascrizione`.
     m.trascrizione = window.componiTrascrizioneRecord(m);
 
-    // Se la vista è aperta su questa scheda, l'editor deve mostrare subito il risultato:
-    // vedere il modale annunciare "bozza inserita" davanti a un editor invariato è il modo
-    // più rapido di far credere che la funzione non abbia funzionato.
     if (window.ricaricaEditorTrascrizione && window.ricaricaEditorTrascrizione(m)) {
         window.trascrizioneNonSalvata = false;
     }
     return true;
 }
 
-/**
- * Tre uscite, non due: sovrascrivi, accoda, annulla. "Accoda" è quella che serve davvero
- * su un documento a più carte, dove la trascrizione si costruisce una pagina per volta —
- * senza, l'utente dovrebbe scegliere fra perdere il lavoro fatto e rinunciare all'OCR.
- */
 function _oChiediSovrascrittura() {
     return new Promise<string>((risolvi) => {
         const modal = document.getElementById('ocr-overwrite-modal');
@@ -741,8 +618,6 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
         .replace('{var1}', String(media));
     box.appendChild(riepilogo);
 
-    // La confidenza bassa va detta a parole, non lasciata a un numero: chi non lavora con
-    // l'OCR non sa che 60% significa "una parola su tre è sbagliata".
     if (media && media < 70) {
         box.appendChild(_oNota(
             _oT('ocr_low_confidence', 'Confidenza bassa: probabilmente la scrittura è corsiva o la scansione è poco leggibile. Il testo va riletto parola per parola.'),
@@ -752,8 +627,6 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
 
     const anteprima = document.createElement('div');
     anteprima.className = 'max-h-40 overflow-y-auto text-xs bg-stone-100 dark:bg-stone-800 p-2 rounded-sm whitespace-pre-wrap';
-    // textContent e non innerHTML: è testo prodotto da un file dell'utente e non ha
-    // ragione di poter introdurre markup in questa finestra.
     anteprima.textContent = esiti.map(e => e.risultato.piano).join('\n\n').slice(0, 1200);
     box.appendChild(anteprima);
 
@@ -764,8 +637,6 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
             ? _oT('ocr_saved_draft', 'Bozza inserita nella trascrizione.')
             : _oT('ocr_draft_skipped', 'Trascrizione lasciata invariata.'));
     }
-    // Quante pagine sono state girate, e quante no per dubbio: una rotazione silenziosa
-    // sembrerebbe un errore la prima volta che l'utente apre il PDF e trova la carta diversa.
     const pagineOcr = esiti.flatMap(e => e.risultato.pagine || []);
     const raddrizzate = pagineOcr.filter(p => p && p.rotazione).length;
     const incerte = pagineOcr.filter(p => p && p.orientamentoIncerto).length;
@@ -780,8 +651,6 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
     }
     box.appendChild(_oNota(stato.join(' ')));
 
-    // Allegati rimasti fuori dal PDF: tipicamente un PDF protetto da password, che pdf-lib
-    // non sa copiare. Il testo c'è comunque, va detto che il file no.
     if (opzioni.pdf && esiti.some(e => e.risultato.pdfErrore)) {
         const cifrati = esiti.some(e => e.risultato.pdfErrore === 'pdf_cifrato');
         box.appendChild(_oNota(cifrati
@@ -795,17 +664,6 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
     }
 }
 
-// --- OCR sulla selezione ------------------------------------------------------
-
-/**
- * OCR di tutte le schede selezionate.
- *
- * NON passa da `applicaInMassa`: quel motore applica un mutatore sincrono a ogni record e
- * salva una volta, mentre qui ogni scheda richiede secondi o minuti di lavoro asincrono e
- * un annullamento a metà deve conservare ciò che è già stato riconosciuto. Il contratto
- * che invece si rispetta è lo stesso: **un solo salvataggio** alla fine, non uno per
- * scheda — su cento carte sarebbero cento riscritture dell'intero database.
- */
 window.ocrSelezionati = async function() {
     if (!window.apiOcr) return;
     const ids = window.selectedRecords || [];
@@ -851,8 +709,6 @@ window.ocrSelezionati = async function() {
             const allegati = _oAllegati(m);
             for (let i = 0; i < allegati.length; i++) {
                 if (!_oStato.inCorso) break;
-                // Le schede già riconosciute si saltano: rifare l'OCR di un fondo intero
-                // per aggiungerne dieci carte è ore di lavoro senza alcun risultato nuovo.
                 if (allegati[i].ocr && allegati[i].ocr.testo) continue;
                 const r = await window.apiOcr.esegui({
                     nomeFile: allegati[i].nome,
@@ -888,8 +744,6 @@ window.ocrSelezionati = async function() {
         if (modal) modal.classList.add('hidden-tab');
     }
 
-    // Salvataggio unico, anche su interruzione: ciò che è stato riconosciuto è costato
-    // minuti di CPU e buttarlo perché l'utente ha premuto Annulla sarebbe una punizione.
     if (schede > 0) {
         await _oSalva();
     }
@@ -921,13 +775,9 @@ window.annullaOcrMassa = function() {
     window.annullaOcr();
 };
 
-// --- Gestione delle lingue ----------------------------------------------------
-
 window.chiudiGestioneLingueOcr = async function() {
     const modal = document.getElementById('ocr-langs-modal');
     if (modal) modal.classList.add('hidden-tab');
-    // Il modale OCR sotto mostra le lingue lette all'apertura: senza ricostruirlo, chi ha
-    // appena installato la prima lingua resterebbe su "Nessuna lingua" con Riconosci spento.
     const ocr = document.getElementById('ocr-modal');
     if (ocr && !ocr.classList.contains('hidden-tab') && !_oStato.inCorso && _oStato.recordId) {
         await window.apriOcrModal(_oStato.recordId, _oStato.indice);
@@ -1000,8 +850,6 @@ async function _oRenderLingue() {
     box.appendChild(_oNota(_oT('ocr_langs_offline_hint',
         'I dati si scaricano una sola volta e restano su questo computer: dopo l\'installazione il riconoscimento funziona senza connessione.')));
 }
-
-// --- Markup -------------------------------------------------------------------
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {

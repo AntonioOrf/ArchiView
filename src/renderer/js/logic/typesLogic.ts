@@ -1,11 +1,5 @@
 let editingTypeId = null;
 
-/**
- * Toglie i divieti lasciati dalla modifica di un modello predefinito. Vanno tolti
- * ESPLICITAMENTE: il modale è uno solo e vive nel DOM per tutta la sessione, quindi senza
- * questa ripulitura il nome resterebbe non scrivibile e metà delle caselle spente anche
- * aprendolo per creare un modello nuovo — un blocco senza più un motivo visibile.
- */
 function sbloccaFormTipo() {
     const inputNome = document.getElementById('custom-type-name') as HTMLInputElement;
     if (inputNome) { inputNome.disabled = false; inputNome.title = ''; }
@@ -32,19 +26,10 @@ function chiudiNewTypeModal() {
     editingTypeId = null;
 }
 
-// Fase 3.1 — i modelli predefiniti stanno in `shared/model.ts`. Qui c'era la terza copia
-// dell'elenco: bastava aggiungere un campo a un modello e dimenticare questa perché il tipo
-// creato dalla tendina avesse campi diversi dal tipo che l'app installa da sola, con lo
-// stesso nome e senza alcun errore.
 function modelloPredefinito(id) {
     return window.Model.modelloPredefinito(id);
 }
 
-// U1 / WCAG 3.2.2 — la tendina dei modelli sostituisce nome e campi a ogni `change`, e su
-// Windows una <select> chiusa lo emette a ogni freccia: scorrere i modelli da tastiera
-// cancellava alla prima pressione il tipo personalizzato in costruzione. Uscendo da
-// "personalizzato" il lavoro si mette da parte — le pillole stesse, con dataset e handler,
-// cioè con tipo, obbligo ed elenco di ciascun campo — e torna quando lo si riseleziona.
 let _lavoroPersonalizzato = null;
 let _modelloPrecedente = null;
 
@@ -60,11 +45,9 @@ function applicaModello() {
     }
     _modelloPrecedente = sel;
     
-    // Pulisce il form
     nameInput.value = '';
     if (extraInput) extraInput.value = '';
     
-    // Rimuove pillole
     if (typeof window.chiudiEditorCampo === 'function') window.chiudiEditorCampo();
     document.querySelectorAll('.custom-field-item').forEach(el => el.remove());
     if (placeholder) placeholder.classList.remove('hidden');
@@ -84,7 +67,6 @@ function applicaModello() {
         return;
     }
 
-    // Seleziona campi in base al modello
     if (sel !== 'custom') {
         const modello = modelloPredefinito(sel);
         if (!modello) return;
@@ -119,14 +101,6 @@ function aggiungiCampoCustom() {
     }
 }
 
-// --- Fase 3.1: la definizione del campo vive sulla pillola ---------------------
-//
-// La pillola è già l'oggetto che l'utente trascina, aggiunge e toglie: il tipo, l'obbligo e
-// i valori dell'elenco stanno nei suoi `dataset`, e `confermaCreaTipo` li rilegge da lì.
-// Una struttura parallela in memoria dovrebbe restare allineata a un DOM che l'utente
-// riordina col mouse, ed è esattamente il genere di disallineamento che non dà errori.
-
-/** Icona/sigla del tipo, mostrata sulla pillola: senza, il tipo si vede solo riaprendo. */
 const SIGLE_TIPO = {
     text: 'Aa', textarea: '¶', number: '123', boolean: 'Sì/No',
     enum: '▾', url: '🔗', date: '📅', dynamic_list: '⋮⋮', attachments: '📎'
@@ -137,11 +111,8 @@ function definizioneDaPillola(pill) {
     if (pill.dataset.obbligatorio === '1') def.obbligatorio = true;
     if (pill.dataset.unico === '1') def.unico = true;
     if (pill.dataset.opzioni) {
-        try { def.opzioni = JSON.parse(pill.dataset.opzioni); } catch (e) { /* pillola manomessa: ignora */ }
+        try { def.opzioni = JSON.parse(pill.dataset.opzioni); } catch (e) {}
     }
-    // Fasi 3.3 e 3.5: il legame a un vocabolario d'archivio e la semantica d'anagrafica
-    // viaggiano sulla pillola come tutto il resto — la pillola È la definizione finché il
-    // tipo non viene salvato.
     if (pill.dataset.vocabolario) def.vocabolario = pill.dataset.vocabolario;
     if (pill.dataset.authority) def.authority = pill.dataset.authority;
     return def;
@@ -163,12 +134,6 @@ function scriviDefinizioneSuPillola(pill, def) {
     }
 }
 
-/**
- * @param bloccato campo d'origine di un modello predefinito: si vede ma non si tocca. Non è
- *                 pignoleria — `applicaModelliPredefiniti` rimette quei campi al loro posto a
- *                 ogni avvio, quindi togliere o riordinare una di queste pillole sarebbe una
- *                 modifica che si disfa da sola, cioè un comando che mente.
- */
 function aggiungiPill(val, label, isBase, bloccato?) {
     const existing = Array.from(document.querySelectorAll('.custom-field-item')).map(el => el.dataset.val.toLowerCase());
     if (existing.includes(val.toLowerCase())) return;
@@ -230,9 +195,6 @@ function aggiungiPill(val, label, isBase, bloccato?) {
         }
     };
 
-    // I campi BASE non sono tipizzabili dall'utente: il loro tipo appartiene ai modelli
-    // predefiniti e alla i18n (`attori_dinamici` è una lista chiave-valore ovunque). Il
-    // pulsante di configurazione compare quindi solo sui campi inventati qui.
     const configurabile = !isBase && !CONFIG_CAMPI[val] && !bloccato;
     const titoloConfig = escapeHTML(window.t('field_configure', 'Configura il campo'));
     const btnConfig = configurabile
@@ -247,10 +209,6 @@ function aggiungiPill(val, label, isBase, bloccato?) {
         pill.title = window.t('field_locked', 'Campo del modello predefinito: non si può togliere né cambiare.');
     }
 
-    // ⚠️ NIENTE `onclick` inline qui dentro: il markup passa da `sanitizeHTML` (DOMPurify),
-    // che rimuove gli attributi di evento — la "X" di questa pillola era inerte da sempre,
-    // e un campo aggiunto per errore non si poteva più togliere se non ricominciando.
-    // Gli handler si agganciano dopo l'inserimento, sugli elementi veri.
     pill.innerHTML = window.sanitizeHTML(`
         <i data-lucide="grip-horizontal" class="w-3 h-3 text-stone-400 mr-1"></i>
         <span>${escapeHTML(finalLabel)}</span>
@@ -262,9 +220,6 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     if (btnRimuovi) btnRimuovi.onclick = () => rimuoviPillDalPulsante(btnRimuovi, val);
     const btnCfg = pill.querySelector<HTMLElement>('.pill-config');
     if (btnCfg) btnCfg.onclick = () => window.apriEditorCampo(btnCfg);
-    // WCAG 2.5.7: il trascinamento non può essere l'unico modo di ordinare i campi del
-    // modello. Due pulsanti (non tasti rapidi soltanto: il criterio chiede un puntatore
-    // singolo SENZA trascinare). Il bersaglio da 24px (2.5.8) sta in style.css (.pill-sposta).
     if (!bloccato) {
         const segnaposto = pill.querySelector('.pill-tipo');
         for (const [delta, icona, chiave, testo] of [
@@ -281,7 +236,6 @@ function aggiungiPill(val, label, isBase, bloccato?) {
             segnaposto.before(b);
         }
     }
-    // Il tipo di partenza: quello del campo base se esiste, altrimenti testo.
     scriviDefinizioneSuPillola(pill, window.Model.definizioneCampo(null, val, CONFIG_CAMPI));
     list.appendChild(pill);
     if (window.lucide) lucide.createIcons({ nodes: [pill] });
@@ -292,7 +246,6 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     }
 }
 
-/** Stesso effetto del drop: cambia solo la posizione nel DOM, che è l'ordine che si salva. */
 function spostaPill(pill, delta, pulsante, etichetta) {
     const list = pill.parentElement;
     if (!list) return;
@@ -300,8 +253,6 @@ function spostaPill(pill, delta, pulsante, etichetta) {
     const j = pills.indexOf(pill) + delta;
     if (j < 0 || j >= pills.length) return;
     list.insertBefore(pill, delta < 0 ? pills[j] : pills[j].nextSibling);
-    // Spostare il nodo toglie il fuoco al pulsante: senza riprenderlo, chi usa la tastiera
-    // ripartirebbe dall'inizio della pagina a ogni passo.
     pulsante.focus();
     if (window.annunciaA11y) {
         window.annunciaA11y(window.t('field_moved_pos', '{var0}: posizione {var1} di {var2}')
@@ -330,8 +281,6 @@ function rimuoviPill(val) {
     }
 }
 
-// --- Editor di un singolo campo (Fase 3.1) ------------------------------------
-
 let _pillolaInModifica = null;
 
 window.apriEditorCampo = function(btn) {
@@ -355,7 +304,6 @@ window.apriEditorCampo = function(btn) {
     document.getElementById('campo-editor-unico').checked = !!def.unico;
     document.getElementById('campo-editor-opzioni').value = (def.opzioni || []).join('\n');
 
-    // Fase 3.3 — la tendina dei vocabolari d'archivio.
     const selVoc = document.getElementById('campo-editor-vocabolario');
     selVoc.innerHTML = '';
     const propri = document.createElement('option');
@@ -370,7 +318,6 @@ window.apriEditorCampo = function(btn) {
         selVoc.appendChild(opt);
     }
 
-    // Fase 3.5 — persona / luogo / nessuno.
     const selAuth = document.getElementById('campo-editor-authority');
     selAuth.innerHTML = '';
     for (const scelta of [''].concat(window.Model.TIPI_AUTHORITY)) {
@@ -385,20 +332,14 @@ window.apriEditorCampo = function(btn) {
     box.classList.remove('hidden');
 };
 
-/** Le opzioni riguardano solo l'elenco a scelta: mostrarle sempre sarebbe un campo inerte. */
 window.aggiornaEditorCampo = function() {
     const tipo = document.getElementById('campo-editor-tipo').value;
     const vocabolario = document.getElementById('campo-editor-vocabolario').value;
     document.getElementById('campo-editor-vocabolario-riga').classList.toggle('hidden', tipo !== 'enum');
-    // Le due fonti dei valori si escludono: con un vocabolario scelto, l'area di testo
-    // sarebbe una seconda lista che nessuno legge e che diverge alla prima aggiunta.
     document.getElementById('campo-editor-opzioni-riga').classList.toggle('hidden', tipo !== 'enum' || !!vocabolario);
-    // Un'anagrafica ha senso su ciò che contiene NOMI: un numero o un sì/no no.
     const authUtile = tipo === 'text' || tipo === 'enum' || tipo === 'dynamic_list';
     document.getElementById('campo-editor-authority-riga').classList.toggle('hidden', !authUtile);
     if (!authUtile) document.getElementById('campo-editor-authority').value = '';
-    // L'unicità su una casella di spunta o su un elenco chiave-valore non vuol dire niente:
-    // due schede su tre avrebbero "duplicato" il valore `no`.
     const unicoUtile = tipo !== 'boolean' && tipo !== 'dynamic_list';
     document.getElementById('campo-editor-unico-riga').classList.toggle('hidden', !unicoUtile);
     if (!unicoUtile) document.getElementById('campo-editor-unico').checked = false;
@@ -416,8 +357,6 @@ window.confermaEditorCampo = function() {
     const opzioni = document.getElementById('campo-editor-opzioni').value
         .split('\n').map(o => o.trim()).filter(Boolean);
     if (tipo === 'enum' && !vocabolario && opzioni.length === 0) {
-        // Un elenco a scelta senza valori è una tendina vuota: un campo che non si può
-        // compilare. Meglio dirlo qui che scoprirlo davanti a una scheda da riempire.
         mostraMessaggio(window.t('msg_enum_no_options', 'Un elenco a scelta ha bisogno di almeno un valore.'), 'error');
         return;
     }
@@ -425,8 +364,6 @@ window.confermaEditorCampo = function() {
         tipo,
         obbligatorio: document.getElementById('campo-editor-obbligatorio').checked,
         unico: document.getElementById('campo-editor-unico').checked,
-        // Con un vocabolario scelto le opzioni NON si scrivono: la lista sta in un posto
-        // solo, o ogni tipo ne avrebbe una copia destinata a divergere.
         opzioni: vocabolario ? [] : opzioni,
         vocabolario,
         authority: document.getElementById('campo-editor-authority').value
@@ -452,13 +389,9 @@ function confermaCreaTipo() {
     }
 
     if (editingTypeId) {
-        // Aggiorna tipo esistente
         const index = appData.tipiDocumento.findIndex(t => t.id === editingTypeId);
         if (index !== -1) {
             appData.tipiDocumento[index].nome = nome;
-            // Fase 3.1 — `impostaCampi` scrive `campi` come elenco di STRINGHE e mette le
-            // definizioni in `campiDef`: dentro l'array manderebbero in errore le versioni
-            // precedenti alla 3.1 su un archivio condiviso (vedi shared/model.ts).
             window.Model.impostaCampi(appData.tipiDocumento[index], definizioni);
             salvaTutto();
             aggiornaSelectTipiDocumento();
@@ -466,7 +399,6 @@ function confermaCreaTipo() {
             mostraMessaggio(window.t("msg_type_updated"), "success");
         }
     } else {
-        // Crea nuovo tipo
         const sel = document.getElementById('new-type-select').value;
         const prefissoId = sel !== 'custom' ? sel : 'custom';
         const id = prefissoId + '_' + Date.now();
@@ -495,12 +427,6 @@ function apriManageTypesModal() {
         let inUsoBadge = inUso ? '<span class="text-[11px] uppercase font-bold tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 ml-2">' + escapeHTML(window.t('type_badge_in_use', 'In uso')) + '</span>' : '';
         let defaultBadge = isDefault ? '<span class="text-[11px] uppercase font-bold tracking-wider text-stone-500 bg-stone-200 px-2 py-0.5 ml-2">' + escapeHTML(window.t('type_badge_default', 'Predefinito')) + '</span>' : '';
         
-        // Un modello predefinito si APRE come gli altri: ciò che è bloccato sono i suoi campi
-        // d'origine (nome del modello compreso), non l'aggiunta di campi propri. Prima il
-        // pulsante non c'era affatto, e un campo aggiunto al modello — cosa che il wizard di
-        // import della 2.4 permette — non si poteva più né ritipizzare né togliere.
-        // L'eliminazione resta preclusa: il modello tornerebbe da solo al riavvio
-        // (`applicaModelliPredefiniti`), cioè sarebbe un pulsante che non fa nulla.
         const btnModifica = `<button type="button" ${window.azione('click', 'modificaTipoDocumento', String((tipo.id) ?? ''))} class="btn btn-ghost btn-icon text-stone-600" title="${escapeHTML(window.t('btn_edit', 'Modifica'))}" aria-label="${escapeHTML(window.t('btn_edit', 'Modifica'))}"><i data-lucide="edit-2" class="w-4 h-4"></i></button>`;
         let buttonsHTML = '';
         if (isDefault) {
@@ -540,13 +466,12 @@ window.eliminaTipoDocumento = function(id) {
     }
     
     window.mostraBottomConfirm(window.t("confirm_delete_model", "Sei sicuro di voler eliminare questo modello?"), async () => {
-        // Salva il tipo per eventuale ripristino
         const tipoSalvato = JSON.parse(JSON.stringify(appData.tipiDocumento.find(t => t.id === id)));
         
         appData.tipiDocumento = appData.tipiDocumento.filter(t => t.id !== id);
         await salvaTutto();
         aggiornaSelectTipiDocumento();
-        apriManageTypesModal(); // Ricarica la lista
+        apriManageTypesModal();
         
         const ripristinaFn = async () => {
             appData.tipiDocumento.push(tipoSalvato);
@@ -570,18 +495,12 @@ window.modificaTipoDocumento = function(id) {
     
     chiudiManageTypesModal();
     
-    // Configura UI per modifica
     editingTypeId = id;
     document.getElementById('new-type-select').value = 'custom';
-    (document.getElementById('new-type-select') as HTMLSelectElement).disabled = true; // Impedisce di cambiare base durante modifica
+    (document.getElementById('new-type-select') as HTMLSelectElement).disabled = true;
     document.getElementById('btn-salva-tipo').textContent = window.t("btn_save_changes", "Save Changes");
     document.querySelector('#new-type-modal .modal-title').textContent = window.t("type_modal_edit_title", "Edit Document Type");
 
-    // Un modello PREDEFINITO si modifica solo nei campi aggiunti dall'utente. Il nome no: è
-    // l'unica cosa di quei tipi che si vede tradotta (`model_<id>`), e riscriverlo qui
-    // produrrebbe un archivio in cui il modello si chiama in italiano dentro un'app in
-    // inglese. I campi d'origine nemmeno: `applicaModelliPredefiniti` li rimette al loro
-    // posto a ogni avvio, quindi toglierli sarebbe una modifica che si disfa da sola.
     sbloccaFormTipo();
     const predefinito = window.Model.modelloPredefinito(id);
     const campiBloccati = new Set(predefinito ? predefinito.campi : []);
@@ -591,27 +510,20 @@ window.modificaTipoDocumento = function(id) {
     const nota = document.getElementById('type-locked-note');
     if (nota) nota.classList.toggle('hidden', !predefinito);
 
-    // Resetta UI
     document.getElementById('custom-type-name').value = tipo.nome;
     document.getElementById('custom-type-extra-input').value = '';
     document.querySelectorAll('.custom-field-item').forEach(el => el.remove());
     document.querySelectorAll('.custom-type-field').forEach(cb => cb.checked = false);
     
-    // Popola campi, con le definizioni della 3.1 riportate sulle pillole: senza, riaprire
-    // un tipo per rinominarlo azzererebbe i tipi dei suoi campi.
     window.Model.campiDelTipo(tipo, CONFIG_CAMPI, appData).forEach(def => {
         const campoId = def.id;
         const bloccato = campiBloccati.has(campoId);
         const checkbox = document.querySelector<HTMLInputElement>(`.custom-type-field[value="${campoId}"]`);
         if (checkbox) {
             checkbox.checked = true;
-            // La casella va disabilitata insieme alla pillola: togliendo la spunta si
-            // toglierebbe il campo per un'altra strada, e il divieto sulla pillola sarebbe
-            // una porta chiusa accanto a una aperta.
             checkbox.disabled = bloccato;
             aggiungiPill(campoId, checkbox.dataset.label, false, bloccato);
         } else {
-            // Campo custom
             let label = campoId;
             if (CONFIG_CAMPI[campoId]) {
                 label = window.t('field_' + campoId) !== 'field_' + campoId ? window.t('field_' + campoId) : CONFIG_CAMPI[campoId].label;

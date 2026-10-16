@@ -1,9 +1,3 @@
-// PIANO-SCHEDA-AFFIANCATA, Fase 2 — il documento accanto al modulo della scheda.
-//
-// Il pannello sta a destra di #view-add, fisso sul bordo della finestra: il modulo resta dove
-// è e scorre come sempre, gli fa solo posto. Mostra la carta (stesso imageViewer del confronto
-// e della trascrizione, un pdfViewer suo per i PDF) oppure il suo testo trascritto in sola
-// lettura: per scrivere c'è l'editor, a un clic.
 (function() {
     const CHIAVE_APERTO = 'schedaDocumentoAperto';
     const CHIAVE_VISTA = 'schedaDocumentoVista';
@@ -18,7 +12,6 @@
         return stato.id ? appData.manoscritti.find(x => String(x.id) === String(stato.id)) : null;
     }
 
-    /** Le carte senza toccare il record (normalizzaAllegati aggiungerebbe `allegati`). */
     function carte(m) {
         if (!m) return [];
         if (Array.isArray(m.allegati)) return m.allegati;
@@ -29,7 +22,6 @@
         return !el('doc-scheda').classList.contains('hidden-tab');
     }
 
-    /** Larghezze: il modulo prende `stato.modulo` % dell'area principale, il documento il resto. */
     function disponi() {
         const pannello = el('doc-scheda');
         const vAdd = el('view-add');
@@ -126,7 +118,6 @@
         el('doc-vista-immagine').setAttribute('aria-pressed', String(!testo));
         el('doc-vista-testo').setAttribute('aria-pressed', String(testo));
         if (testo) mostraTesto();
-        // Tornando all'immagine di un PDF la pagina va ridisegnata: l'<img> era nascosto.
         else if (_pdf && _pdf.numeroPagine()) mostraPagina(stato.pagina);
     }
 
@@ -153,24 +144,20 @@
     }
 
     window.alternaDocumentoScheda = function() {
-        // Fase 4 — staccato in un'altra finestra: il pulsante la porta in primo piano.
         if (window.documentoStaccato && window.documentoStaccato()) window.apiFinestre.messaggio('mostra');
         else if (aperto()) chiudi(true);
         else apri();
     };
 
-    /** Ciò che serve alla finestra staccata per mostrare lo stesso punto del documento. */
     window.statoDocumentoScheda = function() {
         return { id: stato.id, carta: stato.carta, pagina: stato.pagina, vista: stato.vista };
     };
 
-    /** Il pannello si chiude perché il documento va in un'altra finestra: «aperto» resta ricordato. */
     window.chiudiDocumentoScheda = function() {
         if (aperto()) chiudi(false);
         el('btn-documento-scheda')?.setAttribute('aria-pressed', 'true');
     };
 
-    /** Nella finestra staccata: il pannello a tutta finestra, sul punto lasciato nella principale. */
     window.mostraDocumentoStaccato = async function(dati) {
         stato.id = dati.id;
         el('doc-scheda').classList.remove('hidden-tab');
@@ -180,10 +167,6 @@
         if (dati.pagina > 1) await mostraPagina(dati.pagina);
     };
 
-    /**
-     * Il modulo ha cambiato scheda (editItem, resetForm): il pulsante c'è solo su una scheda
-     * salvata con carte, e il pannello si riapre da solo se lo si era lasciato aperto.
-     */
     window.aggiornaDocumentoScheda = function() {
         if (!el('doc-scheda')) return;
         const id = (el('form-id') as HTMLInputElement)?.value || null;
@@ -195,7 +178,6 @@
             if (aperto()) chiudi(false);
             return;
         }
-        // Fase 4 — lasciato in una finestra a parte: ci torna, e segue la scheda aperta.
         if (window.prefLocale(CHIAVE_APERTO) === '1' && window.prefLocale('finestraStaccata:documento') === '1' && window.staccaDocumento) {
             stato.carta = 0;
             stato.pagina = 1;
@@ -256,7 +238,6 @@
             </div>
         </div>
     </aside>`;
-        // Subito dopo #view-add: il CSS lo nasconde quando la vista è nascosta (`+`).
         vAdd.insertAdjacentHTML('afterend', modello);
 
         el('doc-scheda-prec').addEventListener('click', () => mostraCarta(stato.carta - 1));

@@ -256,8 +256,6 @@
         document.getElementById('welcome-buttons').classList.remove('hidden-tab');
     };
 
-    // --- Helpers step badge ---
-
     function updateJoinStepBadge(step: number, stato: 'pending' | 'active' | 'done') {
         const badge = document.getElementById(`join-step${step}-badge`);
         if (!badge) return;
@@ -274,8 +272,6 @@
         }
     }
 
-    // Mostra/nasconde lo step Picker Drive (necessario solo per gli inviti Drive legacy).
-    // Quando è nascosto, lo step "cartella locale" diventa visivamente il passo 2.
     function setDriveStepVisible(visible: boolean) {
         document.getElementById('join-step-drive')?.classList.toggle('hidden-tab', !visible);
         const b3 = document.getElementById('join-step3-badge');
@@ -300,12 +296,8 @@
             .replace('border-blue-400 ring-2 ring-blue-200', 'border-stone-300');
 
         for (let i = 1; i <= 3; i++) updateJoinStepBadge(i, 'pending');
-        setDriveStepVisible(false); // default: layout Hub a 2 passi
+        setDriveStepVisible(false);
     }
-
-    // --- Decodifica codice invito (frontend, nessuna chiamata IPC) ---
-    // Il codice è puro base64: refreshToken|pusherKey|pusherCluster|webhook|autoFetch|vaultId|vaultName
-    // (i primi quattro campi sono vuoti negli inviti nuovi, ignorati in quelli vecchi).
 
     window.handleJoinCodeInput = function(rawCode: string) {
         const okDiv  = document.getElementById('join-code-ok');
@@ -320,8 +312,6 @@
         if (code.startsWith('archiview://join/')) code = code.slice('archiview://join/'.length);
         if (!code) { updateJoinStepBadge(1, 'pending'); setDriveStepVisible(false); return; }
 
-        // Invito ad archivio condiviso: nessun accesso Google né Picker, si salta direttamente
-        // allo step "cartella locale". Mai il repoId: solo il nome scelto dal proprietario.
         const hubInvite = window.decodeHubInvite ? window.decodeHubInvite(rawCode) : null;
         if (hubInvite) {
             window.welcomeHubInvite = hubInvite;
@@ -335,7 +325,7 @@
             if (window.lucide) lucide.createIcons({ nodes: [okDiv] });
             updateJoinStepBadge(1, 'done');
             updateJoinStepBadge(3, 'active');
-            setDriveStepVisible(false); // Hub: nessun Picker, layout a 2 passi (rinumera lo step 3 -> 2 una sola volta)
+            setDriveStepVisible(false);
             return;
         }
         window.welcomeHubInvite = null;
@@ -347,7 +337,6 @@
             const parts = decoded.split('|');
             if (parts.length < 5) throw new Error('formato non valido');
 
-            // parts[1..3] (Pusher e webhook) si ignorano: i vault Drive non hanno realtime.
             const [, , , , pAuto, , vaultName] = parts;
 
             window.welcomeDriveInvite = { driveAutofetch: pAuto === '1' };
@@ -358,10 +347,8 @@
             okDiv?.classList.remove('hidden-tab');
             if (window.lucide) lucide.createIcons({ nodes: [okDiv] });
 
-            // Invito Drive legacy: rivela lo step Picker (layout a 3 passi).
             setDriveStepVisible(true);
 
-            // Evidenzia il pulsante picker come prossimo step obbligatorio
             const pickerBtn = document.getElementById('btn-open-picker');
             if (pickerBtn && !pickerBtn.className.includes('ring-2')) {
                 pickerBtn.className = pickerBtn.className
@@ -385,13 +372,10 @@
         document.getElementById('welcome-buttons')?.classList.add('hidden-tab');
         const joinForm = document.getElementById('welcome-join-form');
         joinForm?.classList.remove('hidden-tab');
-        // Espandi il modal per il layout a due colonne
         const modalWin = document.querySelector('#welcome-modal .modal-window') as HTMLElement;
         if (modalWin) { modalWin.classList.remove('max-w-lg', 'p-8'); modalWin.classList.add('max-w-3xl'); }
         if (window.lucide) lucide.createIcons({ nodes: [joinForm] });
 
-        // Il Google Picker si apre nel browser esterno (openExternalPicker): nessuno script
-        // remoto entra nel renderer, che ha accesso pieno al bridge (N3).
         if (window.apiBrowser?.getDocumentsPath) {
             let initialPath = await window.apiBrowser.getDocumentsPath();
             if (window.apiSettings) {
@@ -406,7 +390,6 @@
     window.nascondiJoinForm = function() {
         document.getElementById('welcome-join-form')?.classList.add('hidden-tab');
         document.getElementById('welcome-buttons')?.classList.remove('hidden-tab');
-        // Ripristina dimensione modal
         const modalWin = document.querySelector('#welcome-modal .modal-window') as HTMLElement;
         if (modalWin) { modalWin.classList.remove('max-w-3xl'); modalWin.classList.add('max-w-lg', 'p-8'); }
         resetJoinState();
@@ -450,7 +433,6 @@
                     if (window.lucide) lucide.createIcons({ nodes: [pickerOk] });
                 }
 
-                // Se il codice invito non era stato inserito, marca step 1 come saltato
                 if (!window.welcomeDriveInvite) updateJoinStepBadge(1, 'done');
                 updateJoinStepBadge(2, 'done');
                 updateJoinStepBadge(3, 'active');
@@ -469,7 +451,6 @@
         const vaultName: string = window.welcomeJoinVaultName || "Vault_Condiviso";
         const basePath: string = (document.getElementById('welcome-join-folder-path') as HTMLInputElement)?.value.trim() || '';
 
-        // Percorso Hub: nessun vaultId Drive, si clona via invito.
         if (window.welcomeHubInvite) {
             if (!basePath) { mostraMessaggio(window.t("msg_seleziona_percorso", "Seleziona una posizione locale per l'archivio."), "warning"); return; }
             const btnH = document.getElementById('btn-join-connect') as HTMLButtonElement;
@@ -531,8 +512,6 @@
         try {
             const driveData = await window.apiDrive.pull(vaultId);
             
-            // pullFromDrive() restituisce { database, driveModifiedTime, lastModifyingUser } oppure null:
-            // non esiste alcun array `files`, quindi il vecchio controllo sollevava sempre TypeError.
             if (!driveData || !driveData.database) {
                 mostraMessaggio(window.t("msg_nessun_database_trovato_n", "Nessun database trovato nell'Archivio selezionato."), "warning");
                 return;
@@ -614,7 +593,6 @@
         const modal = document.getElementById('welcome-modal');
         if (!modal) return;
         
-        // Show close button if a workspace is already loaded
         const closeBtn = document.getElementById('welcome-close-btn');
         if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
             const currentPath = await window.apiBrowser.getWorkspacePath();

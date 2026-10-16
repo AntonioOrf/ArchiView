@@ -1,21 +1,8 @@
-// Fase 3.5 — il pannello "Persone e luoghi" e i collegamenti fra schede.
-//
-// I nomi di persona erano già in archivio da sempre: sono i valori delle `dynamic_list`
-// (`attori_dinamici`, `famiglia_dinamici`). Mancava il passo che li rende interrogabili —
-// vederli tutti, sapere da quante schede compaiono, unificare due grafie della stessa
-// persona — e il rimando diretto fra due schede, che non esisteva affatto.
-//
-// Le mutazioni sono in `logic/vocabolariLogic.ts`; qui c'è solo il DOM.
-// PREFISSO `_ap` sugli helper privati: il bundle concatena tutti gli script in UNO scope.
-
 function _apT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
-/** 'persona' | 'luogo': la scheda del pannello attualmente mostrata. */
 let _apTipo = 'persona';
-
-// --- Pannello persone e luoghi ------------------------------------------------
 
 window.apriAnagrafica = function(tipo) {
     const modal = document.getElementById('authority-modal');
@@ -57,8 +44,6 @@ window.disegnaAnagrafica = function() {
     if (voci.length === 0) {
         const vuoto = document.createElement('div');
         vuoto.className = 'p-6 text-xs text-stone-400 italic text-center';
-        // Il testo distingue "archivio senza persone" da "campo non dichiarato": senza,
-        // un archivio pieno di attori ma con nessun campo marcato sembrerebbe vuoto.
         vuoto.textContent = _apT('auth_none', 'Nessuna voce. Le persone e i luoghi si raccolgono dai campi marcati come tali nell\'editor del tipo documento.');
         lista.appendChild(vuoto);
         return;
@@ -76,10 +61,9 @@ function _apRiga(voce) {
 
     const nome = document.createElement('span');
     nome.className = 'tag-manager-name auth-nome truncate';
-    nome.textContent = voce.nome;   // textContent: è dato utente
+    nome.textContent = voce.nome;
     riga.appendChild(nome);
 
-    // P10 — gli id esterni come link (si aprono nel browser: setWindowOpenHandler del main).
     const ana = window.Model.voceAuthority(appData, voce.tipo, voce.nome);
     if (ana && ana.varianti) nome.title = _apT('auth_variants', 'Varianti: {var0}').replace('{var0}', ana.varianti.join(', '));
     for (const [k, url, etichetta] of [['wikidata', 'https://www.wikidata.org/wiki/', ''], ['viaf', 'https://viaf.org/viaf/', 'VIAF ']]) {
@@ -110,8 +94,6 @@ function _apRiga(voce) {
         : _apT('tag_count_many', '{var0} schede').replace('{var0}', String(voce.conteggio));
     riga.appendChild(conteggio);
 
-    // Il backlink è il motivo per cui l'anagrafica serve: "mostrami le schede in cui questa
-    // persona compare" è la domanda che prima richiedeva una ricerca a mano, nome per nome.
     const vedi = document.createElement('button');
     vedi.type = 'button';
     vedi.className = 'btn btn-ghost btn-icon shrink-0';
@@ -121,8 +103,6 @@ function _apRiga(voce) {
     vedi.onclick = () => {
         window.chiudiAnagrafica();
         const input = document.getElementById('search-input');
-        // La ricerca fra virgolette è già esatta (1.3): un nome composto non deve essere
-        // spezzato in token, o "Giovanni di Pietro" troverebbe tutti i Giovanni.
         if (input) input.value = '"' + voce.nome + '"';
         if (typeof renderMain === 'function') renderMain();
     };
@@ -140,22 +120,12 @@ function _apRiga(voce) {
     return riga;
 }
 
-/**
- * Rinominare qui NON è cosmetico: riscrive il nome in tutte le schede che lo citano. È
- * l'operazione per cui l'anagrafica esiste — unificare "Bartolo da Sassoferrato" e
- * "Bartolus de Saxoferrato" senza aprire quaranta schede.
- */
 function _apRinominaInLoco(riga, voce) {
     rinominaInLoco(riga, '.auth-nome', voce.nome, async (nuovo) => {
         if (nuovo && nuovo !== voce.nome) await window.rinominaAuthorityArchivio(voce.tipo, voce.nome, nuovo);
         window.disegnaAnagrafica();
     });
 }
-
-// --- P10: collegamento a Wikidata e VIAF ---------------------------------------
-//
-// Dentro lo stesso modale, al posto dell'elenco: cerca, mostra i candidati con la descrizione
-// (è lì che si distinguono gli omonimi), salva l'id scelto. La rete è del main (apiAuthority).
 
 let _apVoceCollega = null;
 
@@ -210,7 +180,7 @@ window.cercaAuthorityWikidata = async function() {
         b.className = 'auth-candidato';
         const nome = document.createElement('span');
         nome.className = 'font-semibold';
-        nome.textContent = c.etichetta || c.id;   // testo da Wikidata: solo textContent
+        nome.textContent = c.etichetta || c.id;
         const id = document.createElement('code');
         id.className = 'auth-id';
         id.textContent = c.id;
@@ -248,15 +218,6 @@ window.scollegaAuthority = async function() {
     window.chiudiCollegaAuthority();
 };
 
-// --- Il pannello "Schede collegate" -------------------------------------------
-//
-// Senza questo, il rimando sarebbe di sola scrittura: si registra nel form e non lo si
-// rivede mai — men che meno dal lato della scheda puntata, che del collegamento non porta
-// traccia nel dato (il verso entrante è calcolato, vedi shared/model.ts).
-// Le due direzioni si mostrano SEPARATE e non fuse in un unico elenco: "questa scheda
-// rimanda a" e "è richiamata da" sono affermazioni diverse, e un elenco solo le
-// confonderebbe proprio dove la distinzione conta — l'originale e la sua copia.
-
 let _apSchedaCollegamenti = null;
 
 window.apriCollegamenti = function(id) {
@@ -272,7 +233,6 @@ window.chiudiCollegamenti = function() {
     if (modal) modal.classList.add('hidden-tab');
 };
 
-/** P9 — i testimoni sono la scheda del pannello e le sue collegate. */
 window.collazionaCollegate = function() {
     window.chiudiCollegamenti();
     window.apriCollazione(_apSchedaCollegamenti);
@@ -298,8 +258,6 @@ function _apRigaCollegamento(voce) {
     seg.translate = false;
     btn.appendChild(seg);
 
-    // Cartella e tipo: due schede collegate hanno spesso segnature vicine, e senza il
-    // contesto l'elenco è una colonna di stringhe quasi uguali.
     const dove = document.createElement('span');
     dove.className = 'ml-auto shrink-0 text-xs text-stone-400 truncate';
     dove.textContent = voce.scheda.cartella || '';
@@ -339,13 +297,6 @@ window.disegnaCollegamenti = function() {
     sezione('link_incoming', 'È richiamata da', risolte.entranti);
 };
 
-// --- Collegamenti fra schede, dentro il form ----------------------------------
-
-/**
- * Le relazioni in corso di modifica vivono in un campo nascosto, come gli allegati: la
- * scheda nuova non ha ancora un id quando l'utente aggiunge il primo rimando, quindi non
- * c'è nulla su cui scrivere finché non si salva.
- */
 function _apRelazioniForm() {
     const campo = document.getElementById('form-relazioni');
     if (!campo) return [];
@@ -358,11 +309,6 @@ function _apScriviRelazioniForm(lista) {
     if (campo) campo.value = JSON.stringify(window.Model.relazioni({ relazioni: lista }));
 }
 
-/**
-  * I collegamenti ENTRANTI, mostrati nel form sotto quelli uscenti e non modificabili da
-  * qui: si tolgono dalla scheda che li ha scritti, e un pulsante che modificasse un'altra
-  * scheda senza aprirla sarebbe una modifica invisibile a chi la sta compilando.
-  */
 window.renderBacklinkForm = function() {
     const box = document.getElementById('form-backlink-list');
     const blocco = document.getElementById('form-backlink');
@@ -370,8 +316,6 @@ window.renderBacklinkForm = function() {
 
     const id = String(document.getElementById('form-id')?.value || '');
     const entranti = id ? window.relazioniRisolte(id).entranti : [];
-    // A scheda nuova, o senza rimandi in entrata, il blocco sparisce: una sezione vuota in
-    // mezzo al form è rumore su ogni scheda che non ne ha.
     blocco.classList.toggle('hidden', entranti.length === 0);
 
     box.innerHTML = '';
@@ -419,8 +363,6 @@ window.renderRelazioniForm = function() {
 
         const seg = document.createElement('span');
         seg.className = 'truncate';
-        // Una scheda che non c'è NON si cancella dal dato: su un archivio condiviso può
-        // esistere sulla copia di un collega e non ancora sulla nostra.
         seg.textContent = altra ? (altra.segnatura || _apT('no_signature', 'Senza segnatura')) : _apT('link_missing', 'scheda non presente in questa copia');
         seg.translate = false;
         if (!altra) seg.classList.add('italic', 'text-stone-400');
@@ -435,8 +377,6 @@ window.renderRelazioniForm = function() {
         via.onclick = () => {
             _apScriviRelazioniForm(_apRelazioniForm().filter(r => r.id !== rel.id));
             window.renderRelazioniForm();
-            // La scheda appena scollegata torna fra quelle collegabili: senza, per
-            // rifare il collegamento bisognerebbe chiudere e riaprire il form.
             window.aggiornaSelettoriRelazione();
         };
         riga.appendChild(via);
@@ -446,14 +386,6 @@ window.renderRelazioniForm = function() {
     if (window.lucide) lucide.createIcons({ nodes: [box] });
 };
 
-/**
- * Riempie la tendina delle schede collegabili e quella dei tipi di relazione.
- *
- * ⚠️ Si popola SOLO a form aperto, e a form chiuso si svuota. Una tendina di segnature
- * costruita una volta all'avvio invecchia: dopo un'eliminazione continuerebbe a offrire una
- * scheda che non c'è più, e — poiché il form vive dentro `<main>` anche quando è nascosto —
- * le sue opzioni resterebbero nel testo della pagina, cioè visibili alla ricerca e ai test.
- */
 window.aggiornaSelettoriRelazione = function() {
     const scheda = document.getElementById('form-relazione-target');
     const tipo = document.getElementById('form-relazione-tipo');
@@ -470,11 +402,10 @@ window.aggiornaSelettoriRelazione = function() {
 
     const vista = document.getElementById('view-add');
     if (vista && vista.classList.contains('hidden-tab')) { tipo.innerHTML = ''; return; }
-    // Sé stessa e le già collegate restano fuori: sono le due scelte che non producono nulla.
     const candidate = (appData.manoscritti || [])
         .filter(m => m && String(m.id) !== idCorrente && !gia.has(String(m.id)))
         .sort((a, b) => window.confrontaNaturale(a.segnatura, b.segnatura))
-        .slice(0, 500);   // oltre, la tendina non è più uno strumento: si cerca, non si scorre
+        .slice(0, 500);
     for (const m of candidate) {
         const opt = document.createElement('option');
         opt.value = String(m.id);
@@ -506,14 +437,11 @@ window.aggiungiRelazioneForm = function() {
     window.aggiornaSelettoriRelazione();
 };
 
-/** Carica nel form le relazioni di una scheda esistente (o le azzera per una nuova). */
 window.caricaRelazioniForm = function(m) {
     _apScriviRelazioniForm(m ? window.Model.relazioni(m) : []);
     window.renderRelazioniForm();
     window.aggiornaSelettoriRelazione();
 };
-
-// --- Markup -------------------------------------------------------------------
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {

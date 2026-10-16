@@ -1,16 +1,3 @@
-// Fase 3.4 — Tag come entità: le operazioni di ARCHIVIO (rinomina, fusione, eliminazione,
-// colore) e la resa dei chip.
-//
-// Perché non in bulkActions.ts: quelle agiscono sulla SELEZIONE e passano da
-// `applicaInMassa`. Queste agiscono su tutte le schede che portano un tag, selezionate o
-// no — rinominare `pergamena` deve toccare l'archivio intero anche se l'utente non ha
-// selezionato niente — e quindi hanno bisogno di un proprio undo e di un proprio salvataggio.
-//
-// Tutta l'aritmetica dei tag (chiavi, deduplica, propagazione) sta in `shared/model.ts`:
-// qui restano solo lo stato (`appData`), il salvataggio, l'undo e la i18n, cioè le tre cose
-// che il modello non può conoscere.
-
-/** Il nome globale `_tg` per gli helper privati: il bundle concatena tutto in UNO scope. */
 function _tgT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
@@ -25,11 +12,6 @@ async function _tgAutore() {
     }
 }
 
-/**
- * Fotografia profonda delle sole schede che portano uno dei tag indicati, più
- * dell'anagrafica. È ciò che l'undo rimette a posto: copiare l'intero archivio per una
- * rinomina che tocca tre schede sarebbe uno spreco proporzionale alla dimensione del vault.
- */
 function _tgFotografia(chiavi) {
     const set = new Set((chiavi || []).map(c => window.Model.chiaveTag(c)).filter(Boolean));
     const schede = [];
@@ -56,10 +38,6 @@ async function _tgApplica(descrizione, messaggio, schedeToccate, foto) {
     registraAnnullabile(descrizione, String(messaggio).replace('{var0}', String(schedeToccate)), ripristina);
 }
 
-/**
- * Se il tag filtrato viene rinominato o fuso, il filtro attivo punta a un tag che non
- * esiste più e la griglia resta vuota senza spiegazione. Il filtro segue la rinomina.
- */
 function _tgSegui(da, a) {
     if (!window.activeTags || window.activeTags.size === 0) return;
     const vecchia = window.Model.chiaveTag(da);
@@ -74,16 +52,11 @@ function _tgSegui(da, a) {
     for (const t of nuovi) window.activeTags.add(t);
 }
 
-// --- Operazioni ---------------------------------------------------------------
-
-/** Registra nell'anagrafica i tag comparsi in un salvataggio. Nessun undo: non è un'azione. */
 window.registraTagUsati = function(tags) {
     return window.Model.registraTag(appData, tags);
 };
 
 window.rinominaTagArchivio = async function(da, a) {
-    // La fotografia PRIMA della mutazione: dopo, fotograferebbe il risultato e l'undo
-    // rimetterebbe a posto ciò che ha appena cambiato, cioè niente.
     const foto = _tgFotografia([da, a]);
     const esito = window.Model.rinominaTag(appData, da, a, { autore: await _tgAutore() });
     if (!esito.cambiato) {
@@ -132,31 +105,17 @@ window.eliminaTagArchivio = async function(tag) {
     return esito.schede;
 };
 
-/**
- * Il colore NON passa da `_tgApplica`: non tocca alcun record — vive nell'anagrafica, che
- * è una chiave di primo livello — quindi non c'è nulla da fotografare, nessuna firma da
- * apporre e nessun messaggio da mostrare. È anche la ragione per cui colorare un tag non
- * fa apparire mezzo archivio come "modificato" al prossimo sync.
- */
 window.impostaColoreTagArchivio = async function(tag, colore) {
     if (!window.Model.impostaColoreTag(appData, tag, colore)) return false;
     await window.Store.commit();
     return true;
 };
 
-// --- Resa ---------------------------------------------------------------------
-
-/**
- * La classe CSS del chip. Il colore è un NOME nell'anagrafica (vedi shared/model.ts): la
- * traduzione in valori la fa il foglio di stile, che è l'unico posto a sapere che esiste
- * anche un tema scuro.
- */
 window.classeColoreTag = function(tag) {
     const colore = window.Model.coloreTag(appData, tag);
     return colore ? 'card-tag tag-col-' + colore : 'card-tag';
 };
 
-/** Un chip già pronto. Usato da griglia e tabella, che prima costruivano lo span a mano. */
 window.chipTagHTML = function(tag) {
     return '<span class="' + window.classeColoreTag(tag) + '">' + escapeHTML(tag) + '</span>';
 };

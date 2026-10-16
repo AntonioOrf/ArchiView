@@ -1,7 +1,4 @@
 (function() {
-    // Cambia la chiave i18n di un elemento già tradotto. Serve resettare anche data-i18n-default,
-    // altrimenti applicaTraduzioniHtml continuerebbe a usare come fallback il testo della chiave
-    // precedente (catturato alla prima traduzione).
     function impostaChiaveI18n(el, key, fallback) {
         if (!el) return;
         el.setAttribute('data-i18n', key);
@@ -9,9 +6,6 @@
         el.textContent = window.t(key, fallback);
     }
 
-    // Intestazione della sezione attiva: icona coerente col tipo di archivio e, sotto il titolo,
-    // l'account Google collegato. checkDriveStatus ripiega sulla stringa 'Utente (Drive)' quando
-    // about.get fallisce sotto scope drive.file: la mostriamo così com'è, senza fingere un'email.
     function renderIntestazioneCloud(vaultType) {
         const icon = document.getElementById('cloud-active-icon');
         if (icon) icon.setAttribute('data-lucide', vaultType === 'backup' ? 'shield-check' : 'users');
@@ -26,8 +20,6 @@
         riga.title = riga.textContent;
     }
 
-    // Stato di caricamento uniforme per i bottoni async: disabled + aria-busy + spinner.
-    // Senza aria-busy uno screen reader non ha modo di sapere che l'operazione è in corso.
     const testiOriginali = new WeakMap();
     function impostaStatoCaricamento(btn, attivo, testo?) {
         if (!btn) return;
@@ -48,8 +40,6 @@
         if (window.lucide) window.lucide.createIcons({ nodes: [btn] });
     }
 
-    // Riepilogo di stato: sostituisce l'hint statico con i dati reali già disponibili.
-    // Le righe prive di dato vengono omesse invece di mostrare un placeholder vuoto.
     function renderRiepilogoCloud(vaultConfig, settings) {
         const box = document.getElementById('cloud-status-summary');
         if (!box) return;
@@ -64,8 +54,6 @@
                 : window.t('cloud_status_type_shared', 'Archivio condiviso (legacy)')
         ]);
 
-        // L'account non si ripete qui: vive nell'intestazione della sezione (vedi
-        // renderIntestazioneCloud), dove è in evidenza invece che in fondo a un elenco.
         const connesso = !!(window.driveStatus && window.driveStatus.isAuthenticated);
 
         const ultimo = settings && settings.lastSyncTime;
@@ -94,8 +82,6 @@
             box.appendChild(riga);
         }
 
-        // Senza sessione valida il modal deve offrire l'accesso, altrimenti resta un vicolo cieco:
-        // le azioni di sync qui sopra falliscono tutte finché non si è autenticati.
         if (!connesso) {
             const azione = document.createElement('button');
             azione.type = 'button';
@@ -269,18 +255,10 @@
     };
 
     window.apriCloudModal = async function() {
-        // Questo modal gestisce solo il backup personale su Google Drive e i vault Drive
-        // condivisi legacy: i vault Hub vivono esclusivamente nel modal Condivisione.
         if (window.hubConfig && typeof window.apriShareModal === 'function') {
             return window.apriShareModal();
         }
-        // Google serve solo per il backup personale: l'accesso viene richiesto
-        // on-demand da trasformaInPersonale(), non all'apertura del modal.
 
-        // Lo stato va risolto PRIMA di rendere visibile il modal: il focus-trap sposta il fuoco
-        // sul primo elemento focusabile subito dopo la comparsa, e lucide.createIcons deve girare
-        // dopo lo swap di data-lucide. Rivelando prima e popolando poi si otteneva il fuoco su un
-        // bottone in procinto di sparire e l'icona di stato mai renderizzata.
         if (window.apiSettings) {
             try {
                 const [settings, vaultConfig] = await Promise.all([
@@ -290,7 +268,6 @@
                 aggiornaSezioniCloud(settings, vaultConfig);
             } catch (e) {
                 console.error('Stato cloud non leggibile:', e);
-                // Fallback allo stato locale: meglio un modal coerente che uno a metà.
                 aggiornaSezioniCloud({}, { vaultType: 'local' });
                 mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
             }
@@ -307,15 +284,11 @@
         const sharedSection = document.getElementById('cloud-shared-section');
         const titoloModal = document.getElementById('cloud-modal-title');
 
-        // La sezione di ricollegamento è transitoria: riaprire il modal deve tornare alla vista base.
         document.getElementById('cloud-relink-section')?.classList.add('hidden-tab');
 
         if (vaultConfig.vaultType === 'local') {
             if (localSection) localSection.classList.remove('hidden-tab');
             if (sharedSection) sharedSection.classList.add('hidden-tab');
-            // Il ramo locale offre solo il backup personale: la chiave storica
-            // modal_cloud_title è tradotta "Gestione Condivisione (Cloud)" e prometteva
-            // una condivisione che questo modal non fa più.
             impostaChiaveI18n(titoloModal, 'modal_cloud_title_backup', 'Backup personale su Google Drive');
             return;
         }
@@ -337,7 +310,6 @@
             impostaChiaveI18n(hint, 'cloud_backup_hint', 'Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.');
             if (btnSwitchPersonal) btnSwitchPersonal.classList.add('hidden-tab');
         } else {
-            // Vault Drive condiviso legacy: la collaborazione è passata all'Hub, si punta alla migrazione.
             impostaChiaveI18n(titoloModal, 'modal_cloud_title_shared', 'Archivio condiviso su Google Drive');
             impostaChiaveI18n(title, 'modal_cloud_shared_active', 'Archivio Condiviso Attivo');
             impostaChiaveI18n(desc, 'modal_cloud_shared_legacy_desc', 'Archivio condiviso su Google Drive (legacy). Migra su Hub per inviti revocabili e sincronizzazione in tempo reale.');
@@ -346,7 +318,7 @@
         }
 
         const cbAttachments = document.getElementById('cloud-sync-attachments');
-        if (cbAttachments) cbAttachments.checked = settings.syncAttachments !== false; // Default true
+        if (cbAttachments) cbAttachments.checked = settings.syncAttachments !== false;
 
         renderRiepilogoCloud(vaultConfig, settings);
         if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
@@ -363,7 +335,6 @@
                     : window.t('a11y_sync_attachments_off', 'Sincronizzazione allegati disattivata'));
             }
         } catch (e) {
-            // Senza ripristino la checkbox mostrerebbe uno stato mai salvato.
             if (cb) cb.checked = !checked;
             mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
         }
@@ -373,13 +344,10 @@
         document.getElementById('cloud-modal').classList.add('hidden-tab');
     };
 
-    // La migrazione è a senso unico: passa dal pannello di conferma del modal Condivisione,
-    // che ne elenca le conseguenze. Prima il bottone chiamava migraVaultSuHub() a nudo.
     window.apriMigrazioneDaCloudModal = async function() {
         window.chiudiCloudModal();
         const modal = document.getElementById('share-modal');
         if (!modal || typeof window.mostraStatoShare !== 'function') {
-            // Senza il modal Condivisione la conferma la chiede migraVaultSuHub stesso.
             if (typeof window.migraVaultSuHub === 'function') await window.migraVaultSuHub();
             return;
         }
@@ -402,8 +370,6 @@
         if (window.annunciaA11y) window.annunciaA11y(window.t("cloud_cleaning_in_progress", "Pulizia in corso…"));
 
         try {
-            // getApiCloud è async: senza await si testava .pulisciAllegatiOrfani su una Promise,
-            // sempre undefined, e la pulizia falliva sistematicamente con "Funzione non disponibile".
             const apiCloud = window.getApiCloud ? await window.getApiCloud() : null;
             if (!apiCloud || !apiCloud.pulisciAllegatiOrfani) {
                 throw new Error("Funzione non disponibile.");
@@ -425,8 +391,6 @@
         if (titleEl && titolo) titleEl.textContent = titolo;
         if (msgEl && messaggio) msgEl.textContent = messaggio;
         if (overlay) overlay.classList.remove('hidden-tab');
-        // L'overlay è escluso dal focus-trap (a11yModal SKIP_IDS): senza annuncio esplicito
-        // l'operazione partirebbe in totale silenzio per chi usa uno screen reader.
         if (window.annunciaA11y) window.annunciaA11y([titolo, messaggio].filter(Boolean).join(' — '));
     };
 
@@ -437,7 +401,6 @@
         if (window.annunciaA11y) window.annunciaA11y(window.t('a11y_operation_done', 'Operazione terminata'));
     };
 
-    // Esposte per i bottoni con azione lunga gestiti da altri moduli (driveLogic).
     window.impostaStatoCaricamentoCloud = impostaStatoCaricamento;
 
 })();

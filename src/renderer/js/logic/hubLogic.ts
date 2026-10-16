@@ -1,12 +1,8 @@
 window.hubConfig = null;
 window.hubAutofetchTimer = null;
 
-// Ultima versione remota già notificata dall'autofetch silenzioso: evita di ripetere il
-// toast "Ci sono aggiornamenti" a ogni tick finché l'utente non riceve o cambia versione.
 let _ultimaVersioneAutofetchNotificata = null;
 
-// Nome di default per un vault = basename della cartella workspace (ciò che l'utente ha scelto
-// creandola), non il fantasma appData.nomeArchivio che ripiega sempre su "ArchiView".
 window.nomeVaultDefault = async function() {
     try {
         const p = window.apiBrowser?.getWorkspacePath ? await window.apiBrowser.getWorkspacePath() : '';
@@ -17,21 +13,16 @@ window.nomeVaultDefault = async function() {
     }
 };
 
-// Carica la configurazione del repository all'avvio
 async function inizializzaHubConfig() {
     if (window.apiBrowser && window.apiBrowser.loadHubConfig) {
         window.hubConfig = await window.apiBrowser.loadHubConfig();
         window.avviaAutofetchHub();
         if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
-        // Un membro che entra da invito riceve il DB già alla versione corrente: senza questo
-        // hook la sync allegati (agganciata solo ai pull "con novità") non partirebbe mai.
         if (window.hubConfig) window.sincronizzaAllegatiHub(true);
     }
 }
 document.addEventListener('DOMContentLoaded', inizializzaHubConfig);
 
-// Push in corso: l'handler realtime lo attende prima di confrontare le versioni, altrimenti la
-// notifica del proprio push (che può arrivare prima della risposta) sembrerebbe una novità.
 window.hubPushInCorso = null;
 function pushHub(parentVersion, database) {
     const p = window.apiBrowser.hubPush(parentVersion, window.databasePerDisco(database));
@@ -49,12 +40,10 @@ window.avviaAutofetchHub = async function() {
     if (!window.hubConfig || !window.apiSettings) return;
     
     const settings = await window.apiSettings.get();
-    const enabled = settings.autofetchEnabled !== false; // Default true
+    const enabled = settings.autofetchEnabled !== false;
     const intervalMinutes = settings.autofetchInterval || 5;
     
     if (enabled) {
-        // Autofetch = solo controllo/notifica (come Drive), non scarica: accende l'indicatore
-        // "modifiche in entrata" e lascia il pull all'utente. Evita merge silenziosi.
         window.hubAutofetchTimer = setInterval(() => {
             window.controllaModificheHub(false);
         }, intervalMinutes * 60 * 1000);
@@ -62,8 +51,6 @@ window.avviaAutofetchHub = async function() {
     if (typeof window.avviaRealtimeHub === 'function') window.avviaRealtimeHub();
 };
 
-// Azzera badge/contatore "modifiche in entrata" (usato dopo un pull riuscito o quando risulta
-// non esserci nulla da scaricare, per non lasciare l'indicatore acceso fino al fetch successivo).
 window.pulisciModificheInEntrataHub = function() {
     window.impostaModificheInEntrata(false);
     window.azzeraErroreCloud();
@@ -80,23 +67,18 @@ window.riceviModificheHub = async function(isSilent = false) {
         return;
     }
 
-    // if (!isSilent) mostraMessaggio(window.t("msg_ricezione_modifiche_dall_", "Ricezione modifiche dall'Hub in corso…"), "info");
-    
     try {
         const localVersion = window.hubConfig.version;
 
-        // Fast-path autofetch: `ifVersionNot` costa 1 sola lettura D1 se nulla è cambiato.
         const resPull = await window.apiBrowser.hubPull(isSilent && typeof localVersion === 'number' ? localVersion : undefined);
 
         if (!resPull.ok) {
             if (resPull.status === 401 || resPull.status === 403) {
-                // 403 = membro revocato dall'owner: messaggio dedicato, niente retry.
                 if (isSilent) return;
                 throw new Error(resPull.status === 403
                     ? "Il tuo accesso a questo repository è stato revocato dall'amministratore."
                     : "Chiave di accesso non valida per questo repository.");
             }
-            // If silent, just ignore network errors (might be offline)
             if (isSilent) return;
             throw new Error(resPull.error || "Impossibile scaricare i dati dal server.");
         }
@@ -104,11 +86,9 @@ window.riceviModificheHub = async function(isSilent = false) {
         const dataPull = resPull.data;
         if (dataPull.unchanged === true) {
             window.pulisciModificheInEntrataHub();
-            // DB invariato ma gli allegati possono essere ancora arretrati (join, race con l'upload
-            // dell'owner, link non ancora pubblicati): riallinea al click manuale o se resta lavoro in sospeso.
             if (!isSilent || _hubAttachmentsPending) window.sincronizzaAllegatiHub(isSilent);
             return;
-        } // fast-path: già allineati
+        }
 
         const esterniDati = dataPull.database;
         const serverVersion = dataPull.version;
@@ -120,7 +100,6 @@ window.riceviModificheHub = async function(isSilent = false) {
             return;
         }
 
-        // In silenzio non si apre nessun modale: se il merge dovesse chiedere qualcosa, solo avviso.
         if (isSilent) {
             const conflitti = window.rilevaConflitti(appData.manoscritti, esterniDati.manoscritti, window.ultimoCaricamento || 0,
                 appData.baseHashes || {}, appData.baseObjects || {});
@@ -136,14 +115,13 @@ window.riceviModificheHub = async function(isSilent = false) {
             }
         }
 
-        // Stesso merge a tre vie di Drive (base, tombstone, vocabolari, migrazione): annullato → versione invariata.
         if (await window.sincronizzaEUnisciDati(esterniDati) === false) return;
 
         window.hubConfig.version = serverVersion;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
         window.pulisciModificheInEntrataHub();
-        window.sincronizzaAllegatiHub(isSilent); // fire-and-forget: scarica gli allegati nuovi via link
+        window.sincronizzaAllegatiHub(isSilent);
 
         mostraMessaggio(isSilent
             ? window.t("msg_dati_sincronizzati_automa", "Dati sincronizzati automaticamente dal server.")
@@ -158,17 +136,12 @@ window.riceviModificheHub = async function(isSilent = false) {
     }
 };
 
-// Controllo SOLO-NOTIFICA per l'Hub (equivalente al "fetch" Drive): interroga il server e,
-// se la versione remota è più recente, accende l'indicatore + popola i badge di anteprima,
-// SENZA toccare appData. Lo scaricamento effettivo (merge/salvataggio) resta a scaricaDalCloud
-// → riceviModificheHub ("pull"). Usato dal pulsante Fetch e dall'autofetch.
 window.controllaModificheHub = async function(manual = false) {
     if (!window.hubConfig) return;
     try {
         const localVersion = window.hubConfig.version;
         const loadedAt = window.hubConfig.lastLoadedAt || 0;
 
-        // Fast-path: se nulla è cambiato costa 1 sola lettura D1.
         const res = await window.apiBrowser.hubPull(typeof localVersion === 'number' ? localVersion : undefined);
 
         if (!res.ok) {
@@ -188,7 +161,6 @@ window.controllaModificheHub = async function(manual = false) {
             return;
         }
 
-        // Anteprima senza applicare: badge di record/cartelle/tipi nuovi rispetto all'ultimo pull.
         const remote = data.database || {};
         window.incomingChanges = (remote.manoscritti || []).filter(m => (m.lastModified || 0) > loadedAt);
         window.incomingAuthor = window.t("hub_generic_author", "Collaboratore");
@@ -200,8 +172,6 @@ window.controllaModificheHub = async function(manual = false) {
         if (manual) {
             mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "success");
         } else if (data.version !== _ultimaVersioneAutofetchNotificata) {
-            // Autofetch silenzioso: notifica una sola volta per versione remota, con
-            // un'azione diretta ("Ricevi adesso") invece di lasciare solo l'indicatore acceso.
             _ultimaVersioneAutofetchNotificata = data.version;
             mostraMessaggio(
                 window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "info", null,
@@ -222,7 +192,6 @@ window.inviaModificheHub = async function() {
 
     mostraMessaggio(window.t("msg_invio_modifiche_al_server", "Invio modifiche al server…"), "info");
 
-    // Il push usa appData in memoria, ma la sync allegati che segue legge il DB dal disco.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
 
     try {
@@ -246,7 +215,7 @@ window.inviaModificheHub = async function() {
         await window.apiBrowser.saveHubConfig(window.hubConfig);
         await window.registraBaseInviata(inviate);
 
-        window.sincronizzaAllegatiHub(false); // carica i chunk mancanti sul proprio Drive + pubblica indice
+        window.sincronizzaAllegatiHub(false);
 
         window.azzeraErroreCloud();
         mostraMessaggio(window.t("msg_modifiche_inviate_con_suc", 'Modifiche inviate.'), "success");
@@ -258,9 +227,6 @@ window.inviaModificheHub = async function() {
     }
 };
 
-// --- Cronologia versioni Hub (equivalente delle revisioni Drive) ---------------------------
-
-// Elenco versioni conservate sul server (metadata-only: autore, data, dimensione).
 window.elencaVersioniHub = async function() {
     if (!window.hubConfig) throw new Error(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."));
     const res = await window.apiBrowser.hubVersions();
@@ -269,10 +235,9 @@ window.elencaVersioniHub = async function() {
         e.status = res.status;
         throw e;
     }
-    return res.data; // { currentVersion, versions }
+    return res.data;
 };
 
-// Snapshot completo di una versione specifica (per diff o ripristino).
 window.caricaVersioneHub = async function(versionNumber) {
     if (!window.hubConfig) throw new Error(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."));
     const res = await window.apiBrowser.hubVersion(versionNumber);
@@ -281,19 +246,15 @@ window.caricaVersioneHub = async function(versionNumber) {
         e.status = res.status;
         throw e;
     }
-    return res.data; // { version, database }
+    return res.data;
 };
 
-// Ripristino "git-revert": carica lo snapshot scelto, lo sostituisce in locale, poi lo invia
-// come nuova versione (la cronologia resta append-only, nessuna riscrittura del passato).
 window.ripristinaVersioneHub = async function(versionNumber) {
     if (!window.hubConfig) {
         mostraMessaggio(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."), "error");
         return false;
     }
     try {
-        // Pre-check: se il server è avanzato rispetto a quanto abbiamo in locale, non tocchiamo
-        // nulla e chiediamo di ricevere prima (evita di ripristinare "alla cieca" su dati stantii).
         const resCheck = await window.apiBrowser.hubPull(window.hubConfig.version);
         if (!resCheck.ok) throw new Error(resCheck.error || "Impossibile contattare il server per il ripristino.");
         if (!resCheck.data || resCheck.data.unchanged !== true) {
@@ -302,8 +263,6 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         }
 
         const snap = await window.caricaVersioneHub(versionNumber);
-        // Stesse regole del ripristino locale: schede rifirmate e tombstone per quelle nate dopo,
-        // o il merge dei colleghi riporterebbe tutto com'era (vedi `ripristinaDatabase`).
         await window.ripristinaDatabase(snap.database);
 
         const inviate = structuredClone(appData.manoscritti);
@@ -322,7 +281,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         await window.apiBrowser.saveHubConfig(window.hubConfig);
         await window.registraBaseInviata(inviate);
 
-        return true; // messaggio di successo mostrato dal chiamante (apriConfermaRipristino)
+        return true;
     } catch (e) {
         console.error("Errore ripristino versione Hub:", e);
         mostraMessaggio(e.message || "Errore durante il ripristino della versione.", "error");
@@ -331,30 +290,20 @@ window.ripristinaVersioneHub = async function(versionNumber) {
 };
 
 window.sincronizzaConHub = async function() {
-    // Deprecata: per compatibilità, esegue prima pull e poi push (se non ci sono conflitti bloccanti)
     mostraMessaggio(window.t("msg_sincronizzazione", "Sincronizzazione…"), "info");
     await window.riceviModificheHub(true);
     await window.inviaModificheHub();
 };
 
-// Toast "niente Google" mostrato una sola volta per sessione (non ad ogni sync silenzioso).
 let _avvisoNoGoogleMostrato = false;
 
-// Vero finché una sync allegati lascia lavoro in sospeso (allegati non disponibili, non ancora
-// pubblicati, o propri non caricati per mancanza di Google). Consente all'autofetch silenzioso di
-// riprovare il download senza colpire l'indice hub ad ogni tick quando è già tutto allineato.
-// Inizializzato `true`: il primo giro dopo l'avvio va sempre eseguito.
 let _hubAttachmentsPending = true;
 
-// Ultimo errore allegati mostrato: evita di ripetere lo stesso toast a ogni autofetch.
 let _ultimoErroreAllegatiHub = null;
 
-// Sincronizza gli allegati (chunk cifrati su Drive personale + indice hash→URL sull'hub).
-// Non blocca il flusso di sync del DB: gli allegati non disponibili diventano badge, non errori.
 window.sincronizzaAllegatiHub = async function(isSilent = true) {
     if (!window.hubConfig || !window.apiBrowser?.syncHubAttachments) return null;
     if (window.hubConfig.attachmentsMode === 'off') return null;
-    // Il main legge database_manoscritti.json per sapere quali allegati indicizzare.
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     try {
         const r = await window.apiBrowser.syncHubAttachments();
@@ -362,13 +311,8 @@ window.sincronizzaAllegatiHub = async function(isSilent = true) {
             if (!isSilent) mostraMessaggio(r?.error || "Errore sincronizzazione allegati Hub.", "error");
             return r;
         }
-        // Resta "pending" (→ retry ai prossimi autofetch) finché ci sono allegati non scaricabili,
-        // non ancora pubblicati dagli altri, o propri non caricati per mancanza di Google.
         _hubAttachmentsPending = !!(r.unavailable || r.notPublished || (r.skippedUpload && r.hasLocalAttachments));
 
-        // Errori concreti (es. makeFilePublic bloccato, pubblicazione indice fallita): vanno
-        // mostrati anche dopo sync automatici, altrimenti l'owner crede "tutto ok" mentre gli
-        // allegati non arrivano mai agli altri. Una volta per errore-distinto per non spammare.
         if (Array.isArray(r.errors) && r.errors.length) {
             console.error("[hub-att] errori sync allegati:", r.errors);
             if (!_ultimoErroreAllegatiHub || _ultimoErroreAllegatiHub !== r.errors[0]) {
@@ -390,8 +334,6 @@ window.sincronizzaAllegatiHub = async function(isSilent = true) {
             mostraMessaggio(window.t("msg_allegati_non_disponibili",
                 "{var0} allegato/i non disponibile/i (il proprietario non li ha ancora caricati o il link è scaduto).").replace('{var0}', String(unavailableGenerico)), "warning");
         }
-        // I propri allegati non vengono condivisi finché non si collega Google Drive: avviso
-        // one-time per non ripeterlo ad ogni autofetch/pull/push silenzioso.
         if (r.skippedUpload && r.hasLocalAttachments && !_avvisoNoGoogleMostrato) {
             _avvisoNoGoogleMostrato = true;
             mostraMessaggio(window.t("msg_hub_attachments_no_google",
@@ -404,11 +346,6 @@ window.sincronizzaAllegatiHub = async function(isSilent = true) {
     }
 };
 
-// --- Invito ---
-
-// Anteprima di un invito incollato dall'utente: solo il nome, per l'interfaccia. Le chiavi
-// dentro il codice le legge il main al momento del join (hubJoin).
-// Convenzione pipe: HUB1|hubUrl|repoId|memberKey|encKey|pusherKey|pusherCluster|name(URI-encoded)
 window.decodeHubInvite = function(rawCode) {
     let code = (rawCode || '').trim();
     if (code.startsWith('archiview://join/')) code = code.slice('archiview://join/'.length);
@@ -426,27 +363,18 @@ window.decodeHubInvite = function(rawCode) {
     return { code: rawCode, name };
 };
 
-// Crea un nuovo repository Hub a partire dal workspace corrente (l'utente ne diventa owner).
 window.creaRepositoryHub = async function(name) {
     if (!window.apiBrowser?.hubCreateRepo) return false;
-    // Overlay bloccante per l'intera durata (non il solo toast, che si autonasconde dopo 3.5s
-    // mentre le fetch verso l'Hub sono ancora in corso e l'utente resta senza feedback).
     if (typeof window.mostraProgressoCloud === 'function') {
         window.mostraProgressoCloud(window.t("prog_hub_prepare_title", "Preparazione dell'archivio condiviso"), window.t("msg_creazione_repository", "Creazione del repository in corso…"));
     }
     try {
-        // Il nome scelto è la fonte viva condivisa: va scritto in appData.nomeArchivio PRIMA del
-        // push iniziale, così owner e futuri membri (join → data.database.nomeArchivio) leggono
-        // lo stesso nome. Senza nome esplicito si usa il basename della cartella (il nome che
-        // l'utente vede nello switcher), non il fantasma "ArchiView".
         const finalName = (name && String(name).trim()) || await window.nomeVaultDefault();
         if (window.appData) {
             window.appData.nomeArchivio = finalName;
             await salvaTutto();
         }
 
-        // Il main crea il repo, genera la encKey, fa il push iniziale (v0 → v1) e salva la config:
-        // qui torna solo la parte pubblica.
         const r = await window.apiBrowser.hubCreateRepo(finalName, window.databasePerDisco(window.appData));
         if (!r || !r.ok) {
             if (typeof window.nascondiProgressoCloud === 'function') window.nascondiProgressoCloud();
@@ -454,20 +382,15 @@ window.creaRepositoryHub = async function(name) {
             return false;
         }
         window.hubConfig = r.config;
-        // Aggiorna subito header/widget: senza questo i controlli sync sparirebbero
-        // fino al reload (~1.2s).
         if (window.aggiornaVisibilitaCloud) window.aggiornaVisibilitaCloud();
         window.sincronizzaAllegatiHub(false);
 
         mostraMessaggio(window.t("msg_repository_creato", 'Archivio condiviso pronto: ora puoi invitare i collaboratori.'), "success");
-        // Dopo il reload apri automaticamente il pannello Condivisione (l'owner deve invitare).
         try {
             if (window.apiSettings) {
                 await window.apiSettings.patch({ hubJustCreated: true });
             }
-        } catch { /* flag best-effort: il reload avviene comunque */ }
-        // Overlay già visibile dall'inizio dell'operazione: il reload resta necessario per
-        // reinizializzare lo stato del vault, ma non deve sembrare un errore o un blocco muto.
+        } catch {}
         if (typeof window.mostraProgressoCloud === 'function') {
             window.mostraProgressoCloud(window.t("prog_hub_prepare_title", "Preparazione dell'archivio condiviso"), window.t("prog_hub_prepare_desc", "Un attimo di pazienza..."));
         }
@@ -481,9 +404,6 @@ window.creaRepositoryHub = async function(name) {
     }
 };
 
-// Rinomina il vault Hub (solo owner). Il nome è la fonte viva: aggiorna appData.nomeArchivio +
-// hubConfig.name, salva in locale, poi fa push così i membri ricevono il nuovo nome al prossimo
-// pull. Serve a correggere i vault creati prima che il nome cartella diventasse il default.
 window.rinominaVaultHub = async function(newName) {
     const nome = (newName || '').trim();
     if (!window.hubConfig || !nome) return false;
@@ -492,8 +412,6 @@ window.rinominaVaultHub = async function(newName) {
         if (window.appData) { window.appData.nomeArchivio = nome; await salvaTutto(); }
         window.hubConfig.name = nome;
         await window.apiBrowser.saveHubConfig(window.hubConfig);
-        // Propaga ai membri (push del DB con il nuovo nomeArchivio). Best-effort: se il push
-        // fallisce (conflitto/offline) il nome locale è comunque aggiornato e partirà al prossimo invio.
         if (window.inviaModificheHub) await window.inviaModificheHub();
         if (window.aggiornaListaVault) await window.aggiornaListaVault();
         mostraMessaggio(window.t("msg_vault_rinominato", "Nome dell'archivio aggiornato."), "success");
@@ -504,8 +422,6 @@ window.rinominaVaultHub = async function(newName) {
     }
 };
 
-// Restituisce il ruolo dell'utente sul repository Hub: 'owner' | 'member' | 'unknown'.
-// Il main lo legge dalla config o lo ricava con un probe owner-only, e persiste l'esito certo.
 window.getHubRole = async function() {
     if (!window.hubConfig) return 'unknown';
     if (window.hubConfig.role === 'owner' || window.hubConfig.role === 'member') return window.hubConfig.role;
@@ -514,11 +430,10 @@ window.getHubRole = async function() {
         if (role === 'owner' || role === 'member') window.hubConfig.role = role;
         return role || 'unknown';
     } catch {
-        return 'unknown'; // offline: UI degradata, nessun invito mostrato
+        return 'unknown';
     }
 };
 
-// Genera un invito HUB1: il main crea un membro revocabile e compone il codice con le chiavi.
 window.generaInvitoHub = async function(label) {
     if (!window.hubConfig) { mostraMessaggio(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."), "error"); return null; }
     const memberLabel = (label && String(label).trim()) || `${window.t("hub_invite_default_label", "Invito")} ${new Date().toLocaleDateString()}`;
@@ -549,9 +464,6 @@ window.revocaMembroHub = async function(memberId) {
     } catch { return false; }
 };
 
-// Join di un repository Hub da invito, con basePath già scelto (usato dal welcomeModal,
-// che ha il proprio input percorso). Nessun accesso Google richiesto. Download del DB,
-// creazione del workspace e salvataggio delle chiavi avvengono nel main.
 window.eseguiJoinHub = async function(invite, basePath) {
     if (!invite || !invite.code || !basePath) return false;
     try {

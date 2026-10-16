@@ -5,17 +5,6 @@
 <title>ArchiView — host PDF per OCR</title>
 </head>
 <body>
-<!--
-  Pagina di servizio, mai visibile all'utente: vive in una BrowserWindow offscreen creata da
-  src/main/ocr/pdfHost.ts. Esiste per una sola ragione: pdf.js sa estrarre il livello testo
-  ovunque, ma per rasterizzare una pagina serve un canvas, cioè un contesto Chromium. Farlo
-  qui, in un processo separato, tiene fuori dall'event loop del main un lavoro che su una
-  carta a 300 dpi dura secondi.
-
-  È servita dallo schema privilegiato `ocr-host://`, non da file://, perché un modulo ES
-  caricato da file:// è bloccato dalle regole di origine e il worker di pdf.js deve stare
-  nella stessa origine della pagina.
--->
 <script type="module">
 import * as pdfjs from './pdf.min.mjs';
 
@@ -23,16 +12,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = 'ocr-host://app/file/pdf.worker.min.mjs';
 
 let documento = null;
 
-// I metodi sono appesi a `window` di proposito: dentro un modulo ES le dichiarazioni sono
-// locali, e `webContents.executeJavaScript` valuta nel mondo principale — senza questa riga
-// il main chiamerebbe funzioni che per lui non esistono.
 window.__pdfApri = async function (nomeFile) {
   try {
-    if (documento) { try { await documento.destroy(); } catch { /* noop */ } documento = null; }
+    if (documento) { try { await documento.destroy(); } catch {} documento = null; }
     const compito = pdfjs.getDocument({
       url: 'ocr-host://app/allegato/' + encodeURIComponent(nomeFile),
-      // Il PDF è un file locale dell'utente, ma resta un formato ostile: niente script,
-      // niente font di sistema arbitrari, niente XFA.
       isEvalSupported: false,
       enableXfa: false
     });
@@ -43,14 +27,11 @@ window.__pdfApri = async function (nomeFile) {
   }
 };
 
-/** Livello testo già presente nel PDF. Su un PDF digitale è perfetto e costa quasi nulla. */
 window.__pdfTesto = async function (numero) {
   try {
     if (!documento) return { ok: false, errore: 'nessun documento' };
     const pagina = await documento.getPage(numero);
     const contenuto = await pagina.getTextContent();
-    // Gli `items` non hanno a capo: si ricostruiscono dalle coordinate, altrimenti l'intera
-    // pagina arriva come una riga sola e il post-processing non può fare paragrafi.
     const righe = [];
     let yCorrente = null;
     let corrente = [];
@@ -73,11 +54,6 @@ window.__pdfTesto = async function (numero) {
   }
 };
 
-/**
- * Rasterizza una pagina in PNG. `dpi` decide la resa dell'OCR: sotto i 200 il testo si sfalda.
- * `extra` (0/90/180/270, orario) si somma a `/Rotate`: è il raddrizzamento di una carta
- * scansionata di traverso, deciso dal main dopo il rilevamento dell'orientamento.
- */
 window.__pdfImmagine = async function (numero, dpi, extra) {
   try {
     if (!documento) return { ok: false, errore: 'nessun documento' };
@@ -88,8 +64,6 @@ window.__pdfImmagine = async function (numero, dpi, extra) {
     canvas.width = Math.floor(viewport.width);
     canvas.height = Math.floor(viewport.height);
     const ctx = canvas.getContext('2d', { willReadFrequently: false });
-    // Fondo bianco esplicito: un PDF con pagina trasparente diventerebbe nero su nero una
-    // volta appiattito in PNG, e Tesseract non leggerebbe nulla senza dire perché.
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await pagina.render({ canvasContext: ctx, viewport, background: '#ffffff' }).promise;
@@ -103,11 +77,6 @@ window.__pdfImmagine = async function (numero, dpi, extra) {
   }
 };
 
-/**
- * Un allegato immagine ruotato di `gradi` in senso orario, in PNG. Serve il canvas per la
- * stessa ragione della rasterizzazione: il main non ne ha uno. `from-image` applica l'EXIF
- * come fa Tesseract, così la rotazione si somma a un'immagine già orientata allo stesso modo.
- */
 window.__immagineRuotata = async function (nomeFile, gradi) {
   try {
     const risposta = await fetch('ocr-host://app/allegato/' + encodeURIComponent(nomeFile));
@@ -120,7 +89,6 @@ window.__immagineRuotata = async function (nomeFile, gradi) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Asse y verso il basso: un angolo positivo è una rotazione oraria.
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate(gradi * Math.PI / 180);
     ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
@@ -135,7 +103,7 @@ window.__immagineRuotata = async function (nomeFile, gradi) {
 };
 
 window.__pdfChiudi = async function () {
-  if (documento) { try { await documento.destroy(); } catch { /* noop */ } documento = null; }
+  if (documento) { try { await documento.destroy(); } catch {} documento = null; }
   return { ok: true };
 };
 

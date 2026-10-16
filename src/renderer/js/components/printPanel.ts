@@ -1,25 +1,3 @@
-// Fase 2.2 — Stampa e PDF: superficie utente.
-//
-// Qui non si genera nulla: il documento nasce in `src/main/print/printTemplate.ts` (modulo
-// puro) e viene reso da `printHost.ts`. Questo file sceglie COSA stampare e con quali
-// opzioni, esattamente come `ocrPanel.ts` sceglie cosa riconoscere. La divisione è la
-// stessa della 1.3, della 2.1 e della 2.3: la logica che si può sbagliare sta dove si può
-// testare a freddo.
-//
-// NOMI PRIVATI COL PREFISSO `_s`: il bundle di produzione concatena TUTTI gli script del
-// renderer in un unico scope (scripts/build-renderer-bundle.js). Una `function _riga` qui
-// dentro sostituirebbe l'omonima di un altro file per l'intero bundle, senza un errore in
-// console — è già successo nella 1.5 con `_select`.
-
-// --- Impostazioni persistenti -------------------------------------------------
-//
-// Nome del fondo, autore della schedatura e opzioni di layout stanno in `appState` (cioè
-// nel settings.json del workspace) e NON in `appData`: finirebbero nel database e quindi
-// nel sync, e il nome di chi ha schedato è di chi ha schedato — propagarlo ai colleghi
-// significherebbe firmare le loro stampe col nome di un altro.
-// È la stessa ragione per cui la lingua dell'OCR sta in localStorage (2.3), applicata a un
-// dato che invece è per archivio e non per macchina.
-
 const _sDEFAULT = {
     layout: 'scheda',
     fondo: '',
@@ -35,8 +13,6 @@ const _sDEFAULT = {
 
 window.impostazioniStampa = Object.assign({}, _sDEFAULT);
 
-/** Ripristino dallo stato salvato: chiave per chiave, così un appState scritto da una
- *  versione precedente non introduce campi ignoti (stessa cautela dei filtri della 1.3). */
 window.ripristinaImpostazioniStampa = function(salvate) {
     if (!salvate || typeof salvate !== 'object') return;
     const o = window.impostazioniStampa;
@@ -54,13 +30,9 @@ function _sSalvaImpostazioni() {
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 }
 
-// --- Ambito della stampa ------------------------------------------------------
-
 function _sT(k, d) { return window.t(k, d); }
 
 function _sRecordCorrente() {
-    // La scheda aperta in modifica o in trascrizione: è l'ambito più naturale quando si
-    // stampa mentre si sta lavorando su una carta sola.
     const vAdd = document.getElementById('view-add');
     const vTrasc = document.getElementById('view-trascrizione');
     if (vTrasc && !vTrasc.classList.contains('hidden-tab')) {
@@ -74,10 +46,6 @@ function _sRecordCorrente() {
     return null;
 }
 
-/**
- * Gli ambiti disponibili, con il conteggio. "Risultati" è quello dei filtri correnti e non
- * la cartella: dopo una ricerca l'utente vuole stampare ciò che vede, non ciò che c'è.
- */
 function _sAmbiti() {
     const voci = [];
     const selezionati = (window.selectedRecords || []).slice();
@@ -107,16 +75,12 @@ function _sAmbiti() {
     return voci;
 }
 
-// Gli ambiti servono anche all'export testuale (2.5/2.6): una seconda definizione di
-// "risultati correnti" divergerebbe dalla prima al primo cambio dei filtri.
 window.ambitiSelezione = _sAmbiti;
 
 function _sIdsAmbito(id) {
     const voce = _sAmbiti().find(a => a.id === id);
     return voce ? voce.ids : [];
 }
-
-// --- Costruzione del corpo ----------------------------------------------------
 
 function _sRiga(etichetta, controllo) {
     const wrap = document.createElement('label');
@@ -152,8 +116,6 @@ function _sInput(id, valore, placeholder) {
     return el;
 }
 
-/** I tre layout, con una riga che dice a cosa serve ciascuno: "regesto" e "inventario" non
- *  sono parole ovvie per chi arriva da un foglio di calcolo. */
 function _sBloccoLayout(scelto) {
     const box = document.createElement('div');
     box.className = 'flex flex-col gap-2';
@@ -194,16 +156,12 @@ function _sRiempi() {
     const corpo = document.getElementById('print-body');
     if (!corpo) return;
     const o = window.impostazioniStampa;
-    // Il fuoco: ricostruire il corpo lo perde, e chi sta scrivendo il nome del fondo se lo
-    // vedrebbe sparire alla prima lettera se il campo fosse fra i controlli ricostruiti.
-    // Da qui il ripristino per id in coda, come nel pannello filtri della 1.3.
     const attivo = document.activeElement && document.activeElement.id;
     const inFuoco = document.activeElement as HTMLInputElement | null;
     const selezione = inFuoco && typeof inFuoco.selectionStart === 'number'
         ? inFuoco.selectionStart : null;
     corpo.innerHTML = '';
 
-    // Ambito
     const ambiti = _sAmbiti();
     if (!ambiti.some(a => a.id === window.__printAmbito)) {
         window.__printAmbito = ambiti[0].id;
@@ -214,10 +172,8 @@ function _sRiempi() {
     selAmbito.addEventListener('change', () => { window.__printAmbito = selAmbito.value; _sAggiornaConteggio(); });
     corpo.appendChild(_sRiga(_sT('print_scope', 'Cosa stampare'), selAmbito));
 
-    // Layout
     corpo.appendChild(_sRiga(_sT('print_layout', 'Formato'), _sBloccoLayout(o.layout)));
 
-    // Intestazione: è ciò che rende la stampa citabile in un articolo.
     const box = document.createElement('div');
     box.className = 'grid grid-cols-1 sm:grid-cols-3 gap-2';
     const fondo = _sInput('print-fondo', o.fondo, _sT('print_fund_ph', 'Es. ASP, Notarile'));
@@ -233,8 +189,6 @@ function _sRiempi() {
     );
     corpo.appendChild(box);
 
-    // Opzioni. Miniature e trascrizione riguardano solo la scheda singola: mostrarle negli
-    // altri due layout sarebbe offrire un interruttore che non accende nulla.
     const opzioni = document.createElement('div');
     opzioni.className = 'flex flex-col gap-2 pt-1';
     const aggiungi = (id, etichetta, chiave) => {
@@ -285,8 +239,6 @@ function _sAggiornaConteggio() {
     }
 }
 
-// --- Apertura e chiusura ------------------------------------------------------
-
 window.apriStampa = function(ambito) {
     const modal = document.getElementById('print-modal');
     if (!modal) return;
@@ -304,14 +256,6 @@ window.chiudiStampa = function() {
     _sSalvaImpostazioni();
 };
 
-// --- Esecuzione ---------------------------------------------------------------
-
-/**
- * Opzioni per il main. Etichette dei campi, nomi dei tipi e testi fissi del documento
- * viaggiano nel messaggio: il main non conosce la i18n (lezione della 2.1, e qui pesa di
- * più — una stampa con le intestazioni in italiano dentro un articolo in inglese è
- * inutilizzabile).
- */
 function _sOpzioniIpc() {
     const o = window.impostazioniStampa;
     return {
@@ -324,9 +268,6 @@ function _sOpzioniIpc() {
         includiVuoti: o.layout === 'scheda' && o.campiVuoti,
         intestazione: { fondo: o.fondo, autore: o.autore, data: o.data },
         testoIntestazione: o.fondo,
-        // Le colonne del layout tabellare sono quelle VISIBILI nella vista tabella (1.1):
-        // ciò che si vede a schermo è ciò che finisce sulla carta, senza una seconda
-        // configurazione da tenere allineata alla prima.
         colonne: typeof window.colonneTabellaCorrenti === 'function' ? window.colonneTabellaCorrenti() : [],
         etichette: typeof window.etichetteColonneExport === 'function' ? window.etichetteColonneExport() : {},
         nomiTipi: typeof window.nomiTipiExport === 'function' ? window.nomiTipiExport() : {},
@@ -342,7 +283,6 @@ function _sOpzioniIpc() {
             print_field_signature: _sT('th_signature', 'Segnatura'),
             print_no_records: _sT('print_no_records', 'Nessuna scheda da stampare.'),
             print_untitled: _sT('print_untitled', 'Senza segnatura'),
-            // Fase 3.1: i campi `sì/no` sulla carta.
             value_yes: _sT('value_yes', 'Sì'),
             value_no: _sT('value_no', 'No')
         }
@@ -359,11 +299,6 @@ async function _sEsegui(modo) {
     bottoni.forEach(b => { b.disabled = true; });
     if (typeof mostraMessaggio === 'function') mostraMessaggio(_sT('print_working', 'Preparazione del documento…'), 'info');
     try {
-        // Il main legge il DB dal disco: flush del salvataggio differito, o si stamperebbe
-        // la versione precedente di ciò che si ha davanti (contratto della 2.4.2). Il flush
-        // però non copre l'editor della trascrizione, che vive in memoria finché non si
-        // salva: senza la riga qui sotto, stampare mentre si scrive darebbe la carta senza
-        // l'ultima riga battuta. Stessa scelta dell'export testuale (2.5).
         if (window.trascrizioneNonSalvata && typeof window.salvaTrascrizione === 'function') {
             await window.salvaTrascrizione();
         }
@@ -397,38 +332,19 @@ async function _sEsegui(modo) {
 window.salvaStampaPdf = () => _sEsegui('pdf');
 window.stampaOra = () => _sEsegui('stampa');
 
-/**
- * Stampa della VISTA corrente, dal foglio `@media print` di style.css: è l'unica strada che
- * stampa esattamente ciò che si ha davanti, filtri e ordinamento compresi, senza passare da
- * un layout. Serve per una copia di lavoro veloce; per un documento da allegare a un
- * articolo servono i tre layout del modale.
- */
 window.stampaVistaCorrente = function() {
     window.chiudiStampa();
-    // Il tempo di far ridisegnare la lista senza il modale sopra: `window.print()` fotografa
-    // il DOM com'è in quell'istante, e un overlay ancora presente finirebbe sulla carta.
     setTimeout(() => window.print(), 80);
 };
 
-// --- Attivazione --------------------------------------------------------------
-//
-// Ctrl+P è agganciato QUI e in capture, non fra le scorciatoie di app.ts, per la stessa
-// ragione di Ctrl+K (1.4): quell'handler esce con un `return` quando la vista trascrizione
-// è aperta, e stampare la carta che si sta leggendo è proprio il caso da coprire.
-// In capture anche perché Chromium ha un suo Ctrl+P nativo (`window.print()` sulla finestra
-// intera, con la sidebar e i pulsanti dentro la carta): senza `preventDefault` l'utente si
-// troverebbe quella, che è esattamente il risultato che questa fase esiste per evitare.
 document.addEventListener('keydown', (e) => {
     if (!(e.ctrlKey || e.metaKey) || e.altKey || e.key.toLowerCase() !== 'p') return;
     const modale = document.querySelector('.modal-overlay:not(.hidden-tab)');
-    // Il modale di stampa già aperto non si riapre; sopra un ALTRO modale non si impila.
     if (modale && modale.id !== 'print-modal') return;
     e.preventDefault();
     e.stopPropagation();
     if (!modale) window.apriStampa();
 }, true);
-
-// --- Markup -------------------------------------------------------------------
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {

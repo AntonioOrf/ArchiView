@@ -1,7 +1,4 @@
 (function() {
-    // Il contenuto NON è più scritto a mano qui: arriva da window.changelogData, generato
-    // in build da RELEASE_NOTES.md (scripts/build-changelog.js). Il modal scritto a mano
-    // era rimasto fermo alla 2.4.3 su un'app 2.4.5, cioè mostrava novità sbagliate.
     const dati = (window as any).changelogData || { versione: '', titolo: '', html: '', disponibile: false };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -37,8 +34,6 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
-            // Il corpo passa da sanitizeHTML: è generato da un file di progetto, non da
-            // input utente, ma resta la regola della casa per ogni innerHTML dinamico.
             const contenuto = document.getElementById('changelog-content');
             if (contenuto) contenuto.innerHTML = window.sanitizeHTML(dati.html || '');
             if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
@@ -46,8 +41,6 @@
     });
 
     window.apriChangelogModal = function() {
-        // Nessuna nota per questa versione (RELEASE_NOTES.md non aggiornato): meglio non
-        // aprire nulla che presentare un riquadro "Novità" vuoto.
         if (!dati.disponibile) return;
         const modal = document.getElementById('changelog-modal');
         if (modal) {

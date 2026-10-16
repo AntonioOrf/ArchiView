@@ -1,23 +1,7 @@
-// Fase 3.4 — Il pannello "Gestione tag".
-//
-// Prima della 3.4 un tag esisteva solo come sottostringa dentro il campo `tags` di N
-// schede: correggere un refuso — `pergamana` per `pergamena` — significava aprire le schede
-// una per una, perché nemmeno il trova&sostituisci in massa (1.5) lo faceva in sicurezza
-// (agisce sulla selezione e per sottostringa, quindi `not` toccava anche `notaio`).
-//
-// Le mutazioni NON stanno qui: sono in `logic/tagsLogic.ts`, che a sua volta delega
-// l'aritmetica a `shared/model.ts`. Questo file raccoglie parametri e ridisegna, ed è la
-// stessa divisione in tre strati delle azioni in massa.
-//
-// PREFISSO `_tm` sugli helper privati: gli script del renderer non sono moduli e il bundle
-// li concatena in UN UNICO scope — una `function riga()` qui dentro sostituirebbe quella
-// omonima di un altro componente per l'intero bundle, senza un errore in console.
-
 function _tmT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
-/** I tag selezionati per la fusione, per chiave. Sopravvive ai ridisegni della lista. */
 let _tmSelezionati = new Set<string>();
 
 window.apriGestioneTag = function() {
@@ -36,7 +20,6 @@ window.chiudiGestioneTag = function() {
     if (modal) modal.classList.add('hidden-tab');
 };
 
-/** Riga: selezione per la fusione, colore, nome (rinominabile in loco), conteggio, elimina. */
 function _tmRiga(voce) {
     const riga = document.createElement('div');
     riga.className = 'tag-manager-row';
@@ -75,7 +58,7 @@ function _tmRiga(voce) {
 
     const nome = document.createElement('span');
     nome.className = 'tag-manager-name truncate';
-    nome.textContent = voce.nome;   // textContent: è dato utente
+    nome.textContent = voce.nome;
     riga.appendChild(nome);
 
     const conteggio = document.createElement('span');
@@ -102,8 +85,6 @@ function _tmRiga(voce) {
     elimina.setAttribute('aria-label', _tmT('tag_delete', 'Elimina il tag') + ': ' + voce.nome);
     elimina.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
     elimina.onclick = async () => {
-        // Nessun modale di conferma: l'operazione è annullabile dal toast, come ogni altra
-        // azione in massa. Una conferma in più su un'azione già reversibile è solo attrito.
         await window.eliminaTagArchivio(voce.nome);
         _tmSelezionati.delete(voce.chiave);
         window.disegnaGestioneTag();
@@ -113,13 +94,10 @@ function _tmRiga(voce) {
     return riga;
 }
 
-/** Rinomina nella riga (`rinominaInLoco`); Esc ridisegna senza toccare la selezione. */
 function _tmRinominaInLoco(riga, voce) {
     rinominaInLoco(riga, '.tag-manager-name', voce.nome, async (nuovo) => {
         if (nuovo === null) { window.disegnaGestioneTag(); return; }
         if (nuovo && window.Model.chiaveTag(nuovo) !== voce.chiave) {
-            // Se la chiave nuova esiste già è una FUSIONE, e va detto: l'utente crede di
-            // rinominare e si ritroverebbe due tag diventati uno senza averlo chiesto.
             const esiste = window.Model.conteggiTag(appData.manoscritti, appData)
                 .some(v => v.chiave === window.Model.chiaveTag(nuovo));
             if (esiste && typeof mostraMessaggio === 'function') {
@@ -132,7 +110,6 @@ function _tmRinominaInLoco(riga, voce) {
     });
 }
 
-/** La barra della fusione compare solo con almeno due tag scelti: sotto non ha significato. */
 function _tmAggiornaBarraFusione() {
     const barra = document.getElementById('tag-merge-bar');
     const sel = document.getElementById('tag-merge-target');
@@ -154,8 +131,6 @@ function _tmAggiornaBarraFusione() {
         opt.textContent = v.nome;
         sel.appendChild(opt);
     }
-    // La destinazione è uno dei tag scelti, non un nome nuovo: fondere in un tag inesistente
-    // è una rinomina, e la rinomina ha già il suo pulsante su ogni riga.
     if (voci.some(v => v.chiave === precedente)) sel.value = precedente;
 }
 
@@ -165,8 +140,6 @@ window.disegnaGestioneTag = function() {
 
     const filtro = window.Model.chiaveTag(document.getElementById('tag-manager-filter')?.value || '');
     let voci = window.Model.conteggiTag(appData.manoscritti, appData);
-    // Le chiavi selezionate che non esistono più (tag fuso, rinominato o eliminato) vanno
-    // dimenticate, o la barra della fusione conterebbe fantasmi.
     const vive = new Set(voci.map(v => v.chiave));
     for (const k of Array.from(_tmSelezionati)) if (!vive.has(k)) _tmSelezionati.delete(k);
     if (filtro) voci = voci.filter(v => v.chiave.includes(filtro));

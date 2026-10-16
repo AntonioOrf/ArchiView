@@ -1,70 +1,48 @@
-﻿/* ============================================================
-   SCALA Z-INDEX UNICA (Fase 5.1)
-   Prima convivevano z-40, z-50, z-60, z-70, z-100, z-110, z-150,
-   z-200 e z-[9999], assegnati a occhio: ogni nuovo overlay era una
-   scommessa. Qui i livelli hanno un nome e un ordine dichiarato.
-   Non usare valori numerici nel markup: usare queste classi.
-   ============================================================ */
-:root {
-    --z-sticky: 40;          /* barre sticky dentro la pagina */
-    --z-dropdown: 100;       /* popover ancorati (vault switcher, progressi) */
-    --z-modal: 200;          /* modale base */
-    --z-modal-nested: 220;   /* modale aperto sopra un altro modale */
-    --z-modal-alert: 240;    /* conferme distruttive, banner di conferma, progressi bloccanti */
-    --z-modal-critical: 260; /* conflitti di sync: sopra qualsiasi altro modale */
-    --z-toast: 300;          /* notifiche transitorie */
-    --z-menu: 400;           /* menu contestuali e popover di comando */
+﻿:root {
+    --z-sticky: 40;
+    --z-dropdown: 100;
+    --z-modal: 200;
+    --z-modal-nested: 220;
+    --z-modal-alert: 240;
+    --z-modal-critical: 260;
+    --z-toast: 300;
+    --z-menu: 400;
 }
 
 
 :root {
-    /* Accenti primari - Blu per ottima leggibilità */
     --color-primary: #1d4ed8;
     --color-primary-hover: #1e3a8a;
     --color-primary-light: #dbeafe;
     --color-primary-border: #93c5fd;
-    /* Testo SOPRA un fondo --color-primary (bottoni primari). */
     --color-on-primary: #ffffff;
 
-    /* Sfondi - contrasto netto tra base e pannelli */
-    --color-bg-base: #f1f5f9;          /* slate-100 */
-    --color-bg-panel: #ffffff;         /* bianco puro */
+    --color-bg-base: #f1f5f9;
+    --color-bg-panel: #ffffff;
     --color-bg-panel-transparent: rgba(255, 255, 255, 0.95);
-    --color-bg-hover: #e2e8f0;         /* slate-200 */
-    --color-bg-sidebar: #f8fafc;       /* slate-50 */
+    --color-bg-hover: #e2e8f0;
+    --color-bg-sidebar: #f8fafc;
 
-    /* Testi - altissimo contrasto */
-    --color-text-main: #020617;        /* quasi nero (slate-950) */
-    --color-text-secondary: #1e293b;   /* slate-800 */
-    --color-text-muted: #475569;       /* slate-600 */
-    /* Placeholder: più tenue del muted ma ≥4.5:1 anche su bg-base (#f1f5f9 → 5.37). */
+    --color-text-main: #020617;
+    --color-text-secondary: #1e293b;
+    --color-text-muted: #475569;
     --color-text-placeholder: #5b6576;
 
-    /* Bordi */
-    --color-border: #64748b;           /* slate-500 */
-    --color-border-light: #94a3b8;     /* slate-400 */
-    /* Contorno dei CAMPI (1.4.11: ≥3:1 su ogni fondo del tema). Separato da --color-border,
-       che disegna anche divisori e pannelli decorativi: alzarlo appesantirebbe tutta l'app. */
+    --color-border: #64748b;
+    --color-border-light: #94a3b8;
     --color-border-input: #64748b;
 
-    /* Danger */
     --color-danger: #b91c1c;
     --color-danger-hover: #991b1b;
     --color-danger-light: #fee2e2;
-    --color-on-danger: #ffffff;        /* testo sopra --color-danger (.btn-danger) */
+    --color-on-danger: #ffffff;
     --color-danger-border: #fecaca;
-    /* Testo d'allarme (contatori, badge, etichette): non --color-danger perché nei temi scuri
-       il rosso pieno dei pulsanti è troppo cupo come testo su fondo rosso trasparente. */
     --color-danger-text: #b91c1c;
 
-    /* Warning (vault condiviso legacy) */
     --color-warning: #b45309;
     --color-warning-light: #fef3c7;
     --color-warning-border: #f59e0b;
 
-    /* Esito positivo e informazione (stato cloud, conflitti risolti, diff dello storico).
-       Prima erano esadecimali del tema chiaro cablati nei componenti: in blue-dark restavano
-       fondi pastello e testi verdi a 1.6:1. Ogni testo ≥4.5:1 sul proprio -light e sui pannelli. */
     --color-success: #15803d;
     --color-success-light: #f0fdf4;
     --color-success-border: #86efac;
@@ -73,48 +51,36 @@
     --color-info-border: #bfdbfe;
 
     --radius-sm: 0;
-    /* Scrollbar, tendine native e caret seguono il tema: senza, nei temi scuri restavano
-       chiari (i temi si applicano con una classe, non con prefers-color-scheme). */
     color-scheme: light;
 }
 
 :root.dark-theme {
     color-scheme: dark;
-    /* Accenti primari - Arancio rossi */
     --color-primary: #ea580c;
-    /* WCAG 1.4.3: primary-hover è anche il colore del testo d'accento (.text-amber-800/900,
-       badge, segmento attivo). #c2410c su fondo nero dava 3.3:1; sui temi scuri l'hover
-       SCHIARISCE, e #fb923c regge sia come testo (≥7.6:1) sia come fondo per --color-on-primary. */
     --color-primary-hover: #fb923c;
-    --color-on-primary: #0a0a0a;       /* bianco su #ea580c: 3.56:1 → 5.56:1 */
+    --color-on-primary: #0a0a0a;
     --color-primary-light: rgba(234, 88, 12, 0.15);
     --color-primary-border: rgba(234, 88, 12, 0.3);
 
-    /* Sfondi - Nero puro */
     --color-bg-base: #000000;
     --color-bg-panel: #0a0a0a;
     --color-bg-panel-transparent: rgba(10, 10, 10, 0.98);
     --color-bg-hover: #171717;
     --color-bg-sidebar: #000000;
 
-    /* Testi */
     --color-text-main: #fafafa;
     --color-text-secondary: #d4d4d8;
     --color-text-muted: #a1a1aa;
     --color-text-placeholder: var(--color-text-muted);
 
-    /* Bordi */
     --color-border: #27272a;
     --color-border-light: #18181b;
-    --color-border-input: #71717a;     /* #27272a su nero: 1.3:1 → ≥3.7:1 */
+    --color-border-input: #71717a;
 
-    /* Danger */
     --color-danger: #ef4444;
-    /* Come primary-hover: sui temi scuri l'hover schiarisce, e danger-hover fa anche da
-       colore del testo d'allarme (#dc2626 sul fondo rosso scuro dei banner: 3.6:1). */
     --color-danger-hover: #f87171;
     --color-danger-light: rgba(239, 68, 68, 0.15);
-    --color-on-danger: #0a0a0a;        /* bianco su #ef4444: 3.76:1 → 5.26:1 */
+    --color-on-danger: #0a0a0a;
     --color-danger-border: rgba(239, 68, 68, 0.4);
     --color-danger-text: #f87171;
 
@@ -132,36 +98,31 @@
 
 :root.blue-dark-theme {
     color-scheme: dark;
-    /* Accenti primari - Blu chiaro su sfondo scuro */
     --color-primary: #60a5fa;
-    --color-primary-hover: #93c5fd;    /* come dark-theme: #3b82f6 su slate-800 dava 2.8–4.0:1 */
-    --color-on-primary: #0f172a;       /* bianco su #60a5fa: 2.54:1 → 7.02:1 */
+    --color-primary-hover: #93c5fd;
+    --color-on-primary: #0f172a;
     --color-primary-light: rgba(59, 130, 246, 0.15);
     --color-primary-border: rgba(96, 165, 250, 0.3);
 
-    /* Sfondi - scuri con livelli definiti */
-    --color-bg-base: #0f172a;          /* slate-900 */
-    --color-bg-panel: #1e293b;         /* slate-800 */
+    --color-bg-base: #0f172a;
+    --color-bg-panel: #1e293b;
     --color-bg-panel-transparent: rgba(30, 41, 59, 0.98);
-    --color-bg-hover: #334155;         /* slate-700 */
-    --color-bg-sidebar: #0f172a;       /* slate-900 */
+    --color-bg-hover: #334155;
+    --color-bg-sidebar: #0f172a;
 
-    /* Testi - alto contrasto */
-    --color-text-main: #ffffff;        /* bianco puro */
-    --color-text-secondary: #f1f5f9;   /* slate-100 */
-    --color-text-muted: #aab6c8;       /* slate-400 (#94a3b8) su bg-hover dava 4.04:1; ora 5.05:1 */
+    --color-text-main: #ffffff;
+    --color-text-secondary: #f1f5f9;
+    --color-text-muted: #aab6c8;
     --color-text-placeholder: var(--color-text-muted);
 
-    /* Bordi */
-    --color-border: #475569;           /* slate-600 */
-    --color-border-light: #334155;     /* slate-700 */
-    --color-border-input: #8391a7;     /* #475569 su slate-800: 1.9:1 → ≥3.2:1 anche su bg-hover */
+    --color-border: #475569;
+    --color-border-light: #334155;
+    --color-border-input: #8391a7;
 
-    /* Danger */
     --color-danger: #f87171;
-    --color-danger-hover: #fca5a5;     /* #ef4444 come testo: 3.14:1 */
+    --color-danger-hover: #fca5a5;
     --color-danger-light: rgba(248, 113, 113, 0.15);
-    --color-on-danger: #0f172a;        /* bianco su #f87171: 2.77:1 → 6.45:1 */
+    --color-on-danger: #0f172a;
     --color-danger-border: rgba(248, 113, 113, 0.4);
     --color-danger-text: #fca5a5;
 
@@ -172,43 +133,37 @@
     --color-success: #4ade80;
     --color-success-light: rgba(74, 222, 128, 0.12);
     --color-success-border: rgba(74, 222, 128, 0.4);
-    --color-info: #93c5fd;             /* #60a5fa sul fondo blu trasparente scendeva verso 4.5:1 */
+    --color-info: #93c5fd;
     --color-info-light: rgba(59, 130, 246, 0.15);
     --color-info-border: rgba(96, 165, 250, 0.4);
 }
 
 :root.amber-light-theme {
-    /* Accenti primari - Ambra più vivace e scura */
     --color-primary: #92400e;
     --color-primary-hover: #78350f;
     --color-primary-light: #fde68a;
     --color-primary-border: #f59e0b;
     --color-on-primary: #ffffff;
 
-    /* Sfondi - contrasto più netto tra pannelli */
     --color-bg-base: #e8e4df;
     --color-bg-panel: #fafaf8;
     --color-bg-panel-transparent: rgba(250, 250, 248, 0.95);
     --color-bg-hover: #f0ece6;
     --color-bg-sidebar: #f2ede7;
 
-    /* Testi - più contrasto, gerarchia netta */
     --color-text-main: #1c1917;
     --color-text-secondary: #44403c;
-    --color-text-muted: #57534e;       /* #78716c su crema dava 3.8–4.1:1; ora ≥6:1 */
+    --color-text-muted: #57534e;
     --color-text-placeholder: #6b645d;
 
-    /* Bordi */
     --color-border: #a8a29e;
     --color-border-light: #c9c2ba;
-    --color-border-input: #78716c;     /* #a8a29e su crema: 2.0–2.4:1 → ≥3.8:1 */
+    --color-border-input: #78716c;
 
-    /* #15803d sul fondo base #e8e4df dava 4.0:1 */
     --color-success: #166534;
 }
 
 
-/* Modifiche Layout Flat per ENTRAMBI i temi */
 body {
     padding: 0 !important;
 }
@@ -216,8 +171,6 @@ body {
     border-radius: 0 !important;
     box-shadow: none !important;
 }
-/* Raggio 0 anche nel markup (audit P3-1, DESIGN.md): restano tondi solo i rounded-full di
-   pallini, avatar, interruttori e spinner. */
 .rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-b-lg,
 .file\:rounded-sm::file-selector-button {
     border-radius: 0 !important;
@@ -238,7 +191,6 @@ header {
     background-color: var(--color-bg-panel);
 }
 
-/* Override Tailwind hardcoded colors globally for better readability */
 .bg-stone-50,
 .bg-stone-100,
 .bg-stone-100\/50,
@@ -281,11 +233,6 @@ header {
     border-color: var(--color-border) !important;
 }
 
-/* Utility cromatiche ricorrenti sui token (audit front-end P2-3, DESIGN.md). L'accento è il
-   primario del tema: ambra in amber-light, blu in Clear Blue e blue-dark, arancio in dark.
-   Testi su --color-primary-hover (≥4.5:1 sui pannelli in ogni tema, vedi i commenti dei token);
-   rosso, verde e blu restano significati (pericolo, esito, informazione), non decorazione.
-   !important come il remap qui sopra: vince sulle varianti dark: scritte accanto. */
 .text-amber-400, .text-amber-500, .text-amber-600, .text-amber-700, .text-orange-500, .text-orange-600,
 .hover\:text-amber-300:hover, .hover\:text-amber-600:hover, .hover\:text-amber-700:hover,
 .hover\:text-amber-800:hover, .group:hover .group-hover\:text-amber-700 {
@@ -337,8 +284,6 @@ body {
     font-family: 'Georgia', serif;
 }
 
-/* Dissolvenza del tema solo durante il cambio (applicaTema mette .cambio-tema per 300 ms):
-   sempre attiva annullava le utility transition-* di Tailwind e animava ogni hover. */
 :root.cambio-tema :is(body, .panel-glass, .panel-solid, .card-scheda, button, input, select, textarea, div, span, p, h1, h2, h3, h4, i) {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, opacity 0.2s;
 }
@@ -354,13 +299,9 @@ body {
     100% { transform: translateX(300%); }
 }
 .hidden-tab { display: none !important; }
-/* Scrollbar personalizzata per la sidebar */
 .custom-scroll::-webkit-scrollbar { width: 6px; }
 .custom-scroll::-webkit-scrollbar-thumb { background-color: var(--color-border); border-radius: 10px; }
 
-/* --- COMPONENTI UI SEMANTICI --- */
-
-/* Pannelli e Struttura */
 .panel-glass {
     background-color: var(--color-bg-panel-transparent);
     backdrop-filter: blur(12px);
@@ -379,7 +320,6 @@ body {
     border-bottom: 1px solid var(--color-border-light);
 }
 
-/* Bottoni */
 button, .btn {
     border-radius: 0 !important;
 }
@@ -400,7 +340,7 @@ button, .btn {
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    pointer-events: none; /* niente :hover su un pulsante spento */
+    pointer-events: none;
 }
 .btn-primary {
     background-color: var(--color-primary);
@@ -433,8 +373,6 @@ button, .btn {
     background-color: var(--color-bg-hover);
     color: var(--color-text-main);
 }
-/* Azione distruttiva senza fondo. Le utility text-red-* accanto a .btn-ghost non si vedono:
-   style.css è fuori da @layer (guardia: test/btnUtility.test.js). */
 .btn-danger-ghost {
     background-color: transparent;
     color: var(--color-danger-text);
@@ -444,15 +382,12 @@ button, .btn {
 }
 .btn-icon {
     padding: 0.375rem;
-    /* Fase 5.4 — area di click minima 32px: con un'icona w-4 il solo padding dava 28px,
-       e nella sidebar il pulsante ⋯ scendeva a 26px. */
     min-width: 2rem;
     min-height: 2rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
-/* P1 — caratteri speciali sotto la barra dell'editor (specialCharsPanel.ts). */
 #trasc-caratteri {
     display: flex;
     flex-wrap: wrap;
@@ -483,7 +418,6 @@ button, .btn {
     line-height: 1;
     color: var(--color-text-main);
 }
-/* P2 — avanzamento delle carte sulla card. */
 .card-avanzamento {
     width: 3.5rem;
     height: 0.375rem;
@@ -501,8 +435,6 @@ button, .btn {
     align-items: center;
     justify-content: center;
 }
-/* Pulsanti dentro elementi in linea (chip filtro): 32px sfonderebbe il chip, ma 24px
-   è comunque il minimo WCAG 2.5.8 e il doppio dei 12px di prima. */
 .chip-remove-btn {
     min-width: 1.5rem;
     min-height: 1.5rem;
@@ -510,13 +442,11 @@ button, .btn {
     align-items: center;
     justify-content: center;
 }
-/* P2.5 — stato attivo bottoni editor rich-text (toolbar trascrizione) */
 #trascrizione-toolbar button[data-cmd][aria-pressed="true"] {
     background-color: var(--color-primary);
     color: var(--color-bg-base);
 }
 
-/* Form */
 .form-group {
     margin-bottom: 1rem;
 }
@@ -545,7 +475,6 @@ button, .btn {
     box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-/* Finestre Modali */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -565,14 +494,6 @@ button, .btn {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    /* ⚠️ SENZA QUESTO TETTO NESSUN MODALE SCORRE. `.modal-body` ha `overflow-y: auto` fin
-       dall'inizio, ma un `auto` senza un'altezza da rispettare non entra MAI in funzione: la
-       finestra cresce quanto il contenuto, l'overlay è `position: fixed` e ciò che sfora
-       finisce fuori dallo schermo, irraggiungibile — né con la rotella né con la tastiera.
-       Il difetto non si vedeva perché ogni modale precedente limitava da sé le proprie liste
-       (`.tag-manager-list` e simili); il primo che è cresciuto davvero — il wizard di import
-       della 2.4 — l'ha reso visibile. Il tetto sta QUI e non nel singolo modale proprio per
-       questo: il prossimo modale lungo non deve riscoprirlo da capo. */
     max-height: 100%;
 }
 .modal-header {
@@ -594,9 +515,6 @@ button, .btn {
 .modal-body {
     padding: 1.5rem;
     overflow-y: auto;
-    /* Un figlio flex non scende sotto la propria altezza di contenuto se non glielo si dice:
-       senza `min-height: 0` il corpo resta alto quanto ciò che contiene e il tetto della
-       finestra qui sopra verrebbe sforato lo stesso, spingendo l'intestazione fuori campo. */
     min-height: 0;
 }
 .modal-footer {
@@ -605,10 +523,6 @@ button, .btn {
     justify-content: flex-end;
     gap: 0.75rem;
 }
-/* Variante per i modali il cui corpo scorre: il piede è FRATELLO di `.modal-body`, non figlio,
-   così i pulsanti restano fermi in fondo alla finestra. In un modale lungo — il wizard di
-   import ha una riga per colonna — un pulsante di conferma che scorre via insieme al contenuto
-   costringe a scendere in fondo a un elenco per fare la cosa per cui si è aperta la finestra. */
 .modal-footer-bar {
     margin-top: 0;
     padding: 0.75rem 1.5rem;
@@ -617,9 +531,6 @@ button, .btn {
     flex-shrink: 0;
 }
 
-/* Cards (Schede) */
-/* Niente banda laterale d'accento (audit P3-2: motivo generico) né crema cablato (P3-5: il
-   fondo #fefcf8 lo annullava già .bg-white, il bordo #e4d9c8 restava anche in blue-dark). */
 .card-scheda {
     background-color: var(--color-bg-panel);
     border-radius: var(--radius-sm);
@@ -640,7 +551,6 @@ button, .btn {
     box-shadow: 0 4px 8px -2px rgba(0,0,0,0.12);
     transform: translateY(-2px);
 }
-/* In dark il bordo leggero (#18181b) su #0a0a0a non si vede. */
 :root.dark-theme .card-scheda {
     border-color: var(--color-border);
 }
@@ -648,7 +558,6 @@ button, .btn {
     border-color: var(--color-primary-border);
     background-color: var(--color-bg-hover);
 }
-/* Scheda appena raggiunta da un suggerimento di ricerca (1,5 s, rivelaRecordNellaGriglia). */
 .scheda-raggiunta {
     border-color: var(--color-primary) !important;
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
@@ -662,15 +571,9 @@ button, .btn {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* Piede della sidebar: cinque icone devono stare anche nella sidebar minima (finestra a metà
-   schermo); il padding di .btn le teneva a 54px e le prime/ultime uscivano dai bordi. */
 .sidebar-azioni > .btn { min-width: 0; padding-left: 0.25rem; padding-right: 0.25rem; }
-/* Intestazione della trascrizione in una finestra stretta: i pulsanti vanno a capo a destra
-   invece di uscire dallo schermo ("Salva Trascrizione" restava tagliato). */
 .trasc-intestazione { flex-wrap: wrap; gap: 0.5rem; }
 .trasc-azioni { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
-/* Card strette (finestra a metà schermo): le etichette vanno sotto la segnatura invece di
-   schiacciarla a 0px, e un badge lungo si tronca dentro la card. */
 .card-intestazione { flex-wrap: wrap; }
 .card-intestazione > .card-title { flex: 1 1 8rem; min-width: 0; }
 .card-etichette { flex-wrap: wrap; justify-content: flex-end; min-width: 0; max-width: 100%; }
@@ -679,7 +582,7 @@ button, .btn {
     display: inline-block;
     background-color: var(--color-primary-light);
     color: var(--color-primary-hover);
-    font-size: 0.6875rem; /* 11px: minimo per il testo informativo (audit P2-8) */
+    font-size: 0.6875rem;
     text-transform: uppercase;
     font-weight: bold;
     padding: 0.125rem 0.5rem;
@@ -691,9 +594,8 @@ button, .btn {
     display: inline-block;
     padding: 0.125rem 0.5rem;
     background-color: var(--color-bg-hover);
-    /* secondary e non muted: il tag è contenuto, e muted su bg-hover restava sotto 4.5:1 */
     color: var(--color-text-secondary);
-    font-size: 0.6875rem; /* 11px: minimo per il testo informativo (audit P2-8) */
+    font-size: 0.6875rem;
     text-transform: uppercase;
     font-weight: bold;
     letter-spacing: 0.05em;
@@ -701,11 +603,6 @@ button, .btn {
     border: 1px solid var(--color-border-light);
 }
 
-/* --- Tag come entità (Fase 3.4) -------------------------------------------------
-   Il colore di un tag è salvato nell'archivio come NOME ("ambra", "rosso", …), mai come
-   valore CSS: un `#fde68a` scritto nel database sarebbe illeggibile nei due temi scuri e
-   impossibile da ritematizzare senza riscrivere le schede. La traduzione nome → colore
-   avviene qui, che è l'unico posto a sapere quanti temi esistono. */
 :root {
     --tag-ambra-bg: #fef3c7;  --tag-ambra-fg: #78350f;  --tag-ambra-bd: #f59e0b;
     --tag-rosso-bg: #fee2e2;  --tag-rosso-fg: #7f1d1d;  --tag-rosso-bd: #ef4444;
@@ -717,8 +614,6 @@ button, .btn {
 
 :root.dark-theme,
 :root.blue-dark-theme {
-    /* Sfondi traslucidi e non tinte piene: su nero puro una pastello chiara è un lampo,
-       e i chip stanno dentro le card, cioè dove si legge. */
     --tag-ambra-bg: rgba(245, 158, 11, 0.18);  --tag-ambra-fg: #fcd34d;  --tag-ambra-bd: rgba(245, 158, 11, 0.45);
     --tag-rosso-bg: rgba(239, 68, 68, 0.18);   --tag-rosso-fg: #fca5a5;  --tag-rosso-bd: rgba(239, 68, 68, 0.45);
     --tag-verde-bg: rgba(34, 197, 94, 0.18);   --tag-verde-fg: #86efac;  --tag-verde-bd: rgba(34, 197, 94, 0.45);
@@ -734,9 +629,6 @@ button, .btn {
 .card-tag.tag-col-viola  { background-color: var(--tag-viola-bg);  color: var(--tag-viola-fg);  border-color: var(--tag-viola-bd); }
 .card-tag.tag-col-grigio { background-color: var(--tag-grigio-bg); color: var(--tag-grigio-fg); border-color: var(--tag-grigio-bd); }
 
-/* Nella sidebar il colore è una banda a sinistra e non un fondo pieno: la riga porta già
-   lo stato "filtro attivo" come sfondo ambra, e due sfondi in competizione renderebbero
-   illeggibile proprio la riga selezionata. */
 .tag-filtro { border-left-width: 3px; }
 .tag-filtro.tag-bordo-ambra  { border-left-color: var(--tag-ambra-bd); }
 .tag-filtro.tag-bordo-rosso  { border-left-color: var(--tag-rosso-bd); }
@@ -744,8 +636,6 @@ button, .btn {
 .tag-filtro.tag-bordo-blu    { border-left-color: var(--tag-blu-bd); }
 .tag-filtro.tag-bordo-viola  { border-left-color: var(--tag-viola-bd); }
 .tag-filtro.tag-bordo-grigio { border-left-color: var(--tag-grigio-bd); }
-
-/* --- Pannello "Gestione tag" --------------------------------------------------- */
 
 .tag-manager-list {
     max-height: 22rem;
@@ -768,16 +658,10 @@ button, .btn {
 
 .tag-manager-row:hover { background-color: var(--color-bg-hover); }
 
-/* Il nome occupa lo spazio che avanza: conteggio e pulsanti restano allineati a destra
-   qualunque sia la lunghezza del tag, che in un archivio reale va da "atto" a
-   "testamento con codicillo allegato". */
 .tag-manager-name { flex: 1 1 auto; min-width: 0; font-size: 0.875rem; }
 .tag-manager-input { flex: 1 1 auto; min-width: 0; }
 .tag-manager-count { font-size: 0.75rem; color: var(--color-text-muted); }
 
-/* Scansioni in arrivo (scannerPanel.ts): un riquadro per lotto, miniature in riga. */
-/* «Dal telefono» (scannerPanel.ts): pannello a destra che lascia vedere e usare l'elenco delle
-   schede. Resta un `.modal-overlay` per Esc e lo stack dei modali, ma trasparente ai clic. */
 #scanner-modal.scan-overlay { background: transparent; backdrop-filter: none; pointer-events: none; justify-content: flex-end; align-items: stretch; padding: 0; }
 .scan-laterale { pointer-events: auto; width: min(30rem, 100vw); max-width: none; height: 100%; border-left: 1px solid var(--color-border); box-shadow: none; }
 .scan-testa { flex-direction: column; align-items: stretch; gap: 0.25rem; }
@@ -810,7 +694,6 @@ button, .btn {
 .scan-miniature img { width: 4rem; height: 5.25rem; object-fit: contain; background-color: var(--color-bg-hover); }
 .scan-miniature figcaption { font-size: 0.6875rem; color: var(--color-text-secondary); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scan-piede { display: flex; justify-content: flex-start; font-size: 0.8125rem; }
-/* Avviso all'apertura: un solo riepilogo per questo archivio e per gli altri. */
 .scan-riepilogo { border: 1px solid var(--color-border-light); display: flex; flex-direction: column; margin: 0.75rem 0; }
 .scan-riepilogo-gruppo { padding: 0.75rem 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; }
 .scan-riepilogo-gruppo + .scan-riepilogo-gruppo { border-top: 1px solid var(--color-border-light); }
@@ -819,7 +702,6 @@ button, .btn {
 .scan-riepilogo-riga { display: flex; gap: 0.625rem; align-items: baseline; font-size: 0.875rem; }
 .scan-num { min-width: 2rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 
-/* P10 — id Wikidata/VIAF sull'anagrafica e candidati della ricerca (authorityPanel.ts). */
 .auth-id { font-size: 0.6875rem; font-family: ui-monospace, monospace; color: var(--color-text-secondary); }
 a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-decoration: underline; }
 .auth-candidati { max-height: 18rem; overflow-y: auto; }
@@ -839,11 +721,9 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     width: 6.5rem;
     font-size: 0.75rem;
     padding: 0.125rem 0.25rem;
-    /* Il preflight di Tailwind azzera i bordi: senza questo la tendina aveva solo la banda
-       sinistra, e per un tag senza colore nessun contorno riconoscibile (1.4.11). */
     border: 1px solid var(--color-border-input);
     border-left-width: 4px;
-    min-height: 24px; /* 2.5.8: era alta 22px */
+    min-height: 24px;
 }
 .tag-color-select.tag-col-ambra  { border-left: 4px solid var(--tag-ambra-bd); }
 .tag-color-select.tag-col-rosso  { border-left: 4px solid var(--tag-rosso-bd); }
@@ -865,20 +745,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 .tag-merge-bar select { flex: 1 1 auto; min-width: 0; }
 
 
-/* --- Wizard di import CSV (Fase 2.4) --------------------------------------------
-   La prima versione riusava `.tag-manager-row`: una riga flex con nome e valore d'esempio
-   uno accanto all'altro, e il risultato si leggeva "Colonna 4 · Uso", cioè come se la
-   colonna avesse due nomi. Qui la riga è una GRIGLIA a tre celle — nome del file, freccia,
-   destinazione — e l'esempio va sotto il nome, marcato "es.", dove non può essere scambiato
-   per parte del nome.
-
-   ⚠️ NIENTE `overflow-y` sulle liste interne: `.modal-body` scorre già, e tre barre di
-   scorrimento annidate (finestra, colonne, anteprima) erano metà del disordine segnalato.
-   Le liste crescono e il modale scorre come un documento. */
-
-/* Passo 1 del wizard: la scelta del modello. Pulsanti larghi e non una tendina, perché sotto
-   ogni voce serve vedere QUALI CAMPI porta con sé: è l'unica informazione che permette di
-   scegliere, e in una tendina non ci starebbe. */
 .import-scelte {
     display: flex;
     flex-direction: column;
@@ -933,7 +799,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     gap: 0.75rem;
     margin-bottom: 0.75rem;
 }
-/* Sotto i 46rem tre tendine affiancate diventano tre fessure: meglio in colonna. */
 @media (max-width: 46rem) {
     .import-options { grid-template-columns: minmax(0, 1fr); }
 }
@@ -979,8 +844,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     border-bottom: 1px solid var(--color-border-light);
 }
 .import-map-row:last-child { border-bottom: none; }
-/* Una colonna mappata si distingue a colpo d'occhio da una ignorata: con venti righe tutte
-   uguali, sapere quante ne restano da decidere costa una lettura completa dell'elenco. */
 .import-map-row.is-mapped { background-color: var(--color-bg-hover); }
 .import-map-source { display: flex; flex-direction: column; min-width: 0; }
 .import-map-name {
@@ -999,16 +862,11 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 }
 .import-map-arrow { color: var(--color-text-muted); font-size: 0.8rem; }
 .import-map-select { width: 100%; }
-/* Sotto i 34rem la freccia non ha più senso: le due parti si impilano. */
 @media (max-width: 34rem) {
     .import-map-row { grid-template-columns: minmax(0, 1fr); }
     .import-map-arrow { display: none; }
 }
 
-/* ⚠️ GRIGLIA, NON FLEX. `.form-input` è larga il 100%, quindi in una riga flex la tendina del
-   tipo — che non deve restringersi — si prendeva l'intera larghezza e lasciava al nome del
-   campo una fessura di pochi pixel, cioè proprio il campo da compilare. Qui le colonne sono
-   dichiarate: il nome prende ciò che avanza, il tipo ha una misura sua, i pulsanti la loro. */
 .import-nuovo-campo {
     grid-column: 1 / -1;
     display: grid;
@@ -1019,8 +877,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 }
 .import-nuovo-campo input,
 .import-nuovo-campo select { width: 100%; min-width: 0; }
-/* Sotto i 34rem quattro controlli in riga sono quattro fessure: nome e tipo sopra, i due
-   pulsanti sotto, ciascuno per metà larghezza. */
 @media (max-width: 34rem) {
     .import-nuovo-campo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
@@ -1084,18 +940,11 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     margin-top: 0.75rem;
 }
 
-/* --- Vocabolari controllati, anagrafica e collegamenti (Fasi 3.3, 3.5, 3.6) ------
-   Riusano deliberatamente `.tag-manager-list`/`.tag-manager-row` della 3.4: sono lo stesso
-   oggetto d'interfaccia — un elenco di voci d'archivio con conteggio e azioni in riga — e
-   tre copie della stessa lista divergerebbero al primo ritocco. */
-
 .vocab-griglia {
     display: grid;
     grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
     gap: 0.75rem;
 }
-/* Sotto i 40rem le due colonne diventano illeggibili: l'elenco dei vocabolari si riduce a
-   una striscia e i valori a una colonna di parole spezzate. */
 @media (max-width: 40rem) {
     .vocab-griglia { grid-template-columns: minmax(0, 1fr); }
 }
@@ -1140,9 +989,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 .vocab-valore:hover { background-color: var(--color-bg-hover); }
 .vocab-valore-nome { flex: 1 1 auto; min-width: 0; font-size: 0.875rem; }
 
-/* Il badge dei collegamenti sulla card: è un pulsante, non un'etichetta, perché porta da
-   qualche parte. L'icona lo distingue dal badge del tipo documento, che gli sta accanto ed
-   è invece inerte. */
 .card-badge-link {
     display: inline-flex;
     align-items: center;
@@ -1155,10 +1001,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     color: var(--color-primary);
 }
 
-/* --- Vista a grafo dei collegamenti (Fase 3.5) ---------------------------------
-   La finestra è più grande di ogni altro modale perché è l'unica in cui il contenuto È lo
-   spazio: un grafo in un riquadro da 32rem è una matassa a prescindere dai dati. */
-/* P5 — due carte affiancate (confrontoCarte.ts). */
 .confronto-finestra {
     width: 96vw;
     max-width: none;
@@ -1220,7 +1062,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 }
 .confronto-viewport.hidden-tab { display: none; }
 
-/* P9 — collazione tra testimoni (collazioneTestimoni.ts). */
 .collazione-finestra {
     width: 96vw;
     max-width: none;
@@ -1281,8 +1122,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     flex: 1 1 auto;
     min-height: 0;
 }
-/* Sotto i 56rem il riquadro laterale mangia il grafo: passa sotto, e il disegno si tiene
-   l'intera larghezza. */
 @media (max-width: 56rem) {
     .grafo-area { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
 }
@@ -1294,7 +1133,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     background-color: var(--color-bg-base);
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-sm);
-    /* Il cursore dice che si può trascinare: senza, la tela sembra un'immagine ferma. */
     cursor: grab;
     touch-action: none;
 }
@@ -1319,9 +1157,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 .grafo-nodo text {
     fill: var(--color-text-secondary);
     pointer-events: none;
-    /* Alone del colore della tela: senza, un'etichetta che cade sopra un arco si impasta
-       con la linea e la freccia sparisce dentro le lettere. La proprieta disegna prima il
-       contorno e poi il riempimento, quindi il testo resta nitido. */
     paint-order: stroke fill;
     stroke: var(--color-bg-base);
     stroke-width: 3px;
@@ -1331,12 +1166,9 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 .grafo-nodo.scelto circle { fill: var(--color-primary); stroke: var(--color-primary-hover); }
 .grafo-nodo.scelto text { fill: var(--color-text-main); font-weight: 700; }
 
-/* Lo "spento" non nasconde: il contesto attorno al nodo scelto deve restare visibile, o si
-   perde il senso di dove ci si trova dentro la rete. */
 .grafo-nodo.spento { opacity: 0.18; }
 .grafo-arco.spento { opacity: 0.1; }
 
-/* Duplicati (3.6) */
 .dup-gruppo {
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-sm);
@@ -1355,7 +1187,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 }
 .dup-scheda:hover { background-color: var(--color-bg-hover); color: var(--color-text-main); }
 
-/* Anagrafica (3.5) */
 .auth-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--color-border-light); }
 .auth-tab {
     padding: 0.375rem 0.75rem;
@@ -1367,7 +1198,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 }
 .auth-tab.attiva { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
-/* Collegamenti fra schede (3.5) */
 .rel-riga {
     display: flex;
     align-items: center;
@@ -1377,8 +1207,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-sm);
 }
-/* L'etichetta della relazione è ciò che distingue "copia di" da "stessa mano": va letta
-   prima della segnatura, non dopo, perché è il verbo della frase. */
 .rel-tipo {
     flex: 0 0 auto;
     font-size: 0.6875rem;
@@ -1388,9 +1216,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     color: var(--color-text-muted);
 }
 
-/* Badge del conteggio sul pulsante Filtri (Fase 1.3). Posizionato in assoluto sopra
-   l'angolo del pulsante: in linea allargherebbe il bottone a ogni filtro aggiunto,
-   facendo saltare la barra azioni. Il pulsante porta gia' `relative`. */
 .badge-conteggio {
     position: absolute;
     top: -0.35rem;
@@ -1406,31 +1231,15 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     line-height: 1;
     border-radius: 9999px;
     background-color: var(--color-primary);
-    /* Non `#fff` fisso: nei temi scuri `--color-primary` e' un colore CHIARO (azzurro,
-       arancio) e il bianco vi starebbe sotto 3:1. Il fondo del pannello e' per
-       costruzione l'opposto del primario in ogni tema, quindi il contrasto regge
-       ovunque senza una variabile in piu'. */
     color: var(--color-bg-panel);
 }
 
-/* style.css e' caricato DOPO tailwind.css: senza questa riga il `display:inline-flex`
-   qui sopra batte l'utility `.hidden` a parita' di specificita' e il badge resterebbe
-   visibile (vuoto) anche a zero filtri. E' la stessa trappola gia' incontrata con
-   `hidden` sui .btn (Fase 1.1) e con `position` sul viewport immagini (Fase 1.2). */
 .badge-conteggio.hidden {
     display: none;
 }
 
-/* Segmento attivo del selettore di vista (griglia/tabella): la vista in uso deve
-   leggersi dalla barra, non solo dal contenuto sotto. */
-/* Specificità 0,2,0 e non 0,1,0: `.btn-ghost:hover` vincerebbe sulla classe semplice, e
-   lo stato attivo sparirebbe proprio mentre il puntatore riposa sul segmento appena
-   cliccato — cioè nel momento in cui si guarda per capire se il click ha avuto effetto.
-   La variante :hover mantiene l'accento e schiarisce solo il bordo. */
 .btn.segmento-attivo,
 .btn.segmento-attivo:hover {
-    /* Colore d'accento, non un grigio più scuro: sui temi scuri la differenza fra
-       bg-panel e bg-hover è troppo tenue per dire quale vista è attiva a colpo d'occhio. */
     background-color: var(--color-primary-light);
     color: var(--color-primary-hover);
     border-color: var(--color-primary-border);
@@ -1440,15 +1249,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     border-color: var(--color-primary);
 }
 
-/* ============================================================
-   VISTA TABELLA (Fase 1.1)
-   Le righe devono portare .card-scheda e id="card-<id>": selezione multipla,
-   shift-range, menu contestuale e rivelaRecordNellaGriglia si agganciano a quei
-   due selettori, e riusarli fa funzionare tutto in tabella senza duplicare logica.
-   Il prezzo è che .card-scheda porta con sé lo stile della card (display:flex,
-   padding, bordi): qui va neutralizzato, altrimenti il layout di tabella salta.
-   Colori dalle variabili di tema, così i tre temi seguono senza varianti dark:*.
-   ============================================================ */
 .tabella-schede {
     border-collapse: collapse;
     color: var(--color-text-secondary);
@@ -1480,7 +1280,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
 .tabella-schede thead th.ordinabile:hover {
     background-color: var(--color-bg-hover);
 }
-/* Neutralizzazione dello stile card sulla riga (vedi nota in testa al blocco). */
 .tabella-schede tr.card-scheda {
     display: table-row;
     background-color: transparent;
@@ -1518,7 +1317,6 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     white-space: nowrap;
 }
 
-/* Sidebar Tree View */
 .sidebar-row {
     color: var(--color-text-secondary);
 }
@@ -1561,30 +1359,17 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     background-color: var(--color-danger-light);
 }
 
-/* Activity Bar */
-/* Tab navigazione header: stato attivo */
 .btn-ghost.tab-active {
     color: var(--color-primary);
     background-color: var(--color-primary-light);
     border-bottom: 2px solid var(--color-primary);
 }
 
-/* Cloud modal.
-   Le superfici e gli accenti su misura (.cloud-panel, .cloud-variant-*, .cloud-icon-wrap,
-   .cloud-strong/.cloud-muted/.cloud-accent) sono state rimosse col restyle: nascevano da un
-   tempo in cui le utility `dark:` seguivano prefers-color-scheme invece della classe di tema
-   dell'app. Oggi `@custom-variant dark` in input.css le lega a .dark-theme/.blue-dark-theme, e
-   il blocco di remap più in basso copre le utility neutre dentro .modal-window: il modal usa
-   quindi Tailwind come il resto dell'app. Qui resta solo ciò che Tailwind non può esprimere. */
-
-/* .btn centra il contenuto e style.css è caricato dopo tailwind.css: senza questa regola
-   l'utility justify-start non ha effetto e le voci dell'elenco azioni restano centrate. */
 #cloud-shared-section .btn.justify-start {
     justify-content: flex-start;
-    text-align: left; /* etichette su due righe restavano centrate rispetto all'icona */
+    text-align: left;
 }
 
-/* Focus accessibilità tastiera */
 .btn:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
@@ -1594,46 +1379,29 @@ a.auth-id:hover, a.auth-id:focus-visible { color: var(--color-primary); text-dec
     outline: 2px solid var(--color-primary);
     outline-offset: 0;
 }
-/* Checkbox e radio non sono né .btn né .form-input: senza questa regola l'unico indicatore
-   di fuoco è l'outline di default del browser, invisibile sui fondi scuri del tema dark. */
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible,
 summary:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
-/* Il ring di default del browser su summary, con display:flex, viene disegnato male.
-   Va tolto SOLO fuori da :focus-visible: `summary:focus` da solo ha la stessa specificità
-   della regola sopra e, venendo dopo, cancellava anche il nostro focus ring. */
 summary:focus:not(:focus-visible) { outline: none; }
 
-/* WCAG 1.4.3 vale anche per i placeholder. Fuori da @layer: batte le utility
-   placeholder-* di Tailwind. opacity:1 annulla l'attenuazione di default di alcuni motori. */
 ::placeholder {
     color: var(--color-text-placeholder);
     opacity: 1;
 }
 
-/* Rete di sicurezza WCAG 2.4.7: qualunque controllo senza regola propria mostra il fuoco.
-   :where() = specificità zero, quindi ogni regola dedicata (.btn, .form-input, .iv-viewport…)
-   continua a vincere; ma questo foglio è fuori da @layer e batte comunque le utility
-   Tailwind v4 (layered), cioè i `focus:outline-none` sparsi nei template e i circa 150
-   bottoni-icona creati da JS senza .btn, che prima perdevano l'outline del browser. */
 :where(button, a[href], summary, select, textarea, input:not([type="hidden"]),
        [role="button"], [role="tab"], [role="menuitem"], [role="option"],
        [tabindex]:not([tabindex="-1"])):focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
-/* L'editor della trascrizione tiene outline:none (un rettangolo attorno a tutto il foglio
-   mentre si scrive) e il fuoco si vede sul riquadro che lo contiene. */
 .trasc-editor-area:focus-within {
     box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 
-/* prefers-reduced-motion: niente movimento (spinner, scorrimenti, spostamenti), ma le
-   dissolvenze brevi restano perché orientano: un modale che compare, un toast che se ne va
-   (audit P3-4; prima tutto a 0.01ms). Il colore cambia subito, senza transizione. */
 @media (prefers-reduced-motion: reduce) {
     *:not(.fade-in), *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -1652,11 +1420,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     to { opacity: 1; }
 }
 
-/* Bottone di stato cloud (Zona 2). Il colore sta QUI e non nelle utility Tailwind:
-   .btn-ghost imposta color/background e, essendo style.css caricato dopo tailwind.css,
-   vincerebbe sulle utility text- e bg-. Lo stato arriva dall attributo data-stato.
-   Solo token: le varianti per tema stanno nei blocchi :root (prima esistevano solo per
-   dark-theme, e blue-dark mostrava i fondi pastello del tema chiaro). */
 #cloud-status-btn:hover {
     background-color: var(--color-bg-hover);
 }
@@ -1669,7 +1432,6 @@ summary:focus:not(:focus-visible) { outline: none; }
 #cloud-status-btn[data-stato="offline"],
 #cloud-status-btn[data-stato="locale"]    { color: var(--color-text-muted); }
 
-/* Empty state */
 #empty-state {
     background-color: transparent !important;
     border-color: var(--color-border-light) !important;
@@ -1679,7 +1441,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     font-size: 1rem;
 }
 
-/* Indicatore incoming: pulse per 3 cicli quando appare */
 @keyframes pulse-indicator {
     0%   { opacity: 0.7; }
     50%  { opacity: 1; }
@@ -1721,23 +1482,11 @@ summary:focus:not(:focus-visible) { outline: none; }
     border-radius: 0 2px 2px 0;
 }
 
-/* Chip "Campi di base" (modale crea-tipo): indicatore di selezione non-cromatico.
-   Oltre a colore/grassetto, prepone un segno di spunta quando il campo è scelto,
-   così lo stato è distinguibile anche senza percezione del colore. */
 .custom-type-field:checked + div::before {
-    content: "\2713\00a0"; /* ✓ + spazio unificatore */
+    content: "\2713\00a0";
     font-weight: 700;
 }
 
-/* ==========================================================================
-   Dark theme: remap delle utility neutre (stone/white) DENTRO i modali.
-   Le finestre modali usano molte utility Tailwind hardcoded (text-stone-800,
-   bg-white, bg-stone-100, border-stone-200...) senza varianti dark:, quindi
-   in tema scuro risulterebbero chiare/illeggibili. Qui le rimappiamo alle
-   variabili del tema sfruttando la maggiore specificità (.modal-window .x).
-   Le utility cromatiche semantiche (amber/sky/blue/emerald/red) NON vengono
-   toccate: restano accenti volutamente colorati.
-   ========================================================================== */
 :root.dark-theme .modal-window .text-stone-800,
 :root.blue-dark-theme .modal-window .text-stone-800,
 :root.dark-theme .modal-window .text-stone-700,
@@ -1771,7 +1520,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     border-color: var(--color-border);
 }
 
-/* Stati hover neutri all'interno dei modali */
 :root.dark-theme .modal-window .hover\:bg-stone-50:hover,
 :root.blue-dark-theme .modal-window .hover\:bg-stone-50:hover,
 :root.dark-theme .modal-window .hover\:bg-stone-100:hover,
@@ -1787,9 +1535,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     color: var(--color-text-main);
 }
 
-/* Stessi stati hover FUORI dai modali (sidebar, liste, pannelli). Il remap sopra era
-   limitato a .modal-window: le righe dell'albero in sidebar (hover:bg-stone-100) in tema
-   scuro diventavano un fondo quasi bianco con testo #d4d4d8, circa 1.3:1. */
 :root.dark-theme .hover\:bg-white:hover,
 :root.blue-dark-theme .hover\:bg-white:hover,
 :root.dark-theme .hover\:bg-stone-50:hover,
@@ -1815,8 +1560,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     color: var(--color-text-main) !important;
 }
 
-/* Utility della scala z-index (Fase 5.1): in coda perche devono prevalere su
-   .modal-overlay, che porta il livello base var(--z-modal). */
 .z-sticky { z-index: var(--z-sticky); }
 .z-dropdown { z-index: var(--z-dropdown); }
 .z-modal { z-index: var(--z-modal); }
@@ -1826,22 +1569,12 @@ summary:focus:not(:focus-visible) { outline: none; }
 .z-toast { z-index: var(--z-toast); }
 .z-menu { z-index: var(--z-menu); }
 
-/* ============================================================
-   VISUALIZZATORE IMMAGINI (Fase 1.2) — imageViewer.ts
-   Un solo blocco per i due host (modal #image-modal e pannello della trascrizione):
-   il componente e' identico, quindi lo e' anche il suo stile.
-   Colori scuri fissi e non variabili di tema: entrambi gli host mostrano la carta su
-   fondo scuro in tutti e tre i temi, e una barra che cambia colore col tema, sopra la
-   stessa immagine, sarebbe incoerente.
-   ============================================================ */
 .iv-viewport {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    /* touch-action: senza questo il browser intercetta il drag come scroll/pinch e il
-       pan del pointerdown non riceve piu' i pointermove. */
     touch-action: none;
     outline: none;
 }
@@ -1850,8 +1583,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     outline-offset: -2px;
 }
 .iv-img {
-    /* Il transform e' l'unica cosa che muove l'immagine: la transizione va sul solo
-       filtro e non su transform, o il pan col mouse arriverebbe in ritardo sul cursore. */
     transition: filter 0.15s linear;
     will-change: transform;
     user-select: none;
@@ -1879,26 +1610,19 @@ summary:focus:not(:focus-visible) { outline: none; }
     align-items: center;
     gap: 0.125rem;
     padding: 0.25rem;
-    /* La barra copre il bordo inferiore della carta: a riposo si attenua, al passaggio
-       del mouse (o col fuoco da tastiera dentro il viewport) torna piena. */
     opacity: 0.55;
     transition: opacity 0.2s ease;
 }
 .iv-viewport:hover .iv-barra,
 .iv-viewport:focus-within .iv-barra { opacity: 1; }
-/* Editor stretto (metà di una finestra non massimizzata): le azioni della barra restano
-   solo icona, nome e tooltip vengono da aria-label/title, così la barra non va a capo. */
 #trascrizione-editor-panel { container-type: inline-size; }
 @container (max-width: 860px) {
     #trascrizione-toolbar .btn-secondary > span { display: none; }
 }
-/* In colonna (<1024 px) la larghezza salvata dal divisore non vale: editor pieno, metà
-   altezza, e il divisore, che trascina solo in orizzontale, sparisce. */
 @media (width < 64rem) {
     #trascrizione-editor-panel { width: 100% !important; flex: 1 1 0; }
     #trascrizione-resizer { display: none !important; }
 }
-/* Frecce tra gli allegati: compaiono in hover, ma raggiunte col Tab devono vedersi. */
 #btn-prev-allegato:focus-visible,
 #btn-next-allegato:focus-visible { opacity: 1; }
 
@@ -1968,7 +1692,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     border-radius: 0.25rem;
 }
 .iv-filtri-reset:hover, .iv-filtri-reset:focus-visible { background-color: rgba(255, 255, 255, 0.15); }
-/* P4 — elaborazioni su canvas: sul pannello scuro, come i cursori. */
 .iv-filtro select {
     width: 8.5rem;
     padding: 0.125rem 0.25rem;
@@ -1977,7 +1700,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .iv-filtro select option { color: #1c1917; background-color: #fafaf9; }
-/* Fase 12 — «+N» accanto alla scheda nell'albero: carte appena arrivate dal telefono. */
 .sidebar-dal-telefono {
     margin-left: auto;
     flex-shrink: 0;
@@ -1990,8 +1712,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     border-radius: var(--radius-sm);
 }
 
-/* P6 — regioni della carta. Il velo segue la transform dell'immagine (imageViewer.ts):
-   i bordi si dividono per la scala, così restano di 2 px a qualunque ingrandimento. */
 .iv-regioni {
     position: absolute;
     transform-origin: center center;
@@ -2065,24 +1785,14 @@ summary:focus:not(:focus-visible) { outline: none; }
 .iv-regioni-voce input::placeholder { color: #a8a29e; }
 .iv-regioni-voce input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 0; }
 .iv-regioni-vuoto { color: #d6d3d1; font-style: italic; }
-/* Su hardware lento restano i soli filtri CSS: l'elaborazione per pixel sarebbe troppo pesante. */
 .perf-low .iv-solo-perf-ok { display: none; }
 .iv-viewport[aria-busy="true"] .iv-img { opacity: 0.6; transition: opacity 0.2s; }
 
-/* Il viewport della trascrizione deve riempire il riquadro dell'anteprima, non stringersi
-   sull'immagine: se resta grande quanto la carta, `overflow: hidden` ritaglia la barra dei
-   comandi, che ha un box ma e' invisibile e non cliccabile.
-   La regola sta QUI e non come utility `absolute inset-0` sull'elemento: .iv-viewport
-   dichiara position:relative in style.css, caricato DOPO tailwind.css, e vincerebbe a
-   parita' di specificita' (stessa trappola di `hidden` sui .btn, Fase 1.1). */
 #trasc-img-viewport {
     position: absolute;
     inset: 0;
 }
 
-/* Barra del PDF (pdfViewer.ts): la tendina dei risultati scende SOPRA la pagina disegnata.
-   Regole qui e non utility: `z-20`, `top-full` e le larghezze non sono nel tailwind.css
-   generato, e senza z-index la tendina finiva sotto il viewport, visibile ma non cliccabile. */
 #trasc-pdf-cerca {
     width: 11rem;
 }
@@ -2099,12 +1809,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     background-color: var(--color-bg-hover);
 }
 
-/* ============================================================
-   COMMAND PALETTE E SCORCIATOIE (Fase 1.4) — commandPalette.ts
-   Colori dalle variabili di tema, non `dark:` sparse: la palette è un pannello
-   dell'applicazione come gli altri, e i tre temi devono seguirla senza una seconda
-   tavolozza da tenere allineata a mano.
-   ============================================================ */
 .cp-overlay {
     position: fixed;
     inset: 0;
@@ -2112,12 +1816,8 @@ summary:focus:not(:focus-visible) { outline: none; }
     backdrop-filter: blur(3px);
     display: flex;
     justify-content: center;
-    /* Ancorata in alto e non centrata: l'elenco cresce verso il basso, e una finestra
-       centrata verticalmente si sposterebbe sotto le dita a ogni battuta. */
     align-items: flex-start;
     padding: 10vh 1rem 1rem;
-    /* Sopra i menu contestuali: la palette può essere aperta mentre uno è aperto, e
-       finirebbe altrimenti dietro di esso. */
     z-index: calc(var(--z-menu) + 10);
 }
 .cp-box {
@@ -2138,19 +1838,13 @@ summary:focus:not(:focus-visible) { outline: none; }
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    /* è il contorno del campo di ricerca della palette: token dei campi, non del divisore */
     border-bottom: 1px solid var(--color-border-input);
     flex-shrink: 0;
 }
-/* .cp-input non ha outline: il fuoco si vede come bordo inferiore della riga. */
-/* WCAG 1.4.11 — il contorno è ciò che identifica un campo: --color-border-input (≥3:1).
-   !important perché il remap .border-stone-200/300 → --color-border è !important e molti
-   campi portano anche quelle classi; per lo stesso motivo il fuoco va riaffermato qui. */
 .form-input,
 select.btn {
     border-color: var(--color-border-input) !important;
 }
-/* Il lato sinistro della tendina colore È il colore del tag (4px, .tag-col-*): non si tocca. */
 .tag-color-select {
     border-top-color: var(--color-border-input) !important;
     border-right-color: var(--color-border-input) !important;
@@ -2161,9 +1855,6 @@ select.btn:focus {
     border-color: var(--color-primary) !important;
 }
 
-/* Errore di un campo del form (segnalaErroreCampo): testo + icona sotto il controllo e
-   bordo persistente finché il valore non cambia. --color-danger regge 4.5:1 sul pannello
-   in tutti e quattro i temi. */
 .campo-errore {
     display: flex;
     align-items: center;
@@ -2176,12 +1867,9 @@ select.btn:focus {
 [aria-invalid="true"] {
     border-color: var(--color-danger) !important;
 }
-/* Larghezza animata: barre di avanzamento, pannelli ridimensionabili, sidebar. Sostituisce
-   `transition-all`, che animava anche proprietà di layout mai volute. */
 .transizione-larghezza {
     transition: width 0.3s ease;
 }
-/* Skip link: fuori schermo finché non ha il fuoco, poi in alto a sinistra sopra tutto. */
 .skip-link {
     position: fixed;
     top: 0.5rem;
@@ -2198,13 +1886,9 @@ select.btn:focus {
     transform: none;
 }
 #contenuto-principale:focus {
-    outline: none; /* destinazione del salto, non un controllo */
+    outline: none;
 }
 
-/* WCAG 2.5.8 — bersagli da almeno 24×24px. In style.css e non come utility Tailwind:
-   min-w-6/min-h-6 non esistono nel tailwind.css compilato finché non lo si rigenera, e i
-   pulsanti delle pillole restavano di 12px. Il margine negativo verticale tiene la pillola
-   della stessa altezza: il bersaglio cresce, il disegno no. */
 .custom-field-item .pill-sposta,
 .custom-field-item .pill-config,
 .custom-field-item .pill-rimuovi {
@@ -2216,8 +1900,6 @@ select.btn:focus {
     margin-top: -6px;
     margin-bottom: -6px;
 }
-/* Etichetta che contiene la sua casella: è lei il bersaglio (clic sul testo = clic sulla
-   casella), e con il testo a 14px restava alta 20px. */
 label:has(> input[type="checkbox"]),
 label:has(> input[type="radio"]) {
     min-height: 24px;
@@ -2227,10 +1909,6 @@ label:has(> input[type="radio"]) {
     padding: 0 0.375rem;
 }
 
-/* Titolo della vista: un nome di cartella lungo e senza spazi non deve allargare <main>.
-   Lo <span> è figlio di un <h1> flex, e senza min-width:0 non si restringe mai sotto la
-   lunghezza della parola più lunga: tutta la vista scorreva in orizzontale. Va a capo invece
-   di troncare, così il nome resta leggibile per intero. */
 #titolo-cartella-attuale {
     min-width: 0;
     overflow-wrap: anywhere;
@@ -2239,9 +1917,6 @@ label:has(> input[type="radio"]) {
     flex-shrink: 0;
 }
 
-/* Pannello filtri: è `fixed` e cresce con le ricerche salvate. Senza un tetto la parte
-   bassa (nome e "Salva") finiva sotto il bordo della finestra, irraggiungibile anche da
-   tastiera. Lo scroll interno non lo chiude: _chiudiSuScroll ignora i target interni. */
 #pannello-filtri {
     max-height: calc(100vh - 1rem);
     overflow-y: auto;
@@ -2280,10 +1955,6 @@ label:has(> input[type="radio"]) {
     padding: 0.5rem 1rem;
     cursor: pointer;
 }
-/* Una classe e non :hover: la riga attiva si sposta anche con le frecce, e due
-   evidenziazioni indipendenti (puntatore fermo su una riga, tastiera su un'altra)
-   direbbero all'utente che Invio farà una cosa che non farà. `onmousemove` allinea
-   il puntatore alla selezione, così la classe resta l'unica verità. */
 .cp-voce.cp-attiva {
     background-color: var(--color-primary-light);
     color: var(--color-text-main);
@@ -2314,13 +1985,6 @@ label:has(> input[type="radio"]) {
     white-space: nowrap;
 }
 
-/* --- OCR (Fase 2.3) -------------------------------------------------------- */
-/* Marcatura delle parole a bassa confidenza dentro la bozza di trascrizione.
-   Sottolineatura ondulata e non evidenziazione a blocchi: su una pagina in cui
-   metà delle parole è incerta un fondo colorato renderebbe il testo illeggibile,
-   che è l'opposto di ciò che serve a chi deve rileggerlo. Il colore non è l'unico
-   segnale (c'è anche il tratteggio), così resta distinguibile a chi non percepisce
-   le differenze cromatiche. */
 .ocr-incerto {
     text-decoration: underline wavy var(--color-primary-hover);
     text-underline-offset: 3px;
@@ -2329,8 +1993,6 @@ label:has(> input[type="radio"]) {
     cursor: help;
 }
 
-/* Provenienza e numero di pagina: presenti ma in secondo piano. Restano nel testo
-   salvato, quindi devono leggersi come una nota redazionale, non come trascrizione. */
 .ocr-origine {
     font-size: 0.85em;
     color: var(--color-text-muted, #78716c);
@@ -2348,20 +2010,7 @@ label:has(> input[type="radio"]) {
 }
 
 
-/* =========================================================================
-   Fase 2.2 — Stampa della VISTA corrente (`window.print()`, `stampaVistaCorrente`).
-   Non e' il foglio dei tre layout: quelli sono documenti generati nel main
-   (`src/main/print/printTemplate.ts`) e portano il proprio CSS. Questo serve
-   all'altra strada, la copia di lavoro di cio' che si ha davanti — filtri e
-   ordinamento correnti compresi — e il suo compito e' togliere tutto cio' che
-   e' interfaccia e non contenuto.
-   Senza questo blocco la stampa della finestra usciva con la sidebar, i
-   pulsanti e le ombre dei pannelli: due colonne di comandi inutilizzabili
-   attorno a una lista schiacciata.
-   ========================================================================= */
 @media print {
-    /* Il tema scuro su carta e' inchiostro sprecato e testo illeggibile: la
-       stampa e' SEMPRE chiara, qualunque tema abbia l'applicazione. */
     :root, .dark-theme { color-scheme: light; }
     html, body {
         background: #fff !important;
@@ -2373,9 +2022,6 @@ label:has(> input[type="radio"]) {
         font-size: 10pt;
     }
 
-    /* Interfaccia: fuori. `#context-actions` include "Nuova scheda" e i controlli
-       di vista; i modali e i menu non devono poter finire sulla carta nemmeno se
-       aperti nell'istante in cui parte la stampa. */
     header, .sidebar, #sidebar, #context-actions, .ctx-menu,
     .modal-overlay, #toast-container, #sync-progress-container, .btn, .no-print,
     #update-banner, #tutorial-banner, #pagination-controls, #selection-indicator,
@@ -2392,8 +2038,6 @@ label:has(> input[type="radio"]) {
         padding: 0 !important;
     }
 
-    /* La griglia di card diventa una colonna: due card affiancate su A4 tagliano
-       i campi lunghi, ed e' il contenuto che conta, non la densita'. */
     #manoscritti-grid { display: block !important; }
     .card-scheda {
         break-inside: avoid;
@@ -2407,9 +2051,6 @@ label:has(> input[type="radio"]) {
         padding: 3mm 0 !important;
     }
 
-    /* In vista tabella l'intestazione si ripete a ogni pagina: e' comportamento
-       nativo di `thead`, e senza di esso dalla seconda pagina le colonne non
-       hanno piu' un nome. */
     #manoscritti-table-wrap { overflow: visible !important; }
     .tabella-schede { width: 100% !important; border-collapse: collapse; }
     .tabella-schede thead { display: table-header-group; }
@@ -2419,28 +2060,14 @@ label:has(> input[type="radio"]) {
         padding: 1.5mm 2mm !important;
     }
 
-    /* Trascrizione: il salto di pagina e' ammesso, le righe orfane no. */
     #trascrizione-editor, .trascrizione { orphans: 3; widows: 3; }
 
-    a[href]::after { content: ""; }   /* nessuna URL in coda ai link: qui non ce ne sono di utili */
+    a[href]::after { content: ""; }
 }
 
-/* --- Fase 3.1: configuratore di un campo del tipo documento ------------------
- *
- * Tutto in variabili di tema. La prima versione usava classi Tailwind fisse
- * (`bg-amber-50/60`, `text-stone-800`): sui due temi scuri restava un rettangolo beige con
- * sopra del testo quasi nero, perche' l'override globale di `.bg-amber-50` piu' in alto in
- * questo file non copre la variante con opacita'. Le classi di palette fisse in un'app a
- * quattro temi sono sempre un bug che aspetta il tema giusto per mostrarsi.
- */
 .campo-editor-box {
-    /* Fondo neutro e non `--color-primary-light`: sul tema ambra quel giallo pieno gridava
-     * piu' del contenuto, e un pannello di configurazione non e' un avviso. A dire che il
-     * riquadro appartiene alla pillola sopra basta il filo di accento a sinistra. */
     background-color: var(--color-bg-hover);
     border: 1px solid var(--color-border);
-    /* Il filo di accento a sinistra dice "questo riquadro appartiene alla pillola sopra",
-     * che e' l'unica cosa che il pannello deve comunicare prima del suo contenuto. */
     border-left-width: 3px;
     border-left-color: var(--color-primary);
     color: var(--color-text-main);
@@ -2499,7 +2126,6 @@ label:has(> input[type="radio"]) {
     border-top: 1px solid var(--color-border);
 }
 
-/* Sigla del tipo di dato sulla pillola del campo (Fase 3.1). */
 .pill-tipo {
     font-size: 10px;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -2511,7 +2137,6 @@ label:has(> input[type="radio"]) {
     border: 1px solid var(--color-primary-border);
 }
 
-/* Riscontro dell'interpretazione della data storica (Fase 3.2). */
 .riscontro-data {
     font-size: 0.75rem;
     line-height: 1.3;
@@ -2524,19 +2149,12 @@ label:has(> input[type="radio"]) {
 }
 
 
-/* Campi propri della scheda (Fase 3.7).
- *
- * Il campo va DETTO, non colorato: un fondo pieno su un campo di testo lo farebbe sembrare
- * un avviso o un errore. Basta il filo di accento a sinistra piu' l'etichetta "solo qui",
- * che e' l'unica informazione che manca a chi guarda — questo campo non e' del modello.
- * I colori sono variabili di tema: una classe Tailwind fissa resterebbe chiara sui due
- * temi scuri (lezione della 3.1). */
 .form-group.campo-proprio {
     border-left: 3px solid var(--color-primary);
     padding-left: 0.625rem;
 }
 .campo-proprio-segno {
-    font-size: 0.6875rem; /* 11px: minimo per il testo informativo (audit P2-8) */
+    font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-left: 0.4rem;
@@ -2561,11 +2179,6 @@ label:has(> input[type="radio"]) {
 }
 
 
-/* Riordino dei campi della scheda (Fase 3.8).
- *
- * L'elenco vive DENTRO il form, quindi non deve sembrare un altro form: righe piatte, senza
- * bordi di campo, con la maniglia a sinistra. I colori sono variabili di tema (lezione della
- * 3.1: una classe Tailwind fissa resta chiara sui due temi scuri). */
 .riordino-riga {
     display: flex;
     align-items: center;
@@ -2611,7 +2224,6 @@ label:has(> input[type="radio"]) {
     cursor: default;
 }
 
-/* --- Ricerca tra archivi (crossArchivePanel.ts) --- */
 .altri-archivi-gruppo + .altri-archivi-gruppo {
     margin-top: 1rem;
 }
@@ -2787,11 +2399,6 @@ label:has(> input[type="radio"]) {
     min-width: 0;
 }
 
-/* --- Modale conflitti di sincronizzazione: le due versioni di un campo -------------
-   Lo stato "scelta" sta QUI e non nelle utility: il pulsante porta .btn-secondary, che è
-   fuori da @layer e batteva bg-amber-500/text-white, per cui scelto e non scelto erano
-   identici (audit front-end P1-1). Lo stato è dato anche da aria-pressed e da un'icona di
-   spunta: il colore non è l'unico segnale (1.4.1). */
 .conflitto-opzione {
     background-color: var(--color-bg-panel);
     border: 1px solid var(--color-border-input);
@@ -2814,31 +2421,24 @@ label:has(> input[type="radio"]) {
     border-color: var(--color-primary-hover);
 }
 
-/* --- Modali di sync e storico: stati sui token (audit front-end P1-2, P2-1, P2-6) ---------
-   Al posto di text-amber-700, text-green-700, text-red-500, bg-*-50/NN: fuori dal remap,
-   nei temi scuri davano 1.1–2.1:1. Ogni classe qui legge solo token del tema. */
 .testo-successo { color: var(--color-success); }
 .testo-pericolo { color: var(--color-danger-text); }
 .testo-accento { color: var(--color-primary-hover); }
 
-/* Trascrizione: tab «Testo» / «Scheda» (PIANO-SCHEDA-AFFIANCATA). */
 .trasc-schede { background-color: var(--color-bg-sidebar); border-bottom: 1px solid var(--color-border-light); }
 .trasc-tab { display: inline-flex; align-items: center; gap: 0.375rem; height: 2.5rem; padding: 0 1rem; font-size: 0.875rem; font-weight: 600; color: var(--color-text-muted); background: transparent; border-bottom: 3px solid transparent; cursor: pointer; }
 .trasc-tab:hover { color: var(--color-text-main); background-color: var(--color-bg-hover); }
 .trasc-tab[aria-selected="true"] { color: var(--color-primary-hover); border-bottom-color: var(--color-primary); }
 .trasc-tab:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 
-/* Separatori fra colonne (attivaSeparatore, utils.ts): fuoco visibile e percentuale mentre si trascina. */
 .separatore-colonne { position: relative; touch-action: none; }
 .separatore-colonne:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .separatore-colonne.is-trascina::after { content: attr(data-percento); position: absolute; top: 0.75rem; left: 50%; transform: translateX(-50%); z-index: 20; padding: 0.25rem 0.5rem; white-space: nowrap; pointer-events: none; font: 600 12px system-ui, sans-serif; color: var(--color-bg-panel); background-color: var(--color-text-main); }
 
-/* Documento accanto al modulo della scheda (documentoScheda.ts). Fisso a destra dell'area
-   principale; #view-add gli fa posto con margin-right. Sparisce con la vista. */
 #view-add.con-documento { max-width: none; margin-left: 0; padding-left: 1rem; padding-right: 1rem; }
 #view-add.hidden-tab + .doc-scheda { display: none !important; }
 .doc-scheda { position: fixed; right: 0; z-index: 30; display: flex; background-color: var(--color-bg-panel); border-left: 1px solid var(--color-border-light); }
-.doc-scheda-sep { width: 1.5rem; /* WCAG 2.5.8: bersaglio da 24px */ flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: col-resize; color: var(--color-text-muted); background-color: var(--color-bg-hover); }
+.doc-scheda-sep { width: 1.5rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: col-resize; color: var(--color-text-muted); background-color: var(--color-bg-hover); }
 .doc-scheda-sep:hover, .doc-scheda-sep.is-trascina { background-color: var(--color-primary-light); }
 .doc-scheda-corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .doc-scheda-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.375rem 0.5rem; font-size: 0.8125rem; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border-light); background-color: var(--color-bg-sidebar); }
@@ -2848,7 +2448,6 @@ label:has(> input[type="radio"]) {
 .doc-scheda-vista button[aria-pressed="true"] { color: var(--color-on-primary); background-color: var(--color-primary); border-color: var(--color-primary); }
 .doc-scheda-vista button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; position: relative; }
 .doc-scheda-viewport { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
-/* Finestra staccata (logic/finestraStaccata.ts). `solo-*` sceglie i pulsanti di ciascuna finestra. */
 html.finestra-staccata .solo-principale, html.senza-finestre .solo-principale, html:not(.finestra-staccata) .solo-staccata { display: none !important; }
 html.finestra-staccata-scheda .trasc-intestazione,
 html.finestra-staccata-scheda .trasc-schede [role="tablist"],
@@ -2858,12 +2457,10 @@ html.finestra-staccata-scheda #trascrizione-editor-panel { width: 100% !importan
 html.finestra-staccata-scheda #view-trascrizione { padding: 0.5rem; }
 html.finestra-staccata-documento body #doc-scheda.doc-scheda { display: flex !important; top: 0 !important; left: 0; bottom: 0; width: auto !important; height: auto !important; border-left: 0; }
 html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documento #doc-scheda-chiudi { display: none !important; }
-/* Fase 5 — dove rilasciare la finestra staccata per riagganciarla. */
 .zona-riaggancio { position: fixed; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none; border: 3px dashed var(--color-primary); background-color: var(--color-primary-light); }
 .zona-riaggancio span { padding: 0.5rem 1rem; font: 700 1.25rem Georgia, serif; color: var(--color-primary-hover); background-color: var(--color-bg-panel); }
 .doc-scheda-testo { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1.5rem; font-family: Georgia, serif; color: var(--color-text-main); }
 
-/* Import da ZIP (importZipModal.ts): avanzamento ed esito, tre stati nello stesso modale. */
 .iz-finestra { max-width: 460px; padding: 28px; gap: 20px; color: var(--color-text-main); border: 1px solid var(--color-border-light); }
 .iz-finestra [hidden] { display: none !important; }
 .iz-testa { display: flex; align-items: center; gap: 14px; }
@@ -2913,7 +2510,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     border-color: var(--color-danger-border);
 }
 
-/* Elenco delle schede in conflitto (colonna sinistra). */
 .conflitto-voce {
     background-color: var(--color-bg-panel);
     border: 1px solid var(--color-border);
@@ -2926,7 +2522,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     border-color: var(--color-primary);
 }
 
-/* Un campo in conflitto: contenitore delle due versioni. */
 .conflitto-campo {
     background-color: var(--color-bg-base);
     border: 1px solid var(--color-border);
@@ -2935,8 +2530,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     background-color: var(--color-success-light);
     border-color: var(--color-success-border);
 }
-/* Etichetta "Tua modifica / Modifica cloud" a cavallo del bordo della versione: fondo
-   opaco del pannello, altrimenti il bordo le passa sotto il testo. */
 .conflitto-etichetta {
     background-color: var(--color-bg-panel);
     border: 1px solid var(--color-border-input);
@@ -2946,8 +2539,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     color: var(--color-primary-hover);
 }
 
-/* Modale "schede eliminate sul server": riga e scelta Mantieni/Elimina. La scelta sta qui
-   e non in utility accanto a .btn-secondary, che fuori da @layer le annullerebbe. */
 .eliminazione-riga {
     background-color: var(--color-bg-panel);
     border-bottom: 1px solid var(--color-border-light);
@@ -2972,7 +2563,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     color: var(--color-on-danger);
 }
 
-/* Diff delle revisioni (storico): prima / dopo di un campo. */
 .storico-campo {
     border: 1px solid var(--color-border);
     margin-bottom: 1rem;
@@ -3004,8 +2594,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     white-space: pre-wrap;
     word-break: break-word;
 }
-/* Scelte del welcome (backup personale / hub condiviso): prima fondi #f0f9ff e #ecfdf5 inline,
-   pastello anche nei temi scuri (audit front-end, Fase 5, modo "sfondi" in 7.1). */
 .scelta-backup,
 .scelta-hub {
     border: 1px solid;
@@ -3024,8 +2612,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
 .scelta-backup:hover { border-color: var(--color-info); }
 .scelta-hub:hover { border-color: var(--color-success); }
 
-/* Identità "archivio condiviso" nel modale di condivisione: prima emerald-* cablati, con
-   testo bianco all'80% su emerald-700 a 2.75–4.0:1. */
 .riquadro-successo {
     background-color: var(--color-success-light);
     border: 1px solid var(--color-success-border);
@@ -3039,9 +2625,7 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     background-color: var(--color-info);
     color: var(--color-bg-panel);
 }
-/* Barre di avanzamento (sync, OCR, impostazioni): prima blu/ambra cablati, ora l'accento. */
 .barra-avanzamento { background-color: var(--color-primary); }
-/* Banner di aggiornamento: prima sky-600 con testo bianco a 4.1:1. */
 .banner-info {
     background-color: var(--color-info);
     color: var(--color-bg-panel);
@@ -3058,14 +2642,12 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     color: var(--color-bg-panel);
 }
 
-/* Riquadro del titolo nelle novità di versione: prima blu-50 cablato anche nei temi scuri. */
 .changelog-titolo {
     background-color: var(--color-info-light);
     border: 1px solid var(--color-info-border);
     color: var(--color-info);
 }
 
-/* Righe del pannello storico (audit P2-10): prima utility dark: e ambra trasparenti, valide solo in dark-theme. */
 .storico-intestazione {
     background-color: var(--color-bg-base);
     border-bottom: 1px solid var(--color-border-light);
@@ -3087,7 +2669,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     border: 1px solid var(--color-primary-border);
 }
 
-/* Data della versione nella conferma di ripristino: è il dato su cui si decide. */
 .storico-versione {
     background-color: var(--color-warning-light);
     border: 1px solid var(--color-warning-border);
@@ -3096,10 +2677,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     padding: 0.5rem 0.75rem;
 }
 
-/* ============================================================
-   Pannello Impostazioni (settingsModal.ts)
-   ============================================================ */
-/* Tab: lo stato viene da aria-selected, così aspetto e semantica non possono divergere. */
 .settings-tab-btn {
     color: var(--color-text-secondary);
 }
@@ -3110,7 +2687,6 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
     background-color: var(--color-bg-hover);
     color: var(--color-primary-hover);
 }
-/* Sezioni: filetto fra una e l'altra, non sopra la prima. */
 .sezione-impostazioni + .sezione-impostazioni {
     border-top: 1px solid var(--color-border);
     padding-top: 1.5rem;
@@ -3122,22 +2698,17 @@ html.finestra-staccata-documento #doc-scheda-sep, html.finestra-staccata-documen
 input[aria-invalid="true"] {
     border-color: var(--color-danger) !important;
 }
-/* Era uno style="" inline (bloccato dalla CSP senza 'unsafe-inline' sugli stili). */
 .btn-backup {
     background-color: var(--color-text-main);
     color: var(--color-bg-base);
 }
 
-/* Testo della trascrizione: carattere e dimensione da Impostazioni → Aspetto
-   (applicaPreferenzeTesto mette le due custom property su :root). */
 #trascrizione-editor,
 .anteprima-trascrizione {
     font-family: var(--font-trascrizione, Georgia, 'Segoe UI Historic', serif);
     font-size: var(--dim-trascrizione, 1.125rem);
 }
 
-/* Junicode 2 (Peter S. Baker, SIL OFL 1.1, licenza in fonts/Junicode-OFL.txt): copertura MUFI
-   per abbreviazioni e segni medievali. File variabili: un file copre tutti i pesi. */
 @font-face {
     font-family: 'Junicode';
     src: url('fonts/JunicodeVF-Roman.woff2') format('woff2');

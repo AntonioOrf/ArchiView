@@ -1,40 +1,3 @@
-// Fase 1.5 — Azioni in massa e selezione dell'intero risultato.
-//
-// La barra di selezione offriva esporta/copia/taglia/elimina: tutto ciò che riguarda
-// il CONTENUTO delle schede (cartella, tipo, tag, testo di un campo) si poteva cambiare
-// solo aprendo una scheda per volta. Su una revisione di segnature o su una campagna di
-// ritag di un fondo intero è la differenza fra un minuto e un pomeriggio.
-//
-// Tre strati, separati apposta:
-//  1. funzioni PURE (`regexSostituzione`, `sostituisciTesto`, `contaOccorrenze`,
-//     `aggiungiTagCsv`, `rimuoviTagCsv`, `anteprimaSostituzione`) — nessun DOM, nessun
-//     appData: sono ciò che test/bulkActions.test.js esercita senza avviare Electron;
-//  2. `applicaInMassa`, unico punto che muta i record, salva UNA volta e registra l'undo;
-//  3. il modale, che raccoglie i parametri e non conosce né lo stato né il salvataggio.
-//
-// PERCHÉ NON `Store.updateManoscritto` IN CICLO: quella commit-a ogni chiamata, cioè
-// re-render della sidebar, della griglia e riscrittura dell'intero DB per OGNI record.
-// Su 300 schede selezionate sono 300 render e 300 scritture. Qui si muta l'array in
-// memoria e si chiama `Store.commit()` una volta sola, che è esattamente il contratto
-// del salvataggio coalescente introdotto nella 2.4.2.
-
-// NOMI PRIVATI COL PREFISSO `_b`: gli script del renderer non sono moduli e il bundle di
-// produzione li concatena in UN UNICO scope (scripts/build-renderer-bundle.js). Una
-// `function _select` qui dentro SOSTITUISCE quella di filtersPanel.ts per l'intero
-// bundle — con le firme diverse che hanno, il pannello dei filtri smetteva di agganciare
-// gli onchange e i filtri diventavano inerti, senza un solo errore in console. È il
-// motivo per cui ogni helper di questo file ha un nome che non può collidere.
-
-// --- Funzioni pure ------------------------------------------------------------
-
-/**
- * Espressione della ricerca per trova&sostituisci.
- *
- * `intere` usa i lookaround Unicode e NON `\b`: la sua definizione di "parola" è
- * [A-Za-z0-9_], quindi su testo medievale `più` o `Perùgia` verrebbero spezzati a metà
- * e "notaio" troverebbe anche "notaio-" ma non "d'notaio". Con \p{L}\p{N} il confine è
- * quello linguistico, che è ciò che l'utente intende.
- */
 window.regexSostituzione = function(cerca, opzioni) {
     const o = opzioni || {};
     const ago = String(cerca == null ? '' : cerca);
@@ -46,13 +9,10 @@ window.regexSostituzione = function(cerca, opzioni) {
     return new RegExp(corpo, o.maiuscole ? 'gu' : 'giu');
 };
 
-/** Sostituisce nel solo valore passato. Non tocca record né DOM: è testo dentro, testo fuori. */
 window.sostituisciTesto = function(valore, cerca, sostituisci, opzioni) {
     if (typeof valore !== 'string' || valore === '') return valore;
     const re = window.regexSostituzione(cerca, opzioni);
     if (!re) return valore;
-    // `$&`, `$1`… nella stringa di sostituzione sarebbero interpretati da String.replace:
-    // qui l'utente digita testo, non un modello, e un prezzo come "$5" non deve sparire.
     return valore.replace(re, () => String(sostituisci == null ? '' : sostituisci));
 };
 
@@ -64,11 +24,6 @@ window.contaOccorrenze = function(valore, cerca, opzioni) {
     return trovate ? trovate.length : 0;
 };
 
-/**
- * Conto a secco (dry-run) mostrato sotto i campi del modale: quante schede e quante
- * occorrenze verrebbero toccate. Una sostituzione in massa senza anteprima è una
- * scommessa su un archivio, e l'undo — che pure c'è — si scopre solo dopo il danno.
- */
 window.anteprimaSostituzione = function(records, campo, cerca, opzioni) {
     let schede = 0;
     let occorrenze = 0;
@@ -79,12 +34,6 @@ window.anteprimaSostituzione = function(records, campo, cerca, opzioni) {
     return { schede, occorrenze };
 };
 
-// Fase 3.4 — questi quattro erano l'implementazione dei tag; ora sono la FACCIATA di
-// `shared/model.ts`, che è l'unico posto in cui i tag si spezzano, si confrontano e si
-// riscrivono (main compreso: prima esistevano tre parser diversi). I nomi restano perché
-// sono l'API che il resto del renderer già chiama, e perché `test/bulkActions.test.js` li
-// esercita da qui.
-
 window.dividiTag = function(csv) {
     return window.Model.listaTag(csv);
 };
@@ -93,32 +42,16 @@ window.unisciTag = function(lista) {
     return window.Model.unisciTag(lista);
 };
 
-/**
- * Unione senza duplicati. Il confronto è NORMALIZZATO (accenti, maiuscole, spazi doppi):
- * aggiungere "Pergamena" a una scheda che ha già "pergamena" deve essere un'operazione
- * nulla, non creare due etichette che l'utente vede come una. Il tag esistente vince: è
- * quello già scritto in tutto l'archivio.
- */
 window.aggiungiTagCsv = function(csv, daAggiungere) {
     return window.Model.unisciTag(window.Model.listaTag(csv).concat(window.Model.listaTag(daAggiungere)));
 };
 
-/** Rimozione per corrispondenza ESATTA (normalizzata): togliere `not` non deve togliere `notaio`. */
 window.rimuoviTagCsv = function(csv, daRimuovere) {
     const fuori = new Set(window.Model.listaTag(daRimuovere).map(t => window.Model.chiaveTag(t)));
     if (fuori.size === 0) return window.Model.unisciTag(csv);
     return window.Model.unisciTag(window.Model.listaTag(csv).filter(t => !fuori.has(window.Model.chiaveTag(t))));
 };
 
-// --- Selezione ----------------------------------------------------------------
-
-/**
- * "Seleziona tutti i risultati" e non "tutte le schede a schermo": lo shift-click resta
- * limitato alla pagina corrente (è `selectItem` a leggere le card renderizzate), quindi
- * su un filtro che produce 300 schede in 6 pagine non c'era modo di prenderle tutte.
- * La fonte è `getManoscrittiFiltrati`, cioè ESATTAMENTE l'elenco filtrato e ordinato che
- * l'utente sta guardando: un secondo criterio qui selezionerebbe schede che non vede.
- */
 window.selezionaTuttiIRisultati = function() {
     if (typeof window.getManoscrittiFiltrati !== 'function') return 0;
     const ids = window.getManoscrittiFiltrati().map(m => m.id);
@@ -136,8 +69,6 @@ window.selezionaTuttiIRisultati = function() {
     return ids.length;
 };
 
-// --- Motore delle modifiche in massa ------------------------------------------
-
 function _bRecordSelezionati() {
     const ids = window.selectedRecords || [];
     if (ids.length === 0) return [];
@@ -149,15 +80,6 @@ async function _bSalva() {
     await window.Store.commit();
 }
 
-/**
- * Applica `mutatore(record)` a ogni scheda selezionata. Il mutatore restituisce un patch
- * (oggetto di campi da scrivere) oppure null/undefined per lasciare la scheda intatta:
- * è ciò che permette di NON marcare come modificate schede che la sostituzione non ha
- * toccato — altrimenti un trova&sostituisci senza corrispondenze cambierebbe comunque
- * `lastModified` su tutta la selezione, e il primo sync dopo lo propagherebbe ai colleghi.
- *
- * @returns il numero di schede effettivamente modificate.
- */
 window.applicaInMassa = async function(descrizione, mutatore, messaggio) {
     const records = _bRecordSelezionati();
     if (records.length === 0) return 0;
@@ -170,8 +92,6 @@ window.applicaInMassa = async function(descrizione, mutatore, messaggio) {
         console.error('Impostazioni non leggibili, uso "Anonimo" come autore:', err);
     }
 
-    // Fotografia PRIMA della mutazione: è l'unica cosa che l'undo può ripristinare, e
-    // deve essere una copia profonda (allegati e liste dinamiche sono array condivisi).
     const primaDi = [];
     const adesso = Date.now();
     let toccati = 0;
@@ -209,8 +129,6 @@ window.applicaInMassa = async function(descrizione, mutatore, messaggio) {
     return toccati;
 };
 
-// --- Le quattro azioni --------------------------------------------------------
-
 window.spostaSelezionatiInCartella = function(cartella) {
     const destinazione = cartella || '';
     return window.applicaInMassa(
@@ -229,14 +147,10 @@ window.cambiaTipoSelezionati = function(tipoId) {
     );
 };
 
-/** @param modo 'aggiungi' | 'rimuovi' */
 window.tagSelezionati = function(tags, modo) {
     const lista = window.dividiTag(tags);
     if (lista.length === 0) return Promise.resolve(0);
     const aggiunge = modo !== 'rimuovi';
-    // Fase 3.4: un tag nuovo entra nell'anagrafica anche da qui, o resterebbe senza voce —
-    // e quindi senza colore e senza grafia canonica — finché qualcuno non lo riscrive dal
-    // form. La scrittura su disco la fa `applicaInMassa` subito dopo, in un colpo solo.
     if (aggiunge && typeof window.registraTagUsati === 'function') window.registraTagUsati(lista);
     return window.applicaInMassa(
         aggiunge ? window.t('undo_bulk_tag_add', 'Aggiunta di tag') : window.t('undo_bulk_tag_del', 'Rimozione di tag'),
@@ -263,22 +177,9 @@ window.sostituisciNeiSelezionati = function(campo, cerca, sostituisci, opzioni) 
     );
 };
 
-// --- Campi ammessi dal trova&sostituisci --------------------------------------
-
-/**
- * Campi offerti: `segnatura` e `tags`, che ogni scheda ha, più i campi TESTUALI dei tipi
- * documento presenti NELLA SELEZIONE. Fuori restano le liste dinamiche e gli allegati
- * (non sono stringhe) e — deliberatamente — la trascrizione: è HTML, e una sostituzione
- * cieca su HTML può colpire un nome di tag o un attributo e corrompere il markup. Una
- * ricerca dentro la trascrizione avrà bisogno di un percorso suo (vedi 5.1).
- */
 window.campiSostituibili = function(records) {
     const campi = ['segnatura', 'tags'];
-    // Fase 3.7 — l'unione si fa sui RECORD selezionati: un campo proprio esiste su una
-    // scheda sola, e partendo dai tipi non comparirebbe mai fra i sostituibili.
     for (const m of (records || [])) {
-        // Il ripiego per le schede il cui tipo non esiste (più) è lo stesso della tabella:
-        // senza, quelle schede non avrebbero nessun campo sostituibile.
         const tipo = (appData.tipiDocumento || []).find(t => t.id === (m.tipoDocumento || 'manoscritto'))
             || { campi: ['titolo', 'autore', 'note'] };
         for (const def of window.Model.campiDellaScheda(m, tipo, window.CONFIG_CAMPI, appData)) {
@@ -288,8 +189,6 @@ window.campiSostituibili = function(records) {
     }
     return campi;
 };
-
-// --- Modale -------------------------------------------------------------------
 
 function _bT(k, d) { return window.t(k, d); }
 
@@ -318,7 +217,7 @@ function _bSelect(id, opzioni, valore) {
     for (const o of opzioni) {
         const opt = document.createElement('option');
         opt.value = o.value;
-        opt.textContent = o.label;   // textContent: nomi di cartelle e tipi sono dati utente
+        opt.textContent = o.label;
         if (o.value === valore) opt.selected = true;
         sel.appendChild(opt);
     }
@@ -337,13 +236,6 @@ window.chiudiAzioniMassa = function() {
     if (modal) modal.classList.add('hidden-tab');
 };
 
-/**
- * @param azione 'cartella' | 'tipo' | 'tag' | 'sostituisci'
- *
- * Un solo guscio di modale per le quattro azioni: cambiano il titolo, il corpo e la
- * funzione di conferma. Quattro modali distinti sarebbero quattro copie della stessa
- * intestazione, dello stesso piè di pagina e dello stesso conteggio della selezione.
- */
 window.apriAzioneMassa = function(azione) {
     const records = _bRecordSelezionati();
     if (records.length === 0) {
@@ -360,10 +252,6 @@ window.apriAzioneMassa = function(azione) {
     const conta = modal.querySelector('#bulk-count');
     corpo.innerHTML = '';
 
-    // Il pulsante di conferma è ricreato per clonazione PRIMA di costruire il corpo — è il
-    // modo già usato altrove nel renderer per liberarsi dei listener dell'apertura
-    // precedente — e da qui in poi si usa solo il nodo nuovo: l'anteprima del
-    // trova&sostituisci lo abilita e disabilita, e agire sul nodo staccato non si vedrebbe.
     const vecchioConferma = modal.querySelector('#bulk-confirm');
     const conferma = vecchioConferma.cloneNode(true) as HTMLButtonElement;
     vecchioConferma.parentNode.replaceChild(conferma, vecchioConferma);
@@ -393,9 +281,6 @@ window.apriAzioneMassa = function(azione) {
         }));
         const sel = _bSelect('bulk-tipo', opzioni, records[0].tipoDocumento || 'manoscritto');
         corpo.appendChild(_bRiga(_bT('bulk_label_type', 'Nuovo tipo'), sel));
-        // I campi sono spalmati flat sulla radice del record (vedi 3.0): cambiando tipo
-        // NON si perde nulla, ma i campi estranei al nuovo tipo smettono di comparire nel
-        // form. Dirlo qui evita la telefonata "mi sono sparite le note".
         corpo.appendChild(_bNota(_bT('bulk_type_hint', 'I valori dei campi che il nuovo tipo non prevede restano salvati nella scheda, ma non saranno più visibili nel form finché non si torna al tipo precedente.')));
         esegui = () => window.cambiaTipoSelezionati(sel.value);
 
@@ -415,13 +300,8 @@ window.apriAzioneMassa = function(azione) {
         input.placeholder = _bT('bulk_tag_ph', 'Es. pergamena, notarile');
         corpo.appendChild(_bRiga(_bT('bulk_label_tags', 'Tag'), input));
 
-        // Elenco dei tag già in uso: senza, un ritag in massa è l'occasione perfetta per
-        // introdurre "pergamana" accanto a "pergamena" e spezzare in due un filtro.
         const datalist = document.createElement('datalist');
         datalist.id = 'bulk-tag-list';
-        // Fase 3.4: l'elenco è quello dell'anagrafica, quindi con la grafia canonica e
-        // già deduplicato — prima due schede con "Pergamena" e "pergamena" producevano
-        // due voci identiche a occhio nel menu a tendina.
         for (const voce of window.Model.conteggiTag(appData.manoscritti, appData)) {
             const opt = document.createElement('option');
             opt.value = voce.nome;
@@ -498,7 +378,7 @@ window.apriAzioneMassa = function(azione) {
     }
 
     conferma.onclick = async () => {
-        conferma.disabled = true;   // niente doppio invio su archivi grandi: la commit è async
+        conferma.disabled = true;
         try {
             await esegui();
         } catch (err) {
@@ -511,7 +391,6 @@ window.apriAzioneMassa = function(azione) {
     };
 
     corpo.addEventListener('keydown', (e: KeyboardEvent) => {
-        // Invio conferma, ma non da un select: lì Invio è il modo di chiudere la tendina.
         if (e.key === 'Enter' && ((e.target as HTMLElement).tagName || '').toLowerCase() === 'input') {
             e.preventDefault();
             if (!conferma.disabled) conferma.click();

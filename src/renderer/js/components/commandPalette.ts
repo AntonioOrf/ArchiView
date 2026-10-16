@@ -1,26 +1,3 @@
-// Fase 1.4 — Command palette (Ctrl+K) ed elenco delle scorciatoie.
-//
-// Due lacune distinte, risolte insieme perché condividono la stessa fonte di verità:
-// 1. per raggiungere una scheda, una cartella o un'azione bisognava sapere in quale
-//    angolo dell'interfaccia vive il comando; la palette le espone tutte da un unico
-//    campo di testo, con la stessa ricerca normalizzata della griglia (Fase 0.1);
-// 2. le scorciatoie esistenti erano sei e NON erano documentate da nessuna parte —
-//    né nella guida, né in un tooltip: si scoprivano solo leggendo app.ts.
-//
-// Le voci NON sono una lista fissa: `costruisciComandi` le deriva a ogni apertura dai
-// tipi documento e dalle cartelle esistenti e SCARTA i comandi la cui funzione non è
-// caricata. Una palette che elenca un'azione inesistente è peggio di una che non la
-// elenca: promette e non mantiene.
-//
-// `filtraComandi` è pura e vive qui accanto ai comandi, non in utils.ts: la usa solo
-// questa superficie ed è coperta da test/commandPalette.test.js.
-
-// --- Scorciatoie: unica fonte di verità -------------------------------------
-//
-// Questo elenco è ciò che il pannello "?" mostra. Le combinazioni sono implementate
-// altrove (app.ts per le globali, imageViewer.ts per il visualizzatore): quando se ne
-// aggiunge o cambia una, questa tabella va aggiornata NELLO STESSO intervento, o
-// documenta un'applicazione che non esiste più.
 window.SCORCIATOIE = [
     { gruppo: 'shortcut_group_general', etichetta: 'Generali', voci: [
         { tasti: ['Ctrl', 'K'], chiave: 'shortcut_palette', testo: 'Apri i comandi' },
@@ -40,8 +17,6 @@ window.SCORCIATOIE = [
         { tasti: ['Ctrl', 'D'], chiave: 'shortcut_deselect', testo: 'Azzera la selezione' },
         { tasti: ['clic destro'], chiave: 'shortcut_menu', testo: 'Menu delle azioni sulla scheda o sulla cartella' }
     ]},
-    // Fase 1.5. Tutte inerti dentro un campo di testo e sopra un modale aperto: vedi
-    // `scorciatoiaSuSchede` in app.ts, che è dove sono implementate.
     { gruppo: 'shortcut_group_bulk', etichetta: 'Schede selezionate', voci: [
         { tasti: ['F2'], chiave: 'shortcut_edit', testo: 'Modifica la scheda selezionata' },
         { tasti: ['Ctrl', 'C'], chiave: 'shortcut_copy', testo: 'Copia le schede selezionate' },
@@ -73,22 +48,6 @@ function _T(chiave, fallback) {
     return typeof window.t === 'function' ? window.t(chiave, fallback) : fallback;
 }
 
-// --- Filtro e ordinamento (puro) --------------------------------------------
-
-/**
- * Ordina i comandi per pertinenza rispetto alla query. Il punteggio è a gradini, non
- * una distanza fuzzy: su un elenco di comandi noti l'utente digita l'inizio di ciò che
- * cerca, e un fuzzy match avrebbe soprattutto il potere di mettere in testa la voce
- * sbagliata.
- *
- *   0 = l'etichetta INIZIA con la query               ("imp" → "Impostazioni")
- *   1 = una parola dell'etichetta inizia con la query ("scheda" → "Nuova scheda")
- *   2 = l'etichetta contiene la query
- *   3 = tutti i token compaiono altrove (sottotitolo, gruppo, sinonimi)
- *
- * A parità di punteggio vale l'ordine di registrazione: è ciò che rende prevedibile la
- * palette a query vuota e stabile fra due battute.
- */
 window.filtraComandi = function(voci, query) {
     const q = window.normalizzaTesto(query || '').trim();
     if (!q) return (voci || []).slice();
@@ -100,15 +59,11 @@ window.filtraComandi = function(voci, query) {
 
     (voci || []).forEach((v, i) => {
         const label = window.normalizzaTesto(v.label || '');
-        // `chiavi` sono sinonimi non mostrati: "backup" deve trovare "Esporta cartella"
-        // anche se quella parola nell'etichetta non compare.
         const extra = window.normalizzaTesto(
             [v.sottotitolo || '', v.gruppo || '', (v.chiavi || []).join(' ')].join(' ')
         );
         const tutto = label + ' ' + extra;
 
-        // Tutti i token devono comparire da qualche parte: è la stessa regola AND della
-        // griglia, e senza di essa "nuovo archivio" pescherebbe ogni voce con "nuovo".
         for (const t of tokens) {
             if (!tutto.includes(t)) return;
         }
@@ -125,13 +80,10 @@ window.filtraComandi = function(voci, query) {
     return risultati.map(r => r.voce);
 };
 
-// --- Costruzione dei comandi -------------------------------------------------
-
 function _disponibile(nome) {
     return typeof window[nome] === 'function';
 }
 
-/** Azioni: sempre presenti, indipendenti dalla query. Ordine = frequenza d'uso attesa. */
 function comandiAzione() {
     const voci = [];
     const G = _T('cp_group_actions', 'Azioni');
@@ -154,9 +106,6 @@ function comandiAzione() {
             if (input) { input.focus(); input.select(); }
         }
     });
-    // Una voce sola, non due: proporre "vista a schede" mentre è già attiva è un comando
-    // che non fa nulla, e la palette è esattamente il posto in cui non se ne vedrebbe
-    // l'effetto per capirlo.
     agg(_disponibile('cambiaVistaLista'), (window.vistaLista === 'tabella')
         ? { id: 'vista-griglia', icon: 'layout-grid', label: _T('cp_view_grid', 'Passa alla vista a schede'), chiavi: ['vista', 'griglia'], esegui: () => window.cambiaVistaLista('griglia') }
         : { id: 'vista-tabella', icon: 'rows-3', label: _T('cp_view_table', 'Passa alla vista a tabella'), chiavi: ['vista', 'tabella', 'colonne'], esegui: () => window.cambiaVistaLista('tabella') });
@@ -164,8 +113,6 @@ function comandiAzione() {
         id: 'filtri', icon: 'filter',
         label: _T('tooltip_filters', 'Filtri avanzati e ricerche salvate'),
         chiavi: ['filtro', 'ricerche salvate'],
-        // Il pannello si ancora al pulsante: va aperto DOPO la chiusura della palette,
-        // e infatti `_paletteEsegui` chiude prima di invocare il comando.
         esegui: () => window.apriPannelloFiltri(document.getElementById('btn-filtri'))
     });
     agg(_disponibile('azzeraFiltriRicerca'), {
@@ -174,8 +121,6 @@ function comandiAzione() {
         chiavi: ['reset', 'pulisci'],
         esegui: () => { window.azzeraFiltriRicerca(); if (_disponibile('renderMain')) renderMain(); }
     });
-    // Fase 2.3 — la gestione delle lingue è l'unico comando OCR che ha senso senza contesto:
-    // il riconoscimento vero ha bisogno di una scheda, e vive nel menu della scheda.
     agg(_disponibile('apriGestioneLingueOcr'), {
         id: 'ocr-lingue', icon: 'languages',
         label: _T('ocr_langs_title', 'Lingue del riconoscimento'),
@@ -186,8 +131,6 @@ function comandiAzione() {
         id: 'albero-etichetta', icon: 'text-cursor-input',
         label: _T('tree_label_title', 'Etichetta secondaria delle schede'),
         chiavi: ['albero', 'sidebar', 'dichiarante', 'struttura', 'notaio'],
-        // Il menu si ancora al pulsante dell'header: va aperto col pannello Struttura a
-        // vista, altrimenti si ancorerebbe a un bottone nascosto.
         esegui: () => {
             if (_disponibile('apriSidebarTab')) window.apriSidebarTab('folders');
             window.apriMenuEtichettaAlbero(document.getElementById('btn-albero-secondario'));
@@ -241,9 +184,6 @@ function comandiAzione() {
         chiavi: ['tsv', 'tab', 'tabella'],
         esegui: () => window.esportaCartellaCsv('tsv')
     });
-    // Fase 2.2 — stampa. Tre voci e non una: il layout è la scelta che conta, e passare
-    // dal modale ogni volta per selezionarlo sarebbe due clic in più su un'operazione che
-    // in un ciclo di schedatura si ripete decine di volte.
     agg(_disponibile('apriStampa'), {
         id: 'stampa', icon: 'printer', scorciatoia: 'Ctrl+P',
         label: _T('print_title', 'Stampa e PDF'),
@@ -256,9 +196,6 @@ function comandiAzione() {
         chiavi: ['regesto', 'inventario', 'elenco', 'stampa'],
         esegui: () => { window.impostazioniStampa.layout = 'regesto'; window.apriStampa('cartella'); }
     });
-    // Fasi 2.5/2.6 — export testuali. Tre voci per lo stesso modale: chi cerca "bibtex" o
-    // "word" non sa che quella funzione si chiama "esporta testo", e una palette che
-    // risponde solo al nome esatto del comando è un elenco, non una ricerca.
     agg(_disponibile('apriEsportaTesto'), {
         id: 'esporta-trascrizione', icon: 'file-output',
         label: _T('tx_cmd_transcription', 'Esporta la trascrizione (HTML, Markdown, RTF)'),
@@ -283,7 +220,6 @@ function comandiAzione() {
         chiavi: ['opzioni', 'preferenze', 'lingua'],
         esegui: () => window.apriImpostazioni()
     });
-    // Una voce per tab: "Impostazioni: Aspetto", ... (elenco da settingsModal.ts).
     for (const s of (window.SCHEDE_IMPOSTAZIONI || [])) {
         agg(_disponibile('apriImpostazioni'), {
             id: 'impostazioni-' + s.id, icon: s.icona,
@@ -325,7 +261,6 @@ function comandiAzione() {
     return voci;
 }
 
-/** "Nuova scheda di tipo X": stessa azione del chevron nella barra, ora anche da tastiera. */
 function comandiNuovaScheda() {
     if (!_disponibile('nuovaSchedaDelTipo')) return [];
     const G = _T('menu_new_record_type', 'Nuova scheda di tipo');
@@ -348,19 +283,11 @@ function comandiCartella() {
     return cartelle.slice().sort((a, b) => window.confrontaNaturale(a, b)).map(c => ({
         id: 'cartella-' + c, gruppo: G, icon: 'folder',
         label: c.split('/').pop(),
-        // Il percorso completo distingue due "Notarile" in rami diversi, che con la sola
-        // foglia sarebbero due voci identiche e indistinguibili.
         sottotitolo: c,
         esegui: () => window.vaiACartella(c)
     }));
 }
 
-/**
- * Le schede entrano SOLO con una query: sono migliaia, e costruire migliaia di voci a
- * ogni apertura per poi scartarle è esattamente il lavoro che si sente su hardware
- * lento. Il prefiltro passa per `objectMatchesTokens`, cioè per l'indice già in cache
- * della ricerca (Fase 0.1): nessun secondo indice, nessun secondo comportamento.
- */
 const MAX_SCHEDE_PALETTE = 20;
 function comandiScheda(query) {
     if (!_disponibile('rivelaRecordNellaGriglia') || !_disponibile('objectMatchesTokens')) return [];
@@ -382,13 +309,6 @@ function comandiScheda(query) {
     return voci;
 }
 
-/**
- * Comandi che agiscono sulla SELEZIONE. Sono elencati solo quando una selezione esiste
- * davvero (a parte "seleziona tutti"): la palette non deve offrire un'azione in massa
- * senza massa su cui agire — si aprirebbe un modale capace solo di rispondere
- * "seleziona almeno una scheda", cioè un comando che non fa nulla. È lo stesso
- * criterio con cui la 1.4 elenca un solo comando di cambio vista.
- */
 function comandiSelezione() {
     const voci = [];
     const G = _T('cp_group_selection', 'Selezione');
@@ -454,9 +374,6 @@ function comandiSelezione() {
         chiavi: ['grafo', 'rete', 'collegamenti', 'mappa'],
         esegui: () => window.apriGrafo()
     });
-    // Fase 4 — sicurezza del dato. Il cestino e gli snapshot sono comandi che si cercano
-    // quando è già successo qualcosa: la palette è il posto in cui si cerca per NOME
-    // ("cestino", "recupera") senza sapere in quale menu qualcuno li abbia messi.
     agg(_disponibile('apriCestino'), {
         id: 'cestino', icon: 'trash-2',
         label: _T('trash_title', 'Cestino'),
@@ -540,8 +457,6 @@ window.costruisciComandi = function(query) {
         .concat(comandiNuovaScheda());
 };
 
-// --- Palette -----------------------------------------------------------------
-
 let _palette = null;
 let _paletteOrigineFocus = null;
 let _paletteVoci = [];
@@ -588,8 +503,6 @@ function _paletteEvidenzia() {
 function _paletteEsegui() {
     const voce = _paletteVoci[_paletteIndice];
     if (!voce) return;
-    // Chiudere PRIMA di eseguire: molti comandi aprono un modale o un popover ancorato,
-    // e farlo sotto l'overlay della palette significa aprirlo dietro una tendina.
     window.chiudiCommandPalette(false);
     try {
         voce.esegui();
@@ -610,8 +523,6 @@ function _paletteOnKeyDown(e) {
         case 'Home': e.preventDefault(); _paletteIndice = 0; _paletteEvidenzia(); break;
         case 'End': e.preventDefault(); _paletteIndice = Math.max(0, _paletteVoci.length - 1); _paletteEvidenzia(); break;
         case 'Enter': e.preventDefault(); e.stopPropagation(); _paletteEsegui(); break;
-        // Tab non deve portare il fuoco fuori da un overlay che copre tutto: finirebbe
-        // su comandi invisibili sotto la tendina. Qui scorre l'elenco, come le frecce.
         case 'Tab': e.preventDefault(); _paletteSposta(e.shiftKey ? -1 : 1); break;
     }
 }
@@ -636,9 +547,6 @@ function _paletteRiempi(query) {
     const frammento = document.createDocumentFragment();
     let gruppoCorrente = null;
     _paletteVoci.forEach((v, i) => {
-        // L'intestazione di gruppo compare solo quando il gruppo CAMBIA: dopo il riordino
-        // per pertinenza le voci di uno stesso gruppo non sono più contigue, e una
-        // intestazione per voce sarebbe rumore puro.
         if (v.gruppo && v.gruppo !== gruppoCorrente) {
             gruppoCorrente = v.gruppo;
             const h = document.createElement('div');
@@ -662,7 +570,7 @@ function _paletteRiempi(query) {
         testi.className = 'min-w-0 flex-1';
         const titolo = document.createElement('div');
         titolo.className = 'truncate text-sm';
-        titolo.textContent = v.label;      // textContent: segnature e cartelle sono dati utente
+        titolo.textContent = v.label;
         testi.appendChild(titolo);
         if (v.sottotitolo) {
             const sub = document.createElement('div');
@@ -679,9 +587,6 @@ function _paletteRiempi(query) {
             riga.appendChild(kbd);
         }
 
-        // mousedown e non click: il pointerdown di chiusura sull'overlay arriverebbe
-        // comunque prima del click, e sul comando "esegui" smonterebbe la riga sotto
-        // il puntatore prima che il click possa nascere.
         riga.onmousedown = (e) => { e.preventDefault(); _paletteIndice = i; _paletteEsegui(); };
         riga.onmousemove = () => { if (_paletteIndice !== i) { _paletteIndice = i; _paletteEvidenzia(); } };
         frammento.appendChild(riga);
@@ -692,7 +597,7 @@ function _paletteRiempi(query) {
 }
 
 window.apriCommandPalette = function() {
-    if (_palette) { window.chiudiCommandPalette(true); return; }   // toggle
+    if (_palette) { window.chiudiCommandPalette(true); return; }
     _paletteOrigineFocus = document.activeElement;
 
     const titolo = _T('cp_title', 'Comandi');
@@ -721,9 +626,6 @@ window.apriCommandPalette = function() {
     overlay.addEventListener('mousedown', _paletteOnPointerDown);
 
     const input = overlay.querySelector<HTMLInputElement>('#cp-input');
-    // Il filtro è sincrono e senza debounce: costa quanto una scansione dell'indice già
-    // in cache, e un ritardo su una palette si legge come interfaccia rotta. È il taglio
-    // a 20 schede a tenere il costo costante sugli archivi grandi.
     input.addEventListener('input', () => _paletteRiempi(input.value));
     _paletteRiempi('');
     input.focus();
@@ -731,8 +633,6 @@ window.apriCommandPalette = function() {
     document.addEventListener('keydown', _paletteOnKeyDown, true);
     if (window.lucide) lucide.createIcons({ nodes: [overlay] });
 };
-
-// --- Pannello delle scorciatoie ----------------------------------------------
 
 window.apriScorciatoie = function() {
     const modal = document.getElementById('shortcuts-modal');
@@ -791,12 +691,6 @@ window.chiudiScorciatoie = function() {
     if (modal) modal.classList.add('hidden-tab');
 };
 
-// --- Attivazione --------------------------------------------------------------
-//
-// I due tasti sono agganciati QUI e non fra le scorciatoie di app.ts: quell'handler
-// esce prima del blocco globale quando la vista trascrizione è aperta (`return`), e
-// Ctrl+K deve funzionare anche lì. In capture, così la palette si apre sopra qualunque
-// campo abbia il fuoco.
 function _inCampoTestuale(el) {
     if (!el) return false;
     const tag = (el.tagName || '').toLowerCase();
@@ -804,11 +698,8 @@ function _inCampoTestuale(el) {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (_palette) return;   // i tasti a palette aperta li gestisce _paletteOnKeyDown
+    if (_palette) return;
 
-    // Sopra un modale aperto la palette non si apre: eseguire da lì un comando che apre
-    // un altro modale impilerebbe finestre che l'utente non ha chiesto, e che Esc poi
-    // chiuderebbe a ritroso.
     const modaleAperto = document.querySelector('.modal-overlay:not(.hidden-tab)');
 
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') {
@@ -819,8 +710,6 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    // '?' e non 'Maiusc + /': sulla tastiera italiana il punto interrogativo è Maiusc+'.
-    // Solo fuori dai campi di testo, dove è un carattere da scrivere.
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         if (modaleAperto || _inCampoTestuale(document.activeElement)) return;
         e.preventDefault();

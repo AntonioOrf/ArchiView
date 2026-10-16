@@ -42,8 +42,8 @@
 
     let activeConflicts = [];
     let currentConflictIndex = 0;
-    let resolutions = {}; // id -> resolved card object
-    let resolvedFields = {}; // id -> set of field names resolved
+    let resolutions = {};
+    let resolvedFields = {};
     let onResolvedCallback = null;
 
     window.apriMergeConflictModal = function(conflitti, onResolved) {
@@ -53,11 +53,6 @@
         resolvedFields = {};
         onResolvedCallback = onResolved;
 
-        // Fase 4.4 — si parte dalla scheda GIÀ FUSA campo per campo, non dalla sola versione
-        // locale: i campi che ha toccato solo il collega sono già dentro, e la scelta
-        // dell'utente riguarda unicamente i campi in `campiConflitto`. Partendo dal locale,
-        // risolvere un campo butterebbe via tutto il resto del lavoro altrui.
-        // `fusa` manca solo sul percorso di riserva a timestamp (nessun oggetto di base).
         conflitti.forEach(c => {
             resolutions[c.id] = { ...(c.fusa || c.localCard) };
             resolvedFields[c.id] = new Set();
@@ -72,7 +67,7 @@
     window.annullaSincronizzazioneConflitto = function() {
         document.getElementById('merge-conflict-modal').classList.add('hidden-tab');
         mostraMessaggio(window.t("msg_sincronizzazione_annullat", "Sincronizzazione annullata. Ripristino versione locale."), "warning");
-        if (onResolvedCallback) onResolvedCallback(null); // Segnala l'annullamento
+        if (onResolvedCallback) onResolvedCallback(null);
     };
 
     function renderConflictList() {
@@ -131,9 +126,6 @@
         container.appendChild(headerDiv);
 
         c.campiConflitto.forEach(campo => {
-            // Fase 3.7 — `campiPropri` non è un campo del modello e in CONFIG_CAMPI non c'è:
-            // senza un nome leggibile il conflitto si presenterebbe come "campiPropri", che
-            // non dice niente a chi deve scegliere.
             const conf = CONFIG_CAMPI[campo] ||
                 { label: campo === 'campiPropri' ? window.t('own_field_conflict', 'Campi propri della scheda') : campo };
             const localVal = local[campo];
@@ -148,9 +140,6 @@
             const fieldDiv = document.createElement('div');
             fieldDiv.className = `conflitto-campo p-4 mb-4${isResolved ? ' is-risolto' : ''}`;
 
-            // L'intera scheda (card) è cliccabile col mouse, ma il controllo è solo il pulsante:
-            // una card role="button" con un <button> dentro è un controllo annidato, e lo screen
-            // reader annunciava due pulsanti per la stessa scelta (audit P1-2).
             fieldDiv.innerHTML = window.sanitizeHTML(`
                 <div class="font-bold text-xs uppercase tracking-wider testo-accento mb-3 flex items-center justify-between">
                     <span>${escapeHTML(conf.label || campo)}</span>
@@ -182,8 +171,6 @@
                 </div>
             `);
 
-            // Listener aggiunti dopo sanitizeHTML su tutta la card (solo mouse: da tastiera
-            // si sceglie col pulsante interno)
             fieldDiv.querySelectorAll('[data-resolve-card]').forEach((cardEl: Element) => {
                 const id = cardEl.getAttribute('data-resolve-id');
                 const campo = cardEl.getAttribute('data-resolve-campo');
@@ -194,7 +181,6 @@
                 });
             });
 
-            // Listener anche sui bottoni interni
             fieldDiv.querySelectorAll('button[data-resolve-id]').forEach((btn: Element) => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -221,8 +207,6 @@
         }
 
         if (Array.isArray(valore)) {
-            // Fase 3.7 — le definizioni dei campi propri: si mostra il NOME del campo e il
-            // suo tipo, che è l'unica cosa su cui i due lati possono essere in disaccordo.
             if (campo === 'campiPropri') {
                 return valore.map(d => `• ${escapeHTML(String((d && (d.label || d.id)) || ''))}` +
                     ` <span class="text-stone-400">(${escapeHTML(window.t('field_type_' + (d && d.tipo), (d && d.tipo) || 'text'))})</span>`).join('<br>');
@@ -247,14 +231,12 @@
         const srcCard = scelta === 'local' ? c.localCard : c.externalCard;
         const valScelto = srcCard[campo];
         resolutions[id][campo] = valScelto;
-        // allegatoTipo è derivato da allegati: lo sincronizziamo automaticamente
         if (campo === 'allegati') resolutions[id].allegatoTipo = srcCard.allegatoTipo ?? null;
         resolvedFields[id].add(campo);
 
         renderConflictList();
         renderConflictDetail();
         aggiornaStatoFooter();
-        // Il re-render sostituisce i pulsanti: senza, il fuoco da tastiera cadeva sul body.
         const btn = document.querySelector(`#conflict-detail button[data-resolve-campo="${CSS.escape(String(campo))}"][data-resolve-scelta="${CSS.escape(String(scelta))}"]`) as HTMLElement;
         if (btn) btn.focus();
     };
@@ -285,7 +267,6 @@
         const resolvedCards = [];
         
         activeConflicts.forEach(c => {
-            // Impostiamo il timestamp ad adesso e segnamo che è stato modificato da noi
             const resolvedCard = window.ricomponiTrascrizioneFusa(resolutions[c.id]);
             resolvedCard.lastModified = Date.now();
             resolvedCards.push(resolvedCard);

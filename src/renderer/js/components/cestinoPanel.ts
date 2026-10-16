@@ -1,21 +1,8 @@
-// Fase 4.1 — Il pannello "Cestino".
-//
-// Le mutazioni NON stanno qui: sono in `logic/cestinoLogic.ts`, che a sua volta parla con
-// `main/trash.ts`, dove è scritto perché il cestino non entra nel database. Questo file
-// raccoglie le scelte e ridisegna, come `tagManager.ts` per i tag: stessa divisione in tre
-// strati, e deliberatamente le stesse classi `.tag-manager-list`/`.tag-manager-row`, perché
-// è lo stesso oggetto d'interfaccia — un elenco di voci d'archivio con azioni in riga.
-//
-// PREFISSO `_cp` sugli helper privati: gli script del renderer non sono moduli e il bundle
-// li concatena in UN UNICO scope.
-
 function _cpT(id, fallback) {
     return typeof window.t === 'function' ? window.t(id, fallback) : fallback;
 }
 
-/** Gli id selezionati per l'azione in massa. Sopravvive ai ridisegni della lista. */
 let _cpSelezionati = new Set<string>();
-/** L'ultimo elenco letto dal disco: la lista si ridisegna senza rileggere il file. */
 let _cpVoci = [];
 
 window.apriCestino = async function() {
@@ -58,7 +45,6 @@ function _cpRiga(voce) {
     const col = document.createElement('span');
     col.className = 'tag-manager-name truncate';
     const titolo = document.createElement('span');
-    // textContent: è dato utente, e la segnatura di un manoscritto contiene di tutto.
     titolo.textContent = rec.segnatura || rec.titolo || _cpT('record_untitled', 'scheda senza titolo');
     titolo.translate = false;
     const dove = document.createElement('span');
@@ -96,7 +82,6 @@ function _cpRiga(voce) {
     return riga;
 }
 
-/** La barra in massa compare solo con almeno una voce scelta: sotto non ha significato. */
 function _cpAggiornaBarra() {
     const barra = document.getElementById('cestino-bulk-bar');
     const conteggio = document.getElementById('cestino-bulk-count');
@@ -129,8 +114,6 @@ window.disegnaCestino = async function() {
         return;
     }
 
-    // Gli id selezionati che non ci sono più (ripristinati, scaduti) vanno dimenticati, o
-    // la barra in massa conterebbe fantasmi.
     const vivi = new Set(_cpVoci.map(v => String(v.record.id)));
     for (const k of Array.from(_cpSelezionati)) if (!vivi.has(k)) _cpSelezionati.delete(k);
 
@@ -169,9 +152,6 @@ window.ripristinaVociCestino = async function(ids) {
 };
 
 window.eliminaVociCestino = async function(ids) {
-    // Qui la conferma serve davvero: è l'unico punto dell'applicazione in cui un dato
-    // sparisce senza rete: né undo, né cestino, né snapshot lo riporterebbero indietro
-    // com'era un minuto prima.
     const quante = (ids || []).length;
     const msg = quante > 1
         ? _cpT('trash_confirm_delete_many', 'Eliminare definitivamente {var0} schede? L\'operazione non è annullabile.').replace('{var0}', String(quante))

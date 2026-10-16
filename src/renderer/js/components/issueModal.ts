@@ -1,5 +1,4 @@
 (function() {
-    // Iniezione dinamica dell'HTML della modale all'avvio
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('issue-modal')) {
             const modalHtml = `
@@ -49,12 +48,10 @@
         const modal = document.getElementById('issue-modal');
         if (modal) {
             modal.classList.remove('hidden-tab');
-            // Resetta i campi del form
             document.getElementById('issue-title-input').value = '';
             document.getElementById('issue-type-select').value = 'bug';
             document.getElementById('issue-desc-input').value = '';
             
-            // Applica le traduzioni se ci sono
             if (typeof window.applicaTraduzioniHtml === 'function') {
                 window.applicaTraduzioniHtml();
             }
@@ -115,7 +112,6 @@
                 window.chiudiIssueModal();
             });
         } else {
-            // Fallback
             button.textContent = oldText;
             button.disabled = false;
             window.chiudiIssueModal();

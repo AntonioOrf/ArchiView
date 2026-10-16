@@ -1,20 +1,14 @@
 @import "tailwindcss";
 @source "../";
 
-/* I temi si applicano con una classe su <html> (vedi cambiaTemaSelezionato), non con
-   prefers-color-scheme: senza questa dichiarazione ogni utility dark:* del progetto
-   resta inerte e i temi scuri mostrano i colori chiari. Solo i due temi scuri:
-   .amber-light-theme è chiaro e deve restare fuori. */
 @custom-variant dark (&:where(.dark-theme, .dark-theme *, .blue-dark-theme, .blue-dark-theme *));
 
 .driver-popover-close-btn { display: block !important; }  
 
-/* FIX CURSORE: In alcuni ambienti il cursore scompare sui temi chiari */
 a, button, select, [role="button"], .cursor-pointer {
     cursor: pointer !important;
 }
 
-/* Stili Driver.js personalizzati per ArchiView */
 .driver-popover {
     background-color: var(--color-bg-panel, #fff) !important;
     color: var(--color-text-main, #1c1917) !important;
@@ -85,9 +79,6 @@ a, button, select, [role="button"], .cursor-pointer {
 .driver-popover-progress-text {
     color: var(--color-text-muted, #78716c) !important;
 }
-/* --- Modalità "Prestazioni ridotte" (classe .perf-low su <html>) ---------------
-   Su hardware debole le transizioni globali e le animazioni di comparsa costano
-   repaint continui: qui vengono azzerate, non solo accorciate. */
 html.perf-low *,
 html.perf-low *::before,
 html.perf-low *::after {

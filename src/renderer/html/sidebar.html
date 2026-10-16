@@ -20,8 +20,6 @@
                         <i data-lucide="search" class="w-4 h-4 text-stone-400 shrink-0"></i>
                         <input type="text" id="search-input" data-i18n-placeholder="placeholder_search" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
                     </div>
-                    <!-- Ricerca tra archivi (PIANO-RICERCA-ARCHIVI.md, Fase 2): i risultati
-                         compaiono sotto la griglia, mai dentro. Handler in crossArchivePanel.ts. -->
                     <label class="flex items-center gap-2 mt-2 text-xs text-stone-600 dark:text-stone-300 cursor-pointer select-none">
                         <input type="checkbox" id="search-altri-archivi" class="shrink-0">
                         <span data-i18n="cross_toggle">Cerca anche negli altri archivi</span>
@@ -103,8 +101,6 @@
                     <button data-on-click="apriImpostazioni" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
-                    <!-- Icona coerente con l'azione: apre la CONDIVISIONE, non la sincronizzazione
-                         (la nuvola resta riservata al cloud, in Zona 2). -->
                     <button id="sidebar-cloud-btn" data-on-click="seEsiste" data-args-click="[&quot;apriShareModal&quot;]" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
                         <i data-lucide="users" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
                     </button>
@@ -119,7 +115,6 @@
                     </button>
                 </div>
 
-                <!-- Popover Vault Switcher -->
                 <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white dark:bg-stone-800 rounded-md shadow-2xl border border-stone-200 dark:border-stone-700 p-1.5 z-dropdown flex flex-col max-h-64">
                     <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
                     <div class="w-full h-px bg-stone-200 my-1.5"></div>

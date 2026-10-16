@@ -1,26 +1,13 @@
-// Campi base su cui viene eseguita la ricerca testuale.
-// Non è più la whitelist completa: getSearchFields() vi somma a runtime i campi dei tipi
-// definiti dall'utente, che altrimenti non sarebbero cercabili nella griglia pur comparendo
-// nei suggerimenti (una scheda risultava "non visibile nella vista corrente" proprio quando
-// la si era trovata cercando in un campo custom).
 const SEARCH_FIELDS_BASE = ['segnatura', 'titolo', 'autore', 'datazione', 'supporto', 'incipit', 'explicit', 'note', 'tags', 'trascrizione', 'descrizione', 'provenienza', 'contenuto', 'lingua'];
 
-// --- Cache del testo indicizzato ---------------------------------------------
-// La ricerca scansionava tutti i campi di tutti i record ad ogni keystroke (incluse le
-// trascrizioni, con strip-HTML via regex per record): O(dimensione DB) per battuta.
-// Qui il testo ripulito e in minuscolo è calcolato una volta per record e invalidato
-// a ogni commit dello Store tramite un contatore di generazione.
 const SNIPPET_SKIP_FIELDS = new Set(['id', 'cartella', 'allegati', 'tipoDocumento']);
 let searchCacheGen = 0;
 let searchCache = new WeakMap();
 
-// Chiamata da Store.commit(): i testi cache-ati potrebbero non riflettere più i record.
 window.invalidaCacheRicerca = function() {
     searchCacheGen++;
 };
 
-// Campi indicizzati = base + tutti quelli dichiarati dai tipi documento (inclusi i custom).
-// Ricalcolata solo quando la cache dei testi viene invalidata: i tipi cambiano di rado.
 let searchFieldsCache = null;
 let searchFieldsGen = -1;
 function getSearchFields() {
@@ -29,14 +16,10 @@ function getSearchFields() {
     const tipi = (typeof appData !== 'undefined' && appData.tipiDocumento) || [];
     for (const t of tipi) {
         for (const c of (t.campi || [])) {
-            // I campi sono id stringa; la forma a oggetto è ammessa per compatibilità futura.
             const id = typeof c === 'string' ? c : (c as any)?.id;
             if (id) set.add(id);
         }
     }
-    // Fase 3.7 — anche i campi propri delle schede: un campo che si compila ma non si cerca
-    // non è archiviato, è annotato. La cache si invalida con `searchCacheGen`, che cambia a
-    // ogni scrittura sull'archivio, quindi un campo aggiunto ora è cercabile subito.
     for (const m of (typeof appData !== 'undefined' && appData.manoscritti) || []) {
         for (const d of window.Model.campiPropri(m)) set.add(d.id);
     }
@@ -45,15 +28,12 @@ function getSearchFields() {
     return searchFieldsCache;
 }
 
-// `testoIndicizzabile` vive in logic/utils.ts (Fase 1.3): la usano sia questo indice sia
-// il filtro `campo:valore`, e due copie divergerebbero al primo tipo di campo nuovo.
 const testoIndicizzabile = (v) => window.testoIndicizzabile(v);
 
 function getSearchIndex(m) {
     const cached = searchCache.get(m);
     if (cached && cached.gen === searchCacheGen) return cached;
 
-    // Campi per i suggerimenti: tutti i testuali, con segnatura/titolo in testa.
     const fields = [];
     for (const key of Object.keys(m)) {
         if (SNIPPET_SKIP_FIELDS.has(key)) continue;
@@ -73,23 +53,15 @@ function getSearchIndex(m) {
     const priority = (k) => (k === 'segnatura' ? 0 : k === 'titolo' ? 1 : 2);
     fields.sort((a, b) => priority(a.key) - priority(b.key));
 
-    // Fieno per il filtro della griglia, normalizzato una volta sola per record.
-    // Il markup della trascrizione non è testo: senza togliere i tag, "pagina" trovava ogni PDF
-    // (marcatore `ocr-pagina`) e "strong"/"nbsp" mezzo archivio. Stessa regola di crossArchive/testo.ts.
     let hay = '';
     for (const k of getSearchFields()) {
         const t = testoIndicizzabile(m[k]);
         if (t) hay += t.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ') + '\n';
     }
-    // Testo OCR degli allegati (Fase 2.3). Va aggiunto esplicitamente e non basta metterlo
-    // fra i SEARCH_FIELDS: vive dentro `m.allegati[].ocr.testo`, cioè in un array di oggetti
-    // che `testoIndicizzabile` non sa attraversare. È il passaggio che rende trovabile una
-    // parola scritta dentro una scansione — cioè tutto il punto del riconoscimento.
     if (window.testoOcrRecord) {
         const ocr = window.testoOcrRecord(m);
         if (ocr) hay += ocr + '\n';
     }
-    // P6 — le note delle regioni stanno dentro le carte, come l'OCR.
     if (window.Model) hay += window.Model.testoAnnotazioni(m);
     hay = window.normalizzaTesto(hay);
 
@@ -98,7 +70,6 @@ function getSearchIndex(m) {
     return entry;
 }
 
-/** Il record passa se contiene TUTTI i token, anche sparsi su campi diversi. */
 function objectMatchesTokens(m, tokens) {
     const hay = getSearchIndex(m).hay;
     for (const t of tokens) {
@@ -106,56 +77,26 @@ function objectMatchesTokens(m, tokens) {
     }
     return true;
 }
-// Contratto esplicito verso la command palette (Fase 1.4), che cerca fra le schede con
-// lo stesso predicato e la stessa cache della griglia. Nel bundle concatenato la
-// dichiarazione qui sopra sarebbe già globale, ma appoggiarsi a quello significherebbe
-// far dipendere un altro file da un dettaglio del build, non da un'interfaccia.
 window.objectMatchesTokens = objectMatchesTokens;
 
-// --- Ordinamento -------------------------------------------------------------
-// Fino alla 2.4.5 la lista non era ordinata affatto: l'ordine era quello di inserimento
-// nell'array. L'ordinamento va applicato DENTRO getManoscrittiFiltrati, non in renderMain:
-// rivelaRecordNellaGriglia calcola la pagina di un record con Math.floor(idx / pageSize())
-// sullo stesso elenco, e se i due ordini divergessero salterebbe alla pagina sbagliata.
 window.sortState = window.sortState || { campo: 'segnatura', dir: 'asc' };
 
-// Nota: non esiste una lista fissa di campi ordinabili. I criteri del menu a tendina
-// sono derivati a runtime dai tipi documento presenti nell'elenco (criteriOrdinamento),
-// e in tabella si ordina per qualsiasi colonna visibile. Una whitelist statica proponeva
-// criteri inesistenti fra i record mostrati (es. "Autore" fra le schede fiscali).
-// `createdAt` non esiste nel modello: c'è solo lastModified.
-
-/** La definizione del campo secondo il TIPO di questo record (Fase 3.1). */
 function defCampoDi(m, campo) {
     if (!window.Model) return { id: campo, tipo: 'text' };
     const tipo = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
     return window.Model.definizioneCampo(tipo, campo, CONFIG_CAMPI, appData);
 }
 
-/** Un valore "vuoto" (mancante o solo spazi) tiene il record in coda, in ogni direzione. */
 function valoreMancante(m, campo) {
     if (campo === 'lastModified' || campo === 'allegati') return false;
     const v = m[campo];
     if (v === null || v === undefined || String(v).trim() === '') return true;
-    // Fase 3.2 — una datazione che il parser non riconosce non ha un posto nel tempo, quindi
-    // per un ordinamento cronologico è "vuota" e sta in coda.
-    // ⚠️ Va deciso QUI e non in `confrontaCampo`: il confronto viene moltiplicato per la
-    // direzione, quindi un "resta in fondo" espresso come `return 1` diventa "va in testa"
-    // appena si inverte l'ordine — che è il modo in cui il difetto si è presentato.
     if (window.DataStorica && defCampoDi(m, campo).tipo === 'date') {
         return window.DataStorica.chiaveOrdinamento(v) === null;
     }
     return false;
 }
 
-/**
- * Fase 3.2 — il campo è una data storica per almeno uno dei due record?
- *
- * Si guardano i tipi di ENTRAMBI: in una cartella mista lo stesso nome di campo può essere
- * `date` in un tipo e testo in un altro, e in quel caso l'ordinamento cronologico è quello
- * che l'utente si aspetta — l'alternativa sarebbe ordinare metà elenco per data e metà per
- * alfabeto, che è il peggiore dei due mondi.
- */
 function campoEDataStorica(a, b, campo) {
     if (!window.Model || !window.DataStorica) return false;
     return defCampoDi(a, campo).tipo === 'date' || defCampoDi(b, campo).tipo === 'date';
@@ -165,13 +106,8 @@ function confrontaCampo(a, b, campo) {
     if (campo === 'lastModified') return (a.lastModified || 0) - (b.lastModified || 0);
     if (campo === 'allegati') return normalizzaAllegati(a).length - normalizzaAllegati(b).length;
     if (campoEDataStorica(a, b, campo)) {
-        // Fase 3.2 — "12 maggio 1340" e "3 aprile 1290" in ordine alfabetico finiscono al
-        // contrario: 1 prima di 3. Qui si confrontano gli intervalli interpretati.
         const ka = window.DataStorica.chiaveOrdinamento(a[campo]);
         const kb = window.DataStorica.chiaveOrdinamento(b[campo]);
-        // Le datazioni non riconosciute sono già state spinte in coda da `valoreMancante`,
-        // che agisce prima del segno della direzione: qui restano solo come rete di
-        // sicurezza, e fra due incomprese si torna al confronto naturale, che è stabile.
         if (ka === null && kb === null) return window.confrontaNaturale(a[campo], b[campo]);
         if (ka === null) return 1;
         if (kb === null) return -1;
@@ -180,12 +116,6 @@ function confrontaCampo(a, b, campo) {
     return window.confrontaNaturale(a[campo], b[campo]);
 }
 
-/**
- * Ordina in place (l'array arriva da .filter(), quindi è già una copia).
- * La direzione si applica al solo criterio primario: i record senza valore restano in
- * fondo anche invertendo, e il tie-break sulla segnatura resta ascendente, così l'ordine
- * è deterministico e la paginazione non "balla" fra due render identici.
- */
 function ordinaManoscritti(lista) {
     const campo = (window.sortState && window.sortState.campo) || 'segnatura';
     const segno = (window.sortState && window.sortState.dir === 'desc') ? -1 : 1;
@@ -201,58 +131,37 @@ function ordinaManoscritti(lista) {
     });
 }
 
-/** Imposta il criterio (ri-cliccare lo stesso campo inverte la direzione) e ridisegna. */
 window.impostaOrdinamento = function(campo, dir) {
-    // Qualsiasi campo è ammesso, non solo quelli del menu: le intestazioni della tabella
-    // includono i campi del tipo documento, che sono diversi da archivio ad archivio.
-    // confrontaCampo cade sul confronto naturale per tutto ciò che non è un caso speciale.
     if (typeof campo !== 'string' || !campo) return;
     const stato = window.sortState;
     window.sortState = {
         campo,
         dir: dir || (stato.campo === campo && stato.dir === 'asc' ? 'desc' : 'asc')
     };
-    // La pagina corrente non ha più senso dopo un riordino: si torna alla prima.
     renderMain();
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 };
 
 window.currentPage = 0;
-// In modalità prestazioni ridotte si dimezza la pagina: meno card in DOM per render.
 const PAGE_SIZE_STANDARD = 50;
 const PAGE_SIZE_RIDOTTO = 25;
 function pageSize() {
     return window.modalitaPrestazioniRidotte ? PAGE_SIZE_RIDOTTO : PAGE_SIZE_STANDARD;
 }
 
-// Calcola l'elenco dei manoscritti visibili nella griglia secondo gli stessi
-// criteri di renderMain (cartella + ricerca + tag). Esposto su window così che
-// altri componenti (es. suggerimenti di ricerca) possano localizzare un record.
 window.getManoscrittiFiltrati = function() {
-    // La query è analizzata, non più solo spezzata: i vincoli `campo:valore` non possono
-    // passare per il "fieno" dell'indice, che concatena tutti i campi (vedi analizzaQuery).
     const query = window.analizzaQuery(document.getElementById('search-input').value);
     const tokens = query.testo;
     window.activeTags = window.activeTags || new Set();
     const filtri = window.filtriAvanzati || {};
     const nAvanzati = window.contaFiltriAvanzati(filtri);
 
-    // "Ricerca globale" = il filtro scavalca la cartella selezionata. I filtri avanzati NON
-    // la attivano: "ha allegati" è un restringimento della vista corrente, non un motivo per
-    // saltare all'archivio intero. L'unica eccezione è `sottocartelle`, che è per definizione
-    // un allargamento della cartella e resta gestita in matchCartella.
     const isGlobalSearch = tokens.length > 0 || query.campi.length > 0 || window.activeTags.size > 0;
 
-    // I tag attivi si normalizzano una volta sola, non per ogni record: dentro il filtro
-    // sarebbero N×T normalizzazioni per render, proprio sui vault grandi dove pesa di più.
     const tagsNorm = window.activeTags.size > 0
         ? Array.from(window.activeTags).map(t => window.Model.chiaveTag(t)).filter(Boolean)
         : null;
 
-    // Fase 3.5 — l'indice delle schede collegate nei DUE versi, costruito UNA volta e solo
-    // se il filtro è attivo: il verso entrante non sta nel record, quindi calcolarlo dentro
-    // il predicato vorrebbe dire scorrere l'archivio per ogni scheda — N² sui vault grandi,
-    // proprio dove pesa.
     if (filtri.collegamenti === 'si' || filtri.collegamenti === 'no') {
         const collegati = new Set();
         for (const m of appData.manoscritti) {
@@ -276,10 +185,6 @@ window.getManoscrittiFiltrati = function() {
 
         let matchTag = true;
         if (tagsNorm) {
-            // Fase 3.4 — confronto per CHIAVE, tag per tag. Prima era `includes()` sulla
-            // stringa CSV intera: il tag `not` selezionava anche le schede con `notaio`,
-            // e `sec. XIV` trovava `sec. XIV in.` — cioè il filtro mentiva proprio sui
-            // vocabolari gerarchici, dove i tag condividono per forza il prefisso.
             const chiavi = window.Model.tags(m).map(t => window.Model.chiaveTag(t));
             for (const tag of tagsNorm) {
                 if (chiavi.indexOf(tag) === -1) {
@@ -291,8 +196,6 @@ window.getManoscrittiFiltrati = function() {
 
         if (!(matchCartella && matchSearch && matchTag)) return false;
         if (query.campi.length > 0 && !window.recordPassaCampi(m, query.campi)) return false;
-        // Il predicato avanzato è l'ultimo: è il più costoso (strip HTML della
-        // trascrizione) e va pagato solo sui record già sopravvissuti al resto.
         if (nAvanzati > 0 && !window.recordPassaFiltri(m, filtri)) return false;
         return true;
     });
@@ -300,11 +203,6 @@ window.getManoscrittiFiltrati = function() {
     return ordinaManoscritti(filtrati);
 };
 
-/**
- * "Elimina archivio" è possibile solo su una cartella vuota che non sia la radice.
- * La voce resta comunque ELENCATA quando non lo è, disabilitata e con la spiegazione nel
- * titolo: una voce che sparisce lascia l'utente a chiedersi dove sia finito il comando.
- */
 function statoEliminaCartella() {
     const cartella = window.cartellaAttuale;
     const vuota = !appData.manoscritti.some(m => m.cartella === cartella);
@@ -318,12 +216,6 @@ function statoEliminaCartella() {
     return { abilitato: vuota && !isRadice, motivo };
 }
 
-/**
- * Intestazione della vista lista: breadcrumb del percorso + titolo + chip dei filtri
- * attivi. Serve a rendere VISIBILE lo stato che altrimenti governa la griglia in modo
- * silenzioso: ricerca globale e tag vivono in tab della sidebar che possono essere
- * chiuse, ma continuano a scavalcare la cartella selezionata in getManoscrittiFiltrati.
- */
 function renderIntestazioneVista(isGlobalSearch, search) {
     const titolo = document.getElementById('titolo-cartella-attuale');
     const crumbs = document.getElementById('breadcrumb-cartella');
@@ -335,7 +227,6 @@ function renderIntestazioneVista(isGlobalSearch, search) {
         titolo.textContent = window.t("search_results_title", "Risultati ricerca globale");
         if (icona) icona.setAttribute('data-lucide', 'search');
     } else if (!window.cartellaAttuale) {
-        // Radice virtuale: nessun breadcrumb da mostrare (non ha antenati)
         titolo.textContent = typeof window.etichettaRadice === 'function'
             ? window.etichettaRadice()
             : window.t('folder_root_label', 'Radice');
@@ -345,8 +236,6 @@ function renderIntestazioneVista(isGlobalSearch, search) {
         titolo.textContent = parti[parti.length - 1];
         if (icona) icona.setAttribute('data-lucide', 'folder-open');
 
-        // Breadcrumb cliccabile sugli antenati: due cartelle con lo stesso nome in rami
-        // diversi erano indistinguibili mostrando solo l'ultimo segmento.
         if (crumbs && parti.length > 1) {
             parti.slice(0, -1).forEach((parte, i) => {
                 const percorso = parti.slice(0, i + 1).join('/');
@@ -368,10 +257,6 @@ function renderIntestazioneVista(isGlobalSearch, search) {
     renderFiltriAttivi(search);
 }
 
-/**
- * Traduce i filtri avanzati impostati in descrizioni da chip. Restituisce anche la
- * `chiave` perché il chip sappia quale filtro azzerare quando lo si rimuove.
- */
 function descriviFiltriAvanzati(filtri) {
     const out = [];
     if (!filtri) return out;
@@ -393,9 +278,6 @@ function descriviFiltriAvanzati(filtri) {
     if (filtri.aData) {
         out.push({ chiave: 'aData', icona: 'calendar', testo: T('filter_to', 'Al') + ' ' + filtri.aData });
     }
-    // Fase 3.2 — i due chip del periodo storico portano l'icona della clessidra, diversa dal
-    // calendario della data di modifica: sono due domande diverse e vanno distinguibili a
-    // colpo d'occhio anche quando sono attive insieme.
     if (filtri.daAnno) {
         out.push({ chiave: 'daAnno', icona: 'hourglass', testo: T('filter_year_from', "Dall'anno") + ' ' + filtri.daAnno });
     }
@@ -440,7 +322,6 @@ function descriviFiltriAvanzati(filtri) {
     return out;
 }
 
-/** Chip dei filtri attivi (ricerca + tag + filtri avanzati), ognuno rimovibile in loco. */
 function renderFiltriAttivi(search) {
     const bar = document.getElementById('active-filters');
     if (!bar) return;
@@ -501,9 +382,6 @@ function renderFiltriAttivi(search) {
         });
     });
 
-    // I filtri avanzati vivono dentro un pannello che sta chiuso quasi sempre: senza un
-    // chip per ciascuno, l'unico segnale di un filtro attivo sarebbe una lista più corta
-    // del previsto, cioè nessun segnale.
     avanzati.forEach(f => {
         chip(f.icona, f.testo, window.t('filter_remove_advanced', 'Rimuovi questo filtro'), () => {
             window.applicaFiltriAvanzati({ [f.chiave]: f.chiave === 'sottocartelle' ? false : '' });
@@ -525,10 +403,8 @@ function renderFiltriAttivi(search) {
     if (window.lucide) lucide.createIcons({ nodes: [bar] });
 }
 
-// --- Vista tabella -----------------------------------------------------------
 window.vistaLista = window.vistaLista || 'griglia';
 
-/** Griglia e tabella sono mutuamente esclusive; con zero risultati non si vede nessuna. */
 function mostraContenitoreLista(quale) {
     const grid = document.getElementById('manoscritti-grid');
     const wrap = document.getElementById('manoscritti-table-wrap');
@@ -536,31 +412,15 @@ function mostraContenitoreLista(quale) {
     if (wrap) wrap.classList.toggle('hidden', quale !== 'tabella');
 }
 
-/**
- * Colonne offerte dalla tabella: le fisse più i campi testuali dei tipi presenti
- * NELL'ELENCO CORRENTE. Derivarle dai record e non dall'intero DB evita di mostrare
- * venti colonne vuote quando si sta guardando una cartella di un tipo solo.
- * dynamic_list e attachments restano fuori: non stanno in una cella.
- */
-/**
- * Il tipo di una scheda, o il ripiego storico per le schede il cui tipo non esiste (più):
- * senza, quelle schede non avrebbero NESSUNA colonna e la tabella mostrerebbe solo i campi
- * di servizio — è il caso di un archivio importato o di un modello eliminato.
- */
 function tipoDiScheda(m) {
     return appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'))
         || { campi: ['titolo', 'autore', 'note'] };
 }
-// Esposta per la sidebar (etichetta secondaria dell'albero): il ripiego per le schede
-// senza tipo deve essere UNO, o le due viste mostrerebbero campi diversi della stessa scheda.
 window.tipoDiScheda = tipoDiScheda;
 
 function campiTabellaDisponibili(records) {
     const campi = [];
     const visti = new Set();
-    // Fase 3.7 — l'unione si fa sui RECORD e non sui tipi: un campo proprio esiste su una
-    // scheda sola e non comparirebbe mai partendo dai modelli. I tipi si visitano comunque
-    // una volta sola, perché `campiDellaScheda` parte da lì.
     const tipiVisti = new Set();
     for (const m of records) {
         const tid = m.tipoDocumento || 'manoscritto';
@@ -568,9 +428,6 @@ function campiTabellaDisponibili(records) {
         if (tipiVisti.has(tid) && !propri.length) continue;
         tipiVisti.add(tid);
         const tipo = tipoDiScheda(m);
-        // Fase 3.1: il tipo del campo può venire da `campiDef` e non solo da CONFIG_CAMPI,
-        // quindi lo chiede il modello. Con la vecchia lettura un campo dichiarato
-        // `dynamic_list` dall'utente sarebbe finito in una cella.
         for (const def of window.Model.campiDellaScheda(m, tipo, CONFIG_CAMPI, appData)) {
             if (def.tipo === 'dynamic_list' || def.tipo === 'attachments') continue;
             if (visti.has(def.id)) continue;
@@ -581,7 +438,6 @@ function campiTabellaDisponibili(records) {
     return campi;
 }
 
-/** Chiave di persistenza delle colonne: per tipo, o '_misto' se l'elenco ne mescola più d'uno. */
 function chiaveColonne(records) {
     const tipi = new Set(records.map(m => m.tipoDocumento || 'manoscritto'));
     return tipi.size === 1 ? Array.from(tipi)[0] : '_misto';
@@ -595,17 +451,9 @@ function colonneVisibili(chiave, disponibili) {
         const filtrate = salvate.filter(c => disponibili.includes(c));
         if (filtrate.length > 0) return filtrate;
     }
-    // Default: le prime tre, abbastanza per riconoscere una scheda senza sfondare in larghezza.
     return disponibili.slice(0, 3);
 }
 
-/**
- * Colonne visibili dell'elenco corrente. Esposta per la stampa tabellare (Fase 2.2): ciò
- * che finisce sulla carta sono le colonne che si vedono a schermo, non una seconda
- * configurazione da tenere allineata alla prima.
- * ⚠️ Legge `__ultimiPaginati`, cioè la PAGINA corrente: le colonne dipendono dai tipi
- * presenti, e su un elenco misto la pagina è il campione che l'utente ha davanti.
- */
 window.colonneTabellaCorrenti = function() {
     const paginati = window.__ultimiPaginati || [];
     const disponibili = campiTabellaDisponibili(paginati);
@@ -618,7 +466,6 @@ window.toggleColonnaTabella = function(campo) {
     const disponibili = campiTabellaDisponibili(paginati);
     const chiave = chiaveColonne(paginati) as string;
     const attuali = colonneVisibili(chiave, disponibili);
-    // Le colonne restano nell'ordine di `disponibili`: attivarne una non la manda in fondo.
     const nuove = attuali.includes(campo)
         ? attuali.filter(c => c !== campo)
         : disponibili.filter(c => attuali.includes(c) || c === campo);
@@ -627,11 +474,6 @@ window.toggleColonnaTabella = function(campo) {
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 };
 
-/**
- * Voci del selettore colonne. Sono un sottomenu del "⋯" (Fase 2 di MENU_GROUPING_TODO):
- * prima erano un secondo menu che il primo doveva riaprire riancorandosi a mano al
- * pulsante, perché il menu si chiude prima di eseguire l'azione della voce.
- */
 window.vociColonneTabella = function() {
     const paginati = window.__ultimiPaginati || [];
     const disponibili = campiTabellaDisponibili(paginati);
@@ -644,8 +486,6 @@ window.vociColonneTabella = function() {
         return {
             label: etichettaCampo(campo),
             icon: attiva ? 'check' : 'minus',
-            // Restare con una sola colonna è legittimo; a zero la tabella perderebbe senso,
-            // quindi l'ultima attiva non è disattivabile.
             disabled: attiva && visibili.length === 1,
             onSelect: () => window.toggleColonnaTabella(campo)
         };
@@ -657,17 +497,13 @@ function etichettaCampo(campo) {
     const tradotta = window.t('field_' + campo);
     return tradotta !== 'field_' + campo ? tradotta : (conf.label || campo);
 }
-// Riusata dall'export CSV (Fase 2.1): le intestazioni delle colonne sono le stesse
-// etichette della vista tabella.
 window.etichettaCampo = etichettaCampo;
 
-/** Freccia sull'header della colonna che governa l'ordinamento corrente. */
 function indicatoreOrdinamento(campo) {
     if (!window.sortState || window.sortState.campo !== campo) return '';
     return window.sortState.dir === 'asc' ? ' ▲' : ' ▼';
 }
 
-/** Sì/No leggibili: `true`/`false` in una cella sono gergo, non un dato consultabile. */
 window.testoBooleano = function(v) {
     return v ? window.t('value_yes', 'Sì') : window.t('value_no', 'No');
 };
@@ -676,16 +512,10 @@ function cellaTestuale(m, campo) {
     const v = m[campo];
     if (v === null || v === undefined) return '';
     if (Array.isArray(v)) return '';
-    // Fase 3.1 — i valori tipizzati arrivano fin qui come booleani e numeri veri.
     if (typeof v === 'boolean') return window.testoBooleano(v);
     return String(v).replace(/<[^>]*>/g, '');
 }
 
-/**
- * Render della tabella. Stesse convenzioni della griglia: HTML costruito a stringa con
- * escapeHTML() su ogni valore (non DOMPurify: m.trascrizione contiene HTML vero e la
- * griglia fa già così), handler assegnati per riga, nessuna delega.
- */
 function renderTabellaSchede(paginated) {
     const table = document.getElementById('manoscritti-table');
     if (!table) return;
@@ -697,8 +527,6 @@ function renderTabellaSchede(paginated) {
     const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
 
     const thSegnatura = `<th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;segnatura&quot;]">${escapeHTML(window.t('field_segnatura', 'Segnatura'))}${indicatoreOrdinamento('segnatura')}</th>`;
-    // Ogni colonna è ordinabile: in tabella l'intestazione È il comando di ordinamento
-    // (il menu a tendina resta solo nella vista a schede, dove non c'è nulla da cliccare).
     const thCampi = visibili.map(c =>
         `<th class="ordinabile" ${window.azione('click', 'impostaOrdinamento', String((c) ?? ''))}>${escapeHTML(etichettaCampo(c))}${indicatoreOrdinamento(c)}</th>`
     ).join('');
@@ -722,7 +550,6 @@ function renderTabellaSchede(paginated) {
     for (const m of paginated) {
         const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
         const tr = document.createElement('tr');
-        // .card-scheda + id="card-<id>": contratto condiviso con la griglia (vedi style.css).
         tr.className = 'card-scheda' + (isSelected ? ' riga-selezionata' : '');
         tr.id = 'card-' + m.id;
 
@@ -769,7 +596,6 @@ function renderTabellaSchede(paginated) {
     if (window.lucide) lucide.createIcons({ nodes: [table] });
 }
 
-/** Cambia vista: cambia solo come si guarda l'elenco, non quale elenco. */
 window.cambiaVistaLista = function(vista) {
     const nuova = vista || (window.vistaLista === 'tabella' ? 'griglia' : 'tabella');
     if (nuova === window.vistaLista) return;
@@ -778,19 +604,11 @@ window.cambiaVistaLista = function(vista) {
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 };
 
-/**
- * Menu del chevron su "Nuova scheda": apre il form già impostato sul tipo scelto.
- * Il tipo si poteva scegliere solo dentro il form, dopo averlo aperto; per chi scheda
- * in serie documenti di un tipo diverso dal primo della lista era un passaggio a vuoto
- * ripetuto a ogni scheda.
- */
 window.nuovaSchedaDelTipo = function(tipoId) {
     switchTab('add');
     const select = document.getElementById('form-tipo-documento');
     if (select && tipoId) {
         select.value = tipoId;
-        // I campi del form dipendono dal tipo: senza questo il form resterebbe
-        // quello del tipo precedente pur mostrando il nuovo nel select.
         if (typeof renderDynamicFields === 'function') renderDynamicFields();
     }
 };
@@ -805,17 +623,10 @@ window.apriMenuNuovaScheda = function(ancora) {
     window.apriMenuContestuale(ancora || document.getElementById('btn-nuova-scheda-tipo'), voci);
 };
 
-/**
- * Voci del "⋯" della barra: le azioni di contesto che si usano di rado. Sono valutate
- * al click (creaBottoneOverflow) così "Colonne visibili" compare solo in tabella.
- */
 function vociMenuContesto() {
     const elimina = statoEliminaCartella();
     const voci: any[] = [
         { label: window.t('btn_new_folder', 'Nuova cartella'), icon: 'folder-plus', onSelect: () => aggiungiCartella() },
-        // Fase 2.4: l'import CSV sta con l'import ZIP e non fra gli export, perché è la
-        // stessa domanda — far entrare dati — con una provenienza diversa: il foglio di
-        // calcolo di chi ha già anni di schedatura invece di un backup dell'app.
         {
             label: window.t('menu_import_group', 'Importa'),
             title: window.t('menu_import_group_title', 'Backup ZIP o foglio di calcolo'),
@@ -823,15 +634,9 @@ function vociMenuContesto() {
             submenu: [
                 { label: window.t('menu_import_zip', 'Backup ZIP'), title: window.t('btn_import_zip_full', 'Importa un backup ZIP di ArchiView'), icon: 'download', onSelect: () => importaManoscritto() },
                 { label: window.t('imp_menu', 'Importa CSV'), title: window.t('imp_title', 'Importa da CSV'), icon: 'file-input', onSelect: () => window.apriImportCsv() },
-                // Terza provenienza, stessa domanda: il manoscritto e' gia' digitalizzato
-                // dalla biblioteca e pubblicato come manifest IIIF.
                 { label: window.t('iiif_menu', 'Importa da IIIF'), title: window.t('iiif_title', 'Importa un manoscritto da un manifest IIIF'), icon: 'library', onSelect: () => window.apriImportIiif() }
             ]
         },
-        // Fasi 2.1/2.2/2.5/2.6 — ZIP, CSV, TSV, testo e stampa rispondono tutti alla stessa
-        // domanda (portare fuori il lavoro) cambiando solo destinazione: backup riapribile
-        // in ArchiView, foglio di calcolo, editor di testo o Zotero, carta. Cinque voci di
-        // primo livello per una domanda sola erano metà del menu.
         {
             label: window.t('menu_export_group', 'Esporta'),
             title: window.t('menu_export_group_title_folder', 'ZIP, CSV, TSV, testo, stampa'),
@@ -845,10 +650,6 @@ function vociMenuContesto() {
             ]
         },
         { separator: true },
-        // Fase 1.4: la palette e l'elenco dei tasti non si scoprirebbero altrimenti — una
-        // scorciatoia non documentata è una scorciatoia che non esiste. Restano al primo
-        // livello: sono il rimedio a un menu che non si trova, e seppellirle in un gruppo
-        // le renderebbe introvabili esattamente quanto ciò che servono a rimediare.
         {
             label: window.t('cp_title', 'Comandi'),
             icon: 'terminal',
@@ -862,16 +663,11 @@ function vociMenuContesto() {
             onSelect: () => window.apriScorciatoie()
         },
         { separator: true },
-        // Fase 4.1 — il cestino sta ACCANTO all'eliminazione dell'archivio, non fra gli
-        // export: è la contropartita del gesto distruttivo che lo segue, e trovarlo lì è
-        // ciò che rende quel gesto meno definitivo di quanto sembri.
         {
             label: window.t('trash_title', 'Cestino'),
             icon: 'trash-2',
             onSelect: () => window.apriCestino()
         },
-        // Azione distruttiva, quindi in fondo e staccata: nel menu non c'è la distanza
-        // fisica che la separava dagli altri pulsanti nella barra.
         {
             label: window.t('btn_delete_folder', 'Elimina questa cartella'),
             icon: 'trash',
@@ -882,9 +678,6 @@ function vociMenuContesto() {
         }
     ];
     if (window.vistaLista === 'tabella') {
-        // Sottomenu vero: niente più riaggancio manuale del secondo menu al pulsante "⋯".
-        // Prima del separatore finale, cioè sopra cestino ed eliminazione: è una
-        // preferenza di vista, non va mescolata alle azioni distruttive in fondo.
         voci.splice(voci.length - 3, 0, {
             label: window.t('menu_columns', 'Colonne visibili'),
             icon: 'columns-3',
@@ -899,15 +692,6 @@ window.invertiDirezioneOrdinamento = function() {
     window.impostaOrdinamento(stato.campo, stato.dir === 'asc' ? 'desc' : 'asc');
 };
 
-/** Allinea i controlli (select, direzione, toggle vista) allo stato corrente. */
-/**
- * Criteri offerti dal menu a tendina: i due universali (segnatura, data di modifica),
- * più i campi dei tipi documento PRESENTI NELL'ELENCO CORRENTE, più il numero di allegati.
- *
- * Derivarli dai record e non da una lista fissa evita di proporre criteri che qui non
- * esistono — "Autore" fra schede fiscali, che non hanno quel campo: sceglierlo ordinava
- * tutto per un valore vuoto, cioè non ordinava affatto.
- */
 function criteriOrdinamento(records) {
     const criteri = ['segnatura'];
     for (const c of campiTabellaDisponibili(records || [])) {
@@ -920,12 +704,8 @@ function criteriOrdinamento(records) {
 function aggiornaControlliLista(records) {
     const tabellaAttiva = window.vistaLista === 'tabella';
 
-    // L'indicatore della selezione vive fuori dalla griglia: risincronizzarlo qui evita
-    // che resti indietro dopo un render che ha cambiato i record selezionati.
     if (typeof window.aggiornaStatoSelezione === 'function') window.aggiornaStatoSelezione();
 
-    // In tabella l'ordinamento si comanda dall'intestazione della colonna: select e
-    // freccia sparirebbero come doppioni. Nella vista a schede restano l'unico modo.
     const controlliOrdinamento = document.getElementById('controlli-ordinamento');
     if (controlliOrdinamento) controlliOrdinamento.classList.toggle('hidden-tab', tabellaAttiva);
 
@@ -938,13 +718,8 @@ function aggiornaControlliLista(records) {
         };
         const campoAttivo = window.sortState.campo;
         const criteri = criteriOrdinamento(records);
-        // L'ordinamento in vigore resta comunque elencato, anche se il criterio non
-        // appartiene ai tipi presenti (ci si arriva da un'intestazione di tabella o
-        // cambiando cartella): il select deve dire il vero, non mostrarsi vuoto.
         if (!criteri.includes(campoAttivo)) criteri.push(campoAttivo);
 
-        // Si ricostruisce solo quando l'insieme dei criteri cambia davvero: rifare le
-        // option a ogni render chiuderebbe il dropdown mentre l'utente lo sta usando.
         const firma = criteri.join('|');
         if (select.dataset.firmaCriteri !== firma) {
             select.innerHTML = criteri
@@ -966,8 +741,6 @@ function aggiornaControlliLista(records) {
         btnDir.setAttribute('aria-label', label);
     }
 
-    // Segmento vista: `aria-pressed` dice quale è attiva anche a chi non vede il colore,
-    // ed è ciò che i test interrogano invece di ispezionare le classi.
     const segmenti = [
         { el: document.getElementById('btn-vista-tabella'), attivo: tabellaAttiva },
         { el: document.getElementById('btn-vista-griglia'), attivo: !tabellaAttiva }
@@ -978,8 +751,6 @@ function aggiornaControlliLista(records) {
         s.el.classList.toggle('segmento-attivo', s.attivo);
     }
 
-    // Badge del pulsante Filtri: quanti filtri avanzati sono attivi. È l'unico segnale
-    // permanente, perché il pannello sta chiuso e i chip scorrono via con la lista.
     const btnFiltri = document.getElementById('btn-filtri');
     if (btnFiltri) {
         const n = window.contaFiltriAvanzati(window.filtriAvanzati);
@@ -996,8 +767,6 @@ function aggiornaControlliLista(records) {
         btnFiltri.setAttribute('aria-label', etichetta);
     }
 
-    // Il "⋯" si costruisce una volta sola: le voci sono valutate al click, quindi il menu
-    // resta aggiornato senza ricreare il pulsante a ogni render (che perderebbe il focus).
     const slot = document.getElementById('context-overflow-slot');
     if (slot && !slot.firstChild && typeof window.creaBottoneOverflow === 'function') {
         slot.appendChild(window.creaBottoneOverflow(vociMenuContesto, {
@@ -1010,7 +779,6 @@ function aggiornaControlliLista(records) {
     if (barra && window.lucide) lucide.createIcons({ nodes: [barra] });
 }
 
-/** Una card della griglia: intestazione, campi valorizzati, tag, carte, azioni, menu "⋯". */
 function creaCardScheda(m) {
     const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
     const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
@@ -1027,7 +795,6 @@ function creaCardScheda(m) {
 
 
 
-    // Logica Drag and Drop
     div.draggable = true;
     div.ondragstart = (e) => {
         e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'manoscritto', id: m.id }));
@@ -1036,7 +803,6 @@ function creaCardScheda(m) {
     };
     div.ondragend = () => div.classList.remove('opacity-50');
     
-    // Context menu per Copia/Incolla
     div.oncontextmenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1063,7 +829,6 @@ function creaCardScheda(m) {
         const textAllegati = allegatiRender.length === 1
             ? window.t('attachment_count_one', '1 documento allegato')
             : window.t('attachment_count_many', '{var0} documenti allegati').replace('{var0}', String(allegatiRender.length));
-        // P2 — quante carte sono fatte, solo se se ne sta segnando lo stato.
         const av = window.avanzamentoCarte(m);
         const avTesto = av ? window.t('sheet_progress', '{var0} di {var1} carte trascritte').replace('{var0}', String(av.fatte)).replace('{var1}', String(av.totale)) : '';
         const avHTML = av ? `<progress class="card-avanzamento" max="${Number(av.totale)}" value="${Number(av.fatte)}" aria-label="${escapeHTML(avTesto)}" title="${escapeHTML(avTesto)}"></progress><span class="tabular-nums" aria-hidden="true">${Number(av.fatte)}/${Number(av.totale)}</span>` : '';
@@ -1073,9 +838,6 @@ function creaCardScheda(m) {
         allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
     }
 
-    // Fase 3.5 — il numero dei collegamenti, nei DUE versi. Senza, per sapere se una
-    // scheda è collegata bisognerebbe aprirla, e i rimandi in entrata non si
-    // vedrebbero da nessuna parte: il verso entrante non è scritto nel record.
     let collegamentiHTML = '';
     if (typeof window.relazioniRisolte === 'function') {
         const r = window.relazioniRisolte(m.id);
@@ -1094,13 +856,9 @@ function creaCardScheda(m) {
 
     let infoHTML = '';
     const tipoDoc = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
-    // Fase 3.7 — dalla SCHEDA, non dal tipo: un campo proprio valorizzato che non
-    // comparisse qui sarebbe un dato scritto e mai più riletto.
     const definizioniScheda = window.Model.campiDellaScheda(m, tipoDiScheda(m), CONFIG_CAMPI, appData);
     definizioniScheda.forEach(defCampo => {
         const campo = defCampo.id;
-        // Un `sì/no` valorizzato `no` è un dato, non un campo vuoto: senza questa
-        // riga la scheda direbbe "no" solo tacendo, cioè non lo direbbe affatto.
         const valorizzato = defCampo.tipo === 'boolean' ? typeof m[campo] === 'boolean' : !!m[campo];
         if (valorizzato) {
             let conf = CONFIG_CAMPI[campo] || { type: 'text' };
@@ -1121,9 +879,6 @@ function creaCardScheda(m) {
                 if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
                 else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <i>${escapeHTML(m.titolo)}</i></p>`;
                 else if (defCampo.tipo === 'boolean') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(window.testoBooleano(m[campo]))}</p>`;
-                // Un indirizzo web si apre nel browser di sistema, mai dentro
-                // l'applicazione: una pagina remota dentro la finestra dell'app
-                // sarebbe codice di terzi nello stesso processo delle schede.
                 else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" ${window.azione('click', 'linkEsterno', String((m[campo]) ?? ''))} class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
                 else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
             }
@@ -1132,7 +887,7 @@ function creaCardScheda(m) {
 
     let authorBadgeHTML = '';
     if (m.creatoDa || m.modificatoDa) {
-        const autore = m.modificatoDa || m.creatoDa; // Mostriamo chi ha fatto l'ultima azione
+        const autore = m.modificatoDa || m.creatoDa;
         const titoloMeta = m.modificatoDa && m.creatoDa && m.modificatoDa !== m.creatoDa 
             ? `Creato da ${escapeHTML(m.creatoDa)} - Modificato da ${escapeHTML(m.modificatoDa)}` 
             : `Autore: ${escapeHTML(autore)}`;
@@ -1151,7 +906,6 @@ function creaCardScheda(m) {
         dateHTML = `<div class="text-[11px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
     }
 
-    // Checkbox di selezione (visibile quando c'è almeno un record selezionato)
     const checkboxHTML = hasSelection ? `
         <div class="absolute top-2 left-2 z-10" ${window.azione('click', 'fermaEChiama', "selectItem", String((m.id) ?? ''), window.ARG.evento)}>
             <div class="flex items-center justify-center w-5 h-5 rounded border-2 shadow-sm cursor-pointer transition-colors duration-150
@@ -1185,17 +939,12 @@ function creaCardScheda(m) {
         </div>
     `;
 
-    // Fase 4.2 — Esporta ed Elimina non stanno più come icone sempre visibili in
-    // fondo alla card (competevano con Modifica/Trascrivi, le azioni vere): sono
-    // nel "⋯", che è lo stesso menu del tasto destro.
     const slot = div.querySelector('.card-overflow-slot');
     if (slot && typeof window.creaBottoneOverflow === 'function') {
         slot.appendChild(window.creaBottoneOverflow(
             () => window.vociMenuRecord(m.id),
             {
                 className: 'btn btn-ghost btn-icon card-overflow-btn',
-                // Selezionare la scheda ri-disegna la griglia: recuperiamo il
-                // pulsante ricreato per ancorarci il menu.
                 preparaApertura: () => {
                     window.assicuraSelezioneRecord(m.id);
                     const card = document.getElementById('card-' + m.id);
@@ -1207,7 +956,6 @@ function creaCardScheda(m) {
     return div;
 }
 
-// renderMain è sincrona: non usa await, non deve essere async
 function renderMain(resetPage = true) {
     if (resetPage) window.currentPage = 0;
 
@@ -1218,13 +966,10 @@ function renderMain(resetPage = true) {
     const isGlobalSearch = search !== '' || window.activeTags.size > 0;
 
     renderIntestazioneVista(isGlobalSearch, search);
-    // Ricerca tra archivi: decide da sé se serve una richiesta (interruttore, testo, query già fatta).
     if (typeof window.aggiornaRicercaAltriArchivi === 'function') window.aggiornaRicercaAltriArchivi();
 
-    // Filtro per Cartella (se non globale) E per Ricerca Profonda E per (Multi) Tag
     const filtered = window.getManoscrittiFiltrati();
 
-    // Etichetta diversa quando si naviga una cartella (non si sta cercando)
     const counterKey = isGlobalSearch ? 'counter_documents_found' : 'counter_documents';
     const counterFallback = isGlobalSearch ? 'Documenti trovati: {var0}' : 'Documenti: {var0}';
     document.getElementById('counter-results').textContent = window.t(counterKey, counterFallback).replace('{var0}', String(filtered.length));
@@ -1232,11 +977,6 @@ function renderMain(resetPage = true) {
 
     const paginationControls = document.getElementById('pagination-controls');
 
-    // Zona 3: "Elimina archivio" ha posizione fissa nella barra azioni e cambia solo
-    // stato (prima appariva/spariva dentro l'empty state, quindi si spostava da sola).
-
-    // I criteri di ordinamento dipendono dai tipi presenti fra i risultati: vanno
-    // ricalcolati dopo il filtro, non prima.
     aggiornaControlliLista(filtered);
 
     if (filtered.length === 0) {
@@ -1247,10 +987,6 @@ function renderMain(resetPage = true) {
         }
         document.getElementById('empty-state').classList.remove('hidden');
 
-        // Messaggio coerente con il motivo reale dello zero risultati: con ricerca, tag o
-        // filtri avanzati attivi la cartella può essere piena, e "La cartella è vuota" è
-        // fuorviante. I filtri avanzati non rendono la ricerca globale (restringono la
-        // cartella corrente), quindi vanno contati a parte.
         const emptyText = document.getElementById('empty-state-text');
         if (emptyText) {
             const filtriAttivi = window.contaFiltriAvanzati(window.filtriAvanzati || {}) > 0;
@@ -1268,7 +1004,6 @@ function renderMain(resetPage = true) {
         mostraContenitoreLista(window.vistaLista === 'tabella' ? 'tabella' : 'griglia');
         document.getElementById('empty-state').classList.add('hidden');
 
-        // Paginazione
         const dimPagina = pageSize();
         const totalPages = Math.ceil(filtered.length / dimPagina);
         if (window.currentPage >= totalPages) window.currentPage = Math.max(0, totalPages - 1);
@@ -1289,14 +1024,11 @@ function renderMain(resetPage = true) {
             }
         }
 
-        // La tabella è un percorso di render alternativo, non un secondo elenco: stessi
-        // record già filtrati, ordinati e paginati. Si occupa da sé delle proprie icone.
         if (window.vistaLista === 'tabella') {
             renderTabellaSchede(paginated);
             return;
         }
 
-        // Creazione Card con DocumentFragment per un unico reflow DOM
         const fragment = document.createDocumentFragment();
 
         for (const m of paginated) {
@@ -1305,18 +1037,14 @@ function renderMain(resetPage = true) {
 
         grid.appendChild(fragment);
     }
-    // createIcons scoped solo alla grid, non all'intero documento
     if (window.lucide) lucide.createIcons({ nodes: [grid] });
 }
 
 window.pendingTabSwitch = null;
 
 function switchTab(tab) {
-    // Una finestra staccata segue la sua vista: uscendone salva e si chiude (resta ricordata).
     if (tab !== 'trascrizione' && window.schedaStaccata && window.schedaStaccata()) window.chiudiFinestraStaccata('scheda');
     if (tab !== 'add' && window.documentoStaccato && window.documentoStaccato()) window.chiudiFinestraStaccata('documento');
-    // Il modulo prestato al tab «Scheda» della trascrizione torna a casa prima di ogni cambio
-    // di vista; con modifiche in sospeso prima si salvano, poi si riprova.
     if (tab !== 'trascrizione' && window.moduloInTrascrizione && window.moduloInTrascrizione() && !window.riponiModuloSePulito()) {
         window.lasciaSchedaTrascrizione().then((ok) => { if (ok) switchTab(tab); });
         return;
@@ -1347,10 +1075,7 @@ function switchTab(tab) {
         vAdd.classList.remove('hidden-tab');
         aggiornaSelectCartelle();
         aggiornaSelectTipiDocumento();
-        // Fase 3.5: la tendina dei collegamenti si ricostruisce all'apertura, non all'avvio,
-        // o offrirebbe le schede esistenti quando l'app è partita.
         if (typeof window.aggiornaSelettoriRelazione === 'function') window.aggiornaSelettoriRelazione();
-        // Il pulsante premuto sparisce con la lista: senza, da tastiera il fuoco cade su <body>.
         document.getElementById('form-segnatura')?.focus({ preventScroll: true });
     } else if (tab === 'trascrizione') {
         if (vTrascrizione) vTrascrizione.classList.remove('hidden-tab');
@@ -1359,16 +1084,6 @@ function switchTab(tab) {
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
 }
 
-/**
- * Costruisce lo snippet evidenziato. `token` è già normalizzato, quindi il match avviene
- * su `norm` mentre il testo mostrato resta `clean` (originale, accenti inclusi).
- *
- * L'evidenziazione è posizionale e non più via regex sul termine cercato: dopo la
- * normalizzazione il termine digitato ("perugia") può non comparire alla lettera nel
- * testo originale ("Perùgia"), e una regex costruita su di esso non evidenzierebbe nulla.
- * Gli offset di `norm` valgono su `clean` solo se la normalizzazione ha preservato la
- * lunghezza (vero sul testo precomposto); altrimenti si ripiega sul confronto grezzo.
- */
 function buildSnippet(clean, lower, norm, token) {
     let idx = -1;
     let len = token.length;
@@ -1376,19 +1091,16 @@ function buildSnippet(clean, lower, norm, token) {
     if (j !== -1 && norm.length === clean.length) {
         idx = j;
     } else if (j !== -1) {
-        // P3: æ/œ allungano il normalizzato, l'evidenziazione va sul testo originale.
         idx = window.posizioneOriginale(clean, j);
         len = window.posizioneOriginale(clean, j + token.length) - idx;
     }
     if (idx === -1) idx = lower.indexOf(token);
     if (idx === -1) return null;
 
-    // Estrai una frase più lunga
     const start = Math.max(0, idx - 60);
     const end = Math.min(clean.length, idx + len + 80);
     let snippet = clean.substring(start, end).trim();
 
-    // Offset del match dentro lo snippet, tenendo conto del taglio e del trim iniziale.
     const tagliato = clean.substring(start, end);
     const scartoTrim = tagliato.length - tagliato.replace(/^\s+/, '').length;
     const rel = idx - start - scartoTrim;
@@ -1409,12 +1121,6 @@ function buildSnippet(clean, lower, norm, token) {
     return html;
 }
 
-/**
- * P3 — prima carta (e pagina, se PDF) la cui trascrizione contiene `tok`, con lo snippet e la
- * parola nella forma ORIGINALE ("uita" per la ricerca "vita"), da evidenziare nell'editor.
- * Testo dal DOM come nella ricerca della vista trascrizione: entità decodificate, cioè lo
- * stesso testo che l'editor mostrerà.
- */
 function _cercaNelleCarte(m, tok) {
     const allegati = Array.isArray(m.allegati) ? m.allegati : [];
     const contenitore = document.createElement('template');
@@ -1447,7 +1153,6 @@ function _cercaNelleCarte(m, tok) {
     return null;
 }
 
-/** P6 — prima regione la cui nota contiene `tok`: il clic apre la carta con la regione scelta. */
 function _cercaNelleRegioni(m, tok) {
     const allegati = Array.isArray(m.allegati) ? m.allegati : [];
     for (let i = 0; i < allegati.length; i++) {
@@ -1478,16 +1183,12 @@ function renderSearchSuggestions() {
 
     const matches = [];
     for (const m of appData.manoscritti) {
-        // Stesso predicato della griglia: un suggerimento che porta a un record poi
-        // invisibile nella vista è un vicolo cieco per l'utente.
         if (!objectMatchesTokens(m, tokens)) continue;
 
         const index = getSearchIndex(m);
         let aggiunto = false;
         for (const f of index.fields) {
-            // Confronto su stringhe già ripulite e normalizzate: nessuna regex per record.
             for (const tok of tokens) {
-                // P3: nella trascrizione si dice QUALE carta, e il clic porta lì.
                 const inCarta = f.key === 'trascrizione' ? _cercaNelleCarte(m, tok) : null;
                 if (inCarta) {
                     matches.push(Object.assign({ item: m }, inCarta));
@@ -1501,14 +1202,13 @@ function renderSearchSuggestions() {
                     break;
                 }
             }
-            if (aggiunto) break; // Mostriamo solo il primo campo in cui matcha per questo documento
+            if (aggiunto) break;
         }
-        // P6 — la parola può stare solo nella nota di una regione: non è un campo della scheda.
         for (const tok of aggiunto ? [] : tokens) {
             const inRegione = _cercaNelleRegioni(m, tok);
             if (inRegione) { matches.push(Object.assign({ item: m }, inRegione)); break; }
         }
-        if (matches.length >= 15) break; // Massimo 15 suggerimenti
+        if (matches.length >= 15) break;
     }
 
     if (matches.length === 0) {
@@ -1536,11 +1236,6 @@ function renderSearchSuggestions() {
     container.appendChild(fragment);
 }
 
-/**
- * Porta l'utente sulla card di un record nella griglia di destra: salta alla pagina
- * corretta (la griglia è paginata, altrimenti la card non è nel DOM),
- * scrolla e la evidenzia. Usata dai suggerimenti di ricerca e dall'albero a sinistra.
- */
 window.rivelaRecordNellaGriglia = function(id) {
     const filtrati = window.getManoscrittiFiltrati();
     const idx = filtrati.findIndex(x => x.id === id);
@@ -1554,8 +1249,6 @@ window.rivelaRecordNellaGriglia = function(id) {
 
     const targetCard = document.getElementById('card-' + id);
     if (!targetCard) {
-        // Il record non rientra nel filtro corrente della griglia (es. suggerimento di
-        // ricerca su un campo non incluso nel filtro): non c'è nulla su cui scrollare.
         if (typeof mostraMessaggio === 'function') {
             mostraMessaggio(window.t('msg_record_non_in_vista', 'Documento non visibile nella vista corrente.'), 'info');
         }
@@ -1563,7 +1256,6 @@ window.rivelaRecordNellaGriglia = function(id) {
     }
 
     targetCard.scrollIntoView({ behavior: window.comportamentoScroll(), block: 'center' });
-    // Evidenziazione temporanea per indicare quale scheda è stata raggiunta
     targetCard.classList.add('scheda-raggiunta');
     setTimeout(() => targetCard.classList.remove('scheda-raggiunta'), 1500);
 };
@@ -1571,7 +1263,6 @@ window.rivelaRecordNellaGriglia = function(id) {
 window.cambiaPagina = function(dir) {
     window.currentPage += dir;
     renderMain(false);
-    // Scrolla la vista all'inizio
     const viewList = document.getElementById('view-list');
     if (viewList) viewList.scrollTo({ top: 0, behavior: window.comportamentoScroll() });
 };

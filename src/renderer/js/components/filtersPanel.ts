@@ -1,28 +1,15 @@
-// Fase 1.3 — Pannello filtri avanzati e ricerche salvate.
-//
-// Fino alla 2.4.6 i filtri erano esattamente tre (cartella, testo, tag) e vivevano in tre
-// punti diversi dell'interfaccia. Qui si aggiungono tipo documento, cartella con
-// sottoarchivi, intervallo di data modifica, presenza di allegati e di trascrizione, più
-// le combinazioni salvate con un nome.
-//
-// I predicati NON stanno qui: sono funzioni pure in logic/utils.ts (`recordPassaFiltri`,
-// `recordPassaCampi`, `cartellaNelSottoalbero`), applicate da `getManoscrittiFiltrati`.
-// Questo file è solo la superficie: stato, pannello, persistenza.
-
 window.filtriAvanzati = window.filtriAvanzati || {
     tipo: '',
     sottocartelle: false,
     daData: '',
     aData: '',
-    // Fase 3.2 — periodo STORICO del documento (anni), da non confondere con daData/aData,
-    // che sono la data di ultima modifica della scheda.
     daAnno: '',
     aAnno: '',
-    allegati: '',       // '' | 'si' | 'no'
-    trascrizione: '',   // '' | 'si' | 'no'
-    ocr: '',            // '' | 'si' | 'no' — Fase 2.3
-    collegamenti: '',   // '' | 'si' | 'no' — Fase 3.5
-    statoCarte: ''      // '' | uno di STATI_CARTA — P2
+    allegati: '',
+    trascrizione: '',
+    ocr: '',
+    collegamenti: '',
+    statoCarte: ''
 };
 
 window.ricercheSalvate = window.ricercheSalvate || [];
@@ -32,17 +19,12 @@ let _ancoraFiltri = null;
 
 function _chiudiSuPointerDown(e) {
     if (_pannello && _pannello.contains(e.target)) return;
-    if (_ancoraFiltri && _ancoraFiltri.contains(e.target)) return;   // il click sull'ancora fa toggle
+    if (_ancoraFiltri && _ancoraFiltri.contains(e.target)) return;
     window.chiudiPannelloFiltri(false);
 }
 
 function _chiudiSuScroll(e) {
-    // Lo scroll DENTRO il pannello (elenco di ricerche salvate lungo) non deve chiuderlo.
     if (_pannello && e && e.target && e.target.nodeType === 1 && _pannello.contains(e.target)) return;
-    // Applicare un filtro accorcia la lista, e se era scorsa il browser riporta indietro lo
-    // scroll di <main>: quell'evento chiudeva il pannello a ogni scelta (e faceva fallire i
-    // test a caso). Finché l'ancora è a schermo il pannello la segue; si chiude solo se
-    // l'ancora esce dalla vista. renderMain può ridisegnarla: la si ritrova per id.
     if (_ancoraFiltri && !_ancoraFiltri.isConnected && _ancoraFiltri.id) {
         const nuova = document.getElementById(_ancoraFiltri.id);
         if (nuova) { nuova.setAttribute('aria-expanded', 'true'); _ancoraFiltri = nuova; }
@@ -54,14 +36,6 @@ function _chiudiSuScroll(e) {
     window.chiudiPannelloFiltri(false);
 }
 
-/**
- * Esc è agganciato al DOCUMENTO, non al pannello. Cambiare un filtro ricostruisce il
- * corpo (`_riempiPannello`), quindi il controllo che aveva il fuoco sparisce e il fuoco
- * torna al body: un handler agganciato al solo pannello smetterebbe di ricevere i tasti
- * proprio dopo la prima interazione, lasciando il pannello aperto e senza via d'uscita
- * da tastiera. `_riempiPannello` rimette comunque il fuoco dov'era (vedi sotto): questo
- * è la rete di sicurezza per i casi in cui non ci riesce.
- */
 function _onKeyDownFiltri(e) {
     if (!_pannello) return;
     if (e.key === 'Escape') {
@@ -86,12 +60,6 @@ window.chiudiPannelloFiltri = function(ripristinaFuoco = false) {
     }
 };
 
-/**
- * Applica una modifica parziale ai filtri e ridisegna. Passa sempre da qui: è l'unico
- * punto che ricorda di ridisegnare la lista E di persistere lo stato, ed è ciò che
- * permette ai chip dei filtri attivi di rimuovere un filtro con la stessa chiamata dei
- * controlli del pannello.
- */
 window.applicaFiltriAvanzati = function(patch) {
     window.filtriAvanzati = Object.assign({}, window.filtriAvanzati, patch || {});
     if (typeof renderMain === 'function') renderMain();
@@ -108,13 +76,10 @@ window.azzeraFiltriAvanzati = function(ridisegna = true) {
     }
 };
 
-// --- Ricerche salvate --------------------------------------------------------
-
 function _idRicerca() {
     return 'rs_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
 }
 
-/** Fotografia completa del contesto di ricerca: query, tag, filtri avanzati e cartella. */
 window.salvaRicercaCorrente = function(nome) {
     const etichetta = String(nome || '').trim();
     if (!etichetta) return null;
@@ -125,12 +90,8 @@ window.salvaRicercaCorrente = function(nome) {
         ricerca: input ? input.value : '',
         tag: window.activeTags ? Array.from(window.activeTags) : [],
         filtri: Object.assign({}, window.filtriAvanzati),
-        // La cartella fa parte della ricerca: "Notarile con allegati" senza il ramo di
-        // partenza sarebbe una ricerca diversa a ogni richiamo.
         cartella: typeof window.cartellaAttuale === 'string' ? window.cartellaAttuale : ''
     };
-    // Ri-salvare con lo stesso nome aggiorna, non duplica: due voci identiche nell'elenco
-    // sarebbero indistinguibili e la seconda non si potrebbe più scegliere di proposito.
     window.ricercheSalvate = [voce].concat((window.ricercheSalvate || []).filter(r => r.nome !== voce.nome));
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
     if (_pannello) _riempiPannello();
@@ -141,9 +102,6 @@ window.applicaRicercaSalvata = function(id) {
     const voce = (window.ricercheSalvate || []).find(r => r.id === id);
     if (!voce) return;
 
-    // ORDINE OBBLIGATORIO: prima la cartella, poi il resto. `vaiACartella` chiama
-    // `azzeraFiltriRicerca`, che azzera ricerca, tag E filtri avanzati: invertire i due
-    // passi cancellerebbe la ricerca appena applicata.
     const destinazione = typeof voce.cartella === 'string' ? voce.cartella : '';
     if (destinazione && destinazione !== window.cartellaAttuale && typeof window.vaiACartella === 'function') {
         window.vaiACartella(destinazione);
@@ -175,7 +133,6 @@ window.eliminaRicercaSalvata = function(id) {
     window.ricercheSalvate = elenco.filter(r => r.id !== id);
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
     if (_pannello) _riempiPannello();
-    // Un clic e la ricerca (nome + filtri composti a mano) spariva senza ritorno.
     if (typeof mostraMessaggio === 'function') {
         mostraMessaggio(window.t('msg_saved_search_deleted', 'Ricerca salvata eliminata.'), 'info', () => {
             const ora = window.ricercheSalvate || [];
@@ -187,8 +144,6 @@ window.eliminaRicercaSalvata = function(id) {
         });
     }
 };
-
-// --- Pannello ----------------------------------------------------------------
 
 function _riga(etichetta, controllo) {
     const wrap = document.createElement('label');
@@ -206,7 +161,7 @@ function _select(valore, opzioni, onChange) {
     for (const o of opzioni) {
         const opt = document.createElement('option');
         opt.value = o.value;
-        opt.textContent = o.label;   // textContent: i nomi dei tipi sono dati dell'utente
+        opt.textContent = o.label;
         sel.appendChild(opt);
     }
     sel.value = valore || '';
@@ -214,11 +169,6 @@ function _select(valore, opzioni, onChange) {
     return sel;
 }
 
-/**
- * Posizionamento a dimensioni reali, come il menu contestuale: sotto l'ancora, allineato a
- * destra, ribaltato sopra se non ci sta. L'altezza è già limitata da max-h in CSS, quindi
- * il clamp finale basta a tenerlo tutto dentro la finestra.
- */
 function _posizionaPannello() {
     if (!_pannello) return;
     const box = _pannello;
@@ -242,9 +192,6 @@ function _riempiPannello() {
     if (!_pannello) return;
     const f = window.filtriAvanzati || {};
     const corpo = _pannello.querySelector('[data-corpo]');
-    // Ogni modifica ricostruisce il corpo (serve: cambia lo stato di "Azzera", l'elenco
-    // delle ricerche, i valori). Il controllo che aveva il fuoco viene però distrutto, e
-    // con lui la posizione di chi naviga da tastiera: si annota l'id e lo si ridà dopo.
     const idAttivo = document.activeElement && corpo.contains(document.activeElement)
         ? document.activeElement.id
         : null;
@@ -252,7 +199,6 @@ function _riempiPannello() {
 
     const T = (k, d) => window.t(k, d);
 
-    // Tipo documento
     const tipi = [{ value: '', label: T('filter_any', 'Qualsiasi') }];
     for (const t of ((typeof appData !== 'undefined' && appData.tipiDocumento) || [])) {
         const nome = window.t('model_' + t.id) !== 'model_' + t.id ? window.t('model_' + t.id) : t.nome;
@@ -262,7 +208,6 @@ function _riempiPannello() {
     selTipo.id = 'filtro-tipo';
     corpo.appendChild(_riga(T('filter_type', 'Tipo'), selTipo));
 
-    // Cartella con sottoarchivi
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.id = 'filtro-sottocartelle';
@@ -271,7 +216,6 @@ function _riempiPannello() {
     chk.onchange = () => window.applicaFiltriAvanzati({ sottocartelle: chk.checked });
     corpo.appendChild(_riga(T('filter_subfolders', 'Includi sottoarchivi'), chk));
 
-    // Intervallo di data modifica
     const mkData = (id, valore, chiave) => {
         const el = document.createElement('input');
         el.type = 'date';
@@ -284,10 +228,6 @@ function _riempiPannello() {
     corpo.appendChild(_riga(T('filter_from', 'Dal'), mkData('filtro-da-data', f.daData, 'daData')));
     corpo.appendChild(_riga(T('filter_to', 'Al'), mkData('filtro-a-data', f.aData, 'aData')));
 
-    // --- Fase 3.2: periodo storico del DOCUMENTO -----------------------------------------
-    // Sta sotto l'intervallo di modifica e con un'intestazione propria, perché sono due date
-    // diverse che l'interfaccia ha sempre avuto il dovere di non confondere: una è quando la
-    // scheda è stata toccata, l'altra è quando il documento è stato scritto.
     const titoloPeriodo = document.createElement('div');
     titoloPeriodo.className = 'form-label mt-2 pt-2 border-t';
     titoloPeriodo.style.borderColor = 'var(--color-border-light)';
@@ -296,8 +236,6 @@ function _riempiPannello() {
 
     const mkAnno = (id, valore, chiave, segnaposto) => {
         const el = document.createElement('input');
-        // `number` e non `date`: una datazione storica non ha giorno e mese, e un selettore
-        // di calendario per il Trecento è un controllo che chiede più di quanto si sappia.
         el.type = 'number';
         el.id = id;
         el.className = 'form-input py-1 text-sm';
@@ -311,9 +249,6 @@ function _riempiPannello() {
     corpo.appendChild(_riga(T('filter_year_from', 'Dall\'anno'), mkAnno('filtro-da-anno', f.daAnno, 'daAnno', '1300')));
     corpo.appendChild(_riga(T('filter_year_to', 'All\'anno'), mkAnno('filtro-a-anno', f.aAnno, 'aAnno', '1400')));
 
-    // Scorciatoia per secolo: "sec. XIV" è il modo in cui la domanda viene posta davvero,
-    // e comporre 1301/1400 a mano ogni volta è il genere di attrito che fa smettere di
-    // usare un filtro.
     const secoli = [{ value: '', label: T('filter_any_century', 'Qualsiasi secolo') }];
     for (let n = 11; n <= 20; n++) {
         const romani = ['XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX'][n - 11];
@@ -340,25 +275,20 @@ function _riempiPannello() {
     selTrasc.id = 'filtro-trascrizione';
     corpo.appendChild(_riga(T('filter_transcription', 'Trascrizione'), selTrasc));
 
-    // Fase 2.3: "senza OCR" è la lista di lavoro di chi sta riconoscendo un fondo intero.
     const selOcr = _select(f.ocr, treStati, v => window.applicaFiltriAvanzati({ ocr: v }));
     selOcr.id = 'filtro-ocr';
     corpo.appendChild(_riga(T('filter_ocr', 'Testo OCR'), selOcr));
 
-    // Fase 3.5: "senza collegamenti" è la domanda di chi sta tessendo i rimandi di un fondo
-    // e vuole sapere che cosa gli resta da collegare.
     const selColl = _select(f.collegamenti, treStati, v => window.applicaFiltriAvanzati({ collegamenti: v }));
     selColl.id = 'filtro-collegamenti';
     corpo.appendChild(_riga(T('filter_links', 'Collegamenti'), selColl));
 
-    // P2 — "carte da trascrivere" è la lista di lavoro su un fondo lungo.
     const stati = [{ value: '', label: T('filter_any', 'Qualsiasi') }]
         .concat(window.STATI_CARTA.map(s => ({ value: s, label: T('stato_carta_' + s, s) })));
     const selStato = _select(f.statoCarte, stati, v => window.applicaFiltriAvanzati({ statoCarte: v }));
     selStato.id = 'filtro-stato-carte';
     corpo.appendChild(_riga(T('filter_sheet_status', 'Carte'), selStato));
 
-    // Promemoria della sintassi campo:valore, che nessuno indovinerebbe da solo.
     const hint = document.createElement('p');
     hint.className = 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed border-t border-stone-200 dark:border-stone-700 pt-2';
     hint.textContent = T('filter_query_hint', 'Nella ricerca puoi scrivere campo:valore, per esempio notaio:rossi, tag:pergamena, oppure "frase esatta".');
@@ -373,7 +303,6 @@ function _riempiPannello() {
     azzera.onclick = () => window.azzeraFiltriAvanzati();
     corpo.appendChild(azzera);
 
-    // --- Ricerche salvate ---
     const sez = document.createElement('div');
     sez.className = 'border-t border-stone-200 dark:border-stone-700 pt-3 flex flex-col gap-2';
 
@@ -398,7 +327,7 @@ function _riempiPannello() {
         const applica = document.createElement('button');
         applica.type = 'button';
         applica.className = 'flex-1 text-left text-sm px-2 py-1 rounded-sm truncate hover:bg-stone-100 dark:hover:bg-stone-800';
-        applica.textContent = r.nome;      // textContent: nome scelto dall'utente
+        applica.textContent = r.nome;
         applica.title = r.nome;
         applica.dataset.ricercaId = r.id;
         applica.onclick = () => window.applicaRicercaSalvata(r.id);
@@ -444,8 +373,6 @@ function _riempiPannello() {
     corpo.appendChild(sez);
 
     if (window.lucide) lucide.createIcons({ nodes: [corpo] });
-    // Ogni ricostruzione può cambiare l'altezza (compare "Azzera", cresce l'elenco delle
-    // ricerche): si riposiziona, o un pannello cresciuto sfora di nuovo dal fondo.
     _posizionaPannello();
 
     if (idAttivo) {
@@ -454,13 +381,8 @@ function _riempiPannello() {
     }
 }
 
-/**
- * Apre il pannello ancorato al pulsante. Non riusa `apriMenuContestuale`: quello sa
- * disegnare voci cliccabili, non select, date e campi di testo — e la sua navigazione a
- * frecce fra `menuitem` sarebbe sbagliata su un modulo da compilare.
- */
 window.apriPannelloFiltri = function(ancora) {
-    if (_pannello) { window.chiudiPannelloFiltri(true); return; }   // toggle
+    if (_pannello) { window.chiudiPannelloFiltri(true); return; }
 
     const btn = ancora || document.getElementById('btn-filtri');
     _ancoraFiltri = btn;
@@ -470,15 +392,13 @@ window.apriPannelloFiltri = function(ancora) {
     box.id = 'pannello-filtri';
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', window.t('tooltip_filters', 'Filtri avanzati e ricerche salvate'));
-    // Tetto d'altezza e scroll interno: in style.css (#pannello-filtri), non come utility
-    // arbitraria, che esisterebbe solo dopo aver rigenerato tailwind.css.
     box.className = 'fixed z-menu w-[22rem] max-w-[calc(100vw-1rem)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md p-3 text-stone-800 dark:text-stone-100';
     box.style.left = '-9999px';
     box.style.top = '0px';
     box.innerHTML = '<div data-corpo class="flex flex-col gap-3"></div>';
     document.body.appendChild(box);
     _pannello = box;
-    _riempiPannello(); // posiziona anche (_posizionaPannello)
+    _riempiPannello();
 
     const primo = box.querySelector<HTMLElement>('select, input, button');
     if (primo) primo.focus();

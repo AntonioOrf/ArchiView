@@ -1,16 +1,10 @@
-// Il container toast è già in HTML: niente check dinamico
-// azioneCustom = {label, onClick}: pulsante d'azione con etichetta propria (es. "Ricevi ora"),
-// distinto da azioneAnnulla che è sempre etichettato "Annulla".
 window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null, azioneCustom = null) {
     const container = document.getElementById('toast-container');
     
-    // Non far apparire più di 3 messaggi identici
     const existingToasts = Array.from(container.children);
     const ugualiCount = existingToasts.filter(t => (t as HTMLElement).innerText.trim().includes(testo.trim())).length;
     if (ugualiCount >= 3) return;
 
-    // Il toast è puramente visivo: senza questo gli utenti di screen reader non ricevono
-    // nessun esito delle operazioni. Gli errori interrompono (assertive), il resto attende.
     if (window.annunciaA11y) window.annunciaA11y(testo, tipo === 'error' ? 'assertive' : 'polite');
 
     const toast = document.createElement('div');
@@ -56,8 +50,6 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null, az
         toast.appendChild(btnCustom);
     }
 
-    // Pulsante di chiusura sempre presente: indispensabile per gli errori che non
-    // si auto-chiudono, utile in generale per liberare lo schermo.
     const btnClose = document.createElement('button');
     btnClose.className = 'text-white/70 hover:text-white shrink-0 transition-colors';
     btnClose.setAttribute('aria-label', window.t('btn_close', 'Chiudi'));
@@ -73,9 +65,6 @@ window.mostraMessaggio = function(testo, tipo = 'info', azioneAnnulla = null, az
 
     requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.remove('opacity-0')));
 
-    // Gli errori restano finché non vengono chiusi manualmente (rischio di non
-    // farli leggere altrimenti). Gli altri si auto-chiudono; 5s se c'è un'azione
-    // di annullamento per dare il tempo di cliccare.
     if (tipo !== 'error') {
         dismissTimeout = setTimeout(hideToast, (azioneAnnulla || azioneCustom) ? 5000 : 3500);
     }

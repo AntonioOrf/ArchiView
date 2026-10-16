@@ -1,7 +1,3 @@
-// Import da ZIP: avanzamento ed esito in un solo modale a tre stati (corso / ok / ko).
-// Un archivio grande si estrae per minuti: l'esito resta a schermo finché non lo si chiude,
-// invece di un toast che sparisce mentre si è su un'altra finestra.
-// Il markup è statico; ogni valore variabile entra solo con textContent.
 (function() {
     let stato: 'corso' | 'ok' | 'ko' = 'corso';
     let primaScheda: string | null = null;
@@ -112,8 +108,6 @@
         (el('import-zip-modal')!.querySelector('.iz-dettagli') as HTMLElement).hidden = !e.dettaglio;
     };
 
-    // Durante l'estrazione non si chiude (Esc compreso): l'import continuerebbe senza un posto
-    // dove vederne l'esito.
     window.chiudiImportZip = function() {
         if (stato === 'corso') return;
         el('import-zip-modal')?.classList.add('hidden-tab');

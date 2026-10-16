@@ -1,20 +1,3 @@
-// Fase 3.8 — riordino dei campi di UNA scheda.
-//
-// L'ordine vive sul record (`ordineCampi`) e riguarda solo quella scheda: il modello e le
-// altre schede non cambiano. ⚠️ Lo seguono il form, la vista a schede e la stampa per scheda,
-// cioè i posti in cui si guarda una scheda sola; la tabella e il CSV no, perché le loro
-// colonne sono comuni a tutte le schede e l'ordine di un record non può riordinarle.
-//
-// ⚠️ In riordino i controlli NON vengono smontati, solo nascosti: restano nel DOM con i loro
-// valori, quindi un salvataggio fatto mentre l'elenco è aperto scrive esattamente ciò che
-// l'utente aveva compilato. Smontarli avrebbe voluto dire tenere i valori in una variabile
-// di modulo, cioè un secondo posto in cui vivono i dati del form.
-//
-// Si trascina un ELENCO DI NOMI e non i campi veri: trascinare un `input` combatte con la
-// selezione del testo, e su un `textarea` alto tre righe la maniglia sarebbe più grande del
-// campo che sposta.
-
-/** L'ordine in composizione nel form, sempre un array di id. */
 function ordineCampiForm() {
     const el = document.getElementById('form-ordine-campi');
     if (!el) return [];
@@ -34,12 +17,9 @@ function scriviOrdineCampiForm(ordine) {
 }
 window.scriviOrdineCampiForm = scriviOrdineCampiForm;
 
-/** Gli id nell'ordine in cui il form li sta mostrando adesso. */
 function _idsCorrenti() {
     return window.campiDefinitiDelForm().map(d => d.id);
 }
-
-// --- Modalità riordino --------------------------------------------------------
 
 window.riordinoCampiAttivo = false;
 
@@ -54,11 +34,6 @@ window.apriRiordinoCampi = function() {
     _aggiornaPulsanteRiordino();
 };
 
-/**
- * `silenzioso` = non ridisegnare. Lo usano `resetForm` e `editItem`, che disegnano il form da
- * sé subito dopo: ridisegnare qui rileggerebbe i valori della scheda PRECEDENTE e li
- * rimetterebbe addosso a quella nuova.
- */
 window.chiudiRiordinoCampi = function(silenzioso) {
     const campi = document.getElementById('form-dynamic-fields');
     const box = document.getElementById('form-riordino');
@@ -66,7 +41,6 @@ window.chiudiRiordinoCampi = function(silenzioso) {
     window.riordinoCampiAttivo = false;
     box.classList.add('hidden-tab');
     campi.classList.remove('hidden-tab');
-    // Il form si ridisegna nell'ordine nuovo, conservando ciò che è già scritto.
     if (!silenzioso && window.ridisegnaCampiConservandoValori) window.ridisegnaCampiConservandoValori();
     _aggiornaPulsanteRiordino();
 };
@@ -87,14 +61,11 @@ function _aggiornaPulsanteRiordino() {
     btn.setAttribute('aria-pressed', window.riordinoCampiAttivo ? 'true' : 'false');
 }
 
-/** Rimette la scheda nell'ordine naturale (tipo, poi campi propri). */
 window.azzeraRiordinoCampi = function() {
     scriviOrdineCampiForm([]);
     window.isFormDirty = true;
     _disegnaElencoRiordino();
 };
-
-// --- Elenco trascinabile ------------------------------------------------------
 
 let _trascinato = null;
 
@@ -133,8 +104,6 @@ function _disegnaElencoRiordino() {
             riga.appendChild(segno);
         }
 
-        // P2.4 — l'alternativa da tastiera al trascinamento, come per gli allegati: senza,
-        // il riordino sarebbe una funzione riservata a chi usa il mouse.
         const su = _pulsanteSposta('chevron-up', window.t('reorder_up', 'Sposta su'), () => _sposta(indice, -1));
         const giu = _pulsanteSposta('chevron-down', window.t('reorder_down', 'Sposta giù'), () => _sposta(indice, 1));
         su.disabled = indice === 0;
@@ -145,7 +114,6 @@ function _disegnaElencoRiordino() {
             _trascinato = riga;
             riga.classList.add('riordino-in-volo');
             e.dataTransfer.effectAllowed = 'move';
-            // Firefox non avvia il trascinamento senza dati impostati.
             e.dataTransfer.setData('text/plain', def.id);
         });
         riga.addEventListener('dragend', () => {
@@ -196,7 +164,6 @@ function _sposta(indice, delta, tornaAlFuoco?) {
     }
 }
 
-/** L'ordine come sta adesso nel DOM dell'elenco (dopo un trascinamento). */
 function _applicaOrdineDalDom() {
     const righe = document.querySelectorAll('#form-riordino-lista .riordino-riga');
     _salvaOrdine(Array.from(righe).map(r => r.dataset.campo));
@@ -204,15 +171,12 @@ function _applicaOrdineDalDom() {
 }
 
 function _salvaOrdine(ids) {
-    // La scrittura passa dal modello: è lui a decidere che un ordine uguale a quello
-    // naturale NON si salva (una chiave in più cambierebbe l'impronta del record).
     const finto: { ordineCampi?: string[] } = {};
     window.Model.scriviOrdineCampi(finto, ids, _ordineNaturale());
     scriviOrdineCampiForm(finto.ordineCampi || []);
     window.isFormDirty = true;
 }
 
-/** Gli id nell'ordine che avrebbero senza riordino: prima il tipo, poi i campi propri. */
 function _ordineNaturale() {
     const sel = document.getElementById('form-tipo-documento');
     const tipo = (appData.tipiDocumento || []).find(t => t.id === (sel ? sel.value : ''))

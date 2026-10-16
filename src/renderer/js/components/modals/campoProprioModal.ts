@@ -1,14 +1,3 @@
-// Fase 3.7 — il campo che vive su UNA scheda sola. Il modello documento resta una base:
-// qui si dichiara ciò che quel manoscritto ha e gli altri no (una nota di possesso, una
-// filigrana, un colophon anomalo), senza far comparire una colonna vuota su tutto l'archivio.
-//
-// È un modale e non un pannello inline come l'editor dei campi del tipo (3.1) perché qui non
-// si sta componendo un elenco: si dichiara un campo alla volta, mentre si compila la scheda,
-// e il form sotto deve restare visibile solo dopo la conferma.
-//
-// ⚠️ Niente `obbligatorio` e niente `unico`: "obbligatorio" bloccherebbe il salvataggio della
-// sola scheda che lo dichiara — cioè non vieta niente a nessuno — e l'unicità cerca duplicati
-// su un campo che per definizione esiste una volta sola.
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('campo-proprio-modal')) return;

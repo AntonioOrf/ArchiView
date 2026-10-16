@@ -1,18 +1,7 @@
-// P4 — elaborazioni per l'inchiostro sbiadito, in un Web Worker: su una carta da 12 Mpx un
-// passaggio per pixel bloccherebbe l'interfaccia per secondi.
-//
-// Riceve { id, bitmap, modo, soglia } (bitmap trasferita, già ridotta dal renderer), risponde
-// { id, blob } in JPEG o { id, errore }. Gli algoritmi sono funzioni pure su RGBA, esportate
-// anche per test/elaboraImmagine.test.js.
-//
-// Script classico, non modulo: niente import, e la doppia esposizione in coda come model.ts.
-
-/** Luminanza Rec. 601 intera, 0–255. */
 function avLuma(r: number, g: number, b: number): number {
     return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
-/** Un solo canale in scala di grigi: il rosso fa sparire le rigature, il blu stacca l'inchiostro. */
 function avCanale(px: Uint8ClampedArray, c: 0 | 1 | 2) {
     for (let i = 0; i < px.length; i += 4) {
         const v = px[i + c];
@@ -20,7 +9,6 @@ function avCanale(px: Uint8ClampedArray, c: 0 | 1 | 2) {
     }
 }
 
-/** Livelli automatici: stira fra il 1° e il 99° percentile della luminanza. */
 function avLivelli(px: Uint8ClampedArray) {
     const isto = new Uint32Array(256);
     const n = px.length / 4;
@@ -36,7 +24,6 @@ function avLivelli(px: Uint8ClampedArray) {
     }
 }
 
-/** Bianco e nero sulla luminanza. */
 function avSoglia(px: Uint8ClampedArray, soglia: number) {
     for (let i = 0; i < px.length; i += 4) {
         const v = avLuma(px[i], px[i + 1], px[i + 2]) >= soglia ? 255 : 0;
@@ -44,7 +31,6 @@ function avSoglia(px: Uint8ClampedArray, soglia: number) {
     }
 }
 
-/** Autovalori e autovettori (colonne di `v`) di una matrice simmetrica 3×3, metodo di Jacobi. */
 function avJacobi3(a: number[][]): { l: number[]; v: number[][] } {
     const m = a.map(r => r.slice());
     const v = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -72,13 +58,8 @@ function avJacobi3(a: number[][]): { l: number[]; v: number[][] } {
     return { l: [m[0][0], m[1][1], m[2][2]], v };
 }
 
-/**
- * Decorrelation stretch (il principio di DStretch, spazio RGB): i tre canali vengono resi
- * indipendenti e ciascuno stirato alla stessa varianza, così differenze di colore minime —
- * un inchiostro ferro-gallico sbiadito sulla pergamena — diventano colori diversi.
- */
 function avDstretch(px: Uint8ClampedArray, sigma = 55) {
-    const passo = Math.max(1, Math.floor(px.length / 4 / 200000)) * 4; // campione, non ogni pixel
+    const passo = Math.max(1, Math.floor(px.length / 4 / 200000)) * 4;
     let n = 0;
     const media = [0, 0, 0];
     for (let i = 0; i < px.length; i += passo) { media[0] += px[i]; media[1] += px[i + 1]; media[2] += px[i + 2]; n++; }
@@ -90,7 +71,6 @@ function avDstretch(px: Uint8ClampedArray, sigma = 55) {
     }
     for (let a = 0; a < 3; a++) for (let b = a; b < 3; b++) { cov[a][b] /= n; cov[b][a] = cov[a][b]; }
     const { l, v } = avJacobi3(cov);
-    // T = V · diag(sigma/√λ) · Vᵀ
     const t = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
     for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
         let s = 0;
@@ -105,7 +85,6 @@ function avDstretch(px: Uint8ClampedArray, sigma = 55) {
     }
 }
 
-/** Applica `modo` sul posto. Modo sconosciuto = errore: un dato arrivato male non passa muto. */
 function avElabora(px: Uint8ClampedArray, modo: string, soglia: number) {
     switch (modo) {
         case 'r': return avCanale(px, 0);

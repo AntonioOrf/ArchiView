@@ -1,10 +1,3 @@
-// GENERATO da scripts/azioni-consentite.js (--scrivi): non modificare a mano.
-//
-// Funzioni globali che il dispatcher di logic/azioni.ts può chiamare per nome da un attributo
-// data-on-<evento>. Un nome fuori elenco non viene eseguito: così un attributo finito nel DOM
-// da un dato (vault condiviso, import) non può chiamare funzioni che nessun pulsante usa.
-// test/azioniConsentite.test.js fallisce se un template usa un nome assente da qui.
-
 const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'abbandonaArchivioShare',
     'aggiornaCampoProprio',
@@ -142,7 +135,6 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'eseguiRipristinoCloudGlobale',
     'esportaBackupZip',
     'esportaTesto',
-    'fn',
     'fondiTagSelezionati',
     'formatta',
     'fuocoEditorDaSfondo',

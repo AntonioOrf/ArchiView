@@ -1,32 +1,18 @@
-// P5 — due carte affiancate, per confrontare le mani e ricostruire i fascicoli.
-//
-// Due colonne uguali: ciascuna sceglie la sua carta cercando in TUTTO l'archivio e ha il suo
-// visualizzatore (imageViewer.ts), quindi zoom, rotazione e filtri di P4 sono indipendenti.
-// "Sincronizza" copia scala, spostamento e rotazione da un lato all'altro.
-// Un PDF ha un pdfViewer.ts per lato, separato da quello della trascrizione: la pagina resa
-// finisce nello stesso <img>, quindi zoom e filtri valgono uguali.
 (function() {
     const LATI = ['sx', 'dx'];
     const MAX_RISULTATI = 40;
     let _ccSincronizza = false;
     let _ccInSync = false;
-    // Per lato: il visualizzatore PDF (creato al primo PDF), la pagina mostrata e un contatore
-    // che scarta le rese superate da una scelta successiva.
     const _ccPdf = { sx: null, dx: null };
     const _ccPagina = { sx: 0, dx: 0 };
     const _ccGen = { sx: 0, dx: 0 };
 
     function _ccEl(id) { return document.getElementById(id); }
 
-    /** Indici delle carte della scheda, immagini e PDF. */
     function _ccCarte(m) {
         return normalizzaAllegati(m).map((a, i) => (a ? i : -1)).filter(i => i >= 0);
     }
 
-    /**
-     * Schede con almeno una carta che contengono tutte le parole della ricerca, in
-     * segnatura o nei campi: il nome di un file non lo ricorda nessuno, la scheda sì.
-     */
     function _ccCerca(testo) {
         const parole = window.tokenizzaRicerca(testo);
         const servizio = new Set(window.Model.CHIAVI_SERVIZIO);
@@ -51,7 +37,7 @@
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'confronto-voce';
-        b.textContent = testo;   // segnature e nomi sono dati dell'archivio
+        b.textContent = testo;
         b.addEventListener('click', onClick);
         li.appendChild(b);
         lista.appendChild(li);
@@ -76,14 +62,12 @@
         }
         for (const { m, carte } of trovate) {
             const n = window.t('cmp_n_sheets', '{n} carte').replace('{n}', String(carte.length));
-            // Una sola carta: inutile un secondo passaggio.
             _ccVoce(lista, `${m.segnatura || m.id} · ${n}`, () =>
                 carte.length === 1 ? _ccScegli(lato, m.id, carte[0]) : _ccMostraCarte(lato, m, carte));
         }
         _ccApriLista(lato);
     }
 
-    /** Secondo livello: le carte della scheda scelta, con il ritorno alle schede. */
     function _ccMostraCarte(lato, m, carte) {
         const lista = _ccEl(`confronto-risultati-${lato}`);
         lista.replaceChildren();
@@ -99,7 +83,6 @@
             prima = prima || b;
         }
         _ccApriLista(lato);
-        // Il bottone cliccato è sparito: il fuoco va sulla prima carta, non si perde nel vuoto.
         prima?.focus();
     }
 
@@ -108,7 +91,6 @@
         _ccEl(`confronto-cerca-${lato}`).setAttribute('aria-expanded', 'false');
     }
 
-    /** Sceglie la carta `indice` della scheda `id`; su un PDF apre la pagina `pagina` (1 se assente). */
     async function _ccScegli(lato, id, indice, pagina = 1) {
         const m = appData.manoscritti.find(x => String(x.id) === String(id));
         const a = m && Array.isArray(m.allegati) ? m.allegati[indice] : null;
@@ -127,7 +109,6 @@
         if (a.tipo !== 'pdf') {
             img.alt = nome;
             img.src = window.srcAllegato(a);
-            // Il PDF di prima non serve più: via documento e pagine rese.
             if (_ccPdf[lato]) _ccPdf[lato].chiudi();
             return;
         }
@@ -165,7 +146,6 @@
         }
     }
 
-    /** Copia la vista di `da` sull'altro lato. Il flag evita il rimbalzo fra i due applica(). */
     function _ccAllinea(da) {
         if (!_ccSincronizza || _ccInSync) return;
         const sorgente = (_ccEl(`confronto-viewport-${da}`) as any)._imageViewer;
@@ -190,8 +170,6 @@
             if (ctrl) ctrl.onVista = () => _ccAllinea(lato);
         }
         modal.classList.remove('hidden-tab');
-        // A sinistra la carta che si sta trascrivendo; di un PDF, la pagina aperta
-        // (`_taPaginaCorrente`, attachmentsLogic.ts: 0 sulle immagini).
         const id = (_ccEl('trascrizione-id') as HTMLInputElement)?.value;
         const vistaAperta = !_ccEl('view-trascrizione')?.classList.contains('hidden-tab');
         if (id && vistaAperta) _ccScegli('sx', id, window.currentAllegatoIndex || 0, _taPaginaCorrente || 1);
@@ -216,7 +194,6 @@
 
     window.sincronizzaConfronto = function(attiva) {
         _ccSincronizza = !!attiva;
-        // All'accensione la destra prende la vista della sinistra: è da lì che si parte.
         if (_ccSincronizza) _ccAllinea('sx');
     };
 
@@ -269,8 +246,6 @@
         document.body.insertAdjacentHTML('beforeend', html);
         for (const lato of LATI) {
             const campo = _ccEl(`confronto-cerca-${lato}`);
-            // L'elenco si apre scrivendo o con freccia giù, non al fuoco: aperto da solo, il primo
-            // Esc dopo l'apertura del modale chiuderebbe l'elenco invece del modale.
             campo.addEventListener('input', () => _ccMostraRisultati(lato));
             campo.addEventListener('keydown', (e) => {
                 if (e.key === 'ArrowDown') {
@@ -278,7 +253,6 @@
                     if (_ccEl(`confronto-risultati-${lato}`).classList.contains('hidden-tab')) _ccMostraRisultati(lato);
                     _ccEl(`confronto-risultati-${lato}`).querySelector<HTMLElement>('button')?.focus();
                 } else if (e.key === 'Escape' && !_ccEl(`confronto-risultati-${lato}`).classList.contains('hidden-tab')) {
-                    // Il primo Esc chiude l'elenco, non il modale.
                     e.stopPropagation();
                     _ccChiudiRisultati(lato);
                 }
@@ -299,10 +273,7 @@
             });
             _ccEl(`confronto-pagina-${lato}`).addEventListener('change', (e) =>
                 _ccMostraPagina(lato, (e.target as HTMLInputElement).value));
-            // Col mouse l'elenco si apre anche a campo vuoto: tutte le schede, si sceglie scorrendo.
             campo.addEventListener('click', () => _ccMostraRisultati(lato));
-            // Il fuoco esce dalla ricerca (clic altrove, Tab): l'elenco si chiude. A fine giro,
-            // perché passando da schede a carte il bottone col fuoco viene rimpiazzato.
             const ricerca = campo.closest('.confronto-ricerca');
             ricerca.addEventListener('focusout', () => setTimeout(() => {
                 if (!ricerca.contains(document.activeElement)) _ccChiudiRisultati(lato);

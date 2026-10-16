@@ -1,8 +1,3 @@
-// Pannello Impostazioni. Il markup nasce da SCHEDE: una tab = una voce, una preferenza = una
-// sezione dentro `sezioni`. Popolamento e salvataggio stanno in logic/settingsLogic.ts.
-//
-// Tab con la semantica ARIA del pattern "tabs" verticale: tablist, roving tabindex (solo la
-// tab attiva è nel giro del Tab), frecce su/giù, Home/End.
 (function() {
     const CHIAVE_ULTIMA_TAB = 'archiview.impostazioni.tab';
 
@@ -12,7 +7,6 @@
     const opzione = (valore: string, chiave: string, testo: string) =>
         `<option value="${valore}" data-i18n="${chiave}">${testo}</option>`;
 
-    /** Blocco standard: titolo (etichetta del controllo), descrizione, corpo. */
     function sezione(id: string, icona: string, titolo: [string, string], desc: [string, string] | null, corpo: string) {
         return `
             <section class="sezione-impostazioni" aria-labelledby="${id}-title">
@@ -22,7 +16,6 @@
             </section>`;
     }
 
-    /** Campo numerico con messaggio d'errore collegato (aria-describedby/aria-invalid). */
     function numero(id: string, chiave: string, testo: string, min: number, max: number, azione: string) {
         return `
             <label class="text-xs text-stone-600 flex flex-col gap-1">
@@ -148,8 +141,6 @@
                             <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span data-i18n="btn_restore_default">Ripristina di default</span>
                         </button>
                     </div>`),
-                // Cestino e snapshot stanno fra i DATI: file che occupano spazio su questo
-                // computer e non si sincronizzano, come la cartella allegati.
                 sezione('settings-safety', 'shield-check', ['settings_safety_title', 'Cestino e snapshot'],
                     ['settings_safety_desc', "L'archivio viene fotografato periodicamente su questo computer, e le schede eliminate restano nel cestino prima di sparire. Nulla di tutto ciò viene sincronizzato."],
                     `<label class="flex items-center gap-2 text-sm mb-3">
@@ -164,7 +155,6 @@
                     <button type="button" ${window.azione('click', 'inSequenza', 'chiudiImpostazioni', 'apriCestino')} class="btn btn-secondary mt-3">
                         <i data-lucide="trash-2" class="w-4 h-4 text-stone-500"></i> <span data-i18n="trash_title">Cestino</span>
                     </button>`),
-                // Ricerca tra archivi: preferenze di QUESTO computer. L'elenco lo riempie popolaArchiviRicerca.
                 sezione('settings-cross', 'library', ['settings_cross_title', 'Ricerca tra archivi'],
                     ['settings_cross_desc', 'Gli archivi aperti almeno una volta su questo computer in cui cercare con "Cerca anche negli altri archivi". Vengono soltanto letti, mai modificati.'],
                     `<label class="flex items-center gap-2 text-sm mb-3">
@@ -288,15 +278,13 @@
             btn.tabIndex = attiva ? 0 : -1;
             if (attiva && fuoco) btn.focus();
         });
-        try { localStorage.setItem(CHIAVE_ULTIMA_TAB, targetId); } catch (e) { /* solo comodità */ }
+        try { localStorage.setItem(CHIAVE_ULTIMA_TAB, targetId); } catch (e) {}
     };
 
     window.ultimaTabImpostazioni = function() {
         try { return localStorage.getItem(CHIAVE_ULTIMA_TAB) || SCHEDE[0].id; } catch (e) { return SCHEDE[0].id; }
     };
 
-    // Frecce su/giù (e sinistra/destra a finestra stretta, dove la lista va in orizzontale),
-    // Home/End: si sposta e si attiva insieme (attivazione automatica, pannelli già nel DOM).
     window.tastieraTabImpostazioni = function(e: KeyboardEvent) {
         const ids = SCHEDE.map(s => s.id);
         const corrente = (e.target as HTMLElement).closest<HTMLElement>('.settings-tab-btn');

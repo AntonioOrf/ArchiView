@@ -175,8 +175,6 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        // P2.5 — stato attivo dei bottoni di formattazione (aria-pressed + visuale).
-        // Aggiornato su selectionchange quando la selezione è dentro l'editor.
         const updateToolbarState = () => {
             const editor = document.getElementById('trascrizione-editor');
             const toolbar = document.getElementById('trascrizione-toolbar');
@@ -186,7 +184,7 @@
             toolbar.querySelectorAll('button[data-cmd]').forEach((btn) => {
                 let active = false;
                 if (inEditor) {
-                    try { active = document.queryCommandState(btn.getAttribute('data-cmd')); } catch { /* noop */ }
+                    try { active = document.queryCommandState(btn.getAttribute('data-cmd')); } catch {}
                 }
                 btn.setAttribute('aria-pressed', active ? 'true' : 'false');
             });

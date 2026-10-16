@@ -1,15 +1,7 @@
-// P1 — tastiera dei caratteri speciali (MUFI) sotto la barra dell'editor della trascrizione.
-//
-// Col mouse il pulsante non prende il fuoco (nonRubareFuoco): il carattere entra al cursore e
-// si continua a scrivere. Da tastiera il fuoco resta sul pulsante, per inserirne più di uno di
-// fila; Esc torna all'editor. In entrambi i casi si scrive con execCommand('insertText'),
-// così l'inserimento entra nell'annulla dell'editor e fa scattare 'input' (non salvato).
 (function() {
     const CHIAVE_RECENTI = 'av_caratteri_recenti';
     const MAX_RECENTI = 10;
 
-    // [carattere inserito, chiave i18n del nome, nome italiano di ripiego]. Il nome è quello
-    // che legge lo screen reader: il glifo da solo non dice nulla.
     const GRUPPI: [string, string, [string, string, string][]][] = [
         ['car_gruppo_abbreviazioni', 'Abbreviazioni', [
             ['ꝑ', 'car_a751', 'p con asta tagliata, per'],
@@ -50,7 +42,6 @@
     ];
     const NOMI = new Map(GRUPPI.flatMap(([, , car]) => car.map(([c, k, f]) => [c, [k, f]] as [string, [string, string]])));
     const nome = (c: string) => { const n = NOMI.get(c); return n ? window.t(n[0], n[1]) : c; };
-    // Un segno combinante da solo non si vede: lo si mostra sul cerchio tratteggiato.
     const glifo = (c: string) => /^\p{M}$/u.test(c) ? '◌' + c : c;
 
     function leggiRecenti(): string[] {
@@ -61,7 +52,7 @@
     }
     function ricordaRecente(c: string) {
         const recenti = [c, ...leggiRecenti().filter(x => x !== c)].slice(0, MAX_RECENTI);
-        try { localStorage.setItem(CHIAVE_RECENTI, JSON.stringify(recenti)); } catch { /* solo comodità */ }
+        try { localStorage.setItem(CHIAVE_RECENTI, JSON.stringify(recenti)); } catch {}
     }
 
     function gruppoEl(id: string, titolo: string, caratteri: string[]): HTMLElement {
@@ -96,9 +87,6 @@
         );
     }
 
-    // Posizione del cursore quando l'editor perde il fuoco: da tastiera il fuoco è sul pannello
-    // e la selezione del documento non è più garantita dentro l'editor. Si prende all'uscita e
-    // non a ogni selectionchange: un Range salvato non si sposta col testo scritto al suo bordo.
     let rangeEditor: Range | null = null;
 
     function inserisci(bottone: HTMLElement, e: MouseEvent) {
@@ -119,7 +107,6 @@
         if (!pannello) return;
         const gruppo = bottone.closest<HTMLElement>('[data-gruppo]')?.dataset.gruppo;
         disegna(pannello);
-        // detail 0 = click da tastiera (Invio/Spazio): il fuoco torna al pulsante appena ridisegnato.
         if (e.detail === 0 && gruppo) {
             pannello.querySelector<HTMLElement>(`[data-gruppo="${gruppo}"] [data-c="${CSS.escape(c)}"]`)?.focus();
         }
@@ -144,8 +131,6 @@
             const sel = window.getSelection();
             if (sel && sel.rangeCount && (e.currentTarget as Node).contains(sel.anchorNode)) rangeEditor = sel.getRangeAt(0).cloneRange();
         });
-        // Listener diretti e non data-on-*: i pulsanti nascono qui e il registro delle azioni
-        // vede solo i nomi scritti nei template.
         const bottoneDi = (e: Event) => (e.target as Element).closest<HTMLElement>('.car-speciale');
         pannello.addEventListener('mousedown', (e) => { if (bottoneDi(e)) e.preventDefault(); });
         pannello.addEventListener('click', (e) => { const b = bottoneDi(e); if (b) inserisci(b, e); });

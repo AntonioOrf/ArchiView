@@ -1,9 +1,3 @@
-// P9 — collazione tra testimoni: le trascrizioni di schede collegate, parola per parola.
-//
-// Il calcolo sta in shared/collazione.ts; qui solo testo dei testimoni e DOM. Si apre dal
-// pannello "Schede collegate": i testimoni sono la scheda e le sue collegate (nei due versi).
-// Una colonna per testimone con i luoghi varianti segnati e numerati, e sotto l'apparato
-// rispetto al testimone base.
 (function() {
     let _clIds = [];
 
@@ -11,15 +5,12 @@
     function _clScheda(id) { return (appData.manoscritti || []).find(m => String(m.id) === String(id)); }
     function _clSigla(m) { return (m && m.segnatura) || window.t('no_signature', 'Senza segnatura'); }
 
-    /** Testo piano della scheda: le carte in ordine, o la trascrizione della scheda se non ne ha. */
     function _clTesto(m) {
         const allegati = Array.isArray(m && m.allegati) ? m.allegati : [];
         const pezzi = allegati.some(a => a && typeof a.trascrizione === 'string')
             ? allegati.map(a => (a && a.trascrizione) || '')
             : [(m && m.trascrizione) || ''];
         const tpl = document.createElement('template');
-        // Uno spazio dopo ogni fine di blocco: textContent incollerebbe l'ultima parola di un
-        // paragrafo alla prima del successivo.
         tpl.innerHTML = window.sanitizeHTML(pezzi.join('\n').replace(/<(br|\/p|\/div|\/li|\/h[1-6])\b[^>]*>/gi, '$& '));
         return (tpl.content.textContent || '').replace(/\[p\. \d+\]/g, ' ');
     }
@@ -68,7 +59,6 @@
         _clEl('coll-apparato')?.replaceChildren();
     };
 
-    /** Parole come span (le varianti marcate) e il numero della voce dopo il luogo variante. */
     function _clColonna(titolo, parole, luoghi) {
         const col = document.createElement('section');
         col.className = 'collazione-colonna';
@@ -134,7 +124,6 @@
         const om = window.t('coll_om', 'om.');
         for (const v of app.voci) {
             const li = document.createElement('li');
-            // Le lezioni uguali si raggruppano: "fuit B C", non "fuit B; fuit C".
             const gruppi = new Map();
             for (const l of v.lezioni) {
                 if (!gruppi.has(l.testo)) gruppi.set(l.testo, []);

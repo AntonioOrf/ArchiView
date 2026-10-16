@@ -10,7 +10,6 @@ window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifi
         let valVecchio = (vecchioObj && vecchioObj[key] !== undefined) ? vecchioObj[key] : '';
         let valNuovo = (nuovoObj && nuovoObj[key] !== undefined) ? nuovoObj[key] : '';
 
-        // Normalizziamo per la comparazione
         const jsonVecchio = JSON.stringify(valVecchio);
         const jsonNuovo = JSON.stringify(valNuovo);
 

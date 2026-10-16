@@ -1,12 +1,5 @@
-    <!--
-      ZONA 1 (sinistra) = NAVIGAZIONE: solo i tab della sidebar.
-      ZONA 2 (destra)   = STATO GLOBALE: indicatori e sincronizzazione cloud.
-      Le azioni sui dati vivono nell'header della vista (Zona 3, viewList.ts).
-      Vedi UI_UX_TODO.md — "Legge delle Zone".
-    -->
     <header class="panel-glass shrink-0 flex items-center justify-between gap-3 p-2">
 
-        <!-- ZONA 1 — Navigazione pannelli sidebar -->
         <nav id="sidebar-tablist" role="tablist" aria-orientation="horizontal" class="flex items-center gap-0.5 shrink-0" data-i18n-aria-label="nav_panels" aria-label="Pannelli">
             <button id="btn-tab-folders" role="tab" aria-selected="false" aria-controls="sidebar-folders" tabindex="0" data-on-click="switchSidebarTab" data-args-click="[&quot;folders&quot;]" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders" data-i18n-aria-label="tooltip_folders">
                 <i data-lucide="folder" class="w-5 h-5"></i>
@@ -29,25 +22,15 @@
             </button>
         </nav>
 
-        <!-- ZONA 2 — Stato globale (sincronizzazione) -->
         <div class="flex items-center justify-end gap-2 min-w-0">
 
-            <!-- ZONA 2 — Un solo controllo cloud (Fase 3.1/3.4). Stato prevalente in una riga;
-                 il dettaglio sta nel popover, non in indicatori paralleli.
-                 Nessun md: qui — il controllo non sparisce a finestra stretta (3.3). -->
             <button id="cloud-status-btn" type="button" data-on-click="apriPopoverCloud" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" aria-haspopup="menu" aria-expanded="false"
                     class="btn btn-ghost flex items-center gap-2 min-w-0 max-w-[240px] border border-stone-300">
                 <i id="cloud-status-icon" data-lucide="cloud" class="w-4 h-4 shrink-0"></i>
                 <span id="cloud-status-label" class="text-xs font-medium truncate"></span>
-                <!-- Il chevron è l'unico segnale che qui si apre qualcosa: senza, il
-                     controllo si legge come un'etichetta di stato e le azioni di sync
-                     restano non scoperte. -->
                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 shrink-0 opacity-60"></i>
             </button>
 
-            <!-- L'azione che lo stato corrente richiede, sempre visibile e con etichetta:
-                 Ricevi se ci sono aggiornamenti, Invia se ci sono modifiche locali,
-                 Controlla se è tutto allineato. Le altre due restano nel popover. -->
             <button id="cloud-primary-action" type="button" style="display:none" class="btn btn-secondary items-center gap-1.5 shrink-0">
                 <i id="cloud-primary-action-icon" data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i>
                 <span id="cloud-primary-action-label" class="text-xs font-medium"></span>

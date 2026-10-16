@@ -1,7 +1,3 @@
-// Traduzioni: i due dizionari qui sotto sono l'UNICA fonte (PIANO-OTTIMIZZAZIONE, Fase 4).
-// Una stringa nuova si aggiunge in entrambi; il secondo argomento di `window.t` è il ripiego
-// in italiano mostrato se la chiave manca. Prima c'era anche un catalogo Lingui parallelo,
-// e le due fonti davano testi diversi per la stessa chiave.
 window.linguaAttuale = 'it';
 
 window.initLang = async function() {
@@ -12,7 +8,6 @@ window.initLang = async function() {
 };
 
 const customEn = {
-    // --- Ricerca tra archivi ---
     "cross_toggle": "Also search other archives",
     "cross_title": "In other archives",
     "cross_more": "Show more results",
@@ -137,14 +132,12 @@ const customEn = {
     "cross_insert_value": "Insert into the open record",
     "cross_value_inserted": "Inserted into \"{var0}\".",
     "cross_insert_overwrite": "The field \"{var0}\" is already filled in: replace its content?",
-    // --- Etichetta secondaria delle schede nell'albero ---
     "tree_label_title": "Secondary label on records",
     "tree_label_heading": "Show under the shelfmark",
     "tree_label_none": "None",
     "tree_label_auto": "Automatic (main name)",
     "tree_sort_heading": "Sort the tree by",
     "tree_sort_secondary": "Secondary label",
-    // Vedi la nota sul lessico in customIt: "archive" = vault, "folder" = albero interno.
     "msg_l_archivio_copiato_vuoto": "The copied folder is empty.",
     "th_folder": "Folder",
     "msg_folder_deleted": "Folder deleted.",
@@ -154,7 +147,6 @@ const customEn = {
     "modal_new_folder": "New folder",
     "folder_empty": "The folder is empty.",
     "btn_delete_folder": "Delete this folder",
-    // --- Fase 1.1: ordinamento e vista tabellare ---
     "field_segnatura": "Shelfmark",
     "label_sort_by": "Sort by",
     "tooltip_sort_by": "Sort criterion for the list",
@@ -172,7 +164,6 @@ const customEn = {
     "tooltip_new_record_type": "Choose the type of the new record",
     "menu_new_record_type": "New record of type",
 
-    // --- Fase 1: passi del tutorial sulle funzioni della vista elenco ---
     "tut_sort_title": "Sorting and table view",
     "tut_sort_desc": "The list can be sorted by shelfmark, by a field of the document type, by modification date or by number of attachments. This control switches between the card grid and the table: there every column header sorts, and the visible columns are chosen per document type.",
     "tut_filters_title": "Filters and saved searches",
@@ -182,7 +173,6 @@ const customEn = {
     "tut_viewer_title": "The image viewer",
     "tut_viewer_desc": "In the viewer you can zoom (mouse wheel or the + and − keys), pan, rotate by 90° (R key) and fit to page or width. Brightness, contrast and negative help with hard-to-read scripts. Alt+← and Alt+→ move between the record's attachments.",
 
-    // --- Fase 1.4: command palette e scorciatoie ---
     "cp_title": "Commands",
     "cp_placeholder": "Search a command, a record or a folder…",
     "cp_empty": "No matching command.",
@@ -222,7 +212,6 @@ const customEn = {
     "shortcut_rotate": "Rotate by 90° (with Shift: the other way)",
     "shortcut_pan": "Pan the image",
 
-    // --- Fase 1.5: azioni in massa e scorciatoie sulla selezione ---
     "tut_bulk_title": "Actions on several records",
     "tut_bulk_desc": "Ctrl+click and Shift+click select several records; Ctrl+A takes every result of the current filter, later pages included. The right-click menu then applies the action to the whole selection: moving to a folder, changing the document type, adding or removing tags, replacing text in a field. Before confirming you see how many records will change, and you can undo.",
     "bulk_move_title": "Move to a folder",
@@ -292,7 +281,6 @@ const customEn = {
     "shortcut_bulk_tag": "Add or remove tags on the selection",
     "shortcut_bulk_replace": "Find and replace in a field of the selection",
 
-    // --- Fase 1.3: filtri avanzati e ricerche salvate ---
     "btn_filters": "Filters",
     "tooltip_filters": "Advanced filters and saved searches",
     "tooltip_filters_active": "Advanced filters ({var0} active)",
@@ -319,7 +307,6 @@ const customEn = {
     "btn_delete_saved_search": "Delete this search",
     "msg_saved_search": "Search saved.",
 
-    // --- Fase 1.2: visualizzatore immagini ---
     "tooltip_zoom_in": "Zoom in (+)",
     "tooltip_zoom_out": "Zoom out (-)",
     "tooltip_rotate_left": "Rotate left (Shift+R)",
@@ -333,7 +320,6 @@ const customEn = {
     "label_contrast": "Contrast",
     "label_invert": "Invert (negative)",
 
-    // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
     "btn_new_record": "New record",
     "btn_new_folder": "New folder",
     "btn_import": "Import",
@@ -677,7 +663,6 @@ const customEn = {
     "tooltip_back": "Back to list",
     "placeholder_tags": "Filter tags…",
 
-    // === CONDIVISIONE (redesign) ===
     "share_title": "Sharing",
     "share_local_title": "Share this archive",
     "share_local_desc": "Create a free shared archive to work together with your colleagues, or join an existing one with an invite link.",
@@ -773,8 +758,6 @@ const customEn = {
     "modal_release_notes_title": "Release notes",
     "msg_no_release_notes": "No release notes available for this version.",
 
-    // --- Fase 2.3: OCR degli allegati ---
-    // --- Menu contestuali: etichette corte ---
     "menu_edit_short": "Edit",
     "menu_ocr_short": "Recognise text",
     "menu_export_zip": "Export ZIP",
@@ -802,7 +785,6 @@ const customEn = {
     "menu_explorer_short": "File explorer",
     "bulk_export_zip_full": "Export the selection as ZIP",
 
-    // --- Fase 2.2: stampa e PDF ---
     "print_title": "Print and PDF",
     "print_scope": "What to print",
     "print_scope_selection": "Selected records",
@@ -855,7 +837,6 @@ const customEn = {
     "print_no_records": "No record to print.",
     "print_untitled": "No shelfmark",
 
-    // --- Fasi 2.5 e 2.6: export della trascrizione e citazioni ---
     "tx_title": "Export text and citations",
     "tx_scope": "What to export",
     "tx_format": "Format",
@@ -880,7 +861,6 @@ const customEn = {
     "cit_type": "Manuscript",
     "cit_untitled": "Untitled",
 
-    // --- Fase 3.2: data storica fuzzy ---
     "filter_period": "Document period",
     "filter_year_from": "From year",
     "filter_year_to": "To year",
@@ -898,7 +878,6 @@ const customEn = {
     "date_q_range": "range",
     "date_q_century": "century",
 
-    // --- Fase 3.1: campi tipizzati ---
     "value_yes": "Yes",
     "value_no": "No",
     "field_required": "Required field",
@@ -945,9 +924,7 @@ const customEn = {
     "err_field_option": "The value of the field \"{var0}\" is not among the allowed ones.",
     "warn_field_duplicate": "Careful: \"{var0}\" has the same value as another record ({var1}).",
 
-    // --- Fase 3.4: tag come entità ---
     "tag_manager_title": "Manage tags",
-    // Fase 2.4 — import CSV
     "imp_title": "Import from CSV",
     "imp_step_model": "Where do these records go?",
     "imp_model_new": "Create a new template",
@@ -1051,7 +1028,6 @@ const customEn = {
     "imp_err_dup": "shelfmark already in the archive",
     "imp_err_dup_file": "shelfmark repeated inside the file",
     "undo_import_csv": "Import of {var0} records",
-    // Fase 4 — cestino, snapshot, cronologia per scheda, undo/redo
     "trash_title": "Trash",
     "trash_select": "Select this record",
     "trash_restore": "Restore",
@@ -1140,7 +1116,6 @@ const customEn = {
     "msg_tag_nothing": "No record was modified.",
     "msg_tag_rename_merges": "A tag with this name already exists: the two have been merged.",
 
-    // --- Fasi 3.3, 3.5 e 3.6: vocabolari, anagrafica, collegamenti, duplicati ---
     "vocab_title": "Controlled vocabularies",
     "vocab_new": "New vocabulary",
     "vocab_new_value": "New value…",
@@ -1383,7 +1358,6 @@ const customEn = {
     "pdf_source_transcription": "Transcription",
     "pdf_open_failed_title": "Unreadable PDF",
     "pdf_open_failed_desc": "The file cannot be opened: it may be damaged or password-protected. The transcription can still be edited.",
-    // --- Dal catalogo Lingui (rimosso nella Fase 4 di PIANO-OTTIMIZZAZIONE) ---
     "btn_add_dynamic": "Add",
     "btn_add_image_pdf": "Add Image/PDF",
     "btn_cancel": "Cancel",
@@ -1763,7 +1737,6 @@ const customEn = {
     "unsaved_prompt": "There are unsaved changes in this transcription.",
     "update_available": "A new version is available.",
     "upload_in_progress": "Uploading…",
-    // --- Traduzioni del vecchio catalogo per testo (mai raggiunte da window.t) ---
     "msg_l_archivio_stato_sincroni": "The archive has been synchronized in real time.",
     "msg_esportazione_di_var_recor": "{var0} records exported.",
     "msg_importati_var_record_con_": "{var0} records imported.",
@@ -1783,7 +1756,6 @@ const customEn = {
     "tut_history_panel_title": "History",
     "tut_history_panel_desc": "From here you can browse earlier versions of the archive, open them read-only, and restore the archive to one of them.",
     "msg_annullato_var": "Undone: {var0}",
-    // --- Audit front-end P2-7: chiavi usate senza voce nei dizionari ---
     "msg_hub_migrato_reinvita": "Migration to the Hub complete. Re-invite your collaborators with a new invite from the Sharing panel: Google Drive permissions cannot be transferred.",
     "th_signature": "Shelfmark",
     "history_unknown_author": "Unknown",
@@ -1887,7 +1859,6 @@ const customEn = {
 };
 
 const customIt = {
-    // --- Ricerca tra archivi ---
     "cross_toggle": "Cerca anche negli altri archivi",
     "cross_title": "Negli altri archivi",
     "cross_more": "Mostra altri risultati",
@@ -2012,17 +1983,12 @@ const customIt = {
     "cross_insert_value": "Inserisci nella scheda aperta",
     "cross_value_inserted": "Inserito in \"{var0}\".",
     "cross_insert_overwrite": "Il campo \"{var0}\" è già compilato: sostituirne il contenuto?",
-    // --- Etichetta secondaria delle schede nell'albero ---
     "tree_label_title": "Etichetta secondaria delle schede",
     "tree_label_heading": "Mostra sotto la segnatura",
     "tree_label_none": "Nessuna",
     "tree_label_auto": "Automatica (nome principale)",
     "tree_sort_heading": "Ordina l’albero per",
     "tree_sort_secondary": "Etichetta secondaria",
-    // ⚠️ LESSICO: "archivio" è il VAULT — quelli che si creano e si scelgono dal selettore
-    // in fondo alla sidebar. L'albero interno (appData.cartelle) si chiama "cartella".
-    // Le due cose erano entrambe "archivio" e l'ambiguità arrivava fino alle conferme di
-    // eliminazione, dove "eliminare l'archivio" poteva voler dire due cose molto diverse.
     "msg_l_archivio_copiato_vuoto": "La cartella copiata è vuota.",
     "msg_l_archivio_vuoto_nulla_da": "La cartella è vuota, nulla da esportare.",
     "th_folder": "Cartella",
@@ -2033,7 +1999,6 @@ const customIt = {
     "modal_new_folder": "Nuova cartella",
     "folder_empty": "La cartella è vuota.",
     "btn_delete_folder": "Elimina questa cartella",
-    // --- Fase 1.1: ordinamento e vista tabellare ---
     "field_segnatura": "Segnatura",
     "label_sort_by": "Ordina per",
     "tooltip_sort_by": "Criterio di ordinamento dell'elenco",
@@ -2051,7 +2016,6 @@ const customIt = {
     "tooltip_new_record_type": "Scegli il tipo della nuova scheda",
     "menu_new_record_type": "Nuova scheda di tipo",
 
-    // --- Fase 1: passi del tutorial sulle funzioni della vista elenco ---
     "tut_sort_title": "Ordinamento e tabella",
     "tut_sort_desc": "L'elenco si ordina per segnatura, per un campo del tipo di documento, per data di modifica o per numero di allegati. Questo comando alterna la griglia di schede alla tabella: lì ogni intestazione di colonna ordina, e le colonne visibili si scelgono per tipo di documento.",
     "tut_filters_title": "Filtri e ricerche salvate",
@@ -2061,7 +2025,6 @@ const customIt = {
     "tut_viewer_title": "Il visore delle immagini",
     "tut_viewer_desc": "Nel visore puoi ingrandire (rotella o tasti + e −), spostare l'immagine, ruotarla di 90° (tasto R) e adattarla alla pagina o alla larghezza. Luminosità, contrasto e negativo aiutano con le scritture difficili. Alt+← e Alt+→ passano da un allegato all'altro della scheda.",
 
-    // --- Fase 1.4: command palette e scorciatoie ---
     "cp_title": "Comandi",
     "cp_placeholder": "Cerca un comando, una scheda o una cartella…",
     "cp_empty": "Nessun comando corrisponde.",
@@ -2101,7 +2064,6 @@ const customIt = {
     "shortcut_rotate": "Ruota di 90° (con Maiusc: in senso opposto)",
     "shortcut_pan": "Sposta l’immagine",
 
-    // --- Fase 1.5: azioni in massa e scorciatoie sulla selezione ---
     "tut_bulk_title": "Azioni su più schede",
     "tut_bulk_desc": "Ctrl+clic e Maiusc+clic selezionano più schede; Ctrl+A prende tutti i risultati del filtro, anche delle pagine successive. Il menu del tasto destro applica l'azione a tutta la selezione: spostare in una cartella, cambiare tipo di documento, aggiungere o togliere tag, sostituire testo in un campo. Prima di confermare vedi quante schede cambiano, e puoi annullare.",
     "bulk_move_title": "Sposta in una cartella",
@@ -2171,7 +2133,6 @@ const customIt = {
     "shortcut_bulk_tag": "Aggiungi o rimuovi tag sulla selezione",
     "shortcut_bulk_replace": "Trova e sostituisci in un campo della selezione",
 
-    // --- Fase 1.3: filtri avanzati e ricerche salvate ---
     "btn_filters": "Filtri",
     "tooltip_filters": "Filtri avanzati e ricerche salvate",
     "tooltip_filters_active": "Filtri avanzati ({var0} attivi)",
@@ -2198,7 +2159,6 @@ const customIt = {
     "btn_delete_saved_search": "Elimina questa ricerca",
     "msg_saved_search": "Ricerca salvata.",
 
-    // --- Fase 1.2: visualizzatore immagini ---
     "tooltip_zoom_in": "Ingrandisci (+)",
     "tooltip_zoom_out": "Riduci (-)",
     "tooltip_rotate_left": "Ruota a sinistra (Maiusc+R)",
@@ -2212,7 +2172,6 @@ const customIt = {
     "label_contrast": "Contrasto",
     "label_invert": "Inverti (negativo)",
 
-    // --- Zona 3: azioni di contesto + filtri attivi (UI_UX_TODO Fase 0/1) ---
     "btn_new_record": "Nuova scheda",
     "btn_new_folder": "Nuova cartella",
     "btn_import": "Importa",
@@ -2485,7 +2444,6 @@ const customIt = {
     "settings_drive_not_connected": "Non Connesso",
     "tooltip_cloud_sync": "Cloud & Sincronizzazione",
 
-    // === CONDIVISIONE (redesign) ===
     "share_title": "Condivisione",
     "share_local_title": "Condividi questo archivio",
     "share_local_desc": "Crea un archivio condiviso gratuito per lavorare insieme ai tuoi colleghi, oppure unisciti a un archivio con un link di invito.",
@@ -2573,8 +2531,6 @@ const customIt = {
     "modal_release_notes_title": "Note di rilascio",
     "msg_no_release_notes": "Nessuna nota di rilascio disponibile per questa versione.",
 
-    // --- Fase 2.3: OCR degli allegati ---
-    // --- Menu contestuali: etichette corte ---
     "menu_edit_short": "Modifica",
     "menu_ocr_short": "Riconosci testo",
     "menu_export_zip": "Esporta ZIP",
@@ -2602,7 +2558,6 @@ const customIt = {
     "menu_explorer_short": "Esplora risorse",
     "bulk_export_zip_full": "Esporta la selezione in ZIP",
 
-    // --- Fase 2.2: stampa e PDF ---
     "print_title": "Stampa e PDF",
     "print_scope": "Cosa stampare",
     "print_scope_selection": "Schede selezionate",
@@ -2655,7 +2610,6 @@ const customIt = {
     "print_no_records": "Nessuna scheda da stampare.",
     "print_untitled": "Senza segnatura",
 
-    // --- Fasi 2.5 e 2.6: export della trascrizione e citazioni ---
     "tx_title": "Esporta testo e citazioni",
     "tx_scope": "Cosa esportare",
     "tx_format": "Formato",
@@ -2680,7 +2634,6 @@ const customIt = {
     "cit_type": "Manoscritto",
     "cit_untitled": "Senza titolo",
 
-    // --- Fase 3.2: data storica fuzzy ---
     "filter_period": "Periodo del documento",
     "filter_year_from": "Dall'anno",
     "filter_year_to": "All'anno",
@@ -2698,7 +2651,6 @@ const customIt = {
     "date_q_range": "intervallo",
     "date_q_century": "secolo",
 
-    // --- Fase 3.1: campi tipizzati ---
     "value_yes": "Sì",
     "value_no": "No",
     "field_required": "Campo obbligatorio",
@@ -2726,9 +2678,7 @@ const customIt = {
     "err_field_option": "Il valore del campo \"{var0}\" non è fra quelli previsti.",
     "warn_field_duplicate": "Attenzione: \"{var0}\" ha lo stesso valore di un'altra scheda ({var1}).",
 
-    // --- Fase 3.4: tag come entità ---
     "tag_manager_title": "Gestione tag",
-    // Fase 2.4 — import CSV
     "imp_title": "Importa da CSV",
     "imp_step_model": "Dove finiscono queste schede?",
     "imp_model_new": "Crea un modello nuovo",
@@ -2831,7 +2781,6 @@ const customIt = {
     "imp_err_dup": "segnatura già presente in archivio",
     "imp_err_dup_file": "segnatura ripetuta dentro il file",
     "undo_import_csv": "Import di {var0} schede",
-    // Fase 4 — cestino, snapshot, cronologia per scheda, undo/redo
     "trash_title": "Cestino",
     "trash_select": "Seleziona questa scheda",
     "trash_restore": "Ripristina",
@@ -2920,7 +2869,6 @@ const customIt = {
     "msg_tag_nothing": "Nessuna scheda modificata.",
     "msg_tag_rename_merges": "Un tag con questo nome esiste già: i due sono stati fusi.",
 
-    // --- Fasi 3.3, 3.5 e 3.6: vocabolari, anagrafica, collegamenti, duplicati ---
     "vocab_title": "Vocabolari controllati",
     "vocab_new": "Nuovo vocabolario",
     "vocab_new_value": "Nuovo valore…",
@@ -3163,7 +3111,6 @@ const customIt = {
     "pdf_source_transcription": "Trascrizione",
     "pdf_open_failed_title": "PDF non leggibile",
     "pdf_open_failed_desc": "Il file non si apre: potrebbe essere danneggiato o protetto da password. La trascrizione resta modificabile.",
-    // --- Dal catalogo Lingui (rimosso nella Fase 4 di PIANO-OTTIMIZZAZIONE) ---
     "btn_add_dynamic": "Aggiungi",
     "btn_add_image_pdf": "Aggiungi Immagine/PDF",
     "btn_cancel": "Annulla",
@@ -3546,7 +3493,6 @@ const customIt = {
     "unsaved_prompt": "Ci sono modifiche non salvate in questa trascrizione.",
     "update_available": "È disponibile una nuova versione.",
     "upload_in_progress": "Caricamento",
-    // --- Audit front-end P2-7: chiavi usate senza voce nei dizionari ---
     "msg_hub_migrato_reinvita": "Migrazione sull'Hub completata. Invita di nuovo i collaboratori con un nuovo invito dal pannello Condivisione: i permessi di Google Drive non si trasferiscono.",
     "th_signature": "Segnatura",
     "history_unknown_author": "Sconosciuto",
@@ -3657,30 +3603,20 @@ window.t = function(key, fallback) {
     return dizionario[key] || fallback || key;
 }
 
-// Funzione globale per cambiare lingua
 window.cambiaLingua = async function(lang) {
     window.linguaAttuale = lang;
     await window.apiSettings.patch({ lang });
     document.documentElement.lang = lang;
     window.applicaTraduzioniHtml();
     
-    // Rendi nuovamente l'interfaccia principale per applicare i cambiamenti
     if (typeof renderMain === 'function') renderMain();
     if (typeof renderSidebar === 'function') renderSidebar();
-    // Il chip cloud si ridisegna solo ai cambi di stato: senza, resta nella lingua precedente.
     if (typeof window.aggiornaCloudStatus === 'function') window.aggiornaCloudStatus();
 }
 
-// Traduzione con markup → HTML sanitizzato. Le stringhe sono poche centinaia e fisse, mentre
-// applicaTraduzioniHtml gira su tutto il documento a ogni modale montato: senza cache ogni
-// giro ripassava da DOMPurify le stesse stringhe (misurato: era il costo principale dell'avvio).
 const _traduzioniSanitizzate = new Map<string, string>();
 
 window.applicaTraduzioniHtml = function() {
-    // Sostituisce il testo (innerHTML).
-    // Il testo statico presente nell'HTML (in italiano) viene memorizzato come
-    // fallback: se una chiave non è ancora tradotta si mostra quel testo invece
-    // della chiave grezza (es. "btn_create_hub").
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (!el.hasAttribute('data-i18n-default')) {
@@ -3688,9 +3624,6 @@ window.applicaTraduzioniHtml = function() {
         }
         const def = el.getAttribute('data-i18n-default') || key;
         const testo = window.t(key, def);
-        // Senza `<` né `&` innerHTML e textContent producono lo stesso DOM: niente parser,
-        // niente DOMPurify. Se il nodo contiene già quel testo non si tocca (né layout né
-        // mutazioni per gli observer).
         if (!/[<&]/.test(testo)) {
             const n = el.firstChild;
             if (!(n && n === el.lastChild && n.nodeType === Node.TEXT_NODE && (n as Text).data === testo)) {
@@ -3706,13 +3639,11 @@ window.applicaTraduzioniHtml = function() {
         if (el.innerHTML !== html) el.innerHTML = html;
     });
 
-    // Sostituisce il title
     document.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach(el => {
         const key = el.getAttribute('data-i18n-title');
         el.title = window.t(key, el.title || key);
     });
 
-    // Sostituisce il placeholder
     document.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
         if (!el.hasAttribute('data-i18n-ph-default')) {
@@ -3721,23 +3652,18 @@ window.applicaTraduzioniHtml = function() {
         el.placeholder = window.t(key, el.getAttribute('data-i18n-ph-default') || key);
     });
 
-    // Sostituisce l'aria-label (accessible name per bottoni icona)
     document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
         const key = el.getAttribute('data-i18n-aria-label');
         el.setAttribute('aria-label', window.t(key, el.getAttribute('aria-label') || key));
     });
 
-    // Etichetta degli <optgroup> (attributo, non testo)
     document.querySelectorAll<HTMLOptGroupElement>('[data-i18n-label]').forEach(el => {
         el.label = window.t(el.getAttribute('data-i18n-label'), el.label);
     });
 
-    // Le scorciatoie vanno riapplicate qui: le righe sopra hanno appena riscritto
-    // title e aria-label dalle chiavi, cancellando il suffisso precedente.
     if (typeof window.applicaScorciatoieTooltip === 'function') window.applicaScorciatoieTooltip();
 }
 
-// Applica le traduzioni all'avvio
 document.addEventListener('DOMContentLoaded', () => {
     window.applicaTraduzioniHtml();
 });

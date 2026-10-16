@@ -1,11 +1,9 @@
 window.avviaTutorial = async function () {
-    // Distruggi istanza precedente prima di crearne una nuova
     if (window.dInstance) {
-        try { window.dInstance.destroy(); } catch (_) { /* già distrutta */ }
+        try { window.dInstance.destroy(); } catch (_) {}
         window.dInstance = null;
     }
 
-    // Risolvi il costruttore driver.js indipendentemente dal formato del bundle
     const rawDriver = window.driver;
     if (!rawDriver) {
         console.error("Driver.js non caricato!");
@@ -17,7 +15,6 @@ window.avviaTutorial = async function () {
         return;
     }
 
-    // isCloud viene riletto dopo gli await per evitare race con aggiornaVisibilitaCloud()
     let isTutorialWorkspace = false;
     if (window.apiBrowser && window.apiBrowser.getWorkspacePath) {
         const wp = await window.apiBrowser.getWorkspacePath();
@@ -25,7 +22,6 @@ window.avviaTutorial = async function () {
             isTutorialWorkspace = true;
         }
     }
-    // Rileggiamo isCloud e isAuthenticated dopo l'await, quando il DOM è sicuramente aggiornato
     const isCloud = !!(window.statoCloud && window.statoCloud.vaultCloud);
     const isAuthenticated = !!(window.driveStatus && window.driveStatus.isAuthenticated);
 
@@ -56,8 +52,6 @@ window.avviaTutorial = async function () {
                 );
                 return;
             } else {
-                // appData.cartelle è un array di PERCORSI (stringhe): inserirci un
-                // oggetto faceva esplodere renderSidebar al primo percorso.split('/').
                 if (!appData.cartelle) appData.cartelle = [];
                 if (!appData.cartelle.includes('Tutorial')) {
                     appData.cartelle.push('Tutorial');
@@ -103,8 +97,6 @@ window.avviaTutorial = async function () {
         }
     }
 
-    // AbortController condiviso per lo step corrente: annulla i listener del visit precedente
-    // prima di registrarne di nuovi, evitando accumulo su navigazione prev→next.
     let stepAC = null;
 
     function attachOnce(el, delay = 150) {
@@ -274,8 +266,6 @@ window.avviaTutorial = async function () {
             onHighlighted: (el) => attachOnce(el, 300)
         });
         if (isAuthenticated) {
-            // Utente loggato: #cloud-modal viene aperto normalmente da apriCloudModal().
-            // Aspettiamo che chiuda il modal per avanzare.
             steps.push({
                 element: '#cloud-modal',
                 popover: {
@@ -314,11 +304,6 @@ window.avviaTutorial = async function () {
                 }
             });
         } else {
-            // Utente NON loggato: apriCloudModal() mostra #cloud-auth-modal (z-150) invece di #cloud-modal.
-            // Il popover di driver.js è z-1000000000, quindi i suoi bottoni stanno SOPRA il modal auth
-            // e sono cliccabili. CRITICO: driver.js legge i click-hook da `popover.onNextClick` /
-            // `popover.onPrevClick` (NON dallo step). Messi nello step venivano ignorati e partiva la
-            // navigazione default (movePrevious → tornava a "Integrazione Cloud" senza chiudere il modal).
             let cloudStepDone = false;
             const advanceOnce = () => {
                 if (cloudStepDone) return;
@@ -326,10 +311,6 @@ window.avviaTutorial = async function () {
                 window.dInstance?.moveNext();
             };
             steps.push({
-                // Agganciamo il popover alla finestra di login (non a 'body') con side 'right':
-                // così il tutorial appare ACCANTO al modal auth, non sopra, e lo spotlight
-                // evidenzia il box di accesso. Il modal viene creato (sincrono) al click sul
-                // bottone Cloud dello step precedente, quindi è già nel DOM a questo punto.
                 element: '#cloud-auth-modal .modal-window',
                 popover: {
                     title: window.t('tut_cloud_panel_title', 'Condividere l\'archivio'),
@@ -339,15 +320,12 @@ window.avviaTutorial = async function () {
                     showButtons: ['next', 'previous'],
                     nextBtnText: window.t('btn_login_google', 'Accedi con Google'),
                     prevBtnText: window.t('tut_btn_prosegui', 'Prosegui'),
-                    // "Prosegui" (bottone sinistro): chiude il modal auth e AVANZA (non torna indietro).
                     onPrevClick: () => {
                         const cancelBtn = document.getElementById('btn-cloud-auth-no');
                         if (cancelBtn) cancelBtn.click();
                         else document.getElementById('cloud-auth-modal')?.remove();
                         advanceOnce();
                     },
-                    // "Accedi con Google" (bottone destro): avvia OAuth tramite il bottone reale del
-                    // modal; quando #cloud-modal diventa visibile, avanza.
                     onNextClick: () => {
                         const googleBtn = document.getElementById('btn-cloud-auth-google');
                         if (!googleBtn) { advanceOnce(); return; }
@@ -368,8 +346,6 @@ window.avviaTutorial = async function () {
                     stepAC?.abort();
                     stepAC = new AbortController();
                     cloudStepDone = false;
-                    // Rete di sicurezza: se l'utente clicca direttamente i bottoni del modal auth
-                    // reale invece di quelli del popover, avanza comunque il tutorial.
                     const realCancel = document.getElementById('btn-cloud-auth-no');
                     if (realCancel) realCancel.addEventListener('click', () => advanceOnce(), { once: true, signal: stepAC.signal });
                 }
@@ -412,10 +388,6 @@ window.avviaTutorial = async function () {
         }
     });
 
-    // Fase 1 — le tre funzioni della vista elenco che il tutorial non nominava affatto.
-    // Stanno QUI, subito dopo il ritorno alla navigazione: sono i comandi della barra
-    // sopra l'elenco, e spiegarli prima di aver riportato l'utente sulla lista
-    // significherebbe indicare pulsanti che in quel momento non sono a schermo.
     steps.push({
         element: '#btn-vista-tabella',
         popover: {
@@ -437,8 +409,6 @@ window.avviaTutorial = async function () {
     });
 
     steps.push({
-        // Il "⋯" è costruito al primo render della lista: se manca, driver.js ripiega
-        // sul popover centrato e il passo resta comunque leggibile.
         element: '#context-overflow-slot button',
         popover: {
             title: window.t('tut_palette_title', 'Comandi rapidi'),
@@ -448,10 +418,6 @@ window.avviaTutorial = async function () {
         }
     });
 
-    // Fase 1.5. Il bersaglio è la prima card e non `#selection-indicator`, che senza una
-    // selezione è nascosto: driver.js illuminerebbe un elemento a dimensione zero (la
-    // lezione del pannello allegati nella 1.4). Senza schede il selettore non corrisponde e
-    // il popover ripiega al centro, restando leggibile.
     steps.push({
         element: '.card-scheda',
         popover: {
@@ -518,15 +484,6 @@ window.avviaTutorial = async function () {
         }
     });
 
-    // Fase 1.2 — il visualizzatore. Va PRIMA del passo sull'ambiente di trascrizione,
-    // non dopo: quello avanza al click sulla freccia "torna all'archivio", cioè quando
-    // la vista è già stata lasciata, e un passo successivo punterebbe a un pannello non
-    // più a schermo.
-    //
-    // `:not(.hidden-tab)` non è cosmesi: il pannello dell'allegato esiste sempre nel DOM
-    // ma è nascosto quando la scheda non ha allegati. Con il selettore nudo driver.js
-    // troverebbe un elemento a dimensione zero e illuminerebbe il nulla; senza
-    // corrispondenza ripiega invece sul popover centrato, e il passo resta leggibile.
     steps.push({
         element: '#trascrizione-allegato-panel:not(.hidden-tab)',
         popover: {
@@ -536,8 +493,6 @@ window.avviaTutorial = async function () {
             align: 'start'
         },
         onPrevClick: () => {
-            // Si torna al pulsante "Trascrivi", che vive nella lista: la vista di
-            // trascrizione va chiusa prima, o il passo precedente resterebbe coperto.
             const vList = document.getElementById('view-list');
             if (vList && vList.classList.contains('hidden-tab') && window.switchTab) {
                 window.switchTab('list');
@@ -561,8 +516,6 @@ window.avviaTutorial = async function () {
             const backBtn = document.getElementById('btn-back-to-list-trasc');
             if (backBtn) backBtn.addEventListener('click', () => setTimeout(() => window.dInstance?.moveNext(), 150), { once: true, signal: stepAC.signal });
         },
-        // Il passo precedente è ora il visualizzatore, che vive in QUESTA vista: chiuderla
-        // qui riporterebbe alla lista per poi illuminare un pannello non più a schermo.
         onPrevClick: () => {
             setTimeout(() => window.dInstance?.movePrevious(), 150);
         }
@@ -601,9 +554,6 @@ window.avviaTutorial = async function () {
     window.dInstance = driverObj({
         showProgress: true,
         allowClose: false,
-        // Con allowClose:false driver.js gate la X sull'evento "closeClick" (allowClose && destroy),
-        // perciò il pulsante non chiuderebbe il tour. Configuriamo onCloseClick per distruggere
-        // esplicitamente, mantenendo allowClose:false così Esc/click sull'overlay non chiudono il tour per sbaglio.
         onCloseClick: () => { if (window.dInstance) window.dInstance.destroy(); },
         showButtons: ['next', 'close'],
         onPopoverRender: (popover) => {

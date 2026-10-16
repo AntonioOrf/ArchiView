@@ -1,30 +1,12 @@
-// L'impronta vive nel modello (`Model.improntaRecord`), accanto al merge che la usa.
 window.getRecordHash = function(record) {
     return window.Model.improntaRecord(record);
 };
 
-/**
- * Fase 4.4 — Conflitti CAMPO PER CAMPO.
- *
- * Prima il confronto era sull'impronta dell'intero record: due colleghi che toccavano campi
- * diversi della stessa scheda si vedevano chiedere quale delle due versioni buttare via.
- * Ora la domanda arriva solo per i campi che entrambi hanno cambiato in modo diverso, e la
- * scheda già fusa viaggia nel conflitto (`fusa`) perché il modale parta da lì invece che
- * dalla sola versione locale — altrimenti risolvere un campo cancellerebbe le modifiche
- * altrui su tutti gli altri.
- *
- * @param baseObjects  gli oggetti di base (`.archiview-base.json`). Servono per attribuire
- *                     una differenza a chi l'ha introdotta: `baseHashes` dice SE un lato ha
- *                     cambiato qualcosa, non COSA. Senza, si ricade sull'euristica dei
- *                     timestamp qui sotto, che è quella di prima.
- */
 window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, baseObjects = {}) {
     const localMap = new Map<string, any>((locali || []).map(m => [m.id, m]));
     const externalMap = new Map<string, any>((esterni || []).map(m => [m.id, m]));
     
     const conflitti = [];
-    // allegatoTipo è un campo derivato da allegati: viene risolto implicitamente
-    // quando l'utente sceglie la versione degli allegati. Tenerli separati crea rumore.
     const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'allegatoTipo'];
     const conflitto = (id, local, external, campiConflitto, fusa?) => conflitti.push({
         id: id,
@@ -42,10 +24,8 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
             const externalHash = window.getRecordHash(external);
             const baseHash = baseHashes[id];
 
-            // Se sono identici (i contenuti, scartando i timestamp), non c'è conflitto
             if (localHash === externalHash) continue;
 
-            // Fase 4.4 — strada principale: fusione campo per campo sulla base comune.
             const base = baseObjects && baseObjects[id];
             if (base && window.Model && typeof window.Model.fondiRecord === 'function') {
                 const esito = window.Model.fondiRecord(base, local, external);
@@ -53,8 +33,6 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
                 continue;
             }
 
-            // Senza baseHash (documento precedente alla migrazione hash) ogni differenza è un
-            // conflitto; con il baseHash solo se entrambi i lati sono cambiati rispetto alla base.
             if (!baseHash || (localHash !== baseHash && externalHash !== baseHash)) {
                 const campiConflitto = [];
                 const allKeys = new Set([...Object.keys(local), ...Object.keys(external)]);
@@ -72,16 +50,6 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
     return conflitti;
 };
 
-/**
- * Le modifiche di struttura in arrivo, per il pannello del cloud: cartelle nuove, modelli nuovi o
- * cambiati, cartelle e schede eliminate. Una sola copia per Drive e Hub: prima erano due, e
- * quella dell'Hub non mostrava le eliminazioni.
- *
- * @param locale  il database aperto (`appData`)
- * @param remoto  il database sul cloud, non ancora applicato
- * @param autore  chi ha scritto l'ultima versione remota, se si sa
- * @returns [{ icon, label }]
- */
 window.riepilogoInArrivo = function(locale, remoto, autore) {
     const t = window.t;
     const MAX = 10;
