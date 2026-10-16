@@ -1,11 +1,4 @@
 #!/usr/bin/env node
-// Genera i colori dell'app Android (mobile/src/theme/colori.ts) dai token semantici del desktop
-// (src/renderer/css/style.css, DESIGN.md): chiaro = Clear Blue (`:root`), scuro = Dark
-// (`:root.dark-theme`, nero e arancione). Un colore cambiato nel CSS non può divergere sul telefono:
-// `node scripts/tema-mobile.js --check` (test/temaMobile.test.js) fallisce se il file è vecchio.
-//
-// Uso: node scripts/tema-mobile.js            → riscrive il file
-//      node scripts/tema-mobile.js --check    → esce con 1 se il file non è aggiornato
 
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +7,6 @@ const RADICE = path.join(__dirname, '..');
 const CSS = path.join(RADICE, 'src', 'renderer', 'css', 'style.css');
 const USCITA = path.join(RADICE, 'mobile', 'src', 'theme', 'colori.ts');
 
-/** Le dichiarazioni `--color-*` del primo blocco con quel selettore che ne contiene. */
 function blocco(css, selettore) {
   const re = new RegExp('^' + selettore.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}', 'gm');
   for (let m; (m = re.exec(css));) {
@@ -25,7 +17,6 @@ function blocco(css, selettore) {
   throw new Error('blocco_assente: ' + selettore);
 }
 
-/** `var(--color-x)` risolto dentro lo stesso tema (poi dalla base). */
 function risolvi(token, base) {
   const out = {};
   for (const [k, v] of Object.entries(token)) {
@@ -41,11 +32,6 @@ function risolvi(token, base) {
 
 const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 
-/**
- * Solo sul telefono (design 11/10): lo scuro è grigio scuro opaco invece del nero del desktop,
- * con lo stesso arancione. `divisore` = linea tenue fra le righe (decorativa: non deve reggere
- * il 3:1 dei bordi dei campi, che restano `border-input`).
- */
 const SOLO_TELEFONO = {
   chiaro: { divisore: '#e2e8f0' },
   scuro: {
@@ -58,13 +44,9 @@ function genera() {
   const css = fs.readFileSync(CSS, 'utf8');
   const chiaroGrezzo = blocco(css, ':root');
   const chiaro = { ...risolvi(chiaroGrezzo, {}), ...SOLO_TELEFONO.chiaro };
-  // Il tema scuro eredita da :root quel che non ridefinisce, come nel CSS.
   const scuro = { ...risolvi({ ...chiaroGrezzo, ...blocco(css, ':root.dark-theme') }, chiaro), ...SOLO_TELEFONO.scuro };
   const righe = (t) => Object.keys(chiaro).map(k => `    ${camel(k)}: '${t[k]}',`).join('\n');
-  return `// GENERATO da scripts/tema-mobile.js a partire da src/renderer/css/style.css: non modificare.
-// Chiaro = Clear Blue, scuro = Dark (arancione) su grigio scuro opaco (PIANO-SCANNER Fase 11).
-
-export const colori = {
+  return `export const colori = {
   chiaro: {
 ${righe(chiaro)}
   },

@@ -1,6 +1,3 @@
-// GENERATO da scripts/tema-mobile.js a partire da src/renderer/css/style.css: non modificare.
-// Chiaro = Clear Blue, scuro = Dark (arancione) su grigio scuro opaco (PIANO-SCANNER Fase 11).
-
 export const colori = {
   chiaro: {
     primary: '#1d4ed8',
