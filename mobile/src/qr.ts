@@ -1,15 +1,11 @@
-// QR di abbinamento del Wi-Fi diretto (CONTRATTO §4.2). Senza dipendenze native: si testa in Node.
-
 export type Abbinamento = { host: string; porta: number; token: string };
 
-/** Solo un IPv4 privato: il QR non deve poter mandare le foto fuori dalla rete locale. */
 function ipPrivato(host: string): boolean {
   const n = host.split('.').map(Number);
   if (n.length !== 4 || n.some(x => !Number.isInteger(x) || x < 0 || x > 255) || !/^[\d.]+$/.test(host)) return false;
   return n[0] === 10 || (n[0] === 172 && n[1] >= 16 && n[1] <= 31) || (n[0] === 192 && n[1] === 168);
 }
 
-/** `archiview-scanner://abbina?h=<ip>&p=<porta>&t=<token>` → abbinamento, o `null`. */
 export function leggiQr(testo: string): Abbinamento | null {
   const m = /^archiview-scanner:\/\/abbina\?(.*)$/.exec(testo.trim());
   if (!m) return null;

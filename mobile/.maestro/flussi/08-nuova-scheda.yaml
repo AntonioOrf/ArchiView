@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Nuova scheda con scansione, numerazione, senza scheda dal «+»
 ---
 - launchApp
@@ -13,7 +12,6 @@ name: Nuova scheda con scansione, numerazione, senza scheda dal «+»
 - assertVisible:
     text: Crea e scansiona
     enabled: false
-# Cartella scelta dal pannello.
 - tapOn: "Cartella: nessuna\\. Cambia"
 - assertVisible: Cartella della scheda
 - tapOn: Vuota
@@ -25,14 +23,12 @@ name: Nuova scheda con scansione, numerazione, senza scheda dal «+»
 - hideKeyboard
 - tapOn: Crea e scansiona
 - runFlow: ../comuni/scatta.yaml
-# La pagina scansionata è in coda nella scheda nuova, nella cartella scelta.
 - extendedWaitUntil:
     visible: Da inviare · 1 pagina
     timeout: 20000
 - assertVisible: Reg. 99
 - assertVisible: Fondo Prova · creata qui
 - assertVisible: "Cartella: Vuota\\. Cambia"
-# Numerazione automatica: la pagina dopo prende l'etichetta di partenza.
 - tapOn: Numera le carte
 - tapOn: Prima carta
 - eraseText: 5
@@ -47,7 +43,6 @@ name: Nuova scheda con scansione, numerazione, senza scheda dal «+»
 - back
 - assertVisible: Da inviare · 6 pagine
 - assertVisible: Cartella Vuota, 1 schede
-# Scanner chiuso senza salvare: nessuna pagina nuova.
 - tapOn: Scansiona o crea una scheda
 - tapOn: Scannerizza senza scheda, da smistare al computer
 - runFlow: ../comuni/annulla-scanner.yaml

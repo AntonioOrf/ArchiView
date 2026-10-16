@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Archivio, albero delle cartelle e ricerca
 ---
 - launchApp
@@ -8,7 +7,6 @@ name: Archivio, albero delle cartelle e ricerca
     timeout: 180000
 - assertVisible: "3 schede sul computer.*"
 - assertVisible: Da inviare · 4 pagine
-# Radice: cartelle chiuse e la scheda fuori dalle cartelle.
 - assertVisible: "Cartella Notarile.*"
 - assertVisible: Cartella Vuota, vuota
 - assertVisible: Perg. 7, Privilegio
@@ -18,10 +16,8 @@ name: Archivio, albero delle cartelle e ricerca
 - assertVisible: Busta 3, Creata qui
 - tapOn: "Cartella Atti.*"
 - assertVisible: Reg. 42, Atti sciolti
-# Richiusa, la sottocartella sparisce con le sue schede.
 - tapOn: "Cartella Notarile.*"
 - assertNotVisible: "Reg\\. 42.*"
-# Ricerca: trova anche dentro le cartelle chiuse.
 - tapOn: Cerca nell'archivio
 - inputText: atti
 - assertVisible: Reg. 42, Atti sciolti

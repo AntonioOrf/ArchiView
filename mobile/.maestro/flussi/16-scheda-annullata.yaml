@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Nuova scheda con lo scanner annullato - nessuna scheda fantasma (M10.7)
 ---
 - launchApp

@@ -1,7 +1,3 @@
-// Fase 13 (design 11/10): «Ritaglia di nuovo» con un riquadro dritto. ML Kit non riapre una foto
-// già fatta e la prospettiva richiederebbe OpenCV (provato e tolto nella Fase 9). Si trascinano i
-// quattro angoli; il riquadro sta in frazioni dell'immagine, che ha le proporzioni della foto.
-
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, PanResponder, View } from 'react-native';
 import { Crop, Maximize } from 'lucide-react-native';
@@ -17,7 +13,6 @@ const ANGOLI: Angolo[] = [{ x: 'x0', y: 'y0' }, { x: 'x1', y: 'y0' }, { x: 'x0',
 const nomeAngolo = (a: Angolo) => (a.y === 'y0'
   ? (a.x === 'x0' ? t('Angolo in alto a sinistra') : t('Angolo in alto a destra'))
   : (a.x === 'x0' ? t('Angolo in basso a sinistra') : t('Angolo in basso a destra')));
-/** Passo dei comandi del lettore di schermo, in frazione. */
 const PASSO = 0.02;
 
 type Props = { titolo: string; uri: string; onRitaglia: (r: Riquadro) => Promise<void>; onAnnulla: () => void };

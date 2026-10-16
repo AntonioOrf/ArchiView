@@ -1,9 +1,3 @@
-// Fase 5 — pagina doppia: l'immagine a tutta larghezza con una linea verticale da trascinare
-// sulla piega. La posizione è una frazione della larghezza: il riquadro ha le proporzioni
-// della foto, quindi la frazione sullo schermo è la stessa sull'immagine.
-// 11c: stesso aspetto di Ritaglia (area foto scura, barre col tema); la linea si sposta anche coi
-// comandi del lettore di schermo.
-
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, PanResponder, View } from 'react-native';
 import { Columns2 } from 'lucide-react-native';
@@ -13,7 +7,6 @@ import { spazio, TOCCO, useColori } from './theme';
 import { Intestazione } from './ui/Intestazione';
 import { Pulsante } from './ui/Pulsante';
 
-/** La piega resta fra il 10% e il 90%: una metà più stretta non è una pagina. */
 const tra = (f: number) => Math.min(0.9, Math.max(0.1, f));
 const PASSO = 0.02;
 

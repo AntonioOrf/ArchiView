@@ -1,9 +1,5 @@
 appId: com.antonioorf.archiview.scanner
-# seme: wifi
 name: Wi-Fi diretto - abbinamento dal QR, invio senza account, solo l'archivio del computer, computer spento (M8.14, M10.4, M10.5, M10.6)
-# Gira davvero solo dentro e2e/wifi-emulatore.spec.ts (MAESTRO_WIFI_DESKTOP=acceso): il desktop ha
-# «Ricevi via Wi-Fi» acceso e il suo QR è il poster della scena virtuale dell'emulatore.
-# Lanciato da solo (npm run test:maestro) non fa nulla.
 ---
 - runFlow:
     when:

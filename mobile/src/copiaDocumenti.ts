@@ -1,8 +1,3 @@
-// F5 — copia dei Documenti su Drive e ripristino su un telefono nuovo (chiamate in drive.ts).
-// Si copiano solo i documenti cambiati dall'ultima copia: `documento.json` si riscrive a ogni
-// cambio (pagine, filtri, OCR, nome), quindi basta la sua ora di modifica. Lo stato sta in
-// `documenti/copia.json`; i documenti eliminati in `documenti/eliminati.json` (documenti.ts).
-
 import { Directory, File } from 'expo-file-system';
 import { cartellaDoc, eliminati, eliminatiCopiati, elencaDocumenti, leggiCartelle, radiceDocumenti, salvaCartelle } from './documenti';
 import { daCopiare, daRipristinare, fileValido } from './elencoDocumenti';
@@ -29,17 +24,11 @@ function daCaricare(f: File): FileDaCopiare {
   return { nome: f.name, file: f, md5: i.md5, byte: i.size };
 }
 
-/** I file di un documento, `documento.json` per ultimo. */
 function fileDi(d: Directory): FileDaCopiare[] {
   const foto = d.list().filter((v): v is File => v instanceof File && fileValido(v.name)).sort((a, b) => a.name.localeCompare(b.name));
   return [...foto.map(daCaricare), daCaricare(new File(d, 'documento.json'))];
 }
 
-/**
- * Un giro di copia: toglie da Drive i documenti eliminati, copia le cartelle e i documenti
- * cambiati. Lo stato si salva a ogni documento: un giro interrotto riprende da lì.
- * Restituisce quanti documenti ha copiato.
- */
 export async function copiaDocumenti(): Promise<number> {
   const stato = statoCopia();
   const copiati = { ...stato.copiati };
@@ -64,11 +53,6 @@ export async function copiaDocumenti(): Promise<number> {
   return n;
 }
 
-/**
- * Riporta sul telefono i documenti copiati su Drive che qui non ci sono (telefono nuovo, app
- * reinstallata). Niente si sovrascrive: un documento già presente resta com'è. Le cartelle si
- * uniscono a quelle che ci sono. Restituisce quanti documenti ha ripristinato.
- */
 export async function ripristinaDocumenti(): Promise<number> {
   const copie = await elencaCopie();
   const radice = copie.find(c => c.nome === '');
@@ -92,6 +76,5 @@ export async function ripristinaDocumenti(): Promise<number> {
     for (const f of c.file) await scaricaIn(f.id, new File(d, f.nome));
     n++;
   }
-  // Al prossimo giro i ripristinati risultano «cambiati», ma `specchia` confronta gli md5: nessun ricaricamento.
   return n;
 }

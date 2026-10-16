@@ -1,8 +1,3 @@
-// «Condividi o salva» (design 15a): pannello dal basso. Formato PDF (predefinito) o JPEG, poi
-// «Condividi…» (menu di Android) o «Salva in Download» (cartella scelta una volta). Condividi
-// manda un file solo: con JPEG vale per i documenti di una pagina.
-// «Testo cercabile nel PDF» (15e, acceso di predefinito): prima riconosce il testo delle pagine.
-
 import { useState } from 'react';
 import { Modal, Pressable, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +11,6 @@ import { Testo } from '../ui/Testo';
 type Props = {
   visibile: boolean;
   pagine: number;
-  /** Una cartella è già stata scelta: la nota lo dice e si può cambiare. */
   cartellaScelta: boolean;
   occupato: boolean;
   onChiudi: () => void;

@@ -1,7 +1,3 @@
-// Barra in fondo (design 11/10): due metà con un solo separatore sotto il cerchio; il cerchio
-// dell'azione principale sta a cavallo della linea superiore, che si interrompe ai suoi lati.
-// È l'unica forma tonda dell'app.
-
 import type { ComponentType } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +10,6 @@ type Voce = { etichetta: string; icona: Icona; onPress: () => void; disabilitata
 const ALTEZZA = 72;
 export const CERCHIO = 64;
 export const ALTEZZA_BARRA = ALTEZZA;
-/** Spazio fra la linea interrotta e il cerchio, per lato. */
 const STACCO = 8;
 
 export function BarraFondo({ sinistra, centro, destra }: { sinistra: Voce; centro: Voce; destra: Voce }) {
@@ -42,7 +37,6 @@ export function BarraFondo({ sinistra, centro, destra }: { sinistra: Voce; centr
       <Testo variante="aiuto" numberOfLines={1} maxFontSizeMultiplier={1.5}>{v.etichetta}</Testo>
     </Pressable>
   );
-  // Due mezze linee spostate verso l'esterno: in mezzo resta il varco del cerchio.
   const linea = { position: 'absolute' as const, top: 0, height: 1, width: '50%' as const, backgroundColor: c.divisore };
   return (
     <View style={{ height: ALTEZZA + margini.bottom, paddingBottom: margini.bottom, backgroundColor: c.bgPanel }}>
@@ -74,5 +68,4 @@ export function BarraFondo({ sinistra, centro, destra }: { sinistra: Voce; centr
   );
 }
 
-/** Spazio da lasciare in fondo al contenuto perché il cerchio non copra l'ultima riga. */
 export const SPORGENZA_BARRA = CERCHIO / 2 + STACCO;

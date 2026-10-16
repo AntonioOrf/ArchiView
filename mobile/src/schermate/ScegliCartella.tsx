@@ -1,6 +1,3 @@
-// Cambia cartella (design 14a): elenco tutto aperto (le cartelle di un archivio sono poche), una
-// sola scelta, «Nessuna cartella» in testa. Le cartelle nuove si creano sul computer.
-
 import { useMemo } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { Archive, Check, Folder } from 'lucide-react-native';
@@ -10,7 +7,6 @@ import { raggio, spazio, TOCCO, useColori } from '../theme';
 import { Intestazione } from '../ui/Intestazione';
 import { Testo } from '../ui/Testo';
 
-/** `piede`: la riga d'aiuto in fondo (i Documenti hanno le loro cartelle, create sul telefono). */
 type Props = { titolo: string; sotto: string; cartelle: string[]; attuale: string; onScegli: (cartella: string) => void; onIndietro: () => void; piede?: string };
 
 export function ScegliCartella({ titolo, sotto, cartelle, attuale, onScegli, onIndietro, piede = t('Le cartelle nuove si creano sul computer.') }: Props) {

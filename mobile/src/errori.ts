@@ -1,9 +1,5 @@
-// Fase 5 (PIANO-REVIEW-MOBILE): l'errore grezzo di un invio (`drive_403: {…}`, `wifi_401`, …)
-// diventa una frase per chi scansiona. Il testo tecnico resta nel log della coda.
-
 import { t } from './lingua';
 
-/** Messaggio leggibile per l'errore di un lotto (`messaggio` = `e.message` della coda). */
 export function messaggioErrore(messaggio: string): string {
   const m = messaggio || '';
   const stato = Number(/^(?:drive|upload)_(\d{3})\b/.exec(m)?.[1] ?? 0);

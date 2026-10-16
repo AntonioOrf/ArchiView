@@ -1,8 +1,3 @@
-// Ponte tipizzato verso il validatore condiviso con il desktop (src/shared/scannerLotto.ts).
-// Il file condiviso è uno script senza export (vive anche nel renderer del desktop): si
-// carica con `require` e qui gli si danno i tipi. Se il contratto cambia, si cambiano
-// insieme scannerLotto.ts, docs/scanner/CONTRATTO.md e questo file.
-
 export type Modalita = 'documento' | 'grezza' | 'raffica';
 
 export type Pagina = {
@@ -13,7 +8,6 @@ export type Pagina = {
   larghezza?: number;
   altezza?: number;
   etichetta?: string;
-  /** F8: una riga sulla carta («rifilata», «macchia»): sul desktop finisce nel campo Note della scheda. */
   nota?: string;
   doppia?: { lato: 'sx' | 'dx' };
 };

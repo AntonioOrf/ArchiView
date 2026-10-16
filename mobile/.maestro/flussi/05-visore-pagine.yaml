@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 ---
 - launchApp
@@ -10,7 +9,6 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - tapOn: Reg. 41, Imbreviature, 3 pagine da inviare
 - assertVisible: Da inviare · 3 pagine
 - assertVisible: Fondo Prova
-# Numerazione automatica: la prima carta si scrive solo con l'interruttore acceso.
 - tapOn: Numera le carte
 - tapOn: Prima carta
 - eraseText: 5
@@ -18,13 +16,11 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - hideKeyboard
 - tapOn: Apri 1r
 - assertVisible: "Pagina 1 di 3 · striscia per le altre"
-# Etichetta della carta.
 - tapOn: Etichetta di 1r
 - eraseText: 5
 - inputText: 3r
 - hideKeyboard
 - assertVisible: Etichetta di 3r
-# Strisciata alla pagina dopo.
 - swipe:
     direction: LEFT
 - assertVisible: "Pagina 2 di 3 · striscia per le altre"
@@ -34,14 +30,12 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
       text: Ruota
       enabled: true
     timeout: 15000
-# Rifai: una pagina nuova al posto di questa, stessa etichetta.
 - tapOn: Rifai
 - runFlow: ../comuni/scatta.yaml
 - extendedWaitUntil:
     visible: "Pagina 2 di 3 · striscia per le altre"
     timeout: 15000
 - assertVisible: Etichetta di 1v
-# Ritaglia: «Ritaglia» resta spento finché il riquadro è la pagina intera.
 - tapOn: Ritaglia
 - assertVisible: Ritaglia 1v
 - assertVisible: Trascina gli angoli
@@ -58,7 +52,6 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - extendedWaitUntil:
     visible: "Pagina 2 di 3 · striscia per le altre"
     timeout: 15000
-# Dividi: una pagina doppia diventa due (sx e dx), poi «Dividi» si spegne.
 - tapOn: Dividi
 - assertVisible: Dividi la pagina doppia
 - assertVisible: "Linea della piega, 50% da sinistra"
@@ -69,7 +62,6 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - assertVisible:
     text: Dividi
     enabled: false
-# Elimina: prima annullato, poi confermato.
 - tapOn: Elimina
 - assertVisible: Eliminare la pagina?
 - tapOn: "(?i)annulla"
@@ -82,7 +74,6 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - tapOn: Chiudi
 - assertVisible: Da inviare · 3 pagine
 - assertVisible: 3r
-# Eliminata la metà sinistra: resta la destra.
 - assertVisible: dx
 - back
 - assertVisible: Da inviare · 4 pagine

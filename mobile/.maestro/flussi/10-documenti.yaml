@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documenti
 name: Documenti - elenco, cartelle, ricerca, rinomina, sposta, elimina
 ---
 - launchApp
@@ -12,7 +11,6 @@ name: Documenti - elenco, cartelle, ricerca, rinomina, sposta, elimina
 - assertVisible: Fuori dalle cartelle
 - assertVisible: "Ricevuta biblioteca, .*2 pagine"
 - assertNotVisible: "Fotocopia articolo, .*"
-# Ricerca in tutti i documenti, anche dentro le cartelle.
 - tapOn: Cerca nei documenti
 - inputText: fotocopia
 - assertVisible: Trovati
@@ -22,7 +20,6 @@ name: Documenti - elenco, cartelle, ricerca, rinomina, sposta, elimina
 - assertVisible: Nessun documento trovato.
 - eraseText: 15
 - hideKeyboard
-# Cartelle: nuova, aperta, eliminata da vuota.
 - tapOn: Nuova cartella
 - inputText: "Lettere/2026"
 - assertVisible: Niente «/» nel nome.
@@ -39,7 +36,6 @@ name: Documenti - elenco, cartelle, ricerca, rinomina, sposta, elimina
 - tapOn: Elimina la cartella Scaffale
 - assertVisible: Solo su questo telefono · 2 documenti
 - assertNotVisible: Scaffale
-# Documento: rinomina e sposta.
 - tapOn: "Ricevuta biblioteca, .*"
 - assertVisible: Apri la pagina 1
 - assertVisible: Apri la pagina 2
@@ -57,7 +53,6 @@ name: Documenti - elenco, cartelle, ricerca, rinomina, sposta, elimina
 - assertNotVisible: "Tessera, .*"
 - tapOn: Lettere
 - tapOn: "Tessera, .*"
-# Elimina il documento.
 - tapOn: Elimina il documento
 - assertVisible: Eliminare il documento?
 - tapOn: "(?i)elimina"

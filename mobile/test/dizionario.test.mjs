@@ -1,5 +1,3 @@
-// Guardia del dizionario inglese (come test/i18nDizionari.test.js del desktop): ogni `t('…')` del
-// codice ha la voce in lingua.en.ts, nessuna voce resta senza uso, e la chiave è sempre un letterale.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';

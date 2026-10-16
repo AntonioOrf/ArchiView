@@ -1,7 +1,3 @@
-// Numerazione automatica delle carte: dall'etichetta della pagina precedente alla successiva.
-// `12r` → `12v` → `13r`; `5` → `6`; prefisso e zeri iniziali restano (`c. 009v` → `c. 010r`).
-// Se l'etichetta non finisce con un numero (più r/v facoltativo) non si indovina: `undefined`.
-
 export function prossimaEtichetta(precedente: string | undefined): string | undefined {
   const m = /^(.*?)(\d+)([rRvV]?)$/.exec((precedente || '').trim());
   if (!m) return undefined;

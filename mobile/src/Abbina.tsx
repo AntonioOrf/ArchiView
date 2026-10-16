@@ -1,12 +1,7 @@
-// Fase 7 — abbinamento col computer: si inquadra il QR del pannello "Scansioni in arrivo" e si
-// verifica subito che il desktop risponda (stessa rete, server acceso).
-// 11c: componenti del tema; sopra la fotocamera barra scura fissa (come l'area foto del visore).
-
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Camera as IconaCamera, QrCode } from 'lucide-react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
-// Lettore ML Kit (anche Android): `useObjectOutput` del core legge i QR solo su iOS.
 import { useBarcodeScannerOutput, type Barcode } from 'react-native-vision-camera-barcode-scanner';
 import { t } from './lingua';
 import { colori } from './theme/colori';

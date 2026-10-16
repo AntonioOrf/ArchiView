@@ -1,9 +1,7 @@
-// node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { applicaFiltro, canali, lutLivelli, nitidezza, nomeFiltro, otsu, percentile, quadratoCentrale, SOGLIA_NITIDEZZA } from '../src/filtri.ts';
 
-/** Pixel RGBA da terne [r, g, b] (alfa 200, per vedere che non si tocca). */
 const rgba = terne => new Uint8Array(terne.flatMap(([r, g, b]) => [r, g, b, 200]));
 const terne = px => Array.from({ length: px.length / 4 }, (_, i) => [px[i * 4], px[i * 4 + 1], px[i * 4 + 2]]);
 
@@ -36,7 +34,7 @@ test('grigi: tre canali uguali, alfa intatto', () => {
   for (const [r, g, b] of terne(px)) assert.ok(r === g && g === b);
   assert.equal(px[3], 200);
   assert.deepEqual(terne(px)[2], [10, 10, 10]);
-  assert.deepEqual(terne(px).map(t => t[0]), [76, 149, 10]); // BT.601 su 256: (77·255)>>8, (150·255)>>8
+  assert.deepEqual(terne(px).map(t => t[0]), [76, 149, 10]);
 });
 
 test('bn: carta bianca e inchiostro nero', () => {
@@ -64,7 +62,6 @@ test('nomeFiltro: assente = Originale', () => {
   assert.equal(nomeFiltro('bn'), 'B/N');
 });
 
-/** «Scrittura» finta: tratti neri di 2 px ogni 6 su carta chiara, RGBA. `sfoca` = media 5×5 ripetuta. */
 function pagina(w, h, sfoca = 0) {
   let y = Array.from({ length: w * h }, (_, k) => ((k % w) % 6 < 2 && Math.floor(k / w) % 9 < 7 ? 20 : 235));
   for (let giro = 0; giro < sfoca; giro++) {

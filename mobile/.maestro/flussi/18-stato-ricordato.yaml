@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Cartelle aperte ricordate per archivio dopo il riavvio (M8.28)
 ---
 - launchApp
@@ -15,7 +14,6 @@ name: Cartelle aperte ricordate per archivio dopo il riavvio (M8.28)
     visible: Fondo Prova, cambia archivio
     timeout: 30000
 - assertVisible: Reg. 42, Atti sciolti
-# Un altro archivio ha il suo stato: lì nulla è aperto.
 - tapOn: Fondo Prova, cambia archivio
 - tapOn: Fondo Altro
 - assertNotVisible: "Reg\\. 42.*"

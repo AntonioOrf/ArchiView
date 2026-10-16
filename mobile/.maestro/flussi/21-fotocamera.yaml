@@ -1,8 +1,6 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documenti
 name: Fotocamera - Android la chiede prima dello scanner, negata non scansiona, stato in Impostazioni
 ---
-# Maestro concede tutti i permessi all'avvio: qui la fotocamera no, per vedere la finestra di Android.
 - launchApp:
     permissions:
       camera: deny
@@ -10,7 +8,6 @@ name: Fotocamera - Android la chiede prima dello scanner, negata non scansiona, 
     visible: ArchiScanner
     timeout: 180000
 - tapOn: Documenti, Ricevute, articoli, fotocopie
-# Negata: l'avviso dell'app, e lo scanner non parte.
 - tapOn: Scansiona un documento
 - extendedWaitUntil:
     visible: "(?i)(don.t allow|non consentire)"
@@ -21,20 +18,17 @@ name: Fotocamera - Android la chiede prima dello scanner, negata non scansiona, 
 - assertNotVisible:
     id: ".*optional_mlkit_docscan_ui.*"
 - assertVisible: "Ricevuta biblioteca.*"
-# Impostazioni › Privacy dice che manca, con la via per le impostazioni di Android.
 - tapOn: Impostazioni
 - scrollUntilVisible:
     element: Gestisci nelle impostazioni di Android
 - assertVisible: Fotocamera non consentita
 - tapOn: Indietro
-# Concessa: lo scanner parte (e si chiude senza salvare).
 - tapOn: Scansiona un documento
 - extendedWaitUntil:
     visible: "(?i)(while using the app|mentre usi l'app)"
     timeout: 10000
 - tapOn: "(?i)(while using the app|mentre usi l'app)"
 - runFlow: ../comuni/annulla-scanner.yaml
-# Data una volta, non si richiede; Impostazioni la mostra consentita.
 - tapOn: Scansiona un documento
 - assertNotVisible: Fotocamera non consentita
 - runFlow: ../comuni/annulla-scanner.yaml

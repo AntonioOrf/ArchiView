@@ -1,7 +1,3 @@
-// Documenti (design 15a): «Documenti ⌄» apre la tendina degli archivi; ricerca sul nome (in tutti
-// i documenti), cartelle di un livello col numero di documenti, poi i documenti fuori dalle
-// cartelle. Dentro una cartella: i suoi documenti; vuota si può eliminare.
-
 import { useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, View } from 'react-native';
 import { Folder, FolderPlus, Search, Trash2 } from 'lucide-react-native';
@@ -23,7 +19,6 @@ const pagine = (n: number) => (n === 1 ? t('1 pagina') : t('{n} pagine', { n }))
 type Props = {
   docs: Documento[];
   cartelle: string[];
-  /** Cartella aperta; `null` = la radice. */
   cartella: string | null;
   onApriCartella: (nome: string) => void;
   onIndietro: () => void;

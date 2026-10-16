@@ -1,8 +1,3 @@
-// Fase 13 (design 11/10): la pagina toccata a tutto schermo, zoom e strisciata fra le pagine della
-// scheda. Area della foto sempre scura, barre col tema. Pagine modificabili: etichetta e azioni
-// (Ruota, Ritaglia, Rifai, Dividi, Elimina). In invio o inviate: sola lettura.
-// Fase 15b: lo usano anche i Documenti, senza etichetta né Dividi; le azioni ricevono l'indice.
-
 import { useState, type ComponentType } from 'react';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { Check, CloudUpload, Columns2, Crop, Palette, RotateCw, ScanLine, ScanText, Scissors, Trash2, TriangleAlert } from 'lucide-react-native';
@@ -18,7 +13,6 @@ import type { Parola } from '../testo';
 import { Testo } from '../ui/Testo';
 import { Zoom } from '../ui/Zoom';
 
-/** `chiave`: cambia quando cambia la foto (lo zoom riparte). `inviatoIl`: per i giorni rimasti. */
 export type PaginaVisore = { chiave: string; uri: string; etichetta?: string; nota?: string; doppia?: boolean; stato?: 'invio' | 'inviata'; inviatoIl?: string; filtro?: Filtro; sfocata?: boolean };
 type Azione = (i: number) => void;
 
@@ -30,26 +24,18 @@ type Props = {
   dopoInvio?: DopoInvio;
   occupato: boolean;
   onChiudi: () => void;
-  /** Assente: niente campo «Carta» (Documenti). */
   onEtichetta?: (i: number, etichetta: string) => void;
-  /** F8, solo archivi: «Nota» della carta, va sul desktop. */
   onNota?: (i: number, nota: string) => void;
   onRuota: Azione;
   onRitaglia: Azione;
   onRifai: Azione;
-  /** Assente: niente «Dividi» (Documenti). */
   onDividi?: Azione;
   onElimina: Azione;
-  /** F11, solo Documenti: «Separa» — da questa pagina in poi, un documento nuovo. */
   onSepara?: Azione;
-  /** Fase 15e, solo Documenti: «Testo» (OCR e «Copia testo»). */
   onTesto?: Azione;
-  /** Solo Documenti: le parole dell'OCR della pagina, selezionabili sulla foto e copiate con `onCopia`. */
   parole?: (i: number) => Parola[] | null;
   onCopia?: (testo: string) => void;
-  /** Solo Documenti: OCR della pagina chiesto dalla pressione lunga quando le parole mancano. */
   onRiconosci?: Azione;
-  /** Fase 15d, solo Documenti: «Filtri» apre la scelta sotto la foto. `null` = originale. */
   filtri?: { onScegli: (i: number, f: Filtro | null) => void; onTutte: (f: Filtro | null) => void };
 };
 

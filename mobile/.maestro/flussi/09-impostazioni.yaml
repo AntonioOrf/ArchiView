@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 ---
 - launchApp
@@ -9,7 +8,6 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - tapOn: Impostazioni
 - assertVisible: Account Google
 - assertVisible: Accedi con Google
-# Invio.
 - assertVisible:
     text: Invio automatico solo col Wi-Fi
     checked: true
@@ -19,7 +17,6 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - assertVisible:
     text: Invio automatico solo col Wi-Fi
     checked: false
-# Dopo l'invio (il seme parte da «Conserva sempre»).
 - assertVisible:
     text: Conserva sempre
     checked: true
@@ -30,21 +27,17 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - tapOn: Giorni
 - eraseText: 3
 - inputText: "3"
-# Il numero vale all'uscita dal campo (onEndEditing), non a ogni cifra.
 - pressKey: Enter
 - assertVisible:
     text: Conserva per 3 giorni
     checked: true
-# F5: senza account la copia dei Documenti su Drive è spenta e lo dice.
 - scrollUntilVisible:
     element: "I Documenti stanno solo su questo telefono. Accedi con Google.*"
 - assertVisible:
     text: Copia dei Documenti su Drive
     enabled: false
 - assertNotVisible: Ripristina da Drive
-# Le scelte restano dopo il riavvio.
 - stopApp
-# Maestro concede tutti i permessi a ogni avvio: qui la fotocamera no, per provarne la richiesta.
 - launchApp:
     permissions:
       camera: deny
@@ -58,8 +51,6 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - assertVisible:
     text: Invio automatico solo col Wi-Fi
     checked: false
-# Wi-Fi diretto: chiede la fotocamera, poi il lettore del QR; Annulla torna qui.
-# Sotto la sezione Privacy: va fatto scorrere.
 - scrollUntilVisible:
     element: Abbina col computer
 - tapOn: Abbina col computer

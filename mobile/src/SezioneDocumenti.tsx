@@ -1,10 +1,3 @@
-// Fase 15b — la sezione Documenti, scelta dalla tendina degli archivi: elenco con cartelle →
-// documento → visore (Ruota, Ritaglia, Rifai, Elimina) e Ritaglia. Scanner ML Kit come per gli
-// archivi (BASE, senza i filtri di ML Kit che non tengono l'originale), qui con la galleria;
-// i filtri reversibili sono i nostri (15d, `filtri.ts`). OCR a richiesta (15e): «Testo» nel
-// visore, «Tutte le pagine», PDF ricercabile; si rifà solo se la foto è cambiata.
-// Indietro di Android: chiude il livello aperto; dalla radice lo lascia all'app.
-
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { BackHandler } from 'react-native';
 import { avviso, notizia } from './ui/Avviso';
@@ -32,10 +25,8 @@ import { Schermo } from './ui/Schermo';
 
 type VoceBarra = ComponentProps<typeof BarraFondo>['sinistra'];
 
-/** F6: l'archivio aperto, se c'è; `onManda` mette le foto in un lotto «Senza scheda». */
 type Props = { invio: VoceBarra; impostazioni: VoceBarra; onCambiaArchivio: () => void; archivio?: { nome: string; onManda: (titolo: string, uris: string[]) => Promise<void> } };
 
-// Senza consenso (fotocamera e galleria) o con «Annulla» sul poco spazio vale come scanner annullato.
 const scanner = async (pagine: number) => await prontoAScansionare()
   ? launchDocumentScannerAsync({ pageLimit: pagine, galleryImportAllowed: true, scannerMode: ScannerModeOptions.BASE, resultFormats: ResultFormatOptions.JPEG })
   : { canceled: true as const, pages: [] as string[] };
@@ -48,12 +39,9 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
   const [visore, setVisore] = useState<number | null>(null);
   const [ritaglio, setRitaglio] = useState<string | null>(null);
   const [spostando, setSpostando] = useState(false);
-  /** F11: scelta del documento da unire a quello aperto. */
   const [unendo, setUnendo] = useState(false);
   const [occupato, setOccupato] = useState(false);
-  /** Foglio «Condividi o salva» del documento aperto. */
   const [foglio, setFoglio] = useState(false);
-  /** Foglio «Testo» del visore: indice della pagina. */
   const [testo, setTesto] = useState<number | null>(null);
 
   const ricarica = useCallback(() => {
@@ -90,13 +78,12 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
       if (annullato(e)) return;
       console.error('[documenti]', etichetta, e);
       avviso(t('Errore'), `${etichetta}: ${e?.message || String(e)}`);
-      ricarica(); // dopo un errore a metà, il disco dice com'è andata
+      ricarica();
     } finally {
       setOccupato(false);
     }
   }
 
-  /** OCR delle pagine che non l'hanno aggiornato, una alla volta (salvate a ogni passo). */
   const riconosciTutte = async (d: Doc) => {
     for (const p of d.pagine) { d = await riconosci(d, p.file); aggiorna(d); }
     return d;
@@ -159,7 +146,6 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
           pagine={doc.pagine.map(p => ({ chiave: p.file + p.v, uri: uriPagina(doc, p), filtro: p.filtro }))}
           filtri={{
             onScegli: (i, f) => esegui(t('Filtro'), async () => aggiorna(await impostaFiltro(doc, file(i), f))),
-            // Una pagina alla volta, salvando ogni passo: se si ferma a metà le fatte restano.
             onTutte: f => esegui(t('Filtro'), async () => {
               let d = doc;
               for (const p of doc.pagine) { d = await impostaFiltro(d, p.file, f); aggiorna(d); }

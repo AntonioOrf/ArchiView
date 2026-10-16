@@ -1,12 +1,10 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Cartella di una scheda nata qui, titolo e nota senza scheda
 ---
 - launchApp
 - extendedWaitUntil:
     visible: Fondo Prova, cambia archivio
     timeout: 180000
-# Scheda nata sul telefono: la cartella si cambia finché nessuna pagina è partita.
 - tapOn: "Cartella Notarile.*"
 - tapOn: Busta 3, Creata qui
 - assertVisible: Fondo Prova · creata qui
@@ -18,7 +16,6 @@ name: Cartella di una scheda nata qui, titolo e nota senza scheda
 - back
 - tapOn: "Cartella Atti.*"
 - assertVisible: Busta 3, Creata qui
-# «Senza scheda»: titolo e nota valgono anche per le pagine già in attesa.
 - tapOn: Da inviare, 4 pagine, accedi per inviare
 - tapOn: Senza scheda · 1
 - assertVisible: Fondo Prova · da smistare al computer

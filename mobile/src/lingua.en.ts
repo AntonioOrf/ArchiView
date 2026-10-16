@@ -1,10 +1,4 @@
-// Dizionario inglese: chiave = il testo italiano esatto passato a `t`. Lessico del desktop
-// (src/renderer/js/logic/i18n.ts): archivio = archive, scheda = record, cartella = folder,
-// segnatura = shelfmark, carta = leaf, lotto = batch, Da smistare = To sort.
-// Guardia: test/dizionario.test.mjs.
-
 export const EN: Record<string, string> = {
-  // --- Logica (errori, spazio, date, consenso, filtri, esporta) ---
   'Accesso a Google scaduto: rientra dalle Impostazioni.': 'Google sign-in expired: sign in again from Settings.',
   'Google Drive è pieno: libera spazio, poi riprovo.': 'Google Drive is full: free up space, then I\'ll retry.',
   'Google Drive ha rifiutato l\'invio: rientra dalle Impostazioni.': 'Google Drive refused the upload: sign in again from Settings.',
@@ -40,7 +34,6 @@ export const EN: Record<string, string> = {
   'Scansioni recuperate': 'Recovered scans',
   'download dell\'aggiornamento non riuscito ({motivo})': 'update download failed ({motivo})',
 
-  // --- Impostazioni ---
   'Automatica (lingua del telefono)': 'Automatic (phone language)',
   'Impostazioni': 'Settings',
   'Account Google': 'Google account',
@@ -91,7 +84,6 @@ export const EN: Record<string, string> = {
   'Controllo degli aggiornamenti: {motivo}': 'Update check: {motivo}',
   'Note della versione non aperte: {motivo}': 'Release notes not opened: {motivo}',
 
-  // --- App.tsx ---
   'Lettura delle scansioni: {motivo}': 'Reading the scans: {motivo}',
   'È uscita una versione nuova dell\'app. Le pagine in attesa restano dove sono.': 'A new version of the app is out. Waiting pages stay where they are.',
   'Più tardi': 'Later',
@@ -165,7 +157,6 @@ export const EN: Record<string, string> = {
   'Scannerizza senza scheda': 'Scan without a record',
   'da smistare al computer': 'to sort on the computer',
 
-  // --- Benvenuto ---
   'Conserva {giorni}': 'Keep {giorni}',
   'Invio automatico': 'Automatic sending',
   'Solo Wi-Fi': 'Wi-Fi only',
@@ -198,7 +189,6 @@ export const EN: Record<string, string> = {
   'Vai all\'app': 'Go to the app',
   'Avanti': 'Next',
 
-  // --- SezioneDocumenti ---
   'Lettura dei documenti: {motivo}': 'Reading the documents: {motivo}',
   'Testo copiato': 'Text copied',
   'Eliminare il documento?': 'Delete the document?',
@@ -243,7 +233,6 @@ export const EN: Record<string, string> = {
   'Scansiona un documento in {cartella}': 'Scan a document into {cartella}',
   'Scansiona un documento': 'Scan a document',
 
-  // --- Archivio ---
   '1 pagina': '1 page',
   '{n} pagine': '{n} pages',
   '{nome}, cambia archivio': '{nome}, change archive',
@@ -281,7 +270,6 @@ export const EN: Record<string, string> = {
   'da vedere': 'to review',
   '{pagine} da inviare': '{pagine} to send',
 
-  // --- Scheda ---
   'Inviate': 'Sent',
   'Segnatura': 'Shelfmark',
   'Cartella: {nome}': 'Folder: {nome}',
@@ -311,7 +299,6 @@ export const EN: Record<string, string> = {
   'Elimina la scheda': 'Delete the record',
   'Restano {giorni} dopo l\'invio, poi si cancellano da sole.': 'They stay {giorni} after sending, then delete themselves.',
 
-  // --- Visore ---
   'In invio · sola lettura': 'Sending · read-only',
   'Inviata · sola lettura, conservata ancora {giorni}': 'Sent · read-only, kept for another {giorni}',
   'Inviata · sola lettura': 'Sent · read-only',
@@ -334,7 +321,6 @@ export const EN: Record<string, string> = {
   'Rifai': 'Redo',
   'Dividi': 'Split',
 
-  // --- Documenti, Documento, Condividi, Unisci ---
   '1 documento': '1 document',
   '{n} documenti': '{n} documents',
   'Nome della cartella': 'Folder name',
@@ -388,7 +374,6 @@ export const EN: Record<string, string> = {
   'Copia testo': 'Copy text',
   'Tutte le pagine': 'All pages',
 
-  // --- Fotocamera, Nuovo, Ritaglia, ScegliCartella, Tendina ---
   'Conservare le foto?': 'Keep the photos?',
   '{n} foto non ancora salvate.': '{n} photos not saved yet.',
   'Scarta': 'Discard',
@@ -432,7 +417,6 @@ export const EN: Record<string, string> = {
   'Sezione in uso': 'Section in use',
   'Chiudi l\'elenco degli archivi': 'Close the list of archives',
 
-  // --- Abbina, Dividi, ui ---
   'Inquadra il codice QR sul computer.': 'Frame the QR code on the computer.',
   'Questo QR non è di ArchiView.': 'This QR code is not from ArchiView.',
   'Collegamento a {host}…': 'Connecting to {host}…',
@@ -453,7 +437,6 @@ export const EN: Record<string, string> = {
   'Pagina successiva': 'Next page',
   'Pagina precedente': 'Previous page',
 
-  // --- Permesso della fotocamera e informativa (13/10) ---
   'Fotocamera consentita': 'Camera allowed',
   'Fotocamera non consentita': 'Camera not allowed',
   'Serve per scansionare, per il QR dell\'abbinamento e per la Foto libera.': 'Needed to scan, to read the pairing QR code and for Free photo.',

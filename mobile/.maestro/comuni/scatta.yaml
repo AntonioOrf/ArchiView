@@ -1,8 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# Una pagina con lo scanner ML Kit (attività di Google Play Services, interfaccia in inglese
-# o nella lingua del telefono: si usano gli id). Sull'emulatore la fotocamera virtuale inquadra
-# la stanza finta e lo scanner scatta da solo; se non scatta, l'otturatore.
-# A volte l'anteprima dopo lo scatto espone solo il testo «Done» senza id: vale anche quello.
 ---
 - extendedWaitUntil:
     visible:

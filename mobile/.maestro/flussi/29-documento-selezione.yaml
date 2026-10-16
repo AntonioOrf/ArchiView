@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documenti
 name: Documento - selezione del testo sulla foto senza aver aperto «Testo» prima
 ---
 - launchApp
@@ -9,7 +8,6 @@ name: Documento - selezione del testo sulla foto senza aver aperto «Testo» pri
 - tapOn: Documenti, Ricevute, articoli, fotocopie
 - tapOn: "Ricevuta biblioteca, .*"
 - tapOn: Apri la pagina 1
-# Pagina mai riconosciuta: la pressione lunga fa l'OCR e seleziona la parola premuta.
 - longPressOn: "Pagina 1\\. .*"
 - extendedWaitUntil:
     visible: Seleziona tutto

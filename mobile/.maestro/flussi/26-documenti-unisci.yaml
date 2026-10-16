@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documentiArchivio
 name: F11 e F6 - unisci e separa documenti, manda un documento all'archivio
 ---
 - launchApp
@@ -7,7 +6,6 @@ name: F11 e F6 - unisci e separa documenti, manda un documento all'archivio
     visible: "Ricevuta biblioteca, .*"
     timeout: 180000
 - tapOn: "Ricevuta biblioteca, .*"
-# F11: Unisci «Fotocopia articolo» in fondo.
 - tapOn: Unisci un altro documento in fondo
 - assertVisible: "In fondo a «Ricevuta biblioteca»"
 - tapOn: "Fotocopia articolo, .*"
@@ -16,7 +14,6 @@ name: F11 e F6 - unisci e separa documenti, manda un documento all'archivio
 - extendedWaitUntil:
     visible: "Apri la pagina 3"
     timeout: 20000
-# F11: Separa dalla pagina 3.
 - tapOn: Apri la pagina 3
 - assertVisible: "Pagina 3 di 3 · striscia per le altre"
 - tapOn: Separa
@@ -27,7 +24,6 @@ name: F11 e F6 - unisci e separa documenti, manda un documento all'archivio
     timeout: 20000
 - assertNotVisible: "Apri la pagina 3"
 - assertVisible: "Apri la pagina 2"
-# F6: manda all'archivio.
 - tapOn: "Manda all'archivio «Fondo Prova»"
 - assertVisible: "Mandare all'archivio «Fondo Prova»?"
 - tapOn: "(?i)manda"
@@ -36,7 +32,6 @@ name: F11 e F6 - unisci e separa documenti, manda un documento all'archivio
     timeout: 20000
 - back
 - assertVisible: "Ricevuta biblioteca \\(2\\), .*"
-# Le pagine sono nel «Da inviare» dell'archivio, senza scheda.
 - tapOn: Documenti, cambia archivio
 - tapOn: Fondo Prova
 - extendedWaitUntil:

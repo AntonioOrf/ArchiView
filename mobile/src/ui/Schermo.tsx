@@ -1,7 +1,3 @@
-// Contenitore di ogni schermata. Android 16 disegna l'app sotto le barre di sistema
-// (edge-to-edge): la fascia in alto prende il colore dell'intestazione, e senza barra in fondo
-// si lascia libero lo spazio della navigazione a gesti.
-
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

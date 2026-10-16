@@ -1,7 +1,3 @@
-// Riquadro sotto l'intestazione (design 11/10): compare solo durante l'invio (avanzamento) o con
-// errori dei lotti. Le pagine in attesa e «Invia ora» stanno in «Invio» nella barra in fondo.
-// Annunciato ai lettori di schermo quando cambia.
-
 import { ActivityIndicator, View } from 'react-native';
 import { t } from '../lingua';
 import { raggio, spazio, useColori } from '../theme';

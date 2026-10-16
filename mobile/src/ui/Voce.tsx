@@ -1,6 +1,3 @@
-// Riga di un elenco (archivi, schede): icona, titolo serif, riga d'aiuto, contenuto a destra e ›.
-// Elenco piatto con divisori, non una pila di card (DESIGN.md: superfici piatte).
-
 import type { ComponentType, ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
@@ -13,13 +10,10 @@ type Props = {
   icona?: ComponentType<{ size?: number; color?: string }>;
   destra?: ReactNode;
   onPress?: () => void;
-  /** Fondo d'accento: la voce fissa più importante («Da smistare»). */
   evidenziata?: boolean;
-  /** Ultima del gruppo: niente divisore sotto (il gruppo ha già il suo bordo). */
   ultima?: boolean;
 };
 
-/** Gruppo arrotondato che contiene le voci (design "morbido" 11/10). */
 export function Gruppo({ children }: { children: ReactNode }) {
   const c = useColori();
   return <View style={{ marginHorizontal: spazio.md, borderWidth: 1, borderColor: c.divisore, borderRadius: raggio.lg, overflow: 'hidden', backgroundColor: c.bgPanel }}>{children}</View>;

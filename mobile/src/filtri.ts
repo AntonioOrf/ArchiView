@@ -1,10 +1,3 @@
-// Fase 15d — filtri dei Documenti sui pixel grezzi (react-native-nitro-image li dà come buffer),
-// puri così si provano con `node --test`. Reversibili perché l'originale resta sul disco: il
-// filtro produce una copia. Tre filtri, tutti con tabelle (LUT) per restare veloci su 12 MP:
-// - `migliora`: stira i livelli (1° → nero, 95° percentile → bianco) canale per canale, colori tenuti;
-// - `grigi`: luminanza;
-// - `bn`: luminanza e soglia di Otsu.
-
 import { t } from './lingua';
 
 export type Filtro = 'migliora' | 'grigi' | 'bn';
@@ -18,7 +11,6 @@ export function nomeFiltro(f?: Filtro | null): string {
   }
 }
 
-/** Posizione di R, G, B in un pixel e byte per pixel, dai formati di nitro-image. */
 export function canali(formato: string): { r: number; g: number; b: number; passo: number } {
   'worklet';
   switch (formato) {
@@ -32,10 +24,6 @@ export function canali(formato: string): { r: number; g: number; b: number; pass
   }
 }
 
-// Le funzioni con 'worklet' girano anche nel runtime dei filtri (immagini.ts), fuori dal thread JS.
-// Nei cicli sui pixel indici in variabili locali e luminanza scritta per esteso: 12 M di giri.
-// Luminanza intera: BT.601, pesi su 256 → (77 r + 150 g + 29 b) >> 8.
-
 function istogramma(px: Uint8Array, k: ReturnType<typeof canali>): Uint32Array {
   'worklet';
   const h = new Uint32Array(256);
@@ -44,7 +32,6 @@ function istogramma(px: Uint8Array, k: ReturnType<typeof canali>): Uint32Array {
   return h;
 }
 
-/** Il valore sotto cui sta la frazione `q` dei pixel. */
 export function percentile(h: Uint32Array, q: number): number {
   'worklet';
   let totale = 0;
@@ -54,7 +41,6 @@ export function percentile(h: Uint32Array, q: number): number {
   return 255;
 }
 
-/** Soglia di Otsu: separa al meglio inchiostro e carta nell'istogramma. */
 export function otsu(h: Uint32Array): number {
   'worklet';
   let totale = 0, sommaTot = 0;
@@ -73,7 +59,6 @@ export function otsu(h: Uint32Array): number {
   return soglia;
 }
 
-/** Tabella che porta `basso` a 0 e `alto` a 255 (lineare in mezzo). */
 export function lutLivelli(basso: number, alto: number): Uint8Array {
   'worklet';
   const lut = new Uint8Array(256);
@@ -82,7 +67,6 @@ export function lutLivelli(basso: number, alto: number): Uint8Array {
   return lut;
 }
 
-/** Applica il filtro ai pixel, sul posto (alfa e byte di riempimento non si toccano). */
 export function applicaFiltro(filtro: Filtro, px: Uint8Array, formato: string): void {
   'worklet';
   const k = canali(formato);
@@ -105,18 +89,11 @@ export function applicaFiltro(filtro: Filtro, px: Uint8Array, formato: string): 
   }
 }
 
-// F3 — foto mossa o sfocata: varianza del laplaciano sulla luminanza. A fuoco i bordi
-// inchiostro/carta sono netti e il laplaciano varia molto; mossa o sfocata, è piatto.
 // ponytail: una pagina quasi bianca sembra sfocata: l'avviso dice «Sfocata?» e non blocca nulla.
 
-/** Sotto questa varianza la pagina si segnala. Tarata il 12/10 sulla pagina MGH di scripts/assets
- * ingrandita 2× (~10 MP, come una foto): nitida 435, sfocatura gaussiana 0,7 px 80, 1 px 26,
- * 1,5 px 7; bianca 0. Bassa apposta (meglio un avviso perso che uno falso); da rivedere con foto vere. */
 export const SOGLIA_NITIDEZZA = 50;
-/** Lato del quadrato centrale misurato, a piena risoluzione: ridurre la foto nasconderebbe la sfocatura. */
 export const LATO_MISURA = 1000;
 
-/** Varianza del laplaciano (4 vicini) della luminanza. Le righe di `px` possono essere più lunghe di `w`. */
 export function nitidezza(px: Uint8Array, formato: string, w: number, h: number): number {
   'worklet';
   const { r, g, b, passo } = canali(formato);
@@ -139,7 +116,6 @@ export function nitidezza(px: Uint8Array, formato: string, w: number, h: number)
   return s2 / n - m * m;
 }
 
-/** Il quadrato centrale da misurare, come `[x0, y0, x1, y1]`: tutta l'immagine se è più piccola. */
 export function quadratoCentrale(w: number, h: number): [number, number, number, number] {
   const lw = Math.min(w, LATO_MISURA), lh = Math.min(h, LATO_MISURA);
   const x = Math.floor((w - lw) / 2), y = Math.floor((h - lh) / 2);

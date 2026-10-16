@@ -1,5 +1,3 @@
-// Impostazioni (dalla barra in fondo): account Google, regola d'invio, Wi-Fi diretto, lingua, versione e aggiornamenti.
-
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, AppState, Linking, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 import { avviso } from '../ui/Avviso';
@@ -31,7 +29,6 @@ type Props = {
   onAbbina: () => void;
   onInviaWifi: () => void;
   onScollega: () => void;
-  /** F5: copia dei Documenti su Drive, data dell'ultima copia (ISO), ripristino. */
   copiaDocumenti: boolean;
   ultimaCopia?: string;
   onCopiaDocumenti: (v: boolean) => void;
@@ -39,7 +36,6 @@ type Props = {
   lingua: SceltaLingua;
   onLingua: (l: SceltaLingua) => void;
   onIndietro: () => void;
-  /** Versione nuova già trovata all'avvio, e la sua installazione. */
   nuova: Nuova | null;
   onAggiorna: (n: Nuova) => void;
 };
@@ -56,7 +52,6 @@ export function Sezione({ titolo, evidenza, children }: { titolo: string; eviden
   );
 }
 
-/** Una scelta di un gruppo radio: cerchio col colore d'accento, tutta la riga toccabile. */
 export function Scelta({ attiva, onPress, children, etichetta }: { attiva: boolean; onPress: () => void; children: ReactNode; etichetta: string }) {
   const c = useColori();
   return (
@@ -74,15 +69,12 @@ export function Impostazioni(p: Props) {
   const c = useColori();
   const d = p.dopoInvio;
   const [giorni, setGiorni] = useState(String(d.giorni));
-  // Il permesso si cambia anche dalle impostazioni di Android: si rilegge al ritorno nell'app.
   const [fotocamera, setFotocamera] = useState(fotocameraConsentita);
   useEffect(() => {
     const s = AppState.addEventListener('change', st => { if (st === 'active') setFotocamera(fotocameraConsentita()); });
     return () => s.remove();
   }, []);
-  // I nomi delle lingue restano nella loro lingua: chi ha sbagliato scelta deve ritrovare la sua.
   const lingue: [SceltaLingua, string][] = [['auto', t('Automatica (lingua del telefono)')], ['it', 'Italiano'], ['en', 'English']];
-  // La versione nuova trovata all'avvio («Più tardi» sul popup) si ritrova qui.
   const [agg, setAgg] = useState<StatoAggiornamento>(p.nuova ? { stato: 'nuova', nuova: p.nuova } : { stato: 'ignoto' });
   const cerca = async () => {
     setAgg({ stato: 'cerco' });

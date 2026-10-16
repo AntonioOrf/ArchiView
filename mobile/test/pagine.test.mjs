@@ -1,9 +1,7 @@
-// node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { INTERA, LATO_MINIMO, eIntera, giorniRimasti, inviatiScaduti, misureJpeg, quantiGiorni, rettangoloRitaglio, spostaAngolo } from '../src/pagine.ts';
 
-/** JPEG minimo: SOI, APP1 Exif (se `o`) con un solo tag Orientation, un APP0 di disturbo, SOF0 w×h. */
 function jpeg(w, h, o, le = true) {
   const u16 = v => (le ? [v & 255, v >> 8] : [v >> 8, v & 255]);
   const u32 = v => (le ? [...u16(v & 0xffff), ...u16(v >>> 16)] : [...u16(v >>> 16), ...u16(v & 0xffff)]);
@@ -53,7 +51,6 @@ test('inviatiScaduti secondo «Dopo l\'invio»', () => {
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'sempre', giorni: 7 }, ora), []);
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'subito', giorni: 7 }, ora), ['vecchio', 'recente', 'senza']);
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'giorni', giorni: 7 }, ora), ['vecchio', 'senza']);
-  // 0 giorni vale 1: «recente» ha esattamente un giorno, quindi scade.
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'giorni', giorni: 0 }, ora), ['vecchio', 'recente', 'senza']);
 });
 

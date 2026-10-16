@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: novita
 name: F3 e F8 - pagina segnata sfocata, nota della carta che resta
 ---
 - launchApp
@@ -8,7 +7,6 @@ name: F3 e F8 - pagina segnata sfocata, nota della carta che resta
     timeout: 180000
 - tapOn: "Cartella Notarile.*"
 - tapOn: "Reg. 41, Imbreviature.*"
-# F3: targhetta sulla miniatura e barra nel visore, solo sulla pagina segnata.
 - assertVisible: "Sfocata?"
 - assertVisible: "Apri 1v, forse sfocata"
 - assertNotVisible: "Apri 1r, forse sfocata"
@@ -18,7 +16,6 @@ name: F3 e F8 - pagina segnata sfocata, nota della carta che resta
     direction: RIGHT
 - assertVisible: "Pagina 1 di 3 · striscia per le altre"
 - assertNotVisible: "Sembra mossa o sfocata.*"
-# F8: nota della carta, resta dopo aver chiuso e riaperto.
 - tapOn: Nota di 1r
 - inputText: rifilata
 - hideKeyboard

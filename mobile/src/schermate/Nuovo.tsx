@@ -1,7 +1,3 @@
-// «Nuova scheda» (design 14a, dal «+»): pannello dal basso con la cartella (quella aperta
-// nell'albero, «Cambia» apre l'elenco nello stesso Modal), segnatura e nota → «Crea e scansiona».
-// Indietro o tocco fuori lo chiudono.
-
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,9 +14,7 @@ import { ScegliCartella } from './ScegliCartella';
 type Props = {
   visibile: boolean;
   archivio: string;
-  /** Cartelle dell'archivio, per sceglierne un'altra. */
   cartelle: string[];
-  /** La cartella aperta nell'albero: lì nasce la scheda. */
   cartellaIniziale: string;
   onChiudi: () => void;
   onNuova: (segnatura: string, nota: string, cartella: string) => void;

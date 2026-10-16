@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documenti
 name: Documenti - scansione di un documento nuovo in una cartella, pagine aggiunte, Rifai
 ---
 - launchApp
@@ -7,7 +6,6 @@ name: Documenti - scansione di un documento nuovo in una cartella, pagine aggiun
     visible: ArchiScanner
     timeout: 180000
 - tapOn: Documenti, Ricevute, articoli, fotocopie
-# Dentro una cartella il documento nuovo ci finisce dentro.
 - tapOn: Ricevute
 - tapOn: Scansiona un documento in Ricevute
 - runFlow: ../comuni/scatta.yaml
@@ -21,7 +19,6 @@ name: Documenti - scansione di un documento nuovo in una cartella, pagine aggiun
 - extendedWaitUntil:
     visible: Apri la pagina 2
     timeout: 20000
-# Rifai dal visore: stesso numero di pagine.
 - tapOn: Apri la pagina 2
 - tapOn: Rifai
 - runFlow: ../comuni/scatta.yaml
@@ -29,7 +26,6 @@ name: Documenti - scansione di un documento nuovo in una cartella, pagine aggiun
     visible: "Pagina 2 di 2.*"
     timeout: 20000
 - tapOn: Chiudi
-# Scanner annullato: nessun documento in più.
 - tapOn: Documenti
 - assertVisible: Documenti · 2 documenti
 - tapOn: Scansiona un documento in Ricevute

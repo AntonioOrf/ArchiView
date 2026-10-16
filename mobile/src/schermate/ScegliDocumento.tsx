@@ -1,6 +1,3 @@
-// F11 — «Unisci»: quale documento mettere in fondo a quello aperto. Elenco piatto, dal più recente,
-// con cartella e pagine; il tocco sceglie (la conferma la chiede chi apre questa schermata).
-
 import { FlatList, Pressable, View } from 'react-native';
 import { FileText } from 'lucide-react-native';
 import { quando, type Documento } from '../elencoDocumenti';

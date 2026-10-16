@@ -1,6 +1,3 @@
-// I `.riquadro-*` del desktop: fondo e bordo del significato (info, successo, pericolo, avviso).
-// Rosso, verde e blu sono significati, non decorazione (DESIGN.md).
-
 import type { ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { raggio, spazio, useColori, type Colori } from '../theme';

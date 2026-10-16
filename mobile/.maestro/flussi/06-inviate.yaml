@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Pagine inviate tenute sul telefono
 ---
 - launchApp
@@ -10,7 +9,6 @@ name: Pagine inviate tenute sul telefono
 - assertVisible: Inviate · 1 pagina
 - assertVisible: Nessuna pagina da inviare.
 - assertVisible: recto · inviata
-# Nel visore: sola lettura, niente azioni di modifica.
 - tapOn: Apri recto, inviata
 - assertVisible: Inviata · sola lettura
 - assertVisible: Il computer ha già questa pagina.
@@ -19,10 +17,8 @@ name: Pagine inviate tenute sul telefono
 - assertVisible: Rimuovere dal telefono?
 - tapOn: "(?i)annulla"
 - tapOn: Chiudi
-# «Rimuovi tutte» le rimuove solo dal telefono.
 - tapOn: Rimuovi tutte
 - assertVisible: Rimuovere le pagine inviate?
-# Con l'avviso aperto la gerarchia mostra solo l'avviso: nessuna ambiguità col pulsante sotto.
 - tapOn: "(?i)rimuovi tutte"
 - extendedWaitUntil:
     visible: "Nessuna pagina."

@@ -1,8 +1,3 @@
-// Un documento (design 15a): nome rinominabile (matita), cartella · pagine · data; Sposta ed
-// Elimina, «Condividi o salva» (15c); le pagine in griglia (3 per riga), il tocco apre il
-// visore. Il «+» della barra aggiunge pagine. Tenendo premuta una pagina la si trascina in un
-// altro punto della griglia; con TalkBack «Sposta prima / dopo».
-
 import { useRef, useState } from 'react';
 import { FlatList, Image, Pressable, useWindowDimensions, View, type ViewProps } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -30,12 +25,9 @@ type Props = {
   onSposta: () => void;
   onElimina: () => void;
   onCondividi: () => void;
-  /** Riordino: la pagina `da` va in posizione `a`. */
   onRiordina: (da: number, a: number) => void;
-  /** F6: nome dell'archivio aperto, se c'è; `onArchivio` manda le pagine in «Senza scheda». */
   archivio?: string;
   onArchivio?: () => void;
-  /** F11: sceglie un altro documento da mettere in fondo a questo. */
   onUnisci: () => void;
 };
 
@@ -50,10 +42,8 @@ function Miniatura({ doc, pg, i, n, lato, onApri, onRiordina, onTrascina }: Prop
   const y = useSharedValue(0);
   const su = useSharedValue(0);
   const alto = useRef(lato * 4 / 3);
-  /** Fine dell'ultimo trascinamento: il rilascio non deve aprire anche il visore. */
   const finito = useRef(0);
 
-  // Dallo spostamento del dito alla casella d'arrivo: colonna dentro la riga, riga qualunque.
   const rilascia = (tx: number, ty: number) => {
     finito.current = Date.now();
     onTrascina(null);
@@ -98,7 +88,6 @@ function Miniatura({ doc, pg, i, n, lato, onApri, onRiordina, onTrascina }: Prop
 export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onElimina, onCondividi, onRiordina, archivio, onArchivio, onUnisci }: Props) {
   const { width } = useWindowDimensions();
   const [nome, setNome] = useState<string | null>(null);
-  /** Pagina che si sta trascinando: la sua riga va sopra le altre e l'elenco non scorre. */
   const [trascinata, setTrascinata] = useState<number | null>(null);
   const rigaSu = trascinata === null ? -1 : Math.floor(trascinata / COLONNE);
   const lato = (width - spazio.md * 2 - spazio.md * (COLONNE - 1)) / COLONNE;

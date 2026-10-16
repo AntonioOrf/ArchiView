@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documenti
 name: Documento - testo riconosciuto, correzione che resta, ricerca nel testo
 ---
 - launchApp
@@ -9,20 +8,17 @@ name: Documento - testo riconosciuto, correzione che resta, ricerca nel testo
 - tapOn: Documenti, Ricevute, articoli, fotocopie
 - tapOn: "Ricevuta biblioteca, .*"
 - tapOn: Apri la pagina 1
-# OCR sul telefono (ML Kit), a richiesta.
 - tapOn: Testo
 - assertVisible: Testo della pagina 1
 - extendedWaitUntil:
     notVisible: Riconosco il testo…
     timeout: 60000
 - assertVisible: Le correzioni restano col documento.
-# Una parola che l'OCR non può trovare: la ricerca la trova solo se la correzione è salvata.
 - tapOn: Testo riconosciuto
 - inputText: " zzprova "
 - assertVisible:
     text: Copia testo
     enabled: true
-# La X accanto al titolo: anche lo sfondo si chiama «Chiudi», ma il suo centro cade sul pannello.
 - tapOn:
     text: Chiudi
     rightOf: Testo della pagina 1

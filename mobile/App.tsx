@@ -1,9 +1,3 @@
-// Fase 10b/11 (PIANO-SCANNER.md): l'utente ragiona per archivio → scheda → pagine. Il lotto resta
-// solo come busta di trasferimento: ogni «Salva» dello scanner è un lotto, subito in coda.
-// Schermate a stato, niente router (design 11/10): archivio (con la tendina degli archivi e il
-// «+»), scheda, impostazioni; Dividi e Abbina a tutto schermo.
-// Testi con `t` di src/lingua.ts (PIANO-INGLESE-MOBILE): italiano nel codice, inglese nel dizionario.
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, BackHandler, Platform } from 'react-native';
 import { Avvisi, avviso, notizia } from './src/ui/Avviso';
@@ -53,7 +47,6 @@ import { impostaLingua, t } from './src/lingua';
 
 const DISPOSITIVO = Platform.OS === 'android' ? `${Platform.constants.Manufacturer} ${Platform.constants.Model}` : Platform.OS;
 
-/** La scheda a cui va un lotto, ricostruita dalla sua destinazione (per riaprirla dall'elenco). */
 function sceltaDelLotto(b: Bozza): SchedaScelta {
   const d = b.destinazione;
   if (d.tipo === 'nessuna') return { tipo: 'smistare' };
@@ -64,8 +57,7 @@ function sceltaDelLotto(b: Bozza): SchedaScelta {
 const chiaveScelta = (s: SchedaScelta) => (s.tipo === 'smistare' ? '' : s.id);
 
 export default function App() {
-  // Cambio di lingua: il React Compiler tiene in cache i testi di `t`, quindi si rimonta tutto e
-  // si riapre Impostazioni. ponytail: si perde l'abbinamento Wi-Fi (va rifatto col QR); è raro.
+  // ponytail: si perde l'abbinamento Wi-Fi (va rifatto col QR); è raro.
   const [giro, setGiro] = useState(0);  return <GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider><Principale key={giro} riapriImpostazioni={giro > 0} onLingua={() => setGiro(g => g + 1)} /><Avvisi key={`avvisi${giro}`} /></SafeAreaProvider></GestureHandlerRootView>;
 }
 
@@ -73,7 +65,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const [utente, setUtente] = useState<Utente | null>(null);
   const [nuova, setNuova] = useState<Nuova | null>(null);
   const [lotti, setLotti] = useState<Bozza[]>([]);
-  /** Lotti con la bozza illeggibile: foto su disco da ricostruire (Fase 6b). */
   const [rotti, setRotti] = useState<string[]>([]);
   const [impostazioni, setImpostazioni] = useState<ImpostazioniApp>(() => {
     const i = leggiImpostazioni();
@@ -88,25 +79,20 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const [scheda, setScheda] = useState<SchedaScelta | null>(null);
   const [vista, setVista] = useState<'archivio' | 'impostazioni'>(riapriImpostazioni ? 'impostazioni' : 'archivio');
   const [benvenuto, setBenvenuto] = useState(() => !benvenutoFatto());
-  /** Fase 15: la sezione Documenti al posto dell'archivio (scelta dalla tendina), ricordata alla riapertura. */
   const documenti = !!impostazioni.documenti;
   const [foglioNuovo, setFoglioNuovo] = useState(false);
   const [menuPiu, setMenuPiu] = useState(false);
-  /** Schermata «Cambia cartella» della scheda nuova aperta. */
   const [sceltaCartella, setSceltaCartella] = useState(false);
   const [occupato, setOccupato] = useState<string | null>(null);
   const [invio, setInvio] = useState<{ id: string } & Avanzamento | null>(null);
   const [errori, setErrori] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
   const [cartaIniziale, setCartaIniziale] = useState('1r');
-  /** Titolo e nota della prossima scansione "da smistare": dicono sul computer cosa sono quelle pagine. */
   const [titoloSmistare, setTitoloSmistare] = useState('');
   const [notaSmistare, setNotaSmistare] = useState('');
   const [daDividere, setDaDividere] = useState<{ lotto: string; file: string } | null>(null);
   const [daRitagliare, setDaRitagliare] = useState<{ lotto: string; file: string } | null>(null);
-  /** Pagina aperta nel visore (indice nell'ordine della griglia della scheda). */
   const [visore, setVisore] = useState<number | null>(null);
-  /** F7: fotocamera della foto libera aperta sulla scheda. */
   const [fotoLibera, setFotoLibera] = useState(false);
   const [abbinando, setAbbinando] = useState(false);
   const [abbinamento, setAbbinamento] = useState<{ a: Abbinamento; archivio: string } | null>(null);
@@ -114,9 +100,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
 
   const cambiaImpostazioni = (i: ImpostazioniApp) => { salvaImpostazioni(i); impostaLingua(i.lingua); setImpostazioni(i); };
 
-  // Gli archivi (nomi di cartelle) si aggiornano su qualunque rete, all'accesso, al ritorno della
-  // rete e al cambio d'archivio; il database dell'archivio solo su una rete adatta (Fase 4a),
-  // altrimenti basta l'elenco pubblicato. Un archivio nuovo pubblicato dal desktop smette di essere "nuovo".
   const reteBuona = reteAdatta(rete, impostazioni.soloWifi);
   useEffect(() => {
     if (!utente || !rete.isConnected) return;
@@ -148,7 +131,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   }, []);
   const aggiorna = (b: Bozza) => setLotti(ls => (ls.some(l => l.id === b.id) ? ls.map(l => (l.id === b.id ? b : l)) : [...ls, b]));
-  /** Un lotto rimasto senza pagine sparisce dal disco e dall'elenco. */
   const scarta = (b: Bozza) => { eliminaLotto(b); setLotti(ls => ls.filter(l => l.id !== b.id)); };
 
   useEffect(() => {
@@ -158,7 +140,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     ricarica();
     cercaAggiornamento().then(n => {
       if (!n) return;
-      setNuova(n); // «Più tardi»: resta in Impostazioni › App
+      setNuova(n);
       avviso(`ArchiScanner ${n.versione}`, t('È uscita una versione nuova dell\'app. Le pagine in attesa restano dove sono.'), [
         { text: t('Più tardi'), style: 'cancel' },
         { text: t('Aggiorna'), onPress: () => installaNuova(n) }
@@ -171,14 +153,13 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     setInvio(null);
     if (e.tipo === 'inviato') {
       setErrori(({ [e.id]: _, ...resto }) => resto);
-      ricarica(); // eliminato o tenuto come `inviato`: lo dice il disco
-      setNuove(schedeNuove()); // la scheda nuova del lotto ora è «partita»
+      ricarica();
+      setNuove(schedeNuove());
     } else {
       setErrori(er => ({ ...er, [e.id]: messaggioErrore(e.messaggio) }));
     }
   }, [ricarica]);
 
-  // Fase 1b: la coda parte su Drive solo con l'account che l'ha riempita (un solo utente per telefono).
   const driveOk = !!utente && impostazioni.account === utente.email;
   const chiediAccount = (vecchio: string, nuovo: string, n: number) => avviso(
     t('Account cambiato'),
@@ -195,10 +176,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     else cambiaImpostazioni({ ...leggiImpostazioni(), account: utente.email });
   }, [utente?.email]);
 
-  /**
-   * Coda verso il computer abbinato (Fase 2): solo i lotti del suo archivio, senza account Google
-   * né regola "solo Wi-Fi". Computer che non risponde o token cambiato → abbinamento tolto (2c).
-   */
   const inviaWifi = useCallback(async () => {
     if (!abbinamento || !reteAdatta(rete, true)) return;
     const invia = inviaLottoWifi(abbinamento.a);
@@ -213,7 +190,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   }, [abbinamento, rete, evento, ricarica]);
 
-  // F10: immagini condivise da altre app (menu Condividi di Android) → un Documento nuovo.
   const condivise = useIncomingShare();
   const [arrivi, setArrivi] = useState(0);
   useEffect(() => {
@@ -232,13 +208,11 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   }, [condivise.resolvedSharedPayloads]);
 
   const copiaInCorso = useRef(false);
-  /** Un giro della coda: prima il Wi-Fi diretto, poi Drive. `forza`: l'utente ha premuto "Invia ora", vale anche sui dati mobili. */
   const giro = useCallback(async (forza = false) => {
     await inviaWifi();
     if (!driveOk || !reteAdatta(rete, impostazioni.soloWifi && !forza)) return;
     await svuotaCoda(DISPOSITIVO, evento);
     ricarica();
-    // F5: dopo le pagine, la copia dei Documenti; sempre e solo col Wi-Fi, un giro alla volta.
     if (!impostazioni.copiaDocumenti || !reteAdatta(rete, true) || copiaInCorso.current) return;
     copiaInCorso.current = true;
     try { await copiaDocumenti(); }
@@ -246,7 +220,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     finally { copiaInCorso.current = false; }
   }, [inviaWifi, driveOk, rete, impostazioni.soloWifi, impostazioni.copiaDocumenti, evento, ricarica]);
 
-  // Rete che cambia, accesso, impostazione: si riprova. Così la coda si svuota da sola a casa.
   useEffect(() => { giro(); }, [giro]);
   useEffect(() => {
     const s = AppState.addEventListener('change', st => { if (st === 'active') { ricarica(); giro(); } });
@@ -254,9 +227,9 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   }, [giro, ricarica]);
   useEffect(() => {
     const s = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (benvenuto) return false; // ci pensa Benvenuto
-      if (documenti && vista === 'archivio') return false; // ci pensa SezioneDocumenti
-      if (fotoLibera) return false; // ci pensa Fotocamera (chiede se tenere le foto)
+      if (benvenuto) return false;
+      if (documenti && vista === 'archivio') return false;
+      if (fotoLibera) return false;
       if (daDividere) { setDaDividere(null); return true; }
       if (daRitagliare) { setDaRitagliare(null); return true; }
       if (abbinando) { setAbbinando(false); return true; }
@@ -283,7 +256,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
 
   const installaNuova = (n: Nuova) => esegui(t('Aggiornamento'), () => installaAggiornamento(n));
 
-  // Lotti di questo archivio (quelli di prima della Fase 10 non hanno archivio: valgono ovunque).
   const delArchivio = lotti.filter(l => !l.archivio || l.archivio === archivio?.nome);
   const inCoda = lotti.filter(l => l.stato === 'in_coda');
   const pagineInCoda = inCoda.reduce((n, l) => n + l.pagine.length, 0);
@@ -308,7 +280,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     return scelta;
   };
 
-  // Albero (Fase 14): cartelle aperte per archivio; l'ultima aperta è dove nasce una scheda nuova.
   const aperte = (archivio && impostazioni.aperte?.[archivio.nome]) || [];
   const alterna = (percorso: string) => {
     if (!archivio) return;
@@ -317,7 +288,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const cartellaCorrente = aperte[aperte.length - 1] || '';
   const cartelleArchivio = [...(elenco?.cartelle || []), ...(elenco?.schede || []).map(s => s.cartella), ...nuove.filter(n => n.archivio === archivio?.nome).map(n => n.cartella || '')];
 
-  /** Apre una scheda; per «Senza scheda» i campi mostrano titolo e nota delle pagine in attesa. */
   const apriScheda = (s: SchedaScelta) => {
     if (s.tipo === 'smistare') {
       const ultimo = [...delArchivio].reverse().find(l => l.stato === 'in_coda' && l.destinazione.tipo === 'nessuna');
@@ -328,9 +298,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     setScheda(s);
   };
 
-  /**
-   * Titolo e nota di «Senza scheda» valgono anche per le pagine in attesa (non per quelle in invio).
-   * ponytail: riscrive i manifest a ogni tasto; sono pochi e piccoli. Se pesa: salvare all'uscita dal campo.
+  /** ponytail: riscrive i manifest a ogni tasto; sono pochi e piccoli. Se pesa: salvare all'uscita dal campo.
    */
   const smistareInAttesa = (titolo: string, nota: string) => {
     for (const l of delArchivio) {
@@ -343,10 +311,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   };
 
-  /**
-   * Segnatura e cartella di una scheda nata qui, finché nessuna sua pagina è partita (Fase 3b):
-   * scheda ricordata e lotti in attesa. `cartella: ''` = nessuna.
-   */
   const aggiornaSchedaNuova = (s: Extract<SchedaScelta, { tipo: 'nuova' }>, m: { segnatura?: string; cartella?: string }) => esegui(t('Scheda'), () => {
     const segnatura = m.segnatura ?? s.segnatura;
     const cartella = m.cartella !== undefined ? m.cartella || undefined : s.cartella;
@@ -363,7 +327,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     setScheda({ ...s, segnatura, cartella });
   });
 
-  /** Toglie una scheda nata qui e non ancora partita, con le sue pagine in attesa. */
   const togliSchedaNuova = (id: string) => {
     for (const l of lotti) if (l.destinazione.tipo === 'nuova' && l.destinazione.schedaId === id && l.stato !== 'inviato' && l.id !== invio?.id) eliminaLotto(l);
     const tutte = schedeNuove().filter(n => n.id !== id);
@@ -381,18 +344,12 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     ]
   );
 
-  /** Etichetta della pagina che si sta aggiungendo, se la numerazione automatica è attiva. */
   function etichettaNuova(precedenti: Pagina[]): string | undefined {
     if (!auto) return undefined;
-    // F7: le foto libere (`grezza`) stanno fuori dalla numerazione delle carte.
     const ultima = [...precedenti].reverse().find(p => p.etichetta && p.modalita !== 'grezza');
     return ultima ? prossimaEtichetta(ultima.etichetta) : cartaIniziale.trim() || undefined;
   }
 
-  // Fase 9: lo scanner ML Kit in serie (pagina dopo pagina, poi «Salva»). BASE = ritaglio,
-  // prospettiva e rotazione senza filtri che alterano l'inchiostro. Fase 10: il «Salva» è un
-  // lotto per la scheda aperta, in coda appena copiate le pagine.
-  // Fase 3a: `appenaCreata` = «Crea e scansiona»; scanner annullato → la scheda vuota non resta.
   const scansiona = (s: SchedaScelta, precedenti: Pagina[], appenaCreata = false) => esegui(t('Scansione'), async () => {
     if (!archivio) return;
     if (!await prontoAScansionare()) {
@@ -412,7 +369,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     await salvaPagine(s, r.pages, 'documento', precedenti);
   });
 
-  /** Le pagine di uno scatto («Salva» dello scanner, «Fine» della foto libera) in un lotto della scheda, in coda. */
   const salvaPagine = async (s: SchedaScelta, uris: string[], modalita: Modalita, precedenti: Pagina[]) => {
     if (!archivio) return;
     let b = nuovoLotto(destinazioneDi(s), {
@@ -424,7 +380,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     if (s.tipo === 'smistare') { setTitoloSmistare(''); setNotaSmistare(''); }
     b = await riempiLotto(b, uris, modalita, x => (modalita === 'grezza' ? undefined : etichettaNuova([...precedenti, ...x.pagine])));
     misuraSfocate(b, b.pagine.map(p => p.file));
-    // F9: una scheda «da vedere» che riceve pagine prende la spunta (impostazioni rilette: lo scatto è durato).
     if (b.pagine.length && s.tipo === 'esistente' && elenco?.schede.some(x => x.id === s.id && x.daVedere)) {
       const ora = leggiImpostazioni();
       const gia = ora.viste?.[archivio.nome] || [];
@@ -432,7 +387,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   };
 
-  /** F7: «Fine» della foto libera; le foto temporanee della fotocamera si tolgono dopo la copia. */
   const fineFotoLibera = (s: SchedaScelta, uris: string[], precedenti: Pagina[]) => {
     setFotoLibera(false);
     if (!uris.length) return;
@@ -444,19 +398,11 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     });
   };
 
-  /**
-   * F6: le foto originali di un Documento in un lotto «Senza scheda» dell'archivio aperto, come una
-   * scansione: in coda appena copiate, il desktop le smista. Copia a metà: partono quelle copiate.
-   */
   const mandaDaDocumento = async (titolo: string, uris: string[]) => {
     if (!archivio) return;
     await riempiLotto(nuovoLotto({ tipo: 'nessuna' }, { archivio: archivio.nome, archivioNuovo: archivio.nuovo || undefined, titolo }), uris, 'documento');
   };
 
-  /**
-   * Copia le foto nel lotto una per una e lo mette in coda. Anche a metà (memoria piena, file
-   * sparito): le pagine copiate partono, nessun lotto resta aperto; senza pagine sparisce.
-   */
   const riempiLotto = async (b: Bozza, uris: string[], modalita: Modalita, etichetta?: (b: Bozza) => string | undefined) => {
     aggiorna(b);
     try {
@@ -472,16 +418,13 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     return b;
   };
 
-  /** F3: in sottofondo, dopo «Salva» o «Rifai»: le pagine mosse prendono la targhetta «Sfocata?». */
   const misuraSfocate = (b: Bozza, file: string[]) => {
     controllaSfocate(b, file)
       .then(nb => { if (nb) aggiorna(nb); })
       .catch(e => console.warn('[app] nitidezza non misurata', b.id, e));
   };
 
-  /**
-   * Modifica di una pagina: non del lotto che sta partendo, e un lotto rimasto vuoto si elimina.
-   * ponytail: `invio` si accende alla prima pagina caricata; una modifica in quell'istante vale
+  /** ponytail: `invio` si accende alla prima pagina caricata; una modifica in quell'istante vale
    * dal giro dopo (pagina tolta → invio fallito e ripetuto). Se dà fastidio: segnale "in partenza" dalla coda.
    */
   const modifica = (b: Bozza, fn: () => Bozza | Promise<Bozza>) => {
@@ -492,7 +435,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     });
   };
 
-  // Azioni del visore (Fase 13).
   const elimina = (b: Bozza, p: Pagina, ultima: boolean) => avviso(
     b.stato === 'inviato' ? t('Rimuovere dal telefono?') : t('Eliminare la pagina?'),
     b.stato === 'inviato' ? t('Il computer ha già questa pagina.') : t('Non è ancora stata inviata: la perdi.'),
@@ -502,7 +444,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     ]
   );
 
-  // «Rifai questa pagina»: ML Kit per una pagina sola, la foto nuova prende nome ed etichetta della vecchia.
   const rifai = (b: Bozza, p: Pagina) => modifica(b, async () => {
     if (!await chiediFotocamera()) return b;
     const r = await launchDocumentScannerAsync({ pageLimit: 1, galleryImportAllowed: false, scannerMode: ScannerModeOptions.BASE, resultFormats: ResultFormatOptions.JPEG });
@@ -524,13 +465,11 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   ]);
 
   const nomeRete = !rete.isConnected ? t('offline') : rete.type === NetworkStateType.WIFI ? 'Wi-Fi' : rete.type === NetworkStateType.CELLULAR ? t('dati mobili') : t('rete');
-  // Abbinati a un computer, l'account Google non serve: le pagine del suo archivio partono via Wi-Fi.
   const motivo = !utente && !abbinamento ? t('accedi per inviare') : !rete.isConnected ? t('offline') : abbinamento ? undefined
     : !driveOk ? t('account cambiato') : !reteAdatta(rete, impostazioni.soloWifi) ? t('aspetto il Wi-Fi') : undefined;
   const attesa = <Attesa invio={invio} errori={inCoda.filter(l => errori[l.id]).map(l => `${l.titolo || t('Senza scheda')}: ${errori[l.id]}`)} />;
   const quantePagine = (n: number) => (n === 1 ? t('1 pagina in attesa') : t('{n} pagine in attesa', { n }));
 
-  /** «Invio» nella barra: il numero delle pagine in attesa; toccato le manda subito (anche coi dati mobili). */
   const vaiInvio = {
     etichetta: invio ? `${invio.fatte}/${invio.totali}` : t('Invio'),
     descrizione: invio ? t('Invio in corso, {fatte} di {totali}', invio) : `${t('Invia ora')}, ${quantePagine(pagineInCoda)}${motivo ? ', ' + motivo : ''}`,
@@ -655,7 +594,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     );
   }
 
-  // I Documenti non chiedono archivio né account: si aprono anche dalla prima schermata.
   if (documenti) {
     return (
       <>
@@ -687,7 +625,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     const daInviare = suoi.filter(l => l.stato !== 'inviato');
     const inviati = suoi.filter(l => l.stato === 'inviato');
     const titoloScheda = scheda.tipo === 'smistare' ? t('Senza scheda') : scheda.segnatura || scheda.id;
-    // La cartella di una scheda nata qui si cambia finché il computer non l'ha creata.
     const cartellaCambiabile = scheda.tipo === 'nuova' && !inviati.length && !suoi.some(l => l.id === invio?.id)
       && !nuove.find(n => n.id === scheda.id)?.partita && !elenco?.schede.some(s => s.id === scheda.id);
 
@@ -710,7 +647,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       );
     }
 
-    // Stesso ordine della griglia: prima le da inviare, poi le inviate.
     const sorgenti = [
       ...daInviare.flatMap(b => b.pagine.map(pg => ({ b, pg, stato: invio?.id === b.id ? 'invio' as const : undefined }))),
       ...inviati.flatMap(b => b.pagine.map(pg => ({ b, pg, stato: 'inviata' as const })))
@@ -780,8 +716,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     );
   }
 
-  // Schede con pagine sul telefono, raggruppate (una scheda può avere più lotti), nell'ordine
-  // della griglia della scheda: l'indice di una miniatura è quello del visore.
   const gruppi = new Map<string, SchedaInAttesa>();
   for (const l of delArchivio) {
     if (l.stato === 'inviato') continue;

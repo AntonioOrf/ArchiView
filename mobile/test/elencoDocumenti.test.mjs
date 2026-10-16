@@ -1,4 +1,3 @@
-// node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cartelleConConta, daCopiare, daRipristinare, documentiDi, fileFiltrato, fileOcr, fileValido, LUNGHEZZA_NOME, nomeAutomatico, nomeFile, nomeSeguito, nomiImmagini, nomeValido, prossimoFile, quando, spostata } from '../src/elencoDocumenti.ts';

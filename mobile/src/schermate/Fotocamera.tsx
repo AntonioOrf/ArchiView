@@ -1,7 +1,3 @@
-// F7 — foto libera: la fotocamera senza il ritaglio di ML Kit, per legature, sigilli, filigrane in
-// controluce, dettagli. Più scatti di fila, poi «Fine»: le foto vanno nella scheda come pagine
-// `grezza` (fuori dalla numerazione automatica). Barre scure fisse come nell'abbinamento.
-
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { avviso } from '../ui/Avviso';
@@ -16,7 +12,6 @@ import { Testo } from '../ui/Testo';
 
 type Props = {
   titolo: string;
-  /** Percorsi (`file://`) delle foto scattate, nell'ordine; vuoto = annullato. */
   onFine: (uris: string[]) => void;
 };
 
@@ -31,7 +26,6 @@ export function Fotocamera({ titolo, onFine }: Props) {
   const [scatto, setScatto] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
 
-  // Indietro di Android: con foto già scattate si chiede, non si perdono in silenzio.
   useEffect(() => {
     const s = BackHandler.addEventListener('hardwareBackPress', () => {
       if (!scattate.length) { onFine([]); return true; }

@@ -1,7 +1,3 @@
-// Benvenuto del primo avvio (PIANO-BENVENUTO): presentazione con l'informativa sulla privacy, cosa fare
-// dopo l'invio, account Google. Il permesso della fotocamera lo chiede Android al primo uso.
-// Tutto si cambia poi da Impostazioni; finché non si arriva in fondo, si riparte da qui.
-
 import { useEffect, useState, type ComponentType } from 'react';
 import { BackHandler, Linking, ScrollView, Switch, View } from 'react-native';
 import { avviso } from '../ui/Avviso';
@@ -32,7 +28,6 @@ export function Benvenuto(p: Props) {
   const [dopo, setDopo] = useState(p.dopoInvio);
   const [soloWifi, setSoloWifi] = useState(p.soloWifi);
 
-  // Il tasto indietro di Android torna al passo prima, non chiude l'app.
   useEffect(() => {
     const s = BackHandler.addEventListener('hardwareBackPress', () => {
       if (passo === 0 || passo === ULTIMO) return false;

@@ -1,11 +1,3 @@
-// Invio di un lotto su Google Drive (docs/scanner/CONTRATTO.md §4.1).
-//
-//   ArchiView/Scansioni in arrivo/lotti/<id>/{p0001.jpg, …, lotto.json}
-//
-// Ordine non negoziabile: tutte le pagine, poi `lotto.json`. Il desktop considera completo
-// un lotto solo quando c'è il manifest, quindi un invio interrotto si riprende senza danni:
-// le pagine già presenti con la dimensione giusta si saltano, le copie sbagliate si eliminano.
-
 import { File, UploadType } from 'expo-file-system';
 import { tokenDrive, scartaToken } from './accesso';
 import { ScannerLotto, type ConfigScanner, type Lotto } from './contratto';
@@ -29,10 +21,6 @@ const attendi = (ms: number) => new Promise(r => setTimeout(r, ms));
 const ritentabile = (stato: number) => stato === 429 || stato >= 500;
 const escape = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-/**
- * Esegue una chiamata con il token corrente. 401 → si scarta il token e si riprova una
- * volta; 429/5xx/rete → backoff esponenziale.
- */
 async function chiama(fn: (token: string) => Promise<Response>): Promise<Response> {
   let rinnovato = false;
   let ritardo = 1000;
@@ -70,7 +58,6 @@ async function elenca(q: string, orderBy?: string): Promise<FileDrive[]> {
   return out;
 }
 
-/** Come `getOrCreateFolder` del desktop: la prima cartella con quel nome, altrimenti la crea. */
 async function cartella(nome: string, padre: string | null): Promise<string> {
   let q = `name='${escape(nome)}' and mimeType='${MIME_CARTELLA}' and trashed=false`;
   if (padre) q += ` and '${padre}' in parents`;
@@ -86,7 +73,6 @@ async function cartella(nome: string, padre: string | null): Promise<string> {
 
 let cacheLotti: string | null = null;
 
-/** Dopo l'uscita dall'account (o una cartella sparita) la cartella dei lotti si ricerca da capo. */
 export function azzeraCartelle(): void {
   cacheLotti = null;
   cacheDoc = null;
@@ -104,7 +90,6 @@ async function elimina(id: string): Promise<void> {
   await chiama(t => fetch(`${API}/files/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } }));
 }
 
-/** Sessione resumable + PUT del file in binario. Restituisce la dimensione vista da Drive. */
 async function caricaPagina(locale: File, nome: string, cartellaId: string, byte: number): Promise<number> {
   const mime = nome.endsWith('.png') ? 'image/png' : nome.endsWith('.json') ? 'application/json' : 'image/jpeg';
   const sessione = await chiama(t => fetch(`${UPLOAD}/files?uploadType=resumable&fields=id,size`, {
@@ -144,7 +129,6 @@ async function caricaManifest(lotto: Lotto, cartellaId: string): Promise<void> {
   }));
 }
 
-/** Una cartella lungo un percorso, se esiste (da qui non si crea nulla). */
 async function trovaCartella(percorso: string[]): Promise<string | null> {
   let padre: string | null = null;
   for (const nome of percorso) {
@@ -156,14 +140,12 @@ async function trovaCartella(percorso: string[]): Promise<string | null> {
   return padre;
 }
 
-/** File degli elenchi pubblicati dal desktop, uno per archivio (CONTRATTO §4.3). */
 async function fileArchivi(): Promise<FileDrive[]> {
   const id = await trovaCartella([PERCORSO[0], PERCORSO[1], ScannerLotto.CARTELLA_ARCHIVI]);
   if (!id) return [];
   return (await elenca(`'${id}' in parents and trashed=false and mimeType!='${MIME_CARTELLA}'`)).filter(f => f.name.endsWith('.json'));
 }
 
-/** Cartelle degli archivi sincronizzati dal desktop: `ArchiView/<nome>_ArchiView/`. */
 async function cartelleVault(): Promise<FileDrive[]> {
   const radice = await trovaCartella([PERCORSO[0]]);
   if (!radice) return [];
@@ -171,13 +153,8 @@ async function cartelleVault(): Promise<FileDrive[]> {
     .filter(c => c.name.endsWith(SUFFISSO_VAULT) && c.name.length > SUFFISSO_VAULT.length);
 }
 
-/** Nome dell'archivio (CONTRATTO §2.5, senza `_ArchiView`) di un elenco pubblicato o di una cartella. */
 const nomeDi = (f: FileDrive) => ScannerLotto.nomeArchivio(f.name.endsWith('.json') ? f.name.slice(0, -'.json'.length) : f.name);
 
-/**
- * Nomi degli archivi noti su Drive, in ordine alfabetico: quelli sincronizzati (anche a computer
- * spento) e quelli il cui elenco di schede è stato pubblicato dal pannello Scansioni.
- */
 export async function elencaArchivi(): Promise<string[]> {
   const nomi = new Set([...(await fileArchivi()), ...(await cartelleVault())].map(nomeDi));
   return [...nomi].sort((a, b) => a.localeCompare(b));
@@ -185,12 +162,7 @@ export async function elencaArchivi(): Promise<string[]> {
 
 const scarica = (id: string) => chiama(t => fetch(`${API}/files/${id}?alt=media`, { headers: { Authorization: `Bearer ${t}` } }));
 
-/**
- * Elenco delle schede di un archivio, validato, dalla fonte più recente: l'elenco pubblicato
- * dal pannello Scansioni o il database dell'archivio sincronizzato. `null` se non c'è nessuno
- * dei due (archivio nuovo, creato sul telefono). `conDatabase: false` (dati mobili con «solo
- * Wi-Fi», Fase 4a): solo l'elenco pubblicato, che è piccolo.
- * ponytail: il database si scarica intero (trascrizioni comprese); se pesa troppo, un indice
+/** ponytail: il database si scarica intero (trascrizioni comprese); se pesa troppo, un indice
  * leggero pubblicato dal desktop a ogni sincronizzazione.
  */
 export async function scaricaConfig(archivio: string, conDatabase = true): Promise<ConfigScanner | null> {
@@ -205,23 +177,17 @@ export async function scaricaConfig(archivio: string, conDatabase = true): Promi
   else return null;
   const esito = ScannerLotto.validaConfig(json);
   if (!esito.ok) throw new Error('elenco_non_valido: ' + esito.errori.map(e => e.codice).join(', '));
-  // Un elenco pubblicato prima della normalizzazione porta ancora "<nome>_ArchiView".
   return { ...esito.config, archivio };
 }
 
 export type Avanzamento = { fatte: number; totali: number };
 
-/**
- * Invia un lotto. `fileDi(nome)` restituisce il file locale della pagina. Il manifest viene
- * validato PRIMA di caricare qualunque cosa: un lotto che il desktop rifiuterebbe non parte.
- */
 export async function inviaLotto(lotto: Lotto, fileDi: (nome: string) => File, avanzamento?: (a: Avanzamento) => void): Promise<void> {
   const esito = ScannerLotto.valida(lotto);
   if (!esito.ok) throw new Error('lotto_non_valido: ' + esito.errori.map(e => e.codice + '@' + e.percorso).join(', '));
   try {
     await inviaValidato(esito.lotto, fileDi, avanzamento);
   } catch (e) {
-    // Cartella in cache cancellata a mano su Drive: si ricerca (o ricrea) e si riprova una volta.
     if (!(e instanceof ErroreDrive && e.stato === 404) || !cacheLotti) throw e;
     azzeraCartelle();
     await inviaValidato(esito.lotto, fileDi, avanzamento);
@@ -232,7 +198,6 @@ async function inviaValidato(pulito: Lotto, fileDi: (nome: string) => File, avan
   const idLotti = await cartellaLotti();
   const idCartella = await cartella(pulito.id, idLotti);
   const presenti = await elenca(`'${idCartella}' in parents and trashed=false`);
-  // Già completo (invio ripetuto dopo un errore di rete sulla risposta): niente da fare.
   if (presenti.some(f => f.name === ScannerLotto.NOME_MANIFEST)) return;
 
   let fatte = 0;
@@ -250,13 +215,6 @@ async function inviaValidato(pulito: Lotto, fileDi: (nome: string) => File, avan
   await caricaManifest(pulito, idCartella);
 }
 
-// --- F5: copia dei Documenti ------------------------------------------------------------------
-//
-//   ArchiView/Documenti telefono/{cartelle.json, <uuid>/{p0001.jpg, …, documento.json}}
-//
-// Ogni cartella è lo specchio di quella sul telefono: file nuovi o cambiati (md5) si caricano,
-// quelli che non ci sono più si tolgono. Con `drive.file` l'app vede solo i file che ha creato.
-
 const PERCORSO_DOC = [PERCORSO[0], 'Documenti telefono'];
 let cacheDoc: string | null = null;
 
@@ -270,11 +228,6 @@ async function cartellaDocumenti(): Promise<string> {
 
 export type FileDaCopiare = { nome: string; file: File; md5: string; byte: number };
 
-/**
- * Rende la cartella `nome` (un documento; `''` = la radice, per `cartelle.json`) uguale a `file`,
- * nell'ordine dato: chi chiama mette `documento.json` per ultimo, così una copia interrotta non ha
- * un documento che cita pagine mancanti. Cartella in cache sparita (404): si ricerca una volta.
- */
 export async function specchia(nome: string, file: FileDaCopiare[]): Promise<void> {
   try {
     await specchiaUnaVolta(nome, file);
@@ -301,7 +254,6 @@ async function specchiaUnaVolta(nome: string, file: FileDaCopiare[]): Promise<vo
   for (const x of presenti) if (!file.some(f => f.nome === x.name)) await elimina(x.id);
 }
 
-/** Toglie da Drive la copia di un documento eliminato sul telefono (se c'è). */
 export async function eliminaCopia(nome: string): Promise<void> {
   const radice = await cartellaDocumenti();
   const q = `name='${escape(nome)}' and mimeType='${MIME_CARTELLA}' and trashed=false and '${radice}' in parents`;
@@ -310,7 +262,6 @@ export async function eliminaCopia(nome: string): Promise<void> {
 
 export type CopiaDrive = { nome: string; file: { id: string; nome: string }[] };
 
-/** Le copie su Drive: la radice (`nome: ''`) e una voce per cartella di documento. Niente se non c'è ancora nulla. */
 export async function elencaCopie(): Promise<CopiaDrive[]> {
   const radice = await trovaCartella(PERCORSO_DOC);
   if (!radice) return [];
@@ -322,7 +273,7 @@ export async function elencaCopie(): Promise<CopiaDrive[]> {
   return out;
 }
 
-/** Scarica un file di Drive in `dest` (sovrascrive). ponytail: niente nuovo tentativo su 401 a metà; la volta dopo riparte. */
+/** ponytail: niente nuovo tentativo su 401 a metà; la volta dopo riparte. */
 export async function scaricaIn(id: string, dest: File): Promise<void> {
   const token = await tokenDrive();
   await File.downloadFileAsync(`${API}/files/${id}?alt=media`, dest, { headers: { Authorization: `Bearer ${token}` }, idempotent: true });

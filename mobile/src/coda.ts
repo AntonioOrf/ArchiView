@@ -1,9 +1,3 @@
-// Coda d'invio: i lotti `in_coda` partono uno alla volta, dal più vecchio, quando c'è rete
-// (con "solo Wi-Fi", solo su Wi-Fi o Ethernet). Un lotto inviato si elimina dal telefono (o resta
-// in sola lettura, impostazione «Dopo l'invio»); uno
-// fallito resta in coda con il suo errore e si riprova al prossimo giro. L'invio è
-// riprendibile (src/drive.ts), quindi un giro interrotto a metà non duplica nulla.
-
 import { File, Paths } from 'expo-file-system';
 import { NetworkStateType, type NetworkState } from 'expo-network';
 import { elencaArchivi, inviaLotto, scaricaConfig, type Avanzamento } from './drive';
@@ -13,14 +7,6 @@ import { DOPO_INVIO_PREDEFINITO, type DopoInvio } from './pagine';
 import { leggiJson, scriviJson } from './fileJson';
 import type { Lingua } from './lingua';
 
-/**
- * `archivio`: quello scelto (ricordato); `nuovo` = creato qui, il desktop non l'ha ancora pubblicato.
- * `aperte`: cartelle aperte nell'albero, per archivio, in ordine d'apertura (`alternaCartella`).
- * `account`: email dell'ultimo accesso con cui è partita la coda; con un altro account la coda aspetta il permesso.
- * `documenti`: l'app era nella sezione Documenti; alla riapertura riparte da lì.
- * `copiaDocumenti` (F5): i Documenti si copiano su Drive a ogni giro della coda col Wi-Fi.
- * `viste` (F9): per archivio, le schede «da vedere» già fotografate da questo telefono.
- */
 export type Impostazioni = { soloWifi: boolean; dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean; copiaDocumenti?: boolean; viste?: Record<string, string[]>; lingua?: Lingua };
 
 const IMPOSTAZIONI_PREDEFINITE: Impostazioni = { soloWifi: true, dopoInvio: DOPO_INVIO_PREDEFINITO };
@@ -34,7 +20,6 @@ export function leggiImpostazioni(): Impostazioni {
     const salvate = leggiJson(fileImpostazioni());
     if (!salvate) return IMPOSTAZIONI_PREDEFINITE;
     const i: Impostazioni = { ...IMPOSTAZIONI_PREDEFINITE, ...(salvate as Partial<Impostazioni>) };
-    // Scelto quando l'elenco mostrava ancora "<nome>_ArchiView": stesso archivio, nome normalizzato.
     if (i.archivio) i.archivio = { ...i.archivio, nome: ScannerLotto.nomeArchivio(i.archivio.nome) };
     return i;
   } catch (e) {
@@ -47,10 +32,8 @@ export function salvaImpostazioni(i: Impostazioni): void {
   scriviJson(fileImpostazioni(), i);
 }
 
-// File a parte, non un campo di `Impostazioni`: i semi Maestro senza impostazioni lo scrivono da soli.
 const fileBenvenuto = () => new File(Paths.document, 'benvenuto.json');
 
-/** true se il benvenuto del primo avvio è già stato fatto (o saltato). */
 export function benvenutoFatto(): boolean {
   try { return fileBenvenuto().exists; } catch (e) { console.warn('[coda] benvenuto illeggibile', e); return true; }
 }
@@ -59,13 +42,10 @@ export function segnaBenvenuto(): void {
   scriviJson(fileBenvenuto(), { data: new Date().toISOString() });
 }
 
-// --- Elenco delle schede (Fase 4): copia locale, per scegliere la destinazione offline ---
-
 function fileElenco(): File {
   return new File(Paths.document, 'schede.json');
 }
 
-/** Copia locale dell'elenco delle schede dell'archivio scelto (una sola: quella dell'archivio in uso). */
 export function elencoLocale(archivio?: string): ConfigScanner | null {
   try {
     const f = fileElenco();
@@ -78,10 +58,6 @@ export function elencoLocale(archivio?: string): ConfigScanner | null {
   }
 }
 
-/**
- * Scarica l'elenco dell'archivio e ne salva la copia. Senza elenco su Drive, o se la copia locale è
- * più recente (presa dal database quando c'era il Wi-Fi), resta quella locale.
- */
 export async function aggiornaElenco(archivio: string, conDatabase = true): Promise<ConfigScanner | null> {
   const config = await scaricaConfig(archivio, conDatabase);
   const locale = elencoLocale(archivio);
@@ -89,8 +65,6 @@ export async function aggiornaElenco(archivio: string, conDatabase = true): Prom
   fileElenco().write(JSON.stringify(config));
   return config;
 }
-
-// --- Archivi pubblicati dal desktop (copia locale, per scegliere anche offline) ---
 
 function fileArchivi(): File {
   return new File(Paths.document, 'archivi.json');
@@ -113,9 +87,6 @@ export async function aggiornaArchivi(): Promise<string[]> {
   return nomi;
 }
 
-// --- Schede nate sul telefono: restano in vista nell'archivio anche dopo l'invio ---
-
-/** `partita`: il computer ha già ricevuto pagine, quindi ha creato la scheda: la cartella non si cambia più da qui. */
 export type SchedaNuova = { archivio: string; id: string; segnatura: string; nota?: string; cartella?: string; partita?: true };
 
 function fileSchedeNuove(): File {
@@ -145,7 +116,6 @@ function segnaPartita(id: string): void {
   }
 }
 
-/** La rete permette l'invio? `isInternetReachable` può restare indefinito: conta `isConnected`. */
 export function reteAdatta(rete: NetworkState, soloWifi: boolean): boolean {
   if (!rete.isConnected || rete.isInternetReachable === false) return false;
   if (!soloWifi) return true;
@@ -159,18 +129,12 @@ export type EventoCoda =
 
 let inCorso = false;
 
-/**
- * Un giro della coda. Se un giro è già in corso non ne parte un secondo (i trigger sono tanti:
- * rete che cambia, app in primo piano, lotto appena chiuso). `false` = giro saltato.
- * `filtro`: solo i lotti che passano (Wi-Fi: quelli dell'archivio abbinato).
- */
 export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) => void, invia: typeof inviaLotto = inviaLotto, filtro: (b: Bozza) => boolean = () => true): Promise<boolean> {
   if (inCorso) return false;
   inCorso = true;
   try {
     const tentati = new Set<string>();
     for (;;) {
-      // Si rilegge il disco a ogni lotto: uno riaperto nel frattempo non deve partire.
       const b = elencaLotti().find(l => l.stato === 'in_coda' && !tentati.has(l.id) && filtro(l));
       if (!b) break;
       tentati.add(b.id);
@@ -182,7 +146,6 @@ export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) =>
       } catch (e: any) {
         console.error('[coda] invio fallito', b.id, e);
         evento({ tipo: 'errore', id: b.id, messaggio: e?.message || String(e) });
-        // Senza rete (o abbinamento scaduto) fallirebbero anche i successivi: si chiude il giro.
         if (/network|rete|fetch|wifi_401/i.test(String(e?.message))) break;
       }
     }

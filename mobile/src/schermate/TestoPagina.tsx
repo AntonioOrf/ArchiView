@@ -1,7 +1,3 @@
-// «Testo» del visore (design 15a, solo Documenti): foglio dal basso col testo riconosciuto sul
-// telefono, correggibile prima di copiarlo (la correzione resta col documento). «Copia testo» per
-// la pagina, «Tutte le pagine» per il documento intero.
-
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,11 +10,9 @@ import { Testo } from '../ui/Testo';
 type Props = {
   visibile: boolean;
   titolo: string;
-  /** `null` = riconoscimento in corso. */
   testo: string | null;
   pagine: number;
   occupato: boolean;
-  /** Il testo cambiato a mano, da salvare (alla copia o alla chiusura). */
   onCorreggi: (testo: string) => void;
   onCopia: (testo: string) => void;
   onCopiaTutte: () => void;
@@ -31,7 +25,6 @@ export function TestoPagina(p: Props) {
   const [valore, setValore] = useState(p.testo ?? '');
   const campo = useRef<TextInput>(null);
   useEffect(() => { setValore(p.testo ?? ''); }, [p.testo]);
-  // Android porta la vista sul cursore, che sta in fondo: il testo si aprirebbe sulle ultime righe.
   useEffect(() => { if (p.testo !== null) setTimeout(() => campo.current?.setSelection(0, 0), 0); }, [p.testo]);
   const salva = () => { if (p.testo !== null && valore !== p.testo) p.onCorreggi(valore); };
   const chiudi = () => { salva(); p.onChiudi(); };

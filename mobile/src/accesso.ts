@@ -1,8 +1,3 @@
-// Accesso Google. Stesso progetto Google Cloud del desktop e stesso scope `drive.file`: il
-// telefono vede solo le cartelle create dall'app (desktop o telefono), nient'altro del Drive.
-// Su Android il client OAuth è riconosciuto da pacchetto + SHA-1 del certificato di firma
-// (console Google Cloud): nessun segreto nell'app, nessun config plugin.
-
 import { GoogleSignin, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 
 const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive.file';
@@ -16,7 +11,6 @@ function configura(): void {
 
 export type Utente = { email: string; nome: string | null };
 
-/** Sessione già aperta, senza mostrare nulla. `null` se serve l'accesso. */
 export async function utenteSilenzioso(): Promise<Utente | null> {
   configura();
   try {
@@ -29,7 +23,6 @@ export async function utenteSilenzioso(): Promise<Utente | null> {
   }
 }
 
-/** Accesso interattivo. `null` se l'utente annulla. */
 export async function accedi(): Promise<Utente | null> {
   configura();
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -48,10 +41,8 @@ export async function esci(): Promise<void> {
   await GoogleSignin.signOut();
 }
 
-/** `getTokens` non accetta chiamate sovrapposte: chi arriva mentre una è in corso la condivide. */
 let inCorso: Promise<string> | null = null;
 
-/** Token d'accesso Drive valido (la libreria lo rinnova quando scade). */
 export function tokenDrive(): Promise<string> {
   configura();
   inCorso ??= GoogleSignin.getTokens()
@@ -63,9 +54,6 @@ export function tokenDrive(): Promise<string> {
   return inCorso;
 }
 
-/**
- * Dopo un 401 il token in cache è da buttare: la prossima `getTokens` ne chiede uno nuovo.
- */
 export async function scartaToken(token: string): Promise<void> {
   try {
     await GoogleSignin.clearCachedAccessToken(token);

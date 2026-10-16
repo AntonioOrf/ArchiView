@@ -1,8 +1,3 @@
-// Finestra di conferma/avviso col tema dell'app, al posto di `Alert.alert` (stessa firma), e `notizia` al
-// posto di `ToastAndroid`. La richiesta di consenso (chiediConsenso) resta col dialogo di sistema.
-// `<Avvisi />` sta una volta sola nella radice di App.
-// Più avvisi di fila si accodano. Indietro o tocco sul velo = il pulsante «cancel» (o l'unico pulsante).
-
 import { useSyncExternalStore } from 'react';
 import { Modal, Pressable, ScrollView, useWindowDimensions, View, type AlertButton } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +20,6 @@ export function avviso(titolo: string, messaggio?: string, pulsanti?: AlertButto
   cambia([...coda, { titolo, messaggio, pulsanti: pulsanti?.length ? pulsanti : [{ text: 'OK' }] }]);
 }
 
-/** Conferma breve sopra la barra in fondo, che sparisce da sola; una nuova prende il posto della vecchia. */
 export function notizia(testo: string, lunga = false) {
   const id = Date.now();
   notifica = { testo, id };
@@ -63,7 +57,6 @@ function Finestra() {
   };
   const annulla = v.pulsanti.find(p => p.style === 'cancel') ?? (v.pulsanti.length === 1 ? v.pulsanti[0] : undefined);
   const chiudi = () => { if (annulla) premi(annulla); };
-  // Tre o più pulsanti non stanno in riga: in colonna, a tutta larghezza.
   const colonna = v.pulsanti.length > 2;
 
   return (

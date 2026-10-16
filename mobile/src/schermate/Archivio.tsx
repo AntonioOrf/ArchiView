@@ -1,8 +1,3 @@
-// L'archivio (design 11/10, Fase 14): il nome in grande è il pulsante per cambiare archivio
-// (freccia ⌄), sotto il riquadro «Da inviare» (chiuso; aperto mostra le pagine in attesa per
-// scheda), la ricerca e l'albero delle cartelle come la sidebar del desktop. Albero appiattito
-// in righe (`righeAlbero`): una sola FlatList anche con 50 000 schede; la ricerca lo filtra.
-
 import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, Image, Pressable, View } from 'react-native';
 import { ChevronDown, ChevronRight, ChevronUp, CircleCheck, CloudUpload, Eye, FileText, Folder, FolderOpen, Inbox, Search } from 'lucide-react-native';
@@ -21,7 +16,6 @@ const RIENTRO = 24;
 const ANTEPRIME = 4;
 const conta = (n: number) => (n === 1 ? t('1 pagina') : t('{n} pagine', { n }));
 
-/** Una scheda con pagine ancora sul telefono, con le prime miniature (nell'ordine del visore). */
 export type SchedaInAttesa = { scelta: SchedaScelta; pagine: number; anteprime: { uri: string; etichetta?: string }[]; riassunto?: string };
 
 type Props = {
@@ -29,24 +23,19 @@ type Props = {
   elenco: ConfigScanner | null;
   nuove: SchedaNuova[];
   inAttesa: SchedaInAttesa[];
-  /** Stato dell'invio sotto «Da inviare»: «aspetto il Wi-Fi», «invio 3/8»… */
   statoInvio: string;
   onInviaOra: () => void;
   aperte: string[];
   onAlterna: (percorso: string) => void;
-  /** Errori d'invio, sotto l'intestazione. */
   attesa: ReactNode;
   onApri: (s: SchedaScelta) => void;
   onApriPagina: (s: SchedaScelta, indice: number) => void;
   onCambiaArchivio: () => void;
-  /** Fase 6b: lotti con la bozza illeggibile, da ricostruire dalle foto in «Senza scheda». */
   daRecuperare: number;
   onRecupera: () => void;
-  /** F9: id delle schede dell'archivio già fotografate da questo telefono. */
   viste: string[];
 };
 
-/** Il nome dell'archivio come pulsante: apre la tendina degli archivi. */
 export function NomeArchivio({ nome, aperta, onPress }: { nome: string; aperta?: boolean; onPress: () => void }) {
   const c = useColori();
   return (
@@ -67,7 +56,6 @@ export function NomeArchivio({ nome, aperta, onPress }: { nome: string; aperta?:
   );
 }
 
-/** «Da inviare»: una riga chiusa; aperta, un gruppo per scheda con le miniature. */
 function DaInviare({ gruppi, stato, onInviaOra, onApri, onApriPagina }: { gruppi: SchedaInAttesa[]; stato: string; onInviaOra: () => void; onApri: Props['onApri']; onApriPagina: Props['onApriPagina'] }) {
   const c = useColori();
   const [aperto, setAperto] = useState(false);
@@ -88,8 +76,6 @@ function DaInviare({ gruppi, stato, onInviaOra, onApri, onApriPagina }: { gruppi
           <CloudUpload size={20} color={c.primaryHover} />
           <View style={{ flex: 1 }}>
             <Testo variante="sezione" tono="accento">{`${t('Da inviare')} · ${conta(totale)}`}</Testo>
-            {/* Lo stato (perché non parte, «invio 3/8») su una riga sua, che può andare a capo: col
-                carattere grande, accodato ai nomi delle schede, era il primo a sparire tagliato. */}
             {!aperto && <Testo variante="aiuto" numberOfLines={1}>{nomi.length > 2 ? t('{a}, {b} e altre {n}', { a: nomi[0], b: nomi[1], n: nomi.length - 2 }) : nomi.join(t(' e '))}</Testo>}
             <Testo variante="aiuto">{stato}</Testo>
           </View>
@@ -137,7 +123,6 @@ export function Archivio(p: Props) {
   const c = useColori();
   const [q, setQ] = useState('');
 
-  // Le schede del computer più quelle nate qui e non ancora arrivate (con la cartella scelta qui).
   const schede = useMemo<SchedaAlbero[]>(() => {
     const sulComputer = (p.elenco?.schede || []).map(s => ({ ...s, nuova: false }));
     const ids = new Set(sulComputer.map(s => s.id));
@@ -145,7 +130,6 @@ export function Archivio(p: Props) {
     return [...sulComputer, ...nuove];
   }, [p.elenco, p.nuove]);
   const aperte = useMemo(() => new Set(p.aperte), [p.aperte]);
-  // F9: schede col tag «da vedere» sul computer; quelle fotografate qui hanno la spunta.
   const [soloDaVedere, setSoloDaVedere] = useState(false);
   const viste = useMemo(() => new Set(p.viste), [p.viste]);
   const daVedere = useMemo(() => schede.filter(s => s.daVedere), [schede]);
@@ -158,8 +142,6 @@ export function Archivio(p: Props) {
     p.onApri(s.nuova && n ? { tipo: 'nuova', id: n.id, segnatura: n.segnatura, nota: n.nota, cartella: n.cartella } : { tipo: 'esistente', id: s.id, segnatura: s.segnatura || s.id });
   };
 
-  // Fase 4b: quanto è vecchio l'elenco (fuori dal Wi-Fi non si riscarica il database).
-  // Solo la prima lettera («Oggi» → «oggi»): «Oct» in inglese resta maiuscolo.
   const aggiornato = p.elenco && quando(p.elenco.aggiornatoIl, new Date()).replace(/^\p{Lu}/u, x => x.toLowerCase());
   const stato = p.archivio.nuovo
     ? t('Archivio nuovo: il computer lo crea quando riceve le scansioni')

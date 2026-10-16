@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: documenti
 name: Documento - visore con filtri, ruota, ritaglia, elimina pagina; Condividi o salva
 ---
 - launchApp
@@ -10,7 +9,6 @@ name: Documento - visore con filtri, ruota, ritaglia, elimina pagina; Condividi 
 - tapOn: "Ricevuta biblioteca, .*"
 - tapOn: Apri la pagina 1
 - assertVisible: "Pagina 1 di 2 · striscia per le altre"
-# Filtri: la scelta si applica e «Usa per tutte» la estende.
 - tapOn: Filtri
 - assertVisible: Originale
 - tapOn: Grigi
@@ -52,7 +50,6 @@ name: Documento - visore con filtri, ruota, ritaglia, elimina pagina; Condividi 
 - tapOn: Chiudi
 - assertVisible: "Apri la pagina 1, filtro Grigi"
 - assertNotVisible: "Apri la pagina 2.*"
-# Condividi o salva: PDF o JPEG; il menu di Android si chiude con Indietro.
 - tapOn: Condividi o salva
 - assertVisible: "PDF, Un file con tutte le pagine"
 - tapOn: "Immagini JPEG, Un'immagine"

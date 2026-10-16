@@ -73,7 +73,6 @@ test('albero: cartelle anche vuote, ordine naturale, solo le aperte si espandono
   assert.deepEqual(forma(righeAlbero(schede, cartelle, new Set(['Registri', 'Registri/Badia']))), [
     '▸ Apprezzi (1)', '▸ Mappe (0)', '▾ Registri (3)', '  ▾ Badia (2)', '    · Reg. 9', '    · Reg. 10', '  ▸ Vuota (0)', '  · Reg. 2', '· Sciolta'
   ]);
-  // Una sottocartella aperta sotto una chiusa resta nascosta.
   assert.deepEqual(forma(righeAlbero(schede, cartelle, new Set(['Registri/Badia']))).length, 4);
 });
 

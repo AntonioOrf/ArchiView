@@ -1,6 +1,3 @@
-// Il `.btn` del desktop: primario, secondario, ghost, pericolo (pieno) e pericolo-ghost.
-// Premuto = lo stato :hover del desktop. Angoli morbidi, niente ombra, area di tocco ≥ 48 dp.
-
 import type { ComponentType } from 'react';
 import { ActivityIndicator, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { raggio, spazio, tipo, TOCCO, useColori, type Colori } from '../theme';
@@ -20,7 +17,6 @@ function aspetto(c: Colori, v: Variante, premuto: boolean) {
 
 type Props = {
   titolo?: string;
-  /** Per i pulsanti con sola icona è obbligatoria (lettore di schermo). */
   etichetta?: string;
   icona?: Icona;
   variante?: Variante;
@@ -58,7 +54,6 @@ export function Pulsante({ titolo, etichetta, icona: Icona, variante = 'secondar
         return (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.sm, flexShrink: 1 }}>
             {caricamento ? <ActivityIndicator color={a.testo} /> : Icona ? <Icona size={20} color={a.testo} /> : null}
-            {/* 11c: col testo di sistema ingrandito l'etichetta va a capo invece di uscire dal pulsante. */}
             {!!titolo && <Text style={[tipo.controllo, { color: a.testo, flexShrink: 1, textAlign: 'center' }]}>{titolo}</Text>}
           </View>
         );

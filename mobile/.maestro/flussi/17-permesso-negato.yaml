@@ -1,5 +1,4 @@
 appId: com.antonioorf.archiview.scanner
-# seme: archivio
 name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M8.16)
 ---
 - launchApp:
@@ -9,12 +8,10 @@ name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M
     visible: Fondo Prova, cambia archivio
     timeout: 180000
 - tapOn: Impostazioni
-# Sotto la sezione Privacy: va fatto scorrere.
 - scrollUntilVisible:
     element: Abbina col computer
 - tapOn: Abbina col computer
 - tapOn: "Consenti.*"
-# Dialogo di sistema: «Non consentire».
 - tapOn: "(?i)(don.t allow|non consentire|nega)"
 - extendedWaitUntil:
     visible: Serve la fotocamera
@@ -22,7 +19,6 @@ name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M
 - tapOn: "(?i)annulla|indietro"
 - scrollUntilVisible:
     element: Abbina col computer
-# Concessa da Android (qui: riavvio con il permesso), il lettore QR parte.
 - stopApp
 - launchApp:
     permissions:
@@ -31,7 +27,6 @@ name: Fotocamera negata - messaggio, nessun crash; concessa, il lettore parte (M
     visible: Fondo Prova, cambia archivio
     timeout: 30000
 - tapOn: Impostazioni
-# Sotto la sezione Privacy: va fatto scorrere.
 - scrollUntilVisible:
     element: Abbina col computer
 - tapOn: Abbina col computer

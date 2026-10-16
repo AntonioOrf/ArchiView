@@ -1,4 +1,3 @@
-// node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { prossimaEtichetta } from '../src/etichette.ts';

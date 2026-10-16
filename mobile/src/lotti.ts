@@ -1,11 +1,3 @@
-// Lotti sul telefono: `<documenti>/lotti/<id>/p0001.jpg …` più `bozza.json` (stato locale,
-// NON il manifest: `lotto.json` si compone al momento dell'invio e si valida con il contratto).
-// Fase 10: ogni «Salva» dello scanner è un lotto (busta di trasferimento, l'utente vede solo la
-// scheda). `aperto` solo mentre si copiano le pagine, poi `in_coda` (src/coda.ts): le sue pagine
-// restano modificabili finché non parte. Dopo l'invio riuscito la cartella si elimina, oppure
-// (Fase 13, «Dopo l'invio») resta `inviato` in sola lettura fino alla pulizia. Tutto su disco:
-// la coda sopravvive alla chiusura dell'app.
-
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -24,7 +16,6 @@ export type Bozza = {
   id: string;
   creatoIl: string;
   stato: StatoLotto;
-  /** Solo `inviato`: quando è partito, per la pulizia di «Dopo l'invio». */
   inviatoIl?: string;
   archivio?: string;
   archivioNuovo?: boolean;
@@ -32,7 +23,6 @@ export type Bozza = {
   nota?: string;
   destinazione: Destinazione;
   pagine: Pagina[];
-  /** F3: file delle pagine che sembrano mosse o sfocate. Solo sul telefono, non va nel manifest. */
   sfocate?: string[];
 };
 
@@ -47,7 +37,6 @@ export function cartellaLotto(id: string): Directory {
   return new Directory(radice(), id);
 }
 
-/** `2026-10-05T14:30:22+02:00`: ora locale con il fuso esplicito, come chiede il contratto. */
 function isoLocale(d: Date): string {
   const due = (n: number) => String(n).padStart(2, '0');
   const off = -d.getTimezoneOffset();
@@ -70,10 +59,6 @@ export function salvaBozza(b: Bozza): Bozza {
   return b;
 }
 
-/**
- * Un lotto nasce `aperto` (la coda non lo vede) e passa `in_coda` quando ha tutte le pagine
- * della scansione: un invio non parte mai a metà del salvataggio.
- */
 export function nuovoLotto(destinazione: Destinazione = { tipo: 'nessuna' }, extra?: Pick<Bozza, 'archivio' | 'archivioNuovo' | 'titolo' | 'nota'>): Bozza {
   const ora = new Date();
   const b: Bozza = { id: ScannerLotto.nuovoId(ora, suffissoCasuale()), creatoIl: isoLocale(ora), stato: 'aperto', ...extra, destinazione, pagine: [] };
@@ -81,10 +66,6 @@ export function nuovoLotto(destinazione: Destinazione = { tipo: 'nessuna' }, ext
   return salvaBozza(b);
 }
 
-/**
- * All'avvio: un lotto rimasto `aperto` (app chiusa durante il salvataggio, o lotto del flusso di
- * prima della Fase 10) va in coda; senza pagine si elimina.
- */
 export function chiudiAperti(): void {
   for (const b of elencaLotti()) {
     if (b.stato !== 'aperto') continue;
@@ -93,11 +74,6 @@ export function chiudiAperti(): void {
   }
 }
 
-/**
- * Tutti i lotti sul telefono, dal più vecchio. Una cartella con `bozza.json` illeggibile si
- * salta (e si segnala) invece di bloccare l'elenco: le foto restano su disco, e il suo id va in
- * `rotti` (Fase 6b, «scansioni da recuperare»).
- */
 export function leggiLotti(): { lotti: Bozza[]; rotti: string[] } {
   const out: Bozza[] = [];
   const rotti: string[] = [];
@@ -106,7 +82,7 @@ export function leggiLotti(): { lotti: Bozza[]; rotti: string[] } {
     try {
       const b = leggiJson(new File(voce, 'bozza.json')) as Bozza;
       if (!b || b.id !== voce.name || !Array.isArray(b.pagine)) throw new Error('bozza_incoerente');
-      out.push({ ...b, stato: b.stato || 'aperto' }); // le bozze della Fase 0 non hanno `stato`
+      out.push({ ...b, stato: b.stato || 'aperto' });
     } catch (e) {
       console.warn('[lotti] bozza illeggibile', voce.name, e);
       rotti.push(voce.name);
@@ -117,10 +93,6 @@ export function leggiLotti(): { lotti: Bozza[]; rotti: string[] } {
 
 export const elencaLotti = () => leggiLotti().lotti;
 
-/**
- * Fase 6b: ricostruisce la bozza di un lotto illeggibile dalle sue foto (`p0001.jpg` …, hash
- * ricalcolati), in coda come «Senza scheda» dell'archivio dato. Senza foto la cartella si elimina.
- */
 export async function recuperaLotto(id: string, archivio?: string): Promise<Bozza | null> {
   const d = cartellaLotto(id);
   const foto = d.list()
@@ -135,23 +107,17 @@ export async function recuperaLotto(id: string, archivio?: string): Promise<Bozz
   });
 }
 
-/** sha256 e byte del file che verrà caricato. */
 async function impronta(f: File): Promise<{ sha256: string; byte: number }> {
   // ponytail: legge tutto il file in memoria (ok fino a ~20 MB); per file più grandi hash a blocchi.
   const bytes = await f.bytes();
   return { sha256: hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes)), byte: bytes.byteLength };
 }
 
-/** Nome della prossima pagina: dopo la più alta, così una pagina eliminata non crea doppioni. */
 function prossimoNome(b: Bozza): string {
   const max = b.pagine.reduce((m, p) => Math.max(m, Number(p.file.slice(1, 5))), 0);
   return ScannerLotto.nomePagina(max + 1);
 }
 
-/**
- * Copia l'immagine nel lotto come pagina successiva e ne calcola sha256 e byte.
- * L'hash si calcola sulla COPIA, cioè sul file che verrà caricato.
- */
 export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Modalita, extra?: { larghezza?: number; altezza?: number; etichetta?: string; nota?: string }): Promise<Bozza> {
   const nome = prossimoNome(b);
   const dest = new File(cartellaLotto(b.id), nome);
@@ -169,7 +135,6 @@ export function etichettaPagina(b: Bozza, file: string, etichetta: string): Bozz
   return testoPagina(b, file, 'etichetta', etichetta);
 }
 
-/** F8: la nota della pagina; vuota = assente. */
 export function notaPagina(b: Bozza, file: string, nota: string): Bozza {
   return testoPagina(b, file, 'nota', nota);
 }
@@ -189,18 +154,12 @@ export function rimuoviPagina(b: Bozza, file: string): Bozza {
   return salvaBozza(conSfocate({ ...b, pagine: b.pagine.filter(p => p.file !== file) }, b.sfocate ?? []));
 }
 
-/** `sfocate` ridotto alle pagine che ci sono (un nome tolto può tornare con una pagina nuova); vuoto = assente. */
 function conSfocate(b: Bozza, sfocate: string[]): Bozza {
   const { sfocate: _vecchie, ...resto } = b;
   const restano = [...new Set(sfocate)].filter(f => b.pagine.some(p => p.file === f));
   return restano.length ? { ...resto, sfocate: restano } : resto;
 }
 
-/**
- * F3: misura le pagine `file` e salva il risultato sulla bozza com'è ADESSO su disco (nel frattempo
- * l'utente può aver cambiato un'etichetta). null se il lotto non c'è più (inviato e cancellato).
- * Una misura che fallisce non segna nulla: l'avviso è un aiuto, non un controllo.
- */
 export async function controllaSfocate(b: Bozza, file: string[]): Promise<Bozza | null> {
   const sfocate: string[] = [];
   for (const f of file) {
@@ -216,12 +175,6 @@ export async function controllaSfocate(b: Bozza, file: string[]): Promise<Bozza 
   return salvaBozza(conSfocate(ora, [...(ora.sfocate ?? []).filter(f => !file.includes(f)), ...sfocate]));
 }
 
-/**
- * Fase 5 — pagina doppia: la foto del registro aperto diventa due pagine, divise sulla piega
- * a `frazione` della larghezza (0–1, dalla sinistra), al posto dell'originale e nello stesso
- * punto dell'ordine. Etichette: la sinistra tiene quella della foto, la destra la successiva
- * (`12v` | `13r`). Il ritaglio ricodifica in JPEG alla qualità massima.
- */
 export async function dividiPagina(b: Bozza, file: string, frazione: number): Promise<Bozza> {
   const i = b.pagine.findIndex(p => p.file === file);
   if (i < 0) throw new Error('pagina_assente');
@@ -249,11 +202,6 @@ export async function dividiPagina(b: Bozza, file: string, frazione: number): Pr
   return finale;
 }
 
-/**
- * Fase 13 — una pagina rifatta, ruotata o ritagliata prende il posto della vecchia: stesso nome,
- * etichetta e posto nell'ordine, hash e byte ricalcolati. La copia va prima accanto: se fallisce,
- * la pagina vecchia resta intatta. `uriNuova` (file temporaneo) si elimina.
- */
 export async function sostituisciPagina(b: Bozza, file: string, uriNuova: string, dim?: { larghezza: number; altezza: number }): Promise<Bozza> {
   const vecchia = b.pagine.find(p => p.file === file);
   if (!vecchia) throw new Error('pagina_assente');
@@ -264,19 +212,16 @@ export async function sostituisciPagina(b: Bozza, file: string, uriNuova: string
   return salvaBozza({ ...b, pagine: b.pagine.map(p => (p.file === file ? pagina : p)) });
 }
 
-/** Ruota di 90° in senso orario (ricodifica JPEG alla qualità massima, come Dividi). */
 export async function ruotaPagina(b: Bozza, file: string): Promise<Bozza> {
   const img = await ruotata(fileDellaPagina(b, file).uri);
   return sostituisciPagina(b, file, img.uri, { larghezza: img.width, altezza: img.height });
 }
 
-/** Ritaglio dritto (`r` in frazioni dell'immagine). */
 export async function ritagliaPagina(b: Bozza, file: string, r: Riquadro): Promise<Bozza> {
   const img = await ritagliata(fileDellaPagina(b, file).uri, r);
   return sostituisciPagina(b, file, img.uri, { larghezza: img.width, altezza: img.height });
 }
 
-/** URI per `<Image>`: con l'hash, così una pagina sostituita (stesso nome) non resta in cache. */
 export function uriAnteprima(b: Bozza, p: Pagina): string {
   return `${fileDellaPagina(b, p.file).uri}?v=${p.sha256.slice(0, 12)}`;
 }
@@ -305,19 +250,16 @@ export function manifest(b: Bozza, dispositivo?: string): Lotto {
   return l;
 }
 
-/** Se l'utente lo scarta, o dopo l'invio con «cancella subito», i file locali non servono più. */
 export function eliminaLotto(b: Bozza): void {
   const d = cartellaLotto(b.id);
   if (d.exists) d.delete();
 }
 
-/** Dopo l'invio riuscito: si elimina, o resta in sola lettura secondo «Dopo l'invio». */
 export function segnaInviato(b: Bozza, regola: DopoInvio): void {
   if (regola.modo === 'subito') eliminaLotto(b);
   else salvaBozza({ ...b, stato: 'inviato', inviatoIl: isoLocale(new Date()) });
 }
 
-/** All'avvio e al cambio dell'impostazione: elimina i lotti inviati scaduti. */
 export function pulisciInviati(regola: DopoInvio, ora = new Date()): void {
   const inviati = elencaLotti().filter(l => l.stato === 'inviato');
   for (const id of inviatiScaduti(inviati, regola, ora)) {

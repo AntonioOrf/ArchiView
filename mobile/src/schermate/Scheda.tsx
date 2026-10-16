@@ -1,8 +1,3 @@
-// La scheda (design 11/10): intestazione con indietro, riquadro d'invio, per una scheda nata qui la
-// cartella (Fase 14), «Numera le carte da», per «Senza scheda» titolo e nota delle pagine in attesa, poi le pagine in griglia (3 per riga): «Da inviare» e,
-// se «Dopo l'invio» le tiene, «Inviate». Il tocco su una pagina apre il visore (Fase 13), dove
-// stanno etichetta e azioni. Righe già spezzate in terzine: un elenco solo, virtualizzato.
-
 import { useState, type ReactNode } from 'react';
 import { FlatList, Image, Pressable, Switch, TextInput, useWindowDimensions, View } from 'react-native';
 import { Archive, Camera, Check, Folder, Pencil, Trash2 } from 'lucide-react-native';
@@ -26,11 +21,8 @@ type Riga = { k: string; titolo?: string; azione?: ReactNode; celle?: Cella[] };
 type Props = {
   scheda: SchedaScelta;
   archivio: string;
-  /** Lotti con pagine ancora da inviare. */
   lotti: Bozza[];
-  /** Lotti già inviati e tenuti («Dopo l'invio»): sola lettura. */
   inviati: Bozza[];
-  /** Id del lotto che sta partendo: le sue pagine non si toccano. */
   inInvio?: string;
   numera: boolean;
   onNumera: (v: boolean) => void;
@@ -41,18 +33,13 @@ type Props = {
   notaSmistare: string;
   onNotaSmistare: (v: string) => void;
   dopoInvio: DopoInvio;
-  /** Il riquadro d'invio, sotto l'intestazione. */
   attesa: ReactNode;
   onIndietro: () => void;
-  /** Indice nell'ordine della griglia: prima le da inviare, poi le inviate. */
   onApri: (indice: number) => void;
   onTogliInviate: () => void;
-  /** Solo per una scheda nata qui le cui pagine non sono ancora partite (Fase 14). */
   onCambiaCartella?: () => void;
-  /** Stessa condizione di `onCambiaCartella` (Fase 3b): segnatura e cestino. */
   onRinomina?: (segnatura: string) => void;
   onElimina?: () => void;
-  /** F7: fotocamera senza ritaglio (sigilli, filigrane, dettagli). */
   onFotoLibera: () => void;
 };
 

@@ -1,7 +1,3 @@
-// Fase 15b — Documenti: scanner generico, separato dagli archivi (non si invia, non tocca il
-// contratto). Su disco: `<documenti>/documenti/<uuid>/documento.json` + `p0001.jpg …`, e
-// `documenti/cartelle.json` per le cartelle (anche vuote). Un livello di cartelle.
-
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { recognizeText } from '@infinitered/react-native-mlkit-text-recognition';
@@ -27,22 +23,18 @@ function fileDoc(d: Documento, file: string): File {
   return new File(cartellaDoc(d.id), file);
 }
 
-/** URI per `<Image>`: la copia filtrata se c'è, con la versione (una pagina sostituita non resta in cache). */
 export function uriPagina(d: Documento, p: PaginaDoc): string {
   return `${uriUscita(d, p)}?v=${p.v}`;
 }
 
-/** L'originale, senza versione: ruota, ritaglia e filtri partono sempre da qui. */
 export function uriFile(d: Documento, p: PaginaDoc): string {
   return fileDoc(d, p.file).uri;
 }
 
-/** Quello che esce (PDF, JPEG, OCR): la copia filtrata se c'è, altrimenti l'originale. */
 export function uriUscita(d: Documento, p: PaginaDoc): string {
   return fileDoc(d, p.filtro ? fileFiltrato(p.file) : p.file).uri;
 }
 
-/** Rifà la copia filtrata dall'originale (accanto, poi scambio: se fallisce resta la vecchia). */
 async function rifaiFiltrata(d: Documento, p: PaginaDoc, filtro: Filtro): Promise<void> {
   const dest = fileDoc(d, fileFiltrato(p.file));
   const tmp = new File(cartellaDoc(d.id), `${fileFiltrato(p.file)}.nuova`);
@@ -52,7 +44,6 @@ async function rifaiFiltrata(d: Documento, p: PaginaDoc, filtro: Filtro): Promis
   await tmp.move(dest);
 }
 
-/** Fase 15d: imposta o toglie (`null`) il filtro di una pagina. L'originale non si tocca mai. */
 export async function impostaFiltro(d: Documento, file: string, filtro: Filtro | null): Promise<Documento> {
   const p = d.pagine.find(x => x.file === file);
   if (!p) throw new Error('pagina_assente');
@@ -72,7 +63,6 @@ export function salvaDocumento(d: Documento): Documento {
   return d;
 }
 
-/** Tutti i documenti; una cartella con `documento.json` illeggibile si salta (le foto restano). */
 export function elencaDocumenti(): Documento[] {
   const out: Documento[] = [];
   for (const voce of radice().list()) {
@@ -107,10 +97,6 @@ export function salvaCartelle(cartelle: string[]): void {
   fileCartelle().write(JSON.stringify([...new Set(cartelle)]));
 }
 
-/**
- * Documento nuovo con le pagine dello scanner. Nasce solo quando c'è almeno una pagina copiata:
- * se la copia si ferma a metà (memoria piena) restano quelle già copiate.
- */
 export async function nuovoDocumento(nome: string, cartella: string, uris: string[]): Promise<Documento | null> {
   const d: Documento = { id: Crypto.randomUUID(), nome, creatoIl: new Date().toISOString(), pagine: [], ...(cartella ? { cartella } : {}) };
   cartellaDoc(d.id).create({ intermediates: true });
@@ -120,7 +106,6 @@ export async function nuovoDocumento(nome: string, cartella: string, uris: strin
   return null;
 }
 
-/** Copia le pagine in fondo al documento; salva anche se una copia fallisce, poi rilancia l'errore. */
 export async function aggiungiPagine(d: Documento, uris: string[]): Promise<Documento> {
   const pagine = [...d.pagine];
   try {
@@ -137,19 +122,13 @@ export async function aggiungiPagine(d: Documento, uris: string[]): Promise<Docu
   return { ...d, pagine };
 }
 
-/** La foto nuova prende il posto della vecchia (copia accanto, poi scambio): se la copia fallisce la vecchia resta. */
 export async function sostituisciPagina(d: Documento, file: string, uriNuova: string): Promise<Documento> {
   await rimpiazzaFile(fileDoc(d, file), uriNuova);
-  // Il filtro resta: la copia filtrata si rifà dalla foto nuova.
   const p = d.pagine.find(x => x.file === file);
   if (p?.filtro) await rifaiFiltrata(d, p, p.filtro);
   return salvaDocumento({ ...d, pagine: d.pagine.map(x => (x.file === file ? { ...x, v: x.v + 1 } : x)) });
 }
 
-/**
- * Fase 15e: OCR della pagina com'è adesso (copia filtrata se c'è: il contrasto aiuta). Se è già
- * aggiornato non rifà nulla. Il testo corretto a mano resta; le parole si rifanno comunque, per il PDF.
- */
 export async function riconosci(d: Documento, file: string): Promise<Documento> {
   const p = d.pagine.find(x => x.file === file);
   if (!p) throw new Error('pagina_assente');
@@ -160,12 +139,10 @@ export async function riconosci(d: Documento, file: string): Promise<Documento> 
   return salvaDocumento({ ...d, pagine: d.pagine.map(x => (x.file === file ? { ...x, ocr } : x)) });
 }
 
-/** Il testo corretto a mano: vale per «Copia testo» e per la ricerca (il PDF usa le parole lette). */
 export function correggiTesto(d: Documento, file: string, testo: string): Documento {
   return salvaDocumento({ ...d, pagine: d.pagine.map(x => (x.file === file ? { ...x, ocr: { v: x.ocr?.v ?? x.v, testo, corretto: true } } : x)) });
 }
 
-/** Le parole con la posizione, solo se sono della foto attuale. */
 export function paroleOcr(d: Documento, p: PaginaDoc): Parola[] | null {
   try {
     const f = fileDoc(d, fileOcr(p.file));
@@ -186,11 +163,6 @@ export function rimuoviPagina(d: Documento, file: string): Documento {
   return salvaDocumento({ ...d, pagine: d.pagine.filter(p => p.file !== file) });
 }
 
-/**
- * F11: copia in fondo a `dest` le pagine date di `src`, con la copia filtrata e l'OCR (stessa `v`:
- * l'OCR resta valido), con nomi nuovi. Se una copia fallisce, quelle fatte si tolgono e l'errore
- * risale: `dest` su disco resta com'era. Restituisce le pagine di `dest` con le nuove in fondo.
- */
 async function copiaPagine(src: Documento, dest: Documento, pagine: PaginaDoc[]): Promise<PaginaDoc[]> {
   const out = [...dest.pagine];
   const copiati: File[] = [];
@@ -214,7 +186,6 @@ async function copiaPagine(src: Documento, dest: Documento, pagine: PaginaDoc[])
   return out;
 }
 
-/** F11: le pagine di `src` in fondo a `dest`; poi `src` si elimina (anche dalla copia su Drive). */
 export async function unisciDocumenti(dest: Documento, src: Documento): Promise<Documento> {
   if (dest.id === src.id) throw new Error('stesso_documento');
   const unito = salvaDocumento({ ...dest, pagine: await copiaPagine(src, dest, src.pagine) });
@@ -222,7 +193,6 @@ export async function unisciDocumenti(dest: Documento, src: Documento): Promise<
   return unito;
 }
 
-/** F11: le pagine da `da` in poi diventano un documento nuovo, nella stessa cartella. */
 export async function dividiDocumento(d: Documento, da: number, nome: string): Promise<{ prima: Documento; seconda: Documento }> {
   if (da < 1 || da >= d.pagine.length) throw new Error('divisione_non_valida');
   const nuovo: Documento = { id: Crypto.randomUUID(), nome, creatoIl: new Date().toISOString(), pagine: [], ...(d.cartella ? { cartella: d.cartella } : {}) };
@@ -243,18 +213,14 @@ export async function dividiDocumento(d: Documento, da: number, nome: string): P
 export function eliminaDocumento(d: Documento): void {
   const c = cartellaDoc(d.id);
   if (c.exists) c.delete();
-  // F5: la copia su Drive si toglie al prossimo giro. Se non si scrive, la copia resta (nessun dato perso).
   try { fileEliminati().write(JSON.stringify([...new Set([...eliminati(), d.id])])); }
   catch (e) { console.warn('[documenti] eliminazione non registrata per la copia', d.id, e); }
 }
-
-// --- F5: per la copia su Drive (src/copiaDocumenti.ts) ---
 
 export const radiceDocumenti = radice;
 export { cartellaDoc };
 const fileEliminati = () => new File(radice(), 'eliminati.json');
 
-/** Id dei documenti eliminati la cui copia su Drive è ancora da togliere. */
 export function eliminati(): string[] {
   try {
     const f = fileEliminati();
@@ -266,7 +232,6 @@ export function eliminati(): string[] {
   }
 }
 
-/** Dopo la copia: toglie dalla lista gli id già tolti anche da Drive. */
 export function eliminatiCopiati(ids: string[]): void {
   const restano = eliminati().filter(x => !ids.includes(x));
   const f = fileEliminati();

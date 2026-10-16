@@ -1,8 +1,3 @@
-// La tendina degli archivi (design 11/10): si apre toccando il nome dell'archivio. Elenco degli
-// archivi noti (quelli su Drive più quello in uso), l'attuale con la spunta, poi «Nuovo
-// archivio» (il computer lo crea quando riceve le scansioni). Senza `onChiudi` è la prima
-// schermata dell'app, quando nessun archivio è ancora scelto.
-
 import { useRef, useState, type ReactNode } from 'react';
 import { Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,13 +15,9 @@ type Props = {
   archivi: string[];
   attuale?: { nome: string; nuovo: boolean };
   onScegli: (nome: string, nuovo: boolean) => void;
-  /** Assente = scelta obbligatoria (primo avvio). */
   onChiudi?: () => void;
-  /** Mostrato sopra l'elenco al primo avvio (es. «Accedi con Google»). */
   testa?: ReactNode;
-  /** Fase 15: «Documenti», in fondo sotto «Solo su questo telefono». */
   onDocumenti: () => void;
-  /** I Documenti sono la sezione aperta: il titolo è «Documenti», nessun archivio spuntato. */
   inDocumenti?: boolean;
 };
 
@@ -105,11 +96,8 @@ export function TendinaArchivi(p: Props) {
   const c = useColori();
   const margini = useSafeAreaInsets();
   const scorri = useRef<ScrollView>(null);
-  // L'unico campo è «Nome del nuovo archivio», in fondo: con la tastiera aperta si scorre lì,
-  // dopo che il pannello si è accorciato (onLayout), non all'apertura della tastiera.
   const inFondo = () => { if (Keyboard.isVisible()) scorri.current?.scrollToEnd(); };
   const elenco = <ScrollView ref={scorri} keyboardShouldPersistTaps="handled" onLayout={inFondo} onContentSizeChange={inFondo}><Contenuto {...p} /></ScrollView>;
-  // Edge-to-edge (Android 15+): la finestra non si ridimensiona da sola con la tastiera.
   if (!p.onChiudi) {
     return (
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: c.bgPanel }}>{elenco}</KeyboardAvoidingView>

@@ -1,6 +1,3 @@
-// Il «+» aperto (design 14a): velo scuro, due voci con etichetta sopra il cerchio, che diventa ✕
-// nello stesso punto della barra. Indietro o tocco sul velo chiudono.
-
 import type { ComponentType } from 'react';
 import { Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,12 +15,10 @@ export function MenuPiu({ visibile, voci, onChiudi }: { visibile: boolean; voci:
   const c = useColori();
   const margini = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  // Il cerchio della barra sta a cavallo della sua linea superiore.
   const fondoCerchio = ALTEZZA_BARRA + margini.bottom - CERCHIO / 2;
   return (
     <Modal visible={visibile} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onChiudi}>
       <Pressable accessibilityLabel={t('Chiudi')} onPress={onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.55)' }} />
-      {/* Pallini in colonna sull'asse del cerchio, etichette a sinistra. */}
       <View accessibilityViewIsModal style={{ position: 'absolute', left: 0, right: width / 2 - PALLINO / 2, bottom: fondoCerchio + CERCHIO + spazio.lg, alignItems: 'flex-end', gap: spazio.md }}>
         {voci.map(v => (
           <Pressable

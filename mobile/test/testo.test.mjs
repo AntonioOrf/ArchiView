@@ -1,4 +1,3 @@
-// node --test test/ (Node >= 22.18: importa il .ts togliendo i tipi)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { daRisultato, parolaVicina, soloCaratteri, stratoTesto, testoDiPiuPagine, testoSelezionato } from '../src/testo.ts';
@@ -44,12 +43,11 @@ test('testoDiPiuPagine salta le pagine vuote', () => {
 });
 
 test('stratoTesto: scala foto → pagina, origine in basso, larghezza uguale alla parola', () => {
-  const larghezza1 = t => t.length * 0.5; // finto font: mezzo punto per carattere a corpo 1
+  const larghezza1 = t => t.length * 0.5;
   const [w] = stratoTesto([{ t: 'abcd', x0: 100, y0: 200, x1: 300, y1: 300 }], { w: 1000, h: 2000 }, { w: 500, h: 1000 }, larghezza1);
   assert.equal(w.x, 50);
-  assert.equal(w.size * larghezza1('abcd'), 100); // 200 px di foto = 100 pt di pagina
-  assert.equal(w.y, 1000 - 150 + 10); // fondo della parola (150 pt dall'alto) più un quinto dell'altezza
-  // Parola bassa e larga (lettere spaziate): il corpo non supera il doppio dell'altezza.
+  assert.equal(w.size * larghezza1('abcd'), 100);
+  assert.equal(w.y, 1000 - 150 + 10);
   const [b] = stratoTesto([{ t: 'ab', x0: 0, y0: 0, x1: 400, y1: 10 }], { w: 1000, h: 1000 }, { w: 1000, h: 1000 }, larghezza1);
   assert.equal(b.size, 20);
   assert.equal(stratoTesto([{ t: ' ', x0: 0, y0: 0, x1: 5, y1: 5 }, { t: 'x', x0: 5, y0: 5, x1: 5, y1: 9 }], { w: 10, h: 10 }, { w: 10, h: 10 }, larghezza1).length, 0);
