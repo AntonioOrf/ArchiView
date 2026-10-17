@@ -44,6 +44,7 @@ test.describe('Prove manuali automatizzate', () => {
 
   test('M4.1/M4.2 — archivio e cartella allegati su un percorso di rete', async ({ page, electronApp, userDataDir }) => {
     const unc = (p: string) => '\\\\' + os.hostname() + '\\' + p[0] + '$' + p.slice(2);
+    test.skip(!!process.env.CI, 'sul runner la condivisione D$ in loopback blocca il main process');
     test.skip(process.platform !== 'win32' || !fs.existsSync(unc(userDataDir)), 'condivisione amministrativa non raggiungibile');
     const base = unc(path.join(userDataDir, 'nas'));
     fs.mkdirSync(base, { recursive: true });
