@@ -97,10 +97,10 @@ async function main() {
   r = await fetch(`${BASE}/api/repos/${repoId}/members/${memberId}`, { method: 'DELETE', headers: H(ownerKey) });
   assert(r.status === 200, 'revoke member → 200');
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: H(memberKey) });
-  assert(r.status === 401, 'pull con chiave revocata → 401');
+  assert(r.status === 403, 'pull con chiave revocata → 403');
 
   r = await fetch(`${BASE}/api/repos/${repoId}/versions`, { headers: H(memberKey) });
-  assert(r.status === 401, 'GET /versions con chiave revocata → 401');
+  assert(r.status === 403, 'GET /versions con chiave revocata → 403');
   r = await fetch(`${BASE}/api/repos/${repoId}/versions`, { headers: H(ownerKey) });
   d = await j(r);
   assert(d.versions?.find(v => v.version === 2)?.authorLabel === 'Mario', 'label "Mario" ancora presente su v2 dopo la revoca');

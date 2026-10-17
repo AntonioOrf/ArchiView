@@ -42,6 +42,21 @@ export async function handleGetIndex(req: Request, env: Env, repoId: string): Pr
   return json({ files, chunks, selfMemberId: auth.memberId });
 }
 
+async function eliminabileDa(env: Env, repoId: string, fileName: string, memberId: string | null): Promise<boolean> {
+  const riga = await env.DB.prepare(
+    'SELECT hashes, deleted FROM attachment_files WHERE repo_id = ? AND file_name = ?'
+  ).bind(repoId, fileName).first<{ hashes: string; deleted: number }>();
+  if (!riga || riga.deleted) return true;
+  let hashes: string[] = [];
+  try { hashes = JSON.parse(riga.hashes); } catch { return false; }
+  if (!Array.isArray(hashes) || hashes.length === 0) return false;
+  const altrui = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM attachment_chunks WHERE repo_id = ? AND hash IN (SELECT value FROM json_each(?))
+       AND uploader_member_id IS NOT ?`
+  ).bind(repoId, JSON.stringify(hashes), memberId).first<{ n: number }>();
+  return !altrui || altrui.n === 0;
+}
+
 export async function handlePutIndex(req: Request, env: Env, repoId: string): Promise<Response> {
   const auth = await resolveAuth(env, repoId, bearer(req));
   if (!auth) return rispostaNegata(env, repoId, bearer(req));
@@ -57,6 +72,7 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
 
   const now = Date.now();
   const stmts: D1PreparedStatement[] = [];
+  const isOwner = auth.role === 'owner';
 
   for (const c of (Array.isArray(body.chunks) ? body.chunks : [])) {
     if (!c || typeof c.hash !== 'string' || !HASH_RE.test(c.hash)) return err(400, 'Hash chunk non valido.');
@@ -67,8 +83,9 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
          VALUES(?,?,?,?,?,?,?)
          ON CONFLICT(repo_id,hash) DO UPDATE SET
            url=excluded.url, drive_file_id=excluded.drive_file_id,
-           uploader_member_id=excluded.uploader_member_id, size_bytes=excluded.size_bytes`
-      ).bind(repoId, c.hash, c.url, c.driveFileId ?? null, auth.memberId, c.sizeBytes ?? null, now)
+           uploader_member_id=excluded.uploader_member_id, size_bytes=excluded.size_bytes
+         WHERE ? = 1 OR attachment_chunks.uploader_member_id IS excluded.uploader_member_id`
+      ).bind(repoId, c.hash, c.url, c.driveFileId ?? null, auth.memberId, c.sizeBytes ?? null, now, isOwner ? 1 : 0)
     );
   }
 
@@ -79,6 +96,7 @@ export async function handlePutIndex(req: Request, env: Env, repoId: string): Pr
     }
     const lastModified = typeof f.lastModified === 'number' ? Math.min(f.lastModified, now) : now;
     const deleted = f.deleted ? 1 : 0;
+    if (deleted && !isOwner && !(await eliminabileDa(env, repoId, f.fileName, auth.memberId))) continue;
     stmts.push(
       env.DB.prepare(
         `INSERT INTO attachment_files(repo_id,file_name,hashes,last_modified,deleted)

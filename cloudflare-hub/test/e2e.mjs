@@ -85,6 +85,33 @@ async function main() {
   r = await fetch(`${BASE}/api/repos/${repoId}/members`, { headers: auth(memberKey) });
   ok(r.status === 403, 'B (non owner) su GET members → 403');
 
+  section('Scenario 4b — Chunk e file di un altro membro');
+  r = await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, {
+    method: 'POST', headers: auth(memberKey),
+    body: JSON.stringify({
+      chunks: [{ hash, url: 'https://drive.google.com/uc?export=download&id=RUBATO', driveFileId: 'RUBATO' }],
+      files: [{ fileName: 'scan-01.pdf', hashes: [hash], lastModified: 250, deleted: true }],
+    }),
+  });
+  ok(r.status === 200, 'B invia l\'indice → 200');
+  r = await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, { headers: auth(ownerKey) });
+  d = await j(r);
+  const chunkA = d.chunks?.find((c) => c.hash === hash);
+  ok(chunkA?.driveFileId === 'FILEID', 'il chunk di A resta di A (link non riassegnato)');
+  ok(d.files?.find((f) => f.fileName === 'scan-01.pdf')?.deleted === false, 'B non marca deleted un file di A');
+  r = await fetch(`${BASE}/api/repos/${repoId}/attachments/chunks/${hash}`, { method: 'DELETE', headers: auth(memberKey) });
+  ok(r.status === 403, 'B non cancella il chunk di A → 403');
+  const hashB = 'c'.repeat(64);
+  for (const id of ['PRIMO', 'SECONDO']) {
+    await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, {
+      method: 'POST', headers: auth(memberKey),
+      body: JSON.stringify({ chunks: [{ hash: hashB, url: `https://drive.google.com/uc?export=download&id=${id}`, driveFileId: id }] }),
+    });
+  }
+  r = await fetch(`${BASE}/api/repos/${repoId}/attachments/index`, { headers: auth(memberKey) });
+  d = await j(r);
+  ok(d.chunks?.find((c) => c.hash === hashB)?.driveFileId === 'SECONDO', 'B aggiorna il proprio chunk');
+
   section('Scenario 5 — Conflitto concorrente');
   r = await fetch(`${BASE}/api/repos/${repoId}/push`, {
     method: 'POST', headers: auth(memberKey),
