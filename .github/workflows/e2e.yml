@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
     paths-ignore: ["mobile/**"]
+  workflow_call:
 
 jobs:
   security-check:
@@ -41,6 +42,9 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
+      - name: Scarica il binario di Electron
+        run: node node_modules/electron/install.js
+
       - name: Stub cloudCredentials.ts
         shell: bash
         run: |
@@ -59,11 +63,40 @@ jobs:
           npm run build-css
           npm run build-ts
 
+      - name: Esegui i test unitari
+        run: npm run test:unit
+
       - name: Esegui i test E2E
         run: npx playwright test
         env:
           CI: "true"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Hub locale (wrangler dev) e test E2E dell'app contro l'Hub
+        shell: bash
+        working-directory: cloudflare-hub
+        env:
+          CI: "true"
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run typecheck
+          avvia() {
+            npx wrangler d1 execute archiview-hub --local --persist-to "$RUNNER_TEMP/hub-$1" --file=./src/schema.sql > /dev/null
+            npx wrangler dev --local --ip 127.0.0.1 --port "$2" --persist-to "$RUNNER_TEMP/hub-$1" --var CREATE_SECRET:dev-secret "${@:3}" > "$RUNNER_TEMP/hub-$1.log" 2>&1 &
+          }
+          avvia smoke 8788
+          avvia e2e 8789
+          avvia app 8790 --var CREATE_MAX_PER_IP_MIN:1000 --var CREATE_MAX_PER_IP_DAY:1000
+          for porta in 8788 8789 8790; do
+            for i in $(seq 1 90); do curl -s -m 5 -o /dev/null "http://127.0.0.1:$porta/" && break; sleep 1; done
+            curl -s -m 5 -o /dev/null "http://127.0.0.1:$porta/" || { cat "$RUNNER_TEMP"/hub-*.log; exit 1; }
+          done
+          node test/smoke.mjs http://127.0.0.1:8788 dev-secret
+          node test/e2e.mjs http://127.0.0.1:8789 dev-secret
+          cd ..
+          ARCHIVIEW_HUB_LOCALE=http://127.0.0.1:8790 ARCHIVIEW_HUB_SECRET=dev-secret npx playwright test --project=manuali hub-locale
 
       - name: Carica report in caso di fallimento
         if: failure()
