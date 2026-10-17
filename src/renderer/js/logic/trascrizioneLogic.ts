@@ -1,3 +1,19 @@
+const TAG_INCOLLA = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li'];
+
+window.pulisciHtmlIncollato = function(html) {
+    return DOMPurify.sanitize(String(html || ''), { ALLOWED_TAGS: TAG_INCOLLA, ALLOWED_ATTR: [] });
+};
+
+document.addEventListener('paste', (e) => {
+    const editor = document.getElementById('trascrizione-editor');
+    if (!editor || !(e.target instanceof Node) || !editor.contains(e.target) || !e.clipboardData) return;
+    const html = e.clipboardData.getData('text/html');
+    const testo = e.clipboardData.getData('text/plain');
+    e.preventDefault();
+    if (html) document.execCommand('insertHTML', false, window.pulisciHtmlIncollato(html));
+    else if (testo) document.execCommand('insertText', false, testo);
+});
+
 window.trascrizioneHaTesto = function(html) {
     return String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
 };
@@ -37,13 +53,13 @@ window.scriviTrascrizioneAllegato = function(m, i, html, pagina) {
 
 window.componiPagineAllegato = function(pagine) {
     const lista = Array.isArray(pagine) ? pagine : [];
-    const conTesto = [];
+    const conTesto: any[] = [];
     for (let k = 0; k < lista.length; k++) {
         if (window.trascrizioneHaTesto(lista[k])) conTesto.push(k);
     }
     if (conTesto.length === 0) return '';
     if (conTesto.length === 1 && conTesto[0] === 0) return lista[0];
-    const pezzi = [];
+    const pezzi: any[] = [];
     for (const k of conTesto) {
         pezzi.push('<p class="ocr-pagina"><strong>[p. ' + (k + 1) + ']</strong></p>');
         pezzi.push(lista[k]);
@@ -54,7 +70,7 @@ window.componiPagineAllegato = function(pagine) {
 window.dividiTrascrizionePerPagine = function(html) {
     const testo = String(html || '');
     const marcatore = /<p\b[^>]*\bclass="[^"]*\bocr-pagina\b[^"]*"[^>]*>\s*<(strong|b)>\s*\[p\.\s*(\d{1,5})\]\s*<\/\1>\s*<\/p>/gi;
-    const pagine = [];
+    const pagine: any[] = [];
     const aggiungi = (k, pezzo) => {
         const pulito = pezzo.replace(/^\n/, '').replace(/\n$/, '');
         if (!window.trascrizioneHaTesto(pulito)) return;
@@ -106,7 +122,7 @@ window.componiTrascrizioneRecord = function(m) {
     const allegati = Array.isArray(m.allegati) ? m.allegati : [];
     if (allegati.length === 0) return m.trascrizione || '';
 
-    const pezzi = [];
+    const pezzi: any[] = [];
     let conTesto = 0;
     for (const a of allegati) {
         if (a && window.trascrizioneHaTesto(a.trascrizione)) conTesto++;

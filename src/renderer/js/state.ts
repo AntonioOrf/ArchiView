@@ -1,5 +1,5 @@
 let appData = window.Model ? window.Model.databaseVuoto()
-    : { cartelle: [], manoscritti: [], tipiDocumento: [], trascrizioneEditorWidth: '50%', schemaVersion: 1 };
+    : { cartelle: [], manoscritti: [], tipiDocumento: [], schemaVersion: 1 };
 Object.defineProperty(window, 'appData', {
     get: () => appData,
     set: (v) => { appData = v; },
@@ -18,10 +18,23 @@ window.leggiDatiArchivio = async function() {
     }
 };
 
+window.strutturaPerBase = function(db) {
+    return structuredClone({
+        tipiDocumento: db.tipiDocumento || [], vocabolari: db.vocabolari || {},
+        tagsAnagrafica: db.tagsAnagrafica || {}, authority: db.authority || {}
+    });
+};
+
+window.salvaBase = function() {
+    return window.apiBrowser.salvaDatiBase({ v: 2, schede: appData.baseObjects || {}, struttura: appData.baseStruttura });
+};
+
 async function initData() {
     if (window.apiBrowser) {
         const datiSalvati = await window.leggiDatiArchivio();
-        const datiBaseSalvati = await window.apiBrowser.leggiDatiBase();
+        const baseGrezza = await window.apiBrowser.leggiDatiBase();
+        const v2 = !!baseGrezza && baseGrezza.v === 2 && !!baseGrezza.schede;
+        const datiBaseSalvati = v2 ? baseGrezza.schede : baseGrezza;
         if (datiSalvati) {
             let grezzo = datiSalvati;
             if (datiBaseSalvati && Array.isArray(grezzo)) {
@@ -34,7 +47,7 @@ async function initData() {
             appData = esito.db;
             if (!datiBaseSalvati && appData.baseObjects && Object.keys(appData.baseObjects).length) {
                 try {
-                    await window.apiBrowser.salvaDatiBase(appData.baseObjects);
+                    await window.salvaBase();
                 } catch (err) {
                     console.error('[Dati] Spostamento della base del merge non riuscito:', err);
                 }
@@ -54,6 +67,7 @@ async function initData() {
         } else if (datiBaseSalvati) {
             appData.baseObjects = datiBaseSalvati;
         }
+        if (v2 && baseGrezza.struttura && typeof baseGrezza.struttura === 'object') appData.baseStruttura = baseGrezza.struttura;
     }
     if (!appData.cartelle) {
         appData.cartelle = [];
@@ -69,8 +83,20 @@ async function initData() {
     
     if (!window.schemaDalFuturo) window.Model.applicaModelliPredefiniti(appData);
 
-    if (!appData.trascrizioneEditorWidth) appData.trascrizioneEditorWidth = '50%';
-    
+    let preferenzeSpostate = false;
+    for (const [azione, saltata] of Object.entries(appData.skipConfirmations || {})) {
+        if (saltata) window.prefLocale('confermaSaltata:' + azione, '1');
+    }
+    if (appData.trascrizioneEditorWidth && !window.prefLocale('larghezzaTrascrizione:testo')) {
+        window.prefLocale('larghezzaTrascrizione:testo', appData.trascrizioneEditorWidth);
+    }
+    for (const k of ['skipConfirmations', 'trascrizioneEditorWidth']) {
+        if (k in appData) { delete appData[k]; preferenzeSpostate = true; }
+    }
+    if (preferenzeSpostate && window.apiBrowser && !window.schemaDalFuturo) {
+        try { await salvaTutto({ pendenti: false }); } catch (err) { console.error('[Dati] Preferenze non tolte dal DB:', err); }
+    }
+
     if (window.apiSettings) {
         const settings = await window.apiSettings.get();
         window.ultimoCaricamento = settings.lastSyncTime || 0;
@@ -157,24 +183,25 @@ window.gestoreAnnullamento = {
 };
 
 const SAVE_DEBOUNCE_MS = 400;
-let saveTimer = null;
+let saveTimer: any = null;
 let saveDirty = false;
 let saveChain = Promise.resolve();
 
 window.databasePerDisco = function(db) {
-    const { baseObjects, baseHashes, ...resto } = db;
+    const { baseObjects, baseHashes, baseStruttura, ...resto } = db;
     return resto;
 };
 
-window.registraBaseInviata = async function(inviate) {
+window.registraBaseInviata = async function(inviate, strutturaInviata) {
     appData.baseObjects = {};
     appData.baseHashes = {};
     for (const m of inviate || []) {
         appData.baseObjects[m.id] = m;
         appData.baseHashes[m.id] = window.getRecordHash(m);
     }
+    appData.baseStruttura = strutturaInviata;
     try {
-        if (window.apiBrowser) await window.apiBrowser.salvaDatiBase(appData.baseObjects);
+        if (window.apiBrowser) await window.salvaBase();
     } catch (err) {
         console.error("Errore nel salvataggio della base dopo l'invio:", err);
     }
@@ -231,7 +258,7 @@ window.ripristinaDatabase = async function(dbSnapshot) {
     if (!dbSnapshot || typeof dbSnapshot !== 'object') throw new Error('Snapshot non valido');
     const esito = window.Model.migraDatabase(dbSnapshot);
     const nuovo = esito.db;
-    if (!window.Model.databaseValido(nuovo)) throw new Error(window.Model.motivoNonValido(nuovo));
+    if (!window.Model.databaseValido(nuovo)) throw new Error(window.Model.motivoNonValido(nuovo) || 'Snapshot non valido');
 
     const settings = window.apiSettings ? await window.apiSettings.get() : {};
     const username = settings.username || 'Anonimo';
@@ -255,13 +282,13 @@ window.ripristinaDatabase = async function(dbSnapshot) {
     for (const id of attualiPerId.keys()) if (!ripristinatiPerId.has(id)) tombstone.add(id);
     for (const id of ripristinatiPerId.keys()) tombstone.delete(id);
 
-    const baseObjects = appData.baseObjects;
-    const baseHashes = appData.baseHashes;
+    const { baseObjects, baseHashes, baseStruttura } = appData;
 
     appData = nuovo;
     appData.deletedIds = Array.from(tombstone);
     appData.baseObjects = baseObjects;
     appData.baseHashes = baseHashes;
+    appData.baseStruttura = baseStruttura;
 
     if (typeof window.normalizzaCartelle === 'function') window.normalizzaCartelle();
     await salvaTutto();
@@ -274,21 +301,22 @@ window.ripristinaDatabase = async function(dbSnapshot) {
 window.ricaricaDatiDaDisco = async function() {
     const dati = await window.leggiDatiArchivio();
     if (!dati) throw new Error('Database illeggibile dopo la scrittura.');
-    const { baseObjects, baseHashes } = appData;
+    const { baseObjects, baseHashes, baseStruttura } = appData;
     appData = window.Model.migraDatabase(dati).db;
     appData.baseObjects = baseObjects;
     appData.baseHashes = baseHashes;
+    appData.baseStruttura = baseStruttura;
     await window.Store.commit();
 };
 
-window.sincronizzaEUnisciDati = async function(nuovoDati) {
+window.sincronizzaEUnisciDati = async function(nuovoDati, { aggiornaBase = true } = {}) {
     if (!nuovoDati) return;
 
     if (window.Model) nuovoDati = window.Model.migraDatabase(nuovoDati).db;
 
     return new Promise((resolve) => {
         const loadedAt = window.ultimoCaricamento || 0;
-        let conflitti = [];
+        let conflitti: any[] = [];
         if (typeof window.rilevaConflitti === 'function') {
             conflitti = window.rilevaConflitti(appData.manoscritti, nuovoDati.manoscritti, loadedAt,
                 appData.baseHashes || {}, appData.baseObjects || {});
@@ -306,10 +334,11 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
             const applicaStruttura = () => {
                 appData.cartelle = esito.cartelle;
                 appData.deletedCartelle = esito.deletedCartelle;
-                if (Object.keys(esito.tagsAnagrafica).length) appData.tagsAnagrafica = esito.tagsAnagrafica;
-                if (Object.keys(esito.vocabolari).length) appData.vocabolari = esito.vocabolari;
-                if (Object.keys(esito.authority).length) appData.authority = esito.authority;
+                for (const k of ['tagsAnagrafica', 'vocabolari', 'authority']) {
+                    if (Object.keys(esito[k]).length || appData[k]) appData[k] = esito[k];
+                }
                 appData.tipiDocumento = esito.tipiDocumento;
+                appData.deletedTipi = esito.deletedTipi;
                 if (tombstoneDaTogliere.size && appData.deletedIds) {
                     appData.deletedIds = appData.deletedIds.filter(x => !tombstoneDaTogliere.has(x));
                 }
@@ -322,25 +351,27 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 
                 appData.manoscritti = manoscrittiFinali;
                 
-                appData.baseHashes = {};
-                appData.baseObjects = {};
-                if (typeof window.getRecordHash === 'function') {
-                    (nuovoDati.manoscritti || []).forEach(m => {
-                        appData.baseHashes[m.id] = window.getRecordHash(m);
-                        appData.baseObjects[m.id] = structuredClone(m);
-                    });
+                if (aggiornaBase) {
+                    appData.baseHashes = {};
+                    appData.baseObjects = {};
+                    if (typeof window.getRecordHash === 'function') {
+                        (nuovoDati.manoscritti || []).forEach(m => {
+                            appData.baseHashes[m.id] = window.getRecordHash(m);
+                            appData.baseObjects![m.id] = structuredClone(m);
+                        });
+                    }
+                    appData.baseStruttura = window.strutturaPerBase(nuovoDati);
                 }
-                
-                window.ultimoCaricamento = Date.now();
-                
-                if (window.apiSettings) {
-                    await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
+                if (esito.tipiInConflitto.length && typeof mostraMessaggio === 'function') {
+                    mostraMessaggio(window.t('msg_tipi_in_conflitto', 'Modelli cambiati anche da un collega, tenuta la tua versione: ') + esito.tipiInConflitto.join(', '), 'warning');
                 }
+                let salvato = true;
                 if (window.apiBrowser) {
                     try {
                         await salvaTutto({ pendenti: false });
-                        await window.apiBrowser.salvaDatiBase(appData.baseObjects || {});
+                        if (aggiornaBase) await window.salvaBase();
                     } catch (err) {
+                        salvato = false;
                         console.error("Errore nel salvataggio dopo la sincronizzazione:", err);
                         if (typeof mostraMessaggio === 'function') {
                             mostraMessaggio(window.t("msg_errore_salvataggio", "Errore nel salvataggio dei dati: ") + (err.message || err), "error");
@@ -365,7 +396,7 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                         switchTab('list');
                     }
                 }
-                resolve(true);
+                resolve(salvato);
             };
 
             const processDeletions = async () => {
@@ -390,25 +421,25 @@ window.sincronizzaEUnisciDati = async function(nuovoDati) {
                 }
             };
             
-            if (localDeletionsToPush.length > 0 && typeof window.mostraBottomConfirm === 'function') {
+            if (localDeletionsToPush.length > 0 && typeof window.chiediConfermaBloccante === 'function') {
                 if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(false);
                 const count = localDeletionsToPush.length;
                 const msg = count > 1 
                     ? window.t("confirm_delete_multiple_cloud", "Hai eliminato {var0} record dal tuo archivio. Sei sicuro di volerli cancellare definitivamente anche dal cloud condiviso?").replace("{var0}", String(count)) 
                     : window.t("confirm_delete_single_cloud", "Hai eliminato un record dal tuo archivio. Sei sicuro di volerlo cancellare definitivamente anche dal cloud condiviso?");
                 
-                window.mostraBottomConfirm(msg, () => {
-                    localDeletionsToPush.forEach(card => {
-                        if (!nuovoDati.deletedIds) nuovoDati.deletedIds = [];
-                        if (!nuovoDati.deletedIds.includes(card.id)) nuovoDati.deletedIds.push(card.id);
-                    });
-                    if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'sync_in_progress');
-                    processDeletions();
-                }, null, () => {
-                    localDeletionsToPush.forEach(card => {
-                        mergedManoscritti.push(card);
-                        tombstoneDaTogliere.add(card.id);
-                    });
+                window.chiediConfermaBloccante(msg, window.t('btn_delete_from_cloud', 'Elimina anche dal cloud')).then((conferma) => {
+                    if (conferma) {
+                        localDeletionsToPush.forEach(card => {
+                            if (!nuovoDati.deletedIds) nuovoDati.deletedIds = [];
+                            if (!nuovoDati.deletedIds.includes(card.id)) nuovoDati.deletedIds.push(card.id);
+                        });
+                    } else {
+                        localDeletionsToPush.forEach(card => {
+                            mergedManoscritti.push(card);
+                            tombstoneDaTogliere.add(card.id);
+                        });
+                    }
                     if (typeof window.toggleSyncProgress === 'function') window.toggleSyncProgress(true, 'sync_in_progress');
                     processDeletions();
                 });

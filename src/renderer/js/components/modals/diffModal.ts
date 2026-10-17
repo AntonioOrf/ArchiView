@@ -1,4 +1,4 @@
-window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = "Dettaglio Modifiche") {
+window.apriDiffModal = function(vecchioObj, nuovoObj, titolo = window.t('diff_titolo_predefinito', "Dettaglio Modifiche")) {
     const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'id', 'allegato', 'allegatoTipo'];
     const cambiamenti = [];
 

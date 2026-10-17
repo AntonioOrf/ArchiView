@@ -300,6 +300,24 @@ test.describe('Scanner — scansioni in arrivo', () => {
     await expect.poll(() => ping({}).catch(() => 'spento')).toBe('spento');
   });
 
+  test('R6 — riaprire il Wi-Fi più volte non accumula listener sulla finestra', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Scanner');
+    const conta = () => electronApp.evaluate(({ BrowserWindow }) => {
+      const wc = BrowserWindow.getAllWindows()[0].webContents;
+      return wc.listenerCount('did-start-loading') + wc.listenerCount('destroyed');
+    });
+    const avvii: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      await page.locator('#btn-scansioni').click();
+      await page.locator('#scan-wifi').click();
+      await expect(page.locator('#scan-wifi-qr img')).toBeVisible();
+      avvii.push(await conta());
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#scanner-modal')).toBeHidden();
+    }
+    expect(avvii[2]).toBe(avvii[0]);
+  });
+
   test('lotto da smistare senza titolo: si presenta con la nota del telefono', async ({ page, userDataDir }) => {
     const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Scanner');
     lottoInArrivo(ws, '20261011-130000-nnnn', '', ['x']);

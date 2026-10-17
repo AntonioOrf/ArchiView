@@ -1,16 +1,27 @@
-window.filtriAvanzati = window.filtriAvanzati || {
-    tipo: '',
-    sottocartelle: false,
-    daData: '',
-    aData: '',
-    daAnno: '',
-    aAnno: '',
-    allegati: '',
-    trascrizione: '',
-    ocr: '',
-    collegamenti: '',
-    statoCarte: ''
+window.filtriVuoti = function() {
+    return { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '', statoCarte: '' };
 };
+
+window.filtriValidi = function(salvati) {
+    const f = window.filtriVuoti();
+    if (!salvati || typeof salvati !== 'object') return f;
+    const siNo = (v) => (v === 'si' || v === 'no' ? v : '');
+    const anno = (v) => (/^\d{3,4}$/.test(String(v || '')) ? String(v) : '');
+    f.tipo = typeof salvati.tipo === 'string' ? salvati.tipo : '';
+    f.sottocartelle = !!salvati.sottocartelle;
+    f.daData = typeof salvati.daData === 'string' ? salvati.daData : '';
+    f.aData = typeof salvati.aData === 'string' ? salvati.aData : '';
+    f.daAnno = anno(salvati.daAnno);
+    f.aAnno = anno(salvati.aAnno);
+    f.allegati = siNo(salvati.allegati);
+    f.trascrizione = siNo(salvati.trascrizione);
+    f.ocr = siNo(salvati.ocr);
+    f.collegamenti = siNo(salvati.collegamenti);
+    f.statoCarte = (window.STATI_CARTA || []).includes(salvati.statoCarte) ? salvati.statoCarte : '';
+    return f;
+};
+
+window.filtriAvanzati = window.filtriAvanzati || window.filtriVuoti();
 
 window.ricercheSalvate = window.ricercheSalvate || [];
 
@@ -68,7 +79,7 @@ window.applicaFiltriAvanzati = function(patch) {
 };
 
 window.azzeraFiltriAvanzati = function(ridisegna = true) {
-    window.filtriAvanzati = { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '', statoCarte: '' };
+    window.filtriAvanzati = window.filtriVuoti();
     if (ridisegna) {
         if (typeof renderMain === 'function') renderMain();
         if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
@@ -112,10 +123,7 @@ window.applicaRicercaSalvata = function(id) {
     const input = document.getElementById('search-input');
     if (input) input.value = voce.ricerca || '';
     window.activeTags = new Set(Array.isArray(voce.tag) ? voce.tag : []);
-    window.filtriAvanzati = Object.assign(
-        { tipo: '', sottocartelle: false, daData: '', aData: '', daAnno: '', aAnno: '', allegati: '', trascrizione: '', ocr: '', collegamenti: '', statoCarte: '' },
-        voce.filtri || {}
-    );
+    window.filtriAvanzati = window.filtriValidi(voce.filtri);
 
     if (typeof renderTagList === 'function') renderTagList();
     if (typeof renderSearchSuggestions === 'function') renderSearchSuggestions();

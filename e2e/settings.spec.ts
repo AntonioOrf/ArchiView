@@ -51,6 +51,64 @@ test.describe('Impostazioni', () => {
     await expect.poll(() => fs.existsSync(out) && fs.statSync(out).size, { timeout: 15_000 }).toBeGreaterThan(0);
   });
 
+  test('cartella allegati per archivio, e il backup ZIP la include', async ({ page, electronApp, userDataDir }) => {
+    const wsA = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
+    const esterna = fs.mkdtempSync(path.join(require('os').tmpdir(), 'av-allegati-'));
+    const percorso = () => page.evaluate(() => (window as any).apiSettings.percorsoAllegati());
+    const pronta = () => page.waitForFunction(() => (window as any).__appPronta === true && !!(window as any).apiSettings);
+
+    await stubDialog(electronApp, { canceled: false, filePaths: [esterna] });
+    await page.evaluate(() => (window as any).cambiaCartellaAllegati());
+    expect(path.resolve(await percorso())).toBe(path.resolve(esterna));
+    fs.writeFileSync(path.join(esterna, 'carta-1r.jpg'), 'immagine');
+
+    const zip = path.join(userDataDir, 'backup.zip');
+    await stubDialog(electronApp, { canceled: false, filePath: zip });
+    expect((await page.evaluate(() => (window as any).apiBrowser.exportWorkspaceZip('Backup'))).success).toBe(true);
+    const metodi: Record<string, number> = await new Promise((ok, ko) => require('yauzl').open(zip, { lazyEntries: true }, (err: any, z: any) => {
+      if (err) return ko(err);
+      const nomi: Record<string, number> = {};
+      z.on('entry', (e: any) => { nomi[e.fileName] = e.compressionMethod; z.readEntry(); });
+      z.on('end', () => ok(nomi));
+      z.readEntry();
+    }));
+    const voci = Object.keys(metodi);
+    expect(voci).toContain('allegati_manoscritti/carta-1r.jpg');
+    expect(metodi['allegati_manoscritti/carta-1r.jpg'], 'P6: un JPEG non si ricomprime').toBe(0);
+    expect(metodi['.archiview-vault.json'], 'il resto si comprime').toBe(8);
+
+    await page.evaluate((p) => { setTimeout(() => (window as any).apiBrowser.createWorkspaceInPath(p, 'Secondo'), 0); }, path.join(userDataDir, 'ws'));
+    await page.waitForURL(/index\.html/);
+    await pronta();
+    await expect.poll(percorso).toBe(path.join(userDataDir, 'ws', 'Secondo', 'allegati_manoscritti'));
+    await page.evaluate((p) => { setTimeout(() => (window as any).apiBrowser.openRecentWorkspace(p), 0); }, wsA);
+    await expect.poll(async () => { try { await pronta(); return path.resolve(await percorso()); } catch { return ''; } })
+      .toBe(path.resolve(esterna));
+    fs.rmSync(esterna, { recursive: true, force: true });
+  });
+
+  test('la cartella allegati globale di prima passa agli archivi che la usavano', async ({ userDataDir }) => {
+    const { seedWorkspaceOnDisk, launchApp, closeApp } = await import('./fixtures');
+    const aperto = seedWorkspaceOnDisk(userDataDir, 'Aperto');
+    const altro = path.join(userDataDir, 'ws', 'Altro');
+    fs.mkdirSync(altro, { recursive: true });
+    const esterna = path.join(userDataDir, 'allegati-comuni');
+    fs.mkdirSync(esterna);
+    const file = path.join(userDataDir, 'settings.json');
+    const s = JSON.parse(fs.readFileSync(file, 'utf8'));
+    fs.writeFileSync(file, JSON.stringify({ ...s, customAttachmentsPath: esterna, recentWorkspaces: [aperto, altro] }));
+
+    const { app, page } = await launchApp(userDataDir);
+    try {
+      await page.waitForFunction(() => (window as any).__appPronta === true);
+      expect(path.resolve(await page.evaluate(() => (window as any).apiSettings.percorsoAllegati()))).toBe(path.resolve(esterna));
+      expect(JSON.parse(fs.readFileSync(file, 'utf8')).customAttachmentsPath).toBeUndefined();
+      expect(JSON.parse(fs.readFileSync(path.join(altro, '.archiview-vault.json'), 'utf8')).customAttachmentsPath).toBe(esterna);
+    } finally {
+      await closeApp(app);
+    }
+  });
+
   test('numero non valido: segnalato, non salvato, valore precedente ripristinato', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
     await page.evaluate(() => (window as any).apriImpostazioni('tab-data'));

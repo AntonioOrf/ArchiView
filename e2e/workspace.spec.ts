@@ -13,6 +13,21 @@ test.describe('Gestione workspace', () => {
     await expect(page.locator('#current-vault-name')).toHaveText('Manoscritti', { timeout: 10_000 });
   });
 
+  test('aprire un archivio tiene gli ultimi 20 recenti', async ({ userDataDir }) => {
+    const vecchi = Array.from({ length: 25 }, (_, i) => path.join(userDataDir, 'vecchio-' + i));
+    fs.writeFileSync(path.join(userDataDir, 'settings.json'), JSON.stringify({ recentWorkspaces: vecchi }));
+    const { app, page } = await launchApp(userDataDir);
+    try {
+      const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Venti');
+      const recenti = JSON.parse(fs.readFileSync(path.join(userDataDir, 'settings.json'), 'utf8')).recentWorkspaces;
+      expect(recenti).toHaveLength(20);
+      expect(path.resolve(recenti[0])).toBe(path.resolve(ws));
+      expect(recenti.slice(1)).toEqual(vecchi.slice(0, 19));
+    } finally {
+      await closeApp(app);
+    }
+  });
+
   test('il workspace persiste dopo il riavvio', async ({ page, electronApp, userDataDir }) => {
     const basePath = path.join(userDataDir, 'ws');
     await createLocalWorkspace(page, basePath, 'Persistente');

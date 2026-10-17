@@ -474,4 +474,49 @@ test.describe('OCR degli allegati', () => {
     expect(await chiamateMotore(electronApp)).toHaveLength(0);
     await expect(page.locator('#ocr-result')).toBeHidden();
   });
+
+  test('F8 — carte riordinate e scheda sostituita durante l\'OCR: il testo va sulla carta giusta della scheda viva', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Ocr');
+    await stubMotore(electronApp);
+    await electronApp.evaluate(({ ipcMain }) => {
+      (globalThis as any).__ocrRilascia = false;
+      ipcMain.removeHandler('ocr-esegui');
+      ipcMain.handle('ocr-esegui', async (_e: any, p: any) => {
+        (globalThis as any).__ocrChiamate.push(p);
+        while (!(globalThis as any).__ocrRilascia) await new Promise(r => setTimeout(r, 20));
+        return { ok: true, piano: 'TESTO DI ' + p.nomeFile, html: '<p>x</p>', confidenza: 90, motore: 'tesseract', pagine: [], pagineElaborate: 1, caratteri: 5 };
+      });
+    });
+    await page.evaluate(async () => {
+      // @ts-ignore
+      appData.manoscritti.push({ id: 'f8', segnatura: 'F8', cartella: '', lastModified: 1,
+        allegati: [{ nome: 'prima.jpg', tipo: 'image/jpeg' }, { nome: 'seconda.jpg', tipo: 'image/jpeg' }] });
+      await (window as any).Store.commit();
+    });
+    await page.evaluate(() => (window as any).apriOcrModal('f8', 0));
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await page.locator('#ocr-dest-bozza').setChecked(false);
+    await page.locator('#ocr-dest-indice').setChecked(true);
+    await page.locator('#ocr-confirm').click();
+    await expect.poll(() => chiamateMotore(electronApp).then(c => c.length)).toBe(1);
+
+    await page.evaluate(() => {
+      // @ts-ignore
+      const i = appData.manoscritti.findIndex((m: any) => m.id === 'f8');
+      // @ts-ignore
+      const copia = structuredClone(appData.manoscritti[i]);
+      copia.allegati.reverse();
+      // @ts-ignore
+      appData.manoscritti[i] = copia;
+    });
+    await electronApp.evaluate(() => { (globalThis as any).__ocrRilascia = true; });
+    await expect(page.locator('#ocr-result')).toBeVisible();
+
+    const carte = await page.evaluate(() => {
+      // @ts-ignore
+      const m = appData.manoscritti.find((x: any) => x.id === 'f8');
+      return m.allegati.map((a: any) => ({ nome: a.nome, testo: a.ocr ? a.ocr.testo : null }));
+    });
+    expect(carte).toEqual([{ nome: 'seconda.jpg', testo: null }, { nome: 'prima.jpg', testo: 'TESTO DI prima.jpg' }]);
+  });
 });

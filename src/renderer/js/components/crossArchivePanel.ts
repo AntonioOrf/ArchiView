@@ -540,11 +540,11 @@ window.confermaCopiaAltroArchivio = async function() {
         const piano = window.CopiaScheda.pianifica(r, appData, _caOpzioniCopia(autore, nuovoId, allegatiCopiati));
         const applica = async () => {
             window.CopiaScheda.applica(appData, piano);
+            window.Store.togliTombstone([nuovoId]);
             await window.Store.commit();
         };
         const annulla = async () => {
-            appData.manoscritti = appData.manoscritti.filter(m => String(m.id) !== String(nuovoId));
-            await window.Store.commit();
+            await window.annullaCreazione([nuovoId]);
             if (typeof renderMain === 'function') renderMain(false);
         };
         await applica();

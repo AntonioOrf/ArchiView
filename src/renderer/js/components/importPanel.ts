@@ -658,7 +658,7 @@ window.confermaImportCsv = async function() {
             if (campiPrima.campiDef) tipoBersaglio.campiDef = JSON.parse(JSON.stringify(campiPrima.campiDef));
             else delete tipoBersaglio.campiDef;
         }
-        appData.manoscritti = appData.manoscritti.filter(m => !idNuovi.includes(String(m.id)));
+        await window.annullaCreazione(idNuovi);
         for (const [id, prima] of primaDi) {
             const i = appData.manoscritti.findIndex(m => String(m.id) === String(id));
             if (i !== -1) appData.manoscritti[i] = JSON.parse(JSON.stringify(prima));

@@ -25,6 +25,24 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trascrizione-editor')).toContainText('Nota di trascrizione');
   });
 
+  test('F10 — incollare da Word o dal web tiene solo la formattazione base, niente stili né immagini', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-INCOLLA', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    await page.locator('#trascrizione-editor').click();
+    await electronApp.evaluate(({ clipboard, ClipboardItem }: any) => clipboard.write([new ClipboardItem({
+      'text/html': '<p style="color:red;font-family:Calibri" class="MsoNormal">Item <b>die</b> <span style="mso-x:1">predicto</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="></p><ul><li>uno</li></ul>',
+      'text/plain': 'Item die predicto uno'
+    })]));
+    await page.keyboard.press('Control+V');
+    const html = await page.locator('#trascrizione-editor').evaluate((el) => el.innerHTML);
+    expect(html).toContain('<b>die</b>');
+    expect(html).toContain('predicto');
+    expect(html).toContain('<li>uno</li>');
+    expect(html).not.toMatch(/style=|class=|<img|<span|data:/);
+  });
+
   test('senza allegati l\'editor prende tutta la larghezza e invita ad aggiungere carte', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     await page.locator('#btn-tab-add').click();
@@ -304,6 +322,31 @@ test.describe('Vista Trascrizione', () => {
     await page.locator('#trascrizione-editor').click();
     await page.keyboard.type(testo);
   }
+
+  test('F5 — «Esci senza salvare» scarta anche il testo delle carte lasciate, pure dopo un altro salvataggio', async ({ page, userDataDir }) => {
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await creaConDueAllegati(page, 'MS-SCARTA');
+    await page.evaluate((recId: string) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+
+    await scriviNellEditor(page, 'Bozza da buttare');
+    await vaiAllaCarta(page, 'MS-SCARTA', 1);
+    await page.locator('#btn-back-to-list-trasc').click();
+    await expect(page.locator('#unsaved-modal')).toBeVisible();
+    await page.locator('#unsaved-modal button', { hasText: /Esci senza salvare|Exit without saving/ }).click();
+    await expect(page.locator('#view-list')).toBeVisible();
+
+    await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore
+      appData.manoscritti.push({ id: 'altra', segnatura: 'Altra', cartella: '', lastModified: 1 });
+      await w.Store.commit();
+      await w.flushSalvataggio();
+    });
+    const db = JSON.parse(fs.readFileSync(path.join(ws, 'database_manoscritti.json'), 'utf8'));
+    const m = db.manoscritti.find((x: any) => x.id === id);
+    expect(JSON.stringify(m)).not.toContain('Bozza da buttare');
+  });
 
   test('cambiando carta l\'editor segue l\'allegato mostrato', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
@@ -887,6 +930,44 @@ test.describe('Finestra staccata', () => {
     ]);
     await expect(page.locator('#trasc-scheda-staccata')).toBeHidden();
     await expect(page.locator('#trasc-pannello-scheda #form-segnatura')).toHaveValue('MS-STAC-1bis');
+  });
+
+  test('F4 — dalla staccata «+ valore», tag nuovo e «promuovi al modello» arrivano all\'archivio vero', async ({ page, electronApp, userDataDir }) => {
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-STAC-F4', FIXTURE_PNG);
+    await page.evaluate(() => (window as any).salvaVocabolarioArchivio({ id: 'materia', nome: 'Materia', valori: ['pergamena'] }));
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await page.getByRole('tab', { name: /^Scheda|^Record/ }).click();
+    const [staccata] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      page.getByRole('button', { name: /Stacca in una finestra|Open in a separate window/ }).click(),
+    ]);
+    await pronta(staccata);
+
+    await staccata.evaluate(() => (window as any).aggiungiValoreVocabolario('materia', 'carta bambagina'));
+    await staccata.evaluate(() => (window as any).registraTagUsati(['notarile']));
+    await staccata.evaluate(() => (window as any).apriCampoProprioModal());
+    await staccata.locator('#campo-proprio-nome').fill('Filigrana');
+    await staccata.evaluate(() => (window as any).confermaCampoProprio());
+    await staccata.evaluate(() => (window as any).promuoviCampoProprio('Filigrana'));
+
+    const archivio = () => page.evaluate((recId) => {
+      // @ts-ignore
+      const d = appData;
+      const m = d.manoscritti.find((x: any) => x.id === recId);
+      return {
+        valori: d.vocabolari.materia.valori,
+        tag: Object.keys(d.tagsAnagrafica || {}),
+        campi: d.tipiDocumento.find((t: any) => t.id === m.tipoDocumento).campi
+      };
+    }, id);
+    await expect.poll(async () => (await archivio()).valori).toContain('carta bambagina');
+    const a = await archivio();
+    expect(a.tag).toContain('notarile');
+    expect(a.campi).toContain('Filigrana');
+    await page.evaluate(() => (window as any).flushSalvataggio());
+    const disco = JSON.parse(require('fs').readFileSync(path.join(ws, 'database_manoscritti.json'), 'utf8'));
+    expect(disco.vocabolari.materia.valori).toContain('carta bambagina');
   });
 
   test('la zona «Rilascia per riagganciare» copre la colonna; la X salva e riaggancia', async ({ page, electronApp, userDataDir }) => {

@@ -52,18 +52,24 @@ window.initPreferenzeTesto = async function() {
     }
 };
 
+function _scriviTesto(id: string, testo: string) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = testo;
+}
+
 function _campo<T extends HTMLElement = HTMLInputElement>(id: string): T | null {
     return document.getElementById(id) as T | null;
 }
 
 window.apriImpostazioni = async function(tab?: string) {
     const modale = document.getElementById('settings-modal');
+    if (!modale) return;
     modale.classList.remove('hidden-tab');
     window.cambiaTabImpostazioni(typeof tab === 'string' ? tab : window.ultimaTabImpostazioni());
     if (!window.apiBrowser || !window.apiBrowser.getWorkspacePath || !window.apiSettings) return;
 
     const p = await window.apiBrowser.getWorkspacePath();
-    _campo('settings-workspace-path').textContent = p || window.t('no_workspace_set');
+    _scriviTesto('settings-workspace-path', p || window.t('no_workspace_set'));
 
     const settings = await window.apiSettings.get();
     const vaultConfig = window.apiBrowser.getVaultConfig ? await window.apiBrowser.getVaultConfig() : { vaultType: 'local' };
@@ -112,7 +118,7 @@ window.apriImpostazioni = async function(tab?: string) {
         if (el) { el.value = String(valore); _validoCampo(el); }
     }
 
-    await _mostraCartellaAllegati(settings);
+    await _mostraCartellaAllegati();
 
     const hubSection = _campo('settings-hub-section');
     const driveSection = _campo('settings-drive-section');
@@ -121,8 +127,8 @@ window.apriImpostazioni = async function(tab?: string) {
 
     if (hubSection) {
         if (window.hubConfig) {
-            _campo('settings-hub-url').textContent = window.hubConfig.hubUrl;
-            _campo('settings-hub-repoid').textContent = window.hubConfig.repoId;
+            _scriviTesto('settings-hub-url', window.hubConfig.hubUrl);
+            _scriviTesto('settings-hub-repoid', window.hubConfig.repoId);
             if (typeof window.aggiornaStatoDriveHub === 'function') window.aggiornaStatoDriveHub();
             hubSection.classList.remove('hidden');
             isAnySyncActive = true;
@@ -153,19 +159,24 @@ window.apriImpostazioni = async function(tab?: string) {
     if (disabledText) disabledText.classList.toggle('hidden', isAnySyncActive);
 }
 
-async function _mostraCartellaAllegati(settings?: any) {
+async function _mostraCartellaAllegati() {
     const div = _campo('settings-attachments-path');
     const btnRestore = _campo('btn-restore-attachments');
     if (!div) return;
-    if (!settings) settings = await window.apiSettings.get();
-    let percorso = null;
+    let percorso: any = null;
     try {
         percorso = window.apiSettings.percorsoAllegati ? await window.apiSettings.percorsoAllegati() : null;
     } catch (e) {
         console.error('Percorso degli allegati non disponibile:', e);
     }
     div.textContent = percorso || window.t('settings_not_defined_f', 'Non definita');
-    if (btnRestore) btnRestore.classList.toggle('hidden-tab', !settings.customAttachmentsPath);
+    let personalizzata = false;
+    try {
+        personalizzata = !!(await window.apiBrowser.getVaultConfig())?.customAttachmentsPath;
+    } catch (e) {
+        console.error('Configurazione dell\'archivio non disponibile:', e);
+    }
+    if (btnRestore) btnRestore.classList.toggle('hidden-tab', !personalizzata);
 }
 
 function _validoCampo(el: HTMLInputElement) {
@@ -229,7 +240,7 @@ window.salvaTestoTrascrizione = async function() {
 window.popolaLingueOcrPredefinite = async function(preferite?: string[]) {
     const lista = _campo('settings-ocr-lingue');
     if (!lista) return;
-    let lingue = [];
+    let lingue: any[] = [];
     try {
         const r = window.apiOcr && window.apiOcr.lingue ? await window.apiOcr.lingue() : null;
         lingue = ((r && r.lingue) || []).filter(l => l.installata && l.codice !== 'osd');
@@ -302,7 +313,7 @@ if (window.apiSettings && window.apiSettings.onCambiate) {
 window.popolaArchiviRicerca = async function() {
     const lista = document.getElementById('settings-cross-archivi');
     if (!lista || !window.apiBrowser || !window.apiBrowser.crossArchiveArchivi) return;
-    let archivi = [];
+    let archivi: any[] = [];
     try {
         const r = await window.apiBrowser.crossArchiveArchivi();
         if (r && r.ok) archivi = r.archivi;
@@ -447,7 +458,7 @@ window.esportaBackupZip = async function() {
 }
 
 window.chiudiImpostazioni = function() {
-    document.getElementById('settings-modal').classList.add('hidden-tab');
+    document.getElementById('settings-modal')?.classList.add('hidden-tab');
 }
 
 window.cambiaCartellaLavoro = async function() {
@@ -612,7 +623,7 @@ window.controllaAggiornamenti = async function(mostraAvvisi = true) {
 }
 
 window.nascondiBannerAggiornamento = function() {
-    document.getElementById('update-banner').classList.add('hidden-tab');
+    document.getElementById('update-banner')?.classList.add('hidden-tab');
 }
 
 window.mostraNoteRilascio = function() {

@@ -121,4 +121,23 @@ test.describe('Vista Lista', () => {
     const appData = await getAppData(page);
     expect(appData.cartelle).not.toContain('DaEliminare');
   });
+
+  test('F7 — disegnare griglia, tabella e ordinamento non modifica una scheda senza "allegati"', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'List');
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore
+      appData.manoscritti.push({ id: 'f7', segnatura: 'Vecchia', cartella: '', allegato: 'carta.jpg', allegatoTipo: 'image/jpeg', lastModified: 1 });
+      // @ts-ignore
+      const m = appData.manoscritti.find((x: any) => x.id === 'f7');
+      const prima = w.Model.improntaRecord(m);
+      w.renderMain();
+      w.cambiaVistaLista('tabella');
+      w.renderMain();
+      w.cambiaVistaLista('griglia');
+      return { prima, dopo: w.Model.improntaRecord(m), chiave: Object.prototype.hasOwnProperty.call(m, 'allegati') };
+    });
+    expect(esito.chiave).toBe(false);
+    expect(esito.dopo).toBe(esito.prima);
+  });
 });

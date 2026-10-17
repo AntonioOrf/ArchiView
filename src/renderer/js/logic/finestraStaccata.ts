@@ -1,7 +1,7 @@
 (function() {
     const TIPO_STACCATA = new URLSearchParams(location.search).get('finestra');
-    let _staccata = null;
-    let _zona = null;
+    let _staccata: any = null;
+    let _zona: any = null;
 
     const pref = (k, v?) => window.prefLocale(k, v);
     const clona = (x) => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
@@ -74,22 +74,37 @@
             window.salvaEditorTrascrizioneInMemoria();
         }
         if (Array.isArray(patch.allegati) && Array.isArray(allegatiPrima)) {
-            patch.allegati = window.Model.fondiAllegati(allegatiPrima, patch.allegati, trova(id).allegati || []).allegati;
+            patch.allegati = window.Model.fondiAllegati(allegatiPrima, patch.allegati, vivo.allegati || []).allegati;
         }
         await window.Store.updateManoscritto(id, patch);
         const salvato = trova(id);
+        if (!salvato) throw new Error('scheda non trovata');
         if (window.ricomponiTrascrizioneFusa) window.ricomponiTrascrizioneFusa(salvato);
         await window.Store.commit();
         if (window.renderBarraCarte) window.renderBarraCarte(salvato.id);
         return clona(salvato);
     }
 
+    async function archivioDallaStaccata({ op, args }) {
+        if (op === 'vocabolario') window.Model.aggiungiValoreVocabolario(appData, args[0], args[1]);
+        else if (op === 'tag') window.Model.registraTag(appData, args[0]);
+        else if (op === 'campoModello') {
+            const [tipoId, def] = args;
+            const tipo = appData.tipiDocumento.find(t => String(t.id) === String(tipoId));
+            if (!tipo || !def || (tipo.campi || []).indexOf(def.id) !== -1) return false;
+            window.Model.impostaCampi(tipo, window.Model.campiDelTipo(tipo, window.CONFIG_CAMPI, appData).concat([def]));
+        } else throw new Error('operazione sconosciuta: ' + op);
+        await window.Store.commit();
+        if (typeof aggiornaSelectTipiDocumento === 'function') aggiornaSelectTipiDocumento();
+        return true;
+    }
+
     function zona(tipo) {
-        let r = null;
-        if (tipo === 'scheda' && !document.getElementById('view-trascrizione').classList.contains('hidden-tab')) {
-            r = document.getElementById('trascrizione-editor-panel').getBoundingClientRect();
-        } else if (tipo === 'documento' && !document.getElementById('view-add').classList.contains('hidden-tab')) {
-            const m = document.querySelector('main').getBoundingClientRect();
+        let r: any = null;
+        if (tipo === 'scheda' && !(document.getElementById('view-trascrizione') as HTMLInputElement).classList.contains('hidden-tab')) {
+            r = (document.getElementById('trascrizione-editor-panel') as HTMLInputElement).getBoundingClientRect();
+        } else if (tipo === 'documento' && !(document.getElementById('view-add') as HTMLInputElement).classList.contains('hidden-tab')) {
+            const m = (document.querySelector('main') as HTMLElement).getBoundingClientRect();
             r = { left: m.left + m.width / 2, top: m.top, width: m.width / 2, height: m.height };
         }
         _zona = r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null;
@@ -120,8 +135,9 @@
         const api = window.apiFinestre;
         api.onRichiesta(async (id, metodo, args) => {
             try {
-                let valore = null;
+                let valore: any = null;
                 if (metodo === 'salva') valore = await salvaDallaStaccata(args);
+                else if (metodo === 'archivio') valore = await archivioDallaStaccata(args);
                 else if (metodo === 'record') valore = clona(trova(args));
                 else if (metodo === 'zona') valore = zona(args);
                 else throw new Error('richiesta sconosciuta: ' + metodo);
@@ -137,10 +153,10 @@
             mostraZona(false);
             if (_staccata === tipo) _staccata = null;
             pref('finestraStaccata:' + tipo, '0');
-            if (tipo === 'scheda' && !document.getElementById('view-trascrizione').classList.contains('hidden-tab')) {
+            if (tipo === 'scheda' && !(document.getElementById('view-trascrizione') as HTMLInputElement).classList.contains('hidden-tab')) {
                 const trascrizioneId = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
                 if (trascrizioneId) await window.mostraSchedaTrascrizione('scheda');
-            } else if (tipo === 'documento' && !document.getElementById('view-add').classList.contains('hidden-tab')) {
+            } else if (tipo === 'documento' && !(document.getElementById('view-add') as HTMLInputElement).classList.contains('hidden-tab')) {
                 window.aggiornaDocumentoScheda();
             }
         });
@@ -159,8 +175,8 @@
         const nome = (m && (m.segnatura || m.titolo)) || '';
         if (TIPO_STACCATA === 'scheda') {
             document.title = window.t('detach_title_record', 'Scheda — {var0}').replace('{var0}', nome) + ' · ArchiView';
-            document.getElementById('trasc-staccata-titolo').textContent = nome;
-            document.getElementById('view-trascrizione').classList.remove('hidden-tab');
+            (document.getElementById('trasc-staccata-titolo') as HTMLInputElement).textContent = nome;
+            (document.getElementById('view-trascrizione') as HTMLInputElement).classList.remove('hidden-tab');
             await window.caricaSchedaStaccata(dati.id);
         } else {
             document.title = window.t('detach_title_document', 'Documento — {var0}').replace('{var0}', nome) + ' · ArchiView';
@@ -190,6 +206,26 @@
             const prima = i >= 0 ? appData.manoscritti[i].allegati : null;
             const salvato = await api.richiesta('salva', { id, patch, allegatiPrima: clona(prima) || null });
             if (i >= 0 && salvato) appData.manoscritti[i] = salvato;
+        };
+        const inoltra = (op, args) => api.richiesta('archivio', { op, args })
+            .catch(err => console.error('[Finestra staccata] Operazione d\'archivio non inoltrata:', op, err));
+        const aggiungiValore = window.aggiungiValoreVocabolario;
+        window.aggiungiValoreVocabolario = async (id, valore) => {
+            const ok = await aggiungiValore(id, valore);
+            if (ok) await inoltra('vocabolario', [id, valore]);
+            return ok;
+        };
+        const registraTag = window.registraTagUsati;
+        window.registraTagUsati = (tags) => {
+            inoltra('tag', [tags]);
+            return registraTag(tags);
+        };
+        const promuovi = window.promuoviCampoProprio;
+        window.promuoviCampoProprio = async (id) => {
+            const def = clona(campiPropriForm().find(d => d.id === id));
+            const tipo = _tipoDelForm();
+            await promuovi(id);
+            if (def && tipo && (tipo.campi || []).indexOf(id) !== -1) await inoltra('campoModello', [tipo.id, def]);
         };
         window.collegaEventiModulo();
 

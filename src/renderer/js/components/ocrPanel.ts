@@ -355,8 +355,25 @@ window.annullaOcr = async function() {
     try { await window.apiOcr.annulla(); } catch (errore) { console.error('[OCR] Annullamento:', errore); }
 };
 
-async function _oEseguiSuAllegato(m, indice, lingue, opzioni) {
-    const a = _oAllegati(m)[indice];
+function _oRimappa(m, esiti) {
+    const vivo = appData.manoscritti.find(x => String(x.id) === String(m.id)) || null;
+    if (!vivo) return { m: null, esiti: [] };
+    const carte = _oAllegati(vivo);
+    return {
+        m: vivo,
+        esiti: esiti
+            .map(e => ({ ...e, indice: e.nome ? carte.findIndex(a => a && a.nome === e.nome) : e.indice }))
+            .filter(e => e.indice >= 0)
+    };
+}
+
+function _oCartaViva(recordId, nome) {
+    const m = appData.manoscritti.find(x => String(x.id) === String(recordId)) || null;
+    const indice = m ? _oAllegati(m).findIndex(a => a && a.nome === nome) : -1;
+    return { m, indice, a: indice >= 0 ? _oAllegati(m)[indice] : null };
+}
+
+async function _oEseguiSuAllegato(a, lingue, opzioni) {
     if (!a) return null;
     const intestazione = _oT('ocr_provenance', 'Bozza generata da OCR ({var0}) il {var1} — da rivedere')
         .replace('{var0}', lingue.join('+'))
@@ -415,19 +432,20 @@ window.avviaOcr = async function() {
     _oStato.inCorso = true;
     document.getElementById('ocr-result').classList.add('hidden-tab');
 
-    const indici = sorgente === 'tutti'
-        ? _oAllegati(m).map((a, i) => i)
-        : [Number(sorgente)];
+    const recordId = m.id;
+    const carte = (sorgente === 'tutti' ? _oAllegati(m) : [_oAllegati(m)[Number(sorgente)]])
+        .filter(a => a && a.nome)
+        .map(a => ({ nome: a.nome, tipo: a.tipo }));
 
-    const esiti = [];
+    const esiti: any[] = [];
     let annullato = false;
     try {
-        for (let k = 0; k < indici.length; k++) {
-            const i = indici[k];
-            _oAggiornaAvanzamento({ fase: 'pagina', pagina: k + 1, pagine: indici.length });
-            const r = await _oEseguiSuAllegato(m, i, lingue, opzioni);
+        for (let k = 0; k < carte.length; k++) {
+            const i = k;
+            _oAggiornaAvanzamento({ fase: 'pagina', pagina: k + 1, pagine: carte.length });
+            const r = await _oEseguiSuAllegato(carte[k], lingue, opzioni);
             if (r && r.ok) {
-                esiti.push({ indice: i, risultato: r });
+                esiti.push({ nome: carte[k].nome, risultato: r });
             } else if (r && r.codice === 'annullato') {
                 annullato = true;
                 break;
@@ -453,7 +471,15 @@ window.avviaOcr = async function() {
         return;
     }
 
-    await _oApplicaEsiti(m, esiti, lingue, opzioni, pdf);
+    const vivo = _oCartaViva(recordId, '').m;
+    if (!vivo) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(_oT('ocr_record_gone', 'La scheda non c\'è più: il testo riconosciuto non è stato salvato.'), 'warning');
+        return;
+    }
+    const sulleCarte = esiti
+        .map(e => ({ ...e, indice: _oCartaViva(recordId, e.nome).indice }))
+        .filter(e => e.indice >= 0);
+    await _oApplicaEsiti(vivo, sulleCarte, lingue, opzioni, pdf);
 };
 
 function _oNomePdf(m, sorgente) {
@@ -506,6 +532,8 @@ async function _oApplicaEsiti(m, esiti, lingue, opzioni, pdf?) {
     } catch (errore) {
         console.error('[OCR] Impostazioni non leggibili:', errore);
     }
+    ({ m, esiti } = _oRimappa(m, esiti));
+    if (!m) return;
 
     if (opzioni.indice) {
         for (const e of esiti) {
@@ -525,6 +553,8 @@ async function _oApplicaEsiti(m, esiti, lingue, opzioni, pdf?) {
     let bozzaInserita = false;
     if (opzioni.bozza) {
         bozzaInserita = await _oInserisciBozze(m, esiti);
+        ({ m, esiti } = _oRimappa(m, esiti));
+        if (!m) return;
     }
 
     m.lastModified = adesso;
@@ -559,7 +589,7 @@ async function _oInserisciBozze(m, esiti) {
     if (window.salvaEditorTrascrizioneInMemoria) window.salvaEditorTrascrizioneInMemoria();
     window.migraTrascrizioneSuAllegati(m);
 
-    const scritture = _oScritturePerPagina(m, utili);
+    let scritture = _oScritturePerPagina(m, utili);
     const inConflitto = scritture.filter(s =>
         window.trascrizioneHaTesto(window.leggiTrascrizioneAllegato(m, s.indice, s.pagina)));
 
@@ -567,6 +597,11 @@ async function _oInserisciBozze(m, esiti) {
     if (inConflitto.length > 0) {
         scelta = await _oChiediSovrascrittura();
         if (scelta === 'annulla') return false;
+        const vivo = _oRimappa(m, utili);
+        if (!vivo.m) return false;
+        m = vivo.m;
+        window.migraTrascrizioneSuAllegati(m);
+        scritture = _oScritturePerPagina(m, vivo.esiti);
     }
 
     for (const s of scritture) {
@@ -706,13 +741,15 @@ window.ocrSelezionati = async function() {
             _oAggiornaBulk(k + 1, daFare.length, m.segnatura || '');
 
             let toccata = false;
-            const allegati = _oAllegati(m);
-            for (let i = 0; i < allegati.length; i++) {
+            const recordId = m.id;
+            const carte = _oAllegati(m)
+                .filter(a => a && a.nome && !(a.ocr && a.ocr.testo))
+                .map(a => ({ nome: a.nome, tipo: a.tipo }));
+            for (const c of carte) {
                 if (!_oStato.inCorso) break;
-                if (allegati[i].ocr && allegati[i].ocr.testo) continue;
                 const r = await window.apiOcr.esegui({
-                    nomeFile: allegati[i].nome,
-                    tipo: allegati[i].tipo,
+                    nomeFile: c.nome,
+                    tipo: c.tipo,
                     lingue,
                     dpi: 300,
                     maxPagine: 20,
@@ -720,7 +757,9 @@ window.ocrSelezionati = async function() {
                     raddrizza: _oRaddrizzaPredefinito()
                 });
                 if (r && r.ok && r.piano) {
-                    allegati[i].ocr = {
+                    const viva = _oCartaViva(recordId, c.nome);
+                    if (!viva.a) continue;
+                    viva.a.ocr = {
                         testo: r.piano,
                         lingue: lingue.join('+'),
                         confidenza: r.confidenza,
@@ -728,6 +767,7 @@ window.ocrSelezionati = async function() {
                         pagine: r.pagineElaborate,
                         data: adesso
                     };
+                    viva.m.lastModified = adesso;
                     toccata = true;
                     allegatiFatti++;
                 } else if (r && r.codice === 'annullato') {
@@ -735,7 +775,7 @@ window.ocrSelezionati = async function() {
                     break;
                 }
             }
-            if (toccata) { m.lastModified = adesso; schede++; }
+            if (toccata) schede++;
         }
     } catch (errore) {
         console.error('[OCR] OCR in massa fallito:', errore);

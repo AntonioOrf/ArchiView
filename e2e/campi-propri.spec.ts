@@ -43,6 +43,30 @@ test.describe('Campi propri della scheda', () => {
     await expect(page.locator('#dyn-Filigrana')).toHaveValue('unicorno');
   });
 
+  test('F1 — una lista chiave-valore con spazi e parentesi nel nome conserva le righe', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Propri');
+
+    await page.evaluate(() => (window as any).switchTab('add'));
+    await page.locator('#form-segnatura').fill('PRO-F1');
+    await aggiungiCampoProprio(page, 'Beni mobili (stimati)', 'dynamic_list');
+    const gruppo = page.locator('.form-group.campo-proprio');
+    for (const [k, v] of [['letto', '3 lire'], ['cassa', '1 lira']]) {
+      await gruppo.locator('button.btn-secondary').click();
+      const riga = gruppo.locator('.dynamic-list-row').last();
+      await riga.locator('.list-key').fill(k);
+      await riga.locator('.list-val').fill(v);
+    }
+    await salvaScheda(page);
+
+    await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
+    const m = (await getAppData(page)).manoscritti[0];
+    const id = m.campiPropri[0].id;
+    expect(m[id]).toEqual([{ k: 'letto', v: '3 lire' }, { k: 'cassa', v: '1 lira' }]);
+
+    await page.evaluate((x) => (window as any).editItem(x), m.id);
+    await expect(page.locator('.form-group.campo-proprio .dynamic-list-row')).toHaveCount(2);
+  });
+
   test('3.7.2 — aggiungere un campo NON cancella ciò che si sta già scrivendo', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Propri');
 

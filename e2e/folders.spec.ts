@@ -10,6 +10,58 @@ test.describe('Cartelle', () => {
     await expect(page.locator('#folder-list')).toContainText('Notarile');
   });
 
+  test('F3 — incollare una cartella copiata conserva le sottocartelle, tutte visibili nell\'albero', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
+    for (const c of ['Notarile', 'Notarile/Imbreviature', 'Dest']) await createFolder(page, c);
+    await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore
+      appData.manoscritti.push(
+        { id: 'f3-1', segnatura: 'Prot. 1', cartella: 'Notarile', lastModified: 1 },
+        { id: 'f3-2', segnatura: 'Imbr. 2', cartella: 'Notarile/Imbreviature', lastModified: 1 });
+      await w.Store.commit();
+      await w.flushSalvataggio();
+      w.copiedFolderPath = 'Notarile';
+      await w.incollaRecord('Dest');
+    });
+
+    const dati = await getAppData(page);
+    expect(dati.cartelle).toEqual(expect.arrayContaining(['Dest/Notarile', 'Dest/Notarile/Imbreviature']));
+    const copie = dati.manoscritti.filter((m: any) => m.id !== 'f3-1' && m.id !== 'f3-2');
+    expect(copie.map((m: any) => m.cartella).sort()).toEqual(['Dest/Notarile', 'Dest/Notarile/Imbreviature']);
+  });
+
+  test('F17 — taglia/incolla e trascinamento firmano lo spostamento (data e autore)', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
+    for (const c of ['Da', 'A']) await createFolder(page, c);
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore
+      appData.manoscritti.push(
+        { id: 'f17-1', segnatura: 'Tagliata', cartella: 'Da', lastModified: 1, modificatoDa: 'Altro' },
+        { id: 'f17-2', segnatura: 'Trascinata', cartella: 'Da', lastModified: 1, modificatoDa: 'Altro' });
+      await w.Store.commit();
+      w.cutRecordIds = ['f17-1'];
+      await w.incollaRecord('A');
+      await w.spostaManoscritto('f17-2', 'A');
+      // @ts-ignore
+      return appData.manoscritti.filter((m: any) => m.id.startsWith('f17')).map((m: any) => [m.cartella, m.lastModified > 1, m.modificatoDa !== 'Altro']);
+    });
+    expect(esito).toEqual([['A', true, true], ['A', true, true]]);
+  });
+
+  test('F3 — una scheda in una cartella non registrata la fa comparire nell\'albero', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
+    await page.evaluate(async () => {
+      // @ts-ignore
+      appData.manoscritti.push({ id: 'f3-3', segnatura: 'Orfana', cartella: 'Fantasma/Sotto', lastModified: 1 });
+      await (window as any).Store.commit();
+    });
+    const dati = await getAppData(page);
+    expect(dati.cartelle).toEqual(expect.arrayContaining(['Fantasma', 'Fantasma/Sotto']));
+    await expect(page.locator('#folder-list')).toContainText('Fantasma');
+  });
+
   test('crea sottocartella annidata', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Folders');
     await createFolder(page, 'Notarile');

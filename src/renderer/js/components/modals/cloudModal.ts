@@ -374,6 +374,7 @@
             if (!apiCloud || !apiCloud.pulisciAllegatiOrfani) {
                 throw new Error("Funzione non disponibile.");
             }
+            if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
             const result = await apiCloud.pulisciAllegatiOrfani();
             mostraMessaggio(window.t("msg_pulizia_completata_file_r", 'Pulizia completata. File rimossi: {var0} in locale, {var1} su Drive.').replace("{var0}", String(result.deletedLocal)).replace("{var1}", String(result.deletedDrive)), "success");
         } catch(e) {

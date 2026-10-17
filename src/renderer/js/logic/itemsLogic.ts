@@ -1,7 +1,11 @@
+async function autoreCorrente() {
+    try { return (await window.apiSettings.get()).username || 'Anonimo'; } catch (e) { return 'Anonimo'; }
+}
+
 async function spostaManoscritto(idManoscritto, nuovoPathCartella) {
-    const m = appData.manoscritti.find(x => x.id === idManoscritto);
+    const m = appData.manoscritti.find(x => String(x.id) === String(idManoscritto));
     if (m && m.cartella !== nuovoPathCartella) {
-        await window.Store.updateManoscritto(idManoscritto, { cartella: nuovoPathCartella });
+        await window.Store.updateManoscritto(m.id, { cartella: nuovoPathCartella, lastModified: Date.now(), modificatoDa: await autoreCorrente() });
     }
 }
 
@@ -96,15 +100,14 @@ async function salvaSchedaDalForm(automatico) {
     const settings = await window.apiSettings.get();
     const username = settings.username || 'Anonimo';
 
-    const idCorrente = document.getElementById('form-id').value;
+    const idCorrente = (document.getElementById('form-id') as HTMLInputElement).value;
     const documentoId = idCorrente || window.Model.nuovoId();
 
-    let allegatiCorrenti = JSON.parse(document.getElementById('form-allegati').value || '[]');
+    let allegatiCorrenti = JSON.parse((document.getElementById('form-allegati') as HTMLInputElement).value || '[]');
     const caricati = (window.pendingFilesToUpload || []).length > 0;
-    if (caricati && window.apiBrowser) allegatiCorrenti.push(...await caricaFileInAttesa(window.pendingFilesToUpload, documentoId));
 
-    const cartellaScelta = document.getElementById('form-cartella').value;
-    const tipoId = document.getElementById('form-tipo-documento').value;
+    const cartellaScelta = (document.getElementById('form-cartella') as HTMLInputElement).value;
+    const tipoId = (document.getElementById('form-tipo-documento') as HTMLInputElement).value;
     if (window.salvaUltimoTipoDocumento) window.salvaUltimoTipoDocumento(tipoId);
     
     const tipo = appData.tipiDocumento.find(t => t.id === tipoId) || appData.tipiDocumento[0];
@@ -123,6 +126,8 @@ async function salvaSchedaDalForm(automatico) {
         return { ok: false, messaggio: errore.messaggio };
     }
 
+    if (caricati && window.apiBrowser) allegatiCorrenti.push(...await caricaFileInAttesa(window.pendingFilesToUpload, documentoId));
+
     const mVecchio = idCorrente ? appData.manoscritti.find(x => x.id === idCorrente) : null;
 
     if (mVecchio && Array.isArray(window.allegatiBaseForm)) {
@@ -136,10 +141,10 @@ async function salvaSchedaDalForm(automatico) {
     const creatoDa = mVecchio && mVecchio.creatoDa ? mVecchio.creatoDa : username;
     const primaDellaModifica = mVecchio ? JSON.parse(JSON.stringify(mVecchio)) : null;
 
-    const tagsScheda = window.Model.unisciTag(document.getElementById('form-tags').value);
+    const tagsScheda = window.Model.unisciTag((document.getElementById('form-tags') as HTMLInputElement).value);
     if (typeof window.registraTagUsati === 'function') window.registraTagUsati(tagsScheda);
 
-    let relazioniScheda = [];
+    let relazioniScheda: any[] = [];
     try {
         relazioniScheda = window.Model.relazioni({ relazioni: JSON.parse(document.getElementById('form-relazioni')?.value || '[]') });
     } catch (err) {
@@ -150,7 +155,7 @@ async function salvaSchedaDalForm(automatico) {
         id: documentoId,
         cartella: cartellaScelta,
         tipoDocumento: tipoId,
-        segnatura: document.getElementById('form-segnatura').value,
+        segnatura: (document.getElementById('form-segnatura') as HTMLInputElement).value,
         tags: tagsScheda,
         allegato: nomeAllegato,
         allegatoTipo: tipoAllegato,
@@ -215,10 +220,10 @@ async function salvaSchedaDalForm(automatico) {
     if (automatico && salvato) {
         const allegatiSalvati = JSON.parse(JSON.stringify(salvato.allegati || []));
         window.allegatiBaseForm = allegatiSalvati;
-        document.getElementById('form-allegati').value = JSON.stringify(allegatiSalvati);
+        (document.getElementById('form-allegati') as HTMLInputElement).value = JSON.stringify(allegatiSalvati);
         if (caricati) {
             window.pendingFilesToUpload = [];
-            document.getElementById('form-allegato').value = '';
+            (document.getElementById('form-allegato') as HTMLInputElement).value = '';
             document.getElementById('form-allegati-new-preview')?.classList.add('hidden');
             if (window.renderPendingFiles) window.renderPendingFiles();
             if (window.renderAllegatiForm) window.renderAllegatiForm(allegatiSalvati);
@@ -232,16 +237,16 @@ async function editItem(id) {
     switchTab('add');
     window.caricaSchedaNelForm(id);
     window.aggiornaDocumentoScheda();
-    document.getElementById('form-title').textContent = window.t("title_edit_record", "Edit Record");
-    document.getElementById('btn-cancel-edit').classList.remove('hidden');
+    (document.getElementById('form-title') as HTMLInputElement).textContent = window.t("title_edit_record", "Edit Record");
+    (document.getElementById('btn-cancel-edit') as HTMLInputElement).classList.remove('hidden');
 }
 
 window.caricaSchedaNelForm = function(id) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m) return;
-    document.getElementById('form-id').value = m.id;
-    document.getElementById('form-cartella').value = m.cartella || '';
-    document.getElementById('form-tipo-documento').value = m.tipoDocumento || 'manoscritto';
+    (document.getElementById('form-id') as HTMLInputElement).value = m.id;
+    (document.getElementById('form-cartella') as HTMLInputElement).value = m.cartella || '';
+    (document.getElementById('form-tipo-documento') as HTMLInputElement).value = m.tipoDocumento || 'manoscritto';
 
     if (window.scriviCampiPropriForm) window.scriviCampiPropriForm(window.Model.campiPropri(m));
     if (window.scriviOrdineCampiForm) window.scriviOrdineCampiForm(window.Model.ordineCampi(m));
@@ -249,18 +254,18 @@ window.caricaSchedaNelForm = function(id) {
     if (window.azzeraMemoriaCompilazione) window.azzeraMemoriaCompilazione();
     renderDynamicFields();
     
-    document.getElementById('form-segnatura').value = m.segnatura || '';
-    document.getElementById('form-tags').value = m.tags || '';
+    (document.getElementById('form-segnatura') as HTMLInputElement).value = m.segnatura || '';
+    (document.getElementById('form-tags') as HTMLInputElement).value = m.tags || '';
     if (typeof window.caricaRelazioniForm === 'function') window.caricaRelazioniForm(m);
     if (typeof window.caricaRimandiEsterniForm === 'function') window.caricaRimandiEsterniForm(m);
     
-    let allegatiList = [];
+    let allegatiList: any[] = [];
     if (m.allegati) {
         allegatiList = [...m.allegati];
     } else if (m.allegato) {
         allegatiList.push({ nome: m.allegato, tipo: m.allegatoTipo });
     }
-    document.getElementById('form-allegati').value = JSON.stringify(allegatiList);
+    (document.getElementById('form-allegati') as HTMLInputElement).value = JSON.stringify(allegatiList);
     window.allegatiBaseForm = JSON.parse(JSON.stringify(allegatiList));
     if(window.renderAllegatiForm) window.renderAllegatiForm(allegatiList);
 
@@ -270,16 +275,16 @@ window.caricaSchedaNelForm = function(id) {
 
 
 function deleteItem(id) {
-    document.getElementById('delete-item-id').value = id;
-    document.getElementById('delete-modal').classList.remove('hidden-tab');
+    (document.getElementById('delete-item-id') as HTMLInputElement).value = id;
+    (document.getElementById('delete-modal') as HTMLInputElement).classList.remove('hidden-tab');
 }
 
 function chiudiDeleteModal() {
-    document.getElementById('delete-modal').classList.add('hidden-tab');
+    (document.getElementById('delete-modal') as HTMLInputElement).classList.add('hidden-tab');
 }
 
 async function confermaEliminazione() {
-    const id = document.getElementById('delete-item-id').value;
+    const id = (document.getElementById('delete-item-id') as HTMLInputElement).value;
     const manoscritto = appData.manoscritti.find(x => x.id === id);
     if (!manoscritto) {
         chiudiDeleteModal();
@@ -292,11 +297,12 @@ async function confermaEliminazione() {
         await window.cestinaRecord([recordSalvato], window.origineCestino(1));
     }
 
-    await window.Store.deleteManoscritto(id);
+    let rimandi = await window.Store.eliminaSchede([id]);
     chiudiDeleteModal();
 
     const ripristinaFn = async () => {
         window.Store.togliTombstone([recordSalvato.id]);
+        window.Store.rimettiRimandi(rimandi);
         await window.Store.addManoscritto(JSON.parse(JSON.stringify(recordSalvato)));
     };
     
@@ -304,11 +310,11 @@ async function confermaEliminazione() {
         const vivo = appData.manoscritti.find(x => String(x.id) === String(recordSalvato.id));
         if (!vivo) return;
         if (typeof window.cestinaRecord === 'function') await window.cestinaRecord([vivo], window.origineCestino(1));
-        await window.Store.deleteManoscritto(recordSalvato.id);
+        rimandi = await window.Store.eliminaSchede([recordSalvato.id]);
     };
 
     if (window.gestoreAnnullamento) {
-        window.gestoreAnnullamento.registraAzione(`Eliminazione di "${recordSalvato.titolo}"`, ripristinaFn, rifaiFn);
+        window.gestoreAnnullamento.registraAzione(window.t('undo_delete_record', "Eliminazione di \"{var0}\"").replace('{var0}', recordSalvato.segnatura || recordSalvato.titolo || window.t('senza_titolo', "Senza Titolo")), ripristinaFn, rifaiFn);
         mostraMessaggio(window.t("msg_record_deleted"), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
     } else {
         mostraMessaggio(window.t("msg_record_deleted"), "success");

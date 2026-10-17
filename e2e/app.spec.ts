@@ -19,6 +19,44 @@ test.describe('Avvio applicazione', () => {
     ).toBeVisible();
   });
 
+  test('sulla welcome modal la richiesta di chiusura riceve conferma', async ({ electronApp, page }) => {
+    await expect(page.locator('#welcome-modal')).toBeVisible();
+    await page.waitForFunction(() => (window as any).__appPronta === true);
+    await electronApp.evaluate(({ ipcMain, BrowserWindow }) => {
+      ipcMain.removeAllListeners('confirm-close');
+      (globalThis as any).chiusureConfermate = 0;
+      ipcMain.on('confirm-close', () => { (globalThis as any).chiusureConfermate++; });
+      BrowserWindow.getAllWindows()[0].webContents.send('request-close');
+    });
+    await expect.poll(() => electronApp.evaluate(() => (globalThis as any).chiusureConfermate)).toBe(1);
+  });
+
+  test('R1 — un link archiview:// che avvia l\'app chiusa apre il join con il codice', async ({ userDataDir }) => {
+    const { launchApp, closeApp } = await import('./fixtures');
+    const { app, page } = await launchApp(userDataDir, ['archiview://join/CODICEFREDDO']);
+    try {
+      await expect(page.locator('#welcome-join-code')).toHaveValue('CODICEFREDDO');
+    } finally {
+      await closeApp(app);
+    }
+  });
+
+  test('F21 — «Crea e Avvia» che fallisce mostra il motivo e riabilita il pulsante', async ({ electronApp, page }) => {
+    await expect(page.locator('#welcome-modal')).toBeVisible();
+    await page.waitForFunction(() => (window as any).__appPronta === true);
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('create-workspace-in-path');
+      ipcMain.handle('create-workspace-in-path', () => { throw new Error('permesso negato'); });
+    });
+    await page.evaluate(() => {
+      (document.getElementById('welcome-new-folder-name') as HTMLInputElement).value = 'Prova';
+      (document.getElementById('welcome-new-folder-path') as HTMLInputElement).value = 'C:\\inesistente';
+    });
+    await page.evaluate(() => (window as any).creaCartellaIniziale());
+    await expect(page.locator('#toast-container')).toContainText('permesso negato');
+    await expect(page.locator('#welcome-create-form .btn-primary')).toBeEnabled();
+  });
+
   test('nessun errore fatale in console al boot', async ({ userDataDir }) => {
     const { launchApp, closeApp } = await import('./fixtures');
     const { app, page } = await launchApp(userDataDir);

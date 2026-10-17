@@ -185,6 +185,37 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     expect(esito.entrantiEsca).toBe(0);
   });
 
+  test('F2 — annullare l\'eliminazione o ripristinare dal cestino rimette i rimandi entranti', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
+    await semina(page, [{ segnatura: 'A' }, { segnatura: 'B' }]);
+
+    const elimina = () => page.evaluate(async () => {
+      const w = window as any;
+      const b = appData.manoscritti.find((m: any) => m.segnatura === 'B');
+      (document.getElementById('delete-item-id') as HTMLInputElement).value = b.id;
+      await w.confermaEliminazione();
+      return b.id;
+    });
+    const rimandiDiA = () => page.evaluate(() => (window as any).Model.relazioni(
+      appData.manoscritti.find((m: any) => m.segnatura === 'A')).map((r: any) => r.tipo));
+
+    await page.evaluate(async () => {
+      const a = appData.manoscritti.find((m: any) => m.segnatura === 'A');
+      const b = appData.manoscritti.find((m: any) => m.segnatura === 'B');
+      await (window as any).collegaSchede(a.id, b.id, 'copia di');
+    });
+
+    await elimina();
+    expect(await rimandiDiA()).toEqual([]);
+    await page.keyboard.press('Control+z');
+    await expect.poll(rimandiDiA).toEqual(['copia di']);
+
+    const idB = await elimina();
+    expect(await rimandiDiA()).toEqual([]);
+    await page.evaluate((id) => (window as any).ripristinaDalCestino([id]), idB);
+    expect(await rimandiDiA()).toEqual(['copia di']);
+  });
+
   test('3.5 — il collegamento è annullabile', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
     await semina(page, [{ segnatura: 'A' }, { segnatura: 'B' }]);
@@ -406,7 +437,6 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
           w.eliminaSelezionati();
         } else {
           await w.Store.updateManoscritto(bersaglio.id, { cartella: 'Fondo' });
-          await w.Store.addCartella('Fondo');
           w.eliminaCartellaDaSidebar('Fondo');
         }
       }, via);
@@ -554,5 +584,27 @@ test.describe('Fase 3 — vocabolari, relazioni, anagrafica, duplicati', () => {
     await page.locator('#authority-scollega').click();
     await expect(page.locator('#authority-list .tag-manager-row a.auth-id')).toHaveCount(0);
     expect(await page.evaluate(() => (window as any).Model.voceAuthority(appData, 'persona', 'Bartolo').wikidata)).toBeUndefined();
+  });
+
+  test('F19 — il conteggio dei collegamenti delle card coincide con relazioniRisolte, ed è nel badge', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Fase3');
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore
+      appData.manoscritti.push(
+        { id: 'r-a', segnatura: 'RA', cartella: '', relazioni: [{ id: 'r-b' }, { id: 'r-b' }, { id: 'r-a' }, { id: 'fantasma' }] },
+        { id: 'r-b', segnatura: 'RB', cartella: '', relazioni: [{ id: 'r-a', tipo: 'copia' }] },
+        { id: 'r-c', segnatura: 'RC', cartella: '', relazioni: [{ id: 'r-b' }] },
+        { id: 'r-d', segnatura: 'RD', cartella: '' });
+      await w.Store.commit();
+      // @ts-ignore
+      const indice = w.contaCollegamenti(appData.manoscritti);
+      return ['r-a', 'r-b', 'r-c', 'r-d'].map(id => {
+        const r = w.relazioniRisolte(id);
+        return [id, indice.get(id) || 0, r.uscenti.length + r.entranti.length];
+      });
+    });
+    for (const [id, indice, atteso] of esito) expect(indice, id).toBe(atteso);
+    await expect(page.locator('#card-r-b .card-badge-link')).toContainText('3');
   });
 });

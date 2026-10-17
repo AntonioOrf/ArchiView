@@ -8,6 +8,34 @@ window.initLang = async function() {
 };
 
 const customEn = {
+    "hub_err_revocato": "Your access to this repository has been revoked by the administrator.",
+    "hub_err_chiave": "Invalid access key for this repository.",
+    "hub_err_ricezione": "Error while receiving from the Hub.",
+    "hub_err_server": "Unable to reach the server.",
+    "hub_err_invio_modifiche": "Error while sending changes to the server.",
+    "hub_err_invio": "Error while sending to the Hub.",
+    "hub_err_cronologia": "Unable to fetch the history from the server.",
+    "hub_err_server_ripristino": "Unable to reach the server for the restore.",
+    "hub_err_invio_ripristino": "Error while sending the restore to the server.",
+    "hub_err_ripristino": "Error while restoring the version.",
+    "hub_err_allegati": "Hub attachment sync error.",
+    "hub_err_rinomina": "Error while renaming.",
+    "hub_err_solo_owner": "Only the owner can create invites.",
+    "hub_err_invito_http": "Error creating the invite (HTTP {var0}).",
+    "hub_err_join": "Error while joining the Hub repository.",
+    "tutorial_offri_archivio": "The archive is empty. Load the preset Tutorial archive (with PDF files and sample records) to follow the guide?",
+    "tutorial_err_caricamento": "Error loading the Tutorial: ",
+    "tutorial_err_imprevisto": "Unexpected error loading the Tutorial.",
+    "card_creato_modificato": "Created by {var0} - Modified by {var1}",
+    "card_autore": "Author: {var0}",
+    "pagina_x_di_y": "Page {var0} of {var1}",
+    "senza_titolo": "Untitled",
+    "aria_percorso_cartella": "Folder path",
+    "undo_delete_folder": "Deletion of folder \"{var0}\"",
+    "undo_delete_records": "Deletion of {var0} records",
+    "undo_delete_type": "Deletion of template \"{var0}\"",
+    "undo_delete_record": "Deletion of \"{var0}\"",
+    "diff_titolo_predefinito": "Change details",
     "cross_toggle": "Also search other archives",
     "cross_title": "In other archives",
     "cross_more": "Show more results",
@@ -470,6 +498,8 @@ const customEn = {
     "label_selected_archive": "Selected:",
     "msg_picker_required": "First open Google Drive with the Browse button to authorize access to the shared folder.",
     "msg_selezione_annullata": "Selection cancelled.",
+    "err_drive_accesso_scaduto": "Google sign-in was not completed in the browser within 5 minutes. Try again.",
+    "ocr_record_gone": "The record no longer exists: the recognized text was not saved.",
     "msg_seleziona_percorso": "Select a local location for the archive.",
     "confirm_clean_orphans_desc": "This operation will permanently delete from your PC and Google Drive all attachments no longer associated with any record in the current database. This cannot be undone. Do you want to proceed?",
     "cloud_cleaning_in_progress": "Cleaning in progress…",
@@ -1046,6 +1076,15 @@ const customEn = {
     "trash_emptied": "Trash emptied ({var0} records).",
     "trash_from_bulk": "Bulk deletion",
     "trash_from_single": "Deletion",
+    "trash_from_undo": "Undo",
+    "label_yes": "Yes",
+    "shortcut_tab_record": "Switch between text and record (in the form: document alongside)",
+    "shortcut_special_chars": "Special characters",
+    "shortcut_page_att": "Previous or next attachment",
+    "label_no": "No",
+    "msg_type_save_failed": "The template was not saved: ",
+    "msg_create_archive_failed": "The archive could not be created: ",
+    "type_field_bad_name": "Invalid name: it is already a field of the template or a reserved key of the record.",
     "trash_hint": "Deleted records stay here for 30 days, then disappear on their own. The trash is local to this computer: it is never synchronised and takes no room in the shared archive.",
     "record_untitled": "untitled record",
     "btn_redo": "Redo",
@@ -1796,6 +1835,10 @@ const customEn = {
     "msg_vault_rinominato": "Archive name updated.",
     "msg_perf_mode_saved": "Preference saved. Restart the app to also apply the hardware acceleration change.",
     "msg_errore_salvataggio": "Error while saving the data: ",
+    "msg_tipi_in_conflitto": "Models also changed by a colleague, your version was kept: ",
+    "btn_delete_from_cloud": "Delete from the cloud too",
+    "msg_migrazione_hub_annullata": "Migration cancelled: the archive stays on Google Drive.",
+    "msg_archivio_modificato_fuori": "The archive was changed outside the app: changes merged.",
     "changelog_title": "What's new in version",
     "btn_send_email": "Send by email",
     "settings_drive_connected_as": "Connected as:",
@@ -1859,6 +1902,34 @@ const customEn = {
 };
 
 const customIt = {
+    "hub_err_revocato": "Il tuo accesso a questo repository è stato revocato dall'amministratore.",
+    "hub_err_chiave": "Chiave di accesso non valida per questo repository.",
+    "hub_err_ricezione": "Errore durante la ricezione dall'Hub.",
+    "hub_err_server": "Impossibile contattare il server.",
+    "hub_err_invio_modifiche": "Errore durante l'invio delle modifiche al server.",
+    "hub_err_invio": "Errore durante l'invio all'Hub.",
+    "hub_err_cronologia": "Impossibile recuperare la cronologia dal server.",
+    "hub_err_server_ripristino": "Impossibile contattare il server per il ripristino.",
+    "hub_err_invio_ripristino": "Errore durante l'invio del ripristino al server.",
+    "hub_err_ripristino": "Errore durante il ripristino della versione.",
+    "hub_err_allegati": "Errore sincronizzazione allegati Hub.",
+    "hub_err_rinomina": "Errore durante la rinomina.",
+    "hub_err_solo_owner": "Solo il proprietario può generare inviti.",
+    "hub_err_invito_http": "Errore generazione invito (HTTP {var0}).",
+    "hub_err_join": "Errore durante il join del repository Hub.",
+    "tutorial_offri_archivio": "L'archivio è vuoto. Vuoi caricare l'Archivio Tutorial preimpostato (con file PDF e schede d'esempio) per seguire al meglio la guida?",
+    "tutorial_err_caricamento": "Errore nel caricamento del Tutorial: ",
+    "tutorial_err_imprevisto": "Errore imprevisto nel caricamento del Tutorial.",
+    "card_creato_modificato": "Creato da {var0} - Modificato da {var1}",
+    "card_autore": "Autore: {var0}",
+    "pagina_x_di_y": "Pagina {var0} di {var1}",
+    "senza_titolo": "Senza Titolo",
+    "aria_percorso_cartella": "Percorso cartella",
+    "undo_delete_folder": "Eliminazione archivio \"{var0}\"",
+    "undo_delete_records": "Eliminazione di {var0} schede",
+    "undo_delete_type": "Eliminazione modello \"{var0}\"",
+    "undo_delete_record": "Eliminazione di \"{var0}\"",
+    "diff_titolo_predefinito": "Dettaglio Modifiche",
     "cross_toggle": "Cerca anche negli altri archivi",
     "cross_title": "Negli altri archivi",
     "cross_more": "Mostra altri risultati",
@@ -2253,6 +2324,8 @@ const customIt = {
     "label_selected_archive": "Selezionato:",
     "msg_picker_required": "Prima apri Google Drive con il pulsante Sfoglia per autorizzare l'accesso alla cartella condivisa.",
     "msg_selezione_annullata": "Selezione annullata.",
+    "err_drive_accesso_scaduto": "L'accesso a Google non è stato completato nel browser entro 5 minuti. Riprova.",
+    "ocr_record_gone": "La scheda non c'è più: il testo riconosciuto non è stato salvato.",
     "msg_seleziona_percorso": "Seleziona una posizione locale per l'archivio.",
     "confirm_clean_orphans_desc": "Questa operazione eliminerà definitivamente dal PC e da Google Drive tutti gli allegati che non sono più associati a nessuna scheda nel database corrente. L'operazione è irreversibile. Vuoi procedere?",
     "cloud_cleaning_in_progress": "Pulizia in corso…",
@@ -2799,6 +2872,15 @@ const customIt = {
     "trash_emptied": "Cestino svuotato ({var0} schede).",
     "trash_from_bulk": "Eliminazione multipla",
     "trash_from_single": "Eliminazione",
+    "trash_from_undo": "Annullamento",
+    "label_yes": "Sì",
+    "shortcut_tab_record": "Passa fra testo e scheda (nel modulo: documento accanto)",
+    "shortcut_special_chars": "Caratteri speciali",
+    "shortcut_page_att": "Allegato precedente o successivo",
+    "label_no": "No",
+    "msg_type_save_failed": "Il modello non è stato salvato: ",
+    "msg_create_archive_failed": "L'archivio non è stato creato: ",
+    "type_field_bad_name": "Nome non valido: è già un campo del modello o una chiave riservata della scheda.",
     "trash_hint": "Le schede eliminate restano qui per 30 giorni e poi spariscono da sole. Il cestino è locale a questo computer: non viene sincronizzato e non occupa spazio nell'archivio condiviso.",
     "record_untitled": "scheda senza titolo",
     "btn_redo": "Ripeti",
@@ -3533,6 +3615,10 @@ const customIt = {
     "msg_vault_rinominato": "Nome dell'archivio aggiornato.",
     "msg_perf_mode_saved": "Preferenza salvata. Riavvia l'app per applicare anche la disattivazione dell'accelerazione hardware.",
     "msg_errore_salvataggio": "Errore nel salvataggio dei dati: ",
+    "msg_tipi_in_conflitto": "Modelli cambiati anche da un collega, tenuta la tua versione: ",
+    "btn_delete_from_cloud": "Elimina anche dal cloud",
+    "msg_migrazione_hub_annullata": "Migrazione annullata: l'archivio resta su Google Drive.",
+    "msg_archivio_modificato_fuori": "L'archivio è stato modificato fuori dall'app: modifiche unite.",
     "changelog_title": "Novità della versione",
     "btn_send_email": "Invia via Email",
     "settings_drive_connected_as": "Connesso come:",
@@ -3618,7 +3704,7 @@ const _traduzioniSanitizzate = new Map<string, string>();
 
 window.applicaTraduzioniHtml = function() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
+        const key = el.getAttribute('data-i18n') || '';
         if (!el.hasAttribute('data-i18n-default')) {
             el.setAttribute('data-i18n-default', el.textContent || '');
         }
@@ -3633,19 +3719,19 @@ window.applicaTraduzioniHtml = function() {
         }
         let html = _traduzioniSanitizzate.get(testo);
         if (html === undefined) {
-            html = window.sanitizeHTML(testo);
+            html = String(window.sanitizeHTML(testo));
             _traduzioniSanitizzate.set(testo, html);
         }
         if (el.innerHTML !== html) el.innerHTML = html;
     });
 
     document.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach(el => {
-        const key = el.getAttribute('data-i18n-title');
+        const key = el.getAttribute('data-i18n-title') || '';
         el.title = window.t(key, el.title || key);
     });
 
     document.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]').forEach(el => {
-        const key = el.getAttribute('data-i18n-placeholder');
+        const key = el.getAttribute('data-i18n-placeholder') || '';
         if (!el.hasAttribute('data-i18n-ph-default')) {
             el.setAttribute('data-i18n-ph-default', el.placeholder || '');
         }
@@ -3653,12 +3739,12 @@ window.applicaTraduzioniHtml = function() {
     });
 
     document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
-        const key = el.getAttribute('data-i18n-aria-label');
+        const key = el.getAttribute('data-i18n-aria-label') || '';
         el.setAttribute('aria-label', window.t(key, el.getAttribute('aria-label') || key));
     });
 
     document.querySelectorAll<HTMLOptGroupElement>('[data-i18n-label]').forEach(el => {
-        el.label = window.t(el.getAttribute('data-i18n-label'), el.label);
+        el.label = window.t(el.getAttribute('data-i18n-label') || '', el.label);
     });
 
     if (typeof window.applicaScorciatoieTooltip === 'function') window.applicaScorciatoieTooltip();

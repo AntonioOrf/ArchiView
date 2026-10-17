@@ -18,7 +18,7 @@ function scriviCampiPropriForm(definizioni) {
 window.scriviCampiPropriForm = scriviCampiPropriForm;
 
 function _tipoDelForm() {
-    const sel = document.getElementById('form-tipo-documento');
+    const sel = document.getElementById('form-tipo-documento') as HTMLInputElement;
     const id = sel ? sel.value : '';
     return (appData.tipiDocumento || []).find(t => t.id === id) || (appData.tipiDocumento || [])[0] || null;
 }
@@ -34,10 +34,10 @@ window.apriCampoProprioModal = function() {
     const modal = document.getElementById('campo-proprio-modal');
     if (!modal) return;
 
-    document.getElementById('campo-proprio-nome').value = '';
-    document.getElementById('campo-proprio-opzioni').value = '';
+    (document.getElementById('campo-proprio-nome') as HTMLInputElement).value = '';
+    (document.getElementById('campo-proprio-opzioni') as HTMLInputElement).value = '';
 
-    const sel = document.getElementById('campo-proprio-tipo');
+    const sel = document.getElementById('campo-proprio-tipo') as HTMLInputElement;
     sel.innerHTML = '';
     for (const tipo of window.Model.TIPI_CAMPO_SCEGLIBILI) {
         const opt = document.createElement('option');
@@ -46,7 +46,7 @@ window.apriCampoProprioModal = function() {
         sel.appendChild(opt);
     }
 
-    const selVoc = document.getElementById('campo-proprio-vocabolario');
+    const selVoc = document.getElementById('campo-proprio-vocabolario') as HTMLInputElement;
     selVoc.innerHTML = '';
     const propri = document.createElement('option');
     propri.value = '';
@@ -59,7 +59,7 @@ window.apriCampoProprioModal = function() {
         selVoc.appendChild(opt);
     }
 
-    const selAuth = document.getElementById('campo-proprio-authority');
+    const selAuth = document.getElementById('campo-proprio-authority') as HTMLInputElement;
     selAuth.innerHTML = '';
     for (const scelta of [''].concat(window.Model.TIPI_AUTHORITY)) {
         const opt = document.createElement('option');
@@ -68,7 +68,7 @@ window.apriCampoProprioModal = function() {
         selAuth.appendChild(opt);
     }
 
-    const lista = document.getElementById('campo-proprio-suggerimenti');
+    const lista = document.getElementById('campo-proprio-suggerimenti') as HTMLInputElement;
     lista.innerHTML = '';
     for (const nome of window.nomiCampiPropriUsati()) {
         const opt = document.createElement('option');
@@ -78,7 +78,7 @@ window.apriCampoProprioModal = function() {
 
     window.aggiornaCampoProprio();
     modal.classList.remove('hidden-tab');
-    document.getElementById('campo-proprio-nome').focus();
+    (document.getElementById('campo-proprio-nome') as HTMLInputElement).focus();
 };
 
 window.chiudiCampoProprioModal = function() {
@@ -87,25 +87,25 @@ window.chiudiCampoProprioModal = function() {
 };
 
 window.aggiornaCampoProprio = function() {
-    const tipo = document.getElementById('campo-proprio-tipo').value;
-    const vocabolario = document.getElementById('campo-proprio-vocabolario').value;
-    document.getElementById('campo-proprio-vocabolario-riga').classList.toggle('hidden', tipo !== 'enum');
-    document.getElementById('campo-proprio-opzioni-riga').classList.toggle('hidden', tipo !== 'enum' || !!vocabolario);
+    const tipo = (document.getElementById('campo-proprio-tipo') as HTMLInputElement).value;
+    const vocabolario = (document.getElementById('campo-proprio-vocabolario') as HTMLInputElement).value;
+    (document.getElementById('campo-proprio-vocabolario-riga') as HTMLInputElement).classList.toggle('hidden', tipo !== 'enum');
+    (document.getElementById('campo-proprio-opzioni-riga') as HTMLInputElement).classList.toggle('hidden', tipo !== 'enum' || !!vocabolario);
     const authUtile = tipo === 'text' || tipo === 'enum' || tipo === 'dynamic_list';
-    document.getElementById('campo-proprio-authority-riga').classList.toggle('hidden', !authUtile);
-    if (!authUtile) document.getElementById('campo-proprio-authority').value = '';
+    (document.getElementById('campo-proprio-authority-riga') as HTMLInputElement).classList.toggle('hidden', !authUtile);
+    if (!authUtile) (document.getElementById('campo-proprio-authority') as HTMLInputElement).value = '';
 };
 
 window.confermaCampoProprio = function() {
-    const tipo = document.getElementById('campo-proprio-tipo').value;
-    const vocabolario = tipo === 'enum' ? document.getElementById('campo-proprio-vocabolario').value : '';
-    const opzioni = document.getElementById('campo-proprio-opzioni').value
+    const tipo = (document.getElementById('campo-proprio-tipo') as HTMLInputElement).value;
+    const vocabolario = tipo === 'enum' ? (document.getElementById('campo-proprio-vocabolario') as HTMLInputElement).value : '';
+    const opzioni = (document.getElementById('campo-proprio-opzioni') as HTMLInputElement).value
         .split('\n').map(o => o.trim()).filter(Boolean);
 
     const definizioni = campiPropriForm();
     const delTipo = window.Model.campiDelTipo(_tipoDelForm(), window.CONFIG_CAMPI, appData);
     const esistenti = delTipo.map(d => ({ chiave: d.id })).concat(definizioni.map(d => ({ chiave: d.id })));
-    const id = window.CsvImport.idCampoNuovo(document.getElementById('campo-proprio-nome').value, esistenti);
+    const id = window.CsvImport.idCampoNuovo((document.getElementById('campo-proprio-nome') as HTMLInputElement).value, esistenti);
     if (!id) {
         mostraMessaggio(window.t('own_field_bad_name', 'Nome non valido o già usato in questa scheda.'), 'error');
         return;
@@ -118,7 +118,7 @@ window.confermaCampoProprio = function() {
     const def: AVCampoDef = { id, tipo, label: id };
     if (vocabolario) def.vocabolario = vocabolario;
     else if (opzioni.length) def.opzioni = opzioni;
-    const authority = document.getElementById('campo-proprio-authority').value;
+    const authority = (document.getElementById('campo-proprio-authority') as HTMLInputElement).value;
     if (authority) def.authority = authority;
 
     scriviCampiPropriForm(definizioni.concat([def]));

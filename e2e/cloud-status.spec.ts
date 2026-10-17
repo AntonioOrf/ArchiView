@@ -42,6 +42,19 @@ test.describe('Controllo cloud unico', () => {
     await expect(page.locator('#cloud-status-label')).toHaveText('3 in entrata');
   });
 
+  test('F18 — il nome di una cartella eliminata da un collega si vede alla lettera, non come markup', async ({ page }) => {
+    await page.evaluate(() => {
+      const w = window as any;
+      w.impostaModificheInEntrata(true);
+      w.incomingChanges = [];
+      w.incomingStructuralChanges = [{ icon: 'folder-minus', label: 'Cartella eliminata: <b>x</b> (da <a href="https://example.org">Rossi</a>)' }];
+      w.renderSourceControl();
+    });
+    const lista = page.locator('#source-control-list');
+    await expect(lista).toContainText('<b>x</b>');
+    expect(await lista.locator('b, a').count()).toBe(0);
+  });
+
   test('modifiche locali: lo stato dice quante ne restano da inviare', async ({ page }) => {
     await page.evaluate(() => {
       (window as any).ultimoCaricamento = 1000;

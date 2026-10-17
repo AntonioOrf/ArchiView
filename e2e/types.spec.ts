@@ -39,6 +39,55 @@ test.describe('Tipi Documento', () => {
     expect(campi).toEqual(['Secondo', 'Primo']);
   });
 
+  test('F11 — un campo del modello non può chiamarsi come una chiave della scheda; le virgolette nel nome non rompono l\'editor', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
+    const errori: string[] = [];
+    page.on('pageerror', (e) => errori.push(String(e)));
+
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#new-type-select').selectOption('custom');
+    await page.locator('#custom-type-name').fill('Virgolette');
+    for (const c of ['trascrizione', 'relazioni', 'Detto "il Vecchio"']) {
+      await page.locator('#custom-type-extra-input').fill(c);
+      await page.locator('#custom-type-extra-input').press('Enter');
+    }
+    const valori = await page.locator('#custom-fields-list .custom-field-item').evaluateAll(p => p.map(x => (x as HTMLElement).dataset.val));
+    expect(valori).not.toContain('trascrizione');
+    expect(valori).not.toContain('relazioni');
+    expect(valori).toContain('Detto "il Vecchio"');
+
+    await page.evaluate(() => (window as any).confermaCreaTipo());
+    await expect(page.locator('#new-type-modal')).toBeHidden();
+    const tipo = (await getAppData(page)).tipiDocumento.find((t: any) => t.nome === 'Virgolette');
+    expect(tipo.campi).toContain('Detto "il Vecchio"');
+
+    await page.evaluate((id) => (window as any).modificaTipoDocumento(id), tipo.id);
+    await expect(page.locator('#new-type-modal')).toBeVisible();
+    await expect(page.locator('#custom-fields-list')).toContainText('Detto "il Vecchio"');
+    await page.locator('.custom-field-item').filter({ hasText: 'Detto "il Vecchio"' }).locator('button').last().click();
+    await page.evaluate(() => (window as any).confermaCreaTipo());
+    expect(errori).toEqual([]);
+  });
+
+  test('F16 — se il salvataggio del modello fallisce lo si dice, invece di «Modello creato»', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('salva-dati');
+      ipcMain.handle('salva-dati', () => { throw new Error('disco pieno'); });
+    });
+    const errori: string[] = [];
+    page.on('pageerror', (e) => errori.push(String(e)));
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#new-type-select').selectOption('custom');
+    await page.locator('#custom-type-name').fill('Fallito');
+    await page.locator('#custom-type-extra-input').fill('Campo');
+    await page.locator('#custom-type-extra-input').press('Enter');
+    await page.evaluate(() => (window as any).confermaCreaTipo());
+    await expect(page.locator('#toast-container')).toContainText(/non è stato salvato|was not saved/);
+    await expect(page.locator('#new-type-modal')).toBeVisible();
+    expect(errori).toEqual([]);
+  });
+
   test('crea un tipo documento custom con campi personalizzati', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
 

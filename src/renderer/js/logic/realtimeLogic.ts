@@ -1,7 +1,7 @@
 window.pusherInstance = null;
 
 const PUSHER_SDK = 'vendor/pusher.min.js';
-let pusherLoadPromise = null;
+let pusherLoadPromise: any = null;
 
 function caricaPusherSdk() {
     if (window.Pusher) return Promise.resolve(true);

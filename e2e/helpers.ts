@@ -66,7 +66,6 @@ export async function dismissOverlays(page: Page, { attendiChangelog = true } = 
 
   await page.evaluate(() => {
     (window as any).chiudiChangelogModal?.();
-    (window as any).nascondiMessaggi?.();
   }).catch(() => {});
 
   await expect(changelog).toBeHidden();

@@ -74,7 +74,7 @@ window.apriModalDocumenti = async function(id) {
     container.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">${escapeHTML(window.t('label_loading', 'Caricamento...'))}</div>`;
     document.getElementById('docs-modal').classList.remove('hidden-tab');
 
-    const allegatiRender = normalizzaAllegati(m);
+    const allegatiRender = carteDi(m);
 
     container.innerHTML = '';
 
@@ -120,19 +120,18 @@ window.apriModalDocumenti = async function(id) {
             div.style.transform = '';
             const dragIndex = window._draggedDocModalIndex;
             if (dragIndex !== null && dragIndex !== i) {
-                const item = m.allegati.splice(dragIndex, 1)[0];
+                const prima = JSON.parse(JSON.stringify(normalizzaAllegati(m)));
+                const item = normalizzaAllegati(m).splice(dragIndex, 1)[0];
                 const rect = div.getBoundingClientRect();
                 const mid = rect.left + rect.width / 2;
                 let targetIndex = i;
                 if (e.clientX > mid) targetIndex++;
                 if (dragIndex < targetIndex) targetIndex--;
                 m.allegati.splice(targetIndex, 0, item);
-                
-                const settings = await window.apiSettings.get();
-                const username = settings.username || 'Anonimo';
                 m.lastModified = Date.now();
-                m.modificatoDa = username;
+                _mdRegistraUndoAllegati(id, window.t('undo_reorder_attachments', 'Riordino degli allegati'), prima, JSON.parse(JSON.stringify(m.allegati)));
 
+                m.modificatoDa = await _mdAutore();
                 await salvaTutto();
                 if (typeof renderMain === 'function') renderMain();
                 window.apriModalDocumenti(id);
@@ -188,6 +187,15 @@ window.chiudiModalDocumenti = function() {
     document.getElementById('docs-modal').classList.add('hidden-tab');
 }
 
+async function _mdAutore() {
+    try {
+        return (await window.apiSettings.get()).username || 'Anonimo';
+    } catch (err) {
+        console.error('Impostazioni non leggibili, autore anonimo:', err);
+        return 'Anonimo';
+    }
+}
+
 function _mdRegistraUndoAllegati(id, descrizione, prima, dopo) {
     if (!window.gestoreAnnullamento) return;
     const applica = async (stato) => {
@@ -205,7 +213,7 @@ function _mdRegistraUndoAllegati(id, descrizione, prima, dopo) {
 }
 
 window.rinominaAllegatoDaModal = function(id, index) {
-    const m = appData.manoscritti.find(x => x.id === id);
+    const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m) return;
     const allegatiRender = normalizzaAllegati(m);
     const nomeAttuale = allegatiRender[index].originalName || '';
@@ -214,36 +222,30 @@ window.rinominaAllegatoDaModal = function(id, index) {
     window.apriRenameModal(nomeAttuale, async (nuovoNome) => {
         allegatiRender[index].originalName = nuovoNome;
         m.allegati = allegatiRender;
-
-        const settings = await window.apiSettings.get();
-        const username = settings.username || 'Anonimo';
         m.lastModified = Date.now();
-        m.modificatoDa = username;
-
-        await salvaTutto();
         _mdRegistraUndoAllegati(id, window.t('undo_rename_attachment', 'Rinomina di un allegato'),
             prima, JSON.parse(JSON.stringify(m.allegati)));
+
+        m.modificatoDa = await _mdAutore();
+        await salvaTutto();
         if (typeof renderMain === 'function') renderMain();
         window.apriModalDocumenti(id);
     });
 }
 
 window.spostaAllegatoDaModal = async function(id, index, direction) {
-    const m = appData.manoscritti.find(x => x.id === id);
+    const m = appData.manoscritti.find(x => String(x.id) === String(id));
     if (!m || !Array.isArray(m.allegati)) return;
     const target = index + direction;
     if (target < 0 || target >= m.allegati.length) return;
     const prima = JSON.parse(JSON.stringify(m.allegati));
     [m.allegati[index], m.allegati[target]] = [m.allegati[target], m.allegati[index]];
-
-    const settings = await window.apiSettings.get();
-    const username = settings.username || 'Anonimo';
     m.lastModified = Date.now();
-    m.modificatoDa = username;
-
-    await salvaTutto();
     _mdRegistraUndoAllegati(id, window.t('undo_reorder_attachments', 'Riordino degli allegati'),
         prima, JSON.parse(JSON.stringify(m.allegati)));
+
+    m.modificatoDa = await _mdAutore();
+    await salvaTutto();
     if (typeof renderMain === 'function') renderMain();
     await window.apriModalDocumenti(id);
 
@@ -256,11 +258,19 @@ window.spostaAllegatoDaModal = async function(id, index, direction) {
     }
 }
 
+let _annullaBarraAperta = null;
+
 window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null, onCancelCallback = null) {
-    if (actionId && appData.skipConfirmations && appData.skipConfirmations[actionId]) {
+    if (actionId && window.prefLocale('confermaSaltata:' + actionId) === '1') {
         if (onConfirmCallback) onConfirmCallback();
         return;
     }
+    if (_annullaBarraAperta) {
+        const precedente = _annullaBarraAperta;
+        _annullaBarraAperta = null;
+        precedente();
+    }
+    _annullaBarraAperta = onCancelCallback || (() => {});
 
     const banner = document.getElementById('bottom-confirm-banner');
     document.getElementById('bottom-confirm-text').textContent = testo;
@@ -284,22 +294,41 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null,
     btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
     
     newBtn.onclick = async () => {
+        _annullaBarraAperta = null;
         window.chiudiBottomConfirm();
-        if (actionId && checkbox.checked) {
-            appData.skipConfirmations = appData.skipConfirmations || {};
-            appData.skipConfirmations[actionId] = true;
-            await salvaTutto();
-        }
+        if (actionId && checkbox.checked) window.prefLocale('confermaSaltata:' + actionId, '1');
         if (onConfirmCallback) onConfirmCallback();
     };
-    
+
     newBtnCancel.onclick = () => {
+        _annullaBarraAperta = null;
         window.chiudiBottomConfirm();
         if (onCancelCallback) onCancelCallback();
     };
-    
+
     banner.classList.remove('hidden-tab');
 }
+
+window.chiediConfermaBloccante = function(testo: string, etichettaConferma: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay z-modal-critical';
+        overlay.innerHTML = window.sanitizeHTML(`
+            <div class="modal-window max-w-md">
+                <div class="modal-body"><p class="text-stone-700 leading-relaxed"></p></div>
+                <div class="modal-footer modal-footer-bar">
+                    <button type="button" class="btn btn-secondary" data-modal-cancel>${escapeHTML(window.t('btn_cancel', 'Annulla'))}</button>
+                    <button type="button" class="btn btn-danger">${escapeHTML(etichettaConferma)}</button>
+                </div>
+            </div>`);
+        overlay.querySelector('p').textContent = testo;
+        const chiudi = (ok: boolean) => { overlay.remove(); resolve(ok); };
+        overlay.querySelector('[data-modal-cancel]').addEventListener('click', () => chiudi(false));
+        overlay.querySelector('.btn-danger').addEventListener('click', () => chiudi(true));
+        document.body.appendChild(overlay);
+        (overlay.querySelector('.btn-danger') as HTMLElement).focus();
+    });
+};
 
 window.chiudiBottomConfirm = function() {
     const banner = document.getElementById('bottom-confirm-banner');

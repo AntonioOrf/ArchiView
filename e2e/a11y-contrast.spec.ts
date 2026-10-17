@@ -129,7 +129,8 @@ test.describe('Accessibilità: contrasto del testo', () => {
       const lista: Violazione[] = [];
       for (const s of schermate) {
         await s.apri();
-        await page.waitForTimeout(150);
+        await page.waitForFunction(() => document.getAnimations().every(a =>
+          a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity));
         const v = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'testo' as const });
         lista.push(...v.map(x => ({ schermata: s.nome, ...x })));
         const b = await page.evaluate(scansiona, { radiceSel: s.radice, modo: 'bordi' as const });

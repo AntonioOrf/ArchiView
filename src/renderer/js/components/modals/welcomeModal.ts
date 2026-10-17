@@ -227,9 +227,7 @@
                     div.className = "p-3 bg-white border border-stone-200 rounded cursor-pointer hover:border-amber-400 hover:shadow-md transition-colors flex justify-between items-center";
                     const dateStr = new Date(v.modifiedTime).toLocaleDateString();
                     
-                    const escapedName = v.name.replace(/[&<>'"]/g, tag => ({
-                        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-                    }[tag] || tag));
+                    const escapedName = escapeHTML(v.name);
 
                     div.innerHTML = window.sanitizeHTML(`
                         <div class="flex items-center gap-3">
@@ -247,7 +245,7 @@
                 if (window.lucide) lucide.createIcons({ nodes: [listContainer] });
             }
         } catch(e) {
-            mostraMessaggio(window.t("msg_errore_cloud", "Errore Cloud: ") + e.message, "error");
+            mostraMessaggio(window.t("msg_errore_cloud", "Errore Cloud: ") + window.testoErroreDrive(e), "error");
         }
     };
 
@@ -436,13 +434,11 @@
                 if (!window.welcomeDriveInvite) updateJoinStepBadge(1, 'done');
                 updateJoinStepBadge(2, 'done');
                 updateJoinStepBadge(3, 'active');
-
-                if (window.nascondiMessaggi) window.nascondiMessaggi();
             } else {
                 mostraMessaggio(window.t("msg_selezione_annullata", "Selezione annullata."), "warning");
             }
         } catch (e: any) {
-            mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
+            mostraMessaggio(window.t("msg_errore", "Errore: ") + window.testoErroreDrive(e), "error");
         }
     };
 
@@ -571,12 +567,22 @@
             else if (window.creazioneVaultCondiviso) config = { autoStartTrasformaCondiviso: true };
             else if (window.creazioneVaultPersonale) config = { autoStartTrasformaPersonale: true };
             
-            const success = await window.apiBrowser.createWorkspaceInPath(basePath, name, config);
+            let success = false;
+            let motivo = '';
+            try {
+                success = await window.apiBrowser.createWorkspaceInPath(basePath, name, config);
+            } catch (e) {
+                console.error('Creazione dell\'archivio non riuscita:', e);
+                motivo = e && e.message ? e.message : String(e);
+            }
             if (success) {
                 document.getElementById('welcome-modal').classList.add('hidden-tab');
-            } else if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = window.sanitizeHTML('<span data-i18n=\"btn_create_and_start\">Crea e Avvia</span>');
+            } else {
+                mostraMessaggio(window.t('msg_create_archive_failed', 'L\'archivio non è stato creato: ') + (motivo || name), 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = window.sanitizeHTML(`<span data-i18n="btn_create_and_start">${escapeHTML(window.t('btn_create_and_start', 'Crea e Avvia'))}</span>`);
+                }
             }
         }
     };

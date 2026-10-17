@@ -104,7 +104,7 @@ function campoEDataStorica(a, b, campo) {
 
 function confrontaCampo(a, b, campo) {
     if (campo === 'lastModified') return (a.lastModified || 0) - (b.lastModified || 0);
-    if (campo === 'allegati') return normalizzaAllegati(a).length - normalizzaAllegati(b).length;
+    if (campo === 'allegati') return carteDi(a).length - carteDi(b).length;
     if (campoEDataStorica(a, b, campo)) {
         const ka = window.DataStorica.chiaveOrdinamento(a[campo]);
         const kb = window.DataStorica.chiaveOrdinamento(b[campo]);
@@ -571,7 +571,7 @@ function renderTabellaSchede(paginated) {
             if (typeof showRecordContextMenu === 'function') showRecordContextMenu(e, m.id);
         };
 
-        const allegati = normalizzaAllegati(m);
+        const allegati = carteDi(m);
         const tags = window.Model.tags(m);
         const data = m.lastModified
             ? new Date(m.lastModified).toLocaleDateString(window.localeAttuale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -779,6 +779,23 @@ function aggiornaControlliLista(records) {
     if (barra && window.lucide) lucide.createIcons({ nodes: [barra] });
 }
 
+let _conteggioCollegamenti: Map<string, number> | null = null;
+
+function contaCollegamenti(schede) {
+    const esistenti = new Set((schede || []).map(m => String(m.id)));
+    const conta = new Map<string, number>();
+    const piu = (id) => conta.set(id, (conta.get(id) || 0) + 1);
+    for (const m of schede || []) {
+        const da = String(m.id);
+        for (const r of window.Model.relazioni(m)) {
+            if (!esistenti.has(r.id)) continue;
+            piu(da);
+            if (r.id !== da) piu(r.id);
+        }
+    }
+    return conta;
+}
+
 function creaCardScheda(m) {
     const isSelected = window.selectedRecords && window.selectedRecords.includes(m.id);
     const hasSelection = window.selectedRecords && window.selectedRecords.length > 0;
@@ -811,7 +828,7 @@ function creaCardScheda(m) {
         }
     };
 
-    const allegatiRender = normalizzaAllegati(m);
+    const allegatiRender = carteDi(m);
 
     let allegatoHTML = '';
     const btnTrascriviModifica = `
@@ -840,8 +857,8 @@ function creaCardScheda(m) {
 
     let collegamentiHTML = '';
     if (typeof window.relazioniRisolte === 'function') {
-        const r = window.relazioniRisolte(m.id);
-        const n = r.uscenti.length + r.entranti.length;
+        const r = _conteggioCollegamenti ? null : window.relazioniRisolte(m.id);
+        const n = Number(r ? r.uscenti.length + r.entranti.length : (_conteggioCollegamenti!.get(String(m.id)) || 0));
         if (n > 0) {
             const titolo = window.t('link_panel_title', 'Schede collegate') + ' (' + n + ')';
             collegamentiHTML = `<button type="button" class="card-badge card-badge-link shrink-0" title="${escapeHTML(titolo)}" aria-label="${escapeHTML(titolo)}" ${window.azione('click', 'fermaEChiama', "apriCollegamenti", String((m.id) ?? ''))}><i data-lucide="link" class="w-3 h-3"></i>${n}</button>`;
@@ -889,10 +906,10 @@ function creaCardScheda(m) {
     if (m.creatoDa || m.modificatoDa) {
         const autore = m.modificatoDa || m.creatoDa;
         const titoloMeta = m.modificatoDa && m.creatoDa && m.modificatoDa !== m.creatoDa 
-            ? `Creato da ${escapeHTML(m.creatoDa)} - Modificato da ${escapeHTML(m.modificatoDa)}` 
-            : `Autore: ${escapeHTML(autore)}`;
+            ? window.t('card_creato_modificato', "Creato da {var0} - Modificato da {var1}").replace('{var0}', String(m.creatoDa)).replace('{var1}', String(m.modificatoDa))
+            : window.t('card_autore', "Autore: {var0}").replace('{var0}', String(autore));
 
-        authorBadgeHTML = `<span title="${titoloMeta}" class="flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
+        authorBadgeHTML = `<span title="${escapeHTML(titoloMeta)}" class="flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
             <i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(autore)}
         </span>`;
     }
@@ -1013,7 +1030,7 @@ function renderMain(resetPage = true) {
             if (totalPages > 1) {
                 paginationControls.classList.remove('hidden');
                 paginationControls.classList.add('flex');
-                document.getElementById('page-indicator').textContent = `Pagina ${window.currentPage + 1} di ${totalPages}`;
+                document.getElementById('page-indicator').textContent = window.t('pagina_x_di_y', "Pagina {var0} di {var1}").replace('{var0}', String(window.currentPage + 1)).replace('{var1}', String(totalPages));
                 const btnPrev = document.getElementById('btn-prev-page') as HTMLButtonElement;
                 const btnNext = document.getElementById('btn-next-page') as HTMLButtonElement;
                 if (btnPrev) btnPrev.disabled = window.currentPage === 0;
@@ -1031,8 +1048,13 @@ function renderMain(resetPage = true) {
 
         const fragment = document.createDocumentFragment();
 
-        for (const m of paginated) {
-            fragment.appendChild(creaCardScheda(m));
+        _conteggioCollegamenti = contaCollegamenti(appData.manoscritti);
+        try {
+            for (const m of paginated) {
+                fragment.appendChild(creaCardScheda(m));
+            }
+        } finally {
+            _conteggioCollegamenti = null;
         }
 
         grid.appendChild(fragment);
@@ -1226,7 +1248,7 @@ function renderSearchSuggestions() {
             ? window.apriTrascrizioneSuCarta(match.item.id, match.carta, match.pagina, match.parola)
             : window.rivelaRecordNellaGriglia(match.item.id);
         div.innerHTML = `
-            <div class="text-xs font-bold text-stone-800 truncate mb-1" translate="no">${escapeHTML(match.item.segnatura || match.item.titolo || 'Senza Titolo')}</div>
+            <div class="text-xs font-bold text-stone-800 truncate mb-1" translate="no">${escapeHTML(match.item.segnatura || match.item.titolo || window.t('senza_titolo', "Senza Titolo"))}</div>
             <div class="text-[11px] text-stone-600 leading-tight">
                 <span class="font-semibold text-amber-700 capitalize">${escapeHTML(match.key)}:</span> ${match.snippet}
             </div>

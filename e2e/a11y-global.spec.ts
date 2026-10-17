@@ -24,10 +24,16 @@ test.describe('Accessibilità: effetti globali', () => {
       const visti: string[] = [];
       const mo = new MutationObserver(() => visti.push(el.textContent || '(vuoto)'));
       mo.observe(el, { childList: true, characterData: true, subtree: true });
+      const comparso = () => new Promise<void>((ok) => {
+        const inizio = Date.now();
+        const controlla = () => (el.textContent === 'Sincronizzazione completata' || Date.now() - inizio > 3000) ? ok() : setTimeout(controlla, 10);
+        controlla();
+      });
       (window as any).annunciaA11y('Sincronizzazione completata');
-      await new Promise(r => setTimeout(r, 80));
+      await comparso();
       (window as any).annunciaA11y('Sincronizzazione completata');
-      await new Promise(r => setTimeout(r, 80));
+      await new Promise(r => setTimeout(r, 0));
+      await comparso();
       mo.disconnect();
       return visti;
     });

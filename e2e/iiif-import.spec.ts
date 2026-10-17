@@ -170,6 +170,35 @@ test.describe('Import IIIF', () => {
     expect(fs.readdirSync(path.join(ws, 'allegati_manoscritti'))).toEqual([carta.nome]);
   });
 
+  test('F8 — la scheda sostituita durante lo scaricamento riceve comunque la carta', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'));
+    await leggiManifest(page, `${srv.url}/manifest.json`);
+    await page.locator('#iiif-conferma').click();
+    await expect(page.locator('#iiif-modal')).toBeHidden();
+    await electronApp.evaluate(({ ipcMain }) => {
+      (globalThis as any).__iiifRilascia = false;
+      (globalThis as any).__iiifChiamato = false;
+      ipcMain.removeHandler('iiif-materializza');
+      ipcMain.handle('iiif-materializza', async (_e: any, richieste: any[]) => {
+        (globalThis as any).__iiifChiamato = true;
+        while (!(globalThis as any).__iiifRilascia) await new Promise(r => setTimeout(r, 20));
+        return { ok: true, risultati: richieste.map(r => ({ ok: true, nome: r.nome, hash: 'a'.repeat(64) })) };
+      });
+    });
+    const id = (await getAppData(page)).manoscritti[0].id;
+    const fatto = page.evaluate((idScheda) => (window as any).materializzaCarteIiif(idScheda, [0]), id);
+    await expect.poll(() => electronApp.evaluate(() => (globalThis as any).__iiifChiamato)).toBe(true);
+    await page.evaluate(() => {
+      // @ts-ignore
+      appData.manoscritti[0] = structuredClone(appData.manoscritti[0]);
+    });
+    await electronApp.evaluate(() => { (globalThis as any).__iiifRilascia = true; });
+    await fatto;
+    const carta = (await getAppData(page)).manoscritti[0].allegati[0];
+    expect(carta.remoto).toBeUndefined();
+    expect(carta.hash).toBe('a'.repeat(64));
+  });
+
   test('si importano solo le carte scelte', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'));
     await leggiManifest(page, `${srv.url}/manifest.json`);

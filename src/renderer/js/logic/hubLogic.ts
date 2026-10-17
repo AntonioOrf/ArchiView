@@ -1,7 +1,7 @@
 window.hubConfig = null;
 window.hubAutofetchTimer = null;
 
-let _ultimaVersioneAutofetchNotificata = null;
+let _ultimaVersioneAutofetchNotificata: any = null;
 
 window.nomeVaultDefault = async function() {
     try {
@@ -76,8 +76,8 @@ window.riceviModificheHub = async function(isSilent = false) {
             if (resPull.status === 401 || resPull.status === 403) {
                 if (isSilent) return;
                 throw new Error(resPull.status === 403
-                    ? "Il tuo accesso a questo repository è stato revocato dall'amministratore."
-                    : "Chiave di accesso non valida per questo repository.");
+                    ? window.t('hub_err_revocato', "Il tuo accesso a questo repository è stato revocato dall'amministratore.")
+                    : window.t('hub_err_chiave', "Chiave di accesso non valida per questo repository."));
             }
             if (isSilent) return;
             throw new Error(resPull.error || "Impossibile scaricare i dati dal server.");
@@ -119,6 +119,8 @@ window.riceviModificheHub = async function(isSilent = false) {
 
         window.hubConfig.version = serverVersion;
         window.hubConfig.lastLoadedAt = Date.now();
+        window.ultimoCaricamento = window.hubConfig.lastLoadedAt;
+        if (window.apiSettings) await window.apiSettings.patch({ lastSyncTime: window.ultimoCaricamento });
         await window.apiBrowser.saveHubConfig(window.hubConfig);
         window.pulisciModificheInEntrataHub();
         window.sincronizzaAllegatiHub(isSilent);
@@ -131,7 +133,7 @@ window.riceviModificheHub = async function(isSilent = false) {
         window.impostaErroreCloud(error.message);
         if (!isSilent) {
             console.error("Errore di ricezione:", error);
-            mostraMessaggio(error.message || "Errore durante la ricezione dall'Hub.", "error");
+            mostraMessaggio(error.message || window.t('hub_err_ricezione', "Errore durante la ricezione dall'Hub."), "error");
         }
     }
 };
@@ -146,9 +148,9 @@ window.controllaModificheHub = async function(manual = false) {
 
         if (!res.ok) {
             if (manual) mostraMessaggio(res.status === 403
-                ? "Il tuo accesso a questo repository è stato revocato dall'amministratore."
-                : (res.status === 401 ? "Chiave di accesso non valida per questo repository."
-                : (res.error || "Impossibile contattare il server.")), "error");
+                ? window.t('hub_err_revocato', "Il tuo accesso a questo repository è stato revocato dall'amministratore.")
+                : (res.status === 401 ? window.t('hub_err_chiave', "Chiave di accesso non valida per questo repository.")
+                : (res.error || window.t('hub_err_server', "Impossibile contattare il server."))), "error");
             return;
         }
 
@@ -196,6 +198,7 @@ window.inviaModificheHub = async function() {
 
     try {
         const inviate = structuredClone(appData.manoscritti);
+        const strutturaInviata = window.strutturaPerBase(appData);
         const resPush = await pushHub(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
@@ -207,13 +210,13 @@ window.inviaModificheHub = async function() {
                 );
                 return;
             }
-            throw new Error(resPush.error || "Errore durante l'invio delle modifiche al server.");
+            throw new Error(resPush.error || window.t('hub_err_invio_modifiche', "Errore durante l'invio delle modifiche al server."));
         }
 
         window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
-        await window.registraBaseInviata(inviate);
+        await window.registraBaseInviata(inviate, strutturaInviata);
 
         window.sincronizzaAllegatiHub(false);
 
@@ -223,7 +226,7 @@ window.inviaModificheHub = async function() {
     } catch (e) {
         console.error("Errore invio sync:", e);
         window.impostaErroreCloud(e.message);
-        mostraMessaggio(e.message || "Errore durante l'invio all'Hub.", "error");
+        mostraMessaggio(e.message || window.t('hub_err_invio', "Errore durante l'invio all'Hub."), "error");
     }
 };
 
@@ -231,7 +234,7 @@ window.elencaVersioniHub = async function() {
     if (!window.hubConfig) throw new Error(window.t("msg_questo_archivio_non_colle", "Questo archivio non è collegato ad un repository Hub."));
     const res = await window.apiBrowser.hubVersions();
     if (!res.ok) {
-        const e: Error & { status?: number } = new Error(res.error || "Impossibile recuperare la cronologia dal server.");
+        const e: Error & { status?: number } = new Error(res.error || window.t('hub_err_cronologia', "Impossibile recuperare la cronologia dal server."));
         e.status = res.status;
         throw e;
     }
@@ -256,7 +259,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
     }
     try {
         const resCheck = await window.apiBrowser.hubPull(window.hubConfig.version);
-        if (!resCheck.ok) throw new Error(resCheck.error || "Impossibile contattare il server per il ripristino.");
+        if (!resCheck.ok) throw new Error(resCheck.error || window.t('hub_err_server_ripristino', "Impossibile contattare il server per il ripristino."));
         if (!resCheck.data || resCheck.data.unchanged !== true) {
             mostraMessaggio(window.t("msg_hub_restore_pull_first", "Il server contiene modifiche più recenti. Usa 'Ricevi' prima di ripristinare."), "warning");
             return false;
@@ -266,6 +269,7 @@ window.ripristinaVersioneHub = async function(versionNumber) {
         await window.ripristinaDatabase(snap.database);
 
         const inviate = structuredClone(appData.manoscritti);
+        const strutturaInviata = window.strutturaPerBase(appData);
         const resPush = await pushHub(window.hubConfig.version, appData);
 
         if (!resPush.ok) {
@@ -273,18 +277,18 @@ window.ripristinaVersioneHub = async function(versionNumber) {
                 mostraMessaggio(window.t("msg_hub_restore_conflict", "Ripristino applicato in locale ma non inviato: il server è avanzato nel frattempo. Usa 'Ricevi' per riallineare e poi 'Invia'."), "warning");
                 return false;
             }
-            throw new Error(resPush.error || "Errore durante l'invio del ripristino al server.");
+            throw new Error(resPush.error || window.t('hub_err_invio_ripristino', "Errore durante l'invio del ripristino al server."));
         }
 
         window.hubConfig.version = resPush.data.version;
         window.hubConfig.lastLoadedAt = Date.now();
         await window.apiBrowser.saveHubConfig(window.hubConfig);
-        await window.registraBaseInviata(inviate);
+        await window.registraBaseInviata(inviate, strutturaInviata);
 
         return true;
     } catch (e) {
         console.error("Errore ripristino versione Hub:", e);
-        mostraMessaggio(e.message || "Errore durante il ripristino della versione.", "error");
+        mostraMessaggio(e.message || window.t('hub_err_ripristino', "Errore durante il ripristino della versione."), "error");
         return false;
     }
 };
@@ -299,7 +303,7 @@ let _avvisoNoGoogleMostrato = false;
 
 let _hubAttachmentsPending = true;
 
-let _ultimoErroreAllegatiHub = null;
+let _ultimoErroreAllegatiHub: any = null;
 
 window.sincronizzaAllegatiHub = async function(isSilent = true) {
     if (!window.hubConfig || !window.apiBrowser?.syncHubAttachments) return null;
@@ -308,7 +312,7 @@ window.sincronizzaAllegatiHub = async function(isSilent = true) {
     try {
         const r = await window.apiBrowser.syncHubAttachments();
         if (!r || !r.ok) {
-            if (!isSilent) mostraMessaggio(r?.error || "Errore sincronizzazione allegati Hub.", "error");
+            if (!isSilent) mostraMessaggio(r?.error || window.t('hub_err_allegati', "Errore sincronizzazione allegati Hub."), "error");
             return r;
         }
         _hubAttachmentsPending = !!(r.unavailable || r.notPublished || (r.skippedUpload && r.hasLocalAttachments));
@@ -417,7 +421,7 @@ window.rinominaVaultHub = async function(newName) {
         mostraMessaggio(window.t("msg_vault_rinominato", "Nome dell'archivio aggiornato."), "success");
         return true;
     } catch (e) {
-        mostraMessaggio(e.message || "Errore durante la rinomina.", "error");
+        mostraMessaggio(e.message || window.t('hub_err_rinomina', "Errore durante la rinomina."), "error");
         return false;
     }
 };
@@ -439,8 +443,8 @@ window.generaInvitoHub = async function(label) {
     const memberLabel = (label && String(label).trim()) || `${window.t("hub_invite_default_label", "Invito")} ${new Date().toLocaleDateString()}`;
     try {
         const res = await window.apiBrowser.hubInvite(memberLabel, (window.appData && window.appData.nomeArchivio) || '');
-        if (res.status === 403) throw new Error("Solo il proprietario può generare inviti.");
-        if (!res.ok) throw new Error(res.error || "Errore generazione invito (HTTP " + res.status + ").");
+        if (res.status === 403) throw new Error(window.t('hub_err_solo_owner', "Solo il proprietario può generare inviti."));
+        if (!res.ok) throw new Error(res.error || window.t('hub_err_invito_http', "Errore generazione invito (HTTP {var0}).").replace('{var0}', String(res.status)));
         return res.data.code;
     } catch (e) {
         mostraMessaggio(e.message || "Errore generazione invito.", "error");
@@ -471,7 +475,7 @@ window.eseguiJoinHub = async function(invite, basePath) {
         if (!res.ok) throw new Error(res.error || "Impossibile connettersi al repository remoto.");
         return true;
     } catch (e) {
-        mostraMessaggio(e.message || "Errore durante il join del repository Hub.", "error");
+        mostraMessaggio(e.message || window.t('hub_err_join', "Errore durante il join del repository Hub."), "error");
         return false;
     }
 };

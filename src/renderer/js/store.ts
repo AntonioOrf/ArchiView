@@ -37,9 +37,10 @@ window.Store = {
 
     async eliminaSchede(ids) {
         const morti = new Set<string>((ids || []).map(String));
+        const rimandi = this.rimandiVerso(ids);
         const prima = appData.manoscritti.length;
         appData.manoscritti = appData.manoscritti.filter(m => !morti.has(String(m.id)));
-        if (appData.manoscritti.length === prima) return;
+        if (appData.manoscritti.length === prima) return [];
         const tombstone = new Set((appData.deletedIds || []).map(String));
         for (const id of morti) tombstone.add(id);
         appData.deletedIds = Array.from(tombstone);
@@ -49,55 +50,33 @@ window.Store = {
             if (window.Model.scriviRelazioni(m, restanti)) m.lastModified = adesso;
         }
         await this.commit();
+        return rimandi;
+    },
+
+    rimandiVerso(ids) {
+        const morti = new Set<string>((ids || []).map(String));
+        const rimandi = [];
+        for (const m of appData.manoscritti) {
+            if (morti.has(String(m.id))) continue;
+            for (const r of window.Model.relazioni(m)) if (morti.has(String(r.id))) rimandi.push({ da: m.id, relazione: r });
+        }
+        return rimandi;
+    },
+
+    rimettiRimandi(rimandi) {
+        const adesso = Date.now();
+        for (const { da, relazione } of rimandi || []) {
+            const m = appData.manoscritti.find(x => String(x.id) === String(da));
+            if (!m) continue;
+            const attuali = window.Model.relazioni(m);
+            if (attuali.some(r => r.id === relazione.id && r.tipo === relazione.tipo)) continue;
+            if (window.Model.scriviRelazioni(m, [...attuali, relazione])) m.lastModified = adesso;
+        }
     },
 
     togliTombstone(ids) {
         if (!Array.isArray(appData.deletedIds)) return;
         const vivi = new Set((ids || []).map(String));
         appData.deletedIds = appData.deletedIds.filter(x => !vivi.has(String(x)));
-    },
-
-    async addCartella(nome) {
-        if (!appData.cartelle.includes(nome)) {
-            appData.cartelle.push(nome);
-            await this.commit();
-        }
-    },
-
-    async deleteCartella(nome) {
-        const index = appData.cartelle.indexOf(nome);
-        if (index !== -1) {
-            appData.cartelle.splice(index, 1);
-            if (!appData.deletedCartelle) appData.deletedCartelle = [];
-            if (!appData.deletedCartelle.includes(nome)) appData.deletedCartelle.push(nome);
-            appData.manoscritti.forEach(m => {
-                if (m.cartella === nome) m.cartella = '';
-                else if (m.cartella && m.cartella.startsWith(nome + '/')) m.cartella = '';
-            });
-            await this.commit();
-        }
-    },
-    
-    async rinominaCartella(vecchioNome, nuovoNome) {
-        const index = appData.cartelle.indexOf(vecchioNome);
-        if (index !== -1) {
-            appData.cartelle[index] = nuovoNome;
-            appData.manoscritti.forEach(m => {
-                if (m.cartella === vecchioNome) m.cartella = nuovoNome;
-                else if (m.cartella && m.cartella.startsWith(vecchioNome + '/')) {
-                    m.cartella = m.cartella.replace(vecchioNome + '/', nuovoNome + '/');
-                }
-            });
-            appData.cartelle.forEach((c, i) => {
-                if (c.startsWith(vecchioNome + '/')) {
-                    appData.cartelle[i] = c.replace(vecchioNome + '/', nuovoNome + '/');
-                }
-            });
-            
-            if (!appData.deletedCartelle) appData.deletedCartelle = [];
-            if (!appData.deletedCartelle.includes(vecchioNome)) appData.deletedCartelle.push(vecchioNome);
-            
-            await this.commit();
-        }
     }
 };

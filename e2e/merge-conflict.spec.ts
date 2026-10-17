@@ -389,6 +389,35 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(pushed.deletedIds).toContain('v-2');
   });
 
+  test('D7: la conferma delle eliminazioni locali durante il merge è un modale bloccante', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    await page.evaluate(() => {
+      const w = window as any;
+      w.appData.manoscritti = [];
+      w.appData.deletedIds = ['el-1'];
+      (window as any).__esitoMerge = w.sincronizzaEUnisciDati({ manoscritti: [{ id: 'el-1', segnatura: 'X', cartella: '', lastModified: 1 }], cartelle: [] });
+    });
+    const dialogo = page.locator('.modal-overlay.z-modal-critical:not(.hidden-tab)').getByRole('dialog');
+    await expect(dialogo).toBeVisible();
+    await expect(page.locator('#bottom-confirm-banner')).toBeHidden();
+    await dialogo.getByRole('button', { name: /Elimina|Delete/ }).click();
+    expect(await page.evaluate(() => (window as any).__esitoMerge)).toBe(true);
+    await expect(dialogo).toBeHidden();
+  });
+
+  test('D7: una seconda barra di conferma non lascia la prima senza risposta', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    const esiti = await page.evaluate(() => {
+      const w = window as any;
+      const esiti: string[] = [];
+      w.mostraBottomConfirm('prima', () => esiti.push('prima: sì'), null, () => esiti.push('prima: annullata'));
+      w.mostraBottomConfirm('seconda', () => esiti.push('seconda: sì'), null, () => esiti.push('seconda: annullata'));
+      (document.getElementById('btn-bottom-confirm-yes') as HTMLButtonElement).click();
+      return esiti;
+    });
+    expect(esiti).toEqual(['prima: annullata', 'seconda: sì']);
+  });
+
   test('Hub: una scheda inviata e poi modificata non diventa un conflitto alla ricezione', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await electronApp.evaluate(({ ipcMain }: any) => {
@@ -508,5 +537,54 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     expect(esito.dopoPrima).toBe('Modifica locale');
     expect(esito.base).toBe('Originale');
     expect(esito.dopoSeconda).toBe('Modifica locale');
+  });
+
+  test('D1: un campo aggiunto in locale a un modello sopravvive a ricezione e invio', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      const tipo = (campi: string[]) => ({ id: 'atto', nome: 'Atto', campi });
+      w.appData.manoscritti = [];
+      w.appData.tipiDocumento = [tipo(['segnatura', 'data', 'notaio'])];
+      w.appData.baseStruttura = { tipiDocumento: [tipo(['segnatura', 'data'])] };
+      w.hubConfig = null;
+      let caricato: any = null;
+      w.getApiCloud = async () => ({
+        pull: async () => ({ database: { manoscritti: [], cartelle: [], tipiDocumento: [tipo(['segnatura', 'data'])] }, driveModifiedTime: 5000 }),
+        sync: async () => { caricato = JSON.parse(JSON.stringify(w.databasePerDisco(w.appData))); return 6000; },
+        syncAttachments: async () => {}
+      });
+      await w.sincronizzaGoogleDrive(true);
+      const base = await w.apiBrowser.leggiDatiBase();
+      return {
+        locale: w.appData.tipiDocumento.find((t: any) => t.id === 'atto').campi,
+        caricato: caricato?.tipiDocumento.find((t: any) => t.id === 'atto').campi,
+        baseSuDisco: base?.struttura?.tipiDocumento?.find((t: any) => t.id === 'atto')?.campi
+      };
+    });
+
+    expect(esito.locale).toEqual(['segnatura', 'data', 'notaio']);
+    expect(esito.caricato).toEqual(['segnatura', 'data', 'notaio']);
+    expect(esito.baseSuDisco).toEqual(['segnatura', 'data', 'notaio']);
+  });
+
+  test('F23 — nel modale dei conflitti un sì/no falso si legge «No» e uno zero «0», non «Vuoto»', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
+    await page.evaluate(() => {
+      const base = { id: 'f23', segnatura: 'F23', cartella: '' };
+      (window as any).apriMergeConflictModal([{
+        id: 'f23', segnatura: 'F23',
+        localCard: { ...base, sigillo: false, fogli: 0 },
+        externalCard: { ...base, sigillo: true, fogli: 4 },
+        campiConflitto: ['sigillo', 'fogli']
+      }], () => {});
+    });
+    const dettaglio = page.locator('#conflict-detail');
+    await expect(dettaglio).toBeVisible();
+    await expect(dettaglio).toContainText('No');
+    await expect(dettaglio).toContainText('Sì');
+    await expect(dettaglio).toContainText('0');
+    await expect(dettaglio).not.toContainText(/Vuoto|Empty/);
   });
 });

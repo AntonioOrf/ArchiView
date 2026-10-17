@@ -159,7 +159,7 @@
             ].filter(Boolean) as HTMLElement[];
         };
         let aperta = isVisible(vista);
-        let trigger = null;
+        let trigger: any = null;
         const applica = (ora) => {
             sotto().forEach(el => { (el as HTMLElement).inert = ora; });
             if (ora) {

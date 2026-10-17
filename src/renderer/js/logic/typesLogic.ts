@@ -1,4 +1,4 @@
-let editingTypeId = null;
+let editingTypeId: any = null;
 
 function sbloccaFormTipo() {
     const inputNome = document.getElementById('custom-type-name') as HTMLInputElement;
@@ -13,16 +13,16 @@ function apriNewTypeModal() {
     _lavoroPersonalizzato = null;
     _modelloPrecedente = null;
     sbloccaFormTipo();
-    document.getElementById('new-type-select').value = 'custom';
+    (document.getElementById('new-type-select') as HTMLInputElement).value = 'custom';
     (document.getElementById('new-type-select') as HTMLSelectElement).disabled = false;
-    document.getElementById('btn-salva-tipo').textContent = window.t("btn_create", "Create");
-    document.querySelector('#new-type-modal .modal-title').textContent = window.t("modal_create_type", "Create Document Type");
+    (document.getElementById('btn-salva-tipo') as HTMLInputElement).textContent = window.t("btn_create", "Create");
+    (document.querySelector('#new-type-modal .modal-title') as HTMLElement).textContent = window.t("modal_create_type", "Create Document Type");
     applicaModello();
-    document.getElementById('new-type-modal').classList.remove('hidden-tab');
+    (document.getElementById('new-type-modal') as HTMLInputElement).classList.remove('hidden-tab');
 }
 
 function chiudiNewTypeModal() {
-    document.getElementById('new-type-modal').classList.add('hidden-tab');
+    (document.getElementById('new-type-modal') as HTMLInputElement).classList.add('hidden-tab');
     editingTypeId = null;
 }
 
@@ -30,12 +30,12 @@ function modelloPredefinito(id) {
     return window.Model.modelloPredefinito(id);
 }
 
-let _lavoroPersonalizzato = null;
-let _modelloPrecedente = null;
+let _lavoroPersonalizzato: any = null;
+let _modelloPrecedente: any = null;
 
 function applicaModello() {
-    const sel = document.getElementById('new-type-select').value;
-    const nameInput = document.getElementById('custom-type-name');
+    const sel = (document.getElementById('new-type-select') as HTMLInputElement).value;
+    const nameInput = document.getElementById('custom-type-name') as HTMLInputElement;
     const extraInput = document.getElementById('custom-type-extra-input');
     const placeholder = document.getElementById('empty-fields-placeholder');
 
@@ -55,7 +55,7 @@ function applicaModello() {
     document.querySelectorAll('.custom-type-field').forEach(cb => cb.checked = false);
 
     if (sel === 'custom' && _lavoroPersonalizzato) {
-        const lista = document.getElementById('custom-fields-list');
+        const lista = document.getElementById('custom-fields-list') as HTMLInputElement;
         nameInput.value = _lavoroPersonalizzato.nome;
         for (const p of _lavoroPersonalizzato.pill) {
             lista.appendChild(p);
@@ -73,7 +73,7 @@ function applicaModello() {
         const tNome = window.t('model_' + sel);
         nameInput.value = tNome !== 'model_' + sel ? tNome : modello.nome;
         modello.campi.forEach(campoId => {
-            const cb = document.querySelector(`.custom-type-field[value="${campoId}"]`);
+            const cb = document.querySelector(`.custom-type-field[value="${CSS.escape(campoId)}"]`);
             if (cb) {
                 cb.checked = true;
                 aggiungiPill(campoId, cb.dataset.label || campoId, true);
@@ -93,12 +93,17 @@ function toggleCampoBase(cb) {
 }
 
 function aggiungiCampoCustom() {
-    const input = document.getElementById('custom-type-extra-input');
-    const val = input.value.trim();
-    if (val) {
-        aggiungiPill(val, val, false);
-        input.value = '';
+    const input = document.getElementById('custom-type-extra-input') as HTMLInputElement;
+    if (!input.value.trim()) return;
+    const esistenti = Array.from(document.querySelectorAll<HTMLElement>('.custom-field-item, .custom-type-field'))
+        .map(el => ({ chiave: el.dataset.val || (el as HTMLInputElement).value }));
+    const val = window.CsvImport.idCampoNuovo(input.value, esistenti);
+    if (!val) {
+        mostraMessaggio(window.t('type_field_bad_name', 'Nome non valido: è già un campo del modello o una chiave riservata della scheda.'), 'error');
+        return;
     }
+    aggiungiPill(val, val, false);
+    input.value = '';
 }
 
 const SIGLE_TIPO = {
@@ -138,7 +143,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     const existing = Array.from(document.querySelectorAll('.custom-field-item')).map(el => el.dataset.val.toLowerCase());
     if (existing.includes(val.toLowerCase())) return;
     
-    const list = document.getElementById('custom-fields-list');
+    const list = document.getElementById('custom-fields-list') as HTMLInputElement;
     const placeholder = document.getElementById('empty-fields-placeholder');
     if (placeholder) placeholder.classList.add('hidden');
 
@@ -155,6 +160,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     pill.draggable = true;
 
     pill.ondragstart = (e) => {
+        if (!e.dataTransfer) return;
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', val);
         setTimeout(() => pill.classList.add('opacity-40'), 0);
@@ -169,7 +175,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     
     pill.ondragover = (e) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
         const rect = pill.getBoundingClientRect();
         const mid = rect.left + rect.width / 2;
         
@@ -233,7 +239,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
             b.setAttribute('aria-label', b.title + ': ' + finalLabel);
             b.innerHTML = '<i data-lucide="' + escapeHTML(icona) + '" class="w-3 h-3" aria-hidden="true"></i>';
             b.onclick = () => spostaPill(pill, delta, b, finalLabel);
-            segnaposto.before(b);
+            segnaposto?.before(b);
         }
     }
     scriviDefinizioneSuPillola(pill, window.Model.definizioneCampo(null, val, CONFIG_CAMPI));
@@ -241,7 +247,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     if (window.lucide) lucide.createIcons({ nodes: [pill] });
     
     if (isBase) {
-        const cb = document.querySelector(`.custom-type-field[value="${val}"]`);
+        const cb = document.querySelector(`.custom-type-field[value="${CSS.escape(val)}"]`);
         if (cb) cb.checked = true;
     }
 }
@@ -262,7 +268,7 @@ function spostaPill(pill, delta, pulsante, etichetta) {
 
 function rimuoviPillDalPulsante(btn, val) {
     btn.parentElement.remove();
-    const cb = document.querySelector(`.custom-type-field[value="${val}"]`);
+    const cb = document.querySelector(`.custom-type-field[value="${CSS.escape(val)}"]`);
     if (cb) cb.checked = false;
     
     if (document.querySelectorAll('.custom-field-item').length === 0) {
@@ -272,7 +278,7 @@ function rimuoviPillDalPulsante(btn, val) {
 }
 
 function rimuoviPill(val) {
-    const pill = document.querySelector(`.custom-field-item[data-val="${val}"]`);
+    const pill = document.querySelector(`.custom-field-item[data-val="${CSS.escape(val)}"]`);
     if (pill) pill.remove();
     
     if (document.querySelectorAll('.custom-field-item').length === 0) {
@@ -281,7 +287,7 @@ function rimuoviPill(val) {
     }
 }
 
-let _pillolaInModifica = null;
+let _pillolaInModifica: any = null;
 
 window.apriEditorCampo = function(btn) {
     const pill = btn.closest('.custom-field-item');
@@ -289,9 +295,9 @@ window.apriEditorCampo = function(btn) {
     _pillolaInModifica = pill;
     const def = definizioneDaPillola(pill);
 
-    const box = document.getElementById('campo-editor');
-    document.getElementById('campo-editor-nome').textContent = pill.dataset.val;
-    const sel = document.getElementById('campo-editor-tipo');
+    const box = document.getElementById('campo-editor') as HTMLInputElement;
+    (document.getElementById('campo-editor-nome') as HTMLInputElement).textContent = pill.dataset.val;
+    const sel = document.getElementById('campo-editor-tipo') as HTMLInputElement;
     sel.innerHTML = '';
     for (const tipo of window.Model.TIPI_CAMPO_SCEGLIBILI) {
         const opt = document.createElement('option');
@@ -300,11 +306,11 @@ window.apriEditorCampo = function(btn) {
         if (tipo === def.tipo) opt.selected = true;
         sel.appendChild(opt);
     }
-    document.getElementById('campo-editor-obbligatorio').checked = !!def.obbligatorio;
-    document.getElementById('campo-editor-unico').checked = !!def.unico;
-    document.getElementById('campo-editor-opzioni').value = (def.opzioni || []).join('\n');
+    (document.getElementById('campo-editor-obbligatorio') as HTMLInputElement).checked = !!def.obbligatorio;
+    (document.getElementById('campo-editor-unico') as HTMLInputElement).checked = !!def.unico;
+    (document.getElementById('campo-editor-opzioni') as HTMLInputElement).value = (def.opzioni || []).join('\n');
 
-    const selVoc = document.getElementById('campo-editor-vocabolario');
+    const selVoc = document.getElementById('campo-editor-vocabolario') as HTMLInputElement;
     selVoc.innerHTML = '';
     const propri = document.createElement('option');
     propri.value = '';
@@ -318,7 +324,7 @@ window.apriEditorCampo = function(btn) {
         selVoc.appendChild(opt);
     }
 
-    const selAuth = document.getElementById('campo-editor-authority');
+    const selAuth = document.getElementById('campo-editor-authority') as HTMLInputElement;
     selAuth.innerHTML = '';
     for (const scelta of [''].concat(window.Model.TIPI_AUTHORITY)) {
         const opt = document.createElement('option');
@@ -333,28 +339,28 @@ window.apriEditorCampo = function(btn) {
 };
 
 window.aggiornaEditorCampo = function() {
-    const tipo = document.getElementById('campo-editor-tipo').value;
-    const vocabolario = document.getElementById('campo-editor-vocabolario').value;
-    document.getElementById('campo-editor-vocabolario-riga').classList.toggle('hidden', tipo !== 'enum');
-    document.getElementById('campo-editor-opzioni-riga').classList.toggle('hidden', tipo !== 'enum' || !!vocabolario);
+    const tipo = (document.getElementById('campo-editor-tipo') as HTMLInputElement).value;
+    const vocabolario = (document.getElementById('campo-editor-vocabolario') as HTMLInputElement).value;
+    (document.getElementById('campo-editor-vocabolario-riga') as HTMLInputElement).classList.toggle('hidden', tipo !== 'enum');
+    (document.getElementById('campo-editor-opzioni-riga') as HTMLInputElement).classList.toggle('hidden', tipo !== 'enum' || !!vocabolario);
     const authUtile = tipo === 'text' || tipo === 'enum' || tipo === 'dynamic_list';
-    document.getElementById('campo-editor-authority-riga').classList.toggle('hidden', !authUtile);
-    if (!authUtile) document.getElementById('campo-editor-authority').value = '';
+    (document.getElementById('campo-editor-authority-riga') as HTMLInputElement).classList.toggle('hidden', !authUtile);
+    if (!authUtile) (document.getElementById('campo-editor-authority') as HTMLInputElement).value = '';
     const unicoUtile = tipo !== 'boolean' && tipo !== 'dynamic_list';
-    document.getElementById('campo-editor-unico-riga').classList.toggle('hidden', !unicoUtile);
-    if (!unicoUtile) document.getElementById('campo-editor-unico').checked = false;
+    (document.getElementById('campo-editor-unico-riga') as HTMLInputElement).classList.toggle('hidden', !unicoUtile);
+    if (!unicoUtile) (document.getElementById('campo-editor-unico') as HTMLInputElement).checked = false;
 };
 
 window.chiudiEditorCampo = function() {
-    document.getElementById('campo-editor').classList.add('hidden');
+    (document.getElementById('campo-editor') as HTMLInputElement).classList.add('hidden');
     _pillolaInModifica = null;
 };
 
 window.confermaEditorCampo = function() {
     if (!_pillolaInModifica) return;
-    const tipo = document.getElementById('campo-editor-tipo').value;
-    const vocabolario = tipo === 'enum' ? document.getElementById('campo-editor-vocabolario').value : '';
-    const opzioni = document.getElementById('campo-editor-opzioni').value
+    const tipo = (document.getElementById('campo-editor-tipo') as HTMLInputElement).value;
+    const vocabolario = tipo === 'enum' ? (document.getElementById('campo-editor-vocabolario') as HTMLInputElement).value : '';
+    const opzioni = (document.getElementById('campo-editor-opzioni') as HTMLInputElement).value
         .split('\n').map(o => o.trim()).filter(Boolean);
     if (tipo === 'enum' && !vocabolario && opzioni.length === 0) {
         mostraMessaggio(window.t('msg_enum_no_options', 'Un elenco a scelta ha bisogno di almeno un valore.'), 'error');
@@ -362,23 +368,34 @@ window.confermaEditorCampo = function() {
     }
     scriviDefinizioneSuPillola(_pillolaInModifica, {
         tipo,
-        obbligatorio: document.getElementById('campo-editor-obbligatorio').checked,
-        unico: document.getElementById('campo-editor-unico').checked,
+        obbligatorio: (document.getElementById('campo-editor-obbligatorio') as HTMLInputElement).checked,
+        unico: (document.getElementById('campo-editor-unico') as HTMLInputElement).checked,
         opzioni: vocabolario ? [] : opzioni,
         vocabolario,
-        authority: document.getElementById('campo-editor-authority').value
+        authority: (document.getElementById('campo-editor-authority') as HTMLInputElement).value
     });
     window.chiudiEditorCampo();
 };
 
-function confermaCreaTipo() {
-    const nome = document.getElementById('custom-type-name').value.trim();
+async function _salvaTipi() {
+    try {
+        await salvaTutto();
+        return true;
+    } catch (e) {
+        console.error('Salvataggio del modello non riuscito:', e);
+        mostraMessaggio(window.t('msg_type_save_failed', 'Il modello non è stato salvato: ') + (e && e.message ? e.message : String(e)), 'error');
+        return false;
+    }
+}
+
+async function confermaCreaTipo() {
+    const nome = (document.getElementById('custom-type-name') as HTMLInputElement).value.trim();
     if (!nome) { 
         mostraMessaggio(window.t("msg_insert_type_name"), "error"); 
         return; 
     }
     
-    const definizioni = [];
+    const definizioni: any[] = [];
     document.querySelectorAll('.custom-field-item').forEach(pill => {
         definizioni.push(definizioneDaPillola(pill));
     });
@@ -393,18 +410,18 @@ function confermaCreaTipo() {
         if (index !== -1) {
             appData.tipiDocumento[index].nome = nome;
             window.Model.impostaCampi(appData.tipiDocumento[index], definizioni);
-            salvaTutto();
+            if (!(await _salvaTipi())) return;
             aggiornaSelectTipiDocumento();
             chiudiNewTypeModal();
             mostraMessaggio(window.t("msg_type_updated"), "success");
         }
     } else {
-        const sel = document.getElementById('new-type-select').value;
+        const sel = (document.getElementById('new-type-select') as HTMLInputElement).value;
         const prefissoId = sel !== 'custom' ? sel : 'custom';
         const id = prefissoId + '_' + Date.now();
         
         appData.tipiDocumento.push(window.Model.impostaCampi({ id, nome }, definizioni));
-        salvaTutto();
+        if (!(await _salvaTipi())) return;
         aggiornaSelectTipiDocumento();
         chiudiNewTypeModal();
         mostraMessaggio(window.t("msg_type_created"), "success");
@@ -412,7 +429,7 @@ function confermaCreaTipo() {
 }
 
 function apriManageTypesModal() {
-    const listContainer = document.getElementById('manage-types-list');
+    const listContainer = document.getElementById('manage-types-list') as HTMLInputElement;
     listContainer.innerHTML = window.sanitizeHTML('');
     
     const defaultIds = ['imbreviature', 'atti', 'fiscali'];
@@ -451,11 +468,11 @@ function apriManageTypesModal() {
     });
     
     if (window.lucide) lucide.createIcons({ nodes: [listContainer] });
-    document.getElementById('manage-types-modal').classList.remove('hidden-tab');
+    (document.getElementById('manage-types-modal') as HTMLInputElement).classList.remove('hidden-tab');
 }
 
 function chiudiManageTypesModal() {
-    document.getElementById('manage-types-modal').classList.add('hidden-tab');
+    (document.getElementById('manage-types-modal') as HTMLInputElement).classList.add('hidden-tab');
 }
 
 window.eliminaTipoDocumento = function(id) {
@@ -469,19 +486,21 @@ window.eliminaTipoDocumento = function(id) {
         const tipoSalvato = JSON.parse(JSON.stringify(appData.tipiDocumento.find(t => t.id === id)));
         
         appData.tipiDocumento = appData.tipiDocumento.filter(t => t.id !== id);
-        await salvaTutto();
+        appData.deletedTipi = [...new Set([...(appData.deletedTipi || []), id])];
+        if (!(await _salvaTipi())) return;
         aggiornaSelectTipiDocumento();
         apriManageTypesModal();
-        
+
         const ripristinaFn = async () => {
+            appData.deletedTipi = (appData.deletedTipi || []).filter(x => x !== id);
             appData.tipiDocumento.push(tipoSalvato);
-            await salvaTutto();
+            if (!(await _salvaTipi())) return;
             aggiornaSelectTipiDocumento();
             apriManageTypesModal();
         };
 
         if (window.gestoreAnnullamento) {
-            window.gestoreAnnullamento.registraAzione(`Eliminazione modello "${tipoSalvato.nome}"`, ripristinaFn);
+            window.gestoreAnnullamento.registraAzione(window.t('undo_delete_type', "Eliminazione modello \"{var0}\"").replace('{var0}', tipoSalvato.nome), ripristinaFn);
             mostraMessaggio(window.t("msg_type_deleted"), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
         } else {
             mostraMessaggio(window.t("msg_type_deleted"), "success");
@@ -496,10 +515,10 @@ window.modificaTipoDocumento = function(id) {
     chiudiManageTypesModal();
     
     editingTypeId = id;
-    document.getElementById('new-type-select').value = 'custom';
+    (document.getElementById('new-type-select') as HTMLInputElement).value = 'custom';
     (document.getElementById('new-type-select') as HTMLSelectElement).disabled = true;
-    document.getElementById('btn-salva-tipo').textContent = window.t("btn_save_changes", "Save Changes");
-    document.querySelector('#new-type-modal .modal-title').textContent = window.t("type_modal_edit_title", "Edit Document Type");
+    (document.getElementById('btn-salva-tipo') as HTMLInputElement).textContent = window.t("btn_save_changes", "Save Changes");
+    (document.querySelector('#new-type-modal .modal-title') as HTMLElement).textContent = window.t("type_modal_edit_title", "Edit Document Type");
 
     sbloccaFormTipo();
     const predefinito = window.Model.modelloPredefinito(id);
@@ -510,15 +529,15 @@ window.modificaTipoDocumento = function(id) {
     const nota = document.getElementById('type-locked-note');
     if (nota) nota.classList.toggle('hidden', !predefinito);
 
-    document.getElementById('custom-type-name').value = tipo.nome;
-    document.getElementById('custom-type-extra-input').value = '';
+    (document.getElementById('custom-type-name') as HTMLInputElement).value = tipo.nome;
+    (document.getElementById('custom-type-extra-input') as HTMLInputElement).value = '';
     document.querySelectorAll('.custom-field-item').forEach(el => el.remove());
     document.querySelectorAll('.custom-type-field').forEach(cb => cb.checked = false);
     
     window.Model.campiDelTipo(tipo, CONFIG_CAMPI, appData).forEach(def => {
         const campoId = def.id;
         const bloccato = campiBloccati.has(campoId);
-        const checkbox = document.querySelector<HTMLInputElement>(`.custom-type-field[value="${campoId}"]`);
+        const checkbox = document.querySelector<HTMLInputElement>(`.custom-type-field[value="${CSS.escape(campoId)}"]`);
         if (checkbox) {
             checkbox.checked = true;
             checkbox.disabled = bloccato;
@@ -530,10 +549,10 @@ window.modificaTipoDocumento = function(id) {
             }
             aggiungiPill(campoId, label, false, bloccato);
         }
-        const pill = document.querySelector(`.custom-field-item[data-val="${campoId}"]`);
+        const pill = document.querySelector(`.custom-field-item[data-val="${CSS.escape(campoId)}"]`);
         if (pill) scriviDefinizioneSuPillola(pill, def);
     });
     
-    document.getElementById('new-type-modal').classList.remove('hidden-tab');
+    (document.getElementById('new-type-modal') as HTMLInputElement).classList.remove('hidden-tab');
 };
 

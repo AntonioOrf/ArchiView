@@ -199,6 +199,9 @@
     }
 
     function renderValoreCampo(valore, campo) {
+        if (valore === true) return escapeHTML(window.t('label_yes', 'Sì'));
+        if (valore === false) return escapeHTML(window.t('label_no', 'No'));
+        if (valore === 0) return '0';
         if (!valore) return `<span class="text-stone-400 italic">${window.t("merge_field_empty", "Empty")}</span>`;
 
         if (campo === 'trascrizione') {

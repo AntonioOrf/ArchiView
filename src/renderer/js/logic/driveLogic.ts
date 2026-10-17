@@ -1,3 +1,9 @@
+window.testoErroreDrive = function(e) {
+    const testo = e && e.message ? e.message : String(e);
+    if (testo.includes('ACCESSO_SCADUTO')) return window.t('err_drive_accesso_scaduto', "L'accesso a Google non è stato completato nel browser entro 5 minuti. Riprova.");
+    return testo;
+};
+
 window.driveStatus = { isAuthenticated: false, user: null };
 window.autofetchIntervalId = null;
 
@@ -107,7 +113,7 @@ window.controllaModificheInEntrata = async function(manual = false) {
                 if (manual && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_ci_sono_nuovi_aggiornamen", 'Ci sono nuove modifiche da scaricare.'), "success");
                 
                 try {
-                    const peekData = await apiCloud.peekDb();
+                    const peekData = await apiCloud.pull();
                     if (peekData && peekData.database && peekData.database.manoscritti) {
                         const loadedAt = window.ultimoCaricamento || 0;
                         window.incomingChanges = peekData.database.manoscritti.filter(m => (m.lastModified || 0) > loadedAt);
@@ -176,7 +182,7 @@ async function aggiornaStatoDrive() {
         const logoutBtn = document.getElementById('btn-drive-logout');
         const syncBtn = document.getElementById('btn-drive-sync');
 
-        if (section) {
+        if (section && statusText && loginBtn && logoutBtn && syncBtn) {
             statusText.innerHTML = window.sanitizeHTML(_statoDriveHtml());
             if (window.driveStatus.isAuthenticated) {
                 loginBtn.classList.add('hidden');
@@ -313,7 +319,7 @@ window.collegaArchivioEsistenteDrive = async function() {
         });
         if (window.lucide) lucide.createIcons({ nodes: [list] });
     } catch (e) {
-        list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-red-600 p-4 text-center">${escapeHTML(e.message || String(e))}</p>`);
+        list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-red-600 p-4 text-center">${escapeHTML(window.testoErroreDrive(e))}</p>`);
     }
 };
 
@@ -375,8 +381,9 @@ async function scaricaUnisciCarica(apiCloud, silent) {
 async function caricaDopoMerge(apiCloud, driveData, silent) {
     if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
     const inviate = structuredClone(appData.manoscritti);
+    const strutturaInviata = window.strutturaPerBase(appData);
     const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
-    await window.registraBaseInviata(inviate);
+    await window.registraBaseInviata(inviate, strutturaInviata);
 
     try {
         if (apiCloud.syncAttachments) await apiCloud.syncAttachments();
@@ -559,7 +566,7 @@ async function trasformaArchivio(vaultType, idBottone, testoConfigurazione) {
             await apriCloudModal();
         }
     } catch(e) {
-        mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
+        mostraMessaggio(window.t("msg_errore", "Errore: ") + window.testoErroreDrive(e), "error");
     } finally {
         if (window.impostaStatoCaricamentoCloud) window.impostaStatoCaricamentoCloud(btn, false);
         else if (btn) btn.disabled = false;
@@ -580,12 +587,18 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
         try {
             const apiCloud = await window.getApiCloud();
             if (apiCloud && window.driveStatus?.isAuthenticated) {
+                let annullato = false;
                 try {
                     const driveData = await apiCloud.pull();
                     if (driveData?.database && typeof window.sincronizzaEUnisciDati === 'function') {
-                        await window.sincronizzaEUnisciDati(driveData.database);
+                        annullato = await window.sincronizzaEUnisciDati(driveData.database) === false;
                     }
                 } catch (e) { console.warn("Pull Drive pre-migrazione fallito (procedo con i dati locali):", e); }
+                if (annullato) {
+                    if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
+                    mostraMessaggio(window.t("msg_migrazione_hub_annullata", "Migrazione annullata: l'archivio resta su Google Drive."), "info");
+                    return;
+                }
             }
 
             if (window.apiSettings) {
@@ -608,7 +621,8 @@ window.migraVaultSuHub = async function(skipConfirm = false) {
     else if (confirm(msg)) await esegui();
 };
 
-window.scollegaCloud = async function() {
+window.scollegaCloud = async function(messaggio?) {
+    const domanda = typeof messaggio === 'string' && messaggio ? messaggio : null;
     if (window.hubConfig) {
         const scollega = async () => {
             if (typeof mostraProgressoCloud === 'function') {
@@ -627,7 +641,7 @@ window.scollegaCloud = async function() {
                 if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
             }
         };
-        const msg = window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.");
+        const msg = domanda || window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.");
         if (typeof mostraBottomConfirm === 'function') mostraBottomConfirm(msg, scollega);
         else if (confirm(msg)) await scollega();
         return;
@@ -649,7 +663,7 @@ window.scollegaCloud = async function() {
             if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
         }
     };
-    const msgLegacy = window.t("confirm_disc_cloud", "Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.");
+    const msgLegacy = domanda || window.t("confirm_disc_cloud","Vuoi davvero scollegare questo Archivio dal Cloud? I dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.");
     if (typeof mostraBottomConfirm === 'function') mostraBottomConfirm(msgLegacy, scollegaLegacy);
     else if (confirm(window.t("confirm_disc_cloud_short", `Vuoi davvero scollegare questo Archivio dal Cloud?\nI dati rimarranno salvati sul tuo computer, ma non verranno più sincronizzati automaticamente online e l'app tornerà in modalità solo locale per questo progetto.`))) {
         await scollegaLegacy();

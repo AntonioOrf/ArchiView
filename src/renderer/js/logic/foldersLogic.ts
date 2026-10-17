@@ -1,18 +1,18 @@
 function aggiungiCartella() {
     const input = document.getElementById('folder-name-input') as HTMLInputElement;
     input.value = window.cartellaAttuale ? window.cartellaAttuale + '/' : '';
-    document.getElementById('folder-modal').classList.remove('hidden-tab');
+    document.getElementById('folder-modal')?.classList.remove('hidden-tab');
     input.focus();
     const len = input.value.length;
     input.setSelectionRange(len, len);
 }
 
 function chiudiFolderModal() {
-    document.getElementById('folder-modal').classList.add('hidden-tab');
+    document.getElementById('folder-modal')?.classList.add('hidden-tab');
 }
 
 async function confermaAggiungiCartella() {
-    const nome = document.getElementById('folder-name-input').value;
+    const nome = (document.getElementById('folder-name-input') as HTMLInputElement | null)?.value;
     if (nome) {
         const percorsoPulito = nome.trim().replace(/\/+$/, "");
         
@@ -95,8 +95,8 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
             window.cartellaAttuale = '';
             if (typeof switchTab === 'function') switchTab('list');
         }
-        if (haManoscritti) await window.Store.eliminaSchede(manoscrittiDaEliminare.map(m => m.id));
-        else await window.Store.commit();
+        const rimandi = haManoscritti ? await window.Store.eliminaSchede(manoscrittiDaEliminare.map(m => m.id)) : [];
+        if (!haManoscritti) await window.Store.commit();
         aggiornaSelectCartelle();
 
         const ripristinaFn = async () => {
@@ -109,6 +109,7 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
 
             if (haManoscritti) {
                 window.Store.togliTombstone(recordSalvati.map(r => r.id));
+                window.Store.rimettiRimandi(rimandi);
                 appData.manoscritti.push(...recordSalvati);
             }
             await window.Store.commit();
@@ -116,7 +117,7 @@ window.eliminaCartellaDaSidebar = async function(pathDaEliminare) {
         };
 
         if (window.gestoreAnnullamento) {
-            window.gestoreAnnullamento.registraAzione(`Eliminazione archivio "${nomeVisivo}"`, ripristinaFn);
+            window.gestoreAnnullamento.registraAzione(window.t('undo_delete_folder', "Eliminazione archivio \"{var0}\"").replace('{var0}', nomeVisivo), ripristinaFn);
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t ? window.t("msg_folder_deleted") : "Archivio eliminato.", "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
         } else {
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t ? window.t("msg_folder_deleted") : "Archivio eliminato.", "success");
@@ -170,8 +171,9 @@ window.applicaRinominaCartella = async function(vecchioPath, nuovoPath) {
         else if (c.startsWith(prefixVecchia)) nuovoC = c.replace(vecchioPath, nuovoPath);
         
         if (nuovoC !== c) {
-            if (!appData.deletedCartelle.includes(c)) appData.deletedCartelle.push(c);
-            appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== nuovoC);
+            const tolte = appData.deletedCartelle || [];
+            if (!tolte.includes(c)) tolte.push(c);
+            appData.deletedCartelle = tolte.filter(x => x !== nuovoC);
         }
         return nuovoC;
     });

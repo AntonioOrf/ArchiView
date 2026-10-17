@@ -103,7 +103,7 @@ test.describe('Schema versionato e migrazioni', () => {
     if (fs.existsSync(fileBase)) fs.rmSync(fileBase);
 
     const { app: app2, page: page2 } = await riavvia(electronApp, userDataDir);
-    await expect.poll(() => fs.existsSync(fileBase) && JSON.parse(fs.readFileSync(fileBase, 'utf8'))['b-1']?.segnatura).toBe('ASP 5');
+    await expect.poll(() => fs.existsSync(fileBase) && JSON.parse(fs.readFileSync(fileBase, 'utf8')).schede?.['b-1']?.segnatura).toBe('ASP 5');
     await app2.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('hub-push');
       ipcMain.handle('hub-push', (_e, _p, db) => { (globalThis as any).__e2eHubPushed = db; return { ok: true, data: { version: 2 } }; });
@@ -120,11 +120,12 @@ test.describe('Schema versionato e migrazioni', () => {
     expect(suDisco.manoscritti[0].segnatura).toBe('ASP 5 bis');
     expect(suDisco.baseObjects).toBeUndefined();
     expect(suDisco.baseHashes).toBeUndefined();
-    expect(JSON.parse(fs.readFileSync(fileBase, 'utf8'))['b-1'].segnatura).toBe('ASP 5 bis');
+    expect(JSON.parse(fs.readFileSync(fileBase, 'utf8')).schede?.['b-1'].segnatura).toBe('ASP 5 bis');
     const pushed: any = await app2.evaluate(() => (globalThis as any).__e2eHubPushed);
     expect(pushed.manoscritti).toHaveLength(1);
     expect(pushed.baseObjects).toBeUndefined();
     expect(pushed.baseHashes).toBeUndefined();
+    expect(pushed.baseStruttura).toBeUndefined();
 
     await closeAppSafe(app2);
   });
@@ -182,6 +183,28 @@ test.describe('Schema versionato e migrazioni', () => {
     expect(info.scheda.tags).toBe('');
     expect(Array.isArray(info.scheda.allegati)).toBe(true);
     expect(info.scheda.dataCronica).toBe('1340');
+  });
+
+  test('R5 — una scheda con id numerico si elimina e l\'eliminazione si annulla', async ({ page, electronApp, userDataDir }) => {
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Schema');
+    fs.writeFileSync(path.join(ws, 'database_manoscritti.json'), JSON.stringify({
+      schemaVersion: 4, cartelle: [], tipiDocumento: [],
+      manoscritti: [{ id: 42, segnatura: 'Numerica', cartella: '', lastModified: 1 }, { id: 'esca', segnatura: 'Esca', cartella: '', lastModified: 1 }]
+    }), 'utf8');
+    const { app: app2, page: page2 } = await riavvia(electronApp, userDataDir);
+    try {
+      const segnature = () => page2.evaluate(() => {
+        // @ts-ignore
+        return (appData as any).manoscritti.map((m: any) => m.segnatura).sort();
+      });
+      await page2.evaluate(() => (window as any).deleteItem('42'));
+      await page2.evaluate(() => (window as any).confermaEliminazione());
+      expect(await segnature()).toEqual(['Esca']);
+      await page2.evaluate(() => (window as any).gestoreAnnullamento.annullaUltimaAzione());
+      await expect.poll(segnature).toEqual(['Esca', 'Numerica']);
+    } finally {
+      await closeAppSafe(app2);
+    }
   });
 });
 

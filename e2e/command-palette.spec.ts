@@ -189,7 +189,7 @@ test.describe('Command palette e scorciatoie', () => {
     );
     await expect(page.locator('#shortcuts-body dl > div')).toHaveCount(attese);
     await expect(page.locator('#shortcuts-body')).toContainText('Ctrl');
-    await expect(page.locator('#shortcuts-body kbd', { hasText: /^K$/ })).toHaveCount(1);
+    await expect(page.locator('#shortcuts-body kbd', { hasText: /^K$/ })).toHaveCount(2);
 
     await page.keyboard.press('Escape');
     await expect(page.locator('#shortcuts-modal')).toBeHidden();

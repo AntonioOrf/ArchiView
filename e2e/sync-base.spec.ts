@@ -96,6 +96,94 @@ test.describe('Base del merge e ripristini', () => {
     expect(esito.caricato.deletedIds).toContain('r-2');
   });
 
+  test('D20: se il salvataggio dopo il merge fallisce, sul cloud non si carica nulla', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
+    await electronApp.evaluate(({ ipcMain }: any) => {
+      ipcMain.removeHandler('salva-dati');
+      ipcMain.handle('salva-dati', () => { throw new Error('disco pieno'); });
+    });
+
+    const sync = await page.evaluate(async () => {
+      const w = window as any;
+      const mia = { id: 'd-1', segnatura: 'Mia', cartella: '', lastModified: 1000 };
+      w.appData.manoscritti = [{ ...mia }];
+      w.appData.baseObjects = { 'd-1': { ...mia } };
+      w.appData.baseHashes = { 'd-1': w.getRecordHash(mia) };
+      w.hubConfig = null;
+      let sync = 0;
+      w.getApiCloud = async () => ({
+        pull: async () => ({ database: { manoscritti: [
+          { id: 'd-1', segnatura: 'Mia', cartella: '', lastModified: 1000 },
+          { id: 'd-2', segnatura: 'Del collega', cartella: '', lastModified: 2000 }
+        ], cartelle: [] }, driveModifiedTime: 5000 }),
+        sync: async () => { sync++; return 6000; },
+        syncAttachments: async () => {}
+      });
+      await w.sincronizzaGoogleDrive(true);
+      return sync;
+    });
+
+    expect(sync).toBe(0);
+  });
+
+  test('D4: una scrittura esterna del DB non sposta la base, la modifica locale non inviata resta', async ({ page, userDataDir }) => {
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
+    const fs = await import('fs');
+    await page.evaluate(async () => {
+      const w = window as any;
+      const orig = { id: 'e-1', segnatura: 'Originale', cartella: '', lastModified: 1000 };
+      w.appData.manoscritti = [{ ...orig, segnatura: 'Mia', lastModified: 2000 }];
+      w.appData.baseObjects = { 'e-1': { ...orig } };
+      w.appData.baseHashes = { 'e-1': w.getRecordHash(orig) };
+      await w.salvaTutto();
+    });
+    const file = path.join(ws, 'database_manoscritti.json');
+    const db = JSON.parse(fs.readFileSync(file, 'utf8'));
+    db.manoscritti.push({ id: 'e-2', segnatura: 'Da fuori', cartella: '', lastModified: 3000 });
+    fs.writeFileSync(file, JSON.stringify(db));
+    await expect.poll(() => page.evaluate(() => (window as any).appData.manoscritti.some((m: any) => m.id === 'e-2')), { timeout: 10_000 }).toBe(true);
+
+    const segnatura = await page.evaluate(async () => {
+      const w = window as any;
+      w.hubConfig = null;
+      w.getApiCloud = async () => ({
+        pull: async () => ({ database: { manoscritti: [{ id: 'e-1', segnatura: 'Originale', cartella: '', lastModified: 1000 }], cartelle: [] }, driveModifiedTime: 5000 }),
+        sync: async () => 6000,
+        syncAttachments: async () => {}
+      });
+      await w.scaricaDalCloud(true);
+      return w.appData.manoscritti.find((m: any) => m.id === 'e-1').segnatura;
+    });
+    expect(segnatura).toBe('Mia');
+  });
+
+  test('D18: merge annullato prima della migrazione all\'Hub → nessun Hub creato', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
+    const creati = await page.evaluate(async () => {
+      const w = window as any;
+      let creati = 0;
+      w.hubConfig = null;
+      w.driveStatus = { ...(w.driveStatus || {}), isAuthenticated: true };
+      w.getApiCloud = async () => ({ pull: async () => ({ database: { manoscritti: [], cartelle: [] }, driveModifiedTime: 5000 }) });
+      w.sincronizzaEUnisciDati = async () => false;
+      w.creaRepositoryHub = async () => { creati++; return true; };
+      await w.migraVaultSuHub(true);
+      return creati;
+    });
+    expect(creati).toBe(0);
+  });
+
+  test('D17: il merge da solo non tocca ultimoCaricamento', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
+    const dopo = await page.evaluate(async () => {
+      const w = window as any;
+      w.ultimoCaricamento = 1234;
+      await w.sincronizzaEUnisciDati({ manoscritti: [], cartelle: [] });
+      return w.ultimoCaricamento;
+    });
+    expect(dopo).toBe(1234);
+  });
+
   test('O2: una revisione illeggibile non tocca né il disco né il cloud', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'SyncBase');
     await electronApp.evaluate(({ ipcMain }: any) => {
@@ -145,3 +233,4 @@ test.describe('Base del merge e ripristini', () => {
     expect(esito).toEqual({ schede: 2, base: true, hash: true });
   });
 });
+

@@ -6,7 +6,7 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
     const localMap = new Map<string, any>((locali || []).map(m => [m.id, m]));
     const externalMap = new Map<string, any>((esterni || []).map(m => [m.id, m]));
     
-    const conflitti = [];
+    const conflitti: any[] = [];
     const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'allegatoTipo'];
     const conflitto = (id, local, external, campiConflitto, fusa?) => conflitti.push({
         id: id,
@@ -34,7 +34,7 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
             }
 
             if (!baseHash || (localHash !== baseHash && externalHash !== baseHash)) {
-                const campiConflitto = [];
+                const campiConflitto: any[] = [];
                 const allKeys = new Set([...Object.keys(local), ...Object.keys(external)]);
                 for (const key of allKeys) {
                     if (chiaviIgnorate.includes(key)) continue;
@@ -53,7 +53,7 @@ window.rilevaConflitti = function(locali, esterni, loadedAt, baseHashes = {}, ba
 window.riepilogoInArrivo = function(locale, remoto, autore) {
     const t = window.t;
     const MAX = 10;
-    const voci = [];
+    const voci: any[] = [];
     const nuove = (lista, gia) => { const s = new Set(gia || []); return (lista || []).filter(x => !s.has(x)); };
 
     const cartelle = nuove(remoto.cartelle, locale.cartelle);

@@ -319,8 +319,7 @@ window.confermaImportIiif = async function() {
             await window.Store.commit();
         };
         const annulla = async () => {
-            appData.manoscritti = appData.manoscritti.filter(m => String(m.id) !== String(id));
-            await window.Store.commit();
+            await window.annullaCreazione([id]);
         };
 
         await applica();

@@ -642,7 +642,7 @@ window.renderSourceControl = function() {
         
         let detailsHtml = structural.map(s => `
             <div class="text-xs text-stone-500 italic ml-6 mt-1.5 flex items-center gap-1.5">
-                <i data-lucide="${s.icon || 'corner-down-right'}" class="w-3.5 h-3.5 text-stone-400"></i> ${s.label}
+                <i data-lucide="${s.icon || 'corner-down-right'}" class="w-3.5 h-3.5 text-stone-400"></i> ${escapeHTML(String(s.label || ''))}
             </div>
         `).join('');
         
@@ -962,13 +962,13 @@ window.aggiornaListaVault = async function() {
                     nameSpan.title = path;
                     
                     if (item.provider === 'hub') {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_hub', 'Hub Condiviso'))}"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_hub', 'Hub Condiviso'))}"></i> <span>${escapeHTML(name)}</span>`);
                     } else if (isShared) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Condiviso'))}"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Condiviso'))}"></i> <span>${escapeHTML(name)}</span>`);
                     } else if (isPersonal) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_backup', 'Backup Personale'))}"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_backup', 'Backup Personale'))}"></i> <span>${escapeHTML(name)}</span>`);
                     } else {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Locale'))}"></i> <span>${name}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Locale'))}"></i> <span>${escapeHTML(name)}</span>`);
                     }
                     
                     divContainer.appendChild(nameSpan);
@@ -1005,13 +1005,13 @@ window.aggiornaListaVault = async function() {
                 nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${escapeHTML(hubName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else if (isCurrentShared) {
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${vaultName}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else if (isCurrentPersonal) {
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${vaultName}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else {
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0"></i> <span>${vaultName}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             }
             nameEl.title = currentPath;

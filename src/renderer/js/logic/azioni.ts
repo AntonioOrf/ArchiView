@@ -52,7 +52,7 @@ const AZIONI: Record<string, (el: HTMLElement, e: Event, ...args: any[]) => any>
         e.preventDefault();
     },
     formatta(_el, _e, comando) {
-        document.execCommand(comando, false, null);
+        document.execCommand(comando, false);
         if (typeof window.updateToolbarState === 'function') window.updateToolbarState();
     },
     cliccaElemento(_el, _e, id) {
@@ -94,7 +94,7 @@ function _valoreArg(a, el, e) {
 function _eseguiAzione(el: HTMLElement, tipo: string, e: Event) {
     const nome = el.getAttribute('data-on-' + tipo);
     if (!nome) return;
-    let args = [];
+    let args: any[] = [];
     const grezzi = el.getAttribute('data-args-' + tipo);
     if (grezzi) {
         try {

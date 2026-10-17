@@ -100,12 +100,13 @@ window.eliminaSelezionati = async function() {
         }
 
         const idsEliminati = recordSalvati.map(r => String(r.id));
-        await window.Store.eliminaSchede(idsEliminati);
+        let rimandi = await window.Store.eliminaSchede(idsEliminati);
         window.selectedRecords = [];
         window.aggiornaStatoSelezione();
 
         const ripristinaFn = async () => {
             window.Store.togliTombstone(idsEliminati);
+            window.Store.rimettiRimandi(rimandi);
             appData.manoscritti.push(...JSON.parse(JSON.stringify(recordSalvati)));
             await window.Store.commit();
         };
@@ -116,11 +117,11 @@ window.eliminaSelezionati = async function() {
             if (typeof window.cestinaRecord === 'function') {
                 await window.cestinaRecord(vivi, window.origineCestino(vivi.length));
             }
-            await window.Store.eliminaSchede(idsEliminati);
+            rimandi = await window.Store.eliminaSchede(idsEliminati);
         };
 
         if (window.gestoreAnnullamento) {
-            window.gestoreAnnullamento.registraAzione(`Eliminazione di ${count} record`, ripristinaFn, rifaiFn);
+            window.gestoreAnnullamento.registraAzione(window.t('undo_delete_records', "Eliminazione di {var0} schede").replace('{var0}', String(count)), ripristinaFn, rifaiFn);
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_eliminati", "{var0} record eliminati.").replace("{var0}", String(count)), "success", () => window.gestoreAnnullamento.annullaUltimaAzione());
         }
     };
@@ -206,32 +207,26 @@ window.incollaRecord = async function(targetFolderOverride) {
         const nomeArchivioCopiato = window.copiedFolderPath.split('/').pop();
         const baseTarget = (targetFolder === 'ROOT' || targetFolder === '') ? nomeArchivioCopiato : `${targetFolder}/${nomeArchivioCopiato}`;
 
-        if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
-        if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-        const res = await window.apiBrowser.duplicateRecords(idsToCopy, baseTarget);
-
-        if (res.success) {
-            if (!appData.cartelle.includes(baseTarget)) {
-                appData.cartelle.push(baseTarget);
-            }
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_duplicato_con_su", 'Archivio duplicato ({var0} schede).').replace("{var0}", String(res.count)), "success");
+        const radice = window.copiedFolderPath;
+        try {
+            const n = await duplicaSchede(manoscrittiDaCopiare, m => baseTarget + (m.cartella.startsWith(radice + '/') ? m.cartella.slice(radice.length) : ''));
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_archivio_duplicato_con_su", 'Archivio duplicato ({var0} schede).').replace("{var0}", String(n)), "success");
             window.copiedFolderPath = null;
-            if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-            await window.ricaricaDatiDaDisco();
-            if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-        } else {
-            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_duplicazione_ar", "Errore in duplicazione archivio: ") + res.error, "error");
+        } catch (e) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_duplicazione_ar", "Errore in duplicazione archivio: ") + (e && e.message ? e.message : String(e)), "error");
         }
         return;
     }
 
     if (window.cutRecordIds && window.cutRecordIds.length > 0) {
         let movedCount = 0;
-        const provenienza = [];
+        const provenienza: any[] = [];
+        const autore = await autoreCorrente();
+        const tagliate = window.cutRecordIds.map(String);
         appData.manoscritti.forEach(m => {
-            if (window.cutRecordIds.includes(m.id)) {
+            if (tagliate.includes(String(m.id))) {
                 provenienza.push({ id: String(m.id), cartella: m.cartella });
-                m.cartella = targetFolder;
+                Object.assign(m, { cartella: targetFolder, lastModified: Date.now(), modificatoDa: autore });
                 movedCount++;
             }
         });
@@ -239,7 +234,7 @@ window.incollaRecord = async function(targetFolderOverride) {
             const spostaIn = async (destinazioni) => {
                 for (const [id, cartella] of destinazioni) {
                     const m = appData.manoscritti.find(x => String(x.id) === String(id));
-                    if (m) m.cartella = cartella;
+                    if (m) Object.assign(m, { cartella, lastModified: Date.now(), modificatoDa: autore });
                 }
                 await window.Store.commit();
             };
@@ -258,17 +253,42 @@ window.incollaRecord = async function(targetFolderOverride) {
     }
 
     if (!window.copiedRecordIds || window.copiedRecordIds.length === 0) return;
-    if (!window.apiBrowser || !window.apiBrowser.duplicateRecords) return;
-    
-    if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
-    const res = await window.apiBrowser.duplicateRecords(window.copiedRecordIds, targetFolder);
-    
-    if (res.success) {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", '{var0} schede duplicate.').replace("{var0}", String(res.count)), "success");
-        if (window.salvaStatoPosizione) window.salvaStatoPosizione();
-        await window.ricaricaDatiDaDisco();
-        if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
-    } else {
-        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_incolla", "Errore in incolla: ") + res.error, "error");
+    const ids = window.copiedRecordIds.map(String);
+    const originali = appData.manoscritti.filter(m => ids.includes(String(m.id)));
+    if (originali.length === 0) return;
+    try {
+        const n = await duplicaSchede(originali, () => targetFolder);
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_var_record_duplicati_con_", '{var0} schede duplicate.').replace("{var0}", String(n)), "success");
+    } catch (e) {
+        if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_in_incolla", "Errore in incolla: ") + (e && e.message ? e.message : String(e)), "error");
     }
 };
+
+async function duplicaSchede(originali, cartellaDi: (m) => string) {
+    let autore = 'Anonimo';
+    try { autore = (await window.apiSettings.get()).username || 'Anonimo'; } catch (e) {}
+    const cloni = originali.map(o => {
+        const c = JSON.parse(JSON.stringify(o));
+        delete c.id; delete c.lastModified; delete c.relazioni;
+        c.creatoDa = autore;
+        c.modificatoDa = autore;
+        c.titolo = c.titolo ? c.titolo + ' (Copia)' : 'Copia';
+        if (c.segnatura) c.segnatura += ' (Copia)';
+        c.cartella = cartellaDi(o);
+        return window.Model.creaScheda(c);
+    });
+    const conFile: any[] = [];
+    for (const c of cloni) {
+        for (const a of Array.isArray(c.allegati) ? c.allegati : []) {
+            if (a && typeof a.nome === 'string' && a.nome && !a.remoto) conFile.push({ a, prefisso: String(c.id) });
+        }
+    }
+    if (conFile.length) {
+        const res = await window.apiBrowser.duplicaAllegati(conFile.map(v => ({ nome: v.a.nome, prefisso: v.prefisso })));
+        if (!res || !res.success) throw new Error((res && res.error) || 'copia allegati');
+        conFile.forEach((v, i) => { if (res.nomi[i]) v.a.nome = res.nomi[i]; });
+    }
+    appData.manoscritti.push(...cloni);
+    await window.Store.commit();
+    return cloni.length;
+}

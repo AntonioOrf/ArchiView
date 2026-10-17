@@ -10,7 +10,7 @@
     function _ccEl(id) { return document.getElementById(id); }
 
     function _ccCarte(m) {
-        return normalizzaAllegati(m).map((a, i) => (a ? i : -1)).filter(i => i >= 0);
+        return carteDi(m).map((a, i) => (a ? i : -1)).filter(i => i >= 0);
     }
 
     function _ccCerca(testo) {

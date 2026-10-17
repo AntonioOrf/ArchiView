@@ -67,7 +67,7 @@ window.azzeraRiordinoCampi = function() {
     _disegnaElencoRiordino();
 };
 
-let _trascinato = null;
+let _trascinato: any = null;
 
 function _disegnaElencoRiordino() {
     const lista = document.getElementById('form-riordino-lista');
@@ -113,6 +113,7 @@ function _disegnaElencoRiordino() {
         riga.addEventListener('dragstart', (e) => {
             _trascinato = riga;
             riga.classList.add('riordino-in-volo');
+            if (!e.dataTransfer) return;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', def.id);
         });

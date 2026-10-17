@@ -14,7 +14,7 @@ async function _tgAutore() {
 
 function _tgFotografia(chiavi) {
     const set = new Set((chiavi || []).map(c => window.Model.chiaveTag(c)).filter(Boolean));
-    const schede = [];
+    const schede: any[] = [];
     for (const m of appData.manoscritti || []) {
         for (const t of window.Model.tags(m)) {
             if (!set.has(window.Model.chiaveTag(t))) continue;

@@ -30,7 +30,7 @@
             ...attributi,
             class: classi.join(' ')
         });
-        el.parentNode.replaceChild(svg, el);
+        el.replaceWith(svg);
     }
 
     L.createIcons = function () {

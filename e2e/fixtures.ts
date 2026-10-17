@@ -30,7 +30,7 @@ export function seedWorkspaceOnDisk(userDataDir: string, name: string): string {
   return ws;
 }
 
-export async function launchApp(userDataDir: string): Promise<{ app: ElectronApplication; page: Page }> {
+export async function launchApp(userDataDir: string, argsExtra: string[] = []): Promise<{ app: ElectronApplication; page: Page }> {
   const cleanEnv: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (k === 'ELECTRON_RUN_AS_NODE' || v === undefined) continue;
@@ -40,8 +40,8 @@ export async function launchApp(userDataDir: string): Promise<{ app: ElectronApp
   const exe = process.env.ARCHIVIEW_E2E_EXE;
   const asar = process.env.ARCHIVIEW_E2E_ASAR;
   const app = await electron.launch({
-    ...(exe ? { executablePath: path.resolve(repoRoot, exe), args: [] }
-      : { args: [asar ? path.resolve(repoRoot, asar) : '.'] }),
+    ...(exe ? { executablePath: path.resolve(repoRoot, exe), args: [...argsExtra] }
+      : { args: [asar ? path.resolve(repoRoot, asar) : '.', ...argsExtra] }),
     cwd: repoRoot,
     env: {
       ...cleanEnv,

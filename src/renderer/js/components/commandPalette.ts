@@ -33,14 +33,17 @@ window.SCORCIATOIE = [
     { gruppo: 'shortcut_group_transcription', etichetta: 'Trascrizione', voci: [
         { tasti: ['Alt', '\u2190'], chiave: 'shortcut_prev_att', testo: 'Allegato precedente' },
         { tasti: ['Alt', '\u2192'], chiave: 'shortcut_next_att', testo: 'Allegato successivo' },
-        { tasti: ['Alt', 'F'], chiave: 'shortcut_fullscreen', testo: 'Allegato a schermo intero' }
+        { tasti: ['Alt', 'F'], chiave: 'shortcut_fullscreen', testo: 'Allegato a schermo intero' },
+        { tasti: ['Ctrl', 'Maiusc', 'S'], chiave: 'shortcut_tab_record', testo: 'Passa fra testo e scheda (nel modulo: documento accanto)' },
+        { tasti: ['Alt', 'K'], chiave: 'shortcut_special_chars', testo: 'Caratteri speciali' }
     ]},
     { gruppo: 'shortcut_group_viewer', etichetta: 'Visualizzatore immagini', voci: [
         { tasti: ['+', '\u2212'], chiave: 'shortcut_zoom', testo: 'Ingrandisci o riduci' },
         { tasti: ['0'], chiave: 'shortcut_fit', testo: 'Adatta alla pagina' },
         { tasti: ['1'], chiave: 'shortcut_real', testo: 'Dimensione reale (1:1)' },
         { tasti: ['R'], chiave: 'shortcut_rotate', testo: 'Ruota di 90\u00b0 (con Maiusc: in senso opposto)' },
-        { tasti: ['\u2190', '\u2192', '\u2191', '\u2193'], chiave: 'shortcut_pan', testo: 'Sposta l\u2019immagine' }
+        { tasti: ['\u2190', '\u2192', '\u2191', '\u2193'], chiave: 'shortcut_pan', testo: 'Sposta l\u2019immagine' },
+        { tasti: ['PagSu', 'PagGi\u00f9'], chiave: 'shortcut_page_att', testo: 'Allegato precedente o successivo' }
     ]}
 ];
 
@@ -258,6 +261,48 @@ function comandiAzione() {
         chiavi: ['tasti', 'keyboard'],
         esegui: () => window.apriScorciatoie()
     });
+    agg(_disponibile('apriGestioneTag'), {
+        id: 'gestione-tag', icon: 'tags',
+        label: _T('tag_manager_title', 'Gestione tag'),
+        chiavi: ['etichette', 'tag', 'rinomina', 'fondi', 'colore'],
+        esegui: () => window.apriGestioneTag()
+    });
+    agg(_disponibile('apriVocabolari'), {
+        id: 'vocabolari', icon: 'list-tree',
+        label: _T('vocab_title', 'Vocabolari controllati'),
+        chiavi: ['vocabolario', 'valori', 'elenco', 'supporto', 'lingua'],
+        esegui: () => window.apriVocabolari()
+    });
+    agg(_disponibile('apriAnagrafica'), {
+        id: 'anagrafica', icon: 'users',
+        label: _T('auth_title', 'Persone e luoghi'),
+        chiavi: ['persone', 'luoghi', 'authority', 'attori'],
+        esegui: () => window.apriAnagrafica()
+    });
+    agg(_disponibile('apriGrafo'), {
+        id: 'grafo', icon: 'git-fork',
+        label: _T('graph_title', 'Grafo dei collegamenti'),
+        chiavi: ['grafo', 'rete', 'collegamenti', 'mappa'],
+        esegui: () => window.apriGrafo()
+    });
+    agg(_disponibile('apriCestino'), {
+        id: 'cestino', icon: 'trash-2',
+        label: _T('trash_title', 'Cestino'),
+        chiavi: ['cestino', 'eliminate', 'recupera', 'ripristina', 'cancellate'],
+        esegui: () => window.apriCestino()
+    });
+    agg(_disponibile('creaSnapshotOra'), {
+        id: 'snapshot-crea', icon: 'hard-drive',
+        label: _T('snap_create_cmd', 'Crea uno snapshot dell\'archivio'),
+        chiavi: ['snapshot', 'backup', 'copia', 'sicurezza', 'cronologia'],
+        esegui: () => window.creaSnapshotOra()
+    });
+    agg(_disponibile('apriDuplicati'), {
+        id: 'duplicati', icon: 'copy',
+        label: _T('dup_title', 'Segnature ripetute'),
+        chiavi: ['duplicati', 'segnatura', 'ripetute'],
+        esegui: () => window.apriDuplicati()
+    });
     return voci;
 }
 
@@ -350,53 +395,11 @@ function comandiSelezione() {
         chiavi: ['etichette', 'tag'],
         esegui: () => window.apriAzioneMassa('tag')
     });
-    agg(_disponibile('apriGestioneTag'), {
-        id: 'gestione-tag', icon: 'tags',
-        label: _T('tag_manager_title', 'Gestione tag'),
-        chiavi: ['etichette', 'tag', 'rinomina', 'fondi', 'colore'],
-        esegui: () => window.apriGestioneTag()
-    });
-    agg(_disponibile('apriVocabolari'), {
-        id: 'vocabolari', icon: 'list-tree',
-        label: _T('vocab_title', 'Vocabolari controllati'),
-        chiavi: ['vocabolario', 'valori', 'elenco', 'supporto', 'lingua'],
-        esegui: () => window.apriVocabolari()
-    });
-    agg(_disponibile('apriAnagrafica'), {
-        id: 'anagrafica', icon: 'users',
-        label: _T('auth_title', 'Persone e luoghi'),
-        chiavi: ['persone', 'luoghi', 'authority', 'attori'],
-        esegui: () => window.apriAnagrafica()
-    });
-    agg(_disponibile('apriGrafo'), {
-        id: 'grafo', icon: 'git-fork',
-        label: _T('graph_title', 'Grafo dei collegamenti'),
-        chiavi: ['grafo', 'rete', 'collegamenti', 'mappa'],
-        esegui: () => window.apriGrafo()
-    });
-    agg(_disponibile('apriCestino'), {
-        id: 'cestino', icon: 'trash-2',
-        label: _T('trash_title', 'Cestino'),
-        chiavi: ['cestino', 'eliminate', 'recupera', 'ripristina', 'cancellate'],
-        esegui: () => window.apriCestino()
-    });
-    agg(_disponibile('creaSnapshotOra'), {
-        id: 'snapshot-crea', icon: 'hard-drive',
-        label: _T('snap_create_cmd', 'Crea uno snapshot dell\'archivio'),
-        chiavi: ['snapshot', 'backup', 'copia', 'sicurezza', 'cronologia'],
-        esegui: () => window.creaSnapshotOra()
-    });
     agg(_disponibile('apriStoriaRecord') && window.selectedRecords && window.selectedRecords.length === 1, {
         id: 'storia-record', icon: 'history',
         label: _T('rec_history_title', 'Cronologia della scheda'),
         chiavi: ['cronologia', 'versioni', 'storia', 'scheda'],
         esegui: () => window.apriStoriaRecord(window.selectedRecords[0])
-    });
-    agg(_disponibile('apriDuplicati'), {
-        id: 'duplicati', icon: 'copy',
-        label: _T('dup_title', 'Segnature ripetute'),
-        chiavi: ['duplicati', 'segnatura', 'ripetute'],
-        esegui: () => window.apriDuplicati()
     });
     agg(_disponibile('apriAzioneMassa'), {
         id: 'massa-sostituisci', icon: 'replace', scorciatoia: 'Ctrl+H',

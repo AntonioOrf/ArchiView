@@ -103,6 +103,28 @@ test.describe('Azioni in massa', () => {
     expect((await record(page, 'A')).lastModified).toBeGreaterThan(1);
   });
 
+  test('F6 — Invio nel dialogo dei tag non esegue lo spostamento annullato prima', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Massa');
+    await createFolder(page, 'Notarile');
+    await seed(page, [{ segnatura: 'A' }, { segnatura: 'B' }]);
+    await dismissOverlays(page);
+
+    await seleziona(page, ['A', 'B']);
+    await page.evaluate(() => (window as any).apriAzioneMassa('cartella'));
+    await page.locator('#bulk-cartella').selectOption('Notarile');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#bulk-modal')).toBeHidden();
+
+    await page.evaluate(() => (window as any).apriAzioneMassa('tag'));
+    await page.locator('#bulk-tag-input').fill('notarile');
+    await page.locator('#bulk-tag-input').press('Enter');
+    await expect(page.locator('#bulk-modal')).toBeHidden();
+
+    expect((await record(page, 'A')).tags).toContain('notarile');
+    expect((await record(page, 'A')).cartella).toBe('');
+    expect((await record(page, 'B')).cartella).toBe('');
+  });
+
   test('tag: aggiunge senza duplicare e rimuove solo il tag esatto', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Massa');
     await seed(page, [
@@ -227,6 +249,17 @@ test.describe('Azioni in massa', () => {
     expect(ids).toContain('massa-sostituisci');
   });
 
+  test('F14 — gli strumenti d\'archivio sono nella palette anche senza selezione', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Massa');
+    await dismissOverlays(page);
+    await page.evaluate(() => { (window as any).selectedRecords = []; });
+    const ids = await page.evaluate(() => (window as any).costruisciComandi('').map((c: any) => c.id));
+    for (const id of ['cestino', 'vocabolari', 'anagrafica', 'gestione-tag', 'grafo', 'snapshot-crea', 'duplicati']) {
+      expect(ids, id).toContain(id);
+    }
+    expect(ids).not.toContain('massa-tag');
+  });
+
   test('il pannello "?" documenta le scorciatoie nuove', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Massa');
     await dismissOverlays(page);
@@ -238,5 +271,40 @@ test.describe('Azioni in massa', () => {
     const righe = await corpo.locator('kbd').evaluateAll((els) => els.map((e) => e.textContent!.trim()));
     for (const tasto of ['Canc', 'F2', 'Maiusc']) expect(righe).toContain(tasto);
     await expect(corpo).not.toContainText('shortcut_bulk');
+  });
+
+  test('D9 — copia e incolla: clone con id nuovo, firma nuova, senza rimandi, file proprio', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Massa');
+    const fs = require('fs');
+    const dirAllegati = path.join(userDataDir, 'ws', 'Massa', 'allegati_manoscritti');
+    fs.mkdirSync(dirAllegati, { recursive: true });
+    fs.writeFileSync(path.join(dirAllegati, 'd9_carta.jpg'), 'immagine');
+
+    const esito = await page.evaluate(async () => {
+      const w = window as any;
+      // @ts-ignore
+      appData.manoscritti.push(
+        { id: 'd9-a', segnatura: 'MS D9', cartella: '', lastModified: 1, creatoDa: 'Altro', modificatoDa: 'Altro',
+          relazioni: [{ id: 'd9-b' }], allegati: [{ nome: 'd9_carta.jpg', tipo: 'image/jpeg', trascrizione: '<p>t</p>' }] },
+        { id: 'd9-b', segnatura: 'MS B', cartella: '', lastModified: 1 });
+      await w.Store.commit();
+      w.copiedRecordIds = ['d9-a'];
+      w.cutRecordIds = [];
+      await w.incollaRecord('');
+      // @ts-ignore
+      return appData.manoscritti.filter((m: any) => !['d9-a', 'd9-b'].includes(String(m.id)));
+    });
+
+    expect(esito).toHaveLength(1);
+    const c = esito[0];
+    expect(c.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(c.segnatura).toBe('MS D9 (Copia)');
+    expect(c.creatoDa).not.toBe('Altro');
+    expect(c.lastModified).toBeGreaterThan(1);
+    expect(c.relazioni || []).toEqual([]);
+    expect(c.allegati).toHaveLength(1);
+    expect(c.allegati[0].nome).not.toBe('d9_carta.jpg');
+    expect(c.allegati[0].trascrizione).toBe('<p>t</p>');
+    expect(fs.readFileSync(path.join(dirAllegati, c.allegati[0].nome), 'utf8')).toBe('immagine');
   });
 });

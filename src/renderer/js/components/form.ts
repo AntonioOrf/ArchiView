@@ -158,7 +158,7 @@ function leggiCampiDinamici(definizioni) {
     (definizioni || []).forEach(def => {
         const campoId = def.id;
         if (def.tipo === 'dynamic_list') {
-            const rows = document.querySelectorAll('#container-' + campoId + ' .dynamic-list-row');
+            const rows = document.getElementById('container-' + campoId)?.querySelectorAll('.dynamic-list-row') || [];
             const items = [];
             rows.forEach(row => {
                 const k = row.querySelector('.list-key').value.trim();
@@ -489,10 +489,6 @@ window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderV
     
     listContainer.appendChild(row);
     if (window.lucide) lucide.createIcons({ nodes: [row] });
-};
-
-window.aggiungiAttoreDinamico = function(ruoloVal = 'Attore', nomeVal = '') {
-    window.aggiungiElementoDinamico('attori_dinamici', 'Ruolo', 'Nome', ruoloVal, nomeVal);
 };
 
 function resetForm() {

@@ -32,7 +32,7 @@ window.testoIndicizzabile = function(v) {
 };
 
 window.analizzaQuery = function(str) {
-    const esito = { testo: [], campi: [] };
+    const esito: { testo: string[]; campi: { campo: string; valore: string }[] } = { testo: [], campi: [] };
     const norm = window.normalizzaTesto(str);
     if (!norm || !norm.trim()) return esito;
 

@@ -1,11 +1,38 @@
-let _taRecordCorrente = null;
+let _taRecordCorrente: any = null;
 let _taIndiceCorrente = 0;
 let _taPaginaCorrente = 0;
 let _taGenerazioneCarta = 0;
 
+let _taFoto: any = null;
+
+function _taFotografaCarte(m) {
+    const copia = (v) => (Array.isArray(v) ? v.slice() : v);
+    _taFoto = m ? {
+        id: String(m.id),
+        trascrizione: m.trascrizione,
+        carte: (Array.isArray(m.allegati) ? m.allegati : []).filter(a => a && a.nome)
+            .map(a => ({ nome: a.nome, trascrizione: a.trascrizione, pagine: copia(a.pagine) }))
+    } : null;
+}
+
+function _taRipristinaFoto() {
+    if (!_taFoto) return false;
+    const m = appData.manoscritti.find(x => String(x.id) === _taFoto.id);
+    if (!m) return false;
+    const rimetti = (o, chiave, valore) => { if (valore === undefined) delete o[chiave]; else o[chiave] = valore; };
+    rimetti(m, 'trascrizione', _taFoto.trascrizione);
+    for (const f of _taFoto.carte) {
+        const a = (Array.isArray(m.allegati) ? m.allegati : []).find(x => x && x.nome === f.nome);
+        if (!a) continue;
+        rimetti(a, 'trascrizione', f.trascrizione);
+        rimetti(a, 'pagine', Array.isArray(f.pagine) ? f.pagine.slice() : f.pagine);
+    }
+    return true;
+}
+
 function _taSalvaEditorInMemoria() {
     if (_taRecordCorrente === null) return;
-    const editor = document.getElementById('trascrizione-editor');
+    const editor = document.getElementById('trascrizione-editor') as HTMLInputElement;
     if (!editor) return;
     const m = appData.manoscritti.find(x => String(x.id) === String(_taRecordCorrente));
     if (!m) return;
@@ -14,7 +41,7 @@ function _taSalvaEditorInMemoria() {
 
 let _taFuocoPrimaDelBlocco = false;
 function _taBloccaEditor(bloccato) {
-    const editor = document.getElementById('trascrizione-editor');
+    const editor = document.getElementById('trascrizione-editor') as HTMLInputElement;
     if (!editor) return;
     if (bloccato && editor.getAttribute('contenteditable') !== 'false') {
         _taFuocoPrimaDelBlocco = document.activeElement === editor;
@@ -25,7 +52,7 @@ function _taBloccaEditor(bloccato) {
 }
 
 function _taCaricaEditor(m, indice, pagina = 0) {
-    const editor = document.getElementById('trascrizione-editor');
+    const editor = document.getElementById('trascrizione-editor') as HTMLInputElement;
     if (!editor || !m) return;
     const testo = window.leggiTrascrizioneAllegato(m, indice, pagina);
     const bloccato = editor.getAttribute('contenteditable') === 'false';
@@ -75,8 +102,8 @@ window.indiceCartaCorrente = function() { return _taIndiceCorrente; };
 
 const _TA_CHIAVE_TAB = 'trascrizioneTab';
 const _TA_PAUSA_SALVATAGGIO = 800;
-let _taTimerScheda = null;
-let _taSalvataggioScheda = null;
+let _taTimerScheda: any = null;
+let _taSalvataggioScheda: any = null;
 let _taSporco = false;
 let _taSenzaProgramma = false;
 
@@ -119,9 +146,10 @@ window.salvaSchedaTrascrizioneOra = async function() {
             const esito = await salvaSchedaDalForm(true);
             if (esito.ok) {
                 window.trascrizioneNonSalvata = false;
+                _taFotografaCarte(appData.manoscritti.find(x => String(x.id) === String(_taRecordCorrente)));
                 const ora = new Date().toLocaleTimeString(window.localeAttuale(), { hour: '2-digit', minute: '2-digit' });
                 _taStatoScheda(window.t('trasc_record_saved', 'Salvata alle {var0}').replace('{var0}', ora), 'testo-successo');
-                window.renderBarraCarte(document.getElementById('trascrizione-id').value);
+                window.renderBarraCarte((document.getElementById('trascrizione-id') as HTMLInputElement).value);
                 return true;
             }
             _taStatoScheda(esito.messaggio, 'testo-pericolo');
@@ -138,10 +166,10 @@ window.salvaSchedaTrascrizioneOra = async function() {
 };
 
 function _taMostraPannello(scheda) {
-    document.getElementById('trasc-pannello-testo').classList.toggle('hidden-tab', scheda);
-    document.getElementById('trasc-pannello-scheda').classList.toggle('hidden-tab', !scheda);
-    document.getElementById('tab-trasc-testo').setAttribute('aria-selected', String(!scheda));
-    document.getElementById('tab-trasc-scheda').setAttribute('aria-selected', String(scheda));
+    (document.getElementById('trasc-pannello-testo') as HTMLInputElement).classList.toggle('hidden-tab', scheda);
+    (document.getElementById('trasc-pannello-scheda') as HTMLInputElement).classList.toggle('hidden-tab', !scheda);
+    (document.getElementById('tab-trasc-testo') as HTMLInputElement).setAttribute('aria-selected', String(!scheda));
+    (document.getElementById('tab-trasc-scheda') as HTMLInputElement).setAttribute('aria-selected', String(scheda));
     _taApplicaLarghezza();
 }
 
@@ -155,9 +183,8 @@ window.ricordaLarghezzaTrascrizione = function(p) {
 
 function _taApplicaLarghezza() {
     const editorPanel = document.getElementById('trascrizione-editor-panel');
-    if (!editorPanel || document.getElementById('trascrizione-allegato-panel').classList.contains('hidden-tab')) return;
-    const scheda = window.moduloInTrascrizione();
-    const salvata = window.prefLocale(_taChiaveLarghezza()) || (scheda ? null : appData.trascrizioneEditorWidth);
+    if (!editorPanel || (document.getElementById('trascrizione-allegato-panel') as HTMLInputElement).classList.contains('hidden-tab')) return;
+    const salvata = window.prefLocale(_taChiaveLarghezza());
     const p = window.proporzioneSeparatore(parseFloat(salvata) || 50, false);
     editorPanel.style.width = `${p}%`;
     document.getElementById('trascrizione-resizer')?.setAttribute('aria-valuenow', String(Math.round(p)));
@@ -168,7 +195,7 @@ function _taRiponiModulo() {
     _taTimerScheda = null;
     const form = document.getElementById('manoscritto-form');
     if (form && window.moduloInTrascrizione()) {
-        document.getElementById('view-add').appendChild(form);
+        (document.getElementById('view-add') as HTMLInputElement).appendChild(form);
         resetForm();
     }
     _taStatoScheda('');
@@ -199,7 +226,7 @@ window.mostraSchedaTrascrizione = async function(tab) {
     const scheda = tab === 'scheda';
     if (!window.finestraSatellite) window.prefLocale(_TA_CHIAVE_TAB, scheda ? 'scheda' : 'testo');
     const staccata = !!(window.schedaStaccata && window.schedaStaccata());
-    document.getElementById('trasc-scheda-staccata').classList.toggle('hidden-tab', !staccata);
+    (document.getElementById('trasc-scheda-staccata') as HTMLInputElement).classList.toggle('hidden-tab', !staccata);
     if (staccata) {
         _taMostraPannello(scheda);
         if (scheda) window.apiFinestre.messaggio('mostra');
@@ -214,22 +241,22 @@ window.mostraSchedaTrascrizione = async function(tab) {
         return;
     }
     if (!scheda) {
-        if (await window.lasciaSchedaTrascrizione()) document.getElementById('tab-trasc-testo').focus();
+        if (await window.lasciaSchedaTrascrizione()) (document.getElementById('tab-trasc-testo') as HTMLInputElement).focus();
         return;
     }
     _taSalvaEditorInMemoria();
     aggiornaSelectCartelle();
     aggiornaSelectTipiDocumento();
     if (typeof window.aggiornaSelettoriRelazione === 'function') window.aggiornaSelettoriRelazione();
-    document.getElementById('trasc-pannello-scheda').appendChild(document.getElementById('manoscritto-form'));
-    window.caricaSchedaNelForm(document.getElementById('trascrizione-id').value);
+    (document.getElementById('trasc-pannello-scheda') as HTMLInputElement).appendChild((document.getElementById('manoscritto-form') as HTMLInputElement));
+    window.caricaSchedaNelForm((document.getElementById('trascrizione-id') as HTMLInputElement).value);
     _taMostraPannello(true);
     if (window.lucide) lucide.createIcons();
 };
 
 window.caricaSchedaStaccata = async function(id) {
     if (window.moduloInTrascrizione()) window.riponiModuloSePulito();
-    document.getElementById('trascrizione-id').value = id;
+    (document.getElementById('trascrizione-id') as HTMLInputElement).value = id;
     await window.mostraSchedaTrascrizione('scheda');
 };
 
@@ -242,10 +269,11 @@ async function apriTrascrizione(id) {
     if (!m) return;
     if (!(await window.lasciaSchedaTrascrizione())) return;
 
-    document.getElementById('trascrizione-id').value = m.id;
-    document.getElementById('trascrizione-subtitle').textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
+    (document.getElementById('trascrizione-id') as HTMLInputElement).value = m.id;
+    (document.getElementById('trascrizione-subtitle') as HTMLInputElement).textContent = `${m.segnatura} ${m.titolo ? '- ' + m.titolo : ''}`;
 
     window.migraTrascrizioneSuAllegati(m);
+    _taFotografaCarte(m);
 
     _taGenerazioneCarta++;
     _taRecordCorrente = m.id;
@@ -254,22 +282,22 @@ async function apriTrascrizione(id) {
     _taCaricaEditor(m, 0);
     window.trascrizioneNonSalvata = false;
     
-    const panelAllegato = document.getElementById('trascrizione-allegato-panel');
+    const panelAllegato = document.getElementById('trascrizione-allegato-panel') as HTMLInputElement;
     const resizer = document.getElementById('trascrizione-resizer');
     const editorPanel = document.getElementById('trascrizione-editor-panel');
-    const btnCarica = document.getElementById('btn-carica-allegato-trasc');
+    const btnCarica = document.getElementById('btn-carica-allegato-trasc') as HTMLInputElement;
     const btnCollapse = document.getElementById('btn-collapse-editor');
     const btnOcr = document.getElementById('btn-ocr-trasc');
     
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
-    const noAllegato = document.getElementById('trasc-no-allegato');
+    const noAllegato = document.getElementById('trasc-no-allegato') as HTMLInputElement;
 
     window.nascondiAnteprimaImmagine();
     _taNascondiBarraPdf();
     noAllegato.classList.add('hidden');
     imgPreview.src = '';
 
-    document.getElementById('trasc-carte-bar').classList.add('hidden-tab');
+    (document.getElementById('trasc-carte-bar') as HTMLInputElement).classList.add('hidden-tab');
     
     const allegatiM = normalizzaAllegati(m);
     
@@ -288,7 +316,7 @@ async function apriTrascrizione(id) {
 
         window.renderBarraCarte(m.id);
         
-        if (window.cambiaAllegatoTrascrizione) {
+        if (window.cambiaAllegatoTrascrizione && m.allegati && m.allegati[0]) {
             window.cambiaAllegatoTrascrizione(m.allegati[0].nome, m.allegati[0].tipo, 0);
         }
     } else {
@@ -316,10 +344,10 @@ window.apriTrascrizioneSuCarta = async function(id, carta, pagina, parola) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     const a = m && m.allegati ? m.allegati[carta] : null;
     if (a) await window.cambiaAllegatoTrascrizione(a.nome, a.tipo, carta, pagina);
-    const editor = document.getElementById('trascrizione-editor');
+    const editor = document.getElementById('trascrizione-editor') as HTMLInputElement;
     if (!editor || !parola) return;
     const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
-    const nodi = [];
+    const nodi: any[] = [];
     let testo = '';
     while (walker.nextNode()) {
         nodi.push({ nodo: walker.currentNode, da: testo.length });
@@ -336,8 +364,10 @@ window.apriTrascrizioneSuCarta = async function(id, carta, pagina, parola) {
     range.setEnd(...(punto(i + parola.length) as [Node, number]));
     editor.focus();
     const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
+    if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
     (range.startContainer.parentElement || editor).scrollIntoView({ block: 'center', behavior: window.comportamentoScroll() });
 };
 
@@ -354,10 +384,10 @@ function _taAggiornaBarraCarte(m, index) {
     const campo = document.getElementById('trasc-carta-numero') as HTMLInputElement;
     campo.value = String(i + 1);
     campo.max = String(allegati.length);
-    document.getElementById('trasc-carte-totale').textContent = '/ ' + allegati.length;
+    (document.getElementById('trasc-carte-totale') as HTMLInputElement).textContent = '/ ' + allegati.length;
     (document.getElementById('btn-carta-prec') as HTMLButtonElement).disabled = i === 0;
     (document.getElementById('btn-carta-succ') as HTMLButtonElement).disabled = i === allegati.length - 1;
-    const nome = document.getElementById('trasc-carta-nome');
+    const nome = document.getElementById('trasc-carta-nome') as HTMLInputElement;
     nome.textContent = a.originalName || (a.tipo === 'pdf' ? 'PDF ' : window.t('attachment_image', 'Immagine') + ' ') + (i + 1);
     nome.title = nome.textContent;
     const stato = document.getElementById('trasc-carta-stato') as HTMLSelectElement;
@@ -395,7 +425,7 @@ window.rinominaCartaCorrente = function() {
     const m = appData.manoscritti.find(x => x.id === id);
     const i = window.currentAllegatoIndex || 0;
     const al = m && m.allegati ? m.allegati[i] : null;
-    if (!al) return;
+    if (!m || !al) return;
     window.apriRenameModal(al.originalName || '', async (nuovoNome) => {
         al.originalName = nuovoNome;
         m.lastModified = Date.now();
@@ -410,7 +440,7 @@ window.impostaStatoCarta = async function(valore) {
     const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
     const al = m && m.allegati ? m.allegati[window.currentAllegatoIndex || 0] : null;
-    if (!al) return;
+    if (!m || !al) return;
     if (window.STATI_CARTA.includes(valore)) al.stato = valore;
     else delete al.stato;
     m.lastModified = Date.now();
@@ -446,7 +476,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
     _taSalvaEditorInMemoria();
 
     window.currentAllegatoIndex = index;
-    const id = document.getElementById('trascrizione-id').value;
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
     const isPdf = tipo === 'pdf';
     if (m) {
@@ -458,7 +488,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
     }
 
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
-    const noAllegato = document.getElementById('trasc-no-allegato');
+    const noAllegato = document.getElementById('trasc-no-allegato') as HTMLInputElement;
 
     window.nascondiAnteprimaImmagine();
     _taNascondiBarraPdf();
@@ -473,7 +503,7 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
         return;
     }
 
-    let expectedHash = null;
+    let expectedHash: any = null;
     if (m && m.allegati && m.allegati[index]) {
         expectedHash = m.allegati[index].hash;
     }
@@ -496,11 +526,11 @@ window.cambiaAllegatoTrascrizione = async function(nome, tipo, index, pagina?) {
                     <br>${window.t("attachment_not_local_desc2", "Use Cloud Explorer to sync attachments.")}
                 </p>
                 <div class="mt-4 p-3 bg-stone-900 border border-stone-800 rounded-sm text-xs font-mono text-stone-300 select-all break-all max-w-md mx-auto">
-                    ${window.t("attachment_file_label", "File to insert:")} ${nome}
+                    ${window.t("attachment_file_label", "File to insert:")} ${escapeHTML(String(nome || ''))}
                 </div>
                 <p class="text-xs text-stone-500 mt-3">
                     ${window.t("attachment_copy_hint", "Copy the file to your attachments folder:")}<br>
-                    <span class="font-mono text-[11px] break-all select-all text-amber-600">${result.path}</span>
+                    <span class="font-mono text-[11px] break-all select-all text-amber-600">${escapeHTML(String(result.path || ''))}</span>
                 </p>
                 ${hubBtn}
             `);
@@ -589,7 +619,7 @@ function _taNascondiBarraPdf() {
 }
 
 function _taMostraErrorePdf() {
-    const noAllegato = document.getElementById('trasc-no-allegato');
+    const noAllegato = document.getElementById('trasc-no-allegato') as HTMLInputElement;
     if (!noAllegato) return;
     window.nascondiAnteprimaImmagine();
     _taNascondiBarraPdf();
@@ -638,7 +668,7 @@ async function _taMostraPaginaPdf(m, index, n) {
 }
 
 window.cambiaPaginaPdf = async function(pagina) {
-    const id = document.getElementById('trascrizione-id').value;
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
     const index = _taIndiceCorrente;
     const a = m && m.allegati ? m.allegati[index] : null;
@@ -665,7 +695,7 @@ window.vaiAPaginaPdfDaCampo = function() {
     window.cambiaPaginaPdf(n);
 };
 
-let _taTimerRicercaPdf = null;
+let _taTimerRicercaPdf: any = null;
 
 function _taChiudiRisultatiPdf() {
     const lista = document.getElementById('trasc-pdf-risultati');
@@ -684,7 +714,7 @@ function _taCercaNelleTrascrizioni(m, index, q) {
     if (!a) return [];
     window.migraTrascrizionePdfSuPagine(a);
     const pagine = Array.isArray(a.pagine) ? a.pagine : [];
-    const out = [];
+    const out: any[] = [];
     const contenitore = document.createElement('template');
     for (let k = 0; k < pagine.length; k++) {
         if (!window.trascrizioneHaTesto(pagine[k])) continue;
@@ -697,7 +727,7 @@ function _taCercaNelleTrascrizioni(m, index, q) {
 }
 
 async function _taEseguiRicercaPdf(query) {
-    const id = document.getElementById('trascrizione-id').value;
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
     const lista = document.getElementById('trasc-pdf-risultati');
     const campo = document.getElementById('trasc-pdf-cerca');
@@ -810,14 +840,14 @@ window.aggiornaBarraIiif = function(m, index) {
     if (!al || !al.remoto) { barra.classList.add('hidden-tab'); return; }
 
     const attribuzione = (m && m.iiifAttribuzione) || '';
-    document.getElementById('trasc-iiif-attribuzione').textContent =
+    (document.getElementById('trasc-iiif-attribuzione') as HTMLInputElement).textContent =
         attribuzione || window.t('iiif_remote_page', 'Carta remota (IIIF)');
     barra.classList.remove('hidden-tab');
 
     const restanti = (m.allegati || []).filter(a => a && a.remoto).length;
-    const btnTutte = document.getElementById('btn-iiif-scarica-tutte');
+    const btnTutte = document.getElementById('btn-iiif-scarica-tutte') as HTMLInputElement;
     btnTutte.classList.toggle('hidden', restanti < 2);
-    document.getElementById('btn-iiif-scarica-carta').onclick = () => window.materializzaCarteIiif(m.id, [index]);
+    (document.getElementById('btn-iiif-scarica-carta') as HTMLInputElement).onclick = () => window.materializzaCarteIiif(m.id, [index]);
     btnTutte.onclick = () => window.materializzaCarteIiif(m.id, null);
 
     if (window.lucide) lucide.createIcons({ nodes: [barra] });
@@ -834,16 +864,15 @@ function _taAscoltaProgressoIiif() {
 }
 
 window.materializzaCarteIiif = async function(idScheda, indici) {
-    const m = appData.manoscritti.find(x => x.id === idScheda);
-    if (!m || !window.apiIiif) return;
+    const prima = appData.manoscritti.find(x => String(x.id) === String(idScheda));
+    if (!prima || !window.apiIiif) return;
 
-    const allegati = m.allegati || [];
     const daScaricare = (indici === null || indici === undefined)
-        ? allegati.filter(a => a && a.remoto)
-        : indici.map(i => allegati[i]).filter(a => a && a.remoto);
+        ? (prima.allegati || []).filter(a => a && a.remoto)
+        : indici.map(i => (prima.allegati || [])[i]).filter(a => a && a.remoto);
     if (!daScaricare.length) return;
 
-    const lato = Number.isFinite(Number(m.iiifLato)) ? Number(m.iiifLato) : 2000;
+    const lato = Number.isFinite(Number(prima.iiifLato)) ? Number(prima.iiifLato) : 2000;
     const richieste = daScaricare.map(a => ({
         nome: a.nome,
         urls: window.IiifManifest.candidatiAllegato(a, { lato })
@@ -858,6 +887,9 @@ window.materializzaCarteIiif = async function(idScheda, indici) {
             return;
         }
 
+        const m = appData.manoscritti.find(x => String(x.id) === String(idScheda));
+        if (!m) return;
+        const allegati = m.allegati || [];
         let fatte = 0;
         for (const r of esito.risultati || []) {
             if (!r.ok) continue;
@@ -905,7 +937,7 @@ window.nascondiAnteprimaImmagine = function() {
 async function _taSalvaRegioni(id, nome, lista) {
     const m = appData.manoscritti.find(x => String(x.id) === String(id));
     const al = m && Array.isArray(m.allegati) ? m.allegati.find(a => a && a.nome === nome) : null;
-    if (!al) return;
+    if (!m || !al) return;
     if (lista.length) al.annotazioni = lista;
     else delete al.annotazioni;
     m.lastModified = Date.now();
@@ -935,7 +967,7 @@ window.mostraAnteprimaImmagine = function() {
 };
 
 window.cambiaAllegatoRelativo = function(dir) {
-    const id = document.getElementById('trascrizione-id').value;
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m) return;
     
@@ -959,7 +991,7 @@ window.toggleFullscreenAllegato = function() {
     const editorPanel = document.getElementById('trascrizione-editor-panel');
     const btnToggle = document.getElementById('btn-collapse-editor');
     const resizer = document.getElementById('trascrizione-resizer');
-    const panelAllegato = document.getElementById('trascrizione-allegato-panel');
+    const panelAllegato = document.getElementById('trascrizione-allegato-panel') as HTMLInputElement;
     
     if (!editorPanel) return;
     if (panelAllegato && panelAllegato.classList.contains('hidden-tab')) {
@@ -985,13 +1017,25 @@ window.toggleFullscreenAllegato = function() {
 };
 
 window.chiudiUnsavedModal = function() {
-    document.getElementById('unsaved-modal').classList.add('hidden-tab');
+    (document.getElementById('unsaved-modal') as HTMLInputElement).classList.add('hidden-tab');
     window.isClosingApp = false;
 }
 
-window.confermaUscitaTrascrizione = function() {
+window.confermaUscitaTrascrizione = async function() {
+    const chiudendo = window.isClosingApp;
     if (typeof chiudiUnsavedModal === 'function') chiudiUnsavedModal();
+    const scarta = window.trascrizioneNonSalvata;
     window.trascrizioneNonSalvata = false;
+    if (scarta && _taRipristinaFoto()) {
+        try {
+            await window.Store.commit();
+            if (typeof window.flushSalvataggio === 'function') await window.flushSalvataggio();
+        } catch (e) {
+            console.error('Ripristino della trascrizione non salvato:', e);
+        }
+    }
+    _taFoto = null;
+    window.isClosingApp = chiudendo;
     if (window.isClosingApp && window.apiBrowser && window.apiBrowser.confirmClose) {
         window.apiBrowser.confirmClose();
     } else {
@@ -1019,7 +1063,7 @@ window.confermaUscitaTrascrizione = function() {
 
 function chiudiTrascrizione() {
     if (window.trascrizioneNonSalvata) {
-        document.getElementById('unsaved-modal').classList.remove('hidden-tab');
+        (document.getElementById('unsaved-modal') as HTMLInputElement).classList.remove('hidden-tab');
         return;
     }
     window.confermaUscitaTrascrizione();
@@ -1027,8 +1071,8 @@ function chiudiTrascrizione() {
 
 async function salvaTrascrizione() {
     if (window.moduloInTrascrizione()) await window.salvaSchedaTrascrizioneOra();
-    const id = document.getElementById('trascrizione-id').value;
-    const editor = document.getElementById('trascrizione-editor');
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
+    const editor = document.getElementById('trascrizione-editor') as HTMLInputElement;
 
     const settings = await window.apiSettings.get();
     const username = settings.username || 'Anonimo';
@@ -1041,6 +1085,7 @@ async function salvaTrascrizione() {
         m.modificatoDa = username;
         await salvaTutto();
         window.trascrizioneNonSalvata = false;
+        _taFotografaCarte(m);
         mostraMessaggio(window.t("msg_transcription_saved"), "success");
         editor.focus();
     }
@@ -1050,7 +1095,7 @@ async function caricaAllegatoTrascrizione(e) {
     const file = e.target.files[0];
     if (!file || !window.apiBrowser) return;
     
-    const id = document.getElementById('trascrizione-id').value;
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
     const m = appData.manoscritti.find(x => x.id === id);
     if (!m) return;
 
@@ -1065,7 +1110,7 @@ async function caricaAllegatoTrascrizione(e) {
         if (risultato) {
             if (!m.allegati) m.allegati = [];
             if (m.allegato && m.allegati.length === 0) {
-                m.allegati.push({ nome: m.allegato, tipo: m.allegatoTipo, originalName: 'Allegato' });
+                m.allegati.push({ nome: m.allegato, tipo: m.allegatoTipo || '', originalName: 'Allegato' });
             }
             m.allegati.push({
                 nome: risultato.fileName,

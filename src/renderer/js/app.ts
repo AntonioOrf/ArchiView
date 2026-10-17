@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    let staccata = false;
     try {
-        if (window.avviaFinestraStaccata && await window.avviaFinestraStaccata()) return;
+        if (window.avviaFinestraStaccata && await window.avviaFinestraStaccata()) { staccata = true; return; }
+
+        window.apiBrowser?.onRequestClose?.(() => window.gestisciChiusura ? window.gestisciChiusura() : window.apiBrowser.confirmClose());
 
         if (window.initModalitaPrestazioni) await window.initModalitaPrestazioni();
 
@@ -61,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         performance.mark('archiview:pronta');
         window.__appPronta = true;
         document.dispatchEvent(new CustomEvent('archiview:pronta'));
+        if (!staccata) window.apiBrowser?.prendiUrlInvito?.().then(gestisciUrlInvito).catch((e) => console.warn('Link d\'invito non letto:', e));
     }
 });
 
@@ -205,8 +209,7 @@ async function avviaApp() {
         window.trascrizioneNonSalvata = true;
     });
 
-    if (window.apiBrowser && window.apiBrowser.onRequestClose) {
-        window.apiBrowser.onRequestClose(async () => {
+        window.gestisciChiusura = async () => {
             if (typeof window.flushSalvataggio === 'function') {
                 try { await window.flushSalvataggio(); } catch (e) { console.error("Errore nel flush di chiusura:", e); }
             }
@@ -225,8 +228,7 @@ async function avviaApp() {
             } else {
                 window.apiBrowser.confirmClose();
             }
-        });
-    }
+        };
     
 
     const resizer = document.getElementById('trascrizione-resizer');
@@ -259,8 +261,8 @@ function collegaEventiMain() {
         window.apiBrowser.onDatabaseModificatoEsterno(async () => {
             const nuovoDati = await window.leggiDatiArchivio();
             if (nuovoDati) {
-                await window.sincronizzaEUnisciDati(nuovoDati);
-                mostraMessaggio(window.t("msg_l_archivio_stato_sincroni", "L'archivio è stato sincronizzato in tempo reale."), "info");
+                if (await window.sincronizzaEUnisciDati(nuovoDati, { aggiornaBase: false }) === false) return;
+                mostraMessaggio(window.t("msg_archivio_modificato_fuori", "L'archivio è stato modificato fuori dall'app: modifiche unite."), "info");
             }
         });
     }
@@ -322,18 +324,7 @@ function ripristinaStatoSalvato(settings) {
             };
         }
         const fSalvati = window.statoIniziale.filtriAvanzati;
-        if (fSalvati && typeof fSalvati === 'object') {
-            window.filtriAvanzati = {
-                tipo: typeof fSalvati.tipo === 'string' ? fSalvati.tipo : '',
-                sottocartelle: !!fSalvati.sottocartelle,
-                daData: typeof fSalvati.daData === 'string' ? fSalvati.daData : '',
-                aData: typeof fSalvati.aData === 'string' ? fSalvati.aData : '',
-                daAnno: /^\d{3,4}$/.test(String(fSalvati.daAnno || '')) ? String(fSalvati.daAnno) : '',
-                aAnno: /^\d{3,4}$/.test(String(fSalvati.aAnno || '')) ? String(fSalvati.aAnno) : '',
-                allegati: fSalvati.allegati === 'si' || fSalvati.allegati === 'no' ? fSalvati.allegati : '',
-                trascrizione: fSalvati.trascrizione === 'si' || fSalvati.trascrizione === 'no' ? fSalvati.trascrizione : ''
-            };
-        }
+        if (fSalvati && typeof fSalvati === 'object') window.filtriAvanzati = window.filtriValidi(fSalvati);
         if (Array.isArray(window.statoIniziale.ricercheSalvate)) {
             window.ricercheSalvate = window.statoIniziale.ricercheSalvate.filter(r => r && r.id && r.nome);
         }
@@ -488,15 +479,14 @@ window.handleInviteCode = function(code, isManualInput = false) {
     }
 };
 
+function gestisciUrlInvito(url) {
+    if (typeof url === 'string' && url.startsWith('archiview://join/') && typeof window.handleInviteCode === 'function') {
+        window.handleInviteCode(url.substring(17));
+    }
+}
+
 if (window.apiBrowser && window.apiBrowser.onInviteUrl) {
-    window.apiBrowser.onInviteUrl((url) => {
-        if (url.startsWith('archiview://join/')) {
-            const code = url.substring(17);
-            if (typeof window.handleInviteCode === 'function') {
-                window.handleInviteCode(code);
-            }
-        }
-    });
+    window.apiBrowser.onInviteUrl(gestisciUrlInvito);
 }
 
 

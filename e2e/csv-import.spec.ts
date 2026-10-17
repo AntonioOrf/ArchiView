@@ -125,13 +125,12 @@ test.describe('Import CSV (2.4)', () => {
     await preparaCsv(electronApp, userDataDir, 'dest.csv', 'Segnatura\r\nASP 1\r\n');
     await apriWizard(page);
 
-    expect(await page.locator('#import-csv-cartella-slot select').inputValue()).toBe('');
-    await expect(page.locator('#import-csv-preview')).not.toContainText('Fiesole');
+    expect(await page.locator('#import-csv-cartella-slot select').inputValue()).toBe('Catasto/165 (Fiesole)');
 
     await page.locator('#import-csv-confirm').click();
     const dati = await getAppData(page);
-    expect(dati.manoscritti.find((m: any) => m.segnatura === 'ASP 1').cartella).toBe('');
-    expect(dati.cartelle).not.toContain('Catasto/165 (Fiesole)');
+    expect(dati.cartelle).toContain('Catasto/165 (Fiesole)');
+    expect(dati.manoscritti.find((m: any) => m.segnatura === 'ASP 1').cartella).toBe('Catasto/165 (Fiesole)');
   });
 
   test('con molte colonne il modale resta dentro lo schermo, scorre, e i pulsanti restano fermi', async ({ page, electronApp, userDataDir }) => {
@@ -182,9 +181,32 @@ test.describe('Import CSV (2.4)', () => {
     await page.locator('#import-csv-confirm').click();
     await expect(page.locator('#import-csv-modal')).toBeHidden();
     expect(await segnature(page)).toEqual(['A-1', 'A-2', 'A-3', 'Seed-000']);
+    const idImportati = await page.evaluate(() => {
+      // @ts-ignore
+      return (appData as any).manoscritti.filter((m: any) => /^A-/.test(m.segnatura)).map((m: any) => String(m.id)).sort();
+    });
 
     await page.evaluate(() => (window as any).gestoreAnnullamento.annullaUltimaAzione());
     await expect.poll(() => segnature(page)).toEqual(['Seed-000']);
+
+    const dopo = await page.evaluate(async () => {
+      // @ts-ignore
+      const tombstone = ((appData as any).deletedIds || []).map(String);
+      const cestino = await (window as any).apiSicurezza.cestinoElenca();
+      return { tombstone, cestino: (cestino.voci || []).map((v: any) => String(v.record.id)) };
+    });
+    for (const id of idImportati) {
+      expect(dopo.tombstone, 'F12: annullare l\'import è un\'eliminazione, o al prossimo invio le schede tornano dal cloud').toContain(id);
+      expect(dopo.cestino).toContain(id);
+    }
+
+    await page.evaluate(() => (window as any).gestoreAnnullamento.ripetiUltimaAzione());
+    await expect.poll(() => segnature(page)).toEqual(['A-1', 'A-2', 'A-3', 'Seed-000']);
+    const tombstoneDopoRifai = await page.evaluate(() => {
+      // @ts-ignore
+      return ((appData as any).deletedIds || []).map(String);
+    });
+    for (const id of idImportati) expect(tombstoneDopoRifai).not.toContain(id);
   });
 
   test('in modalità aggiornamento la riga corregge la scheda esistente invece di duplicarla', async ({ page, electronApp, userDataDir }) => {

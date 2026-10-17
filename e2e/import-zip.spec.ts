@@ -50,6 +50,40 @@ test.describe('Import ZIP: avanzamento ed esito', () => {
     await expect(modale(page)).toBeHidden();
   });
 
+  test('D10/D23 — omonimi rinominati, rimandi rimappati, tag registrati, cartella fuori dai tombstone', async ({ page, electronApp, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Imp');
+    const dirAllegati = path.join(userDataDir, 'ws', 'Imp', 'allegati_manoscritti');
+    fs.mkdirSync(dirAllegati, { recursive: true });
+    fs.writeFileSync(path.join(dirAllegati, 'gs_a.pdf'), 'locale');
+    await page.evaluate(async () => {
+      // @ts-ignore
+      appData.manoscritti.push({ id: 'z1', segnatura: 'Locale 1', cartella: '' }, { id: 'z2', segnatura: 'Locale 2', cartella: '' });
+      // @ts-ignore
+      appData.deletedCartelle = ['Fondo', 'Fondo/Filza 1'];
+      await (window as any).Store.commit();
+    });
+    await preparaZip(electronApp, userDataDir, {
+      'schedatura.json': JSON.stringify({ manoscritti: [
+        { id: 'z1', cartella: 'Fondo/Filza 1', segnatura: 'Atto 1', tags: 'notarile', relazioni: [{ id: 'z2' }], allegati: [{ nome: 'gs_a.pdf', tipo: 'pdf' }] },
+        { id: 'z2', cartella: 'Fondo/Filza 1', segnatura: 'Atto 2' }] }),
+      'allegati/gs_a.pdf': '%PDF-1.4 zip',
+    });
+
+    await page.evaluate(() => (window as any).importaManoscritto());
+    await expect(page.locator('#iz-titolo')).toHaveText('Importazione completata');
+
+    const data = await getAppData(page);
+    const atto1 = data.manoscritti.find((m: any) => m.segnatura === 'Atto 1');
+    const atto2 = data.manoscritti.find((m: any) => m.segnatura === 'Atto 2');
+    expect(atto1.id).not.toBe('z1');
+    expect(atto1.relazioni).toEqual([{ id: atto2.id }]);
+    expect(atto1.allegati[0].nome).not.toBe('gs_a.pdf');
+    expect(fs.readFileSync(path.join(dirAllegati, atto1.allegati[0].nome), 'utf8')).toBe('%PDF-1.4 zip');
+    expect(fs.readFileSync(path.join(dirAllegati, 'gs_a.pdf'), 'utf8')).toBe('locale');
+    expect(Object.values(data.tagsAnagrafica || {}).map((t: any) => t.nome)).toContain('notarile');
+    expect(data.deletedCartelle || []).toEqual([]);
+  });
+
   test('a import fallito spiega la causa, tiene i dettagli e offre di riprovare', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Imp');
     await preparaZip(electronApp, userDataDir, { 'allegati/x.pdf': '%PDF-1.4' });

@@ -388,4 +388,15 @@ test.describe('Filtri avanzati e ricerche salvate', () => {
     await expect.poll(async () => (await segnature(page)).slice().sort()).toEqual(['CON', 'SENZA']);
     await expect(page.locator('#badge-filtri')).toBeHidden();
   });
+
+  test('F13 — i filtri «testo OCR», «collegamenti» e «stato delle carte» sopravvivono al riavvio', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Filtri');
+    await page.evaluate(() => (window as any).applicaFiltriAvanzati({ ocr: 'no', collegamenti: 'si', statoCarte: 'rivista', allegati: 'si' }));
+    await page.waitForTimeout(800);
+    await page.reload();
+    await page.waitForFunction(() => (window as any).__appPronta === true);
+    const f = await page.evaluate(() => (window as any).filtriAvanzati);
+    expect({ ocr: f.ocr, collegamenti: f.collegamenti, statoCarte: f.statoCarte, allegati: f.allegati })
+      .toEqual({ ocr: 'no', collegamenti: 'si', statoCarte: 'rivista', allegati: 'si' });
+  });
 });

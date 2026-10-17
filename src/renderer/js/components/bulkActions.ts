@@ -247,7 +247,7 @@ window.apriAzioneMassa = function(azione) {
     const modal = document.getElementById('bulk-modal');
     if (!modal) return;
 
-    const corpo = modal.querySelector('#bulk-body');
+    const corpo = modal.querySelector<HTMLElement>('#bulk-body');
     const titolo = modal.querySelector('#bulk-title');
     const conta = modal.querySelector('#bulk-count');
     corpo.innerHTML = '';
@@ -390,12 +390,12 @@ window.apriAzioneMassa = function(azione) {
         window.chiudiAzioniMassa();
     };
 
-    corpo.addEventListener('keydown', (e: KeyboardEvent) => {
+    corpo.onkeydown = (e: KeyboardEvent) => {
         if (e.key === 'Enter' && ((e.target as HTMLElement).tagName || '').toLowerCase() === 'input') {
             e.preventDefault();
             if (!conferma.disabled) conferma.click();
         }
-    });
+    };
 
     modal.classList.remove('hidden-tab');
     const primo = corpo.querySelector<HTMLElement>('input, select');

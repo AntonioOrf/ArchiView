@@ -80,9 +80,9 @@ window.salvaStatoPosizione = async function() {
     const stato = {
         cartella: typeof window.cartellaAttuale === 'string' ? window.cartellaAttuale : '',
         tab: tabAttuale,
-        trascrizioneId: document.getElementById('trascrizione-id') ? document.getElementById('trascrizione-id').value : null,
+        trascrizioneId: (document.getElementById('trascrizione-id') as HTMLInputElement | null)?.value ?? null,
         cartelleEspanse: Array.from(window.cartelleEspanse),
-        ricerca: document.getElementById('search-input') ? document.getElementById('search-input').value : '',
+        ricerca: (document.getElementById('search-input') as HTMLInputElement | null)?.value ?? '',
         tagAttivi: window.activeTags ? Array.from(window.activeTags) : [],
         sort: window.sortState ? { campo: window.sortState.campo, dir: window.sortState.dir } : null,
         vista: window.vistaLista || 'griglia',
@@ -134,6 +134,12 @@ window.apriLinkEsternoSicuro = function(url) {
     }
     if (window.apiBrowser && window.apiBrowser.apriLinkEsterno) window.apiBrowser.apriLinkEsterno(u);
 };
+
+function carteDi(m): any[] {
+    if (!m) return [];
+    if (Array.isArray(m.allegati) && m.allegati.length) return m.allegati;
+    return m.allegato ? [{ nome: m.allegato, tipo: m.allegatoTipo, originalName: 'Allegato' }] : [];
+}
 
 function normalizzaAllegati(m): any[] {
     if (!m.allegati) m.allegati = [];
@@ -231,8 +237,9 @@ function creaSelect(id, opzioni, valore) {
 }
 
 function normalizzaCartelle() {
-    const cartelleSet = new Set(appData.cartelle);
-    appData.cartelle.forEach(percorso => {
+    const citate = appData.manoscritti.map(m => m.cartella).filter(c => typeof c === 'string' && c);
+    const cartelleSet = new Set([...appData.cartelle, ...citate]);
+    Array.from(cartelleSet).forEach(percorso => {
         let pathCorrente = '';
         percorso.split('/').forEach(part => {
             pathCorrente = pathCorrente ? pathCorrente + '/' + part : part;

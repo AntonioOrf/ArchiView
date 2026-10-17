@@ -33,7 +33,7 @@ window.avviaTutorial = async function () {
         if (isEmptyOrFake) {
             if (window.mostraBottomConfirm && window.apiBrowser && window.apiBrowser.loadTutorialWorkspace) {
                 window.mostraBottomConfirm(
-                    "L'archivio è vuoto. Vuoi caricare l'Archivio Tutorial preimpostato (con file PDF e schede d'esempio) per seguire al meglio la guida?",
+                    window.t('tutorial_offri_archivio', "L'archivio è vuoto. Vuoi caricare l'Archivio Tutorial preimpostato (con file PDF e schede d'esempio) per seguire al meglio la guida?"),
                     async () => {
                         localStorage.setItem('startTutorialOnBoot', 'true');
                         try {
@@ -41,12 +41,12 @@ window.avviaTutorial = async function () {
                             if (!res.success) {
                                 console.error("Errore caricamento Tutorial:", res.error);
                                 localStorage.removeItem('startTutorialOnBoot');
-                                if (window.mostraMessaggio) window.mostraMessaggio("Errore nel caricamento del Tutorial: " + res.error, 'error');
+                                if (window.mostraMessaggio) window.mostraMessaggio(window.t('tutorial_err_caricamento', "Errore nel caricamento del Tutorial: ") + res.error, 'error');
                             }
                         } catch (e) {
                             console.error("Eccezione caricamento Tutorial:", e);
                             localStorage.removeItem('startTutorialOnBoot');
-                            if (window.mostraMessaggio) window.mostraMessaggio("Errore imprevisto nel caricamento del Tutorial.", 'error');
+                            if (window.mostraMessaggio) window.mostraMessaggio(window.t('tutorial_err_imprevisto', "Errore imprevisto nel caricamento del Tutorial."), 'error');
                         }
                     }
                 );
@@ -67,14 +67,11 @@ window.avviaTutorial = async function () {
                     allegati: [],
                     trascrizione: '<p>Benvenuto nell\'editor di trascrizione! Qui puoi annotare i tuoi documenti in modo strutturato.</p>'
                 });
-                if (window.salvaDatiApp) {
-                    try {
-                        await window.salvaDatiApp();
-                    } catch (e) {
-                        console.error("Errore salvataggio dati tutorial:", e);
-                    }
+                try {
+                    await window.Store.commit();
+                } catch (e) {
+                    console.error("Errore salvataggio dati tutorial:", e);
                 }
-                if (window.renderMain) window.renderMain();
             }
         }
     }

@@ -459,7 +459,6 @@
 
     window.abbandonaArchivioShare = function() {
         const msg = window.t("share_member_leave_confirm", "Il tuo PC conserverà una copia locale, ma non riceverai più gli aggiornamenti dei colleghi.");
-        if (typeof window.mostraBottomConfirm === 'function') window.mostraBottomConfirm(msg, () => window.scollegaCloud());
-        else if (typeof window.scollegaCloud === 'function') window.scollegaCloud();
+        if (typeof window.scollegaCloud === 'function') window.scollegaCloud(msg);
     };
 })();

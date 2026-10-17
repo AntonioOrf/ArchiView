@@ -119,20 +119,37 @@ async function importaZip() {
     if (res.success && res.manoscritti) {
         let addedCount = 0;
         const existingIds = new Set(appData.manoscritti.map(m => m.id));
-        
+        const { validi, scartati } = window.Model.recordValidi(res.manoscritti);
+        if (scartati) console.warn(`[Import ZIP] ${scartati} voci non valide scartate`);
+        res.manoscritti = validi;
+
+        const idNuovi = new Map();
         res.manoscritti.forEach(m => {
             if (existingIds.has(m.id)) {
+                const vecchio = String(m.id);
                 m.id = window.Model.nuovoId();
+                idNuovi.set(vecchio, m.id);
                 m.titolo = m.titolo ? m.titolo + ' (Copia)' : '';
+            }
+        });
+        const rinominati = res.rinominati || {};
+        res.manoscritti.forEach(m => {
+            if (Array.isArray(m.relazioni)) {
+                for (const r of m.relazioni) if (r && idNuovi.has(String(r.id))) r.id = idNuovi.get(String(r.id));
+            }
+            if (Array.isArray(m.allegati)) {
+                for (const a of m.allegati) if (a && Object.prototype.hasOwnProperty.call(rinominati, a.nome)) a.nome = rinominati[a.nome];
             }
             window.Model.normalizzaScheda(m);
             window.Store.togliTombstone([m.id]);
             appData.manoscritti.push(m);
-            
-            if (m.cartella && !appData.cartelle.includes(m.cartella)) {
-                appData.cartelle.push(m.cartella);
+
+            const c = m.cartella;
+            if (c && Array.isArray(appData.deletedCartelle)) {
+                appData.deletedCartelle = appData.deletedCartelle.filter(x => x !== c && !c.startsWith(x + '/'));
             }
-            
+            window.Model.registraTag(appData, window.Model.tags(m));
+
             addedCount++;
         });
 
@@ -140,7 +157,6 @@ async function importaZip() {
 
         await window.Store.commit();
         if (typeof aggiornaSelectCartelle === 'function') aggiornaSelectCartelle();
-        if (window.ripristinaStatoPosizione) window.ripristinaStatoPosizione();
         window.importZipRiuscito({
             schede: addedCount,
             cartelle: new Set(res.manoscritti.map(m => m.cartella).filter(Boolean)).size,
