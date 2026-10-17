@@ -63,6 +63,11 @@ for (const h of ostili) {
     await assert.rejects(assembleFileFromChunks([h, H2], cacheDir, dest));
     assert.ok(!fs.existsSync(dest), 'destinazione creata nonostante il chunk mancante');
 
+    fs.mkdirSync(path.join(cacheDir, H2));
+    await assert.rejects(assembleFileFromChunks([h, H2], cacheDir, dest));
+    assert.ok(!fs.existsSync(dest), 'file troncato lasciato al nome finale');
+    assert.deepStrictEqual(fs.readdirSync(path.dirname(dest)), [], 'temporaneo rimasto');
+
     await assembleFileFromChunks([h, h], cacheDir, dest);
     assert.strictEqual(fs.readFileSync(dest, 'utf8'), 'carta 12rcarta 12r');
 

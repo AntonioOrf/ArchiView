@@ -8,4 +8,15 @@ function pickerGetSecretOk(reqUrl: string, sessionSecret: string): boolean {
   }
 }
 
-export { pickerGetSecretOk };
+const RE_ID_DRIVE = /^[A-Za-z0-9_-]{1,200}$/;
+
+function idDriveValido(id: unknown): boolean {
+  return typeof id === 'string' && RE_ID_DRIVE.test(id);
+}
+
+function idDrive(id: unknown): string {
+  if (!idDriveValido(id)) throw new Error('Id Drive non valido');
+  return id as string;
+}
+
+export { pickerGetSecretOk, idDriveValido, idDrive };

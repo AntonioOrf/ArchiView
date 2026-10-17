@@ -4,10 +4,10 @@ import { avviaServerLoopback } from '../loopbackServer';
 import * as crypto from 'crypto';
 import { shell } from 'electron';
 import { state, initWorkspace, getActiveVaultFlags, saveAllSettings } from '../../workspaceManager';
-import { driveState, authenticateDrive } from './auth';
+import { driveState, authenticateDrive, ERR_ACCESSO_SCADUTO, SCADENZA_BROWSER_MS } from './auth';
 const { getOrCreateFolder } = require('./fileOps');
 import { pullFromDrive } from './vaultOps';
-import { pickerGetSecretOk } from './pickerSecurity';
+import { pickerGetSecretOk, idDriveValido } from './pickerSecurity';
 import { safeChildDir, nomeCartellaSicuro } from '../pathSafety';
 
 function dbPerNuovoMembro(database: any): string {
@@ -54,6 +54,7 @@ function decodeInviteCode(inviteCode: string): { vaultName: string; vaultId: str
   const parts = Buffer.from(b64, 'base64').toString('utf8').split('|');
   if (parts.length < 5) throw new Error("Codice incompleto");
   const [, , , , , vaultId, vaultName] = parts;
+  if (vaultId && !idDriveValido(vaultId)) throw new Error("Codice d'invito non valido");
   return { vaultName: vaultName || "Vault_Condiviso", vaultId: vaultId || "" };
 }
 
@@ -63,6 +64,7 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   const parts = Buffer.from(b64, 'base64').toString('utf8').split('|');
   if (parts.length < 5) throw new Error("Codice incompleto");
   const [, , , , pAuto, vaultId] = parts;
+  if (vaultId && !idDriveValido(vaultId)) throw new Error("Codice d'invito non valido");
 
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
   if (fs.existsSync(newPath)) {
@@ -97,6 +99,7 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
 }
 
 async function joinByFolderId(vaultId: string, vaultName: string, basePath: string, invito: any): Promise<boolean> {
+  if (vaultId && !idDriveValido(vaultId)) throw new Error("Id Drive non valido");
   const name = vaultName || "Vault_Condiviso";
   const newPath = safeChildDir(basePath, nomeCartellaSicuro(name));
   if (fs.existsSync(newPath)) {
@@ -382,7 +385,7 @@ async function openExternalPicker(): Promise<any> {
           res.end(pickerHtml);
         } else if (pathname === '/picker-callback' && req.method === 'POST') {
           leggiCorpoConSecret(req, res, (data) => {
-            if (typeof data.id !== 'string' || !data.id) return reject(new Error("Dati picker non validi."));
+            if (!idDriveValido(data.id)) return reject(new Error("Dati picker non validi."));
             resolve({ id: data.id, name: typeof data.name === 'string' ? data.name : '' });
           });
         } else if (pathname === '/picker-cancel' && req.method === 'POST') {
@@ -393,7 +396,10 @@ async function openExternalPicker(): Promise<any> {
       };
 
       try {
-        pickerServer = await avviaServerLoopback(3457, gestore);
+        pickerServer = await avviaServerLoopback(3457, gestore, {
+          scadenzaMs: SCADENZA_BROWSER_MS,
+          alloScadere: () => { pickerServer = null; reject(new Error(ERR_ACCESSO_SCADUTO)); }
+        });
       } catch (err: any) {
         console.error("Errore server picker:", err);
         return reject(new Error("Porta 3457 già in uso o errore server."));

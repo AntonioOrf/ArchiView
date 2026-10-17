@@ -15,6 +15,7 @@ const MOTIVI = ['auto', 'manuale', 'prima-ripristino', 'prima-import'];
 const RE_NOME = /^(\d{8})-(\d{6})(?:-([a-z-]+))?\.json\.gz$/;
 
 let ultimoAuto = 0;
+let archivioAuto: string | null = null;
 
 function cartellaSnapshot(): string | null {
   if (!state.workspacePath) return null;
@@ -135,6 +136,7 @@ async function forseCreaSnapshotAutomatico(payload: string): Promise<void> {
     const { attivi } = opzioniRotazione();
     if (!attivi) return;
     if (!cartellaSnapshot()) return;
+    if (archivioAuto !== state.workspacePath) { archivioAuto = state.workspacePath; ultimoAuto = 0; }
     if (ultimoAuto === 0) {
       const voci = await elencaSnapshot();
       if (ultimoAuto === 0) ultimoAuto = voci.length ? voci[0].creatoIl : 0;

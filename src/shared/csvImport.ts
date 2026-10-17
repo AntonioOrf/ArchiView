@@ -155,7 +155,7 @@ function avRipulisciCella(grezzo: any): string {
   if (t.length > 1 && t[0] === "'") {
     const c = t[1];
     if (c === '=' || c === '+' || c === '@' || c === '\t' || c === '\r') return t.slice(1);
-    if (c === '-' && !/^-\d/.test(t.slice(1))) return t.slice(1);
+    if (c === '-' && !/^-\d[\d.,]*$/.test(t.slice(1))) return t.slice(1);
   }
   return t;
 }

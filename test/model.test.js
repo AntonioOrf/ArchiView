@@ -276,4 +276,32 @@ const Model = require('../out/shared/model');
   assert.strictEqual(conCustom.tipiDocumento.length, 4, 'i predefiniti si aggiungono, non sostituiscono');
 }
 
-console.log('model: 18 gruppi di test OK');
+{
+  const esito = Model.migraDatabase({ cartelle: [], manoscritti: [null, 5, 'x', [], {}, { id: '' }, { id: 'a' }, { id: 7 }] });
+  assert.deepStrictEqual(esito.db.manoscritti.map(m => m.id), ['a', '7']);
+  assert.ok(esito.applicate.some(a => /6 voci/.test(a)), 'lo scarto è dichiarato fra le migrazioni');
+  const futuro = Model.migraDatabase({ schemaVersion: 999, cartelle: [], manoscritti: [null, { id: 'b' }] });
+  assert.deepStrictEqual(futuro.db.manoscritti, [{ id: 'b' }]);
+  assert.deepStrictEqual(Model.recordValidi([null, { id: 'c' }]), { validi: [{ id: 'c' }], scartati: 1 });
+  assert.match(Model.motivoNonValido({ cartelle: [], manoscritti: [{ id: 'a' }, null] }), /non valid/);
+}
+
+{
+  const db = {
+    schemaVersion: Model.SCHEMA_VERSION, cartelle: [], tipiDocumento: [],
+    manoscritti: [{ id: 101, segnatura: 'A', relazioni: [{ id: 102, tipo: 'copia' }] }, { id: '102', segnatura: 'B' }],
+    deletedIds: [55, '56'],
+    baseObjects: { 101: { id: 101, segnatura: 'A' } }
+  };
+  const esito = Model.migraDatabase(db);
+  assert.deepStrictEqual(esito.db.manoscritti.map(m => m.id), ['101', '102']);
+  assert.deepStrictEqual(esito.db.manoscritti[0].relazioni, [{ id: '102', tipo: 'copia' }]);
+  assert.deepStrictEqual(esito.db.deletedIds, ['55', '56']);
+  assert.strictEqual(esito.db.baseObjects['101'].id, '101');
+  assert.ok(esito.applicate.some(a => /id/.test(a)), 'la normalizzazione è dichiarata');
+  assert.strictEqual(esito.db.schemaVersion, Model.SCHEMA_VERSION, 'lo schema non cambia: le versioni precedenti continuano ad aprire il DB');
+  const dinuovo = Model.migraDatabase(esito.db);
+  assert.deepStrictEqual(dinuovo.applicate, [], 'idempotente');
+}
+
+console.log('model: 20 gruppi di test OK');

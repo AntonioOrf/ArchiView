@@ -2,7 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
-const UTILS = path.join(__dirname, '..', 'src', 'renderer', 'js', 'logic', 'utils.ts');
+const UTILS = path.join(__dirname, '..', 'out', 'renderer', 'js', 'logic', 'utils.js');
 
 function estraiFunzione(sorgente, nome) {
   const marker = 'window.' + nome + ' = function';
@@ -32,7 +32,7 @@ function estraiCostante(sorgente, nome) {
 }
 
 function caricaFunzioni() {
-  const src = (fs.readFileSync(UTILS, 'utf8') + '\n' + fs.readFileSync(UTILS.replace('utils.ts', 'ricercaLogic.ts'), 'utf8'));
+  const src = (fs.readFileSync(UTILS, 'utf8') + '\n' + fs.readFileSync(UTILS.replace('utils.js', 'ricercaLogic.js'), 'utf8'));
   const codice = [
     estraiFunzione(src, 'normalizzaTesto'),
     estraiFunzione(src, 'testoIndicizzabile'),

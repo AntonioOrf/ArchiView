@@ -248,6 +248,12 @@ test('l\'apostrofo anti-formula dell\'export non finisce dentro il dato', () => 
   assert.strictEqual(esito.schede[0].segnatura, '=SOMMA(A1)');
   assert.strictEqual(CSV.ripulisciCella("'Ndrangheta"), "'Ndrangheta");
   assert.strictEqual(CSV.ripulisciCella("-12"), '-12');
+  for (const v of ["-1+cmd|'/C calc'!A0", '-12 fiorini']) {
+    const giro = CSV.analizzaCsv(generaCsv([{ id: 'r2', cartella: '', tipoDocumento: 'imbreviature', segnatura: v, Notaio: 'Rossi', allegati: [] }], TIPI, {}));
+    const scheda = CSV.costruisciSchede(giro.righe, CSV.proponiMappatura(giro.intestazioni, COLONNE), ctx()).schede[0];
+    assert.strictEqual(scheda.segnatura, v, 'esportato e reimportato resta uguale: ' + v);
+  }
+  assert.strictEqual(CSV.ripulisciCella("'-12"), "'-12", 'davanti a un numero puro l\'apostrofo è dell\'utente');
 });
 
 test('3.7: una colonna che il modello non prevede diventa un campo PROPRIO della scheda', () => {

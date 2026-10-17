@@ -43,5 +43,25 @@ function cheFallisce(errori, valore) {
   drive.files.create = async () => { if (++tentativi === 1) throw errore(503); return { data: { id: 'f1' } }; };
   assert.strictEqual(await uploadFileReturningId(__filename, 'x', 'p'), 'f1');
   console.log('✅ Test 5: l\'upload dei chunk riprova da sé.');
+
+  const { uploadFile } = require(path.join(OUT, 'ipc', 'drive', 'fileOps.js'));
+  const aggiornati = [];
+  let eliminati = 0;
+  drive.files.list = async () => ({ data: { files: [{ id: 'nuovo', modifiedTime: new Date().toISOString() }, { id: 'doppione' }] } });
+  drive.files.delete = async () => { eliminati++; };
+  drive.files.update = async (p) => { aggiornati.push(p); return { data: { modifiedTime: new Date().toISOString() } }; };
+  await uploadFile(__filename, 'database_manoscritti.json', 'p');
+  assert.strictEqual(eliminati, 0, 'nessuna eliminazione definitiva');
+  assert.ok(aggiornati.some(p => p.fileId === 'doppione' && p.requestBody && p.requestBody.trashed === true), 'il doppione va nel cestino di Drive');
+  console.log('✅ Test 6: i duplicati Drive vanno nel cestino.');
+
+  const { getOrCreateFolder } = require(path.join(OUT, 'ipc', 'drive', 'fileOps.js'));
+  let query = 0;
+  drive.files.list = async () => { query++; return { data: { files: [] } }; };
+  const ostile = "x' in parents or name='database_manoscritti.json";
+  await assert.rejects(uploadFile(__filename, 'database_manoscritti.json', ostile), /Id Drive non valido/);
+  await assert.rejects(getOrCreateFolder('ArchiView', ostile), /Id Drive non valido/);
+  assert.strictEqual(query, 0, 'nessuna query con un id ostile');
+  console.log('✅ Test 7: id di cartella Drive validati prima delle query.');
   console.log('Tutti i test driveRetry passati con successo!');
 })().catch((e) => { console.error(e); process.exitCode = 1; });

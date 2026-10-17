@@ -5,11 +5,14 @@ import * as crypto from 'crypto';
 import { state, finestraPrincipale, getActiveVaultFlags } from '../../workspaceManager';
 import * as tokenStore from '../../cloudTokenStore';
 import { avviaServerLoopback, leggiCallbackOAuth } from '../loopbackServer';
+import { scriviLogAuth, rimuoviLogVecchi } from '../../logAuth';
 
 const REDIRECT_PORT = 3456;
 const REDIRECT_PATH = '/oauth2callback';
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}${REDIRECT_PATH}`;
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+const SCADENZA_BROWSER_MS = 5 * 60 * 1000;
+const ERR_ACCESSO_SCADUTO = "ACCESSO_SCADUTO: l'accesso a Google non è stato completato nel browser entro 5 minuti.";
 
 const driveState = {
   localServer: null as any,
@@ -65,18 +68,15 @@ function classifyDriveFolderError(err: any): 'forbidden' | 'notfound' | null {
 const ERR_VAULT_FORBIDDEN = "ACCESSO_NEGATO_VAULT: Questo account Google non è autorizzato ad accedere all'archivio condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario.";
 const ERR_VAULT_NOTFOUND = "L'archivio condiviso non esiste o è stato eliminato. Richiedi un nuovo invito al proprietario.";
 
+let logVecchiTolti: string | null = null;
+function togliLogVecchi(): void {
+  if (!state.workspacePath || logVecchiTolti === state.workspacePath) return;
+  logVecchiTolti = state.workspacePath;
+  void rimuoviLogVecchi(state.workspacePath, app.getPath('userData'));
+}
 function logAuthEvent(message: string): void {
-  let logPath: string;
-  if (state.workspacePath) {
-    logPath = path.join(state.workspacePath, '.archiview-chunks', 'auth_debug.log');
-    const dir = path.dirname(logPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  } else {
-    logPath = path.join(app.getPath('userData'), 'auth_debug.log');
-  }
-  try {
-    fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${message}\n`);
-  } catch (e) { console.error("Errore scrittura log auth:", e); }
+  togliLogVecchi();
+  void scriviLogAuth(path.join(app.getPath('userData'), 'logs', 'auth.log'), message);
 }
 
 function initGoogle(): void {
@@ -120,6 +120,7 @@ function initGoogle(): void {
 }
 
 function loadSavedTokens(): boolean {
+  togliLogVecchi();
   try {
     initGoogle();
   } catch (e: any) {
@@ -162,7 +163,6 @@ function loadSavedTokens(): boolean {
     tokenPath = getGlobalTokenPath();
   }
 
-  logAuthEvent("Tentativo lettura token da: " + tokenPath);
   if (tokenPath && fs.existsSync(tokenPath)) {
     try {
       const tokens = readTokenFile(tokenPath) as any;
@@ -182,7 +182,6 @@ function loadSavedTokens(): boolean {
         }
       }
       driveState.oauth2Client.setCredentials(tokens);
-      logAuthEvent("Token letto e impostato con SUCCESSO. Scope: " + (tokens.scope || 'n/d'));
       return true;
     } catch (e: any) {
       logAuthEvent("ERRORE LETTURA: " + e.message);
@@ -354,7 +353,14 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
       };
 
       try {
-        driveState.localServer = await avviaServerLoopback(REDIRECT_PORT, gestore);
+        driveState.localServer = await avviaServerLoopback(REDIRECT_PORT, gestore, {
+          scadenzaMs: SCADENZA_BROWSER_MS,
+          alloScadere: () => {
+            driveState.localServer = null;
+            logAuthEvent("OAUTH: login non completato entro il tempo, server chiuso.");
+            reject(new Error(ERR_ACCESSO_SCADUTO));
+          }
+        });
       } catch (err: any) {
         console.error("Errore server locale:", err);
         return reject(new Error("Impossibile avviare il server locale per l'autenticazione. Riprova."));
@@ -436,4 +442,4 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
   return { isAuthenticated: true, user: userEmail };
 }
 
-export { driveState, writeTokenFile, readTokenFile, getGlobalTokenPath, getLocalTokenPath, logAuthEvent, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus };
+export { driveState, writeTokenFile, readTokenFile, getGlobalTokenPath, getLocalTokenPath, logAuthEvent, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND, ERR_ACCESSO_SCADUTO, SCADENZA_BROWSER_MS, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus };

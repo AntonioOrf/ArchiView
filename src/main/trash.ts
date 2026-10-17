@@ -23,9 +23,13 @@ async function leggiGrezzo(): Promise<any[]> {
   if (!file || !fs.existsSync(file)) return [];
   try {
     const dati = JSON.parse(await fsp.readFile(file, 'utf8'));
-    return Array.isArray(dati) ? dati : [];
+    if (Array.isArray(dati)) return dati;
+    throw new Error('non è un elenco');
   } catch (e: any) {
-    console.error('[Cestino] File illeggibile, ignorato:', e && e.message);
+    console.error('[Cestino] File illeggibile, conservato a parte:', e && e.message);
+    const data = new Date().toISOString().replace(/[:.]/g, '-');
+    try { await fsp.rename(file, path.join(path.dirname(file), `cestino.corrotto-${data}.json`)); }
+    catch (err: any) { if (!err || err.code !== 'ENOENT') throw err; }
     return [];
   }
 }

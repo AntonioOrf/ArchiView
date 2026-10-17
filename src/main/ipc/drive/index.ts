@@ -25,9 +25,6 @@ function setupDriveIpc() {
   ipcMain.handle('drive-pull', async (event: any, vaultId: string) => {
     return await pullFromDrive(vaultId);
   });
-  ipcMain.handle('drive-peek-db', async (event: any, vaultId: string) => {
-    return await pullFromDrive(vaultId);
-  });
   ipcMain.handle('drive-sync', async (event: any, parentModifiedTime: number) => {
     return await syncToDrive(parentModifiedTime);
   });
@@ -106,16 +103,6 @@ function setupDriveIpc() {
 
   ipcMain.handle('drive-open-external-picker', async () => {
     return await openExternalPicker();
-  });
-
-  ipcMain.handle('drive-get-file-meta', async (event: any, fileId: string) => {
-    if (!loadSavedTokens()) throw new Error("Autenticazione Google Drive non effettuata.");
-    const res = await driveState.drive.files.get({
-      fileId,
-      fields: 'id, name, parents, modifiedTime, owners(emailAddress)',
-      supportsAllDrives: true
-    });
-    return res.data;
   });
 }
 

@@ -137,14 +137,20 @@ export async function assembleFileFromChunks(chunkHashes: string[], cacheDir: st
         return chunkPath;
     });
 
-    const fileHandle = await fs.promises.open(destinationFilePath, 'w');
-
+    const parziale = path.join(destDir, `.archiview-scarico-${crypto.randomBytes(8).toString('hex')}.part`);
     try {
-        for (const chunkPath of chunkPaths) {
-            const chunkData = await fs.promises.readFile(chunkPath);
-            await fileHandle.write(chunkData);
+        const fileHandle = await fs.promises.open(parziale, 'w');
+        try {
+            for (const chunkPath of chunkPaths) {
+                const chunkData = await fs.promises.readFile(chunkPath);
+                await fileHandle.write(chunkData);
+            }
+        } finally {
+            await fileHandle.close();
         }
-    } finally {
-        await fileHandle.close();
+        await fs.promises.rename(parziale, destinationFilePath);
+    } catch (e) {
+        await fs.promises.rm(parziale, { force: true }).catch(() => {});
+        throw e;
     }
 }

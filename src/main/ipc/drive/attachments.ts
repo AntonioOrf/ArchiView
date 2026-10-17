@@ -5,6 +5,7 @@ import { splitFileIntoChunks, assembleFileFromChunks, filtraIndiceChunk, safeChu
 import { driveState, loadSavedTokens } from './auth';
 const { getOrCreateFolder, uploadFile, downloadFile, asyncPool } = require('./fileOps');
 import { safeAttachmentPath, safeAttachmentPathOrNull } from '../pathSafety';
+import { idDrive } from './pickerSecurity';
 
 function indiceSicuro(grezzo: unknown): Record<string, string[]> {
   const { indice, scartate } = filtraIndiceChunk(grezzo);
@@ -20,7 +21,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   try {
     const s = { ...getAllSettings(), ...getActiveVaultFlags() };
     if ((s.isSharedVault || s.isPersonalCloud) && s.sharedVaultId) projectFolderId = s.sharedVaultId;
-    if (!s.syncAttachments) return;
+    if (s.syncAttachments === false) return;
   } catch (e) { console.error("Errore lettura settings:", e); }
 
   if (!projectFolderId) return;
@@ -53,7 +54,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
   let remoteIndex: any = {};
   let indexFileId: string | null = null;
   const indexRes = await driveState.drive.files.list({
-    q: `name='index.json' and '${projectFolderId}' in parents and trashed=false`,
+    q: `name='index.json' and '${idDrive(projectFolderId)}' in parents and trashed=false`,
     fields: 'files(id)'
   });
   if (indexRes.data.files && indexRes.data.files.length > 0) {
@@ -105,7 +106,7 @@ async function syncAttachmentsBidirectional(): Promise<void> {
     let pageToken: string | undefined = undefined;
     do {
       const resAll = await driveState.drive.files.list({
-        q: `'${dataFolderId}' in parents and trashed=false`,
+        q: `'${idDrive(dataFolderId)}' in parents and trashed=false`,
         pageSize: 1000,
         fields: 'nextPageToken, files(id, name)',
         pageToken

@@ -101,7 +101,11 @@ assert.strictEqual(neutralizzaFormula('=SOMMA(A1)'), "'=SOMMA(A1)");
 assert.strictEqual(neutralizzaFormula('+1+1'), "'+1+1");
 assert.strictEqual(neutralizzaFormula('@import'), "'@import");
 assert.strictEqual(neutralizzaFormula('-cmd'), "'-cmd");
-assert.strictEqual(neutralizzaFormula('-12 fiorini'), '-12 fiorini', 'un importo negativo resta un numero');
+assert.strictEqual(neutralizzaFormula('-12'), '-12', 'un importo negativo resta un numero');
+assert.strictEqual(neutralizzaFormula('-12,50'), '-12,50');
+assert.strictEqual(neutralizzaFormula('-3.5'), '-3.5');
+assert.strictEqual(neutralizzaFormula("-1+cmd|'/C calc'!A0"), "'-1+cmd|'/C calc'!A0");
+assert.strictEqual(neutralizzaFormula('-12 fiorini'), "'-12 fiorini", 'testo che inizia con un numero negativo: neutralizzato');
 assert.strictEqual(neutralizzaFormula('Perugia'), 'Perugia');
 {
   const out = righe(generaCsv([{ id: '1', tipoDocumento: 'manoscritto', note: '=HYPERLINK("http://x")' }], tipi));

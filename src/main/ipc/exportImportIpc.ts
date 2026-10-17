@@ -5,7 +5,7 @@ import { state } from '../workspaceManager';
 import { extractZipStreaming } from './zipStreaming';
 import { generaCsv } from './csvExport';
 import { leggiDb, recordsRichiesti, nomeFileSicuro } from './recordSelection';
-import { scriviAtomico } from '../scritturaAtomica';
+import { safeAttachmentPathOrNull, copiaConNomeLibero } from './pathSafety';
 
 function setupExportImportIpc() {
   ipcMain.handle('export-zip', async (event, ids, titleDialog) => {
@@ -30,7 +30,7 @@ function setupExportImportIpc() {
         }
     }
     
-    const defaultName = ids.length === 1 ? `Esportazione_${toExport[0].segnatura || 'Manoscritto'}.zip` : `Esportazione_Multipla.zip`;
+    const defaultName = ids.length === 1 ? `Esportazione_${nomeFileSicuro(toExport[0].segnatura, 'Manoscritto')}.zip` : `Esportazione_Multipla.zip`;
     const result = await dialog.showSaveDialog({
         title: 'Esporta Schedatura',
         defaultPath: defaultName,
@@ -54,10 +54,9 @@ function setupExportImportIpc() {
         
         if (fs.existsSync(allegatiDir)) {
             for (const att of requiredAttachments) {
-                const attName = path.basename(att);
-                const attPath = path.join(allegatiDir, attName);
-                if (fs.existsSync(attPath)) {
-                    archive.file(attPath, { name: `allegati/${attName}` });
+                const attPath = safeAttachmentPathOrNull(allegatiDir, att);
+                if (attPath && fs.existsSync(attPath)) {
+                    archive.file(attPath, { name: `allegati/${path.basename(attPath)}` });
                 }
             }
         }
@@ -158,7 +157,7 @@ function setupExportImportIpc() {
         }
         if (!data.manoscritti || !Array.isArray(data.manoscritti)) return nonArchiview('Formato JSON non valido');
 
-        return { success: true, manoscritti: data.manoscritti, copiati: estratto.copiati, saltati: estratto.saltati };
+        return { success: true, manoscritti: data.manoscritti, copiati: estratto.copiati, saltati: estratto.saltati, rinominati: estratto.rinominati };
     } catch (e) {
         const dettaglio = e.message || String(e);
         let codice = 'altro';
@@ -175,48 +174,26 @@ function setupExportImportIpc() {
     }
   });
 
-  ipcMain.handle('duplicate-records', async (event, ids, targetFolder) => {
-      if (!state.workspacePath) return { success: false, error: 'Nessun workspace aperto' };
-      
-      const dbPath = path.join(state.workspacePath, 'database_manoscritti.json');
-      if (!fs.existsSync(dbPath)) return { success: false, error: 'Database non trovato' };
-      
-      const dbData = await fs.promises.readFile(dbPath, 'utf8');
-      const db = JSON.parse(dbData);
-      if (!db.manoscritti) db.manoscritti = [];
-      
-      const toDuplicate = db.manoscritti.filter(m => ids.includes(m.id));
-      if (toDuplicate.length === 0) return { success: false, error: 'Nessun record da duplicare' };
-      
-      const allegatiDir = state.attachmentsDirPath;
-      let duplicatedCount = 0;
-      
-      for (const original of toDuplicate) {
-          const clone = JSON.parse(JSON.stringify(original));
-          clone.id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-          clone.titolo = clone.titolo ? clone.titolo + ' (Copia)' : 'Copia';
-          if (clone.segnatura) clone.segnatura += ' (Copia)';
-          if (targetFolder) clone.cartella = targetFolder;
-          
-          if (Array.isArray(clone.allegati)) {
-              for (const att of clone.allegati) {
-                  if (!att || typeof att.nome !== 'string' || !att.nome) continue;
-                  const origName = path.basename(att.nome);
-                  const origPath = path.join(allegatiDir, origName);
-                  if (!fs.existsSync(origPath)) continue;
-                  const ext = path.extname(origName);
-                  const newName = `${path.basename(origName, ext)}_copia_${Date.now()}${ext}`;
-                  fs.copyFileSync(origPath, path.join(allegatiDir, newName));
-                  att.nome = newName;
+  ipcMain.handle('duplica-allegati', async (event, voci) => {
+      if (!state.workspacePath || !state.attachmentsDirPath) return { success: false, error: 'Nessun workspace aperto' };
+      if (!Array.isArray(voci) || voci.length > 20000) return { success: false, error: 'Parametri non validi' };
+      const dir = state.attachmentsDirPath;
+      const nomi: (string | null)[] = [];
+      try {
+          for (const v of voci) {
+              const da = v && typeof v.nome === 'string' ? safeAttachmentPathOrNull(dir, v.nome) : null;
+              const prefisso = String((v && v.prefisso) || '').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64) || ('doc_' + Date.now());
+              try {
+                  nomi.push(da ? await copiaConNomeLibero(da, dir, prefisso, path.basename(v.nome)) : null);
+              } catch (e) {
+                  if (!e || e.code !== 'ENOENT') throw e;
+                  nomi.push(null);
               }
           }
-          
-          db.manoscritti.push(clone);
-          duplicatedCount++;
+          return { success: true, nomi };
+      } catch (e) {
+          return { success: false, error: e && e.message ? e.message : String(e) };
       }
-      
-      await scriviAtomico(dbPath, JSON.stringify(db));
-      return { success: true, count: duplicatedCount };
   });
 }
 

@@ -24,6 +24,15 @@ const scheda = (n) => ({ id: 'm' + n, cartella: '', segnatura: 'MS ' + n });
   const dopo = (await trash.elencaCestino()).map(v => v.record.id).sort();
   assert.deepStrictEqual(dopo, ['m2', 'm3', 'm4', 'm5', 'm6']);
   console.log('✅ Test 2: ripristino ed eliminazione sovrapposti non si annullano.');
+
+  const file = trash.percorsoCestino();
+  fs.writeFileSync(file, '[{"record": tronc');
+  await trash.aggiungiAlCestino([scheda(7)]);
+  const conservati = fs.readdirSync(path.dirname(file)).filter(f => /^cestino\.corrotto-.*\.json$/.test(f));
+  assert.strictEqual(conservati.length, 1, 'il file illeggibile si conserva con un altro nome');
+  assert.strictEqual(fs.readFileSync(path.join(path.dirname(file), conservati[0]), 'utf8'), '[{"record": tronc');
+  assert.deepStrictEqual((await trash.elencaCestino()).map(v => v.record.id), ['m7']);
+  console.log('✅ Test 3: cestino corrotto conservato prima di riscrivere.');
   console.log('Tutti i test cestino passati con successo!');
 })().catch((e) => { console.error(e); process.exitCode = 1; })
   .finally(() => fs.rmSync(ws, { recursive: true, force: true }));

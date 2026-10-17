@@ -112,6 +112,9 @@ if (process.defaultApp && process.argv.length >= 2) {
   app.setAsDefaultProtocolClient('archiview');
 }
 
+const urlInvitoDa = (argv: string[]) => argv.find(arg => typeof arg === 'string' && arg.startsWith('archiview://')) || null;
+let urlInvitoInAttesa: string | null = urlInvitoDa(process.argv);
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -122,7 +125,7 @@ if (!gotTheLock) {
       if (state.mainWindow.isMinimized()) state.mainWindow.restore();
       state.mainWindow.focus();
 
-      const url = commandLine.find(arg => arg.startsWith('archiview://'));
+      const url = urlInvitoDa(commandLine);
       if (url) {
         state.mainWindow.webContents.send('handle-invite-url', url);
       }
@@ -133,6 +136,8 @@ if (!gotTheLock) {
     event.preventDefault();
     if (state.mainWindow) {
       state.mainWindow.webContents.send('handle-invite-url', url);
+    } else {
+      urlInvitoInAttesa = url;
     }
   });
 
@@ -176,12 +181,18 @@ if (!gotTheLock) {
   setupScannerIpc();
 
   ipcMain.handle('apri-link-esterno', async (event, url) => {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) {
       await shell.openExternal(url);
       return true;
     }
     console.warn(`[SECURITY] Tentativo bloccato di aprire link esterno non sicuro: ${url}`);
     return false;
+  });
+
+  ipcMain.handle('prendi-url-invito', () => {
+    const url = urlInvitoInAttesa;
+    urlInvitoInAttesa = null;
+    return url;
   });
 
   ipcMain.handle('get-version', () => {
@@ -231,7 +242,7 @@ if (!gotTheLock) {
   let forceClose = false;
   state.mainWindow?.on('close', (e) => {
     if (process.env.ARCHIVIEW_E2E_USER_DATA) return;
-    if (!forceClose && state.mainWindow && state.mainWindow.webContents) {
+    if (!forceClose && state.mainWindow && state.mainWindow.webContents && !state.mainWindow.webContents.isCrashed()) {
       e.preventDefault();
       state.mainWindow.webContents.send('request-close');
     }

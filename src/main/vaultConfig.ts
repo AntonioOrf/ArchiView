@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
+import { scriviAtomicoSync } from './scritturaAtomica';
 
 const VAULT_FILE = '.archiview-vault.json';
 const DRIVE_FILE = '.archiview-drive.json';
@@ -46,9 +47,10 @@ function degradaMicrosoft(cfg) {
 
 function deriveFromLegacy(folderPath, globalSettings) {
   const cfg = emptyConfig();
-  const drive = safeReadJson(path.join(folderPath, DRIVE_FILE)) || {};
+  const driveFile = safeReadJson(path.join(folderPath, DRIVE_FILE));
+  const drive = driveFile || {};
   const hub = safeReadJson(path.join(folderPath, HUB_FILE));
-  const inFolder = safeReadJson(path.join(folderPath, INFOLDER_SETTINGS_FILE)) || {};
+  const inFolder = driveFile ? {} : (safeReadJson(path.join(folderPath, INFOLDER_SETTINGS_FILE)) || {});
   const g = globalSettings || {};
 
   let isActiveVault = false;
@@ -109,7 +111,7 @@ function readVaultConfig(folderPath, globalSettings) {
 function writeVaultConfig(folderPath, config) {
   if (!folderPath) return false;
   try {
-    fs.writeFileSync(path.join(folderPath, VAULT_FILE), JSON.stringify(config, null, 2), 'utf8');
+    scriviAtomicoSync(path.join(folderPath, VAULT_FILE), JSON.stringify(config, null, 2));
     return true;
   } catch (e) {
     console.error("Errore scrittura vault config unificata:", e);
@@ -125,8 +127,22 @@ function syncUnifiedFromLegacy(folderPath, globalSettings) {
   const cfg = deriveFromLegacy(folderPath, globalSettings);
   const prima = safeReadJson(path.join(folderPath, VAULT_FILE));
   if (prima && typeof prima.archivioId === 'string' && prima.archivioId) cfg.archivioId = prima.archivioId;
+  if (prima && typeof prima.customAttachmentsPath === 'string' && prima.customAttachmentsPath) cfg.customAttachmentsPath = prima.customAttachmentsPath;
   writeVaultConfig(folderPath, cfg);
   return cfg;
+}
+
+function cartellaAllegatiArchivio(folderPath: string): string {
+  const cfg = safeReadJson(path.join(folderPath, VAULT_FILE));
+  const scelta = cfg && typeof cfg.customAttachmentsPath === 'string' ? cfg.customAttachmentsPath : '';
+  return scelta || path.join(folderPath, 'allegati_manoscritti');
+}
+
+function impostaCartellaAllegatiArchivio(folderPath: string, percorso: string | null, globalSettings): boolean {
+  if (!folderPath) return false;
+  const cfg = readVaultConfig(folderPath, globalSettings);
+  if (percorso) cfg.customAttachmentsPath = percorso; else delete cfg.customAttachmentsPath;
+  return writeVaultConfig(folderPath, cfg);
 }
 
 function assicuraArchivioId(folderPath, globalSettings) {
@@ -152,4 +168,4 @@ function legacyDaConfig(cfg) {
   };
 }
 
-export { readVaultConfig, writeVaultConfig, syncUnifiedFromLegacy, assicuraArchivioId, legacyDaConfig };
+export { readVaultConfig, writeVaultConfig, syncUnifiedFromLegacy, assicuraArchivioId, legacyDaConfig, cartellaAllegatiArchivio, impostaCartellaAllegatiArchivio };

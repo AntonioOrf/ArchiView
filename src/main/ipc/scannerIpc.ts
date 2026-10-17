@@ -14,6 +14,7 @@ const LATO_MINIATURA = 240;
 let inCorso: Promise<any> | null = null;
 
 let wifi: { server: any; sender: any } | null = null;
+const finestreConAscolto = new WeakSet<object>();
 
 async function fermaWifi(): Promise<void> {
   const w = wifi;
@@ -146,8 +147,11 @@ function setupScannerIpc() {
         onLotto: (id: string) => { if (!event.sender.isDestroyed()) event.sender.send('scanner-wifi-lotto', id); }
       });
       wifi = { server, sender: event.sender };
-      event.sender.once('destroyed', () => { fermaWifi(); });
-      event.sender.once('did-start-loading', () => { fermaWifi(); });
+      if (!finestreConAscolto.has(event.sender)) {
+        finestreConAscolto.add(event.sender);
+        event.sender.once('destroyed', () => { fermaWifi(); });
+        event.sender.on('did-start-loading', () => { fermaWifi(); });
+      }
       const indirizzi = indirizziLan();
       if (!indirizzi.length) { await fermaWifi(); throw new Error('nessuna_rete_locale'); }
       const url = urlAbbinamento(indirizzi[0], server.porta, server.token);

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { pipeline } from 'stream/promises';
 import { driveState } from './auth';
+import { idDrive } from './pickerSecurity';
 
 const escapeDriveQuery = (str: string) => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
@@ -29,7 +30,7 @@ async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3, attesaBase
 
 async function getOrCreateFolder(folderName: string, parentId: string | null = null): Promise<string> {
   let q = `name='${escapeDriveQuery(folderName)}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  if (parentId) q += ` and '${parentId}' in parents`;
+  if (parentId) q += ` and '${idDrive(parentId)}' in parents`;
 
   let res = await driveState.drive.files.list({
     q,
@@ -65,7 +66,7 @@ async function getOrCreateFolder(folderName: string, parentId: string | null = n
 
 async function uploadFile(localPath: string, driveFileName: string, parentId: string, skipIfExist = false): Promise<number | undefined> {
   const mimeType = driveFileName.endsWith('.json') ? 'application/json' : 'application/octet-stream';
-  const q = `name='${escapeDriveQuery(driveFileName)}' and '${parentId}' in parents and trashed=false`;
+  const q = `name='${escapeDriveQuery(driveFileName)}' and '${idDrive(parentId)}' in parents and trashed=false`;
   const res = await driveState.drive.files.list({
     q,
     fields: 'files(id, modifiedTime)',
@@ -80,7 +81,7 @@ async function uploadFile(localPath: string, driveFileName: string, parentId: st
     if (files.length > 1) {
       for (let i = 1; i < files.length; i++) {
         try {
-          await driveState.drive.files.delete({ fileId: files[i].id, supportsAllDrives: true });
+          await driveState.drive.files.update({ fileId: files[i].id, requestBody: { trashed: true }, supportsAllDrives: true });
         } catch (e: any) {
           console.warn("Impossibile eliminare duplicato Drive:", files[i].id, e.message);
         }

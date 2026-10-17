@@ -57,9 +57,16 @@ async function run() {
   const dest4 = path.join(tmpRoot, 'allegati4');
   fs.mkdirSync(dest4, { recursive: true });
   fs.writeFileSync(path.join(dest4, 'foto.txt'), 'originale');
-  await extractZipStreaming(zip1, dest4);
+  const res4 = await extractZipStreaming(zip1, dest4);
   assert.strictEqual(fs.readFileSync(path.join(dest4, 'foto.txt'), 'utf8'), 'originale');
-  console.log('✅ Test 4: allegato esistente preservato.');
+  assert.strictEqual(fs.readFileSync(path.join(dest4, 'foto_2.txt'), 'utf8'), 'contenuto-allegato');
+  assert.deepStrictEqual(res4.rinominati, { 'foto.txt': 'foto_2.txt' });
+  assert.strictEqual(res4.copiati, 1);
+  const res4b = await extractZipStreaming(zip1, dest1);
+  assert.deepStrictEqual(res4b.rinominati, {});
+  assert.strictEqual(res4b.saltati, 1);
+  assert.deepStrictEqual(fs.readdirSync(dest1), ['foto.txt']);
+  console.log('✅ Test 4: allegato esistente preservato, omonimo diverso con nome libero.');
 
   const zip5 = path.join(tmpRoot, 'corrotto.zip');
   fs.writeFileSync(zip5, 'questo non è uno zip');

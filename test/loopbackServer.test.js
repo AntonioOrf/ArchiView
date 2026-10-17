@@ -27,7 +27,7 @@ assert.deepStrictEqual(leggiCallbackOAuth('/oauth2callback?code=x&state=', { pat
 
 function richiesta(host, porta) {
   return new Promise((resolve) => {
-    const req = http.get({ host, port: porta, path: '/sonda', timeout: 1500 }, (res) => { res.resume(); resolve(res.statusCode); });
+    const req = http.get({ host, port: porta, path: '/sonda', timeout: 1500, agent: false }, (res) => { res.resume(); resolve(res.statusCode); });
     req.on('timeout', () => { req.destroy(); resolve('timeout'); });
     req.on('error', (e) => resolve(e.code));
   });
@@ -57,5 +57,16 @@ function richiesta(host, porta) {
   } finally {
     server.close();
   }
+
+  let scaduto = 0;
+  await avviaServerLoopback(porta, (req, res) => { res.writeHead(204); res.end(); }, { scadenzaMs: 150, alloScadere: () => scaduto++ });
+  assert.strictEqual(await richiesta('127.0.0.1', porta), 204);
+  await new Promise(r => setTimeout(r, 400));
+  assert.strictEqual(scaduto, 1, 'alla scadenza si avvisa una volta');
+  assert.notStrictEqual(await richiesta('127.0.0.1', porta), 204, 'alla scadenza il server si chiude');
+  const chiuso = await avviaServerLoopback(porta, () => {}, { scadenzaMs: 150, alloScadere: () => scaduto++ });
+  chiuso.close();
+  await new Promise(r => setTimeout(r, 300));
+  assert.strictEqual(scaduto, 1, 'chiuso prima della scadenza: nessun avviso');
   console.log('loopbackServer tests passed.');
 })().catch((e) => { console.error(e); process.exit(1); });

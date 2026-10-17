@@ -1,7 +1,8 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { state, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni } from '../workspaceManager';
+import { state, getAllSettings, saveAllSettings, patchSettings, applicaCartellaAllegati } from '../workspaceManager';
+import { impostaCartellaAllegatiArchivio } from '../vaultConfig';
 import { applicaZoom } from '../zoomInterfaccia';
 import { leggiPerfConfig, scriviPerfConfig } from '../perfConfig';
 
@@ -29,7 +30,8 @@ function setupSettingsIpc() {
       if (esito.canceled || !esito.filePaths || !esito.filePaths[0]) return null;
       const scelta = path.resolve(esito.filePaths[0]);
       if (!fs.statSync(scelta).isDirectory()) return null;
-      saveAllSettings({ customAttachmentsPath: scelta });
+      if (!state.workspacePath || !impostaCartellaAllegatiArchivio(state.workspacePath, scelta, getAllSettings())) return null;
+      applicaCartellaAllegati();
       return scelta;
     } catch (error) {
       console.error('Errore scelta cartella allegati:', error);
@@ -39,7 +41,8 @@ function setupSettingsIpc() {
 
   ipcMain.handle('ripristina-cartella-allegati', () => {
     try {
-      rimuoviImpostazioni(['customAttachmentsPath']);
+      if (!state.workspacePath || !impostaCartellaAllegatiArchivio(state.workspacePath, null, getAllSettings())) return false;
+      applicaCartellaAllegati();
       return true;
     } catch (error) {
       console.error('Errore ripristino cartella allegati:', error);

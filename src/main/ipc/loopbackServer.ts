@@ -8,9 +8,14 @@ export interface ServerLoopback {
   close(): void;
 }
 
-function avviaServerLoopback(porta: number, gestore: (req: any, res: any) => void): Promise<ServerLoopback> {
+function avviaServerLoopback(porta: number, gestore: (req: any, res: any) => void,
+  opzioni: { scadenzaMs?: number; alloScadere?: () => void } = {}): Promise<ServerLoopback> {
   const serverAperti: any[] = [];
-  const chiudi = () => { for (const s of serverAperti) { try { s.close(); } catch {} } };
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const chiudi = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    for (const s of serverAperti) { try { s.close(); } catch {} }
+  };
 
   const ascolta = (host: string) => new Promise<void>((resolve, reject) => {
     const server = http.createServer(gestore);
@@ -37,6 +42,9 @@ function avviaServerLoopback(porta: number, gestore: (req: any, res: any) => voi
         chiudi();
         throw e;
       }
+    }
+    if (opzioni.scadenzaMs) {
+      timer = setTimeout(() => { timer = null; chiudi(); if (opzioni.alloScadere) opzioni.alloScadere(); }, opzioni.scadenzaMs);
     }
     return { close: chiudi };
   })();

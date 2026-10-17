@@ -3,10 +3,10 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { ipcMain } from 'electron';
 import { state, getAllSettings } from '../workspaceManager';
-import { readVaultConfig, assicuraArchivioId } from '../vaultConfig';
+import { readVaultConfig, assicuraArchivioId, cartellaAllegatiArchivio } from '../vaultConfig';
 import { leggiPerfConfig } from '../perfConfig';
 import { IndiceWorker } from '../crossArchive/client';
-import { safeAttachmentPathOrNull, safeAttachmentPath } from './pathSafety';
+import { safeAttachmentPathOrNull, safeAttachmentPath, copiaConNomeLibero } from './pathSafety';
 import { hashFile } from '../chunkingLogic';
 
 import type { IndiceArchivi } from '../crossArchive/indiceMemoria';
@@ -179,9 +179,8 @@ function setupCrossArchiveIpc() {
         try {
           if (!a || a.remoto || typeof a.nome !== 'string') throw new Error('Allegato non disponibile');
           const da = safeAttachmentPath(cartellaAllegati(archivio.percorso), a.nome);
-          const nome = await nomeLibero(dest, pref, a.originalName || a.nome);
+          const nome = await copiaConNomeLibero(da, dest, pref, a.originalName || a.nome);
           const verso = safeAttachmentPath(dest, nome);
-          await fs.promises.copyFile(da, verso, fs.constants.COPYFILE_EXCL);
           copiati.push({ posizione: p, nome, hash: await hashFile(verso) });
         } catch (e) {
           errori.push({ posizione: p, errore: e && e.code === 'ENOENT' ? 'File non presente su questo computer' : ((e && e.message) || String(e)) });
@@ -208,7 +207,7 @@ function setupCrossArchiveIpc() {
       if (!allegato || allegato.remoto || typeof allegato.nome !== 'string') return { ok: false, error: 'Allegato non disponibile' };
       const mime = MIME_IMMAGINI[path.extname(allegato.nome).toLowerCase()];
       if (!mime) return { ok: false, error: 'Formato non visualizzabile' };
-      const file = safeAttachmentPathOrNull(path.join(archivio.percorso, 'allegati_manoscritti'), allegato.nome);
+      const file = safeAttachmentPathOrNull(cartellaAllegati(archivio.percorso), allegato.nome);
       if (!file) return { ok: false, error: 'Nome allegato non valido' };
       const st = await fs.promises.stat(file);
       if (!st.isFile() || st.size > MAX_IMMAGINE) return { ok: false, error: 'Allegato troppo grande' };
@@ -230,7 +229,7 @@ async function archivioConsultabile(archivioId: string) {
 }
 
 function cartellaAllegati(percorso: string): string {
-  return path.join(percorso, 'allegati_manoscritti');
+  return cartellaAllegatiArchivio(percorso);
 }
 
 async function dimensioniAllegati(percorso: string, scheda: any): Promise<(number | null)[]> {
@@ -241,16 +240,6 @@ async function dimensioniAllegati(percorso: string, scheda: any): Promise<(numbe
     if (!file) return null;
     try { return (await fs.promises.stat(file)).size; } catch (e) { return null; }
   }));
-}
-
-async function nomeLibero(dir: string, prefisso: string, originale: string): Promise<string> {
-  const ext = path.extname(originale).toLowerCase().replace(/[^a-z0-9.]/g, '').substring(0, 16);
-  const base = path.basename(originale, path.extname(originale)).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50) || 'allegato';
-  for (let n = 1; n < 1000; n++) {
-    const nome = `${prefisso}_${base}${n > 1 ? '_' + n : ''}${ext}`;
-    try { await fs.promises.access(path.join(dir, nome)); } catch (e) { return nome; }
-  }
-  throw new Error('Nessun nome libero per ' + originale);
 }
 
 function idValido(v: any): boolean {

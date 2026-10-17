@@ -24,4 +24,12 @@ assert.strictEqual(pickerGetSecretOk(`/?s=sbagliato&s=${secret}`, secret), false
 assert.strictEqual(pickerGetSecretOk('http://[::1', secret), false);
 assert.strictEqual(pickerGetSecretOk(undefined, secret), false);
 
+const { idDriveValido, idDrive } = require('../out/main/ipc/drive/pickerSecurity');
+for (const buono of ['1AbC-dEf_GhIjKlMnOpQrStUvWxYz0123', 'root']) assert.strictEqual(idDriveValido(buono), true, buono);
+for (const ostile of ["x' in parents or name='database_manoscritti.json", "a'b", 'a b', '', 'x'.repeat(201), null, 42, {}, 'id\\']) {
+  assert.strictEqual(idDriveValido(ostile), false, String(ostile));
+  assert.throws(() => idDrive(ostile), /Id Drive non valido/);
+}
+assert.strictEqual(idDrive('abc_DEF-123'), 'abc_DEF-123');
+
 console.log('pickerSecurity tests passed.');

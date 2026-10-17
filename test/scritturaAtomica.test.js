@@ -37,6 +37,15 @@ console.log('Running scritturaAtomica tests...');
     assert.strictEqual(fs.readFileSync(impostazioni, 'utf8'), '{"b":2}');
     assert.deepStrictEqual(fs.readdirSync(dir).sort(), ['database_manoscritti.json', 'settings.json']);
 
+    const veroRename = fs.renameSync;
+    let rifiuti = 2;
+    fs.renameSync = (da, a) => {
+      if (rifiuti-- > 0) throw Object.assign(new Error('occupato'), { code: rifiuti ? 'EPERM' : 'EBUSY' });
+      return veroRename(da, a);
+    };
+    try { scriviAtomicoSync(impostazioni, '{"c":3}'); } finally { fs.renameSync = veroRename; }
+    assert.strictEqual(fs.readFileSync(impostazioni, 'utf8'), '{"c":3}');
+
     console.log('scritturaAtomica tests passed.');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { safeAttachmentPathOrNull } from './pathSafety';
+import { hashFile } from '../chunkingLogic';
 
 const MAX_JSON_BYTES = 64 * 1024 * 1024;
 
@@ -22,7 +23,7 @@ function spazioLiberoDisco(dir: string): number | null {
 }
 
 function extractZipStreaming(zipPath: string, allegatiDir: string,
-  opzioni: { spazioLibero?: (dir: string) => number | null; avanzamento?: (fatte: number, totale: number) => void } = {}): Promise<{ json: string | null; copiati: number; saltati: number }> {
+  opzioni: { spazioLibero?: (dir: string) => number | null; avanzamento?: (fatte: number, totale: number) => void } = {}): Promise<{ json: string | null; copiati: number; saltati: number; rinominati: { [nome: string]: string } }> {
   const yauzl = require('yauzl');
   const libero = (opzioni.spazioLibero || spazioLiberoDisco)(allegatiDir);
   const tetto = libero == null ? Infinity : Math.max(0, libero - MARGINE_DISCO_BYTES);
@@ -35,10 +36,11 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
       let totaleAllegati = 0;
       let copiati = 0;
       let saltati = 0;
+      const rinominati: { [nomeNelloZip: string]: string } = {};
       const fail = (e) => { if (!settled) { settled = true; try { zipfile.close(); } catch (_) {} reject(e); } };
 
       zipfile.on('error', fail);
-      zipfile.on('end', () => { if (!settled) { settled = true; resolve({ json: jsonText, copiati, saltati }); } });
+      zipfile.on('end', () => { if (!settled) { settled = true; resolve({ json: jsonText, copiati, saltati, rinominati }); } });
 
       let fatte = 0;
       zipfile.on('entry', (entry) => {
@@ -69,8 +71,6 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
             console.warn(`[import zip] allegato con nome non valido saltato: ${attName}`);
             return zipfile.readEntry();
           }
-          if (fs.existsSync(attPath)) { saltati++; return zipfile.readEntry(); }
-
           totaleAllegati += entry.uncompressedSize;
           if (totaleAllegati > tetto) {
             return fail(new Error('Spazio su disco insufficiente per estrarre gli allegati dell\'archivio'));
@@ -82,6 +82,8 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
             if (e) return fail(e);
             const tmpPath = `${attPath}.${crypto.randomBytes(4).toString('hex')}.part`;
             const out = fs.createWriteStream(tmpPath);
+            const impronta = crypto.createHash('sha256');
+            stream.on('data', (c) => impronta.update(c));
             const failPulito = (errore) => {
               stream.unpipe(out);
               out.destroy();
@@ -89,10 +91,18 @@ function extractZipStreaming(zipPath: string, allegatiDir: string,
             };
             stream.on('error', failPulito);
             out.on('error', failPulito);
-            out.on('close', () => {
+            out.on('close', async () => {
               try {
-                if (fs.existsSync(attPath)) { fs.rmSync(tmpPath, { force: true }); saltati++; }
-                else { fs.renameSync(tmpPath, attPath); copiati++; }
+                let verso = attPath;
+                if (fs.existsSync(attPath)) {
+                  if (await hashFile(attPath) === impronta.digest('hex')) { fs.rmSync(tmpPath, { force: true }); saltati++; return zipfile.readEntry(); }
+                  const ext = path.extname(attName);
+                  // ponytail: exists + rename non è atomico; basta perché il renderer non lancia due import insieme.
+                  for (let n = 2; fs.existsSync(verso); n++) verso = path.join(path.dirname(attPath), `${path.basename(attName, ext)}_${n}${ext}`);
+                  rinominati[attName] = path.basename(verso);
+                }
+                fs.renameSync(tmpPath, verso);
+                copiati++;
               } catch (err) { return fail(err); }
               zipfile.readEntry();
             });

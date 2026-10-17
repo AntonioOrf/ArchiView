@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { state } from '../workspaceManager';
+import { safeAttachmentPathOrNull } from '../ipc/pathSafety';
 import * as pdfHost from './pdfHost';
 import { riconosci, linguaMancanti, normalizzaLingue, rilevaOrientamento } from './ocrEngine';
 import { testoOcrPiano, testoOcrInHtml, unisciPagine } from './ocrText';
@@ -21,9 +22,8 @@ function contaAlfanumerici(s) {
 
 function percorsoAllegato(nomeFile) {
   if (!state.attachmentsDirPath) throw new Error('Cartella allegati non definita');
-  const sicuro = path.basename(String(nomeFile || ''));
-  if (!sicuro) throw new Error('Nome allegato non valido');
-  const p = path.join(state.attachmentsDirPath, sicuro);
+  const p = safeAttachmentPathOrNull(state.attachmentsDirPath, String(nomeFile || ''));
+  if (!p) throw new Error('Nome allegato non valido');
   if (!fs.existsSync(p)) {
     const errore: any = new Error('Allegato non presente su questo PC');
     errore.codice = 'allegato_mancante';

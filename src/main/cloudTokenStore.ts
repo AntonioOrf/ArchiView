@@ -1,7 +1,8 @@
 import { app, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { state, getActiveVaultFlags } from './workspaceManager';
+import { state, getActiveVaultFlags, getAllSettings } from './workspaceManager';
+import { scriviAtomicoSync } from './scritturaAtomica';
 
 function tokensDir(): string {
   return path.join(app.getPath('userData'), 'cloud-tokens');
@@ -28,11 +29,27 @@ function tokenPathFor(provider: 'google' | 'hub', key: string): string {
 }
 
 import * as crypto from 'crypto';
+import { assicuraArchivioId } from './vaultConfig';
+
+function hubPathKey(repoId: string, wp: string): string {
+  const suffix = wp ? crypto.createHash('sha256').update(wp).digest('hex').slice(0, 12) : 'noworkspace';
+  return `${repoId}-${suffix}`;
+}
 
 function hubScopeKey(repoId: string, wpOverride?: string): string {
   const wp = wpOverride || state.workspacePath || '';
-  const suffix = wp ? crypto.createHash('sha256').update(wp).digest('hex').slice(0, 12) : 'noworkspace';
-  return `${repoId}-${suffix}`;
+  const id = wp ? assicuraArchivioId(wp, getAllSettings()) : null;
+  return id ? `${repoId}-a-${id}` : hubPathKey(repoId, wp);
+}
+
+function slotDaMigrare(repoId: string): string | null {
+  const proprio = tokenPathFor('hub', hubPathKey(repoId, state.workspacePath || ''));
+  if (fs.existsSync(proprio)) return proprio;
+  const prefisso = `hub-${sanitizeKey(repoId)}-`;
+  let nomi: string[] = [];
+  try { nomi = fs.readdirSync(tokensDir()); } catch { return null; }
+  const candidati = nomi.filter(n => n.startsWith(prefisso) && /^[0-9a-f]{12}\.json$/.test(n.slice(prefisso.length)));
+  return candidati.length === 1 ? path.join(tokensDir(), candidati[0]) : null;
 }
 
 function hubLegacyPath(repoId: string): string {
@@ -63,11 +80,12 @@ function loadHubSecrets(repoId: string): { repoKey?: string; encKey?: string | n
     const scopedPath = tokenPathFor('hub', hubScopeKey(repoId));
     let raw = readSerialized(scopedPath);
     if (!raw) {
-      const legacyPath = hubLegacyPath(repoId);
-      if (legacyPath !== scopedPath && fs.existsSync(legacyPath)) {
-        raw = readSerialized(legacyPath);
+      for (const vecchio of [slotDaMigrare(repoId), hubLegacyPath(repoId)]) {
+        if (!vecchio || vecchio === scopedPath || !fs.existsSync(vecchio)) continue;
+        raw = readSerialized(vecchio);
         if (raw) {
-          try { writeSerialized(scopedPath, raw); fs.unlinkSync(legacyPath); } catch (e) {}
+          try { writeSerialized(scopedPath, raw); fs.unlinkSync(vecchio); } catch (e) {}
+          break;
         }
       }
     }
@@ -80,7 +98,8 @@ function loadHubSecrets(repoId: string): { repoKey?: string; encKey?: string | n
 }
 
 function clearHubSecrets(repoId: string): void {
-  for (const p of [tokenPathFor('hub', hubScopeKey(repoId)), hubLegacyPath(repoId)]) {
+  const proprioPerPercorso = tokenPathFor('hub', hubPathKey(repoId, state.workspacePath || ''));
+  for (const p of [tokenPathFor('hub', hubScopeKey(repoId)), proprioPerPercorso, hubLegacyPath(repoId)]) {
     try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {}
   }
 }
@@ -90,10 +109,10 @@ function writeSerialized(filePath: string, serialized: string): void {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (safeStorage.isEncryptionAvailable()) {
     const encrypted = safeStorage.encryptString(serialized).toString('base64');
-    fs.writeFileSync(filePath, JSON.stringify({ encrypted, v: 1 }));
+    scriviAtomicoSync(filePath, JSON.stringify({ encrypted, v: 1 }));
   } else {
     console.warn('[cloudTokenStore] safeStorage non disponibile: token salvato in chiaro.');
-    fs.writeFileSync(filePath, serialized);
+    scriviAtomicoSync(filePath, serialized);
   }
 }
 

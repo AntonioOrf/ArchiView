@@ -70,17 +70,21 @@ async function fetchVerifiedChunk(urls: string[], expectedHash: string): Promise
   return null;
 }
 
-function collectUsedAttachments(dbPath: string, dir: string): Map<string, number> {
+async function collectUsedAttachments(dbPath: string, dir: string): Promise<Map<string, number>> {
   const used = new Map<string, number>();
-  if (!fs.existsSync(dbPath)) return used;
-  const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  let testo: string;
+  try { testo = await fs.promises.readFile(dbPath, 'utf8'); } catch (e: any) {
+    if (e && e.code === 'ENOENT') return used;
+    throw e;
+  }
+  const db = JSON.parse(testo);
   for (const m of db.manoscritti || []) {
     for (const a of m.allegati || []) {
       if (!a.nome) continue;
       const p = safeAttachmentPathOrNull(dir, a.nome);
       if (!p) { console.warn(`[hub-att] nome allegato non sicuro ignorato: ${a.nome}`); continue; }
       let mtime = m.lastModified || 0;
-      try { if (fs.existsSync(p)) mtime = Math.max(mtime, fs.statSync(p).mtimeMs); } catch {}
+      try { mtime = Math.max(mtime, (await fs.promises.stat(p)).mtimeMs); } catch {}
       used.set(a.nome, mtime);
     }
   }
@@ -114,10 +118,11 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
   fs.mkdirSync(plainCache, { recursive: true });
   fs.mkdirSync(encCache, { recursive: true });
 
-  const used = collectUsedAttachments(dbPath, attDir);
-  const hasLocalAttachments = Array.from(used.keys()).some(fileName => {
-    try { return fs.statSync(path.join(attDir, fileName)).isFile(); } catch { return false; }
-  });
+  const used = await collectUsedAttachments(dbPath, attDir);
+  let hasLocalAttachments = false;
+  for (const fileName of used.keys()) {
+    try { if ((await fs.promises.stat(path.join(attDir, fileName))).isFile()) { hasLocalAttachments = true; break; } } catch {}
+  }
   let uploaded = 0, downloaded = 0, unavailable = 0, skippedUpload = false, notPublished = 0, decryptFailed = 0;
   const errors: string[] = [];
 
@@ -145,11 +150,11 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
           const plainHashes: string[] = await splitFileIntoChunks(localPath, plainCache);
           const out: string[] = [];
           for (const ph of plainHashes) {
-            const blob = encryptChunk(key, fs.readFileSync(path.join(plainCache, ph)), ph);
+            const blob = encryptChunk(key, await fs.promises.readFile(path.join(plainCache, ph)), ph);
             const ctHash = sha256hex(blob);
             out.push(ctHash);
-            const encPath = path.join(encCache, ctHash);
-            if (!fs.existsSync(encPath)) fs.writeFileSync(encPath, blob);
+            try { await fs.promises.writeFile(path.join(encCache, ctHash), blob, { flag: 'wx' }); }
+            catch (e: any) { if (!e || e.code !== 'EEXIST') throw e; }
           }
           return out;
         };
@@ -168,7 +173,7 @@ async function syncHubAttachmentsImpl(): Promise<SyncAttachmentsResult> {
           try {
             const id = await uploadFileReturningId(path.join(encCache, ctHash), ctHash, chunkFolderId);
             await makeFilePublic(id);
-            const entry = { hash: ctHash, url: primaryUrl(id), driveFileId: id, sizeBytes: fs.statSync(path.join(encCache, ctHash)).size };
+            const entry = { hash: ctHash, url: primaryUrl(id), driveFileId: id, sizeBytes: (await fs.promises.stat(path.join(encCache, ctHash))).size };
             newChunks.push(entry);
             remoteChunks.set(ctHash, entry);
             uploaded++;

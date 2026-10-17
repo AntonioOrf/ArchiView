@@ -69,7 +69,6 @@ type AVDatabase = {
   tagsAnagrafica?: { [chiave: string]: AVVoceTag };
   vocabolari?: { [id: string]: AVVocabolario };
   authority?: { [chiave: string]: AVAuthority };
-  trascrizioneEditorWidth?: string;
   [altro: string]: any;
 };
 
@@ -346,9 +345,18 @@ function avVersioneDi(db: any): number {
   return typeof v === 'number' && isFinite(v) && v > 0 ? Math.floor(v) : 0;
 }
 
+function avRecordValidi(lista: any): { validi: any[]; scartati: number } {
+  const voci = Array.isArray(lista) ? lista : [];
+  const validi = voci.filter((m: any) => m && typeof m === 'object' && !Array.isArray(m)
+    && ((typeof m.id === 'string' && m.id !== '') || (typeof m.id === 'number' && isFinite(m.id))));
+  return { validi, scartati: voci.length - validi.length };
+}
+
 function avMotivoNonValido(db: any): string | null {
   if (!db || typeof db !== 'object' || Array.isArray(db)) return 'Il database non è un oggetto';
   if (!avEArray(db.manoscritti)) return 'Manca la collezione "manoscritti"';
+  const { scartati } = avRecordValidi(db.manoscritti);
+  if (scartati) return `${scartati} voci di "manoscritti" non valide (non oggetti o senza id)`;
   if (!avEArray(db.cartelle)) return 'Manca la collezione "cartelle"';
   if (db.tipiDocumento !== undefined && !avEArray(db.tipiDocumento)) return '"tipiDocumento" non è un elenco';
   if (db.strutturaCampi !== undefined && !avEArray(db.strutturaCampi)) return '"strutturaCampi" non è un elenco';
@@ -1147,8 +1155,7 @@ function avDatabaseVuoto(): AVDatabase {
   const db: any = {
     cartelle: [],
     manoscritti: [],
-    tipiDocumento: AV_MODELLI_PREDEFINITI.map(m => ({ id: m.id, nome: m.nome, campi: m.campi.slice() })),
-    trascrizioneEditorWidth: '50%'
+    tipiDocumento: AV_MODELLI_PREDEFINITI.map(m => ({ id: m.id, nome: m.nome, campi: m.campi.slice() }))
   };
   for (const migrazione of AV_MIGRAZIONI) migrazione.applica(db);
   db.schemaVersion = ARCHIVIEW_SCHEMA_VERSION;
@@ -1345,6 +1352,60 @@ function avImprontaRecord(record: any): string | null {
   return JSON.stringify(ordinato);
 }
 
+function avFondiTipi(base: any[] | undefined, locali: any[], esterni: any[], eliminati: Set<string>) {
+  const perId = (x: any[] | undefined) => new Map<string, any>((x || []).filter((t: any) => t && t.id != null).map((t: any) => [t.id, t]));
+  const B = base ? perId(base) : null, L = perId(locali), E = perId(esterni);
+  const tipi: any[] = [];
+  const conflitti: string[] = [];
+  for (const id of new Set([...L.keys(), ...E.keys()])) {
+    if (eliminati.has(id)) continue;
+    const l = L.get(id), e = E.get(id), b = B ? B.get(id) : undefined;
+    if (!l || !e) {
+      const solo = l || e;
+      if (b && avUgualiJson(solo, b)) continue;
+      tipi.push(solo);
+      continue;
+    }
+    const bb = b || l;
+    const { fuso, conflitti: chiavi } = avFondiChiavi(bb, l, e);
+    const bc: string[] = b ? (b.campi || []) : [];
+    const lc: string[] = l.campi || [], ec: string[] = e.campi || [];
+    fuso.campi = [
+      ...lc.filter(c => ec.includes(c) || !bc.includes(c)),
+      ...ec.filter(c => !lc.includes(c) && !bc.includes(c))
+    ];
+    const def = avFondiChiavi(b ? (b.campiDef || {}) : {}, l.campiDef || {}, e.campiDef || {});
+    for (const c of Object.keys(def.fuso)) if (!fuso.campi.includes(c)) delete def.fuso[c];
+    if (Object.keys(def.fuso).length) fuso.campiDef = def.fuso; else delete fuso.campiDef;
+    if (b && (chiavi.some(k => k !== 'campi' && k !== 'campiDef') || def.conflitti.length)) conflitti.push(fuso.nome || id);
+    tipi.push(fuso);
+  }
+  return { tipi, conflitti };
+}
+
+function avFondiMappa(base: any, locale: any, esterno: any, unisci: (l: any, e: any) => any) {
+  const fuso = unisci(locale, esterno);
+  if (!base || typeof base !== 'object') return fuso;
+  const l = locale || {}, e = esterno || {};
+  for (const k of Object.keys(base)) {
+    const inL = Object.prototype.hasOwnProperty.call(l, k), inE = Object.prototype.hasOwnProperty.call(e, k);
+    if (inL && inE) {
+      if (Array.isArray(base[k] && base[k].valori) && fuso[k]) {
+        const chiavi = (x: any) => new Set(avListaValori(x && x.valori).map(avChiaveTesto));
+        const b = chiavi(base[k]), cl = chiavi(l[k]), ce = chiavi(e[k]);
+        fuso[k].valori = avListaValori(fuso[k].valori).filter((v: any) => {
+          const c = avChiaveTesto(v);
+          return !(b.has(c) && (!cl.has(c) || !ce.has(c)));
+        });
+      }
+      continue;
+    }
+    if (!inL && !inE) continue;
+    if (avUgualiJson(inL ? l[k] : e[k], base[k])) delete fuso[k];
+  }
+  return fuso;
+}
+
 function avFondiDatabase(locale: any, esterno: any, risolte: any[] = []) {
   const l = locale || {};
   const e = esterno || {};
@@ -1353,9 +1414,9 @@ function avFondiDatabase(locale: any, esterno: any, risolte: any[] = []) {
   const cartelle = new Set<string>([...(l.cartelle || []), ...(e.cartelle || [])]);
   for (const c of deletedCartelle) cartelle.delete(c);
 
-  const tipi = new Map<string, any>();
-  for (const t of e.tipiDocumento || []) tipi.set(t.id, t);
-  for (const t of l.tipiDocumento || []) if (!tipi.has(t.id)) tipi.set(t.id, t);
+  const deletedTipi = new Set<string>([...(l.deletedTipi || []), ...(e.deletedTipi || [])]);
+  const bS = l.baseStruttura || null;
+  const tipi = avFondiTipi(bS ? bS.tipiDocumento : undefined, l.tipiDocumento, e.tipiDocumento, deletedTipi);
 
   const risolteMap = new Map<string, any>((risolte || []).map((r: any) => [r.id, r]));
   const localMap = new Map<string, any>((l.manoscritti || []).map((m: any) => [m.id, m]));
@@ -1402,10 +1463,12 @@ function avFondiDatabase(locale: any, esterno: any, risolte: any[] = []) {
   return {
     cartelle: Array.from(cartelle).sort(),
     deletedCartelle: Array.from(deletedCartelle),
-    tagsAnagrafica: avUnisciAnagraficheTag(l.tagsAnagrafica, e.tagsAnagrafica),
-    vocabolari: avUnisciVocabolari(l.vocabolari, e.vocabolari),
-    authority: avUnisciAuthority(l.authority, e.authority),
-    tipiDocumento: Array.from(tipi.values()),
+    tagsAnagrafica: avFondiMappa(bS && bS.tagsAnagrafica, l.tagsAnagrafica, e.tagsAnagrafica, avUnisciAnagraficheTag),
+    vocabolari: avFondiMappa(bS && bS.vocabolari, l.vocabolari, e.vocabolari, avUnisciVocabolari),
+    authority: avFondiMappa(bS && bS.authority, l.authority, e.authority, avUnisciAuthority),
+    tipiDocumento: tipi.tipi,
+    deletedTipi: Array.from(deletedTipi),
+    tipiInConflitto: tipi.conflitti,
     schede,
     daRicomporre,
     eliminateDalRemoto,
@@ -1538,6 +1601,20 @@ const AV_MIGRAZIONI: { versione: number; descrizione: string; applica: (db: any)
   }
 ];
 
+function avIdAStringa(db: any): number {
+  let cambiati = 0;
+  const comeStringa = (v: any) => (typeof v === 'number' ? (cambiati++, String(v)) : v);
+  const scheda = (m: any) => {
+    if (!m || typeof m !== 'object') return;
+    m.id = comeStringa(m.id);
+    if (Array.isArray(m.relazioni)) for (const r of m.relazioni) if (r && typeof r === 'object') r.id = comeStringa(r.id);
+  };
+  for (const m of Array.isArray(db.manoscritti) ? db.manoscritti : []) scheda(m);
+  if (Array.isArray(db.deletedIds)) db.deletedIds = db.deletedIds.map(comeStringa);
+  if (db.baseObjects && typeof db.baseObjects === 'object') for (const k of Object.keys(db.baseObjects)) scheda(db.baseObjects[k]);
+  return cambiati;
+}
+
 function avMigraDatabase(grezzo: any): AVEsitoMigrazione {
   const applicate: string[] = [];
 
@@ -1549,6 +1626,17 @@ function avMigraDatabase(grezzo: any): AVEsitoMigrazione {
     db = { cartelle: [], manoscritti: [], tipiDocumento: [] };
     applicate.push('Database assente o illeggibile: creato vuoto');
   }
+
+  if (Array.isArray(db.manoscritti)) {
+    const { validi, scartati } = avRecordValidi(db.manoscritti);
+    if (scartati) {
+      db.manoscritti = validi;
+      applicate.push(`${scartati} voci di "manoscritti" non valide scartate (non oggetti o senza id)`);
+    }
+  }
+
+  const idConvertiti = avIdAStringa(db);
+  if (idConvertiti) applicate.push(`${idConvertiti} id numerici portati a stringa`);
 
   const versione = avVersioneDi(db);
   if (versione > ARCHIVIEW_SCHEMA_VERSION) {
@@ -1657,6 +1745,7 @@ const ArchiViewModel = {
   fondiRecord: avFondiRecord,
   improntaRecord: avImprontaRecord,
   fondiDatabase: avFondiDatabase,
+  recordValidi: avRecordValidi,
   fondiAllegati: avFondiAllegati,
   trascrizioneDerivata: avTrascrizioneDerivata,
   fondiCampiPropri: avFondiCampiPropri,

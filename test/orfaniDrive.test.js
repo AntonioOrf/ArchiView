@@ -48,9 +48,15 @@ function driveFinto(remoto) {
   return { drive: { files }, cestinati };
 }
 
-async function pulisci(remoto) {
+const nelCestinoDiSistema = [];
+const idElectron = require.resolve('electron');
+require.cache[idElectron] = { id: idElectron, filename: idElectron, loaded: true, exports: {
+  shell: { trashItem: async (p) => { nelCestinoDiSistema.push(path.basename(p)); fs.rmSync(p); } } } };
+
+async function pulisci(remoto, dopoAvvio = (ws) => {}) {
   for (const k of Object.keys(require.cache)) if (k.startsWith(OUT)) delete require.cache[k];
   const ws = preparaWorkspace();
+  fs.writeFileSync(path.join(ws, 'allegati_manoscritti', 'grande.pdf.ab12cd34.part'), 'x');
   const finto = driveFinto(remoto);
   stub('workspaceManager.js', {
     state: { workspacePath: ws },
@@ -67,10 +73,29 @@ async function pulisci(remoto) {
     uploadFile: async () => Date.now()
   });
   const { cleanOrphanedAttachments } = require(path.join(OUT, 'ipc', 'drive', 'vaultOps.js'));
+  await new Promise(r => setTimeout(r, 20));
+  dopoAvvio(ws);
   const esito = await cleanOrphanedAttachments();
   const locali = fs.readdirSync(path.join(ws, 'allegati_manoscritti')).sort();
   fs.rmSync(ws, { recursive: true, force: true });
   return { esito, cestinati: finto.cestinati.sort(), locali };
+}
+
+async function syncAllegatiParte(impostazioni) {
+  for (const k of Object.keys(require.cache)) if (k.startsWith(OUT)) delete require.cache[k];
+  const ws = preparaWorkspace();
+  let partita = false;
+  stub('workspaceManager.js', {
+    state: { workspacePath: ws, attachmentsDirPath: path.join(ws, 'allegati_manoscritti') },
+    getAllSettings: () => impostazioni, saveAllSettings: () => {}, finestraPrincipale: () => null,
+    getActiveVaultFlags: () => ({ isSharedVault: true, sharedVaultId: 'vault' })
+  });
+  stub('ipc/drive/auth.js', { driveState: {}, loadSavedTokens: () => true });
+  stub('ipc/drive/fileOps.js', { getOrCreateFolder: async () => { partita = true; throw new Error('fermo qui'); } });
+  const { syncAttachmentsBidirectional } = require(path.join(OUT, 'ipc', 'drive', 'attachments.js'));
+  try { await syncAttachmentsBidirectional(); } catch (e) {}
+  fs.rmSync(ws, { recursive: true, force: true });
+  return partita;
 }
 
 (async () => {
@@ -89,8 +114,19 @@ async function pulisci(remoto) {
     assert.deepStrictEqual(r3.cestinati, [], 'DB remoto corrotto: nessuna cestinazione');
     console.log('✅ Test 2: DB remoto illeggibile o corrotto → nessuna pulizia su Drive.');
 
-    assert.deepStrictEqual(r1.locali, ['cestinato.jpg', 'mio.jpg'], 'gli allegati delle schede nel cestino non sono orfani');
+    assert.deepStrictEqual(r1.locali, ['cestinato.jpg', 'grande.pdf.ab12cd34.part', 'mio.jpg'], 'gli allegati delle schede nel cestino non sono orfani');
     console.log('✅ Test 3: la pulizia locale conserva gli allegati del cestino.');
+
+    nelCestinoDiSistema.length = 0;
+    const r5 = await pulisci(remoto, (ws) => fs.writeFileSync(path.join(ws, 'allegati_manoscritti', 'appena_allegato.jpg'), 'n'));
+    assert.deepStrictEqual(nelCestinoDiSistema, ['vecchio.jpg'], 'gli orfani locali vanno nel cestino di sistema');
+    assert.ok(r5.locali.includes('appena_allegato.jpg'), 'un file creato dopo l\'avvio non è ancora un orfano');
+    assert.strictEqual(r5.esito.deletedLocal, 1);
+    console.log('✅ Test 5: orfani locali recuperabili, file nuovi e .part saltati.');
+
+    assert.strictEqual(await syncAllegatiParte({}), true, 'impostazione assente → la sync parte');
+    assert.strictEqual(await syncAllegatiParte({ syncAttachments: false }), false, 'spenta → non parte');
+    console.log('✅ Test 4: allegati Drive sincronizzati di default.');
   } finally {
     console.error = origErr;
   }

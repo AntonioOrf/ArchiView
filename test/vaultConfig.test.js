@@ -36,6 +36,15 @@ try {
   assert.deepStrictEqual([cg.vaultType, cg.provider, cg.sync.sharedVaultId, cg.migratedFromMicrosoft], ['shared', 'google', 'drive123', undefined]);
   const h = vault('hub', { '.archiview-hub.json': { hubUrl: 'https://hub.example', repoId: 'repo_1' } });
   assert.strictEqual(readVaultConfig(h, {}).provider, 'hub');
+
+  const ripristinato = vault('ripristinato', {
+    'settings.json': { isSharedVault: true, sharedVaultId: 'drive456' },
+    '.archiview-drive.json': { isSharedVault: false, isPersonalCloud: false, sharedVaultId: null }
+  });
+  const scollegato = syncUnifiedFromLegacy(ripristinato, {});
+  assert.deepStrictEqual([scollegato.vaultType, scollegato.sync.sharedVaultId], ['local', null], 'scollegato resta scollegato');
+  const vecchio = vault('vecchio', { 'settings.json': { isSharedVault: true, sharedVaultId: 'drive789' } });
+  assert.strictEqual(readVaultConfig(vecchio, {}).vaultType, 'shared');
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }

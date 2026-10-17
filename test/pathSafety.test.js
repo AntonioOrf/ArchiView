@@ -118,4 +118,65 @@ for (const nome of ['carta 12r.tif', 'Fondo (1500) – c. 3v.jpg', 'perché.pdf'
   }
 }
 
-console.log('pathSafety tests passed.');
+(async () => {
+  const fs = require('fs');
+  const os = require('os');
+  const { copiaConNomeLibero } = require('../out/main/ipc/pathSafety');
+  const radice = fs.mkdtempSync(path.join(os.tmpdir(), 'av-nomelibero-'));
+  try {
+    const a = path.join(radice, 'a'), b = path.join(radice, 'b'), dest = path.join(radice, 'allegati');
+    fs.mkdirSync(a); fs.mkdirSync(b); fs.mkdirSync(dest);
+    fs.writeFileSync(path.join(a, 'IMG_0001.jpg'), 'uno');
+    fs.writeFileSync(path.join(b, 'IMG_0001.jpg'), 'due');
+    fs.writeFileSync(path.join(a, 'carta à.jpg'), 'tre');
+    fs.writeFileSync(path.join(b, 'carta è.jpg'), 'quattro');
+
+    const n1 = await copiaConNomeLibero(path.join(a, 'IMG_0001.jpg'), dest, 's1', 'IMG_0001.jpg');
+    const n2 = await copiaConNomeLibero(path.join(b, 'IMG_0001.jpg'), dest, 's1', 'IMG_0001.jpg');
+    assert.deepStrictEqual([n1, n2], ['s1_IMG_0001.jpg', 's1_IMG_0001_2.jpg']);
+    assert.strictEqual(fs.readFileSync(path.join(dest, n1), 'utf8'), 'uno');
+    assert.strictEqual(fs.readFileSync(path.join(dest, n2), 'utf8'), 'due');
+
+    const paralleli = await Promise.all([
+      copiaConNomeLibero(path.join(a, 'carta à.jpg'), dest, 's1', 'carta à.jpg'),
+      copiaConNomeLibero(path.join(b, 'carta è.jpg'), dest, 's1', 'carta è.jpg')
+    ]);
+    assert.strictEqual(new Set(paralleli).size, 2, 'nomi distinti anche in parallelo');
+    assert.deepStrictEqual(paralleli.map(n => fs.readFileSync(path.join(dest, n), 'utf8')).sort(), ['quattro', 'tre']);
+    console.log('✅ copiaConNomeLibero: omonimi con _2, mai sovrascritti.');
+    console.log('pathSafety tests passed.');
+  } finally {
+    fs.rmSync(radice, { recursive: true, force: true });
+  }
+})().catch((e) => { console.error(e); process.exit(1); });
+
+(async () => {
+  const fs = require('fs');
+  const os = require('os');
+  const radice = fs.mkdtempSync(path.join(os.tmpdir(), 'av-n7-'));
+  const dir = path.join(radice, 'allegati');
+  fs.mkdirSync(dir);
+  fs.writeFileSync(path.join(dir, 'buono.jpg'), 'x');
+  const handlers = {};
+  const mostrati = [];
+  const OUT = path.join(__dirname, '..', 'out', 'main');
+  const idE = require.resolve('electron');
+  require.cache[idE] = { id: idE, filename: idE, loaded: true, exports: {
+    ipcMain: { handle: (c, fn) => { handlers[c] = fn; } }, shell: { showItemInFolder: (p) => mostrati.push(p) },
+    protocol: {}, net: {}, app: { getPath: () => radice } } };
+  const idW = require.resolve(path.join(OUT, 'workspaceManager.js'));
+  require.cache[idW] = { id: idW, filename: idW, loaded: true, exports: { state: { attachmentsDirPath: dir, workspacePath: radice } } };
+  try {
+    require(path.join(OUT, 'ipc', 'attachmentsIpc.js')).setupAttachmentsIpc();
+    for (const ostile of ['..', '.', 'CON.txt', 'buono.jpg:Zone.Identifier']) {
+      assert.strictEqual(handlers['get-allegato-path']({}, ostile), '', 'get-allegato-path: ' + ostile);
+      assert.strictEqual(await handlers['mostra-cartella-allegato']({}, ostile), false, 'mostra-cartella-allegato: ' + ostile);
+    }
+    assert.deepStrictEqual(mostrati, [], 'nessuna cartella mostrata per un nome ostile');
+    assert.strictEqual(handlers['get-allegato-path']({}, 'buono.jpg'), path.join(dir, 'buono.jpg'));
+    assert.strictEqual(await handlers['mostra-cartella-allegato']({}, 'buono.jpg'), true);
+    console.log('✅ N7: get-allegato-path e mostra-cartella-allegato passano da safeAttachmentPath.');
+  } finally {
+    fs.rmSync(radice, { recursive: true, force: true });
+  }
+})().catch((e) => { console.error(e); process.exit(1); });

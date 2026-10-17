@@ -4,6 +4,7 @@ import * as path from 'path';
 import { state, initWorkspace, getAllSettings, saveAllSettings, aggiornaHubConfigDalRenderer, loadHubConfigPubblica, disconnectHub } from '../workspaceManager';
 import { readVaultConfig, syncUnifiedFromLegacy } from '../vaultConfig';
 import { safeChildDir } from './pathSafety';
+import { scriviAtomicoSync } from '../scritturaAtomica';
 
 function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, database: any): boolean {
   try {
@@ -26,14 +27,14 @@ function clonaWorkspace(basePath: string, folderName: string, hubConfig: any, da
         const { repoKey, encKey, ...publicCfg } = hubConfig;
         if (publicCfg.repoId && (repoKey || encKey)) saveHubSecrets(publicCfg.repoId, { repoKey, encKey }, newPath);
         const configPath = path.join(newPath, '.archiview-hub.json');
-        fs.writeFileSync(configPath, JSON.stringify(publicCfg, null, 2), 'utf8');
+        scriviAtomicoSync(configPath, JSON.stringify(publicCfg, null, 2));
     }
 
     if (hubConfig && hubConfig.isSharedVault) {
-        const settingsPath = path.join(newPath, 'settings.json');
-        fs.writeFileSync(settingsPath, JSON.stringify({
-            isSharedVault: hubConfig.isSharedVault,
-            sharedVaultId: hubConfig.sharedVaultId
+        fs.writeFileSync(path.join(newPath, '.archiview-drive.json'), JSON.stringify({
+            isSharedVault: true, isPersonalCloud: false,
+            sharedVaultId: hubConfig.sharedVaultId || null,
+            pusherKey: null, pusherCluster: null, pusherWebhook: null, driveAutofetch: false
         }, null, 2), 'utf8');
     }
 
@@ -281,7 +282,14 @@ function setupWorkspaceIpc() {
       });
 
       archive.pipe(output);
-      archive.directory(state.workspacePath, false);
+      const giaCompressi = /\.(jpe?g|png|gif|webp|avif|heic|jp2|tiff?|pdf|zip|gz|7z|mp3|mp4|m4a)$/i;
+      const voce = (e: any) => (giaCompressi.test(e.name) ? { ...e, store: true } : e);
+      archive.directory(state.workspacePath, false, voce);
+      const att = state.attachmentsDirPath;
+      const rel = att ? path.relative(state.workspacePath, att) : '';
+      if (att && (rel.startsWith('..') || path.isAbsolute(rel)) && fs.existsSync(att)) {
+        archive.directory(att, 'allegati_manoscritti', voce);
+      }
       archive.finalize();
     });
   });

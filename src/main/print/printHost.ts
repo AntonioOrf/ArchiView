@@ -1,6 +1,7 @@
 import { BrowserWindow, protocol } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { safeAttachmentPathOrNull } from '../ipc/pathSafety';
 const fsp = require('fs').promises;
 import { state } from '../workspaceManager';
 
@@ -37,7 +38,9 @@ function registraProtocollo() {
 
       if (radice === 'allegato') {
         if (!state.attachmentsDirPath) return new Response('Not Found', { status: 404 });
-        const dati = await fsp.readFile(path.join(state.attachmentsDirPath, nome));
+        const percorso = safeAttachmentPathOrNull(state.attachmentsDirPath, nome);
+        if (!percorso) return new Response('Access Denied', { status: 403 });
+        const dati = await fsp.readFile(percorso);
         return new Response(dati, {
           status: 200,
           headers: {
@@ -96,11 +99,11 @@ async function preparaMiniature(records, { pdf = true } = {}) {
 
       if (!state.attachmentsDirPath) continue;
       const ext = path.extname(file).toLowerCase();
-      const percorso = path.join(state.attachmentsDirPath, path.basename(file));
-      if (!fs.existsSync(percorso)) continue;
+      const percorso = safeAttachmentPathOrNull(state.attachmentsDirPath, file);
+      if (!percorso || !fs.existsSync(percorso)) continue;
 
       if (IMMAGINI.has(ext)) {
-        mappa[file] = `${SCHEMA}://app/allegato/${encodeURIComponent(path.basename(file))}`;
+        mappa[file] = `${SCHEMA}://app/allegato/${encodeURIComponent(path.basename(percorso))}`;
         fatte++;
       } else if (ext === '.pdf' && pdf) {
         try {

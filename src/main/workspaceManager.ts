@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { app } from 'electron';
-import { syncUnifiedFromLegacy, readVaultConfig, legacyDaConfig } from './vaultConfig';
+import { syncUnifiedFromLegacy, readVaultConfig, legacyDaConfig, cartellaAllegatiArchivio, impostaCartellaAllegatiArchivio } from './vaultConfig';
 import { scriviAtomicoSync } from './scritturaAtomica';
 import { configuraStore, leggiStore, scriviStore } from './settingsStore';
 const { esaminaPatch } = require('./impostazioniRenderer');
@@ -9,7 +9,9 @@ const { esaminaPatch } = require('./impostazioniRenderer');
 const userDataPath = app.getPath('userData');
 configuraStore(path.join(userDataPath, 'settings.json'));
 
-const VAULT_KEYS = ['isSharedVault', 'isPersonalCloud', 'sharedVaultId', 'driveAutofetch', 'pusherKey', 'pusherCluster', 'pusherWebhook'];
+const MAX_RECENTI = 20;
+
+const VAULT_KEYS = ['isSharedVault','isPersonalCloud', 'sharedVaultId', 'driveAutofetch', 'pusherKey', 'pusherCluster', 'pusherWebhook'];
 
 function stripVaultKeys(obj) {
   const out = { ...obj };
@@ -52,8 +54,6 @@ function saveAllSettings(newSettings) {
   scriviImpostazioni(stripVaultKeys(updated));
 
   if (state.workspacePath) {
-    applicaCartellaAllegati(updated);
-
     const hasVaultKeys = VAULT_KEYS.some(k => Object.prototype.hasOwnProperty.call(newSettings, k));
     if (hasVaultKeys) {
       const driveSettingsPath = path.join(state.workspacePath, '.archiview-drive.json');
@@ -77,19 +77,30 @@ function saveAllSettings(newSettings) {
   return updated;
 }
 
-function applicaCartellaAllegati(settings) {
+function applicaCartellaAllegati() {
   if (!state.workspacePath) return;
-  state.attachmentsDirPath = settings.customAttachmentsPath || path.join(state.workspacePath, 'allegati_manoscritti');
+  state.attachmentsDirPath = cartellaAllegatiArchivio(state.workspacePath);
   if (!fs.existsSync(state.attachmentsDirPath)) {
     fs.mkdirSync(state.attachmentsDirPath, { recursive: true });
   }
+}
+
+function migraCartellaAllegatiGlobale(settings, folderPath) {
+  const globale = settings.customAttachmentsPath;
+  if (typeof globale !== 'string' || !globale) return;
+  for (const p of new Set([folderPath, ...(settings.recentWorkspaces || [])])) {
+    try {
+      if (!p || !fs.existsSync(p)) continue;
+      if (cartellaAllegatiArchivio(p) === path.join(p, 'allegati_manoscritti')) impostaCartellaAllegatiArchivio(p, globale, settings);
+    } catch (e) { console.error('Migrazione della cartella allegati non riuscita per', p, e); }
+  }
+  rimuoviImpostazioni(['customAttachmentsPath']);
 }
 
 function rimuoviImpostazioni(chiavi: string[]) {
   const current = getAllSettings();
   for (const k of chiavi) delete current[k];
   scriviImpostazioni(stripVaultKeys(current));
-  applicaCartellaAllegati(current);
   return current;
 }
 
@@ -112,16 +123,8 @@ function initWorkspace(folderPath) {
   state.workspacePath = folderPath;
   state.dataFilePath = path.join(folderPath, 'database_manoscritti.json');
 
-  const settings = getAllSettings();
-  if (settings.customAttachmentsPath) {
-    state.attachmentsDirPath = settings.customAttachmentsPath;
-  } else {
-    state.attachmentsDirPath = path.join(folderPath, 'allegati_manoscritti');
-  }
-
-  if (!fs.existsSync(state.attachmentsDirPath)) {
-    fs.mkdirSync(state.attachmentsDirPath, { recursive: true });
-  }
+  migraCartellaAllegatiGlobale(getAllSettings(), folderPath);
+  applicaCartellaAllegati();
 
   const currentSettings = getAllSettings();
   let recentWorkspaces = currentSettings.recentWorkspaces || [];
@@ -129,7 +132,7 @@ function initWorkspace(folderPath) {
   recentWorkspaces = recentWorkspaces.filter(p => p !== folderPath);
   recentWorkspaces.unshift(folderPath);
   
-  recentWorkspaces = recentWorkspaces.slice(0, 5);
+  recentWorkspaces = recentWorkspaces.slice(0, MAX_RECENTI);
 
   const driveSettingsPath = path.join(folderPath, '.archiview-drive.json');
   let workspaceDriveSettings = {
@@ -183,7 +186,7 @@ function saveHubConfig(config) {
     if (publicCfg.repoId && (repoKey || encKey)) {
       saveHubSecrets(publicCfg.repoId, { repoKey, encKey });
     }
-    fs.writeFileSync(p, JSON.stringify(publicCfg, null, 2), 'utf8');
+    scriviAtomicoSync(p, JSON.stringify(publicCfg, null, 2));
     syncUnifiedFromLegacy(state.workspacePath, getAllSettings());
     return true;
   } catch (e) {
@@ -225,7 +228,7 @@ function loadHubConfig() {
     if (cfg.repoKey || cfg.encKey) {
       saveHubSecrets(cfg.repoId, { repoKey: cfg.repoKey, encKey: cfg.encKey });
       const { repoKey, encKey, ...publicCfg } = cfg;
-      try { fs.writeFileSync(p, JSON.stringify(publicCfg, null, 2), 'utf8'); } catch (e) {}
+      try { scriviAtomicoSync(p, JSON.stringify(publicCfg, null, 2)); } catch (e) {}
     }
 
     const secrets = loadHubSecrets(cfg.repoId) || {};
@@ -255,4 +258,4 @@ function aggiornaHubConfigDalRenderer(parziale: any): boolean {
   return saveHubConfig(next);
 }
 
-export { state, finestraPrincipale, loadWorkspace, initWorkspace, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni, getActiveVaultFlags, saveHubConfig, loadHubConfig, loadHubConfigPubblica, aggiornaHubConfigDalRenderer, disconnectHub };
+export { state, finestraPrincipale, loadWorkspace, initWorkspace, getAllSettings, saveAllSettings, patchSettings, rimuoviImpostazioni, applicaCartellaAllegati, getActiveVaultFlags, saveHubConfig, loadHubConfig, loadHubConfigPubblica, aggiornaHubConfigDalRenderer, disconnectHub };

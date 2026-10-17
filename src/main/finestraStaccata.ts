@@ -142,7 +142,7 @@ function setupFinestraStaccata(opzioni: { principale: () => any; urlIndex: strin
   ipcMain.handle('finestra-dati', (e: any) => (daStaccata(e) ? datiIniziali : null));
 
   ipcMain.handle('finestra-richiesta', (e: any, metodo: string, args: any) => {
-    if (!daStaccata(e) || (metodo !== 'salva' && metodo !== 'record')) return Promise.reject(new Error('richiesta non ammessa'));
+    if (!daStaccata(e) || !['salva', 'record', 'archivio'].includes(metodo)) return Promise.reject(new Error('richiesta non ammessa'));
     return chiedi(vivaPrincipale(), 'finestra-richiesta', metodo, args);
   });
 

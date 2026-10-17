@@ -7,6 +7,7 @@ const apiBrowser = {
     salvaDatiBase: (dati) => ipcRenderer.invoke('salva-dati-base', dati),
     onDatabaseModificatoEsterno: (callback) => ipcRenderer.on('database-modificato-esterno', () => callback()),
     onInviteUrl: (callback) => ipcRenderer.on('handle-invite-url', (event, url) => callback(url)),
+    prendiUrlInvito: () => ipcRenderer.invoke('prendi-url-invito'),
     
     salvaAllegato: (filePath, documentoId) => ipcRenderer.invoke('salva-allegato', filePath, documentoId),
     onAllegatoScaricato: (callback) => ipcRenderer.on('allegato-scaricato', (event, fileName) => callback(fileName)),
@@ -75,7 +76,7 @@ const apiBrowser = {
     printDirect: (ids, opzioni) => ipcRenderer.invoke('print-direct', ids, opzioni),
     exportTranscript: (ids, opzioni) => ipcRenderer.invoke('export-transcript', ids, opzioni),
     exportCitations: (ids, opzioni) => ipcRenderer.invoke('export-citations', ids, opzioni),
-    duplicateRecords: (ids, targetFolder) => ipcRenderer.invoke('duplicate-records', ids, targetFolder),
+    duplicaAllegati: (voci) => ipcRenderer.invoke('duplica-allegati', voci),
     deleteVaultLocal: (path) => ipcRenderer.invoke('delete-vault-local', path),
     
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
@@ -193,7 +194,6 @@ const apiDrive = {
     decodeInvite: (code) => ipcRenderer.invoke('drive-decode-invite', code),
     onSyncProgress: (callback) => ipcRenderer.on('sync-progress', (event, data) => callback(data)),
     pulisciAllegatiOrfani: () => ipcRenderer.invoke('drive-clean-orphans'),
-    peekDb: (vaultId) => ipcRenderer.invoke('drive-peek-db', vaultId),
     shareVault: (email) => ipcRenderer.invoke('drive-share-vault', email),
     listPermissions: () => ipcRenderer.invoke('drive-list-permissions'),
     removePermission: (permissionId) => ipcRenderer.invoke('drive-remove-permission', permissionId),
@@ -201,8 +201,7 @@ const apiDrive = {
     getDbFileId: () => ipcRenderer.invoke('drive-get-db-file-id'),
     listRevisions: (fileId) => ipcRenderer.invoke('drive-list-revisions', fileId),
     getRevision: (fileId, revisionId) => ipcRenderer.invoke('drive-get-revision', fileId, revisionId),
-    openExternalPicker: () => ipcRenderer.invoke('drive-open-external-picker'),
-    getFileMeta: (fileId) => ipcRenderer.invoke('drive-get-file-meta', fileId)
+    openExternalPicker: () => ipcRenderer.invoke('drive-open-external-picker')
 };
 contextBridge.exposeInMainWorld('apiDrive', apiDrive);
 

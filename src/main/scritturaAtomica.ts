@@ -60,7 +60,15 @@ function scriviAtomicoSync(percorso: string, contenuto: string | Buffer): void {
     } finally {
       fs.closeSync(fd);
     }
-    fs.renameSync(tmp, percorso);
+    for (let i = 1; ; i++) {
+      try {
+        fs.renameSync(tmp, percorso);
+        break;
+      } catch (errore) {
+        if (i >= TENTATIVI_RENAME || !ERRORI_TRANSITORI.has(errore && errore.code)) throw errore;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30 * i);
+      }
+    }
   } catch (errore) {
     try { fs.unlinkSync(tmp); } catch (_) {}
     throw errore;

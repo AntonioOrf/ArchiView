@@ -49,7 +49,7 @@ function neutralizzaFormula(cella: string): string {
   if (!cella) return cella;
   const c = cella[0];
   if (c === '=' || c === '+' || c === '@' || c === '\t' || c === '\r') return "'" + cella;
-  if (c === '-' && !/^-\d/.test(cella)) return "'" + cella;
+  if (c === '-' && !/^-\d[\d.,]*$/.test(cella)) return "'" + cella;
   return cella;
 }
 

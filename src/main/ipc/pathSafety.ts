@@ -51,4 +51,19 @@ function dentroCartellaReale(fileReale: string, dir: string): boolean {
   return !rel.startsWith('..') && !path.isAbsolute(rel);
 }
 
-export { safeAttachmentPath, safeAttachmentPathOrNull, safeChildDir, nomeCartellaSicuro, dentroCartellaReale };
+async function copiaConNomeLibero(sorgente: string, dir: string, prefisso: string, originale: string): Promise<string> {
+  const ext = path.extname(originale).toLowerCase().replace(/[^a-z0-9.]/g, '').substring(0, 16);
+  const base = path.basename(originale, path.extname(originale)).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50) || 'allegato';
+  for (let n = 1; n < 1000; n++) {
+    const nome = `${prefisso}_${base}${n > 1 ? '_' + n : ''}${ext}`;
+    try {
+      await fs.promises.copyFile(sorgente, safeAttachmentPath(dir, nome), fs.constants.COPYFILE_EXCL);
+      return nome;
+    } catch (e: any) {
+      if (e && e.code !== 'EEXIST') throw e;
+    }
+  }
+  throw new Error('Nessun nome libero per ' + originale);
+}
+
+export { safeAttachmentPath, safeAttachmentPathOrNull, safeChildDir, nomeCartellaSicuro, dentroCartellaReale, copiaConNomeLibero };

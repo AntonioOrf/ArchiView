@@ -29,10 +29,48 @@ const ids = (lista) => lista.map(m => m.id).sort();
 
 {
   const esito = Model.fondiDatabase(
-    { tipiDocumento: [{ id: 't1', nome: 'vecchio' }, { id: 't2', nome: 'solo locale' }] },
-    { tipiDocumento: [{ id: 't1', nome: 'nuovo' }] });
+    { tipiDocumento: [{ id: 't1', nome: 'vecchio', campi: ['a', 'notaio'] }, { id: 't2', nome: 'solo locale', campi: [] }] },
+    { tipiDocumento: [{ id: 't1', nome: 'nuovo', campi: ['a', 'b'] }] });
   assert.deepStrictEqual(esito.tipiDocumento.map(t => t.nome).sort(), ['nuovo', 'solo locale']);
-  console.log('✅ Test 3: modelli fusi.');
+  assert.deepStrictEqual(esito.tipiDocumento.find(t => t.id === 't1').campi, ['a', 'notaio', 'b']);
+  console.log('✅ Test 3: modelli senza base fusi senza perdere campi.');
+}
+
+{
+  const tipo = (campi, extra = {}) => ({ id: 't1', nome: 'Atto', campi, ...extra });
+  const fondi = (b, l, e, extraL = {}, extraE = {}) => Model.fondiDatabase(
+    { tipiDocumento: l, baseStruttura: { tipiDocumento: b }, ...extraL }, { tipiDocumento: e, ...extraE });
+
+  let esito = fondi([tipo(['a', 'b'])], [tipo(['a', 'b', 'notaio'])], [tipo(['a', 'b'])]);
+  assert.deepStrictEqual(esito.tipiDocumento[0].campi, ['a', 'b', 'notaio']);
+  esito = fondi([tipo(['a', 'b', 'c'])], [tipo(['a', 'b', 'c', 'd'])], [tipo(['a', 'c'])]);
+  assert.deepStrictEqual(esito.tipiDocumento[0].campi, ['a', 'c', 'd']);
+  esito = fondi([tipo(['a', 'b'])], [tipo(['a'])], [tipo(['a', 'b', 'x'])]);
+  assert.deepStrictEqual(esito.tipiDocumento[0].campi, ['a', 'x']);
+  esito = fondi([tipo(['a', 'b'])], [tipo(['a', 'b'], { campiDef: { a: { tipo: 'date' } } })],
+    [tipo(['a', 'b'], { campiDef: { b: { tipo: 'number' } } })]);
+  assert.deepStrictEqual(esito.tipiDocumento[0].campiDef, { a: { tipo: 'date' }, b: { tipo: 'number' } });
+  esito = fondi([tipo(['a'])], [tipo(['a'])], [tipo(['a'], { nome: 'Atto notarile' })]);
+  assert.strictEqual(esito.tipiDocumento[0].nome, 'Atto notarile');
+  assert.deepStrictEqual(esito.tipiInConflitto, []);
+  esito = fondi([tipo(['a'])], [tipo(['a'], { nome: 'L' })], [tipo(['a'], { nome: 'E' })]);
+  assert.strictEqual(esito.tipiDocumento[0].nome, 'L');
+  assert.deepStrictEqual(esito.tipiInConflitto, ['L']);
+  console.log('✅ Test 3b: modelli a tre vie, campi aggiunti e tolti dai due lati.');
+}
+
+{
+  const t2 = { id: 't2', nome: 'Lettera', campi: ['a'] };
+  let esito = Model.fondiDatabase({ tipiDocumento: [], deletedTipi: ['t2'] }, { tipiDocumento: [t2] });
+  assert.deepStrictEqual(esito.tipiDocumento, []);
+  assert.deepStrictEqual(esito.deletedTipi, ['t2']);
+  esito = Model.fondiDatabase({ tipiDocumento: [t2] }, { tipiDocumento: [], deletedTipi: ['t2'] });
+  assert.deepStrictEqual(esito.tipiDocumento, []);
+  esito = Model.fondiDatabase({ tipiDocumento: [t2], baseStruttura: { tipiDocumento: [t2] } }, { tipiDocumento: [] });
+  assert.deepStrictEqual(esito.tipiDocumento, []);
+  esito = Model.fondiDatabase({ tipiDocumento: [t2], baseStruttura: { tipiDocumento: [] } }, { tipiDocumento: [] });
+  assert.deepStrictEqual(esito.tipiDocumento.map(t => t.id), ['t2']);
+  console.log('✅ Test 3c: modelli eliminati, con e senza tombstone.');
 }
 
 {
@@ -44,6 +82,30 @@ const ids = (lista) => lista.map(m => m.id).sort();
   assert.strictEqual(esito.schede[0].titolo, 'T locale');
   assert.strictEqual(esito.schede[0].note, 'N remota');
   console.log('✅ Test 4: fusione per campo con la base.');
+}
+
+{
+  const voc = (valori, extra = {}) => ({ materia: { id: 'materia', nome: 'Materia', valori, modificato: 1, ...extra } });
+  const fondi = (bS, l, e) => Model.fondiDatabase({ ...l, baseStruttura: bS }, e);
+
+  let esito = fondi({ vocabolari: voc(['a', 'b']) }, { vocabolari: voc(['a']) }, { vocabolari: voc(['a', 'b', 'c']) });
+  assert.deepStrictEqual(esito.vocabolari.materia.valori, ['a', 'c']);
+  esito = Model.fondiDatabase({ vocabolari: voc(['a']) }, { vocabolari: voc(['a', 'b']) });
+  assert.deepStrictEqual(esito.vocabolari.materia.valori, ['a', 'b']);
+  esito = fondi({ vocabolari: voc(['a']) }, { vocabolari: {} }, { vocabolari: voc(['a']) });
+  assert.deepStrictEqual(esito.vocabolari, {});
+  esito = fondi({ vocabolari: voc(['a']) }, { vocabolari: {} }, { vocabolari: voc(['a', 'z'], { modificato: 2 }) });
+  assert.deepStrictEqual(esito.vocabolari.materia.valori, ['a', 'z']);
+
+  const tag = { notarile: { nome: 'notarile', modificato: 1 } };
+  esito = fondi({ tagsAnagrafica: tag }, { tagsAnagrafica: {} }, { tagsAnagrafica: tag });
+  assert.deepStrictEqual(esito.tagsAnagrafica, {});
+  const aut = { 'persona:bartolo': { nome: 'Bartolo', modificato: 1 } };
+  esito = fondi({ authority: aut }, { authority: aut }, { authority: {} });
+  assert.deepStrictEqual(esito.authority, {});
+  esito = fondi({ tagsAnagrafica: {} }, { tagsAnagrafica: {} }, { tagsAnagrafica: tag });
+  assert.deepStrictEqual(Object.keys(esito.tagsAnagrafica), ['notarile']);
+  console.log('✅ Test 3d: vocabolari, tag e authority a tre vie.');
 }
 
 {

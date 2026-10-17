@@ -5,6 +5,9 @@ const fsp = require('fs').promises;
 import * as zlib from 'zlib';
 
 const BASE_URL = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/';
+const MAX_LINGUA_BYTES = 100 * 1024 * 1024;
+const TIMEOUT_DOWNLOAD_MS = 5 * 60 * 1000;
+const gunzip = require('util').promisify(zlib.gunzip);
 
 const LINGUE_NOTE = [
   { codice: 'ita', nome: 'Italiano' },
@@ -88,10 +91,17 @@ async function installaLingua(codice) {
       [BASE_URL + codice + '.traineddata.gz', true],
       [BASE_URL + codice + '.traineddata', false]
     ] as Array<[string, boolean]>) {
-      const risposta = await net.fetch(url);
+      const risposta = await net.fetch(url, { signal: AbortSignal.timeout(TIMEOUT_DOWNLOAD_MS) });
       if (!risposta.ok) continue;
+      if (Number(risposta.headers.get('content-length')) > MAX_LINGUA_BYTES) return { ok: false, errore: 'troppo_grande' };
       const buffer = Buffer.from(await risposta.arrayBuffer());
-      dati = comprimuto ? zlib.gunzipSync(buffer) : buffer;
+      if (buffer.length > MAX_LINGUA_BYTES) return { ok: false, errore: 'troppo_grande' };
+      try {
+        dati = comprimuto ? await gunzip(buffer, { maxOutputLength: MAX_LINGUA_BYTES }) : buffer;
+      } catch (e: any) {
+        if (e && e.code === 'ERR_BUFFER_TOO_LARGE') return { ok: false, errore: 'troppo_grande' };
+        throw e;
+      }
       break;
     }
 
@@ -121,4 +131,4 @@ async function rimuoviLingua(codice) {
   }
 }
 
-export { LINGUE_NOTE, codiceValido, cartellaLingue, percorsoLingua, linguaInstallata, codiciInstallati, listaLingue, installaLingua, rimuoviLingua };
+export { LINGUE_NOTE, MAX_LINGUA_BYTES, codiceValido, cartellaLingue, percorsoLingua, linguaInstallata, codiciInstallati, listaLingue, installaLingua, rimuoviLingua };

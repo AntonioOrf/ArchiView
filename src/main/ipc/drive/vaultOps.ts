@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { state, getAllSettings, saveAllSettings, getActiveVaultFlags } from '../../workspaceManager';
 import { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } from './auth';
 const { getOrCreateFolder, uploadFile, withDriveRetry } = require('./fileOps');
+import { idDrive } from './pickerSecurity';
 
 async function assertVaultFolderAccessible(vaultFolderId: string): Promise<void> {
   try {
@@ -22,7 +23,7 @@ function isCloudVault(s: any): boolean {
 async function listVaultsFromDrive(): Promise<any[]> {
   await authenticateDrive();
   const rootFolderId = await getOrCreateFolder('ArchiView');
-  const q = `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const q = `'${idDrive(rootFolderId)}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   const res = await driveState.drive.files.list({ q, spaces: 'drive', fields: 'files(id, name, modifiedTime)' });
   return res.data.files || [];
 }
@@ -41,7 +42,7 @@ async function trovaDbDrive(cartella: string | null): Promise<any | null> {
     includeItemsFromAllDrives: true, supportsAllDrives: true
   })).then((r: any) => (r.data.files || [])[0] || null);
   const nome = `name='database_manoscritti.json' and trashed=false`;
-  const trovato = cartella ? await cerca(`${nome} and '${cartella}' in parents`) : null;
+  const trovato = cartella ? await cerca(`${nome} and '${idDrive(cartella)}' in parents`) : null;
   if (trovato || state.workspacePath) return trovato;
   return (await cerca(nome)) || cerca(`${nome} and sharedWithMe=true`);
 }
@@ -106,7 +107,7 @@ async function syncToDrive(parentModifiedTime: number | null = null): Promise<nu
 
   if (parentModifiedTime) {
     const res = await driveState.drive.files.list({
-      q: `name='database_manoscritti.json' and '${projectFolderId}' in parents and trashed=false`,
+      q: `name='database_manoscritti.json' and '${idDrive(projectFolderId)}' in parents and trashed=false`,
       fields: 'files(id, modifiedTime)',
       includeItemsFromAllDrives: true,
       supportsAllDrives: true
@@ -122,6 +123,8 @@ async function syncToDrive(parentModifiedTime: number | null = null): Promise<nu
   const newDbTime = await uploadFile(dbPath, 'database_manoscritti.json', projectFolderId);
   return newDbTime || Date.now();
 }
+
+const AVVIO_MAIN = Date.now();
 
 async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; deletedDrive: number }> {
   if (!state.workspacePath) throw new Error("Nessun workspace aperto");
@@ -154,10 +157,16 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
   const allegatiLocalDir = path.join(state.workspacePath, 'allegati_manoscritti');
   if (fs.existsSync(allegatiLocalDir)) {
-    for (const file of fs.readdirSync(allegatiLocalDir)) {
-      if (!usedLocal.has(file)) {
-        try { fs.unlinkSync(path.join(allegatiLocalDir, file)); deletedLocal++; } catch (e) { console.error("Errore eliminazione locale:", e); }
-      }
+    const { shell } = require('electron');
+    for (const file of await fs.promises.readdir(allegatiLocalDir)) {
+      if (usedLocal.has(file) || file.endsWith('.part')) continue;
+      const percorso = path.join(allegatiLocalDir, file);
+      try {
+        const st = await fs.promises.stat(percorso);
+        if (!st.isFile() || Math.max(st.birthtimeMs, st.ctimeMs) >= AVVIO_MAIN) continue;
+        await shell.trashItem(percorso);
+        deletedLocal++;
+      } catch (e) { console.error("Errore eliminazione locale:", e); }
     }
   }
 
@@ -170,7 +179,7 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
     }
 
     const indexRes = await driveState.drive.files.list({
-      q: `name='index.json' and '${projectFolderId}' in parents and trashed=false`,
+      q: `name='index.json' and '${idDrive(projectFolderId)}' in parents and trashed=false`,
       fields: 'files(id)'
     });
     if (indexRes.data.files && indexRes.data.files.length > 0) {
@@ -205,7 +214,7 @@ async function cleanOrphanedAttachments(): Promise<{ deletedLocal: number; delet
 
 async function cestinaChunkInutili(projectFolderId: string, usedHashes: Set<string>): Promise<number> {
   const dataFolderRes = await withDriveRetry(() => driveState.drive.files.list({
-    q: `name='data' and '${projectFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    q: `name='data' and '${idDrive(projectFolderId)}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id)'
   }));
   if (!dataFolderRes.data.files || dataFolderRes.data.files.length === 0) return 0;
@@ -217,7 +226,7 @@ async function cestinaChunkInutili(projectFolderId: string, usedHashes: Set<stri
   let pages = 0;
   do {
     const chunksRes = await withDriveRetry(() => driveState.drive.files.list({
-      q: `'${dataFolderId}' in parents and trashed=false`,
+      q: `'${idDrive(dataFolderId)}' in parents and trashed=false`,
       fields: 'nextPageToken, files(id, name)',
       pageSize: 1000,
       pageToken

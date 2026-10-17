@@ -4,7 +4,7 @@ import { pathToFileURL } from 'url';
 import * as fs from 'fs';
 const fsp = require('fs').promises;
 import { state } from '../workspaceManager';
-import { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale } from './pathSafety';
+import { safeAttachmentPath, safeAttachmentPathOrNull, dentroCartellaReale, copiaConNomeLibero } from './pathSafety';
 import { hashFile } from '../chunkingLogic';
 import * as schemaApp from '../schemaApp';
 
@@ -26,20 +26,12 @@ function setupAttachmentsIpc() {
     try {
       if (!state.attachmentsDirPath) throw new Error("Cartella allegati non definita");
       await verificaSorgenteAllegato(sourcePath);
-      const ext = path.extname(sourcePath).toLowerCase().replace(/[^a-z0-9.]/g, '').substring(0, 16);
-
-      const cleanOriginalName = path.basename(sourcePath, path.extname(sourcePath))
-        .replace(/[^a-zA-Z0-9_-]/g, '_')
-        .substring(0, 50);
-
       const idPulito = typeof documentoId === 'string' || typeof documentoId === 'number'
         ? String(documentoId).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64)
         : '';
-      const prefix = idPulito ? `${idPulito}_` : `doc_${Date.now()}_`;
-      const fileName = `${prefix}${cleanOriginalName}${ext}`;
+      const fileName = await copiaConNomeLibero(sourcePath, state.attachmentsDirPath, idPulito || `doc_${Date.now()}`, sourcePath);
+      const ext = path.extname(fileName);
       const destPath = safeAttachmentPath(state.attachmentsDirPath, fileName);
-
-      await fsp.copyFile(sourcePath, destPath);
 
       const hash = await hashFile(destPath);
 
@@ -74,9 +66,8 @@ function setupAttachmentsIpc() {
   ipcMain.handle('mostra-cartella-allegato', async (event, fileName) => {
     try {
       if (!state.attachmentsDirPath) return false;
-      const safeFileName = path.basename(fileName);
-      const p = path.join(state.attachmentsDirPath, safeFileName);
-      if (fs.existsSync(p)) {
+      const p = safeAttachmentPathOrNull(state.attachmentsDirPath, fileName);
+      if (p && fs.existsSync(p)) {
         shell.showItemInFolder(p); 
         return true;
       }
@@ -88,8 +79,7 @@ function setupAttachmentsIpc() {
 
   ipcMain.handle('get-allegato-path', (event, fileName) => {
     if (!state.attachmentsDirPath) return '';
-    const safeFileName = path.basename(fileName);
-    return path.join(state.attachmentsDirPath, safeFileName);
+    return safeAttachmentPathOrNull(state.attachmentsDirPath, fileName) || '';
   });
 
   ipcMain.handle('pdf-allegato-info', async (event, fileName) => {

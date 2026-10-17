@@ -1,5 +1,6 @@
 import { getActiveVaultFlags } from '../../workspaceManager';
 import { driveState, loadSavedTokens, initGoogle } from './auth';
+import { idDrive } from './pickerSecurity';
 
 async function getDbFileId(): Promise<string> {
   let projectFolderId: string | null = null;
@@ -15,7 +16,7 @@ async function getDbFileId(): Promise<string> {
   let res;
   try {
     res = await driveState.drive.files.list({
-      q: `name='database_manoscritti.json' and '${projectFolderId}' in parents and trashed=false`,
+      q: `name='database_manoscritti.json' and '${idDrive(projectFolderId)}' in parents and trashed=false`,
       spaces: 'drive',
       fields: 'files(id)'
     });
