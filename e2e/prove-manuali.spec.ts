@@ -231,4 +231,138 @@ test.describe('Prove manuali automatizzate', () => {
     const dopo = await page.locator(`#card-${id}`).screenshot({ animations: 'disabled' });
     expect.soft(Buffer.compare(prima, dopo), 'la card selezionata è identica a quella non selezionata').not.toBe(0);
   });
+
+  test('M16.2 — X sulla welcome al primo avvio: l\'app si chiude', async ({ electronApp, page }) => {
+    await expect(page.locator('#welcome-modal')).toBeVisible();
+    await page.waitForFunction(() => (window as any).__appPronta === true);
+    const uscita = new Promise<number | null>(r => electronApp.process().once('exit', c => r(c)));
+    await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+    expect(await Promise.race([uscita, new Promise(r => setTimeout(() => r('ancora aperta'), 10_000))])).toBe(0);
+  });
+
+  test('M16.4 — login lasciato a metà: messaggio dopo 5 minuti, porta 3456 libera, secondo login riparte', async ({ page, electronApp }) => {
+    test.skip(!process.env.ARCHIVIEW_E2E_LUNGHE, '5 minuti di attesa: ARCHIVIEW_E2E_LUNGHE=1');
+    test.setTimeout(8 * 60_000);
+    const portaLibera = () => new Promise<boolean>(r => {
+      const s = require('net').createServer().once('error', () => r(false)).listen(3456, '127.0.0.1', () => s.close(() => r(true)));
+    });
+    await electronApp.evaluate(({ shell }) => {
+      (globalThis as any).aperture = [];
+      shell.openExternal = async (u: string) => { (globalThis as any).aperture.push(u); };
+    });
+    await expect(page.locator('#welcome-modal')).toBeVisible();
+    await page.waitForFunction(() => (window as any).__appPronta === true);
+    const inizio = Date.now();
+    await page.evaluate(() => { (window as any).mostraCloudExplorer(); });
+    await expect.poll(() => electronApp.evaluate(() => (globalThis as any).aperture.length)).toBe(1);
+    expect(await electronApp.evaluate(() => (globalThis as any).aperture[0])).toContain('accounts.google.com');
+    expect(await portaLibera()).toBe(false);
+    await expect(page.locator('#toast-container').getByText('entro 5 minuti')).toBeVisible({ timeout: 6 * 60_000 });
+    expect(Date.now() - inizio).toBeGreaterThan(5 * 60_000 - 5_000);
+    expect(await portaLibera()).toBe(true);
+    await page.evaluate(() => { (window as any).mostraCloudExplorer(); });
+    await expect.poll(() => electronApp.evaluate(() => (globalThis as any).aperture.length)).toBe(2);
+    expect(await portaLibera()).toBe(false);
+  });
+
+  test('M16.8 — lingua OCR scaricata davvero da tessdata e usata per riconoscere una pagina', async ({ page, userDataDir }) => {
+    test.setTimeout(6 * 60_000);
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'OcrVera');
+    const png = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'archiview-m168-')), 'pagina.png');
+    const dati = await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 1600; c.height = 400;
+      const g = c.getContext('2d')!;
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.fillStyle = '#000'; g.font = '64px Georgia, serif';
+      g.fillText('Archivio dei manoscritti', 60, 150);
+      g.fillText('della biblioteca di Firenze', 60, 280);
+      return c.toDataURL('image/png').split(',')[1];
+    });
+    fs.writeFileSync(png, Buffer.from(dati, 'base64'));
+    const esito = await page.evaluate(() => (window as any).apiOcr.installaLingua('ita'));
+    expect(esito.ok, JSON.stringify(esito)).toBe(true);
+    const traineddata = path.join(userDataDir, 'ocr-langs', 'ita.traineddata');
+    expect(fs.statSync(traineddata).size).toBeGreaterThan(1_000_000);
+    const lingue = await page.evaluate(() => (window as any).apiOcr.lingue());
+    expect(lingue.lingue.find((l: any) => l.codice === 'ita').installata).toBe(true);
+
+    const id = await createItemWithAttachment(page, 'OCR-VERA', png);
+    await page.evaluate((rid) => (window as any).apriOcrModal(rid, 0), id);
+    await expect(page.locator('#ocr-confirm')).toBeEnabled();
+    await page.locator('#ocr-dest-indice').setChecked(true);
+    await page.locator('#ocr-confirm').click();
+    await expect(page.locator('#ocr-result')).toBeVisible({ timeout: 120_000 });
+    const testo = await page.evaluate((rid) => {
+      // @ts-ignore
+      return appData.manoscritti.find((m: any) => m.id === rid).allegati[0].ocr?.testo || '';
+    }, id);
+    console.log('[M16.8] testo riconosciuto:', JSON.stringify(testo));
+    expect(testo).toMatch(/manoscritti/i);
+    expect(testo).toMatch(/Firenze/i);
+  });
+
+  test('M16.9 — incolla da Word vero: restano paragrafi, grassetto, corsivo, elenchi; spariscono stili e immagine', async ({ page, electronApp, userDataDir }) => {
+    test.skip(process.platform !== 'win32' || !process.env.ARCHIVIEW_E2E_LUNGHE, 'Word via COM e appunti di sistema condivisi: ARCHIVIEW_E2E_LUNGHE=1, da sola');
+    test.setTimeout(3 * 60_000);
+    const segnale = path.join(userDataDir, 'word');
+    fs.mkdirSync(segnale);
+    const ps1 = path.join(segnale, 'copia.ps1');
+    fs.writeFileSync(ps1, [
+      '$ErrorActionPreference = "Stop"',
+      '$w = New-Object -ComObject Word.Application',
+      '$w.Visible = $false',
+      '$w.DisplayAlerts = 0',
+      'try {',
+      '  $d = $w.Documents.Add()',
+      '  $s = $w.Selection',
+      '  $s.Style = $d.Styles.Item(-2)',
+      '  $s.TypeText("Titolo del fondo")',
+      '  $s.TypeParagraph()',
+      '  $s.Style = $d.Styles.Item(-1)',
+      '  $s.Font.Name = "Calibri"; $s.Font.Color = 255',
+      '  $s.TypeText("Item ")',
+      '  $s.Font.Bold = 1; $s.TypeText("die"); $s.Font.Bold = 0',
+      '  $s.TypeText(" ")',
+      '  $s.Font.Italic = 1; $s.TypeText("predicto"); $s.Font.Italic = 0',
+      '  $s.TypeText(" anno domini ")',
+      `  $null = $s.InlineShapes.AddPicture("${fixture('sample.png')}")`,
+      '  $s.TypeParagraph()',
+      '  $s.Range.ListFormat.ApplyBulletDefault()',
+      '  $s.TypeText("primo")',
+      '  $s.TypeParagraph()',
+      '  $s.TypeText("secondo")',
+      '  $d.Content.Copy()',
+      'Add-Type -AssemblyName System.Windows.Forms',
+      `[System.Windows.Forms.Clipboard]::GetText([System.Windows.Forms.TextDataFormat]::Html) | Set-Content -Encoding utf8 "${path.join(segnale, 'appunti.html')}"`,
+      `  New-Item -ItemType File "${path.join(segnale, 'copiato')}" | Out-Null`,
+      `  $t = 0; while (-not (Test-Path "${path.join(segnale, 'fatto')}") -and $t -lt 120) { Start-Sleep -Milliseconds 500; $t++ }`,
+      '  $d.Close([ref]0)',
+      '} finally { $w.Quit([ref]0) }',
+    ].join('\r\n'));
+    const word = require('child_process').spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ps1], { stdio: 'inherit' });
+    try {
+      await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Word');
+      const id = await createItemWithAttachment(page, 'MS-WORD', fixture('sample.png'));
+      await page.evaluate((rid) => (window as any).apriTrascrizione(rid), id);
+      await expect(page.locator('#view-trascrizione')).toBeVisible();
+      await expect.poll(() => fs.existsSync(path.join(segnale, 'copiato')), { timeout: 90_000 }).toBe(true);
+      const sorgente = fs.readFileSync(path.join(segnale, 'appunti.html'), 'utf8');
+      expect(sorgente, 'negli appunti c\'è l\'HTML di Word').toMatch(/urn:schemas-microsoft-com:office|mso-/);
+      await page.locator('#trascrizione-editor').click();
+      await page.keyboard.press('Control+V');
+      await expect(page.locator('#trascrizione-editor')).toContainText('secondo');
+      const html = await page.locator('#trascrizione-editor').evaluate((el) => el.innerHTML);
+      console.log('[M16.9] HTML incollato:', html);
+      expect(html).toContain('Titolo del fondo');
+      expect(html).toMatch(/<(b|strong)>die<\/(b|strong)>/);
+      expect(html).toMatch(/<(i|em)>predicto<\/(i|em)>/);
+      expect(html).toMatch(/<li>[^<]*primo/);
+      expect(html).toMatch(/<li>[^<]*secondo/);
+      expect(html).not.toMatch(/style=|class=|<img|<span|<o:p|mso-|data:/);
+    } finally {
+      fs.writeFileSync(path.join(segnale, 'fatto'), '');
+      if (word.exitCode === null) await new Promise(r => word.once('exit', r));
+    }
+  });
 });
