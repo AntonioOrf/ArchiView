@@ -828,12 +828,16 @@ test.describe('Trascrizione: tab Scheda', () => {
     await expect(segnatura).toHaveCount(0);
   });
 
-  test('il separatore si trascina, si aggancia, si regola da tastiera e ricorda la proporzione per tab', async ({ page, userDataDir }) => {
+  test('il separatore si trascina, si aggancia, si regola da tastiera e ricorda la proporzione per tab', async ({ page, electronApp, userDataDir }) => {
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const b = BrowserWindow.getAllWindows()[0]; b.unmaximize(); b.setContentSize(1200, 760);
+    });
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-AFF-3', FIXTURE_PNG);
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
 
     const sep = page.locator('#trascrizione-resizer');
+    await expect(sep).toBeVisible();
     const contenitore = (await page.locator('#trascrizione-container').boundingBox())!;
     const quota = async () => {
       const ed = (await page.locator('#trascrizione-editor-panel').boundingBox())!;
