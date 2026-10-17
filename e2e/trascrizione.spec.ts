@@ -43,6 +43,28 @@ test.describe('Vista Trascrizione', () => {
     expect(html).not.toMatch(/style=|class=|<img|<span|data:/);
   });
 
+  test('F10 — gli elenchi di Word diventano elenchi, senza pallini né spazi finti', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-ELENCHI', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    await expect(page.locator('#view-trascrizione')).toBeVisible();
+    await page.locator('#trascrizione-editor').click();
+    const voce = (cls: string, segno: string, testo: string) =>
+      `<p class=${cls} style='text-indent:-18.0pt;mso-list:l0 level1 lfo1'><![if !supportLists]><span style='font-family:Symbol'><span style='mso-list:Ignore'>${segno}<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]><span style='font-family:"Calibri",sans-serif;color:red'>${testo}<o:p></o:p></span></p>\n\n`;
+    await page.locator('#trascrizione-editor').evaluate((el, frammento) => {
+      const dati = new DataTransfer();
+      dati.setData('text/html', frammento);
+      dati.setData('text/plain', 'primo secondo uno due');
+      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dati, bubbles: true, cancelable: true }));
+    }, '<!--StartFragment-->\n\n<h1>Prima<o:p></o:p></h1>\n\n' + voce('MsoListParagraphCxSpFirst', '·', 'primo') + voce('MsoListParagraphCxSpLast', '·', 'secondo')
+      + '<p class=MsoNormal>Dopo</p>\n\n' + voce('MsoListParagraphCxSpFirst', '1.', 'uno') + voce('MsoListParagraphCxSpLast', '2.', 'due'));
+    const html = await page.locator('#trascrizione-editor').evaluate((el) => el.innerHTML.replace(/\s+/g, ' '));
+    expect(html).toMatch(/<ul>\s*<li>primo<\/li>\s*<li>secondo<\/li>\s*<\/ul>/);
+    expect(html).toMatch(/<ol>\s*<li>uno<\/li>\s*<li>due<\/li>\s*<\/ol>/);
+    expect(html).not.toMatch(/·|&nbsp;|<p>\s*<\/p>/);
+    expect(await page.evaluate(() => (window as any).pulisciHtmlIncollato('<b>a</b> <i>b</i>'))).toBe('<b>a</b> <i>b</i>');
+  });
+
   test('senza allegati l\'editor prende tutta la larghezza e invita ad aggiungere carte', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     await page.locator('#btn-tab-add').click();

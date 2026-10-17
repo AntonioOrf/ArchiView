@@ -1,7 +1,43 @@
 const TAG_INCOLLA = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li'];
 
+function elenchiDiWord(doc: Document) {
+    // ponytail: i livelli di Word (mso-list level2+) finiscono in un elenco piatto; annidarli se le trascrizioni li usano
+    let lista: HTMLElement | null = null;
+    doc.querySelectorAll('p[style*="mso-list"]').forEach(p => {
+        const segno = p.querySelector('[style*="mso-list:Ignore"]');
+        const tipo = segno && /^\s*[0-9a-z]+[.)]/i.test(segno.textContent || '') ? 'ol' : 'ul';
+        p.querySelectorAll('[style*="mso-list:Ignore"]').forEach(n => n.remove());
+        if (!lista || p.previousElementSibling !== lista || lista.tagName.toLowerCase() !== tipo) {
+            lista = doc.createElement(tipo);
+            p.before(lista);
+        }
+        const voce = doc.createElement('li');
+        voce.append(...Array.from(p.childNodes));
+        lista.append(voce);
+        p.remove();
+    });
+}
+
 window.pulisciHtmlIncollato = function(html) {
-    return DOMPurify.sanitize(String(html || ''), { ALLOWED_TAGS: TAG_INCOLLA, ALLOWED_ATTR: [] });
+    const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    elenchiDiWord(doc);
+    doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+        const p = doc.createElement('p');
+        p.append(...Array.from(h.childNodes));
+        h.replaceWith(p);
+    });
+    const commenti = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
+    const daTogliere: Node[] = [];
+    while (commenti.nextNode()) daTogliere.push(commenti.currentNode);
+    daTogliere.forEach(n => n.parentNode!.removeChild(n));
+    doc.body.normalize();
+    const blocco = (n: Node | null) => !n || /^(P|UL|OL|LI|DIV|H[1-6]|TABLE|BLOCKQUOTE)$/.test((n as Element).tagName || '');
+    [doc.body, ...Array.from(doc.body.querySelectorAll('ul, ol'))].forEach(contenitore => {
+        Array.from(contenitore.childNodes).forEach(n => {
+            if (n.nodeType === 3 && !n.textContent!.trim() && blocco(n.previousSibling) && blocco(n.nextSibling)) n.remove();
+        });
+    });
+    return DOMPurify.sanitize(doc.body.innerHTML, { ALLOWED_TAGS: TAG_INCOLLA, ALLOWED_ATTR: [] });
 };
 
 document.addEventListener('paste', (e) => {
