@@ -1,3 +1,33 @@
+## ArchiView 3.4.1 — Più leggera e più sicura con i dati
+
+Una versione di correzioni: nessuna funzione nuova grande, molti casi in cui un dato poteva perdersi senza avviso.
+
+### Novità
+
+- **Installazione più leggera**: l'installer passa da 151 a 115 MB, il programma installato da 574 a 369 MB.
+- **Cartella allegati per archivio**: una cartella allegati personalizzata ora appartiene all'archivio e non più a tutto il programma. Chi ne aveva già scelta una la ritrova sull'archivio aperto e sugli archivi recenti. Il backup ZIP include anche gli allegati che stanno in quella cartella.
+- **Venti archivi recenti** invece di cinque: restano tutti nella ricerca tra archivi e nei rimandi.
+- **Incollare da Word o dal web** tiene solo paragrafi, grassetto, corsivo, sottolineato ed elenchi; spariscono stili, colori e immagini incollate.
+
+### Correzioni
+
+- **Modelli, vocabolari, tag e persone/luoghi** si fondono a tre vie, come le schede: un campo aggiunto a un modello su un PC non sparisce più alla sincronizzazione e un valore tolto non ritorna.
+- **Allegati con lo stesso nome** (es. `IMG_0001.jpg` da due cartelle) non si sovrascrivono più: il secondo prende un nome libero (`_2`, `_3`). Lo stesso vale per l'import da ZIP quando il contenuto è diverso.
+- **Allegati di Google Drive**: si sincronizzano davvero anche se l'opzione non era mai stata toccata; un download interrotto non lascia più un file troncato che non veniva riscaricato.
+- **Un archivio spostato o rinominato** ritrova il collegamento all'Hub condiviso.
+- **Un salvataggio fallito dopo la sincronizzazione** non fa più sovrascrivere le modifiche dei colleghi; le conferme di eliminazione durante la sincronizzazione ora bloccano finché non si risponde.
+- **«Esci senza salvare»** dalla trascrizione scarta davvero il testo di tutte le carte.
+- **Pulizia degli allegati orfani**: i file vanno nel Cestino di Windows (o di Drive), non si cancellano più in modo definitivo; un file appena allegato non viene toccato.
+- **Annullare un import CSV, IIIF o una copia da un altro archivio** non fa ricomparire le schede alla sincronizzazione successiva.
+- **La X sulla schermata di benvenuto** chiude il programma.
+- **Un invito `archiview://`** aperto con il programma chiuso apre direttamente l'unione all'archivio.
+- **Accesso a Google lasciato a metà**: dopo 5 minuti compare un messaggio e si può riprovare subito.
+- I filtri su testo OCR, collegamenti e stato delle carte si ricordano al riavvio; le voci di Cestino, Vocabolari, Tag e Grafo compaiono nella palette (Ctrl+K) anche senza schede selezionate.
+- Liste chiave-valore con spazi nel nome del campo, annullamento di un'eliminazione che perdeva i collegamenti, cartelle copiate che non comparivano nell'albero: corretti.
+- Sicurezza: identificativi di Drive controllati, log di accesso senza email e fuori dalla cartella dell'archivio, export CSV protetto anche dalle formule che iniziano con `-`, lingue OCR scaricate con limite di dimensione e di tempo.
+
+---
+
 ## ArchiView 3.4.0 — La scheda accanto al documento
 
 Si compila la scheda guardando il documento, nella stessa finestra o in una a parte.
