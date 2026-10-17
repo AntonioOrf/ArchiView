@@ -1,5 +1,3 @@
-// S6/P4: i pacchetti lingua OCR si scaricavano senza timeout e senza tetto, e il `.gz` si
-// decomprimeva con `gunzipSync` sul thread del main (decine di MB, un archivio-bomba senza fine).
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -31,7 +29,6 @@ const L = require('../out/main/ocr/ocrLangs');
     assert.ok(chiamate[0].opzioni && chiamate[0].opzioni.signal, 'il download ha un timeout');
     console.log('✅ Test 1: installazione con timeout.');
 
-    // Bomba: pochi KB compressi, oltre il tetto decompressi.
     risposte = { 'lat.traineddata.gz': zlib.gzipSync(Buffer.alloc(L.MAX_LINGUA_BYTES + 1)) };
     const bomba = await L.installaLingua('lat');
     assert.strictEqual(bomba.ok, false);

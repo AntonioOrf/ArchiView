@@ -1,6 +1,3 @@
-// S2/P5: il log OAuth stava in `<archivio>/.archiview-chunks/auth_debug.log` (cartella che può
-// essere sincronizzata) con l'email dell'account, scritto con `appendFileSync` a ogni lettura dei
-// token. Ora: userData/logs/auth.log, email tolte, scrittura asincrona in coda, rotazione a 1 MB.
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -28,7 +25,6 @@ const { scriviLogAuth, rimuoviLogVecchi, LOG_AUTH_MAX_BYTES } = require('../out/
     assert.ok(fs.readFileSync(file, 'utf8').endsWith('dopo la rotazione\n'));
     console.log('✅ Test 2: rotazione oltre 1 MB.');
 
-    // Il vecchio file dentro l'archivio (e quello in userData) si toglie.
     const ws = path.join(dir, 'ws');
     fs.mkdirSync(path.join(ws, '.archiview-chunks'), { recursive: true });
     fs.writeFileSync(path.join(ws, '.archiview-chunks', 'auth_debug.log'), 'email@x.it');
@@ -36,7 +32,7 @@ const { scriviLogAuth, rimuoviLogVecchi, LOG_AUTH_MAX_BYTES } = require('../out/
     await rimuoviLogVecchi(ws, dir);
     assert.ok(!fs.existsSync(path.join(ws, '.archiview-chunks', 'auth_debug.log')));
     assert.ok(!fs.existsSync(path.join(dir, 'auth_debug.log')));
-    await rimuoviLogVecchi(ws, dir); // già tolti: nessun errore
+    await rimuoviLogVecchi(ws, dir);
     console.log('✅ Test 3: vecchi auth_debug.log rimossi.');
     console.log('Tutti i test logAuth passati con successo!');
   } finally {
