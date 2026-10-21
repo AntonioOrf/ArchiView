@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, PanResponder, View } from 'react-native';
 import { Columns2 } from 'lucide-react-native';
+import { piegaProposta } from './immagini';
 import { t } from './lingua';
 import { colori } from './theme/colori';
 import { spazio, TOCCO, useColori } from './theme';
@@ -28,6 +29,11 @@ export function Dividi({ uri, onDividi, onAnnulla }: Props) {
 
   useEffect(() => {
     Image.getSize(uri, (w, h) => setProporzione(w / h), e => { console.warn('[dividi] dimensioni non lette', e); setProporzione(4 / 3); });
+    let vivo = true;
+    piegaProposta(uri.split('?')[0])
+      .then(f => { if (vivo && attuale.current === 0.5) imposta(f); })
+      .catch(e => console.warn('[dividi] piega non proposta', e));
+    return () => { vivo = false; };
   }, [uri]);
 
   const trascina = useRef(PanResponder.create({

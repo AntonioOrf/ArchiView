@@ -26,6 +26,7 @@ import type { Nuova } from './src/aggiornamento';
 import { abbinamentoPerso, inviaLottoWifi, type Abbinamento } from './src/wifi';
 import { ScannerLotto, type Modalita, type Pagina } from './src/contratto';
 import { File } from 'expo-file-system';
+import Nativo from './modules/nativo';
 import { Fotocamera } from './src/schermate/Fotocamera';
 import { Archivio, type SchedaInAttesa } from './src/schermate/Archivio';
 import { Benvenuto } from './src/schermate/Benvenuto';
@@ -135,6 +136,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
 
   useEffect(() => {
     utenteSilenzioso().then(setUtente);
+    Nativo.preparaScanner().catch(e => console.warn('[app] modulo dello scanner non scaricato in anticipo', e));
     try { chiudiAperti(); } catch (e) { console.warn('[app] lotti aperti non chiusi', e); }
     try { pulisciInviati(leggiImpostazioni().dopoInvio); } catch (e) { console.warn('[app] pulizia delle inviate non riuscita', e); }
     ricarica();
@@ -378,7 +380,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       nota: s.tipo === 'nuova' ? s.nota : s.tipo === 'smistare' ? notaSmistare.trim() || undefined : undefined
     });
     if (s.tipo === 'smistare') { setTitoloSmistare(''); setNotaSmistare(''); }
-    b = await riempiLotto(b, uris, modalita, x => (modalita === 'grezza' ? undefined : etichettaNuova([...precedenti, ...x.pagine])));
+    b = await riempiLotto(b, uris, modalita, x => (modalita === 'grezza' ? undefined : etichettaNuova([...precedenti, ...x.pagine])), true);
     misuraSfocate(b, b.pagine.map(p => p.file));
     if (b.pagine.length && s.tipo === 'esistente' && elenco?.schede.some(x => x.id === s.id && x.daVedere)) {
       const ora = leggiImpostazioni();
@@ -393,7 +395,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     esegui(t('Foto libera'), async () => {
       try { await salvaPagine(s, uris, 'grezza', precedenti); }
       finally {
-        for (const u of uris) { try { new File(u).delete(); } catch (e) { console.warn('[app] foto temporanea non eliminata', u, e); } }
+        for (const u of uris) { try { const f = new File(u); if (f.exists) f.delete(); } catch (e) { console.warn('[app] foto temporanea non eliminata', u, e); } }
       }
     });
   };
@@ -403,17 +405,15 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     await riempiLotto(nuovoLotto({ tipo: 'nessuna' }, { archivio: archivio.nome, archivioNuovo: archivio.nuovo || undefined, titolo }), uris, 'documento');
   };
 
-  const riempiLotto = async (b: Bozza, uris: string[], modalita: Modalita, etichetta?: (b: Bozza) => string | undefined) => {
-    aggiorna(b);
+  const riempiLotto = async (b: Bozza, uris: string[], modalita: Modalita, etichetta?: (b: Bozza) => string | undefined, sposta = false) => {
+    const inizio = Date.now();
     try {
-      for (const uri of uris) {
-        b = await aggiungiPagina(b, uri, modalita, { etichetta: etichetta?.(b) });
-        aggiorna(b);
-      }
+      for (const uri of uris) b = await aggiungiPagina(b, uri, modalita, { etichetta: etichetta?.(b), sposta });
     } finally {
       if (b.pagine.length) aggiorna(salvaBozza({ ...b, stato: 'in_coda' }));
       else scarta(b);
     }
+    if (__DEV__) console.log(`[scansione] ${uris.length} pagine salvate in ${Date.now() - inizio} ms`);
     setTimeout(() => giro(), 0);
     return b;
   };

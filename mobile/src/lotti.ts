@@ -2,8 +2,10 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { prossimaEtichetta } from './etichette';
-import { ritagliata, ruotata, sfocata } from './immagini';
-import { inviatiScaduti, type DopoInvio, type Riquadro } from './pagine';
+import Nativo from '../modules/nativo';
+import { raddrizzata, ruotata, sfocata } from './immagini';
+import { inviatiScaduti, type DopoInvio } from './pagine';
+import type { Angoli } from './scanner/bordi';
 import { ScannerLotto, type Destinazione, type Lotto, type Modalita, type Pagina } from './contratto';
 import { leggiJson, rimpiazzaFile, scriviJson } from './fileJson';
 import { t } from './lingua';
@@ -48,10 +50,6 @@ function isoLocale(d: Date): string {
 
 function suffissoCasuale(): string {
   return Array.from(Crypto.getRandomBytes(4), b => ALFABETO[b % ALFABETO.length]).join('');
-}
-
-function hex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export function salvaBozza(b: Bozza): Bozza {
@@ -107,22 +105,19 @@ export async function recuperaLotto(id: string, archivio?: string): Promise<Bozz
   });
 }
 
-async function impronta(f: File): Promise<{ sha256: string; byte: number }> {
-  // ponytail: legge tutto il file in memoria (ok fino a ~20 MB); per file più grandi hash a blocchi.
-  const bytes = await f.bytes();
-  return { sha256: hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes)), byte: bytes.byteLength };
-}
+const impronta = (f: File) => Nativo.impronta(f.uri);
 
 function prossimoNome(b: Bozza): string {
   const max = b.pagine.reduce((m, p) => Math.max(m, Number(p.file.slice(1, 5))), 0);
   return ScannerLotto.nomePagina(max + 1);
 }
 
-export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Modalita, extra?: { larghezza?: number; altezza?: number; etichetta?: string; nota?: string }): Promise<Bozza> {
+export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Modalita, extra?: { larghezza?: number; altezza?: number; etichetta?: string; nota?: string; sposta?: boolean }): Promise<Bozza> {
   const nome = prossimoNome(b);
   const dest = new File(cartellaLotto(b.id), nome);
   if (dest.exists) dest.delete();
-  await new File(uriSorgente).copy(dest);
+  if (extra?.sposta) new File(uriSorgente).moveSync(dest);
+  else await new File(uriSorgente).copy(dest);
   const pagina: Pagina = { file: nome, ...(await impronta(dest)), modalita };
   if (extra?.larghezza) pagina.larghezza = Math.round(extra.larghezza);
   if (extra?.altezza) pagina.altezza = Math.round(extra.altezza);
@@ -217,8 +212,8 @@ export async function ruotaPagina(b: Bozza, file: string): Promise<Bozza> {
   return sostituisciPagina(b, file, img.uri, { larghezza: img.width, altezza: img.height });
 }
 
-export async function ritagliaPagina(b: Bozza, file: string, r: Riquadro): Promise<Bozza> {
-  const img = await ritagliata(fileDellaPagina(b, file).uri, r);
+export async function ritagliaPagina(b: Bozza, file: string, q: Angoli): Promise<Bozza> {
+  const img = await raddrizzata(fileDellaPagina(b, file).uri, q);
   return sostituisciPagina(b, file, img.uri, { larghezza: img.width, altezza: img.height });
 }
 

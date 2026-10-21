@@ -13,7 +13,7 @@ import { prontoAScansionare } from './consenso';
 import { annullato, cartellaSalvata, condividi, salva, scegliCartella } from './esporta';
 import { Condividi } from './schermate/Condividi';
 import { t } from './lingua';
-import { ritagliata, ruotata } from './immagini';
+import { raddrizzata, ruotata } from './immagini';
 import { Documenti } from './schermate/Documenti';
 import { Documento } from './schermate/Documento';
 import { Ritaglia } from './schermate/Ritaglia';
@@ -97,13 +97,13 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
   const nuovo = () => esegui(t('Scansione'), async () => {
     const r = await scanner(100);
     if (r.canceled || !r.pages?.length) return;
-    const d = await nuovoDocumento(nomeAutomatico(new Date()), cartella || '', r.pages);
+    const d = await nuovoDocumento(nomeAutomatico(new Date()), cartella || '', r.pages, true);
     if (d) { aggiorna(d); setAperto(d.id); }
   });
 
   const altrePagine = (d: Doc) => esegui(t('Scansione'), async () => {
     const r = await scanner(100);
-    if (!r.canceled && r.pages?.length) aggiorna(await aggiungiPagine(d, r.pages));
+    if (!r.canceled && r.pages?.length) aggiorna(await aggiungiPagine(d, r.pages, true));
   });
 
   const elimina = (d: Doc) => avviso(t('Eliminare il documento?'), t('«{nome}» e le sue pagine spariscono dal telefono.', { nome: d.nome }), [
@@ -130,7 +130,7 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
       return (
         <Schermo>
           <Ritaglia titolo={t('Ritaglia la pagina')} uri={uriPagina(doc, pg)} onAnnulla={() => setRitaglio(null)}
-            onRitaglia={r => esegui(t('Ritaglio'), async () => { aggiorna(await sostituisciPagina(doc, pg.file, (await ritagliata(uriFile(doc, pg), r)).uri)); setRitaglio(null); })} />
+            onRitaglia={q => esegui(t('Ritaglio'), async () => { aggiorna(await sostituisciPagina(doc, pg.file, (await raddrizzata(uriFile(doc, pg), q)).uri)); setRitaglio(null); })} />
           <StatusBar style="auto" />
         </Schermo>
       );

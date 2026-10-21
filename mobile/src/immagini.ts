@@ -2,8 +2,10 @@ import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { Images } from 'react-native-nitro-image';
 import { createWorkletRuntime, runOnRuntimeAsync, type WorkletRuntime } from 'react-native-worklets';
-import { applicaFiltro, nitidezza, quadratoCentrale, SOGLIA_NITIDEZZA, type Filtro } from './filtri';
-import { misureJpeg, rettangoloRitaglio, type Riquadro } from './pagine';
+import { applicaFiltro, canali, nitidezza, quadratoCentrale, SOGLIA_NITIDEZZA, type Filtro } from './filtri';
+import { misureJpeg } from './pagine';
+import Nativo from '../modules/nativo';
+import { colonnaPiega, type Angoli } from './scanner/bordi';
 
 const percorso = (uri: string) => decodeURIComponent(uri.replace(/^file:\/\//, ''));
 
@@ -79,9 +81,31 @@ export async function perPdf(uri: string): Promise<{ bytes: Uint8Array; w: numbe
   }
 }
 
-export async function ritagliata(uri: string, r: Riquadro): Promise<Immagine> {
-  const intera = await ImageManipulator.manipulate(uri).renderAsync();
-  const ctx = ImageManipulator.manipulate(uri);
-  ctx.crop(rettangoloRitaglio(r, intera.width, intera.height));
-  return (await ctx.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 1 });
+async function dritta(uri: string) {
+  const img = await Images.loadFromFileAsync(percorso(uri));
+  const gradi = GRADI_EXIF[misureDi(uri)?.orientamento ?? 1];
+  return gradi ? img.rotateAsync(gradi) : img;
+}
+
+export const LATO_RADDRIZZATA = 3000;
+
+export async function raddrizzata(uri: string, q: Angoli): Promise<Immagine> {
+  const inizio = Date.now();
+  const r = await Nativo.raddrizza(uri, q, LATO_RADDRIZZATA, 95);
+  if (__DEV__) console.log(`[ritaglio] ${r.width}x${r.height} in ${Date.now() - inizio} ms`);
+  return r;
+}
+
+export async function piegaProposta(uri: string): Promise<number> {
+  const img = await dritta(uri);
+  const w = Math.min(400, img.width), h = Math.max(1, Math.round(img.height * w / img.width));
+  const raw = await (await img.resizeAsync(w, h)).toRawPixelDataAsync(false);
+  runtimeFiltri ??= createWorkletRuntime({ name: 'filtri' });
+  return runOnRuntimeAsync(runtimeFiltri, (px: ArrayBuffer, formato: string, w: number, h: number) => {
+    'worklet';
+    const { r, g, b, passo } = canali(formato);
+    const s = new Uint8Array(px), riga = Math.floor(s.length / h), y = new Uint8Array(w * h);
+    for (let j = 0; j < h; j++) for (let i = 0, o = j * riga; i < w; i++, o += passo) y[j * w + i] = (77 * s[o + r] + 150 * s[o + g] + 29 * s[o + b]) >> 8;
+    return colonnaPiega(y, w, h);
+  }, raw.buffer, raw.pixelFormat, raw.width, raw.height);
 }

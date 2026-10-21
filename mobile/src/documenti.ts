@@ -97,23 +97,24 @@ export function salvaCartelle(cartelle: string[]): void {
   fileCartelle().write(JSON.stringify([...new Set(cartelle)]));
 }
 
-export async function nuovoDocumento(nome: string, cartella: string, uris: string[]): Promise<Documento | null> {
+export async function nuovoDocumento(nome: string, cartella: string, uris: string[], sposta = false): Promise<Documento | null> {
   const d: Documento = { id: Crypto.randomUUID(), nome, creatoIl: new Date().toISOString(), pagine: [], ...(cartella ? { cartella } : {}) };
   cartellaDoc(d.id).create({ intermediates: true });
-  const finale = await aggiungiPagine(d, uris);
+  const finale = await aggiungiPagine(d, uris, sposta);
   if (finale.pagine.length) return finale;
   eliminaDocumento(finale);
   return null;
 }
 
-export async function aggiungiPagine(d: Documento, uris: string[]): Promise<Documento> {
+export async function aggiungiPagine(d: Documento, uris: string[], sposta = false): Promise<Documento> {
   const pagine = [...d.pagine];
   try {
     for (const uri of uris) {
       const file = prossimoFile(pagine);
       const dest = fileDoc(d, file);
       if (dest.exists) dest.delete();
-      await new File(uri).copy(dest);
+      if (sposta) new File(uri).moveSync(dest);
+      else await new File(uri).copy(dest);
       pagine.push({ file, v: 0 });
     }
   } finally {

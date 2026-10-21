@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { INTERA, LATO_MINIMO, eIntera, giorniRimasti, inviatiScaduti, misureJpeg, quantiGiorni, rettangoloRitaglio, spostaAngolo } from '../src/pagine.ts';
+import { LATO_MINIMO, eIntera, giorniRimasti, inviatiScaduti, misureJpeg, quantiGiorni, ritaglioValido, spostaPunto } from '../src/pagine.ts';
+import { INTERI } from '../src/scanner/bordi.ts';
 
 function jpeg(w, h, o, le = true) {
   const u16 = v => (le ? [v & 255, v >> 8] : [v >> 8, v & 255]);
@@ -26,19 +27,17 @@ test('misureJpeg: null se non è un JPEG o manca il SOF', () => {
   assert.equal(misureJpeg(new Uint8Array(0)), null);
 });
 
-test('spostaAngolo resta dentro l\'immagine e col lato minimo', () => {
-  assert.deepEqual(spostaAngolo(INTERA, { x: 'x0', y: 'y0' }, -0.2, -0.2), INTERA);
-  const r = spostaAngolo(INTERA, { x: 'x1', y: 'y1' }, -0.95, -0.95);
-  assert.ok(Math.abs(r.x1 - LATO_MINIMO) < 1e-9 && Math.abs(r.y1 - LATO_MINIMO) < 1e-9);
-  const s = spostaAngolo(INTERA, { x: 'x0', y: 'y1' }, 0.25, -0.5);
-  assert.deepEqual(s, { x0: 0.25, y0: 0, x1: 1, y1: 0.5 });
+test('spostaPunto muove un angolo solo e resta dentro l\'immagine', () => {
+  assert.deepEqual(spostaPunto(INTERI, 0, -0.2, -0.2), INTERI);
+  assert.deepEqual(spostaPunto(INTERI, 3, 0.25, -0.5), [0, 0, 1, 0, 1, 1, 0.25, 0.5]);
+  assert.ok(eIntera(INTERI) && !eIntera(spostaPunto(INTERI, 1, -0.01, 0)));
 });
 
-test('rettangoloRitaglio in pixel interi e mai fuori', () => {
-  assert.deepEqual(rettangoloRitaglio(INTERA, 3000, 4000), { originX: 0, originY: 0, width: 3000, height: 4000 });
-  assert.deepEqual(rettangoloRitaglio({ x0: 0.1, y0: 0.25, x1: 0.9, y1: 0.75 }, 1001, 2000), { originX: 100, originY: 500, width: 801, height: 1000 });
-  assert.deepEqual(rettangoloRitaglio({ x0: -1, y0: 0, x1: 2, y1: 1 }, 10, 10), { originX: 0, originY: 0, width: 10, height: 10 });
-  assert.ok(eIntera(INTERA) && !eIntera({ ...INTERA, x0: 0.01 }));
+test('ritaglioValido: convesso e non troppo piccolo', () => {
+  assert.ok(ritaglioValido(INTERI));
+  assert.ok(ritaglioValido([0.1, 0.1, 0.9, 0.2, 0.8, 0.9, 0.2, 0.8]));
+  assert.ok(!ritaglioValido([0, 0, 1, 1, 1, 0, 0, 1]));
+  assert.ok(!ritaglioValido([0, 0, LATO_MINIMO / 2, 0, LATO_MINIMO / 2, LATO_MINIMO / 2, 0, LATO_MINIMO / 2]));
 });
 
 test('inviatiScaduti secondo «Dopo l\'invio»', () => {

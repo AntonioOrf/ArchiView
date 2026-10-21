@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.antonioorf.archiview'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.nativo"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  implementation 'com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1'
+  implementation 'com.google.android.gms:play-services-base:18.5.0'
+}

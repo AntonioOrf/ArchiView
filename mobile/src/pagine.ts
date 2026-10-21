@@ -1,29 +1,20 @@
 import { t } from './lingua';
-
-export type Riquadro = { x0: number; y0: number; x1: number; y1: number };
-
-export const INTERA: Riquadro = { x0: 0, y0: 0, x1: 1, y1: 1 };
+import { area, convesso, INTERI, spostamento, type Angoli } from './scanner/bordi';
 
 export const LATO_MINIMO = 0.1;
 
 const tra = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-export function spostaAngolo(r: Riquadro, angolo: { x: 'x0' | 'x1'; y: 'y0' | 'y1' }, dx: number, dy: number): Riquadro {
-  const n = { ...r };
-  n[angolo.x] = angolo.x === 'x0' ? tra(r.x0 + dx, 0, r.x1 - LATO_MINIMO) : tra(r.x1 + dx, r.x0 + LATO_MINIMO, 1);
-  n[angolo.y] = angolo.y === 'y0' ? tra(r.y0 + dy, 0, r.y1 - LATO_MINIMO) : tra(r.y1 + dy, r.y0 + LATO_MINIMO, 1);
+export function spostaPunto(q: Angoli, k: number, dx: number, dy: number): Angoli {
+  const n = [...q];
+  n[2 * k] = tra(q[2 * k] + dx, 0, 1);
+  n[2 * k + 1] = tra(q[2 * k + 1] + dy, 0, 1);
   return n;
 }
 
-export function rettangoloRitaglio(r: Riquadro, larghezza: number, altezza: number) {
-  const x0 = Math.round(tra(r.x0, 0, 1) * larghezza);
-  const y0 = Math.round(tra(r.y0, 0, 1) * altezza);
-  const x1 = Math.round(tra(r.x1, 0, 1) * larghezza);
-  const y1 = Math.round(tra(r.y1, 0, 1) * altezza);
-  return { originX: x0, originY: y0, width: Math.max(1, x1 - x0), height: Math.max(1, y1 - y0) };
-}
+export const ritaglioValido = (q: Angoli) => convesso(q) && area(q) >= LATO_MINIMO * LATO_MINIMO;
 
-export const eIntera = (r: Riquadro) => r.x0 <= 0 && r.y0 <= 0 && r.x1 >= 1 && r.y1 >= 1;
+export const eIntera = (q: Angoli) => spostamento(q, INTERI) < 1e-6;
 
 function orientamento(b: Uint8Array, t: number, fine: number): number {
   const le = b[t] === 0x49;
