@@ -95,6 +95,7 @@ jobs:
           done
           node test/smoke.mjs http://127.0.0.1:8788 dev-secret
           node test/e2e.mjs http://127.0.0.1:8789 dev-secret
+          node test/produzione.mjs http://127.0.0.1:8790 dev-secret
           cd ..
           ARCHIVIEW_HUB_LOCALE=http://127.0.0.1:8790 ARCHIVIEW_HUB_SECRET=dev-secret npx playwright test --project=manuali hub-locale
 
@@ -103,6 +104,74 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  drive:
+    runs-on: windows-latest
+    env:
+      ARCHIVIEW_DRIVE_REFRESH_TOKEN: ${{ secrets.GOOGLE_TEST_REFRESH_TOKEN }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+
+    steps:
+      - name: Token di prova assente
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN == ''
+        run: echo "GOOGLE_TEST_REFRESH_TOKEN non impostato, test Drive reali saltati."
+
+      - name: Checkout del codice
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Installa le dipendenze
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
+        run: |
+          npm ci
+          node node_modules/electron/install.js
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: cloudCredentials.ts con il client Google
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
+        shell: bash
+        run: |
+          {
+            echo "export const GOOGLE_CLIENT_ID = \"$GOOGLE_CLIENT_ID\";"
+            echo "export const GOOGLE_CLIENT_SECRET = \"$GOOGLE_CLIENT_SECRET\";"
+            echo 'export const GOOGLE_API_KEY = "";'
+            echo 'export const PUSHER_KEY = "";'
+            echo 'export const PUSHER_CLUSTER = "";'
+            echo 'export const HUB_URL = "";'
+            echo 'export const HUB_CREATE_SECRET = "";'
+          } > src/main/ipc/cloudCredentials.ts
+
+      - name: Build (CSS + TS)
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
+        run: |
+          npm run build-css
+          npm run build-ts
+
+      - name: Test E2E contro Google Drive
+        if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
+        run: npx playwright test drive-reale
+        env:
+          CI: "true"
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Carica report in caso di fallimento
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report-drive
           path: |
             playwright-report/
             test-results/
