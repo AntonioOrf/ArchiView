@@ -126,6 +126,30 @@ export async function aggiungiPagina(b: Bozza, uriSorgente: string, modalita: Mo
   return salvaBozza({ ...b, pagine: [...b.pagine, pagina] });
 }
 
+export async function riordinaLotti(ordine: { b: Bozza; pg: Pagina }[]): Promise<{ resta: Bozza; tolti: Bozza[] }> {
+  const lotti = [...new Map(ordine.map(x => [x.b.id, x.b])).values()];
+  if (!lotti.length) throw new Error('nessun_lotto');
+  const resta = lotti.find(b => b.stato === 'aperto') ?? lotti[0];
+  const tolti = lotti.filter(b => b.id !== resta.id);
+  let max = resta.pagine.reduce((m, p) => Math.max(m, Number(p.file.slice(1, 5))), 0);
+  const pagine: Pagina[] = [];
+  const sfocate = [...(resta.sfocate ?? [])];
+  for (const { b, pg } of ordine) {
+    if (b.id === resta.id) { pagine.push(pg); continue; }
+    const nome = ScannerLotto.nomePagina(++max);
+    const dest = new File(cartellaLotto(resta.id), nome);
+    if (dest.exists) dest.delete();
+    await fileDellaPagina(b, pg.file).copy(dest);
+    pagine.push({ ...pg, file: nome });
+    if (b.sfocate?.includes(pg.file)) sfocate.push(nome);
+  }
+  const finale = salvaBozza(conSfocate({ ...resta, pagine }, sfocate));
+  for (const b of tolti) {
+    try { eliminaLotto(b); } catch (e) { console.warn('[lotti] lotto unito non eliminato', b.id, e); }
+  }
+  return { resta: finale, tolti };
+}
+
 export function etichettaPagina(b: Bozza, file: string, etichetta: string): Bozza {
   return testoPagina(b, file, 'etichetta', etichetta);
 }

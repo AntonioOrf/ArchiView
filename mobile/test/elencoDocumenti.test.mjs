@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cartelleConConta, daCopiare, daRipristinare, documentiDi, fileFiltrato, fileOcr, fileValido, LUNGHEZZA_NOME, nomeAutomatico, nomeFile, nomeSeguito, nomiImmagini, nomeValido, prossimoFile, quando, spostata } from '../src/elencoDocumenti.ts';
+import { cartelleConConta, daCopiare, daRipristinare, documentiDi, fileFiltrato, fileOcr, fileValido, inizioGruppo, LUNGHEZZA_NOME, nomeAutomatico, nomeFile, nomeSeguito, nomiImmagini, nomeValido, prossimoFile, quando, spostata } from '../src/elencoDocumenti.ts';
 
 test('nomeSeguito: (2), poi (3), mai oltre la lunghezza massima (F11)', () => {
   assert.equal(nomeSeguito('Ricevute'), 'Ricevute (2)');
@@ -41,6 +41,17 @@ test('spostata: avanti, indietro, oltre i bordi, invariato', () => {
   assert.equal(spostata(a, 2, 2), a);
   assert.equal(spostata(a, 9, 0), a);
   assert.deepEqual(a, ['p1', 'p2', 'p3', 'p4']);
+});
+
+test('spostata con un gruppo: in fila, nel loro ordine, dove cade la pagina trascinata', () => {
+  const a = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9'];
+  assert.deepEqual(spostata(a, 4, 7, [1, 3, 4]), ['p1', 'p3', 'p6', 'p7', 'p8', 'p2', 'p4', 'p5', 'p9']);
+  assert.equal(inizioGruppo(9, 4, 7, [1, 3, 4]), 5);
+  assert.deepEqual(spostata(a, 4, 0, [1, 3, 4]), ['p2', 'p4', 'p5', 'p1', 'p3', 'p6', 'p7', 'p8', 'p9']);
+  assert.equal(inizioGruppo(9, 4, 0, [1, 3, 4]), 0);
+  assert.deepEqual(spostata(a, 1, 1, [1, 3]), ['p1', 'p2', 'p4', 'p3', 'p5', 'p6', 'p7', 'p8', 'p9']);
+  assert.equal(spostata(a, 2, 2, [1, 2]), a);
+  assert.deepEqual(spostata(a, 0, 99, [0, 8]), ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p1', 'p9']);
 });
 
 test('nomeFile: niente caratteri vietati, punti ai bordi, mai vuoto', () => {

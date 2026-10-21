@@ -62,12 +62,19 @@ export function nomeSeguito(nome: string): string {
   return base.slice(0, LUNGHEZZA_NOME - suffisso.length).trimEnd() + suffisso;
 }
 
-export function spostata<T>(elenco: T[], da: number, a: number): T[] {
-  const dove = Math.min(elenco.length - 1, Math.max(0, a));
-  if (da === dove || da < 0 || da >= elenco.length) return elenco;
-  const copia = elenco.slice();
-  copia.splice(dove, 0, ...copia.splice(da, 1));
-  return copia;
+export function inizioGruppo(n: number, da: number, a: number, insieme: number[]): number {
+  const dove = Math.min(n - 1, Math.max(0, a));
+  const prima = dove > da ? dove + 1 : dove;
+  return prima - insieme.filter(j => j < prima).length;
+}
+
+export function spostata<T>(elenco: T[], da: number, a: number, insieme: number[] = [da]): T[] {
+  if (da < 0 || da >= elenco.length) return elenco;
+  const dentro = new Set([da, ...insieme.filter(j => j >= 0 && j < elenco.length)]);
+  const resto = elenco.filter((_, j) => !dentro.has(j));
+  const k = inizioGruppo(elenco.length, da, a, [...dentro]);
+  const copia = [...resto.slice(0, k), ...elenco.filter((_, j) => dentro.has(j)), ...resto.slice(k)];
+  return copia.every((x, j) => x === elenco[j]) ? elenco : copia;
 }
 
 export const fileValido =(f: string) => /^p\d{4}(\.jpg|\.f\.jpg|\.ocr\.json)$/.test(f);

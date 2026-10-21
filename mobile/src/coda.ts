@@ -128,6 +128,9 @@ export type EventoCoda =
   | { tipo: 'errore'; id: string; messaggio: string };
 
 let inCorso = false;
+let corrente: string | null = null;
+
+export const lottoInInvio = () => corrente;
 
 export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) => void, invia: typeof inviaLotto = inviaLotto, filtro: (b: Bozza) => boolean = () => true): Promise<boolean> {
   if (inCorso) return false;
@@ -138,6 +141,7 @@ export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) =>
       const b = elencaLotti().find(l => l.stato === 'in_coda' && !tentati.has(l.id) && filtro(l));
       if (!b) break;
       tentati.add(b.id);
+      corrente = b.id;
       try {
         await invia(manifest(b, dispositivo), nome => fileDellaPagina(b, nome), a => evento({ tipo: 'lotto', id: b.id, avanzamento: a }));
         segnaInviato(b, leggiImpostazioni().dopoInvio);
@@ -147,6 +151,8 @@ export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) =>
         console.error('[coda] invio fallito', b.id, e);
         evento({ tipo: 'errore', id: b.id, messaggio: e?.message || String(e) });
         if (/network|rete|fetch|wifi_401/i.test(String(e?.message))) break;
+      } finally {
+        corrente = null;
       }
     }
     return true;

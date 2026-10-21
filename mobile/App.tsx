@@ -3,7 +3,7 @@ import { AppState, BackHandler, Platform } from 'react-native';
 import { Avvisi, avviso, notizia } from './src/ui/Avviso';
 import { useIncomingShare } from 'expo-sharing';
 import { nuovoDocumento } from './src/documenti';
-import { nomeAutomatico } from './src/elencoDocumenti';
+import { nomeAutomatico, spostata } from './src/elencoDocumenti';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -16,8 +16,8 @@ import { chiediFotocamera, prontoAScansionare } from './src/consenso';
 import { azzeraCartelle, type Avanzamento } from './src/drive';
 import { Dividi } from './src/Dividi';
 import { messaggioErrore } from './src/errori';
-import { aggiungiPagina, chiudiAperti, controllaSfocate, dividiPagina, elencaLotti, eliminaLotto, leggiLotti, recuperaLotto, etichettaPagina, notaPagina, nuovoLotto, pulisciInviati, rimuoviPagina, ritagliaPagina, ruotaPagina, salvaBozza, sostituisciPagina, uriAnteprima, type Bozza } from './src/lotti';
-import { aggiornaArchivi, aggiornaElenco, archiviLocali, benvenutoFatto, elencoLocale, leggiImpostazioni, reteAdatta, salvaImpostazioni, salvaSchedeNuove, schedeNuove, segnaBenvenuto, svuotaCoda, type EventoCoda, type Impostazioni as ImpostazioniApp } from './src/coda';
+import { aggiungiPagina, chiudiAperti, controllaSfocate, dividiPagina, elencaLotti, eliminaLotto, leggiLotti, recuperaLotto, etichettaPagina, notaPagina, nuovoLotto, pulisciInviati, rimuoviPagina, riordinaLotti, ritagliaPagina, ruotaPagina, salvaBozza, sostituisciPagina, uriAnteprima, type Bozza } from './src/lotti';
+import { aggiornaArchivi, aggiornaElenco, archiviLocali, benvenutoFatto, elencoLocale, leggiImpostazioni, lottoInInvio, reteAdatta, salvaImpostazioni, salvaSchedeNuove, schedeNuove, segnaBenvenuto, svuotaCoda, type EventoCoda, type Impostazioni as ImpostazioniApp } from './src/coda';
 import { alternaCartella, chiaveDestinazione, destinazioneDi, perArchivio, percorsoLeggibile, type SchedaScelta } from './src/scelta';
 import { prossimaEtichetta } from './src/etichette';
 import { Abbina } from './src/Abbina';
@@ -655,6 +655,47 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       chiave: b.id + pg.file + pg.sha256, uri: uriAnteprima(b, pg), etichetta: pg.etichetta, nota: pg.nota, doppia: !!pg.doppia, stato, inviatoIl: b.inviatoIl,
       sfocata: !!b.sfocate?.includes(pg.file)
     }));
+    const eliminaPagine = (indici: number[]) => {
+      const scelte = indici.map(i => sorgenti[i]).filter(Boolean);
+      if (!scelte.length) return;
+      const uno = scelte.length === 1;
+      const nonInviate = scelte.some(x => x.b.stato !== 'inviato');
+      avviso(uno ? t('Eliminare la pagina?') : t('Eliminare {n} pagine?', { n: scelte.length }),
+        nonInviate
+          ? (uno ? t('Non è ancora stata inviata: la perdi.') : t('Quelle non ancora inviate le perdi.'))
+          : (uno ? t('Il computer ha già questa pagina.') : t('Il computer le ha già: spariscono solo dal telefono.')), [
+          { text: t('Annulla'), style: 'cancel' },
+          {
+            text: t('Elimina'), style: 'destructive', onPress: () => esegui(t('Eliminazione'), () => {
+              const perLotto = new Map<string, string[]>();
+              for (const x of scelte) perLotto.set(x.b.id, [...(perLotto.get(x.b.id) ?? []), x.pg.file]);
+              for (const [id, file] of perLotto) {
+                let b = lotti.find(l => l.id === id);
+                if (!b || invio?.id === id) continue;
+                for (const f of file) b = rimuoviPagina(b, f);
+                if (b.pagine.length) aggiorna(b); else scarta(b);
+              }
+            })
+          }
+        ]);
+    };
+    const riordinaPagine = (da: number, a: number, insieme: number[]) => {
+      const voci = daInviare.flatMap(b => b.pagine.map(pg => ({ b, pg })));
+      const nuove = spostata(voci, da, a, insieme);
+      if (nuove === voci) return;
+      esegui(t('Riordino'), async () => {
+        for (const b of daInviare) if (b.stato === 'in_coda') salvaBozza({ ...b, stato: 'aperto' });
+        try {
+          if (daInviare.some(b => b.id === lottoInInvio())) throw new Error(t('Invio in corso: riprova tra poco.'));
+          const { resta, tolti } = await riordinaLotti(nuove);
+          setLotti(ls => ls.filter(l => !tolti.some(x => x.id === l.id)).map(l => (l.id === resta.id ? resta : l)));
+          setTimeout(() => giro(), 0);
+        } catch (e) {
+          for (const b of daInviare) { try { salvaBozza(b); } catch (e2) { console.warn('[app] stato del lotto non ripristinato', b.id, e2); } }
+          throw e;
+        }
+      });
+    };
     if (visore !== null && sorgenti.length) {
       const su = (fn: (b: Bozza, pg: Pagina) => void) => (i: number) => fn(sorgenti[i].b, sorgenti[i].pg);
       return (
@@ -702,6 +743,8 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
           onNotaSmistare={v => { setNotaSmistare(v); smistareInAttesa(titoloSmistare, v); }}
           onCambiaCartella={cartellaCambiabile ? () => setSceltaCartella(true) : undefined}
           onFotoLibera={() => esegui(t('Foto libera'), async () => { if (await prontoAScansionare()) setFotoLibera(true); })}
+          onEliminaPagine={eliminaPagine}
+          onRiordina={suoi.some(l => l.id === invio?.id) ? undefined : riordinaPagine}
           onRinomina={cartellaCambiabile && scheda.tipo === 'nuova' ? v => aggiornaSchedaNuova(scheda, { segnatura: v }) : undefined}
           onElimina={cartellaCambiabile && scheda.tipo === 'nuova' ? () => eliminaSchedaNuova(scheda, precedenti.length) : undefined}
           onIndietro={() => setScheda(null)}

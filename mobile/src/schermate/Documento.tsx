@@ -1,21 +1,18 @@
-import { useRef, useState } from 'react';
-import { FlatList, Image, Pressable, useWindowDimensions, View, type ViewProps } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import { useState } from 'react';
+import { Image, ScrollView, View } from 'react-native';
 import { Archive, Combine, FolderInput, Pencil, Share2, Trash2 } from 'lucide-react-native';
-import { LUNGHEZZA_NOME, nomeValido, quando, type Documento as Doc, type PaginaDoc } from '../elencoDocumenti';
+import { LUNGHEZZA_NOME, nomeValido, quando, type Documento as Doc } from '../elencoDocumenti';
 import { uriPagina } from '../documenti';
 import { nomeFiltro } from '../filtri';
 import { t } from '../lingua';
 import { raggio, spazio, useColori } from '../theme';
 import { SPORGENZA_BARRA } from '../ui/BarraFondo';
 import { Campo } from '../ui/Campo';
+import { ContaSpostate, Griglia, useFinestra, useMisure } from '../ui/Griglia';
 import { Intestazione } from '../ui/Intestazione';
 import { Pulsante } from '../ui/Pulsante';
+import { SegnoScelta, TestataSelezione, useSelezione } from '../ui/Selezione';
 import { Testo } from '../ui/Testo';
-
-const COLONNE = 3;
 
 type Props = {
   doc: Doc;
@@ -25,76 +22,21 @@ type Props = {
   onSposta: () => void;
   onElimina: () => void;
   onCondividi: () => void;
-  onRiordina: (da: number, a: number) => void;
+  onRiordina: (da: number, a: number, insieme: number[]) => void;
   archivio?: string;
   onArchivio?: () => void;
   onUnisci: () => void;
+  onEliminaPagine: (file: string[]) => void;
 };
 
-type PropsMiniatura = {
-  doc: Doc; pg: PaginaDoc; i: number; n: number; lato: number;
-  onApri: (i: number) => void; onRiordina: (da: number, a: number) => void; onTrascina: (i: number | null) => void;
-};
-
-function Miniatura({ doc, pg, i, n, lato, onApri, onRiordina, onTrascina }: PropsMiniatura) {
+export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onElimina, onCondividi, onRiordina, archivio, onArchivio, onUnisci, onEliminaPagine }: Props) {
   const c = useColori();
-  const x = useSharedValue(0);
-  const y = useSharedValue(0);
-  const su = useSharedValue(0);
-  const alto = useRef(lato * 4 / 3);
-  const finito = useRef(0);
-
-  const rilascia = (tx: number, ty: number) => {
-    finito.current = Date.now();
-    onTrascina(null);
-    const col = Math.min(COLONNE - 1, Math.max(0, (i % COLONNE) + Math.round(tx / (lato + spazio.md))));
-    const riga = Math.floor(i / COLONNE) + Math.round(ty / (alto.current + spazio.md));
-    onRiordina(i, riga * COLONNE + col);
-  };
-  const pan = Gesture.Pan()
-    .activateAfterLongPress(350)
-    .onStart(() => { su.set(1); scheduleOnRN(onTrascina, i); })
-    .onUpdate(e => { x.set(e.translationX); y.set(e.translationY); })
-    .onEnd(e => { scheduleOnRN(rilascia, e.translationX, e.translationY); })
-    .onFinalize(() => { x.set(0); y.set(0); su.set(0); });
-  const stile = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.get() }, { translateY: y.get() }, { scale: su.get() ? 1.06 : 1 }],
-    opacity: su.get() ? 0.9 : 1,
-  }));
-
-  return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[{ width: lato }, stile]} onLayout={e => { alto.current = e.nativeEvent.layout.height; }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={pg.filtro ? t('Apri la pagina {n}, filtro {filtro}', { n: i + 1, filtro: nomeFiltro(pg.filtro) }) : t('Apri la pagina {n}', { n: i + 1 })}
-          accessibilityHint={n > 1 ? t('Tieni premuto e trascina per spostarla') : undefined}
-          accessibilityActions={n > 1 ? [...(i > 0 ? [{ name: 'decrement', label: t('Sposta prima') }] : []), ...(i < n - 1 ? [{ name: 'increment', label: t('Sposta dopo') }] : [])] : undefined}
-          onAccessibilityAction={e => onRiordina(i, i + (e.nativeEvent.actionName === 'increment' ? 1 : -1))}
-          onPress={() => { if (Date.now() - finito.current > 400) onApri(i); }} style={{ gap: spazio.xs }}>
-          {({ pressed }) => (
-            <>
-              <View style={{ width: lato, height: lato * 4 / 3, backgroundColor: c.bgHover, borderWidth: pressed ? 2 : 1, borderColor: pressed ? c.primary : c.divisore, borderRadius: raggio.md, overflow: 'hidden' }}>
-                <Image source={{ uri: uriPagina(doc, pg) }} style={{ flex: 1 }} resizeMode="cover" resizeMethod="resize" accessibilityIgnoresInvertColors />
-                {!!pg.filtro && <Testo variante="aiuto" numberOfLines={1} maxFontSizeMultiplier={1.5} style={{ position: 'absolute', left: 6, bottom: 6, paddingHorizontal: 6, borderRadius: raggio.sm, overflow: 'hidden', backgroundColor: c.bgPanel, color: c.textMain, fontWeight: '600' }}>{nomeFiltro(pg.filtro)}</Testo>}
-              </View>
-              <Testo>{String(i + 1)}</Testo>
-            </>
-          )}
-        </Pressable>
-      </Animated.View>
-    </GestureDetector>
-  );
-}
-
-export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onElimina, onCondividi, onRiordina, archivio, onArchivio, onUnisci }: Props) {
-  const { width } = useWindowDimensions();
+  const sel = useSelezione();
+  const { lato } = useMisure();
+  const finestra = useFinestra();
   const [nome, setNome] = useState<string | null>(null);
-  const [trascinata, setTrascinata] = useState<number | null>(null);
-  const rigaSu = trascinata === null ? -1 : Math.floor(trascinata / COLONNE);
-  const lato = (width - spazio.md * 2 - spazio.md * (COLONNE - 1)) / COLONNE;
   const n = doc.pagine.length;
   const sotto = [doc.cartella, n === 1 ? t('1 pagina') : t('{n} pagine', { n }), quando(doc.creatoIl, new Date())].filter(Boolean).join(' · ');
-  const righe: PaginaDoc[][] = [];
-  for (let i = 0; i < n; i += COLONNE) righe.push(doc.pagine.slice(i, i + COLONNE));
 
   const testa = (
     <View style={{ gap: spazio.md, paddingTop: spazio.md }}>
@@ -114,34 +56,48 @@ export function Documento({ doc, onIndietro, onApri, onRinomina, onSposta, onEli
       </View>
       {archivio && <Pulsante variante="ghost" icona={Archive} titolo={t('Manda all\'archivio «{nome}»', { nome: archivio })} onPress={onArchivio!} style={{ marginHorizontal: spazio.md, marginTop: -spazio.sm, alignSelf: 'flex-start' }} />}
       <Testo variante="sezione" accessibilityRole="header" style={{ paddingHorizontal: spazio.md }}>{t('Pagine')}</Testo>
-      {n > 1 && <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md, marginTop: -spazio.sm }}>{t('Tieni premuta una pagina e trascinala per cambiare l\'ordine.')}</Testo>}
+      {n > 1 && <Testo variante="aiuto" style={{ paddingHorizontal: spazio.md, marginTop: -spazio.sm }}>{t('Tieni premuta una pagina per selezionarla, poi trascinala per spostare tutte le selezionate.')}</Testo>}
     </View>
   );
 
+  // ponytail: niente scorrimento automatico al bordo durante il trascinamento: con molte pagine si sposta in più passi.
   return (
     <View style={{ flex: 1 }}>
-      <Intestazione titolo={doc.nome} sotto={sotto} onIndietro={onIndietro}
-        azioni={<>
-          <Pulsante variante="ghost" icona={Combine} etichetta={t('Unisci un altro documento in fondo')} onPress={onUnisci} />
-          <Pulsante variante="ghost" icona={Pencil} etichetta={t('Rinomina il documento')} onPress={() => setNome(doc.nome)} />
-        </>} />
-      <FlatList
-        data={righe}
-        keyExtractor={r => r[0].file}
-        ListHeaderComponent={testa}
-        keyboardShouldPersistTaps="handled"
-        scrollEnabled={trascinata === null}
-        // ponytail: niente scorrimento automatico verso il bordo durante il trascinamento: con molte pagine si sposta in più passi.
-        CellRendererComponent={({ index, style, ...resto }: ViewProps & { index: number }) => <View {...resto} style={[style, index === rigaSu && { zIndex: 1, elevation: 1 }]} />}
-        contentContainerStyle={{ gap: spazio.md, paddingBottom: SPORGENZA_BARRA + spazio.md }}
-        renderItem={({ item: r, index: riga }) => (
-          <View style={{ flexDirection: 'row', gap: spazio.md, paddingHorizontal: spazio.md }}>
-            {r.map((pg, k) => (
-              <Miniatura key={pg.file} doc={doc} pg={pg} i={riga * COLONNE + k} n={n} lato={lato} onApri={onApri} onRiordina={onRiordina} onTrascina={setTrascinata} />
-            ))}
-          </View>
-        )}
-      />
+      {sel.scelte ? (
+        <TestataSelezione n={sel.scelte.length} totale={n} onTutte={() => sel.tutte(doc.pagine.map((_, i) => i))} onEsci={sel.esci}
+          onElimina={() => { onEliminaPagine(sel.scelte!.map(i => doc.pagine[i]?.file).filter((x): x is string => !!x)); sel.esci(); }} />
+      ) : (
+        <Intestazione titolo={doc.nome} sotto={sotto} onIndietro={onIndietro}
+          azioni={<>
+            <Pulsante variante="ghost" icona={Combine} etichetta={t('Unisci un altro documento in fondo')} onPress={onUnisci} />
+            <Pulsante variante="ghost" icona={Pencil} etichetta={t('Rinomina il documento')} onPress={() => setNome(doc.nome)} />
+          </>} />
+      )}
+      <View style={{ flex: 1 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: spazio.md, paddingBottom: SPORGENZA_BARRA + spazio.md }} {...finestra.scorrimento}>
+          {testa}
+          <Griglia n={n} chiave={i => doc.pagine[i].file} vista={finestra.vista} sel={sel} onApri={onApri} onRiordina={onRiordina} onSpostando={finestra.setSpostando}
+            descrivi={(i, scegliendo) => {
+              const pg = doc.pagine[i];
+              return {
+                etichetta: scegliendo ? t('Pagina {n}', { n: i + 1 }) : pg.filtro ? t('Apri la pagina {n}, filtro {filtro}', { n: i + 1, filtro: nomeFiltro(pg.filtro) }) : t('Apri la pagina {n}', { n: i + 1 }),
+                aiuto: scegliendo ? undefined : n > 1 ? t('Tieni premuto per selezionare, trascina per spostarla') : t('Tieni premuto per selezionare più pagine')
+              };
+            }}
+            contenuto={(i, evidenza) => {
+              const pg = doc.pagine[i];
+              return (
+                <View style={{ width: lato, height: lato * 4 / 3, backgroundColor: c.bgHover, borderWidth: evidenza ? 3 : 1, borderColor: evidenza ? c.primary : c.divisore, borderRadius: raggio.md, overflow: 'hidden' }}>
+                  <Image source={{ uri: uriPagina(doc, pg) }} style={{ flex: 1 }} resizeMode="cover" resizeMethod="resize" accessibilityIgnoresInvertColors />
+                  {!!pg.filtro && <Testo variante="aiuto" numberOfLines={1} maxFontSizeMultiplier={1.5} style={{ position: 'absolute', left: 6, bottom: 6, paddingHorizontal: 6, borderRadius: raggio.sm, overflow: 'hidden', backgroundColor: c.bgPanel, color: c.textMain, fontWeight: '600' }}>{nomeFiltro(pg.filtro)}</Testo>}
+                  {!!sel.scelte && <SegnoScelta scelta={sel.scelta(i)} />}
+                </View>
+              );
+            }}
+            etichetta={i => <Testo numberOfLines={1} maxFontSizeMultiplier={1.5}>{String(i + 1)}</Testo>} />
+        </ScrollView>
+        <ContaSpostate n={finestra.spostando} />
+      </View>
     </View>
   );
 }

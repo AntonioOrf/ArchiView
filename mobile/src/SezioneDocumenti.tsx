@@ -263,9 +263,22 @@ export function SezioneDocumenti({ invio, impostazioni, onCambiaArchivio, archiv
               { text: t('Annulla'), style: 'cancel' },
               { text: t('Manda'), onPress: () => esegui(t('Invio all\'archivio'), async () => { await archivio.onManda(doc.nome, doc.pagine.map(p => uriFile(doc, p))); notizia(t('Pagine in «Da inviare»')); }) }
             ]) : undefined}
+          onEliminaPagine={file => {
+            const tutte = file.length >= doc.pagine.length;
+            avviso(tutte ? t('Eliminare il documento?') : file.length === 1 ? t('Eliminare la pagina?') : t('Eliminare {n} pagine?', { n: file.length }),
+              tutte ? t('Sono tutte le pagine: si elimina tutto il documento.') : file.length === 1 ? t('La perdi.') : t('Le perdi.'), [
+                { text: t('Annulla'), style: 'cancel' },
+                {
+                  text: t('Elimina'), style: 'destructive', onPress: () => esegui(t('Eliminazione'), () => {
+                    if (tutte) { eliminaDocumento(doc); setAperto(null); setDocs(ds => ds.filter(x => x.id !== doc.id)); return; }
+                    aggiorna(file.reduce((d, f) => rimuoviPagina(d, f), doc));
+                  })
+                }
+              ]);
+          }}
           onRinomina={nome => esegui(t('Rinomina'), () => { aggiorna(salvaDocumento({ ...doc, nome })); })}
-          onRiordina={(da, a) => {
-            const pagine = spostata(doc.pagine, da, a);
+          onRiordina={(da, a, insieme) => {
+            const pagine = spostata(doc.pagine, da, a, insieme);
             if (pagine !== doc.pagine) esegui(t('Riordino'), () => { aggiorna(salvaDocumento({ ...doc, pagine })); });
           }} />
         <Condividi
