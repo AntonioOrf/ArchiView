@@ -7,6 +7,9 @@ _Read this in [Italian](README-it.md)_
 
 # ArchiView
 
+[![Desktop](https://img.shields.io/github/v/release/AntonioOrf/ArchiView?filter=v*&label=ArchiView%20desktop)](https://github.com/AntonioOrf/ArchiView/releases/latest)
+[![Android](https://img.shields.io/github/v/release/AntonioOrf/ArchiView?filter=scanner-v*&include_prereleases&label=ArchiScanner%20Android)](https://github.com/AntonioOrf/ArchiView/releases?q=scanner-v&expanded=true)
+
 **ArchiView** is a desktop application (built with Electron) for cataloguing, archiving and transcribing manuscripts and historical documents. It works offline.
 
 ## Transcription
