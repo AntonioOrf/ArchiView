@@ -6,7 +6,8 @@ const { IndiceWorker } = require('../out/main/crossArchive/client');
 
 const ARCHIVI = 10;
 const SCHEDE = 5000;
-const SOGLIE = { primoCaricamento: 2000, ricercaCalda: 100, aggiornamentoUna: 300 };
+const SCALA = process.env.CI ? 3 : 1;
+const SOGLIE = { primoCaricamento: 2000 * SCALA, ricercaCalda: 100 * SCALA, aggiornamentoUna: 300 * SCALA };
 
 const NOMI = ['Luca', 'Bartolo', 'Giovanni', 'Piero', 'Nanni', 'Cecco', 'Andrea', 'Bindo', 'Lapo', 'Vanni'];
 const COGNOMI = ["d'Abete", 'di Ser Lapo', 'Bonaccorsi', 'del Pace', 'Ricoveri', 'da Pisa', 'Mannelli', 'Strozzi'];
