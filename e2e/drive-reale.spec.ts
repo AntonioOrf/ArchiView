@@ -48,6 +48,7 @@ async function aggiungiScheda(page: Page, segnatura: string) {
       tags: '', allegati: [], trascrizione: '', lastModified: Date.now(),
     });
     await w.Store.commit();
+    await w.flushSalvataggio();
   }, segnatura);
 }
 
