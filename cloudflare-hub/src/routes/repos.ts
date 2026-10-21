@@ -1,7 +1,19 @@
 import type { Env } from '../types';
+import { bearer, resolveAuth, rispostaNegata } from '../auth';
 import { randomId, randomKey, sha256hex, timingSafeEqual } from '../crypto';
 import { err, json, tooMany } from '../http';
 import { clientIp, enforceCreateLimits, verifyTurnstile } from '../ratelimit';
+
+const TABELLE_REPO = ['version_blobs', 'versions', 'attachment_chunks', 'attachment_files', 'members', 'repos'];
+
+export async function handleDeleteRepo(req: Request, env: Env, repoId: string): Promise<Response> {
+  const auth = await resolveAuth(env, repoId, bearer(req));
+  if (!auth) return rispostaNegata(env, repoId, bearer(req));
+  if (auth.role !== 'owner') return err(403, 'Operazione riservata al proprietario del repository.');
+
+  await env.DB.batch(TABELLE_REPO.map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE repo_id = ?`).bind(repoId)));
+  return json({ ok: true, repoId });
+}
 
 export async function handleCreateRepo(req: Request, env: Env): Promise<Response> {
   if (!env.CREATE_SECRET) {

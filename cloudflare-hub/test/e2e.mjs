@@ -153,6 +153,24 @@ async function main() {
   r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth('chiave-mai-esistita') });
   ok(r.status === 401, 'chiave inventata → 401');
 
+  section('Scenario 7 — Cancellazione del repository');
+  r = await fetch(`${BASE}/api/repos/${repoId}/members`, {
+    method: 'POST', headers: auth(ownerKey), body: JSON.stringify({ label: 'Utente C' }),
+  });
+  const memberKeyC = (await j(r))?.memberKey;
+  r = await fetch(`${BASE}/api/repos/${repoId}`, { method: 'DELETE', headers: auth(memberKeyC) });
+  ok(r.status === 403, 'membro C cancella il repo → 403');
+  r = await fetch(`${BASE}/api/repos/${repoId}`, { method: 'DELETE', headers: auth('chiave-mai-esistita') });
+  ok(r.status === 401, 'chiave inventata cancella il repo → 401');
+  r = await fetch(`${BASE}/api/repos/${repoId}`, { method: 'DELETE', headers: auth(ownerKey) });
+  ok(r.status === 200, 'A cancella il repo → 200');
+  r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(ownerKey) });
+  ok(r.status === 401, 'pull dopo la cancellazione → 401');
+  r = await fetch(`${BASE}/api/repos/${repoId}/pull`, { headers: auth(memberKeyC) });
+  ok(r.status === 401, 'pull del membro dopo la cancellazione → 401');
+  r = await fetch(`${BASE}/api/repos/${repoId}`, { method: 'DELETE', headers: auth(ownerKey) });
+  ok(r.status === 401, 'seconda cancellazione → 401');
+
   section('Extra — Rate-limit creazione (Fase 5)');
   const rlIp = `198.51.100.${Math.floor(Math.random() * 250) + 1}`;
   const createAs = () => fetch(`${BASE}/api/repos`, {

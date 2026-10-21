@@ -11,6 +11,7 @@ su Drive personale). Il client sta nel main di ArchiView: `src/main/ipc/hubIpc.t
 | `POST /api/repos` | header `X-Create-Secret` | `{name?}` → `201 {repoId, ownerKey}` |
 | `GET /api/repos/:id/pull[?ifVersionNot=N]` | `Bearer` membro/owner | → `{version, database}` oppure `{version, unchanged:true}` |
 | `POST /api/repos/:id/push` | `Bearer` membro/owner | `{parentVersion, database}` → `{version}` (409 su conflitto) |
+| `DELETE /api/repos/:id` | owner | cancella repo, versioni, membri e indice allegati (i file su Drive restano) |
 | `GET /api/repos/:id/members` | owner | → `{members:[…]}` |
 | `POST /api/repos/:id/members` | owner | `{label?}` → `201 {memberId, memberKey}` |
 | `DELETE /api/repos/:id/members/:mid` | owner | → revoca soft |

@@ -1,6 +1,6 @@
 import type { Env } from './types';
 import { err, json, preflight } from './http';
-import { handleCreateRepo } from './routes/repos';
+import { handleCreateRepo, handleDeleteRepo } from './routes/repos';
 import { handlePull } from './routes/pull';
 import { handlePush } from './routes/push';
 import { handleAddMember, handleListMembers, handleRevokeMember } from './routes/members';
@@ -26,6 +26,8 @@ export default {
 
         const repoId = seg[2];
         if (!repoId) return err(404, 'Not found');
+
+        if (seg.length === 3 && M === 'DELETE') return handleDeleteRepo(req, env, repoId);
 
         if (seg.length === 4 && seg[3] === 'pull' && M === 'GET') {
           return handlePull(req, env, repoId);

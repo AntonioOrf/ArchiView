@@ -10,6 +10,7 @@
     "migrate:local": "wrangler d1 execute archiview-hub --local --file=./src/schema.sql",
     "smoke": "node test/smoke.mjs",
     "e2e": "node test/e2e.mjs",
+    "produzione": "node test/produzione.mjs",
     "typecheck": "tsc --noEmit",
     "realtime": "node test/realtime.mjs"
   },
