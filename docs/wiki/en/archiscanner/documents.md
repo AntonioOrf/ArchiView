@@ -8,8 +8,10 @@ From the archive drop-down, under **Solo su questo telefono** (Only on this phon
 
 The scanner button creates a document in the open folder, with an automatic name
 («Documento 9 ott 18:05») that you can change with the pencil. Folders have a single level.
-Inside a document the same button adds pages; to reorder them, press and hold a page and drag
-it. Search finds documents by name and by recognised text.
+Inside a document the same button adds pages. Press and hold a page to select it (a tap adds
+others) and drag it to move all the selected pages, as in records
+([Selecting and moving several pages](./scanning#selecting-and-moving-several-pages)). Search
+finds documents by name and by recognised text.
 
 Images shared with ArchiScanner from another app's **Share** menu (Gallery, WhatsApp…), one or
 more, become a new document.

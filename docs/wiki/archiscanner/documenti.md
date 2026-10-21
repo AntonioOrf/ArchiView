@@ -8,8 +8,10 @@ servono account né archivio, e niente parte verso il computer.
 
 Il pulsante dello scanner crea un documento nella cartella aperta, con un nome automatico
 («Documento 9 ott 18:05») che puoi cambiare con la matita. Le cartelle sono di un solo livello.
-Dentro un documento lo stesso pulsante aggiunge pagine, e per cambiarne l'ordine tieni premuta
-una pagina e trascinala. La ricerca trova i documenti per nome e per il testo riconosciuto.
+Dentro un documento lo stesso pulsante aggiunge pagine. Tieni premuta una pagina per
+selezionarla (un tocco ne aggiunge altre) e trascinala per spostare tutte le selezionate, come
+nelle schede ([Selezionare e spostare più pagine](./scansionare#selezionare-e-spostare-piu-pagine)).
+La ricerca trova i documenti per nome e per il testo riconosciuto.
 
 Le immagini condivise con ArchiScanner dal menu **Condividi** di un'altra app (Galleria,
 WhatsApp…), una o più, diventano un documento nuovo.

@@ -85,14 +85,30 @@ doppio tocco, e si passa alle altre strisciando.
 - **Nota**: una riga per la pagina («rifilata», «macchia d'umidità»). Sul computer finisce nel
   campo **Note** della scheda, con l'etichetta della carta (`1v: rifilata`).
 - **Ruota** di 90°.
-- **Ritaglia** con un riquadro dritto; **Pagina intera** lo riporta ai bordi.
+- **Ritaglia** con quattro angoli liberi: porta ogni angolo sul bordo del foglio, anche se la
+  foto è storta, e la pagina viene raddrizzata. **Pagina intera** li riporta ai bordi.
 - **Rifai**: riapre lo scanner per quella sola pagina. La foto nuova prende il posto della
   vecchia, con la stessa etichetta.
-- **Dividi**: per una pagina doppia (un'apertura del registro). Sposti la linea sulla piega e
-  ottieni due pagine, etichettate per esempio 12v e 13r. La nota passa a entrambe.
+- **Dividi**: per una pagina doppia (un'apertura del registro). La linea parte già sulla piega
+  trovata dall'app; se serve la sposti, e ottieni due pagine, etichettate per esempio 12v e 13r.
+  La nota passa a entrambe.
 - **Elimina**.
 
 Le pagine già partite si aprono in sola lettura.
+
+### Selezionare e spostare più pagine
+
+Tieni premuta una miniatura: viene selezionata subito, e un tocco ne aggiunge o toglie altre. Il
+cestino in alto elimina tutte le selezionate.
+
+Per cambiare l'ordine, tieni premuta una pagina e trascinala: si spostano insieme tutte le
+selezionate, una barra blu indica dove finiranno e in alto a destra c'è quante sono. Al rilascio
+si mettono in fila nel loro ordine e restano selezionate. Le etichette restano attaccate alle
+pagine: se sposti la 3r, resta 3r.
+
+Al primo spostamento le scansioni in attesa della scheda diventano una sola, e al computer arriva
+un unico invio. Le pagine già inviate, e tutte quelle della scheda mentre una sua scansione è in
+invio, non si spostano.
 
 ## L'invio
 

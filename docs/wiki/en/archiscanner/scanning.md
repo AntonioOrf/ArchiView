@@ -83,15 +83,31 @@ others.
 - **Nota** (Note): one line for the page ("trimmed", "water stain"). On the computer it goes into
   the record's **Notes** field, with the leaf label (`1v: trimmed`).
 - **Ruota** (Rotate) by 90°.
-- **Ritaglia** (Crop) with a straight frame; **Pagina intera** (Whole page) resets it to the
-  edges.
+- **Ritaglia** (Crop) with four free corners: drag each corner onto the edge of the sheet, even
+  if the photo is skewed, and the page is straightened. **Pagina intera** (Whole page) resets them
+  to the edges.
 - **Rifai** (Redo): reopens the scanner for that page only. The new photo replaces the old one
   and keeps its label.
-- **Dividi** (Split): for a double page (an opening of the register). Move the line onto the
-  fold and you get two pages, labelled for example 12v and 13r. The note goes to both.
+- **Dividi** (Split): for a double page (an opening of the register). The line starts on the fold
+  the app has found; move it if needed and you get two pages, labelled for example 12v and 13r.
+  The note goes to both.
 - **Elimina** (Delete).
 
 Pages that have already left open read-only.
+
+### Selecting and moving several pages
+
+Press and hold a thumbnail: it is selected at once, and a tap adds or removes others. The bin at
+the top deletes all the selected pages.
+
+To change the order, press and hold a page and drag it: all the selected pages move together, a
+blue bar shows where they will land and the top right corner shows how many they are. When you
+let go they line up in their order and stay selected. Labels stay with their pages: if you move
+3r, it stays 3r.
+
+On the first move the record's waiting scans become a single one, and the computer receives a
+single delivery. Pages already sent, and all the record's pages while one of its scans is being
+sent, cannot be moved.
 
 ## Sending
 
