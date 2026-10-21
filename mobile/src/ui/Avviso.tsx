@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { Modal, Pressable, ScrollView, useWindowDimensions, View, type AlertButton } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, useWindowDimensions, View, type AlertButton } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '../lingua';
 import { raggio, spazio, useColori } from '../theme';
@@ -7,7 +7,7 @@ import { ALTEZZA_BARRA } from './BarraFondo';
 import { Pulsante } from './Pulsante';
 import { Testo } from './Testo';
 
-type Voce = { titolo: string; messaggio?: string; pulsanti: AlertButton[] };
+type Voce = { titolo: string; messaggio?: string; pulsanti: AlertButton[]; percento?: number | null };
 
 let coda: Voce[] = [];
 let notifica: { testo: string; id: number } | null = null;
@@ -18,6 +18,20 @@ const iscrivi = (f: () => void) => { ascolta.add(f); return () => { ascolta.dele
 
 export function avviso(titolo: string, messaggio?: string, pulsanti?: AlertButton[]) {
   cambia([...coda, { titolo, messaggio, pulsanti: pulsanti?.length ? pulsanti : [{ text: 'OK' }] }]);
+}
+
+export function attesa(titolo: string, messaggio: (p: number | null) => string) {
+  const v: Voce = { titolo, messaggio: messaggio(null), pulsanti: [], percento: null };
+  cambia([v, ...coda]);
+  return {
+    percento: (p: number | null) => {
+      if (v.percento === p) return;
+      v.percento = p;
+      v.messaggio = messaggio(p);
+      cambia([...coda]);
+    },
+    chiudi: () => cambia(coda.filter(x => x !== v))
+  };
 }
 
 export function notizia(testo: string, lunga = false) {
@@ -67,13 +81,23 @@ function Finestra() {
         <View accessibilityViewIsModal accessibilityRole="alert"
           style={{ backgroundColor: c.bgPanel, borderRadius: raggio.lg, borderWidth: 1, borderColor: c.divisore, padding: spazio.lg, gap: spazio.md, maxHeight: height * 0.8 }}>
           <Testo variante="sezione" accessibilityRole="header">{v.titolo}</Testo>
-          {!!v.messaggio && <ScrollView style={{ flexGrow: 0 }}><Testo tono="muted">{v.messaggio}</Testo></ScrollView>}
-          <View style={{ flexDirection: colonna ? 'column-reverse' : 'row', justifyContent: 'flex-end', flexWrap: 'wrap', gap: spazio.sm, marginTop: spazio.xs }}>
+          {v.percento !== undefined ? (
+            <View accessibilityLiveRegion="polite" style={{ gap: spazio.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.sm }}>
+                <ActivityIndicator color={c.primary} />
+                <Testo tono="muted" style={{ flex: 1 }}>{v.messaggio}</Testo>
+              </View>
+              <View style={{ height: 4, borderRadius: 2, backgroundColor: c.bgHover }}>
+                {v.percento !== null && <View style={{ height: 4, borderRadius: 2, width: `${v.percento}%`, backgroundColor: c.primary }} />}
+              </View>
+            </View>
+          ) : !!v.messaggio && <ScrollView style={{ flexGrow: 0 }}><Testo tono="muted">{v.messaggio}</Testo></ScrollView>}
+          {!!v.pulsanti.length && <View style={{ flexDirection: colonna ? 'column-reverse' : 'row', justifyContent: 'flex-end', flexWrap: 'wrap', gap: spazio.sm, marginTop: spazio.xs }}>
             {v.pulsanti.map((p, i) => (
               <Pulsante key={i} titolo={p.text} onPress={() => premi(p)}
                 variante={p.style === 'destructive' ? 'pericolo' : p.style === 'cancel' ? 'ghost' : i === v.pulsanti.length - 1 ? 'primario' : 'secondario'} />
             ))}
-          </View>
+          </View>}
         </View>
       </View>
     </Modal>

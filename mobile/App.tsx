@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, BackHandler, Platform } from 'react-native';
-import { Avvisi, avviso, notizia } from './src/ui/Avviso';
+import { attesa as avvisoInCorso, Avvisi, avviso, notizia } from './src/ui/Avviso';
 import { useIncomingShare } from 'expo-sharing';
 import { nuovoDocumento } from './src/documenti';
 import { nomeAutomatico, spostata } from './src/elencoDocumenti';
@@ -64,8 +64,7 @@ export default function App() {
 
 function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: boolean; onLingua: () => void }) {
   const [utente, setUtente] = useState<Utente | null>(null);
-  const [nuova, setNuova] = useState<Nuova | null>(null);
-  const [lotti, setLotti] = useState<Bozza[]>([]);
+  const [nuova, setNuova] = useState<Nuova | null>(null);  const [lotti, setLotti] = useState<Bozza[]>([]);
   const [rotti, setRotti] = useState<string[]>([]);
   const [impostazioni, setImpostazioni] = useState<ImpostazioniApp>(() => {
     const i = leggiImpostazioni();
@@ -256,7 +255,14 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   }
 
-  const installaNuova = (n: Nuova) => esegui(t('Aggiornamento'), () => installaAggiornamento(n));
+  const installaNuova = (n: Nuova) => esegui(t('Aggiornamento'), async () => {
+    const a = avvisoInCorso(`ArchiScanner ${n.versione}`, p => p === null ? t('Scarico l\'aggiornamento…') : t('Scarico l\'aggiornamento… {p}%', { p }));
+    try {
+      await installaAggiornamento(n, a.percento);
+    } finally {
+      a.chiudi();
+    }
+  });
 
   const delArchivio = lotti.filter(l => !l.archivio || l.archivio === archivio?.nome);
   const inCoda = lotti.filter(l => l.stato === 'in_coda');

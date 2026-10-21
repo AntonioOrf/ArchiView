@@ -25,11 +25,13 @@ export async function cercaAggiornamento(segnalaErrori = false): Promise<Nuova |
   }
 }
 
-export async function installaAggiornamento({ versione, url }: Nuova): Promise<void> {
+export async function installaAggiornamento({ versione, url }: Nuova, onPercento: (p: number | null) => void): Promise<void> {
   const apk = new File(Paths.cache, `ArchiScanner-${versione}.apk`);
   if (apk.exists) apk.delete();
   try {
-    await File.downloadFileAsync(url, apk);
+    await File.downloadFileAsync(url, apk, {
+      onProgress: ({ bytesWritten, totalBytes }) => onPercento(totalBytes > 0 ? Math.floor(bytesWritten * 100 / totalBytes) : null)
+    });
   } catch (e: any) {
     throw new Error(t('download dell\'aggiornamento non riuscito ({motivo})', { motivo: e?.message || String(e) }));
   }

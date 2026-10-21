@@ -88,6 +88,8 @@ export const EN: Record<string, string> = {
   'È uscita una versione nuova dell\'app. Le pagine in attesa restano dove sono.': 'A new version of the app is out. Waiting pages stay where they are.',
   'Più tardi': 'Later',
   'Aggiorna': 'Update',
+  'Scarico l\'aggiornamento…': 'Downloading the update…',
+  'Scarico l\'aggiornamento… {p}%': 'Downloading the update… {p}%',
   'Aggiornamento': 'Update',
   'Account cambiato': 'Account changed',
   '1 pagina scansionata con {vecchio}: inviarla a {nuovo}?': '1 page scanned with {vecchio}: send it to {nuovo}?',
