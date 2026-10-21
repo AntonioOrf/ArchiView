@@ -32,7 +32,8 @@ The names of the options vary a little between phone makers, but the steps are t
 ## Updating
 
 You don't need to repeat all this by hand. At startup the app checks for a new version and offers
-**Update**: it downloads the APK and opens Android's installer, where you just tap **Update**. You
+**Update**: it downloads the APK, showing the percentage, and opens Android's installer, where you
+just tap **Update**. You
 can also check from **Settings → App → Check for updates**.
 
 The new version installs over the old one and keeps everything: pages waiting to be sent,

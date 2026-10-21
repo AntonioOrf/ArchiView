@@ -72,6 +72,7 @@ The app remembers your choice. To change it, tap the archive name at the top.
 ## Updating the app
 
 At startup the app checks for a new version and tells you with a message: **Update** downloads
-the APK and opens Android's installer, **Later** puts it off. The new version stays in
-**Settings → App**, where **Check for updates** runs the check by hand. Pages waiting to be sent
-stay where they are.
+the APK and opens Android's installer, **Later** puts it off. While the APK downloads, the message
+stays open with the percentage downloaded and the app can't be used until the installer appears.
+The new version stays in **Settings → App**, where **Update** does the same and **Check for
+updates** runs the check by hand. Pages waiting to be sent stay where they are.

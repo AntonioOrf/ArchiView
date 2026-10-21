@@ -31,7 +31,8 @@ I nomi delle voci cambiano un poco fra le marche di telefono, ma i passi sono qu
 ## Aggiornare
 
 Non serve ripetere tutto a mano. All'avvio l'app controlla se c'è una versione nuova e propone
-**Aggiorna**: scarica l'APK e apre l'installazione di Android, dove basta toccare **Aggiorna**.
+**Aggiorna**: scarica l'APK mostrando la percentuale e apre l'installazione di Android, dove basta
+toccare **Aggiorna**.
 Puoi controllare anche da **Impostazioni → App → Cerca aggiornamenti**.
 
 La versione nuova si installa sopra la vecchia e tiene tutto: pagine in attesa, Documenti,

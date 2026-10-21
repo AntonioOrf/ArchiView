@@ -67,6 +67,7 @@ La scelta resta ricordata. Per cambiarla tocca il nome dell'archivio in alto.
 ## Aggiornare l'app
 
 All'avvio l'app controlla se è uscita una versione nuova e lo dice con un avviso: **Aggiorna**
-scarica l'APK e apre l'installazione di Android, **Più tardi** lo rimanda. La versione nuova resta
-in **Impostazioni → App**, dove **Cerca aggiornamenti** ripete il controllo a mano. Le pagine in
-attesa restano dove sono.
+scarica l'APK e apre l'installazione di Android, **Più tardi** lo rimanda. Durante il download
+l'avviso resta aperto con la percentuale scaricata e l'app non si usa finché non compare
+l'installazione. La versione nuova resta in **Impostazioni → App**, dove **Aggiorna** fa lo stesso
+e **Cerca aggiornamenti** ripete il controllo a mano. Le pagine in attesa restano dove sono.
