@@ -4,7 +4,7 @@ import { piuNuova, ultimaApk } from '../src/aggiornamento.ts';
 
 const rel = (tag, apk = true, draft = false) => ({
   tag_name: tag, draft,
-  assets: apk ? [{ name: `ArchiView-Scanner-${tag}.apk`, browser_download_url: `https://x/${tag}.apk` }] : []
+  assets: apk ? [{ name: `ArchiView-Scanner-${tag}.apk`, browser_download_url: `https://x/${tag}.apk`, size: 42 }] : []
 });
 
 test('confronto di versioni numerico, non alfabetico', () => {
@@ -16,7 +16,7 @@ test('confronto di versioni numerico, non alfabetico', () => {
 
 test('sceglie la release scanner più nuova con APK, ignorando desktop, bozze e release senza APK', () => {
   const r = [rel('v3.3.0'), rel('scanner-v0.4.0', false), rel('scanner-v0.5.0', true, true), rel('scanner-v0.2.1'), rel('scanner-v0.3.0')];
-  assert.deepEqual(ultimaApk(r, '0.2.0'), { versione: '0.3.0', url: 'https://x/scanner-v0.3.0.apk' });
+  assert.deepEqual(ultimaApk(r, '0.2.0'), { versione: '0.3.0', url: 'https://x/scanner-v0.3.0.apk', byte: 42 });
 });
 
 test('nessun aggiornamento se la versione installata è già la più nuova', () => {
