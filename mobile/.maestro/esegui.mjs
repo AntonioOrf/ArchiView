@@ -5,7 +5,8 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PKG = 'com.antonioorf.archiview.scanner';
+const PKG_FLUSSI = 'com.antonioorf.archiview.scanner';
+const PKG = process.env.ARCHIVIEW_MAESTRO_PKG || PKG_FLUSSI;
 const QUI = dirname(fileURLToPath(import.meta.url));
 const FOTO = join(QUI, '..', '..', 'scripts', 'assets', 'mgh-ss22-p104.jpg');
 const WIN = process.platform === 'win32';
@@ -197,12 +198,40 @@ function semina(nome, lingua = 'it') {
 if (emulatore) {
   adb('shell', 'settings', 'put', 'secure', 'stylus_handwriting_enabled', '0');}
 
+let radice = QUI;
+if (PKG !== PKG_FLUSSI) {
+  radice = join(tmpdir(), `archiview-flussi-${process.env.ANDROID_SERIAL.replace(/\W/g, '_')}`);
+  rmSync(radice, { recursive: true, force: true });
+  for (const d of ['flussi', 'comuni']) {
+    mkdirSync(join(radice, d), { recursive: true });
+    for (const f of readdirSync(join(QUI, d))) writeFileSync(join(radice, d, f), readFileSync(join(QUI, d, f), 'utf8').replaceAll(`appId: ${PKG_FLUSSI}\n`, `appId: ${PKG}\n`).replaceAll(`appId: ${PKG_FLUSSI}\r\n`, `appId: ${PKG}\r\n`));
+  }
+}
+
+const SEME_DEL_FLUSSO = {
+  '01-primo-avvio': 'vuoto', '02-archivio-albero': 'archivio', '03-tendina-archivi': 'archivio', '04-da-inviare': 'archivio',
+  '05-visore-pagine': 'archivio', '06-inviate': 'archivio', '07-cartella-e-smistare': 'archivio', '08-nuova-scheda': 'archivio',
+  '09-impostazioni': 'archivio', '10-documenti': 'documenti', '11-documento-visore': 'documenti', '12-documento-nuovo': 'documenti',
+  '13-bozza-persa': 'recupero', '14-inviate-scadute': 'scadute', '15-rinomina-cestino': 'nuove', '16-scheda-annullata': 'archivio',
+  '17-permesso-negato': 'archivio', '18-stato-ricordato': 'archivio', '19-schermate': 'archivio', '20-wifi-diretto': 'wifi',
+  '21-fotocamera': 'documenti', '22-benvenuto': 'vuoto', '23-sfocata-nota': 'novita', '24-da-vedere': 'novita',
+  '25-foto-libera': 'archivio', '26-documenti-unisci': 'documentiArchivio', '27-documento-testo': 'documenti', '28-inglese': 'archivio',
+  '29-documento-selezione': 'documenti', '98-wiki-archivio': 'archivio', '99-wiki-documenti': 'documenti'
+};
+const LINGUA_DEL_FLUSSO = { '28-inglese': 'en' };
+
 mkdirSync(join(QUI, 'esiti'), { recursive: true });
+mkdirSync(join(radice, 'esiti'), { recursive: true });
 const esiti = [];
 for (const f of flussi) {
-  const testo = readFileSync(join(cartella, f), 'utf8');
-  const seme = /^#\s*seme:\s*(\S+)/m.exec(testo)?.[1] || 'vuoto';
-  const lingua = /^#\s*lingua:\s*(\S+)/m.exec(testo)?.[1] || 'it';
+  const nome = f.replace(/\.yaml$/, '');
+  const seme = SEME_DEL_FLUSSO[nome];
+  const lingua = LINGUA_DEL_FLUSSO[nome] || 'it';
+  if (!seme) {
+    console.error(`\n${f}: seme non dichiarato in SEME_DEL_FLUSSO`);
+    esiti.push([f, false]);
+    continue;
+  }
   console.log(`\n▶ ${f} (seme: ${seme}, lingua: ${lingua})`);
   try {
     semina(seme, lingua);
@@ -211,7 +240,8 @@ for (const f of flussi) {
     esiti.push([f, false]);
     continue;
   }
-  const r = esegui(MAESTRO, ['--device', process.env.ANDROID_SERIAL, 'test',`flussi/${f}`, '--format', 'junit', '--output', `esiti/${f.replace(/\.yaml$/, '.xml')}`], { cwd: QUI, stdio: 'inherit', env: { ...process.env, MAESTRO_CLI_NO_ANALYTICS: '1', MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true' } });
+  const r = esegui(MAESTRO, ['--device', process.env.ANDROID_SERIAL, 'test',`flussi/${f}`, '--format', 'junit', '--output', `esiti/${nome}.xml`], { cwd: radice, stdio: 'inherit', env: { ...process.env, MAESTRO_CLI_NO_ANALYTICS: '1', MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true' } });
+  if (radice !== QUI && existsSync(join(radice, 'esiti', `${nome}.xml`))) copyFileSync(join(radice, 'esiti', `${nome}.xml`), join(QUI, 'esiti', `${nome}.xml`));
   esiti.push([f, r.status === 0]);
 }
 
