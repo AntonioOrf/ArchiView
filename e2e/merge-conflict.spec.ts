@@ -85,13 +85,13 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Merge');
     await injectConflict(page);
 
-    const cardLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]').first();
+    const cardLocale = page.locator('button[data-resolve-scelta="local"] .conflitto-valore').first();
     await expect(cardLocale).toBeVisible();
     await cardLocale.click();
 
     await expect(page.locator('#btn-resolve-all')).toBeEnabled();
 
-    const cardCloud = page.locator('div[data-resolve-card="true"][data-resolve-scelta="external"]').first();
+    const cardCloud = page.locator('button[data-resolve-scelta="external"] .conflitto-valore').first();
     await expect(cardCloud).toBeVisible();
     await cardCloud.click();
 
@@ -129,15 +129,20 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
         const scelto = document.querySelector('button[data-resolve-scelta="local"]')!;
         const altro = document.querySelector('button[data-resolve-scelta="external"]')!;
         const s = getComputedStyle(scelto), a = getComputedStyle(altro);
+        const fondo = getComputedStyle(document.getElementById('conflict-detail')!).backgroundColor;
+        const sotto = fondo === 'rgba(0, 0, 0, 0)' ? getComputedStyle(scelto.closest('.modal-window')!).backgroundColor : fondo;
+        const composto = (c: string, base: string) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = base; ctx.fillRect(0, 0, 1, 1); ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); return Array.from(ctx.getImageData(0, 0, 1, 1).data); };
         return {
-          diversi: s.backgroundColor !== a.backgroundColor,
-          testo: ratio(rgb(s.color), rgb(s.backgroundColor)),
-          stacco: ratio(rgb(s.backgroundColor), rgb(a.backgroundColor)),
+          diversi: s.backgroundColor !== a.backgroundColor && s.borderTopColor !== a.borderTopColor,
+          testo: ratio(rgb(s.color), composto(s.backgroundColor, sotto)),
+          filetto: ratio(rgb(s.outlineColor), rgb(sotto)),
+          spessore: parseFloat(s.outlineWidth) + parseFloat(s.borderTopWidth),
         };
       });
       expect(m.diversi, `${tema}: pulsante scelto identico all'altro`).toBe(true);
       expect(m.testo, `${tema}: testo del pulsante scelto`).toBeGreaterThanOrEqual(4.5);
-      expect(m.stacco, `${tema}: stacco scelto/non scelto`).toBeGreaterThanOrEqual(3);
+      expect(m.filetto, `${tema}: filetto della scelta sul fondo`).toBeGreaterThanOrEqual(3);
+      expect(m.spessore, `${tema}: filetto della scelta troppo sottile`).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -231,7 +236,7 @@ test.describe('Conflitti di merge (dati iniettati)', () => {
 
     await expect(page.locator('#merge-conflict-modal')).toBeVisible();
 
-    const cardsLocale = page.locator('div[data-resolve-card="true"][data-resolve-scelta="local"]');
+    const cardsLocale = page.locator('button[data-resolve-scelta="local"]');
     const count = await cardsLocale.count();
     for (let i = 0; i < count; i++) {
       await cardsLocale.nth(i).click();

@@ -90,11 +90,14 @@ test.describe('Import CSV (2.4)', () => {
     await expect(page.locator('#import-csv-step-modello')).toBeVisible();
     await expect(page.locator('#import-csv-step-mappatura')).toBeHidden();
     await expect(page.locator('#import-csv-confirm')).toBeHidden();
+    await expect(page.locator('.import-passi li[aria-current="step"]')).toHaveAttribute('data-passo', 'modello');
 
     await page.locator('.import-scelta[data-valore="__nuovo__"]').click();
     await expect(page.locator('#import-csv-nome-modello')).toHaveValue('catasto');
     await page.locator('#import-csv-nome-modello').fill('Catasto fiorentino');
     await page.locator('#import-csv-continua').click();
+    await expect(page.locator('.import-passi li[aria-current="step"]')).toHaveAttribute('data-passo', 'mappatura');
+    await expect(page.locator('.import-passi li[data-passo="modello"] .passo-numero')).toHaveClass(/fatto/);
 
     let tipi = await page.evaluate(() => appData.tipiDocumento.map((t: any) => t.nome));
     expect(tipi).not.toContain('Catasto fiorentino');

@@ -511,6 +511,14 @@ function _ipDisegnaPasso() {
     blocco('import-csv-step-modello', primoPasso);
     blocco('import-csv-step-modello-head', primoPasso);
     blocco('import-csv-step-mappatura', !primoPasso);
+    document.querySelectorAll('#import-csv-modal .import-passi li').forEach((li: HTMLElement) => {
+        const attivo = li.dataset.passo === s.passo;
+        const numero = li.querySelector('.passo-numero');
+        numero.classList.toggle('attivo', attivo);
+        numero.classList.toggle('fatto', !attivo && !primoPasso);
+        li.classList.toggle('is-attivo', attivo);
+        if (attivo) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
 
     const indietro = document.getElementById('import-csv-back');
     if (indietro) indietro.classList.toggle('hidden-tab', primoPasso);
@@ -690,16 +698,19 @@ window.confermaImportCsv = async function() {
         if (document.getElementById('import-csv-modal')) return;
         const html = `
     <div id="import-csv-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-3xl">
+        <div class="modal-window max-w-4xl max-h-[90vh]">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="file-input" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="imp_title">Importa da CSV</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" data-i18n="imp_title">Importa da CSV</h3>
+                    <p id="import-csv-file" class="modal-sottotitolo import-file"></p>
+                </div>
             </div>
-            <div class="modal-body">
-                <p id="import-csv-file" class="import-file"></p>
-
+            <div class="flex flex-1 min-h-0">
+            <ol class="import-passi">
+                <li data-passo="modello"><span class="passo-numero">1</span><span data-i18n="imp_step_one">Modello e cartella</span></li>
+                <li data-passo="mappatura"><span class="passo-numero">2</span><span data-i18n="imp_step_two">Colonne e anteprima</span></li>
+            </ol>
+            <div class="modal-body flex-1 min-w-0">
                 <div id="import-csv-step-modello-head" class="import-section-head">
                     <h4 data-i18n="imp_step_model">Dove finiscono queste schede?</h4>
                 </div>
@@ -740,10 +751,7 @@ window.confermaImportCsv = async function() {
 
                 <p class="import-hint" data-i18n="imp_hint">Nulla viene scritto finché non premi Importa. Le righe scartate restano nel file: correggile e reimporta soltanto quelle. L'intero import si annulla con Ctrl+Z.</p>
             </div>
-            <!-- Il piede è FRATELLO del corpo, non figlio: il corpo scorre e i pulsanti no.
-                 In un modale con una riga per colonna, un "Importa" che scorre via insieme
-                 all'elenco costringe a scendere in fondo per fare la cosa per cui si è aperta
-                 la finestra. Vedi .modal-footer-bar in style.css. -->
+            </div>
             <div class="modal-footer modal-footer-bar">
                 <button type="button" data-on-click="chiudiImportCsv" data-modal-cancel class="btn btn-ghost">
                     <span data-i18n="btn_cancel">Annulla</span>

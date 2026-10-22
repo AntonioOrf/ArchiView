@@ -17,8 +17,6 @@ const FUNZIONI_VERIFICATE = {
 const ECCEZIONI = {
   'src/renderer/js/components/mainView.ts::div.innerHTML = ` <div class="text-xs font-bold text-stone-800 truncate mb-1" tr':
     'match.snippet viene da buildSnippet(), che passa ogni pezzo da escapeHTML e aggiunge solo <mark>',
-  "src/renderer/js/components/modals/diffModal.ts::document.body.insertAdjacentHTML('beforeend', modalHtml)":
-    'textPrima/textDopo passano da escapeHTML, tranne emptyLabel che è un letterale con t() già escapato',
   "src/renderer/js/components/modals/settingsModal.ts::document.body.insertAdjacentHTML('beforeend', html)":
     'html nasce solo da letterali di SCHEDE e da window.azione (che escapa nome e argomenti): nessun dato; sanitizeHTML toglierebbe i data-on-*',
   'src/renderer/js/logic/i18n.ts::el.innerHTML = html':

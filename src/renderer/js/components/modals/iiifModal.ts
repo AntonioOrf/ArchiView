@@ -59,6 +59,7 @@ window.apriImportIiif = function(opzioni) {
     _iiEl('iiif-url').value = (scheda && scheda.iiifManifestUrl) || '';
     _iiEl('iiif-anteprima').classList.add('hidden-tab');
     (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = true;
+    _iiEl('iiif-conferma').textContent = _iiT('iiif_import', 'Importa');
     _iiMostraErrore('');
 
     _iiEl('iiif-campi-scheda').classList.toggle('hidden-tab', _iiStato.modalita === 'aggiungi');
@@ -171,15 +172,12 @@ function _iiDisegnaAnteprima() {
         const src = window.srcAllegato({ remoto: true, iiif: c }, { lato: 140 });
         const etichetta = _iiEtichettaCarta(c, i);
         return `
-            <label class="iiif-carta shrink-0 w-24 cursor-pointer" data-indice="${i}" title="${escapeHTML(etichetta)}">
-                <span class="relative block">
-                    <img src="${escapeHTML(src)}" alt="${escapeHTML(etichetta)}" loading="lazy"
-                         class="w-24 h-32 object-cover rounded-sm border border-stone-300 bg-stone-100">
-                    <input type="checkbox" checked
-                           class="absolute top-1 left-1 w-4 h-4 accent-amber-600"
-                           aria-label="${escapeHTML(etichetta)}">
+            <label class="iiif-carta" data-indice="${i}" title="${escapeHTML(etichetta)}">
+                <span class="iiif-carta-immagine">
+                    <img src="${escapeHTML(src)}" alt="${escapeHTML(etichetta)}" loading="lazy">
+                    <input type="checkbox" checked aria-label="${escapeHTML(etichetta)}">
                 </span>
-                <span class="mt-1 block text-[11px] text-stone-500 truncate text-center">${escapeHTML(String(i + 1))}. ${escapeHTML(etichetta)}</span>
+                <span class="iiif-carta-nome">${escapeHTML(etichetta)}</span>
             </label>`;
     }).join(''));
 
@@ -210,7 +208,11 @@ function _iiAggiornaConteggio() {
     const totale = _iiStato.norm.carte.length;
     _iiEl('iiif-selezionate').textContent = _iiT('iiif_selected_count', '{var0} di {var1} carte selezionate')
         .replace('{var0}', String(n)).replace('{var1}', String(totale));
-    (_iiEl('iiif-conferma') as HTMLButtonElement).disabled = n === 0;
+    const conferma = _iiEl('iiif-conferma') as HTMLButtonElement;
+    conferma.disabled = n === 0;
+    conferma.textContent = n === 0 ? _iiT('iiif_import', 'Importa')
+        : n === 1 ? _iiT('iiif_import_one', 'Importa una carta')
+        : _iiT('iiif_import_n', 'Importa {var0} carte').replace('{var0}', String(n));
 }
 
 window.applicaIntervalloIiif = function() {
@@ -349,86 +351,76 @@ window.confermaImportIiif = async function() {
         if (document.getElementById('iiif-modal')) return;
         const html = `
     <div id="iiif-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-3xl">
-            <div class="modal-header shrink-0">
-                <h3 class="modal-title">
-                    <i data-lucide="library" class="w-5 h-5 text-amber-700"></i>
-                    <span id="iiif-titolo-modale" data-i18n="iiif_title">Importa un manoscritto da un manifest IIIF</span>
-                </h3>
-                <button type="button" data-on-click="chiudiImportIiif" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+        <div class="modal-window max-w-4xl max-h-[90vh]">
+            <div class="modal-header">
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="iiif-titolo-modale" data-i18n="iiif_title">Importa un manoscritto da un manifest IIIF</h3>
+                    <p class="modal-sottotitolo" data-i18n="iiif_hint">Incolla l'indirizzo del manifest pubblicato dalla biblioteca. Le carte restano sul server e non occupano spazio: si scaricano una per una, o tutte insieme, quando servono.</p>
+                </div>
+                <button type="button" data-on-click="chiudiImportIiif" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="modal-body space-y-4">
-                <p class="text-xs text-stone-500" data-i18n="iiif_hint">
-                    Incolla l'indirizzo del manifest pubblicato dalla biblioteca. Le carte restano sul server e non occupano spazio: si scaricano una per una, o tutte insieme, quando servono.
-                </p>
-
+            <div class="modal-body flex-1 flex flex-col gap-4">
                 <form data-on-submit="leggiManifestIiif" data-args-submit="[{&quot;$&quot;:&quot;event&quot;}]" class="flex gap-2">
-                    <input type="url" id="iiif-url" required class="form-input flex-1"
+                    <input type="url" id="iiif-url" required class="form-input flex-1 font-mono text-xs"
+                           data-i18n-aria-label="iiif_url_label" aria-label="Indirizzo del manifest"
                            data-i18n-placeholder="iiif_url_placeholder" placeholder="https://.../manifest.json">
                     <button type="submit" id="iiif-leggi" class="btn btn-secondary shrink-0" data-i18n="iiif_read">Leggi</button>
                 </form>
 
-                <div id="iiif-errore" class="hidden-tab text-xs text-red-700 bg-red-50 border border-red-200 rounded-sm p-2"></div>
+                <div id="iiif-errore" class="hidden-tab iiif-nota is-pericolo" role="alert"></div>
 
-                <div id="iiif-anteprima" class="hidden-tab space-y-3">
-                    <div class="border border-stone-200 rounded-sm p-3 bg-stone-50">
-                        <div class="flex items-baseline justify-between gap-3">
-                            <h4 id="iiif-titolo" class="font-semibold text-sm truncate"></h4>
-                            <span id="iiif-conteggio" class="text-xs text-stone-500 shrink-0"></span>
-                        </div>
-                        <p id="iiif-diritti" class="text-[11px] text-stone-500 mt-1"></p>
+                <div id="iiif-anteprima" class="hidden-tab flex flex-col gap-4">
+                    <div class="iiif-testata">
+                        <h4 id="iiif-titolo" class="iiif-titolo"></h4>
+                        <span id="iiif-conteggio" class="modello-suggerimento shrink-0"></span>
+                        <span id="iiif-diritti" class="modello-suggerimento min-w-0"></span>
                     </div>
 
-                    <div id="iiif-avvisi" class="hidden-tab text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-sm p-2"></div>
+                    <div id="iiif-avvisi" class="hidden-tab iiif-nota is-avviso"></div>
 
-                    <!-- Un manifest di biblioteca contiene quasi sempre piu' del manoscritto:
-                         piatti, dorso, regolo colorimetrico, carte di guardia. Di qui la
-                         selezione, e l'intervallo scritto per non spuntare 500 caselle. -->
-                    <div class="flex flex-wrap items-end gap-2">
-                        <div class="flex-1 min-w-[200px]">
-                            <label class="form-label" for="iiif-intervallo" data-i18n="iiif_range">Carte da importare</label>
-                            <input type="text" id="iiif-intervallo" class="form-input" data-on-input="applicaIntervalloIiif"
-                                   data-i18n-placeholder="iiif_range_placeholder" placeholder="tutte — oppure 1-10, 25, 40-60">
-                        </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label class="iiif-etichetta" for="iiif-intervallo" data-i18n="iiif_range">Carte da importare</label>
+                        <input type="text" id="iiif-intervallo" class="form-input iiif-intervallo font-mono text-xs" data-on-input="applicaIntervalloIiif"
+                               data-i18n-placeholder="iiif_range_placeholder" placeholder="tutte — oppure 1-10, 25, 40-60">
                         <button type="button" class="btn btn-ghost" data-on-click="selezionaTutteIiif" data-args-click="[true]" data-i18n="iiif_select_all">Tutte</button>
                         <button type="button" class="btn btn-ghost" data-on-click="selezionaTutteIiif" data-args-click="[false]" data-i18n="iiif_select_none">Nessuna</button>
-                        <span id="iiif-selezionate" class="text-xs text-stone-500 ml-auto"></span>
+                        <span id="iiif-selezionate" class="modello-suggerimento ml-auto"></span>
                     </div>
 
-                    <div id="iiif-miniature" class="flex flex-wrap gap-2 overflow-y-auto max-h-64 p-1 border border-stone-200 rounded-sm bg-stone-50"></div>
+                    <div id="iiif-miniature" class="iiif-miniature"></div>
 
-                    <div id="iiif-campi-scheda" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="form-label" for="iiif-segnatura" data-i18n="field_segnatura">Segnatura</label>
-                            <input type="text" id="iiif-segnatura" class="form-input">
+                    <div class="iiif-campi">
+                        <div id="iiif-campi-scheda" class="contents">
+                            <div>
+                                <label class="form-label" for="iiif-segnatura" data-i18n="field_segnatura">Segnatura</label>
+                                <input type="text" id="iiif-segnatura" class="form-input font-mono text-xs">
+                            </div>
+                            <div>
+                                <label class="form-label" for="iiif-tipo" data-i18n="imp_model">Modello</label>
+                                <select id="iiif-tipo" class="form-input"></select>
+                            </div>
+                            <div>
+                                <label class="form-label" for="iiif-cartella" data-i18n="imp_folder">Cartella</label>
+                                <select id="iiif-cartella" class="form-input"></select>
+                            </div>
                         </div>
                         <div>
-                            <label class="form-label" for="iiif-tipo" data-i18n="imp_model">Modello</label>
-                            <select id="iiif-tipo" class="form-input"></select>
+                            <label class="form-label" for="iiif-lato" data-i18n="iiif_resolution">Risoluzione dei download</label>
+                            <select id="iiif-lato" class="form-input">
+                                <option value="1200">1200 px</option>
+                                <option value="2000" selected>2000 px</option>
+                                <option value="4000">4000 px</option>
+                                <option value="0" data-i18n="iiif_res_max">Massima disponibile</option>
+                            </select>
                         </div>
-                        <div>
-                            <label class="form-label" for="iiif-cartella" data-i18n="imp_folder">Cartella</label>
-                            <select id="iiif-cartella" class="form-input"></select>
-                        </div>
-                    </div>
-
-                    <div class="sm:w-1/2">
-                        <label class="form-label" for="iiif-lato" data-i18n="iiif_resolution">Risoluzione dei download</label>
-                        <select id="iiif-lato" class="form-input">
-                            <option value="1200">1200 px</option>
-                            <option value="2000" selected>2000 px</option>
-                            <option value="4000">4000 px</option>
-                            <option value="0" data-i18n="iiif_res_max">Massima disponibile</option>
-                        </select>
                     </div>
                 </div>
-
-                <div class="modal-footer mt-4">
-                    <button type="button" data-on-click="chiudiImportIiif" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
-                    <button type="button" id="iiif-conferma" data-on-click="confermaImportIiif" class="btn btn-primary" disabled data-i18n="iiif_import">Importa</button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiImportIiif" class="btn btn-secondary" data-i18n="btn_cancel">Annulla</button>
+                <button type="button" id="iiif-conferma" data-on-click="confermaImportIiif" class="btn btn-primary" disabled></button>
             </div>
         </div>
     </div>

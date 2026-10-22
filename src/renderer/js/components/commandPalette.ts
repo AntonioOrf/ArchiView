@@ -540,7 +540,7 @@ function _paletteRiempi(query) {
     if (_paletteVoci.length === 0) {
         const vuoto = document.createElement('p');
         vuoto.id = 'cp-vuoto';
-        vuoto.className = 'p-6 text-sm italic text-center text-stone-400';
+        vuoto.className = 'p-6 modello-suggerimento text-center';
         vuoto.textContent = _T('cp_empty', 'Nessun comando corrisponde.');
         lista.appendChild(vuoto);
         if (input) input.removeAttribute('aria-activedescendant');
@@ -577,7 +577,7 @@ function _paletteRiempi(query) {
         testi.appendChild(titolo);
         if (v.sottotitolo) {
             const sub = document.createElement('div');
-            sub.className = 'truncate text-xs text-stone-500 dark:text-stone-400';
+            sub.className = 'truncate modello-suggerimento';
             sub.textContent = v.sottotitolo;
             testi.appendChild(sub);
         }
@@ -645,21 +645,20 @@ window.apriScorciatoie = function() {
 
     for (const sezione of window.SCORCIATOIE) {
         const blocco = document.createElement('section');
-        blocco.className = 'mb-5 last:mb-0';
+        blocco.className = 'scorciatoie-sezione';
 
         const titolo = document.createElement('h4');
-        titolo.className = 'text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2';
+        titolo.className = 'modello-sez mb-1';
         titolo.textContent = _T(sezione.gruppo, sezione.etichetta);
         blocco.appendChild(titolo);
 
         const dl = document.createElement('dl');
-        dl.className = 'flex flex-col gap-1.5';
         for (const s of sezione.voci) {
             const riga = document.createElement('div');
-            riga.className = 'flex items-baseline justify-between gap-4';
+            riga.className = 'scorciatoie-riga';
 
             const dt = document.createElement('dt');
-            dt.className = 'text-sm text-stone-700 dark:text-stone-200 min-w-0';
+            dt.className = 'text-sm min-w-0';
             dt.textContent = _T(s.chiave, s.testo);
 
             const dd = document.createElement('dd');
@@ -667,7 +666,7 @@ window.apriScorciatoie = function() {
             s.tasti.forEach((k, i) => {
                 if (i > 0) {
                     const piu = document.createElement('span');
-                    piu.className = 'text-xs text-stone-400';
+                    piu.className = 'modello-suggerimento';
                     piu.textContent = '+';
                     dd.appendChild(piu);
                 }
@@ -725,12 +724,9 @@ document.addEventListener('keydown', (e) => {
         if (document.getElementById('shortcuts-modal')) return;
         const html = `
     <div id="shortcuts-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-lg max-h-[85vh]">
+        <div class="modal-window max-w-md max-h-[85vh]">
             <div class="modal-header shrink-0">
-                <h3 class="modal-title">
-                    <i data-lucide="keyboard" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="cp_shortcuts">Scorciatoie da tastiera</span>
-                </h3>
+                <h3 class="modal-title" data-i18n="cp_shortcuts">Scorciatoie da tastiera</h3>
                 <button type="button" data-on-click="chiudiScorciatoie" data-modal-cancel
                         class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>

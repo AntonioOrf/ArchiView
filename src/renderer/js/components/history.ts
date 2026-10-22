@@ -151,23 +151,21 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
     overlay.id = 'history-diff-modal';
     overlay.className = 'modal-overlay';
     overlay.innerHTML = window.sanitizeHTML(`
-        <div class="modal-window max-w-2xl">
+        <div class="modal-window max-w-3xl">
             <div class="modal-header gap-4">
                 <div class="min-w-0">
                     <h3 class="modal-title">
-                        <span>${escapeHTML(t('history_diff_title', 'Storico'))}:</span>
-                        <span class="font-normal truncate" translate="no">${escapeHTML(label)}</span>
+                        <span>${escapeHTML(t('history_diff_title', 'Storico'))} ·</span>
+                        <span class="font-mono font-medium truncate" translate="no">${escapeHTML(label)}</span>
                     </h3>
-                    <p id="hist-diff-sottotitolo" class="text-xs text-stone-500 mt-1"></p>
+                    <p id="hist-diff-sottotitolo" class="modal-sottotitolo"></p>
                 </div>
                 <button id="hist-close-btn" type="button" class="btn btn-ghost btn-icon shrink-0" aria-label="${escapeHTML(t('btn_close', 'Chiudi'))}"><span aria-hidden="true">✕</span></button>
             </div>
             <div id="hist-diff-body" class="modal-body"></div>
             <div class="modal-footer modal-footer-bar">
-                <div class="flex gap-2">
-                    <button id="hist-prev-btn" type="button" class="btn btn-secondary disabled:opacity-40"><span aria-hidden="true">←</span> ${escapeHTML(t('btn_prev', 'Precedente'))}</button>
-                    <button id="hist-next-btn" type="button" class="btn btn-secondary disabled:opacity-40">${escapeHTML(t('btn_next', 'Successiva'))} <span aria-hidden="true">→</span></button>
-                </div>
+                <button id="hist-prev-btn" type="button" class="btn btn-secondary disabled:opacity-40"><span aria-hidden="true">←</span> ${escapeHTML(t('btn_prev', 'Precedente'))}</button>
+                <button id="hist-next-btn" type="button" class="btn btn-secondary disabled:opacity-40">${escapeHTML(t('btn_next', 'Successiva'))} <span aria-hidden="true">→</span></button>
                 <button id="hist-close-btn2" type="button" class="btn btn-primary ml-auto">${escapeHTML(t('btn_close', 'Chiudi'))}</button>
             </div>
         </div>
@@ -179,7 +177,6 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
     const btnPrev = overlay.querySelector<HTMLButtonElement>('#hist-prev-btn');
     const btnNext = overlay.querySelector<HTMLButtonElement>('#hist-next-btn');
     const chiaviIgnorate = ['lastModified', 'modificatoDa', 'creatoDa', 'id', 'allegato', 'allegatoTipo'];
-    const vuoto = t('diff_empty', '(Vuoto)');
 
     function renderDiff() {
         const { revM, curM } = diffs[idx];
@@ -190,7 +187,7 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
         const posizione = t('history_diff_position', 'Visualizzando {i} di {n}:')
             .replace('{i}', String(idx + 1)).replace('{n}', String(diffs.length));
         sottotitolo.innerHTML = window.sanitizeHTML(
-            `${escapeHTML(conteggio)} · ${escapeHTML(posizione)} <strong class="text-stone-700" translate="no">${escapeHTML(titolo)}</strong>`);
+            `${escapeHTML(conteggio)} · ${escapeHTML(posizione)} <strong class="font-mono font-medium" translate="no">${escapeHTML(titolo)}</strong>`);
 
         const allKeys = new Set([...Object.keys(revM), ...Object.keys(curM)]);
         let htmlDiff = '';
@@ -199,27 +196,12 @@ function apriDiffRevisioneModal(diffs, label, leftLabel?, rightLabel?) {
             const v = JSON.stringify(revM[key] ?? '');
             const a = JSON.stringify(curM[key] ?? '');
             if (v === a) continue;
-            const prima = typeof revM[key] === 'object' ? JSON.stringify(revM[key], null, 2) : String(revM[key] ?? vuoto);
-            const dopo = typeof curM[key] === 'object' ? JSON.stringify(curM[key], null, 2) : String(curM[key] ?? vuoto);
-            htmlDiff += `
-                <div class="storico-campo">
-                    <div class="storico-campo-nome">
-                        ${escapeHTML(t('diff_field', 'Campo:'))} <span class="testo-accento" translate="no">${escapeHTML(key)}</span>
-                    </div>
-                    <div class="flex">
-                        <div class="storico-prima">
-                            <div class="text-[11px] font-bold testo-pericolo mb-1">${escapeHTML(leftLabel || t("diff_in_revision", "IN REVISION"))}</div>
-                            <div class="storico-valore">${escapeHTML(prima)}</div>
-                        </div>
-                        <div class="storico-dopo">
-                            <div class="text-[11px] font-bold testo-successo mb-1">${escapeHTML(rightLabel || t("diff_current_version", "CURRENT VERSION"))}</div>
-                            <div class="storico-valore">${escapeHTML(dopo)}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const prima = typeof revM[key] === 'object' ? JSON.stringify(revM[key], null, 2) : String(revM[key] ?? '');
+            const dopo = typeof curM[key] === 'object' ? JSON.stringify(curM[key], null, 2) : String(curM[key] ?? '');
+            htmlDiff += window.htmlDiffCampo(key, prima, dopo,
+                leftLabel || t("diff_in_revision", "nella revisione"), rightLabel || t("diff_current_version", "versione attuale"));
         }
-        if (!htmlDiff) htmlDiff = `<p class="text-sm text-stone-500 text-center py-8">${escapeHTML(t('history_diff_no_visible', 'Nessuna differenza nei campi visibili.'))}</p>`;
+        if (!htmlDiff) htmlDiff = `<p class="modello-suggerimento text-center py-8">${escapeHTML(t('history_diff_no_visible', 'Nessuna differenza nei campi visibili.'))}</p>`;
         body.innerHTML = window.sanitizeHTML(htmlDiff);
         body.scrollTop = 0;
 
@@ -670,13 +652,22 @@ function _srApriModal(id, etichetta, tappe, corrente) {
 
     const header = document.createElement('div');
     header.className = 'modal-header';
+    const testa = document.createElement('div');
+    testa.className = 'min-w-0';
     const h3 = document.createElement('h3');
     h3.className = 'modal-title';
-    h3.innerHTML = '<i data-lucide="history" class="w-5 h-5 text-amber-700"></i>';
     const span = document.createElement('span');
-    span.textContent = window.t('rec_history_title', 'Cronologia della scheda') + ': ' + etichetta;
-    h3.appendChild(span);
-    header.appendChild(h3);
+    span.textContent = window.t('rec_history_title', 'Cronologia della scheda') + ' ·';
+    const segnatura = document.createElement('span');
+    segnatura.className = 'font-mono font-medium truncate';
+    segnatura.setAttribute('translate', 'no');
+    segnatura.textContent = etichetta;
+    h3.append(span, segnatura);
+    const nota = document.createElement('p');
+    nota.className = 'modal-sottotitolo';
+    nota.textContent = window.t('rec_history_hint', 'Le tappe sono ricavate dagli snapshot locali: compaiono solo i momenti in cui questa scheda è cambiata.');
+    testa.append(h3, nota);
+    header.appendChild(testa);
     finestra.appendChild(header);
 
     const body = document.createElement('div');
@@ -684,23 +675,23 @@ function _srApriModal(id, etichetta, tappe, corrente) {
     finestra.appendChild(body);
 
     const lista = document.createElement('div');
-    lista.className = 'tag-manager-list';
     body.appendChild(lista);
 
     for (let i = 0; i < tappe.length; i++) {
         const t = tappe[i];
         const riga = document.createElement('div');
-        riga.className = 'tag-manager-row';
+        riga.className = 'storico-tappa';
 
         const col = document.createElement('span');
-        col.className = 'tag-manager-name truncate';
+        col.className = 'flex-1 min-w-0';
         const quando = document.createElement('span');
+        quando.className = 'block font-medium truncate';
         quando.textContent = formatRelativeDate(t.creatoIl);
         const stato = document.createElement('span');
-        stato.className = 'text-xs text-stone-500';
-        stato.textContent = '  ·  ' + (t.record
+        stato.className = 'block modello-suggerimento truncate';
+        stato.textContent = t.record
             ? _snEtichettaMotivo(t.motivo)
-            : window.t('rec_history_absent', 'scheda non presente'));
+            : window.t('rec_history_absent', 'scheda non presente');
         col.appendChild(quando);
         col.appendChild(stato);
         riga.appendChild(col);
@@ -736,21 +727,16 @@ function _srApriModal(id, etichetta, tappe, corrente) {
         lista.appendChild(riga);
     }
 
-    const nota = document.createElement('p');
-    nota.className = 'text-xs text-stone-500 leading-relaxed mt-3';
-    nota.textContent = window.t('rec_history_hint', 'Le tappe sono ricavate dagli snapshot locali: compaiono solo i momenti in cui questa scheda è cambiata.');
-    body.appendChild(nota);
-
     const footer = document.createElement('div');
-    footer.className = 'modal-footer';
+    footer.className = 'modal-footer modal-footer-bar';
     const chiudi = document.createElement('button');
     chiudi.type = 'button';
-    chiudi.className = 'btn btn-ghost';
+    chiudi.className = 'btn btn-primary';
     chiudi.setAttribute('data-modal-cancel', '');
     chiudi.textContent = window.t('btn_close', 'Chiudi');
     chiudi.onclick = () => overlay.remove();
     footer.appendChild(chiudi);
-    body.appendChild(footer);
+    finestra.appendChild(footer);
 
     document.body.appendChild(overlay);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });

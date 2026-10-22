@@ -2,29 +2,23 @@
     function initMergeConflictModal() {
         if (!document.getElementById('merge-conflict-modal')) {
             const html = `
-    <div id="merge-conflict-modal" class="modal-overlay hidden-tab z-modal-critical bg-stone-900/80 backdrop-blur-sm flex justify-center items-center">
-        <div class="modal-window w-full max-w-5xl p-6 shadow-2xl border border-stone-200 flex flex-col h-[85vh] bg-stone-50">
-            <div class="modal-header shrink-0 flex justify-between items-center pb-3 border-b border-stone-200">
-                <h3 class="modal-title text-stone-800 font-serif flex items-center gap-2">
-                    <i data-lucide="git-merge" class="w-5 h-5 text-red-500"></i> <span data-i18n="merge_conflict_modal_title">Sync Conflicts Detected</span>
-                </h3>
-            </div>
-            <div class="flex-1 flex gap-4 overflow-hidden py-4 min-h-0">
-                <!-- Left panel: list of conflicts -->
-                <div class="w-1/4 border-r border-stone-200 pr-3 flex flex-col gap-2 overflow-y-auto" id="conflict-list">
-                    <!-- Cards will be populated here -->
-                </div>
-                <!-- Right panel: comparison of fields -->
-                <div class="w-3/4 flex flex-col overflow-y-auto px-2 bg-white rounded border border-stone-200 p-4" id="conflict-detail">
-                    <!-- Comparative details -->
+    <div id="merge-conflict-modal" class="modal-overlay hidden-tab z-modal-critical">
+        <div class="modal-window max-w-6xl h-[85vh]">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" data-i18n="merge_conflict_modal_title">Le stesse schede sono cambiate da entrambe le parti</h3>
+                    <p class="modal-sottotitolo" data-i18n="merge_select_version_desc">Per ogni campo scegli quale versione tenere. Niente viene scritto finché non applichi.</p>
                 </div>
             </div>
-            <div class="modal-footer shrink-0 pt-3 border-t border-stone-200 flex justify-between items-center bg-stone-50">
-                <span class="text-sm font-medium text-stone-600" id="conflict-counter"></span>
-                <div class="flex gap-2">
-                    <button data-on-click="annullaSincronizzazioneConflitto" class="btn btn-secondary"><span data-i18n="btn_cancel_sync">Cancel Synchronization</span></button>
-                    <button id="btn-resolve-all" class="btn btn-primary" disabled data-on-click="concludiRisoluzioneConflitti"><span data-i18n="btn_apply_resolution">Apply Resolution</span></button>
-                </div>
+            <div class="flex-1 flex min-h-0">
+                <div id="conflict-list" class="conflitto-elenco"></div>
+                <div id="conflict-detail" class="conflitto-dettaglio"></div>
+            </div>
+            <div class="modal-footer modal-footer-bar items-center">
+                <span class="conflitto-contatore" id="conflict-counter"></span>
+                <span class="flex-1"></span>
+                <button type="button" data-on-click="annullaSincronizzazioneConflitto" class="btn btn-secondary"><span data-i18n="btn_cancel_sync">Annulla la sincronizzazione</span></button>
+                <button type="button" id="btn-resolve-all" class="btn btn-primary" disabled data-on-click="concludiRisoluzioneConflitti"><span data-i18n="btn_apply_resolution">Applica le scelte</span></button>
             </div>
         </div>
     </div>
@@ -78,30 +72,23 @@
             const isSelected = index === currentConflictIndex;
             const isResolved = resolvedFields[c.id].size === c.campiConflitto.length;
 
-            const div = document.createElement('div');
-            div.setAttribute('role', 'button');
-            div.setAttribute('tabindex', '0');
+            const div = document.createElement('button');
+            div.type = 'button';
             if (isSelected) div.setAttribute('aria-current', 'true');
-            div.className = `conflitto-voce p-3 cursor-pointer transition-colors flex flex-col gap-1${isSelected ? ' is-attiva' : ''}`;
+            div.className = `conflitto-voce${isSelected ? ' is-attiva' : ''}`;
             div.onclick = () => {
                 currentConflictIndex = index;
                 renderConflictList();
                 renderConflictDetail();
             };
-            div.onkeydown = (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    div.click();
-                }
-            };
 
-            let badgeHtml = isResolved
-                ? `<span class="stato-badge is-successo text-[11px]">${window.t("merge_badge_resolved", "Resolved")}</span>`
-                : `<span class="stato-badge is-pericolo text-[11px]">${c.campiConflitto.length - resolvedFields[c.id].size} ${window.t("merge_badge_pending", "pending")}</span>`;
+            const stato = isResolved
+                ? `<span class="conflitto-stato testo-successo">${escapeHTML(window.t("merge_badge_resolved", "risolta"))}</span>`
+                : `<span class="conflitto-stato testo-avviso">${escapeHTML(window.t("merge_badge_pending", "{var0} da scegliere").replace('{var0}', String(c.campiConflitto.length - resolvedFields[c.id].size)))}</span>`;
 
             div.innerHTML = window.sanitizeHTML(`
-                <div class="font-semibold text-sm text-stone-800 truncate" translate="no" title="${escapeHTML(c.segnatura)}">${escapeHTML(c.segnatura)}</div>
-                ${badgeHtml}
+                <span class="conflitto-voce-nome" translate="no" title="${escapeHTML(c.segnatura)}">${escapeHTML(c.segnatura)}</span>
+                ${stato}
             `);
             container.appendChild(div);
         });
@@ -117,11 +104,14 @@
         const local = c.localCard;
         const external = c.externalCard;
 
+        const n = c.campiConflitto.length;
         const headerDiv = document.createElement('div');
-        headerDiv.className = 'mb-4 pb-2 border-b border-stone-200';
+        headerDiv.className = 'conflitto-testa';
         headerDiv.innerHTML = window.sanitizeHTML(`
-            <h4 class="text-lg font-serif text-stone-800 mb-1" translate="no">${escapeHTML(c.segnatura)}</h4>
-            <p class="text-xs text-stone-500">${window.t("merge_select_version_desc", "Select the correct version for each field modified by both users.")}</p>
+            <h4 class="conflitto-segnatura" translate="no">${escapeHTML(c.segnatura)}</h4>
+            <span class="modello-suggerimento">${escapeHTML(n === 1
+                ? window.t('merge_fields_one', '1 campo in conflitto')
+                : window.t('merge_fields_count', '{var0} campi in conflitto').replace('{var0}', String(n)))}</span>
         `);
         container.appendChild(headerDiv);
 
@@ -138,52 +128,30 @@
             const externalChosen = isResolved && JSON.stringify(chosenVal) === JSON.stringify(externalVal);
 
             const fieldDiv = document.createElement('div');
-            fieldDiv.className = `conflitto-campo p-4 mb-4${isResolved ? ' is-risolto' : ''}`;
+            fieldDiv.className = 'conflitto-campo';
+
+            const opzione = (scelta: string, scelto: boolean, etichetta: string, valore) => `
+                    <button type="button" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="${scelta}"
+                        aria-pressed="${scelto ? 'true' : 'false'}" class="conflitto-opzione${scelto ? ' is-scelta' : ''}">
+                        <span class="modello-suggerimento">${escapeHTML(etichetta)}</span>
+                        <span class="conflitto-valore">${renderValoreCampo(valore, campo)}</span>
+                    </button>`;
 
             fieldDiv.innerHTML = window.sanitizeHTML(`
-                <div class="font-bold text-xs uppercase tracking-wider testo-accento mb-3 flex items-center justify-between">
-                    <span>${escapeHTML(conf.label || campo)}</span>
-                    ${isResolved ? `<span class="testo-successo text-[11px] flex items-center gap-0.5"><i data-lucide="check-circle" class="w-3 h-3"></i> ${window.t("merge_choice_registered", "Choice registered")}</span>` : ''}
+                <div class="conflitto-campo-testa">
+                    <span class="conflitto-campo-nome">${escapeHTML(conf.label || campo)}</span>
+                    ${isResolved
+                        ? `<span class="conflitto-stato testo-successo">${escapeHTML(window.t("merge_choice_registered", "scelta registrata"))}</span>`
+                        : `<span class="conflitto-stato testo-avviso">${escapeHTML(window.t("merge_field_pending", "da scegliere"))}</span>`}
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
-                        class="conflitto-opzione flex flex-col gap-2 p-3 relative cursor-pointer${localChosen ? ' is-scelta' : ''}">
-                        <span class="conflitto-etichetta is-locale text-[11px] uppercase font-bold absolute -top-2 left-2 px-1">${window.t("merge_local_label", "Your Change (Local)")}</span>
-                        <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(localVal, campo)}</div>
-                        <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="local"
-                            aria-pressed="${localChosen ? 'true' : 'false'}"
-                            class="conflitto-scegli btn btn-secondary py-1 text-xs justify-center mt-2">
-                            ${localChosen ? '<i data-lucide="check" class="w-4 h-4" aria-hidden="true"></i>' : ''}
-                            ${window.t("btn_keep_mine", "Keep mine")}
-                        </button>
-                    </div>
-                    <div data-resolve-card="true" data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
-                        class="conflitto-opzione flex flex-col gap-2 p-3 relative cursor-pointer${externalChosen ? ' is-scelta' : ''}">
-                        <span class="conflitto-etichetta text-[11px] uppercase font-bold absolute -top-2 left-2 px-1">${window.t("merge_cloud_label", "Cloud Change (Server)")}</span>
-                        <div class="text-sm text-stone-700 whitespace-pre-wrap select-text break-all mt-1 flex-1 leading-relaxed">${renderValoreCampo(externalVal, campo)}</div>
-                        <button data-resolve-id="${escapeHTML(String(c.id))}" data-resolve-campo="${escapeHTML(campo)}" data-resolve-scelta="external"
-                            aria-pressed="${externalChosen ? 'true' : 'false'}"
-                            class="conflitto-scegli btn btn-secondary py-1 text-xs justify-center mt-2">
-                            ${externalChosen ? '<i data-lucide="check" class="w-4 h-4" aria-hidden="true"></i>' : ''}
-                            ${window.t("btn_use_this", "Use this")}
-                        </button>
-                    </div>
+                <div class="conflitto-versioni">
+                    ${opzione('local', localChosen, window.t("merge_local_label", "La tua versione"), localVal)}
+                    ${opzione('external', externalChosen, window.t("merge_cloud_label", "Versione sul server"), externalVal)}
                 </div>
             `);
 
-            fieldDiv.querySelectorAll('[data-resolve-card]').forEach((cardEl: Element) => {
-                const id = cardEl.getAttribute('data-resolve-id');
-                const campo = cardEl.getAttribute('data-resolve-campo');
-                const scelta = cardEl.getAttribute('data-resolve-scelta');
-
-                cardEl.addEventListener('click', () => {
-                    window.risolviCampoConflitto(id, campo, scelta);
-                });
-            });
-
             fieldDiv.querySelectorAll('button[data-resolve-id]').forEach((btn: Element) => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                btn.addEventListener('click', () => {
                     window.risolviCampoConflitto(
                         btn.getAttribute('data-resolve-id'),
                         btn.getAttribute('data-resolve-campo'),
@@ -194,8 +162,6 @@
 
             container.appendChild(fieldDiv);
         });
-
-        if (window.lucide) lucide.createIcons({ nodes: [container] });
     }
 
     function renderValoreCampo(valore, campo) {
@@ -254,14 +220,19 @@
         });
 
         const irrisolti = totali - risolti;
-        document.getElementById('conflict-counter').innerHTML = irrisolti === 0
-            ? `<span class="testo-successo font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> ${window.t("merge_all_resolved", 'Tutti i conflitti sono risolti.')}</span>`
-            : `${window.t("merge_conflicts_to_resolve", "Conflicts to resolve:")} <b class="testo-pericolo">${irrisolti}</b>`;
+        const schede = activeConflicts.filter(c => resolvedFields[c.id].size < c.campiConflitto.length).length;
+        const restano = irrisolti === 1
+            ? window.t('merge_one_left', 'Resta una scelta')
+            : schede === 1
+                ? window.t('merge_left_one_record', 'Restano {var0} scelte in una scheda').replace('{var0}', String(irrisolti))
+                : window.t('merge_conflicts_to_resolve', 'Restano {var0} scelte in {var1} schede')
+                    .replace('{var0}', String(irrisolti)).replace('{var1}', String(schede));
+        document.getElementById('conflict-counter').innerHTML = window.sanitizeHTML(irrisolti === 0
+            ? `<span class="pallino-scelta is-fatto" aria-hidden="true"></span>${escapeHTML(window.t("merge_all_resolved", 'Tutti i conflitti sono risolti.'))}`
+            : `<span class="pallino-scelta" aria-hidden="true"></span>${escapeHTML(restano)}`);
 
         const btnApply = document.getElementById('btn-resolve-all') as HTMLButtonElement;
         btnApply.disabled = irrisolti > 0;
-
-        if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('conflict-counter')] });
     }
 
     window.concludiRisoluzioneConflitti = function() {

@@ -9,35 +9,33 @@
         document.body.insertAdjacentHTML('beforeend', `
     <div id="import-zip-modal" class="modal-overlay hidden-tab z-modal-alert">
         <div class="modal-window iz-finestra">
-            <div class="iz-testa">
-                <i data-lucide="download" class="iz-icona testo-accento" data-iz-stato="corso" aria-hidden="true"></i>
-                <i data-lucide="circle-check" class="iz-icona testo-successo" data-iz-stato="ok" aria-hidden="true"></i>
-                <i data-lucide="circle-alert" class="iz-icona testo-pericolo" data-iz-stato="ko" aria-hidden="true"></i>
-                <h2 id="iz-titolo" class="iz-titolo"></h2>
-            </div>
-            <div class="iz-blocco" data-iz-stato="corso">
-                <span class="iz-etichetta" data-i18n="import_zip_archivio">Archivio</span>
-                <span id="iz-nome" class="iz-nome"></span>
-            </div>
-            <div class="iz-blocco" data-iz-stato="corso">
-                <div id="iz-barra" class="iz-traccia" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria-label="import_zip_barra" aria-label="Avanzamento dell'importazione">
-                    <div id="iz-riempimento" class="iz-riempimento"></div>
+            <div class="modal-header">
+                <div class="min-w-0">
+                    <h2 id="iz-titolo" class="modal-title"></h2>
+                    <p id="iz-nome" class="modal-sottotitolo iz-nome" data-iz-stato="corso"></p>
+                    <p id="iz-riepilogo" class="modal-sottotitolo" data-iz-stato="ok"></p>
+                    <p id="iz-causa" class="modal-sottotitolo" data-iz-stato="ko" role="alert"></p>
                 </div>
-                <div class="iz-conteggio"><span id="iz-file"></span><span id="iz-percento"></span></div>
             </div>
-            <p class="iz-nota" data-iz-stato="corso" data-i18n="import_zip_nota">Non chiudere ArchiView finché l'importazione non è finita. I file già presenti vengono saltati.</p>
-            <p id="iz-riepilogo" class="iz-riepilogo" data-iz-stato="ok"></p>
-            <div class="iz-tessere" data-iz-stato="ok">
-                <div class="iz-tessera iz-tessera-ok"><span id="iz-copiati" class="iz-numero"></span><span data-i18n="import_zip_copiati">allegati copiati</span></div>
-                <div class="iz-tessera"><span id="iz-saltati" class="iz-numero"></span><span data-i18n="import_zip_saltati">già presenti, saltati</span></div>
+            <div class="modal-body iz-corpo">
+                <div class="iz-blocco" data-iz-stato="corso">
+                    <div class="iz-conteggio"><span id="iz-file"></span><span id="iz-percento"></span></div>
+                    <div id="iz-barra" class="iz-traccia" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria-label="import_zip_barra" aria-label="Avanzamento dell'importazione">
+                        <div id="iz-riempimento" class="iz-riempimento"></div>
+                    </div>
+                </div>
+                <p class="modello-suggerimento" data-iz-stato="corso" data-i18n="import_zip_nota">Non chiudere ArchiView finché l'importazione non è finita. I file già presenti vengono saltati.</p>
+                <div class="iz-tessere" data-iz-stato="ok">
+                    <div class="iz-tessera"><span id="iz-copiati" class="iz-numero"></span><span data-i18n="import_zip_copiati">allegati copiati</span></div>
+                    <div class="iz-tessera"><span id="iz-saltati" class="iz-numero"></span><span data-i18n="import_zip_saltati">già presenti, saltati</span></div>
+                </div>
+                <p class="iz-nota" data-iz-stato="ko" data-i18n="import_zip_ko_stato">Nessuna scheda è stata aggiunta. Gli allegati già estratti restano nella cartella e al prossimo tentativo vengono saltati.</p>
+                <details class="iz-dettagli" data-iz-stato="ko">
+                    <summary data-i18n="import_zip_dettagli">Dettagli tecnici</summary>
+                    <code id="iz-dettaglio"></code>
+                </details>
             </div>
-            <p id="iz-causa" class="iz-causa" data-iz-stato="ko" role="alert"></p>
-            <p class="iz-nota" data-iz-stato="ko" data-i18n="import_zip_ko_stato">Nessuna scheda è stata aggiunta. Gli allegati già estratti restano nella cartella e al prossimo tentativo vengono saltati.</p>
-            <details class="iz-dettagli" data-iz-stato="ko">
-                <summary data-i18n="import_zip_dettagli">Dettagli tecnici</summary>
-                <code id="iz-dettaglio"></code>
-            </details>
-            <div class="iz-piede" data-iz-stato="ok ko">
+            <div class="modal-footer modal-footer-bar" data-iz-stato="ok ko">
                 <button type="button" class="btn btn-secondary" data-on-click="chiudiImportZip"><span data-i18n="btn_close">Chiudi</span></button>
                 <button type="button" class="btn btn-primary" data-iz-stato="ok" data-on-click="mostraSchedeImportate"><span data-i18n="import_zip_mostra">Mostra le schede</span></button>
                 <button type="button" class="btn btn-primary" data-iz-stato="ko" data-on-click="riprovaImportZip"><span data-i18n="import_zip_riprova">Riprova</span></button>
@@ -45,7 +43,6 @@
         </div>
     </div>`);
         if (window.applicaTraduzioniHtml) window.applicaTraduzioniHtml();
-        if (window.lucide) lucide.createIcons({ nodes: [el('import-zip-modal')] });
     }
 
     function mostra(nuovo: 'corso' | 'ok' | 'ko', titolo: string) {
