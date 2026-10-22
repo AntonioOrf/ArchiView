@@ -104,7 +104,11 @@ window.apriImpostazioni = async function(tab?: string) {
     const aggAuto = _campo('settings-aggiornamenti-auto');
     if (aggAuto) aggAuto.checked = settings.aggiornamentiAutomatici !== false;
     const versione = _campo('settings-versione');
-    if (versione && window.apiBrowser.getVersion) versione.textContent = await window.apiBrowser.getVersion();
+    if (versione && window.apiBrowser.getVersion) {
+        versione.textContent = await window.apiBrowser.getVersion();
+        const nav = _campo('settings-versione-nav');
+        if (nav) nav.textContent = versione.textContent;
+    }
 
     const M: Partial<typeof ArchiViewModel> = window.Model || {};
     const auto = _campo('settings-snapshot-auto');

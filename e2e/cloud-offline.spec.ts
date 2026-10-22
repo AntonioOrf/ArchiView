@@ -44,6 +44,46 @@ test.describe('Cloud: stati UI offline', () => {
     await expect(page.locator('#share-state-member')).toBeHidden();
   });
 
+  test('da proprietario la matita rinomina l\'archivio condiviso', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'CloudOff');
+    await page.evaluate(async () => {
+      const w = window as any;
+      w.hubConfig = { name: 'Vault ABC', attachmentsMode: 'off', lastLoadedAt: Date.now() };
+      w.getHubRole = async () => 'owner';
+      w.listaMembriHub = async () => [];
+      w.__rinominato = null;
+      w.rinominaVaultHub = async (nome: string) => { w.__rinominato = nome; return true; };
+      await w.apriShareModal();
+    });
+    await expect(page.locator('#share-owner-reponame')).toHaveText('Vault ABC');
+    await page.getByRole('button', { name: /Rinomina l'archivio|Rename the archive/ }).click();
+    const campo = page.locator('#share-owner-reponame input');
+    await expect(campo).toBeFocused();
+    await campo.fill('Fondo Notarile');
+    await campo.press('Enter');
+    await expect(page.locator('#share-owner-reponame')).toHaveText('Fondo Notarile');
+    expect(await page.evaluate(() => (window as any).__rinominato)).toBe('Fondo Notarile');
+  });
+
+  test('gestione archivi: i recenti si elencano e uno si apre con un clic', async ({ page, userDataDir }) => {
+    const base = path.join(userDataDir, 'ws');
+    await createLocalWorkspace(page, base, 'CloudOff');
+    const primo = await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath());
+    await page.evaluate((p) => { setTimeout(() => (window as any).apiBrowser.createWorkspaceInPath(p, 'Secondo'), 0); }, base);
+    await expect.poll(async () => { try { return await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath()); } catch { return ''; } })
+      .toBe(path.join(base, 'Secondo'));
+    await page.waitForFunction(() => (window as any).__appPronta === true);
+
+    await page.evaluate(() => (window as any).mostraWelcomeModal());
+    const recenti = page.locator('#welcome-recenti');
+    await expect(recenti).toBeVisible();
+    await expect(recenti.locator('.archivio-recente[aria-current="true"]')).toContainText('Secondo');
+    await expect(recenti.locator('.archivio-recente[aria-current="true"]')).toBeDisabled();
+    await recenti.locator('.archivio-recente', { hasText: 'CloudOff' }).click();
+    await expect.poll(async () => { try { return await page.evaluate(() => (window as any).apiBrowser.getWorkspacePath()); } catch { return ''; } })
+      .toBe(primo);
+  });
+
   test('welcome join: un codice invito non valido mostra un errore, senza chiamate di rete', async ({ page, userDataDir }) => {
     await expect(page.locator('#welcome-modal')).toBeVisible();
     await page.evaluate(() => (window as any).mostraJoinForm());

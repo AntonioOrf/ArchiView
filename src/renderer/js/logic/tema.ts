@@ -23,8 +23,8 @@ window.initTheme = async function() {
     const savedTheme = settings.theme || 'system';
     try { localStorage.setItem('theme', savedTheme); } catch (e) {}
 
-    const sel = document.getElementById('settings-theme');
-    if (sel) sel.value = savedTheme;
+    const scelta = document.querySelector<HTMLInputElement>(`#settings-theme input[value="${CSS.escape(savedTheme)}"]`);
+    if (scelta) scelta.checked = true;
     
     window.applicaTema(savedTheme);
     

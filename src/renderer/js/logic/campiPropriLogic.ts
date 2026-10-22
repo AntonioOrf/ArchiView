@@ -70,11 +70,20 @@ window.apriCampoProprioModal = function() {
 
     const lista = document.getElementById('campo-proprio-suggerimenti') as HTMLInputElement;
     lista.innerHTML = '';
-    for (const nome of window.nomiCampiPropriUsati()) {
+    _campiPropriUsati = _usiCampiPropri();
+    for (const [nome, uso] of _campiPropriUsati) {
         const opt = document.createElement('option');
         opt.value = nome;
+        opt.label = window.t('own_field_used', '{var0}, {var1} schede')
+            .replace('{var0}', window.t('field_type_' + (uso.def.tipo || 'text'), uso.def.tipo || 'text'))
+            .replace('{var1}', String(uso.n));
         lista.appendChild(opt);
     }
+
+    const segnatura = (document.getElementById('form-segnatura') as HTMLInputElement | null)?.value.trim();
+    (document.getElementById('campo-proprio-sottotitolo') as HTMLElement).textContent = segnatura
+        ? window.t('own_field_hint_for', 'Vale solo per {var0}: il modello e le altre schede non cambiano.').replace('{var0}', segnatura)
+        : window.t('own_field_hint', 'Il campo resta su questa scheda: il modello e le altre schede non cambiano.');
 
     window.aggiornaCampoProprio();
     modal.classList.remove('hidden-tab');
@@ -160,8 +169,29 @@ window.promuoviCampoProprio = async function(id) {
     mostraMessaggio(window.t('own_field_promoted', 'Campo "{var0}" aggiunto al modello.').replace('{var0}', String(def.label || id)), 'success');
 };
 
-window.nomiCampiPropriUsati = function() {
-    return window.campiPropriArchivio().map(d => d.label || d.id);
+let _campiPropriUsati = new Map<string, { def: AVCampoDef, n: number }>();
+
+function _usiCampiPropri() {
+    const usi = new Map<string, { def: AVCampoDef, n: number }>();
+    for (const m of (appData.manoscritti || [])) {
+        for (const d of window.Model.campiPropri(m)) {
+            const nome = String(d.label || d.id);
+            const uso = usi.get(nome);
+            if (uso) uso.n++;
+            else usi.set(nome, { def: d, n: 1 });
+        }
+    }
+    return new Map([...usi].sort((a, b) => a[0].localeCompare(b[0])));
+}
+
+window.riprendiCampoProprioUsato = function() {
+    const uso = _campiPropriUsati.get((document.getElementById('campo-proprio-nome') as HTMLInputElement).value.trim());
+    if (!uso) return;
+    (document.getElementById('campo-proprio-tipo') as HTMLSelectElement).value = uso.def.tipo || 'text';
+    (document.getElementById('campo-proprio-vocabolario') as HTMLSelectElement).value = uso.def.vocabolario || '';
+    (document.getElementById('campo-proprio-opzioni') as HTMLTextAreaElement).value = (uso.def.opzioni || []).join('\n');
+    (document.getElementById('campo-proprio-authority') as HTMLSelectElement).value = uso.def.authority || '';
+    window.aggiornaCampoProprio();
 };
 
 window.campiPropriArchivio = function() {

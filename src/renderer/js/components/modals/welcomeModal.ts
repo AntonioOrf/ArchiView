@@ -2,122 +2,115 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('welcome-modal')) {
             const html = `
-    <div id="welcome-modal" class="modal-overlay hidden-tab z-modal-nested bg-stone-900/80 backdrop-blur-sm">
-        <div class="modal-window max-w-lg p-8 text-center shadow-2xl border-2 border-stone-200 relative">
-            <button id="welcome-close-btn" class="absolute top-3 right-3 p-1 text-stone-400 hover:text-stone-700 hidden transition-colors" data-on-click="chiudiWelcomeModal" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
+    <div id="welcome-modal" class="modal-overlay hidden-tab z-modal-nested">
+        <div class="modal-window max-w-xl relative benvenuto">
+            <button id="welcome-close-btn" class="btn btn-ghost btn-icon absolute top-3 right-3 hidden" data-on-click="chiudiWelcomeModal" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <div class="flex justify-center">
-                <div class="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center text-stone-600 shadow-inner">
-                    <i data-lucide="library" class="w-8 h-8"></i>
-                </div>
-            </div>
-            <h2 class="text-2xl font-serif text-stone-800 mb-4" data-i18n="modal_folder_title">Gestione Archivi</h2>
-            <p class="text-stone-600 mb-8 leading-relaxed text-sm">
+            <h2 class="modal-title" data-i18n="modal_folder_title">Gestione Archivi</h2>
+            <p class="modal-sottotitolo mb-4">
                 <span data-i18n="welcome_desc_gestione">Scegli una cartella di destinazione per creare un nuovo archivio indipendente, oppure seleziona un archivio già esistente per caricarne i dati.</span>
             </p>
 
-            <div class="flex flex-col gap-3" id="welcome-buttons">
-                <button data-on-click="selezionaCartellaIniziale" class="btn btn-primary w-full justify-center py-3 text-lg font-medium shadow-md">
+            <div class="benvenuto-colonne" id="welcome-buttons">
+                <section id="welcome-recenti" class="hidden" aria-labelledby="welcome-recenti-titolo">
+                    <h3 id="welcome-recenti-titolo" class="condivisione-sez" data-i18n="welcome_recent">Recenti</h3>
+                    <div id="welcome-recenti-lista"></div>
+                </section>
+                <div class="flex flex-col">
+                <h3 class="condivisione-sez benvenuto-altro" data-i18n="welcome_other">Altro</h3>
+                <button data-on-click="selezionaCartellaIniziale" class="scelta-archivio">
                     <i data-lucide="folder-open" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_open_local">Apri Archivio Locale</span>
                 </button>
-                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;locale&quot;]" class="btn btn-secondary w-full justify-center py-3 text-lg font-medium shadow-sm bg-stone-100 border border-stone-300 text-stone-700">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;locale&quot;]" class="scelta-archivio">
                     <i data-lucide="folder-plus" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_local">Crea Nuova Cartella Locale</span>
                 </button>
-                <div class="h-px bg-stone-200 my-1 w-full"></div>
-                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;personale&quot;]" class="btn scelta-backup w-full justify-center py-3 text-lg font-medium shadow-sm">
+                
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;personale&quot;]" class="scelta-archivio">
                     <i data-lucide="cloud" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_cloud_private">Crea un Backup Personale</span>
                 </button>
-                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;hub&quot;]" class="btn scelta-hub w-full justify-center py-3 text-lg font-medium shadow-sm">
+                <button data-on-click="mostraInputNuovaCartella" data-args-click="[&quot;hub&quot;]" class="scelta-archivio">
                     <i data-lucide="server" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_create_hub_shared">Crea un Hub Condiviso</span>
                 </button>
-                <button data-on-click="mostraJoinForm" class="btn w-full justify-center py-3 text-lg font-medium shadow-sm text-amber-900 bg-amber-50 border border-amber-300 hover:bg-amber-100">
+                <button data-on-click="mostraJoinForm" class="scelta-archivio">
                     <i data-lucide="users" class="w-5 h-5 mr-2"></i>
                     <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                 </button>
-                <button data-on-click="mostraCloudExplorer" class="btn btn-ghost text-sm text-stone-500 mt-1 w-full justify-center">
+                <button data-on-click="mostraCloudExplorer" class="btn btn-ghost text-sm mt-2 self-start">
                     <span data-i18n="btn_restore_drive">Ripristina da Google Drive…</span>
                 </button>
+                </div>
             </div>
 
-            <!-- CREA NUOVA CARTELLA FORM -->
-            <div id="welcome-create-form" class="hidden-tab mt-4 text-left border border-stone-200 p-4 rounded-md bg-stone-50">
+            <div id="welcome-create-form" class="hidden-tab mt-2 pt-4 border-t border-stone-200">
                 <div class="mb-3">
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_archive_name">Nome dell\'archivio</label>
-                    <input type="text" id="welcome-new-folder-name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-colors text-sm" placeholder="Es. Archivio Manoscritti" data-i18n-placeholder="placeholder_archive_name" data-on-keydown="suInvio" data-args-keydown="[&quot;creaCartellaIniziale&quot;,false]">
+                    <input type="text" id="welcome-new-folder-name" class="form-input w-full text-sm" placeholder="Es. Archivio Manoscritti" data-i18n-placeholder="placeholder_archive_name" data-on-keydown="suInvio" data-args-keydown="[&quot;creaCartellaIniziale&quot;,false]">
                 </div>
                 <div class="mb-3">
                     <label class="form-label font-medium mb-1 block text-sm" data-i18n="label_position">Posizione</label>
                     <div class="flex gap-2">
-                        <input type="text" id="welcome-new-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                        <button data-on-click="selezionaPercorsoBase" class="btn btn-secondary px-3 py-1 text-sm shadow-sm bg-stone-100 border border-stone-300" data-i18n="btn_browse">Sfoglia…</button>
+                        <input type="text" id="welcome-new-folder-path" class="form-input flex-1 text-sm font-mono" readonly>
+                        <button data-on-click="selezionaPercorsoBase" class="btn btn-secondary text-sm shrink-0" data-i18n="btn_browse">Sfoglia…</button>
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
                     <button data-on-click="nascondiInputNuovaCartella" class="btn btn-ghost text-sm text-stone-500 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
-                    <button data-on-click="creaCartellaIniziale" class="btn btn-primary text-sm shadow-sm px-6"><span data-i18n="btn_create_and_start">Crea e Avvia</span></button>
+                    <button data-on-click="creaCartellaIniziale" class="btn btn-primary text-sm px-6"><span data-i18n="btn_create_and_start">Crea e Avvia</span></button>
                 </div>
             </div>
 
-            <!-- JOIN FORM — layout a 2 colonne -->
-            <div id="welcome-join-form" class="hidden-tab mt-4 text-left border border-stone-200 rounded-lg overflow-hidden">
-                <!-- HEADER -->
-                <div class="px-5 py-3 bg-stone-50 border-b border-stone-200 flex items-center gap-2">
-                    <i data-lucide="users" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                    <h3 class="font-semibold text-sm text-stone-800">
+            <div id="welcome-join-form" class="hidden-tab mt-2 border-t border-stone-200">
+                <div class="pt-4">
+                    <h3 class="modal-title">
                         <span data-i18n="btn_join_shared">Unisciti a un Archivio Condiviso</span>
                     </h3>
                 </div>
 
-                <!-- BODY: 2 COLONNE -->
-                <div class="flex divide-x divide-stone-200">
+                <div class="flex flex-col">
 
-                    <!-- COLONNA SINISTRA: Step Cloud (1 + 2) -->
-                    <div class="flex-1 p-4 flex flex-col gap-4 min-w-0 bg-white">
+                    <div class="flex flex-col min-w-0">
 
-                        <!-- STEP 1: Link invito ArchiView -->
-                        <div>
+                        <div class="unisciti-passo">
                             <div class="flex items-center gap-2 mb-1.5">
-                                <span id="join-step1-badge" class="w-5 h-5 rounded-full bg-stone-300 text-white text-[10px] font-bold flex items-center justify-center shrink-0 transition-colors">1</span>
-                                <label class="form-label font-medium text-sm text-stone-700">
+                                <span id="join-step1-badge" class="passo-numero">1</span>
+                                <label class="form-label">
                                     <span data-i18n="label_invite_code_opt">Link d'Invito ArchiView</span>
                                 </label>
                             </div>
-                            <p class="text-[11px] text-stone-500 mb-2 ml-7 leading-snug"><span data-i18n="join_step1_hint">Paste the archiview://join/... link received from the organizer.</span></p>
+                            <p class="modello-suggerimento mb-2 ml-8"><span data-i18n="join_step1_hint">Paste the archiview://join/... link received from the organizer.</span></p>
                             <input type="text" id="welcome-join-code"
-                                class="form-input w-full bg-white text-stone-600 text-sm border border-stone-300 font-mono"
+                                class="form-input w-full text-sm font-mono"
                                 placeholder="archiview://join/..."
                                 data-on-input="seEsiste" data-args-input="[&quot;handleJoinCodeInput&quot;,{&quot;$&quot;:&quot;value&quot;}]">
-                            <div id="join-code-ok" class="hidden-tab mt-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5 flex items-center gap-1.5">
+                            <div id="join-code-ok" class="hidden-tab mt-1.5 text-xs testo-successo flex items-center gap-1.5">
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0"></i>
                                 <span id="join-code-ok-text"></span>
                             </div>
-                            <div id="join-code-err" class="hidden mt-1.5 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5"></div>
+                            <div id="join-code-err" class="hidden mt-1.5 campo-errore"></div>
                         </div>
 
-                        <!-- STEP 2: Picker Google Drive (solo per inviti Drive legacy) -->
-                        <div id="join-step-drive" class="hidden-tab">
+                        <div id="join-step-drive" class="hidden-tab unisciti-passo">
                             <div class="flex items-center gap-2 mb-1.5">
-                                <span id="join-step2-badge" class="w-5 h-5 rounded-full bg-stone-300 text-white text-[10px] font-bold flex items-center justify-center shrink-0 transition-colors">2</span>
-                                <label class="form-label font-medium text-sm text-stone-700" data-i18n="label_authorize_folder">Autorizza accesso cartella Drive</label>
+                                <span id="join-step2-badge" class="passo-numero">2</span>
+                                <label class="form-label" data-i18n="label_authorize_folder">Autorizza accesso cartella Drive</label>
                             </div>
-                            <div class="ml-7 mb-2 p-2 bg-amber-50 border border-amber-200 rounded-md text-[11px] text-amber-800 flex items-start gap-1.5">
-                                <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+                            <div class="ml-8 mb-2 modello-suggerimento">
                                 <span data-i18n="join_step2_hint">First <strong>accept the sharing email from Google Drive</strong>. The folder will appear in <em>"Shared with me"</em>.</span>
                             </div>
                             <button type="button" data-on-click="apriGooglePicker" id="btn-open-picker"
-                                class="btn btn-secondary w-full justify-center py-3 text-sm font-medium shadow-sm bg-white border border-stone-300 text-stone-700 transition-colors">
-                                <i data-lucide="folder-search" class="w-5 h-5 mr-2 text-blue-600"></i>
+                                class="btn btn-secondary">
+                                <i data-lucide="folder-search" class="w-4 h-4 mr-2" aria-hidden="true"></i>
                                 <span data-i18n="btn_browse_drive">Sfoglia Google Drive…</span>
                             </button>
-                            <div id="join-picker-ok" class="hidden-tab mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-sm text-emerald-700 flex items-center gap-2">
-                                <i data-lucide="folder-check" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                            <div id="join-picker-ok" class="hidden-tab mt-2 text-sm testo-successo flex items-center gap-2">
+                                <i data-lucide="folder-check" class="w-4 h-4 shrink-0" aria-hidden="true"></i>
                                 <div>
                                     <span class="font-semibold" data-i18n="label_selected_archive">Selezionato:</span>
                                     <span id="join-picker-vault-name" class="font-mono ml-1 text-sm"></span>
@@ -126,28 +119,25 @@
                         </div>
                     </div>
 
-                    <!-- COLONNA DESTRA: Step Locale (3) + Azioni -->
-                    <div class="flex-1 p-4 flex flex-col gap-4 min-w-0 bg-stone-50">
+                    <div class="flex flex-col min-w-0">
 
-                        <!-- STEP 3: Percorso locale -->
-                        <div class="flex-1">
+                        <div class="unisciti-passo">
                             <div class="flex items-center gap-2 mb-1.5">
-                                <span id="join-step3-badge" class="w-5 h-5 rounded-full bg-stone-300 text-white text-[10px] font-bold flex items-center justify-center shrink-0 transition-colors">3</span>
-                                <label class="form-label font-medium text-sm text-stone-700" data-i18n="label_local_archive_pos">Posizione archivio locale</label>
+                                <span id="join-step3-badge" class="passo-numero">3</span>
+                                <label class="form-label" data-i18n="label_local_archive_pos">Posizione archivio locale</label>
                             </div>
-                            <p class="text-[11px] text-stone-500 mb-2 ml-7 leading-snug"><span data-i18n="join_step3_hint">Choose where to save the local copy of the archive on your PC.</span></p>
+                            <p class="modello-suggerimento mb-2 ml-8"><span data-i18n="join_step3_hint">Choose where to save the local copy of the archive on your PC.</span></p>
                             <div class="flex gap-2">
-                                <input type="text" id="welcome-join-folder-path" class="form-input flex-1 bg-white text-stone-600 text-sm border border-stone-300" readonly>
-                                <button data-on-click="selezionaPercorsoBaseJoin" class="btn btn-secondary px-3 py-1 text-sm shrink-0" data-i18n="btn_browse">Sfoglia…</button>
+                                <input type="text" id="welcome-join-folder-path" class="form-input flex-1 text-sm font-mono" readonly>
+                                <button data-on-click="selezionaPercorsoBaseJoin" class="btn btn-secondary text-sm shrink-0" data-i18n="btn_browse">Sfoglia…</button>
                             </div>
                         </div>
 
-                        <!-- AZIONI -->
-                        <div class="mt-auto pt-4 border-t border-stone-200 flex justify-between items-center">
+                        <div class="pt-4 border-t border-stone-200 flex justify-between items-center">
                             <button data-on-click="nascondiJoinForm" class="btn btn-ghost text-sm text-stone-500 flex items-center gap-1">
                                 <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                             </button>
-                            <button data-on-click="eseguiJoinVault" id="btn-join-connect" class="btn btn-primary text-sm shadow-sm px-6">
+                            <button data-on-click="eseguiJoinVault" id="btn-join-connect" class="btn btn-primary text-sm px-6">
                                 <span data-i18n="btn_connect">Connettiti</span>
                             </button>
                         </div>
@@ -155,19 +145,17 @@
                 </div>
             </div>
 
-            <!-- CLOUD EXPLORER -->
-            <div id="welcome-cloud-explorer" class="hidden-tab mt-4 text-left border border-stone-200 p-4 rounded-md bg-stone-50">
-                <h3 class="font-medium mb-3 text-stone-800 flex items-center gap-2">
-                    <i data-lucide="cloud" class="w-5 h-5 text-blue-600"></i> <span data-i18n="title_select_cloud_archive">Seleziona un Archivio dal Cloud</span>
+            <div id="welcome-cloud-explorer" class="hidden-tab mt-2 pt-4 border-t border-stone-200">
+                <h3 class="modal-title mb-3">
+                    <i data-lucide="cloud" class="w-4 h-4" aria-hidden="true"></i> <span data-i18n="title_select_cloud_archive">Seleziona un Archivio dal Cloud</span>
                 </h3>
                 <div id="cloud-vaults-list" class="space-y-2 max-h-64 overflow-y-auto pr-2">
-                    <!-- Lista popolata via JS -->
                 </div>
                 <div class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
                     <button data-on-click="nascondiCloudExplorer" class="btn btn-ghost text-sm text-stone-500 flex items-center gap-1">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> <span data-i18n="btn_go_back">Torna Indietro</span>
                     </button>
-                    <button data-on-click="eseguiRipristinoCloudGlobale" class="btn btn-secondary text-sm shadow-sm" data-i18n-title="title_search_everywhere" title="Se non vedi il tuo archivio, cerca in tutto il Drive"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>
+                    <button data-on-click="eseguiRipristinoCloudGlobale" class="btn btn-secondary text-sm" data-i18n-title="title_search_everywhere" title="Se non vedi il tuo archivio, cerca in tutto il Drive"><span data-i18n="btn_search_everywhere">Cerca Ovunque</span></button>
                 </div>
             </div>
         </div>
@@ -223,15 +211,16 @@
                 listContainer.innerHTML = window.sanitizeHTML(`<p class="text-sm text-stone-500 p-4 text-center"><span data-i18n="msg_no_archive_found_drive">Nessun Archivio trovato nella cartella ArchiView sul tuo Drive.</span></p>`);
             } else {
                 vaults.forEach(v => {
-                    const div = document.createElement('div');
-                    div.className = "p-3 bg-white border border-stone-200 rounded cursor-pointer hover:border-amber-400 hover:shadow-md transition-colors flex justify-between items-center";
+                    const div = document.createElement('button');
+                    div.type = 'button';
+                    div.className = "scelta-archivio justify-between";
                     const dateStr = new Date(v.modifiedTime).toLocaleDateString();
                     
                     const escapedName = escapeHTML(v.name);
 
                     div.innerHTML = window.sanitizeHTML(`
                         <div class="flex items-center gap-3">
-                            <i data-lucide="folder-cloud" class="w-5 h-5 text-blue-600"></i>
+                            <i data-lucide="folder-cloud" class="w-4 h-4" aria-hidden="true"></i>
                             <div>
                                 <div class="font-medium text-stone-800">${escapedName}</div>
                                 <div class="text-xs text-stone-500"><span data-i18n="label_modified">Modificato:</span> ${dateStr}</div>
@@ -257,17 +246,8 @@
     function updateJoinStepBadge(step: number, stato: 'pending' | 'active' | 'done') {
         const badge = document.getElementById(`join-step${step}-badge`);
         if (!badge) return;
-        const base = 'w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0 transition-colors ';
-        if (stato === 'done') {
-            badge.className = base + 'bg-emerald-500';
-            badge.textContent = '✓';
-        } else if (stato === 'active') {
-            badge.className = base + 'bg-blue-500';
-            badge.textContent = String(step);
-        } else {
-            badge.className = base + 'bg-stone-300';
-            badge.textContent = String(step);
-        }
+        badge.className = 'passo-numero' + (stato === 'done' ? ' fatto' : stato === 'active' ? ' attivo' : '');
+        badge.textContent = stato === 'done' ? '✓' : String(step);
     }
 
     function setDriveStepVisible(visible: boolean) {
@@ -289,9 +269,7 @@
         document.getElementById('join-code-err')?.classList.add('hidden-tab');
         document.getElementById('join-picker-ok')?.classList.add('hidden-tab');
 
-        const pickerBtn = document.getElementById('btn-open-picker');
-        if (pickerBtn) pickerBtn.className = pickerBtn.className
-            .replace('border-blue-400 ring-2 ring-blue-200', 'border-stone-300');
+        document.getElementById('btn-open-picker')?.classList.remove('scelta-attiva');
 
         for (let i = 1; i <= 3; i++) updateJoinStepBadge(i, 'pending');
         setDriveStepVisible(false);
@@ -347,11 +325,7 @@
 
             setDriveStepVisible(true);
 
-            const pickerBtn = document.getElementById('btn-open-picker');
-            if (pickerBtn && !pickerBtn.className.includes('ring-2')) {
-                pickerBtn.className = pickerBtn.className
-                    .replace('border-stone-300', 'border-blue-400 ring-2 ring-blue-200');
-            }
+            document.getElementById('btn-open-picker')?.classList.add('scelta-attiva');
 
             updateJoinStepBadge(1, 'done');
             updateJoinStepBadge(2, 'active');
@@ -609,8 +583,61 @@
             }
         }
 
+        await disegnaArchiviRecenti();
         modal.classList.remove('hidden-tab');
         modal.style.setProperty('display', 'flex', 'important');
         if (window.lucide) lucide.createIcons({ nodes: [modal] });
     };
+
+    async function disegnaArchiviRecenti() {
+        const sezione = document.getElementById('welcome-recenti');
+        const lista = document.getElementById('welcome-recenti-lista');
+        if (!sezione || !lista || !window.apiBrowser?.getRecentWorkspaces) return;
+        let recenti = [];
+        let attuale = '';
+        try {
+            recenti = await window.apiBrowser.getRecentWorkspaces();
+            attuale = await window.apiBrowser.getWorkspacePath();
+        } catch (e) {
+            console.error('Archivi recenti non letti, la gestione archivi resta senza elenco:', e);
+        }
+        lista.replaceChildren();
+        for (const voce of recenti || []) {
+            const percorso = voce.path || voce;
+            const [tipo, chiave, testo] = voce.provider === 'hub' ? ['hub', 'vault_type_hub', 'Hub condiviso']
+                : voce.isShared ? ['condiviso', 'vault_type_shared', 'Condiviso']
+                : voce.isPersonal ? ['backup', 'vault_type_backup', 'Backup personale']
+                : ['locale', 'vault_type_local', 'Locale'];
+            const riga = document.createElement('button');
+            riga.type = 'button';
+            riga.className = 'archivio-recente';
+            const nome = document.createElement('span');
+            nome.className = 'archivio-recente-nome';
+            nome.textContent = String(percorso).split(/[\\/]/).pop() || String(percorso);
+            const stato = document.createElement('span');
+            stato.className = 'archivio-recente-tipo';
+            const pallino = document.createElement('span');
+            pallino.className = 'pallino-stato tipo-' + tipo;
+            pallino.setAttribute('aria-hidden', 'true');
+            stato.append(pallino, percorso === attuale ? window.t('welcome_recent_open', 'aperto ora') : window.t(chiave, testo));
+            const via = document.createElement('span');
+            via.className = 'archivio-recente-percorso';
+            via.textContent = percorso;
+            riga.append(nome, stato, via);
+            if (percorso === attuale) {
+                riga.disabled = true;
+                riga.setAttribute('aria-current', 'true');
+            } else {
+                riga.onclick = async () => {
+                    try {
+                        if (!(await window.apiBrowser.openRecentWorkspace(percorso))) window.archivioRecenteNonTrovato(percorso);
+                    } catch (e) {
+                        mostraMessaggio(window.t('msg_errore', 'Errore: ') + e.message, 'error');
+                    }
+                };
+            }
+            lista.appendChild(riga);
+        }
+        sezione.classList.toggle('hidden', !lista.childElementCount);
+    }
 })();

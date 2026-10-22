@@ -17,6 +17,7 @@ function apriNewTypeModal() {
     (document.getElementById('new-type-select') as HTMLSelectElement).disabled = false;
     (document.getElementById('btn-salva-tipo') as HTMLInputElement).textContent = window.t("btn_create", "Create");
     (document.querySelector('#new-type-modal .modal-title') as HTMLElement).textContent = window.t("modal_create_type", "Create Document Type");
+    document.getElementById('type-used-by')?.classList.add('hidden');
     applicaModello();
     (document.getElementById('new-type-modal') as HTMLInputElement).classList.remove('hidden-tab');
 }
@@ -37,7 +38,6 @@ function applicaModello() {
     const sel = (document.getElementById('new-type-select') as HTMLInputElement).value;
     const nameInput = document.getElementById('custom-type-name') as HTMLInputElement;
     const extraInput = document.getElementById('custom-type-extra-input');
-    const placeholder = document.getElementById('empty-fields-placeholder');
 
     if (_modelloPrecedente === 'custom' && sel !== 'custom') {
         const pill = Array.from(document.querySelectorAll('.custom-field-item'));
@@ -50,7 +50,7 @@ function applicaModello() {
     
     if (typeof window.chiudiEditorCampo === 'function') window.chiudiEditorCampo();
     document.querySelectorAll('.custom-field-item').forEach(el => el.remove());
-    if (placeholder) placeholder.classList.remove('hidden');
+    _aggiornaElencoCampi();
 
     document.querySelectorAll('.custom-type-field').forEach(cb => cb.checked = false);
 
@@ -62,7 +62,7 @@ function applicaModello() {
             const cb = document.querySelector(`.custom-type-field[value="${CSS.escape(p.dataset.val)}"]`);
             if (cb) cb.checked = true;
         }
-        if (placeholder && _lavoroPersonalizzato.pill.length) placeholder.classList.add('hidden');
+        _aggiornaElencoCampi();
         _lavoroPersonalizzato = null;
         return;
     }
@@ -106,10 +106,12 @@ function aggiungiCampoCustom() {
     input.value = '';
 }
 
-const SIGLE_TIPO = {
-    text: 'Aa', textarea: '¶', number: '123', boolean: 'Sì/No',
-    enum: '▾', url: '🔗', date: '📅', dynamic_list: '⋮⋮', attachments: '📎'
-};
+function _aggiornaElencoCampi() {
+    const n = document.querySelectorAll('.custom-field-item').length;
+    document.getElementById('empty-fields-placeholder')?.classList.toggle('hidden', n > 0);
+    const conto = document.getElementById('modello-campi-conto');
+    if (conto) conto.textContent = String(n);
+}
 
 function definizioneDaPillola(pill) {
     const def: Record<string, any> = { id: pill.dataset.val, tipo: pill.dataset.tipo || 'text' };
@@ -133,10 +135,10 @@ function scriviDefinizioneSuPillola(pill, def) {
     if (def.authority) pill.dataset.authority = def.authority; else delete pill.dataset.authority;
     const badge = pill.querySelector('.pill-tipo');
     if (badge) {
-        badge.textContent = SIGLE_TIPO[pill.dataset.tipo] || pill.dataset.tipo;
-        badge.title = window.t('field_type_' + pill.dataset.tipo, pill.dataset.tipo) +
-            (def.obbligatorio ? ' • ' + window.t('field_required', 'Campo obbligatorio') : '');
+        badge.textContent = window.t('field_type_' + pill.dataset.tipo, pill.dataset.tipo);
+        badge.title = def.obbligatorio ? window.t('field_required', 'Campo obbligatorio') : '';
     }
+    pill.classList.toggle('campo-obbligatorio', !!def.obbligatorio);
 }
 
 function aggiungiPill(val, label, isBase, bloccato?) {
@@ -144,8 +146,6 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     if (existing.includes(val.toLowerCase())) return;
     
     const list = document.getElementById('custom-fields-list') as HTMLInputElement;
-    const placeholder = document.getElementById('empty-fields-placeholder');
-    if (placeholder) placeholder.classList.add('hidden');
 
     let finalLabel = label;
     if (window.t('field_' + val) !== 'field_' + val) {
@@ -155,7 +155,8 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     }
 
     const pill = document.createElement('div');
-    pill.className = "custom-field-item flex items-center gap-1 px-2 py-1.5 bg-white border border-stone-300 text-stone-800 rounded-sm text-sm font-medium shadow-sm cursor-grab active:cursor-grabbing transition-transform";
+    pill.className = 'custom-field-item';
+    pill.setAttribute('role', 'listitem');
     pill.dataset.val = val;
     pill.draggable = true;
 
@@ -163,61 +164,44 @@ function aggiungiPill(val, label, isBase, bloccato?) {
         if (!e.dataTransfer) return;
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', val);
-        setTimeout(() => pill.classList.add('opacity-40'), 0);
+        setTimeout(() => pill.classList.add('in-volo'), 0);
         window._draggedPill = pill;
     };
-    
-    pill.ondragend = (e) => {
-        pill.classList.remove('opacity-40');
+
+    pill.ondragend = () => {
+        pill.classList.remove('in-volo');
         window._draggedPill = null;
-        document.querySelectorAll('.custom-field-item').forEach(p => p.style.transform = '');
     };
-    
+
     pill.ondragover = (e) => {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-        const rect = pill.getBoundingClientRect();
-        const mid = rect.left + rect.width / 2;
-        
-        document.querySelectorAll('.custom-field-item').forEach(p => {
-            if (p !== pill && p !== window._draggedPill) p.style.transform = '';
-        });
-        
-        if (window._draggedPill && window._draggedPill !== pill) {
-            pill.style.transform = e.clientX < mid ? 'translateX(10px)' : 'translateX(-10px)';
-        }
+        const trascinata = window._draggedPill;
+        if (!trascinata || trascinata === pill) return;
+        const meta = pill.getBoundingClientRect().top + pill.offsetHeight / 2;
+        list.insertBefore(trascinata, e.clientY < meta ? pill : pill.nextSibling);
     };
-    
-    pill.ondragleave = (e) => pill.style.transform = '';
-    
-    pill.ondrop = (e) => {
-        e.preventDefault();
-        pill.style.transform = '';
-        if (window._draggedPill && window._draggedPill !== pill) {
-            const rect = pill.getBoundingClientRect();
-            const mid = rect.left + rect.width / 2;
-            if (e.clientX < mid) list.insertBefore(window._draggedPill, pill);
-            else list.insertBefore(window._draggedPill, pill.nextSibling);
-        }
-    };
+
+    pill.ondrop = (e) => e.preventDefault();
 
     const configurabile = !isBase && !CONFIG_CAMPI[val] && !bloccato;
     const titoloConfig = escapeHTML(window.t('field_configure', 'Configura il campo'));
     const btnConfig = configurabile
-        ? `<button type="button" class="pill-config text-stone-400 hover:text-amber-700 focus:outline-none ml-1 transition-colors" title="${titoloConfig}" aria-label="${titoloConfig}"><i data-lucide="settings-2" class="w-3 h-3"></i></button>`
+        ? `<button type="button" class="pill-config" title="${titoloConfig}" aria-label="${titoloConfig}: ${escapeHTML(finalLabel)}"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i></button>`
         : '';
     const btnRimuoviHtml = bloccato
-        ? `<i data-lucide="lock" class="w-3 h-3 text-stone-400 ml-1" aria-hidden="true"></i>`
-        : `<button type="button" class="pill-rimuovi text-stone-400 hover:text-red-600 focus:outline-none ml-1 transition-colors" aria-label="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+        ? `<i data-lucide="lock" class="pill-lucchetto w-3.5 h-3.5" aria-hidden="true"></i>`
+        : `<button type="button" class="pill-rimuovi" aria-label="${escapeHTML(window.t('tooltip_remove', 'Rimuovi'))}: ${escapeHTML(finalLabel)}"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>`;
     if (bloccato) {
         pill.draggable = false;
-        pill.classList.remove('cursor-grab', 'active:cursor-grabbing');
+        pill.classList.add('bloccato');
         pill.title = window.t('field_locked', 'Campo del modello predefinito: non si può togliere né cambiare.');
     }
 
     pill.innerHTML = window.sanitizeHTML(`
-        <i data-lucide="grip-horizontal" class="w-3 h-3 text-stone-400 mr-1"></i>
-        <span>${escapeHTML(finalLabel)}</span>
+        <i data-lucide="grip-vertical" class="pill-maniglia w-3.5 h-3.5" aria-hidden="true"></i>
+        <span class="pill-numero" aria-hidden="true"></span>
+        <span class="pill-nome">${escapeHTML(finalLabel)}</span>
         <span class="pill-tipo"></span>
         ${btnConfig}
         ${btnRimuoviHtml}
@@ -225,16 +209,20 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     const btnRimuovi = pill.querySelector<HTMLElement>('.pill-rimuovi');
     if (btnRimuovi) btnRimuovi.onclick = () => rimuoviPillDalPulsante(btnRimuovi, val);
     const btnCfg = pill.querySelector<HTMLElement>('.pill-config');
-    if (btnCfg) btnCfg.onclick = () => window.apriEditorCampo(btnCfg);
+    if (btnCfg) {
+        btnCfg.onclick = () => window.apriEditorCampo(btnCfg);
+        pill.classList.add('configurabile');
+        pill.onclick = (e) => { if (!(e.target as HTMLElement).closest('button')) window.apriEditorCampo(btnCfg); };
+    }
     if (!bloccato) {
         const segnaposto = pill.querySelector('.pill-tipo');
         for (const [delta, icona, chiave, testo] of [
-            [-1, 'chevron-left', 'field_move_left', 'Sposta a sinistra'],
-            [1, 'chevron-right', 'field_move_right', 'Sposta a destra'],
+            [-1, 'chevron-up', 'reorder_up', 'Sposta su'],
+            [1, 'chevron-down', 'reorder_down', 'Sposta giù'],
         ] as Array<[number, string, string, string]>) {
             const b = document.createElement('button');
             b.type = 'button';
-            b.className = 'pill-sposta text-stone-400 hover:text-amber-700 transition-colors';
+            b.className = 'pill-sposta';
             b.title = window.t(chiave, testo);
             b.setAttribute('aria-label', b.title + ': ' + finalLabel);
             b.innerHTML = '<i data-lucide="' + escapeHTML(icona) + '" class="w-3 h-3" aria-hidden="true"></i>';
@@ -244,6 +232,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     }
     scriviDefinizioneSuPillola(pill, window.Model.definizioneCampo(null, val, CONFIG_CAMPI));
     list.appendChild(pill);
+    _aggiornaElencoCampi();
     if (window.lucide) lucide.createIcons({ nodes: [pill] });
     
     if (isBase) {
@@ -267,24 +256,15 @@ function spostaPill(pill, delta, pulsante, etichetta) {
 }
 
 function rimuoviPillDalPulsante(btn, val) {
-    btn.parentElement.remove();
+    rimuoviPill(val, btn.closest('.custom-field-item'));
     const cb = document.querySelector(`.custom-type-field[value="${CSS.escape(val)}"]`);
     if (cb) cb.checked = false;
-    
-    if (document.querySelectorAll('.custom-field-item').length === 0) {
-        const placeholder = document.getElementById('empty-fields-placeholder');
-        if (placeholder) placeholder.classList.remove('hidden');
-    }
 }
 
-function rimuoviPill(val) {
-    const pill = document.querySelector(`.custom-field-item[data-val="${CSS.escape(val)}"]`);
+function rimuoviPill(val, pill = document.querySelector(`.custom-field-item[data-val="${CSS.escape(val)}"]`)) {
+    if (pill && pill === _pillolaInModifica) window.chiudiEditorCampo();
     if (pill) pill.remove();
-    
-    if (document.querySelectorAll('.custom-field-item').length === 0) {
-        const placeholder = document.getElementById('empty-fields-placeholder');
-        if (placeholder) placeholder.classList.remove('hidden');
-    }
+    _aggiornaElencoCampi();
 }
 
 let _pillolaInModifica: any = null;
@@ -292,11 +272,18 @@ let _pillolaInModifica: any = null;
 window.apriEditorCampo = function(btn) {
     const pill = btn.closest('.custom-field-item');
     if (!pill) return;
+    document.querySelectorAll('.custom-field-item.selezionato').forEach(p => p.classList.remove('selezionato'));
+    pill.classList.add('selezionato');
     _pillolaInModifica = pill;
     const def = definizioneDaPillola(pill);
 
     const box = document.getElementById('campo-editor') as HTMLInputElement;
-    (document.getElementById('campo-editor-nome') as HTMLInputElement).textContent = pill.dataset.val;
+    const nome = pill.querySelector('.pill-nome')?.textContent || pill.dataset.val;
+    (document.getElementById('campo-editor-nome') as HTMLElement).textContent = nome;
+    (document.getElementById('campo-anteprima-etichetta') as HTMLElement).textContent = nome;
+    const pills = Array.from(document.querySelectorAll('.custom-field-item'));
+    (document.getElementById('campo-editor-posizione') as HTMLElement).textContent = window.t('type_field_position', 'posizione {var0} di {var1}')
+        .replace('{var0}', String(pills.indexOf(pill) + 1)).replace('{var1}', String(pills.length));
     const sel = document.getElementById('campo-editor-tipo') as HTMLInputElement;
     sel.innerHTML = '';
     for (const tipo of window.Model.TIPI_CAMPO_SCEGLIBILI) {
@@ -349,10 +336,36 @@ window.aggiornaEditorCampo = function() {
     const unicoUtile = tipo !== 'boolean' && tipo !== 'dynamic_list';
     (document.getElementById('campo-editor-unico-riga') as HTMLInputElement).classList.toggle('hidden', !unicoUtile);
     if (!unicoUtile) (document.getElementById('campo-editor-unico') as HTMLInputElement).checked = false;
+    const voc = vocabolario ? window.elencoVocabolari().find(v => v.id === vocabolario) : null;
+    const opzioni = voc ? voc.valori : (document.getElementById('campo-editor-opzioni') as HTMLInputElement).value
+        .split('\n').map(o => o.trim()).filter(Boolean);
+    _disegnaAnteprima(tipo, opzioni);
 };
+
+function _disegnaAnteprima(tipo: string, opzioni: string[]) {
+    const box = document.getElementById('campo-anteprima-controllo');
+    if (!box) return;
+    let el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    if (tipo === 'textarea') {
+        el = document.createElement('textarea');
+        el.rows = 2;
+    } else if (tipo === 'enum') {
+        el = document.createElement('select');
+        for (const o of opzioni.slice(0, 50)) el.add(new Option(String(o)));
+    } else {
+        el = document.createElement('input');
+        el.type = tipo === 'boolean' ? 'checkbox' : tipo === 'number' ? 'number' : 'text';
+        if (tipo === 'date') el.placeholder = window.t('type_preview_date', 'es. 12 marzo 1348');
+        if (tipo === 'url') el.placeholder = 'https://';
+    }
+    if (tipo !== 'boolean') el.className = 'form-input' + (tipo === 'url' || tipo === 'number' ? '' : ' font-serif');
+    el.tabIndex = -1;
+    box.replaceChildren(el);
+}
 
 window.chiudiEditorCampo = function() {
     (document.getElementById('campo-editor') as HTMLInputElement).classList.add('hidden');
+    document.querySelectorAll('.custom-field-item.selezionato').forEach(p => p.classList.remove('selezionato'));
     _pillolaInModifica = null;
 };
 
@@ -430,49 +443,46 @@ async function confermaCreaTipo() {
 
 function apriManageTypesModal() {
     const listContainer = document.getElementById('manage-types-list') as HTMLInputElement;
-    listContainer.innerHTML = window.sanitizeHTML('');
-    
     const defaultIds = ['imbreviature', 'atti', 'fiscali'];
-    
-    appData.tipiDocumento.forEach(tipo => {
-        const isDefault = defaultIds.includes(tipo.id);
-        const inUso = appData.manoscritti.some(m => m.tipoDocumento === tipo.id);
-        
-        const div = document.createElement('div');
-        div.className = 'flex justify-between items-center p-3 bg-stone-50 border border-stone-200 rounded-sm';
-        
-        let inUsoBadge = inUso ? '<span class="text-[11px] uppercase font-bold tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 ml-2">' + escapeHTML(window.t('type_badge_in_use', 'In uso')) + '</span>' : '';
-        let defaultBadge = isDefault ? '<span class="text-[11px] uppercase font-bold tracking-wider text-stone-500 bg-stone-200 px-2 py-0.5 ml-2">' + escapeHTML(window.t('type_badge_default', 'Predefinito')) + '</span>' : '';
-        
-        const btnModifica = `<button type="button" ${window.azione('click', 'modificaTipoDocumento', String((tipo.id) ?? ''))} class="btn btn-ghost btn-icon text-stone-600" title="${escapeHTML(window.t('btn_edit', 'Modifica'))}" aria-label="${escapeHTML(window.t('btn_edit', 'Modifica'))}"><i data-lucide="edit-2" class="w-4 h-4"></i></button>`;
-        let buttonsHTML = '';
-        if (isDefault) {
-            buttonsHTML = btnModifica;
-        } else {
-            buttonsHTML = btnModifica + `
-                <button type="button" ${window.azione('click', 'eliminaTipoDocumento', String((tipo.id) ?? ''))} class="btn btn-danger-ghost btn-icon" title="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}" aria-label="${escapeHTML(window.t('tooltip_delete', 'Elimina'))}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            `;
-        }
+    const t = window.t;
 
-        div.innerHTML = window.sanitizeHTML(`
-            <div class="flex items-center">
-                <span class="font-medium text-stone-800">${escapeHTML(window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome)}</span>
-                ${defaultBadge}
-                ${inUsoBadge}
-            </div>
-            <div class="flex gap-1">
-                ${buttonsHTML}
-            </div>
-        `);
-        listContainer.appendChild(div);
-    });
-    
+    const righe = appData.tipiDocumento.map(tipo => {
+        const isDefault = defaultIds.includes(tipo.id);
+        const schede = appData.manoscritti.filter(m => m.tipoDocumento === tipo.id).length;
+        const campi = window.Model.campiDelTipo(tipo, CONFIG_CAMPI, appData).length;
+        const nome = t('model_' + tipo.id) !== 'model_' + tipo.id ? t('model_' + tipo.id) : tipo.nome;
+        const modifica = escapeHTML(t('btn_edit', 'Modifica') + ' ' + nome);
+        const elimina = escapeHTML(t('tooltip_delete', 'Elimina') + ' ' + nome);
+        const btnElimina = isDefault ? '' : `<button type="button" ${window.azione('click', 'eliminaTipoDocumento', String((tipo.id) ?? ''))} class="btn btn-danger-ghost btn-icon" title="${elimina}" aria-label="${elimina}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+        return `<tr>
+            <td>${escapeHTML(nome)}${isDefault ? ` <span class="modello-suggerimento">· ${escapeHTML(t('type_badge_default', 'predefinito'))}</span>` : ''}</td>
+            <td class="num">${campi}</td>
+            <td class="num">${schede}</td>
+            <td class="azioni"><button type="button" ${window.azione('click', 'modificaTipoDocumento', String((tipo.id) ?? ''))} class="btn btn-ghost btn-icon" title="${modifica}" aria-label="${modifica}"><i data-lucide="pencil" class="w-4 h-4"></i></button>${btnElimina}</td>
+        </tr>`;
+    }).join('');
+
+    listContainer.innerHTML = window.sanitizeHTML(`<table class="tabella-modelli">
+        <thead><tr>
+            <th scope="col">${escapeHTML(t('types_col_model', 'Modello'))}</th>
+            <th scope="col" class="num">${escapeHTML(t('types_col_fields', 'Campi'))}</th>
+            <th scope="col" class="num">${escapeHTML(t('types_col_records', 'Schede'))}</th>
+            <th scope="col"><span class="sr-only">${escapeHTML(t('types_col_actions', 'Azioni'))}</span></th>
+        </tr></thead>
+        <tbody>${righe}</tbody>
+    </table>`);
+
     if (window.lucide) lucide.createIcons({ nodes: [listContainer] });
     (document.getElementById('manage-types-modal') as HTMLInputElement).classList.remove('hidden-tab');
 }
 
 function chiudiManageTypesModal() {
     (document.getElementById('manage-types-modal') as HTMLInputElement).classList.add('hidden-tab');
+}
+
+function nuovoModelloDaGestione() {
+    chiudiManageTypesModal();
+    apriNewTypeModal();
 }
 
 window.eliminaTipoDocumento = function(id) {
@@ -528,10 +538,18 @@ window.modificaTipoDocumento = function(id) {
     inputNome.title = predefinito ? window.t('type_name_locked', 'Il nome di un modello predefinito non si cambia: è tradotto insieme all\'applicazione.') : '';
     const nota = document.getElementById('type-locked-note');
     if (nota) nota.classList.toggle('hidden', !predefinito);
+    const usatoDa = document.getElementById('type-used-by');
+    if (usatoDa) {
+        const n = appData.manoscritti.filter(m => m.tipoDocumento === id).length;
+        usatoDa.textContent = window.t('type_used_by', 'Usato da {var0} schede · le modifiche valgono per tutte').replace('{var0}', String(n));
+        usatoDa.classList.toggle('hidden', n === 0);
+    }
 
     (document.getElementById('custom-type-name') as HTMLInputElement).value = tipo.nome;
     (document.getElementById('custom-type-extra-input') as HTMLInputElement).value = '';
+    window.chiudiEditorCampo();
     document.querySelectorAll('.custom-field-item').forEach(el => el.remove());
+    _aggiornaElencoCampi();
     document.querySelectorAll('.custom-type-field').forEach(cb => cb.checked = false);
     
     window.Model.campiDelTipo(tipo, CONFIG_CAMPI, appData).forEach(def => {

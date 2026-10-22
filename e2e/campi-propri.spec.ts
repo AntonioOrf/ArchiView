@@ -43,6 +43,30 @@ test.describe('Campi propri della scheda', () => {
     await expect(page.locator('#dyn-Filigrana')).toHaveValue('unicorno');
   });
 
+  test('un nome già usato nell\'archivio si suggerisce con tipo e conteggio e ne riprende la configurazione', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Propri');
+
+    await page.evaluate(() => (window as any).switchTab('add'));
+    await page.locator('#form-segnatura').fill('PRO-S1');
+    await page.evaluate(() => (window as any).apriCampoProprioModal());
+    await page.locator('#campo-proprio-nome').fill('Supporto');
+    await page.locator('#campo-proprio-tipo').selectOption('enum');
+    await page.locator('#campo-proprio-opzioni').fill('pergamena\ncarta');
+    await page.evaluate(() => (window as any).confermaCampoProprio());
+    await page.locator('#dyn-Supporto').selectOption('carta');
+    await salvaScheda(page);
+    await expect.poll(async () => (await getAppData(page)).manoscritti.length, { timeout: 10_000 }).toBe(1);
+
+    await page.evaluate(() => (window as any).switchTab('add'));
+    await page.locator('#form-segnatura').fill('PRO-S2');
+    await page.evaluate(() => (window as any).apriCampoProprioModal());
+    await expect(page.locator('#campo-proprio-sottotitolo')).toContainText('PRO-S2');
+    await expect(page.locator('#campo-proprio-suggerimenti option[value="Supporto"]')).toHaveAttribute('label', /1/);
+    await page.locator('#campo-proprio-nome').pressSequentially('Supporto');
+    await expect(page.locator('#campo-proprio-tipo')).toHaveValue('enum');
+    await expect(page.locator('#campo-proprio-opzioni')).toHaveValue('pergamena\ncarta');
+  });
+
   test('F1 — una lista chiave-valore con spazi e parentesi nel nome conserva le righe', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Propri');
 

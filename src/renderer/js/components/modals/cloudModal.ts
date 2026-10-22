@@ -7,8 +7,6 @@
     }
 
     function renderIntestazioneCloud(vaultType) {
-        const icon = document.getElementById('cloud-active-icon');
-        if (icon) icon.setAttribute('data-lucide', vaultType === 'backup' ? 'shield-check' : 'users');
 
         const riga = document.getElementById('cloud-active-account');
         if (!riga) return;
@@ -103,31 +101,25 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('cloud-modal')) {
             const html = `
-    <!-- Modal Cloud & Sincronizzazione -->
     <div id="cloud-modal" class="modal-overlay hidden-tab z-modal-nested fixed inset-0 flex items-center justify-center">
         <div class="modal-window w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="modal-header shrink-0 border-b border-stone-200 dark:border-stone-700">
-                <h3 class="modal-title text-stone-800 dark:text-stone-100 flex items-center gap-2">
-                    <i data-lucide="shield-check" class="w-5 h-5 testo-info shrink-0" aria-hidden="true"></i> <span id="cloud-modal-title" data-i18n="modal_cloud_title">Backup su Google Drive</span>
+            <div class="modal-header shrink-0 border-b border-stone-200">
+                <h3 class="modal-title"><span id="cloud-modal-title" data-i18n="modal_cloud_title">Backup su Google Drive</span>
                 </h3>
                 <button type="button" data-on-click="chiudiCloudModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi"><i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body p-6 flex-1 overflow-y-auto custom-scroll min-h-0">
 
-                <!-- SEZIONE VAULT LOCALE (Non Condiviso) -->
                 <div id="cloud-local-section" class="text-center py-4">
-                    <div class="w-14 h-14 riquadro-info testo-info flex items-center justify-center mx-auto mb-4">
-                        <i data-lucide="shield-check" class="w-7 h-7" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-xl font-serif font-semibold mb-2 text-stone-800 dark:text-stone-100"><span data-i18n="modal_cloud_activate_title">Backup personale su Google Drive</span></h3>
-                    <p class="text-sm text-stone-600 dark:text-stone-400 max-w-sm mx-auto">
+                    <h3 class="condivisione-nome mb-2"><span data-i18n="modal_cloud_activate_title">Backup personale su Google Drive</span></h3>
+                    <p class="text-sm text-stone-600 max-w-sm mx-auto">
                         <span data-i18n="modal_cloud_activate_desc_short">Una copia privata dell'archivio sul tuo Google Drive, accessibile solo a te.</span>
                     </p>
                     <div class="flex flex-col gap-3 max-w-xs mx-auto">
                         <button type="button" data-on-click="trasformaInPersonale" id="btn-trasforma-personale" class="btn btn-primary btn-block justify-center py-3 text-sm">
-                            <i data-lucide="shield-check" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_backup_private">Backup Personale (Google Drive)</span>
+                                <span data-i18n="btn_backup_private">Backup Personale (Google Drive)</span>
                         </button>
-                        <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCloudModal&quot;,&quot;apriShareModal&quot;]" class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 mt-1">
+                        <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCloudModal&quot;,&quot;apriShareModal&quot;]" class="text-xs text-stone-400 hover:text-stone-600 mt-1">
                             <span data-i18n="cloud_local_share_link">Vuoi invece lavorarci insieme ai colleghi? Condividi l'archivio</span>
                         </button>
                     </div>
@@ -136,76 +128,65 @@
                     </div>
                 </div>
 
-                <!-- SEZIONE VAULT CONDIVISO/PERSONALE ATTIVO -->
                 <div id="cloud-shared-section" class="hidden-tab flex flex-col gap-4">
 
-                    <!-- INTESTAZIONE: identità dell'archivio + account Google collegato.
-                         L'email sta qui e non solo nel riepilogo: è il dato che dice QUALE Drive
-                         si sta usando, la prima cosa da controllare quando due PC divergono. -->
-                    <div class="flex items-center gap-3.5 p-4 rounded-lg riquadro-info">
-                        <div class="w-11 h-11 tessera-info flex items-center justify-center shrink-0">
-                            <i id="cloud-active-icon" data-lucide="cloud" class="w-6 h-6" aria-hidden="true"></i>
-                        </div>
+                    <div class="cloud-stato">
+                        <span class="pallino-stato" aria-hidden="true"></span>
                         <div class="flex-1 min-w-0 text-left">
-                            <p class="font-serif text-base font-semibold text-stone-800 dark:text-stone-100" id="cloud-active-title" data-i18n="modal_cloud_active_title">Cloud Attivo</p>
-                            <p class="text-xs text-stone-500 dark:text-stone-400 truncate" id="cloud-active-account"></p>
+                            <p class="font-medium text-stone-800" id="cloud-active-title" data-i18n="modal_cloud_active_title">Cloud Attivo</p>
+                            <p class="text-xs text-stone-500 truncate" id="cloud-active-account"></p>
                         </div>
-                        <button type="button" data-on-click="sincronizzaGoogleDrive" id="btn-cloud-drive-sync" class="btn btn-primary px-4 py-2.5 font-medium shrink-0">
-                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2" aria-hidden="true"></i> <span data-i18n="btn_sync_now">Sincronizza Ora</span>
+                        <button type="button" data-on-click="sincronizzaGoogleDrive" id="btn-cloud-drive-sync" class="btn btn-secondary shrink-0">
+                                <span data-i18n="btn_sync_now">Sincronizza Ora</span>
                         </button>
                     </div>
 
-                    <p class="text-sm text-stone-600 dark:text-stone-400" id="cloud-active-desc" data-i18n="modal_cloud_active_desc">Questo Archivio è sincronizzato.</p>
+                    <p class="text-sm text-stone-600" id="cloud-active-desc" data-i18n="modal_cloud_active_desc">Questo Archivio è sincronizzato.</p>
 
-                    <!-- STATO: riepilogo + (se disconnesso) bottone di accesso -->
-                    <div class="flex flex-col gap-2 p-4 rounded-lg bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700 text-sm text-stone-600 dark:text-stone-400">
+                    <div class="cloud-riepilogo">
                         <div id="cloud-status-summary" class="flex flex-col gap-2"></div>
                     </div>
 
-                    <label for="cloud-sync-attachments" class="flex items-center gap-2.5 p-3 rounded-lg border border-stone-200 dark:border-stone-700 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/40">
-                        <input type="checkbox" id="cloud-sync-attachments" data-on-change="toggleSyncAttachments" data-args-change="[{&quot;$&quot;:&quot;checked&quot;}]" class="w-4 h-4 text-blue-600 rounded border-stone-300 shrink-0">
-                        <span class="text-sm leading-snug text-stone-700 dark:text-stone-300" data-i18n="label_sync_attachments">Sincronizza allegati automaticamente (PDF/Immagini)</span>
+                    <label for="cloud-sync-attachments" class="cloud-opzione">
+                        <input type="checkbox" id="cloud-sync-attachments" data-on-change="toggleSyncAttachments" data-args-change="[{&quot;$&quot;:&quot;checked&quot;}]" class="w-4 h-4 shrink-0">
+                        <span class="text-sm leading-snug text-stone-700" data-i18n="label_sync_attachments">Sincronizza allegati automaticamente (PDF/Immagini)</span>
                     </label>
 
-                    <details class="group">
-                        <summary class="text-stone-500 dark:text-stone-400 flex items-center gap-1.5 py-1.5 px-1 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer select-none">
+                    <details class="group cloud-avanzate">
+                        <summary class="text-stone-600 flex items-center gap-1.5 py-1.5 text-xs font-semibold cursor-pointer select-none">
                             <i data-lucide="chevron-right" class="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-90" aria-hidden="true"></i> <span data-i18n="label_advanced_options">Opzioni avanzate</span>
                         </summary>
                         <div class="flex flex-col gap-1.5 mt-1.5">
                             <button type="button" data-on-click="collegaArchivioEsistenteDrive" id="btn-cloud-relink" class="btn btn-ghost justify-start py-2 text-sm">
-                                <i data-lucide="link" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_relink_drive_vault">Collega a un archivio esistente su Drive</span>
+                                <span data-i18n="btn_relink_drive_vault">Collega a un archivio esistente su Drive</span>
                             </button>
                             <button type="button" data-on-click="cambiaAccountGoogleVault" id="btn-cloud-change-account" class="btn btn-ghost justify-start py-2 text-sm">
-                                <i data-lucide="user-plus" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_use_another_account">Usa un altro account Google</span>
+                                <span data-i18n="btn_use_another_account">Usa un altro account Google</span>
                             </button>
                             <button type="button" data-on-click="apriMigrazioneDaCloudModal" id="btn-migrate-hub" class="btn btn-ghost justify-start py-2 text-sm">
-                                <i data-lucide="server" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_migrate_hub">Passa all'archivio condiviso</span>
+                                <span data-i18n="btn_migrate_hub">Passa all'archivio condiviso</span>
                             </button>
                             <button type="button" data-on-click="trasformaInPersonale" id="btn-switch-personal" class="btn btn-ghost justify-start py-2 text-sm">
-                                <i data-lucide="shield" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_convert_backup_private">Converti in Backup Personale</span>
+                                <span data-i18n="btn_convert_backup_private">Converti in Backup Personale</span>
                             </button>
 
-                            <!-- Azioni irreversibili: separate e già rosse a riposo, non solo in hover -->
-                            <hr class="my-1 border-stone-200">
+                            <hr class="my-1 border-stone-200" aria-hidden="true">
                             <button type="button" data-on-click="pulisciAllegatiOrfani" id="btn-cloud-clean-orphans" class="btn btn-danger-ghost justify-start py-2 text-sm">
-                                <i data-lucide="trash-2" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_clean_ghosts">Pulisci file inutilizzati</span>
+                                <span data-i18n="btn_clean_ghosts">Pulisci file inutilizzati</span>
                             </button>
                             <button type="button" data-on-click="scollegaCloud" id="btn-disconnect-cloud" class="btn btn-danger-ghost justify-start py-2 text-sm">
-                                <i data-lucide="unlink" class="w-4 h-4 mr-2 shrink-0" aria-hidden="true"></i> <span data-i18n="btn_disconnect_cloud">Scollega dal Cloud</span>
+                                <span data-i18n="btn_disconnect_cloud">Scollega dal Cloud</span>
                             </button>
                         </div>
                     </details>
 
-                    <p class="flex items-start gap-2 text-xs text-stone-500 dark:text-stone-400 pt-1"><i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-stone-400" aria-hidden="true"></i> <span id="cloud-hint" data-i18n="cloud_backup_hint">Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.</span></p>
+                    <p class="modello-suggerimento pt-1"><span id="cloud-hint" data-i18n="cloud_backup_hint">Questo è un backup personale sul tuo Cloud privato. Per collaborare con altri, usa un archivio condiviso.</span></p>
                 </div>
 
-                <!-- SEZIONE RICOLLEGA A UN ARCHIVIO DRIVE ESISTENTE -->
-                <!-- Serve quando due PC dello stesso utente sono finiti su cartelle Drive diverse:
-                     elenca gli archivi già presenti sull'account e riscrive il solo sharedVaultId. -->
                 <div id="cloud-relink-section" class="hidden-tab flex flex-col gap-4">
                     <div class="text-left">
-                        <h3 class="text-lg font-serif font-semibold text-stone-800 dark:text-stone-100" data-i18n="modal_cloud_relink_title">Collega a un archivio esistente su Drive</h3>
-                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1" data-i18n="modal_cloud_relink_desc">Scegli la cartella su Drive con cui questo archivio deve sincronizzarsi. Usalo se un altro PC lavora già su un archivio che qui non vedi.</p>
+                        <h3 class="condivisione-nome" data-i18n="modal_cloud_relink_title">Collega a un archivio esistente su Drive</h3>
+                        <p class="text-sm text-stone-600 mt-1" data-i18n="modal_cloud_relink_desc">Scegli la cartella su Drive con cui questo archivio deve sincronizzarsi. Usalo se un altro PC lavora già su un archivio che qui non vedi.</p>
                     </div>
                     <div id="cloud-relink-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto custom-scroll"></div>
                     <div class="flex justify-end">
@@ -217,17 +198,14 @@
         </div>
     </div>
 
-    <!-- OVERLAY PROGRESSO CLOUD -->
-    <!-- Nessun aria-live qui: l'annuncio passa da window.annunciaA11y, due region concorrenti
-         produrrebbero annunci doppi e sovrapposti. -->
-    <div id="cloud-progress-overlay" class="modal-overlay hidden-tab z-modal-alert flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-2xl p-6 text-center max-w-sm w-full">
-            <svg class="animate-spin w-12 h-12 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+    <div id="cloud-progress-overlay" class="modal-overlay hidden-tab z-modal-alert">
+        <div class="modal-window max-w-sm p-6 text-center">
+            <svg class="animate-spin w-8 h-8 testo-primario mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
-            <h3 class="text-lg font-bold mb-2 text-stone-800 dark:text-stone-100" id="cloud-progress-title"><span data-i18n="msg_operation_progress">Operazione in corso</span></h3>
-            <p class="text-sm text-stone-600 dark:text-stone-400" id="cloud-progress-message"><span data-i18n="msg_please_wait">Attendere prego…</span></p>
+            <h3 class="modal-title justify-center mb-2" id="cloud-progress-title"><span data-i18n="msg_operation_progress">Operazione in corso</span></h3>
+            <p class="text-sm text-stone-600" id="cloud-progress-message"><span data-i18n="msg_please_wait">Attendere prego…</span></p>
         </div>
     </div>
             `;

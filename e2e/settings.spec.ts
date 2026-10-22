@@ -154,7 +154,7 @@ test.describe('Impostazioni', () => {
   test('le preferenze nuove restano dopo il riavvio e si applicano', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Impostazioni');
     await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
-    await page.locator('#settings-theme').selectOption('blue-dark');
+    await page.locator('#settings-theme .tema-scheda:has(input[value="blue-dark"])').click();
     await page.locator('#settings-zoom-select').selectOption('120');
     await page.locator('#settings-font-trascrizione').selectOption('junicode');
     await page.locator('#settings-dim-trascrizione').fill('22');
@@ -187,6 +187,10 @@ test.describe('Impostazioni', () => {
       expect(stile.dim.trim()).toBe('22px');
       expect(stile.pdf).toBe(2000);
       expect(await page2.evaluate(async () => { await document.fonts.load("16px 'Junicode'"); return document.fonts.check("16px 'Junicode'"); })).toBe(true);
+      await page2.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
+      await expect(page2.locator('#settings-theme input[value="blue-dark"]')).toBeChecked();
+      await expect(page2.locator('#settings-theme input:checked')).toHaveCount(1);
+      await expect(page2.locator('#settings-versione-nav')).toHaveText(/^\d+\.\d+\.\d+/);
     } finally {
       await closeApp(app2);
     }

@@ -31,7 +31,7 @@ test.describe('UI: impostazioni, lingua, tema', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');
 
     await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
-    await page.locator('#settings-theme').selectOption('dark');
+    await page.locator('#settings-theme .tema-scheda:has(input[value="dark"])').click();
 
     await expect(page.locator('html')).toHaveClass(/dark-theme/, { timeout: 8_000 });
   });
@@ -40,7 +40,7 @@ test.describe('UI: impostazioni, lingua, tema', () => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');
 
     await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
-    await page.locator('#settings-theme').selectOption('dark');
+    await page.locator('#settings-theme .tema-scheda:has(input[value="dark"])').click();
     await expect(page.locator('html')).toHaveClass(/dark-theme/, { timeout: 8_000 });
 
     const { launchApp, closeApp } = await import('./fixtures');

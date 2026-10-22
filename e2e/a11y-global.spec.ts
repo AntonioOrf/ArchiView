@@ -345,7 +345,7 @@ test.describe('Accessibilità: effetti globali', () => {
 
       for (const tema of ['light', 'amber-light', 'dark', 'blue-dark']) {
         await page.evaluate(() => (window as any).apriImpostazioni('tab-appearance'));
-        await page.locator('#settings-theme').selectOption(tema);
+        await page.locator(`#settings-theme .tema-scheda:has(input[value="${tema}"])`).click();
         await page.evaluate(() => (window as any).chiudiImpostazioni());
         await page.waitForFunction((t) => {
           const c = document.documentElement.classList;

@@ -52,12 +52,16 @@
                             <div id="form-dynamic-fields"></div>
                             <input type="hidden" id="form-campi-propri" value="[]">
                             <input type="hidden" id="form-ordine-campi" value="[]">
-                            <div id="form-riordino" class="hidden-tab panel-solid p-3 mb-3">
-                                <div class="flex items-center justify-between gap-2 mb-2">
-                                    <p class="text-xs text-stone-500" data-i18n="reorder_hint">Trascina per cambiare l'ordine dei campi. Vale solo per questa scheda.</p>
-                                    <button type="button" data-on-click="azzeraRiordinoCampi" class="btn btn-ghost text-xs" data-i18n="reorder_reset">Ordine del modello</button>
+                            <div id="form-riordino" class="hidden-tab riordino-box">
+                                <div class="riordino-testa">
+                                    <div>
+                                        <h3 id="riordino-titolo" data-i18n="reorder_title">Ordine dei campi</h3>
+                                        <p data-i18n="reorder_hint">Trascina, oppure seleziona una riga e usa ↑ ↓. Vale solo per questa scheda.</p>
+                                    </div>
+                                    <button type="button" data-on-click="azzeraRiordinoCampi" class="btn btn-ghost text-sm" data-i18n="reorder_reset">Ordine del modello</button>
+                                    <button type="button" data-on-click="alternaRiordinoCampi" class="btn btn-primary text-sm" data-i18n="reorder_end">Fine</button>
                                 </div>
-                                <ul id="form-riordino-lista" class="space-y-1"></ul>
+                                <ul id="form-riordino-lista" aria-labelledby="riordino-titolo"></ul>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button type="button" id="btn-campo-proprio" data-on-click="apriCampoProprioModal" class="btn btn-ghost text-sm">

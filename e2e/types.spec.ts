@@ -144,6 +144,59 @@ test.describe('Tipi Documento', () => {
     expect(appData.tipiDocumento.find((t: any) => t.id === tipoId)).toBeUndefined();
   });
 
+  test('editor a due pannelli: clic sulla riga configura il campo a destra, con anteprima', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
+
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#custom-type-name').fill('Pannelli');
+    await expect(page.locator('#campo-editor-vuoto')).toBeVisible();
+    for (const c of ['Supporto', 'Filigrana']) {
+      await page.locator('#custom-type-extra-input').fill(c);
+      await page.locator('#custom-type-extra-input').press('Enter');
+    }
+    await page.locator('.modello-comune', { hasText: /Note/ }).click();
+    await expect(page.locator('#modello-campi-conto')).toHaveText('3');
+
+    const riga = page.locator('.custom-field-item[data-val="Supporto"]');
+    await riga.locator('.pill-nome').click();
+    await expect(riga).toHaveClass(/selezionato/);
+    await expect(page.locator('#campo-editor')).toBeVisible();
+    await expect(page.locator('#campo-editor-vuoto')).toBeHidden();
+    await expect(page.locator('#campo-editor-nome')).toHaveText('Supporto');
+    await expect(page.locator('#campo-editor-posizione')).toContainText('1');
+
+    await page.locator('#campo-editor-tipo').selectOption('enum');
+    await page.locator('#campo-editor-opzioni').fill('pergamena\ncarta');
+    await expect(page.locator('#campo-anteprima-controllo select option')).toHaveText(['pergamena', 'carta']);
+    await page.locator('#btn-campo-editor-ok').click();
+    await expect(riga.locator('.pill-tipo')).toHaveText(/Elenco a scelta|Pick list/);
+
+    await riga.locator('.pill-rimuovi').click();
+    await expect(page.locator('#modello-campi-conto')).toHaveText('2');
+  });
+
+  test('Gestisci modelli è una tabella con campi e schede di ogni modello', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
+
+    await page.evaluate(() => (window as any).apriManageTypesModal());
+    const riga = page.locator('#manage-types-list tbody tr').filter({ hasText: /Imbreviature/ });
+    await expect(riga).toHaveCount(1);
+    const attesi = await page.evaluate(() => {
+      const w = window as any;
+      // @ts-ignore
+      const t = (appData as any).tipiDocumento.find((x: any) => x.id === 'imbreviature');
+      // @ts-ignore
+      return { campi: w.Model.campiDelTipo(t, w.CONFIG_CAMPI, appData).length, schede: (appData as any).manoscritti.filter((m: any) => m.tipoDocumento === 'imbreviature').length };
+    });
+    await expect(riga.locator('td.num').nth(0)).toHaveText(String(attesi.campi));
+    await expect(riga.locator('td.num').nth(1)).toHaveText(String(attesi.schede));
+    await expect(riga.getByRole('button', { name: /Elimina|Delete/ })).toHaveCount(0);
+
+    await page.locator('#manage-types-modal').getByRole('button', { name: /^(Nuovo modello|New model)$/ }).click();
+    await expect(page.locator('#manage-types-modal')).toBeHidden();
+    await expect(page.locator('#new-type-modal')).toBeVisible();
+  });
+
   test('i tipi documento custom persistono dopo il riavvio', async ({ page, electronApp, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
 
