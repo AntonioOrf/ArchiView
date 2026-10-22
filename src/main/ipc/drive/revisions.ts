@@ -61,6 +61,10 @@ async function getDriveRevision(fileId: string, revisionId: string): Promise<any
     }
     return data;
   } catch (e: any) {
+    const status = e.code || e.status || (e.response && e.response.status);
+    if (status === 403 && /cannot be downloaded/i.test(e.message || '')) {
+      throw new Error("Google Drive non consente a questo account di scaricare questa revisione (versione caricata da un altro membro, file con download limitato al proprietario o contenuto non più conservato). Prova una revisione più recente o chiedi al proprietario dell'archivio.");
+    }
     throw new Error("Impossibile scaricare la revisione: " + e.message);
   }
 }
