@@ -299,7 +299,7 @@ window.apriOcrModal = async function(recordId, indice) {
     avanzamento.className = 'hidden-tab flex flex-col gap-2';
     avanzamento.innerHTML = window.sanitizeHTML(`
         <div class="w-full h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
-            <div id="ocr-progress-bar" class="h-full barra-avanzamento transizione-larghezza" style="width:0%"></div>
+            <div id="ocr-progress-bar" class="h-full barra-avanzamento barra-scala"></div>
         </div>
         <p id="ocr-progress-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
     `);
@@ -334,7 +334,7 @@ function _oAggiornaAvanzamento(dati) {
     const pagina = dati.pagina || 1;
     const dentroPagina = typeof dati.progresso === 'number' ? dati.progresso : 0;
     const frazione = Math.min(((pagina - 1) + dentroPagina) / pagine, 1);
-    barra.style.width = Math.round(frazione * 100) + '%';
+    barra.style.transform = `scaleX(${frazione})`;
 
     const fasi = {
         pagina: _oT('ocr_phase_page', 'Pagina'),
@@ -801,7 +801,7 @@ window.ocrSelezionati = async function() {
 function _oAggiornaBulk(fatte, totale, segnatura) {
     const barra = document.getElementById('ocr-bulk-bar');
     const testo = document.getElementById('ocr-bulk-text');
-    if (barra) barra.style.width = Math.round((fatte - 1) / totale * 100) + '%';
+    if (barra) barra.style.transform = `scaleX(${(fatte - 1) / totale})`;
     if (testo) {
         testo.textContent = _oT('ocr_bulk_progress', 'Scheda {var0} di {var1}: {var2}')
             .replace('{var0}', String(fatte))
@@ -972,7 +972,7 @@ async function _oRenderLingue() {
             </div>
             <div class="modal-body">
                 <div class="w-full h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden mb-2">
-                    <div id="ocr-bulk-bar" class="h-full barra-avanzamento transizione-larghezza" style="width:0%"></div>
+                    <div id="ocr-bulk-bar" class="h-full barra-avanzamento barra-scala"></div>
                 </div>
                 <p id="ocr-bulk-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
                 <div class="modal-footer">

@@ -26,14 +26,14 @@ window.toggleSyncProgress = function(show, titleKey = 'sync_in_progress') {
             barContainer.classList.remove('hidden');
             barContainer.classList.add('flex');
             if(textContainer) textContainer.classList.remove('hidden');
-            if (bar) bar.style.width = '0%';
+            if (bar) bar.style.transform = 'scaleX(0)';
             if (textContainer) textContainer.textContent = '...';
             if (title) title.textContent = window.t(titleKey);
         } else {
             barContainer.classList.add('hidden');
             barContainer.classList.remove('flex');
             if(textContainer) textContainer.classList.add('hidden');
-            if (bar) bar.style.width = '0%';
+            if (bar) bar.style.transform = 'scaleX(0)';
         }
     }
 
@@ -46,7 +46,7 @@ window.updateSyncProgress = function(percent, text) {
     const bar = document.getElementById('sync-progress-bar');
     const textContainer = document.getElementById('sync-progress-text');
     if (bar) {
-        bar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+        bar.style.transform = `scaleX(${Math.min(100, Math.max(0, percent)) / 100})`;
     }
     if (textContainer && text) {
         textContainer.textContent = text;

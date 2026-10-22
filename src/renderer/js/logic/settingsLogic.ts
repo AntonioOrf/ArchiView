@@ -423,7 +423,7 @@ window.esportaBackupZip = async function() {
         progDiv.innerHTML = window.sanitizeHTML(`
             <div class="font-bold text-sm">${window.escapeHTML(window.t('export_in_progress', 'Esportazione in corso…'))}</div>
             <div class="w-full bg-stone-700 h-2 rounded-full overflow-hidden">
-                <div id="export-progress-bar" class="barra-avanzamento h-full w-0 transizione-larghezza"></div>
+                <div id="export-progress-bar" class="barra-avanzamento h-full barra-scala"></div>
             </div>
             <div id="export-progress-text" class="text-xs text-stone-300">${window.escapeHTML(window.t('export_calculating', 'Calcolo…'))}</div>
         `);
@@ -437,7 +437,7 @@ window.esportaBackupZip = async function() {
                     const proc = progress.entries.processed;
                     const total = progress.entries.total;
                     const perc = total > 0 ? Math.round((proc / total) * 100) : 0;
-                    bar.style.width = perc + '%';
+                    bar.style.transform = `scaleX(${perc / 100})`;
                     text.textContent = window.t('export_progress_files', '{var0} di {var1} file elaborati ({var2}%)')
                         .replace('{var0}', String(proc)).replace('{var1}', String(total)).replace('{var2}', String(perc));
                 }

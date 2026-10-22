@@ -1997,8 +1997,11 @@ select.btn:focus {
 [aria-invalid="true"] {
     border-color: var(--color-danger) !important;
 }
-.transizione-larghezza {
-    transition: width 0.3s ease;
+.barra-scala {
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
 }
 .skip-link {
     position: fixed;

@@ -84,5 +84,5 @@ Known limit: the scanner measures text, not icon-only buttons.
 Impeccable detector false positives (verified, no action): `gray-on-color` on `text-stone-*`
 over `bg-amber-50/100` (remapped and measured); `broken-image` in `imagePdfModal.ts` and
 `viewTrascrizione.ts` (`src` set at runtime); `overused-font` in `vendor/driver.css` (overridden
-by `input.css`); `side-tab` on sidebar tags (the band is data); `layout-transition` on progress
-bars and sidebar resizing.
+by `input.css`); `side-tab` on sidebar tags (the band is data). Progress bars fill with `.barra-scala`
+(`transform: scaleX`), never by animating `width`; resizable panels have no width transition.

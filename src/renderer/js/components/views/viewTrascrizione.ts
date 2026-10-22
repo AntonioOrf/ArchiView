@@ -29,7 +29,7 @@
 
         <div id="trascrizione-container" class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
 
-            <div id="trascrizione-allegato-panel" class="trasc-fonte flex-1 overflow-hidden relative flex flex-col transizione-larghezza hidden-tab min-w-[250px]">
+            <div id="trascrizione-allegato-panel" class="trasc-fonte flex-1 overflow-hidden relative flex flex-col hidden-tab min-w-[250px]">
                 <div id="trasc-carte-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
                     <button id="btn-carta-prec" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[-1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_prev_sheet" data-i18n-aria-label="trasc_prev_sheet"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                     <input id="trasc-carta-numero" type="number" min="1" inputmode="numeric" class="w-14 px-1 py-0.5 text-center border border-stone-300 bg-white tabular-nums" data-i18n-aria-label="trasc_sheet_number" data-on-change="vaiACartaDaCampo">
@@ -78,7 +78,7 @@
                 <i data-lucide="grip-vertical" class="w-4 h-4 pointer-events-none"></i>
             </div>
 
-            <div id="trascrizione-editor-panel" style="width: 50%;" class="trasc-testo flex flex-col overflow-hidden transizione-larghezza shrink-0 min-w-[250px]">
+            <div id="trascrizione-editor-panel" style="width: 50%;" class="trasc-testo flex flex-col overflow-hidden shrink-0 min-w-[250px]">
                 <div class="trasc-schede shrink-0 flex items-center justify-between gap-2 pr-2">
                     <span id="trasc-staccata-titolo" class="solo-staccata pl-3 font-semibold truncate" translate="no"></span>
                     <div role="tablist" class="flex" data-i18n-aria-label="trasc_tabs">
