@@ -65,7 +65,7 @@
                         <label class="text-xs text-stone-600 flex flex-col gap-1">
                             <span data-i18n="settings_font_family">Carattere</span>
                             <select id="settings-font-trascrizione" aria-describedby="settings-font-desc" ${window.azione('change', 'salvaTestoTrascrizione')} class="${CAMPO}">
-                                ${opzione('serif', 'settings_font_serif', 'Con grazie (Georgia)')}
+                                ${opzione('serif', 'settings_font_serif', 'Con grazie (Source Serif)')}
                                 ${opzione('sans', 'settings_font_sans', 'Senza grazie')}
                                 ${opzione('mono', 'settings_font_mono', 'Monospaziato')}
                                 <option value="junicode">Junicode</option>

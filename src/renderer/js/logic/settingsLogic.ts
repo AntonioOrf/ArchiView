@@ -8,9 +8,9 @@ const PREDEFINITI_IMPOSTAZIONI = Object.freeze({
 window.PREDEFINITI_IMPOSTAZIONI = PREDEFINITI_IMPOSTAZIONI;
 
 const _FAMIGLIE_TRASCRIZIONE = {
-    serif: "Georgia, 'Segoe UI Historic', serif",
-    sans: "'Segoe UI', 'Segoe UI Historic', system-ui, sans-serif",
-    mono: "ui-monospace, 'Cascadia Mono', Consolas, monospace",
+    serif: "'Source Serif 4', 'Junicode', Georgia, 'Segoe UI Historic', serif",
+    sans: "'IBM Plex Sans', 'Segoe UI', 'Segoe UI Historic', system-ui, sans-serif",
+    mono: "'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace",
     junicode: "'Junicode', 'Segoe UI Historic', Georgia, serif"
 };
 
