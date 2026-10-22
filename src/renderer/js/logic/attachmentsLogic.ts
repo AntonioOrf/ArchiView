@@ -65,6 +65,7 @@ function _taCaricaEditor(m, indice, pagina = 0) {
     _taFuocoPrimaDelBlocco = false;
     if (avevaFuoco) editor.focus();
     _taAggiornaEtichetta(m, indice);
+    window.aggiornaStatoTesto?.();
 }
 
 function _taAggiornaEtichetta(m, indice) {
@@ -187,7 +188,7 @@ function _taApplicaLarghezza() {
     const salvata = window.prefLocale(_taChiaveLarghezza());
     const p = window.proporzioneSeparatore(parseFloat(salvata) || 50, false);
     editorPanel.style.width = `${p}%`;
-    document.getElementById('trascrizione-resizer')?.setAttribute('aria-valuenow', String(Math.round(p)));
+    document.getElementById('trascrizione-resizer')?.setAttribute('aria-valuenow', String(Math.round(100 - p)));
 }
 
 function _taRiponiModulo() {
@@ -310,7 +311,7 @@ async function apriTrascrizione(id) {
         if (btnOcr) btnOcr.classList.remove('hidden-tab');
         if (btnCollapse) {
             btnCollapse.classList.remove('hidden');
-            btnCollapse.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
+            btnCollapse.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-close" class="w-5 h-5"></i>');
             btnCollapse.title = window.t("tooltip_collapse", "Collapse Editor");
         }
 
@@ -1002,14 +1003,14 @@ window.toggleFullscreenAllegato = function() {
         editorPanel.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
+            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-close" class="w-5 h-5"></i>');
             btnToggle.title = window.t("tooltip_collapse", "Collapse Editor");
         }
     } else {
         editorPanel.classList.add('hidden');
         if (resizer) resizer.classList.add('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-open" class="w-5 h-5"></i>');
+            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-open" class="w-5 h-5"></i>');
             btnToggle.title = window.t("tooltip_expand_editor", "Expand Editor");
         }
     }
@@ -1053,7 +1054,7 @@ window.confermaUscitaTrascrizione = async function() {
         editorPanel.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
         if (btnToggle) {
-            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-left-close" class="w-5 h-5"></i>');
+            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-close" class="w-5 h-5"></i>');
             btnToggle.title = window.t("tooltip_collapse", "Collapse Editor");
         }
     }

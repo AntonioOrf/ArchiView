@@ -255,7 +255,7 @@ test.describe('Cartelle', () => {
     const appData = await getAppData(page);
     expect(appData.manoscritti.find((m: any) => m.segnatura === 'MS-RADICE-001').cartella).toBe('');
     expect(appData.cartelle).toEqual([]);
-    await expect(page.locator('main')).toContainText('MS-RADICE-001');
+    await expect(page.locator('#view-list')).toContainText('MS-RADICE-001');
   });
 
   test('eliminare l\'ultima cartella riporta alla radice senza errori', async ({ page, userDataDir }) => {

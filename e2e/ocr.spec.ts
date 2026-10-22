@@ -245,7 +245,7 @@ test.describe('OCR degli allegati', () => {
     await page.locator('#btn-tab-add').click();
     await page.locator('#form-segnatura').fill('NUDA-1');
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('NUDA-1', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('NUDA-1', { timeout: 10_000 });
 
     const id = await page.evaluate(() => {
       // @ts-ignore

@@ -505,6 +505,17 @@ window.aggiungiElementoDinamico = function(campoId, placeholderKey, placeholderV
     if (window.lucide) lucide.createIcons({ nodes: [row] });
 };
 
+window.aggiornaTitoloScheda = function() {
+    const h1 = document.getElementById('form-titolo-segnatura');
+    if (!h1) return;
+    const segnatura = (document.getElementById('form-segnatura') as HTMLInputElement).value.trim();
+    h1.textContent = segnatura || window.t('record_no_shelfmark', 'Ancora senza segnatura');
+    h1.classList.toggle('is-vuoto', !segnatura);
+};
+document.addEventListener('input', (e) => {
+    if ((e.target as HTMLElement).id === 'form-segnatura') window.aggiornaTitoloScheda();
+});
+
 function resetForm() {
     window.isFormDirty = false;
     document.getElementById('form-segnatura').value = '';
@@ -544,8 +555,9 @@ function resetForm() {
     applicaUltimoTipoDocumento();
     window.azzeraMemoriaCompilazione();
     renderDynamicFields();
-    document.getElementById('form-title').textContent = window.t('title_new_record', 'Compila Nuova Scheda');
-    
+    document.getElementById('form-title').textContent = window.t('title_new_record', 'Nuova scheda');
+    window.aggiornaTitoloScheda();
+
     if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('btn-cancel-edit')] });
 }
 

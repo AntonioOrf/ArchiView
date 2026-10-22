@@ -195,6 +195,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'salvaTrascrizione',
     'scollegaAuthority',
     'scollegaCloud',
+    'segnoFilologico',
     'selectItem',
     'selezionaCartellaIniziale',
     'selezionaPercorsoBase',

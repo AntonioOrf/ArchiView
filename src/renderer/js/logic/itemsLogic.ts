@@ -255,6 +255,7 @@ window.caricaSchedaNelForm = function(id) {
     renderDynamicFields();
     
     (document.getElementById('form-segnatura') as HTMLInputElement).value = m.segnatura || '';
+    window.aggiornaTitoloScheda();
     (document.getElementById('form-tags') as HTMLInputElement).value = m.tags || '';
     if (typeof window.caricaRelazioniForm === 'function') window.caricaRelazioniForm(m);
     if (typeof window.caricaRimandiEsterniForm === 'function') window.caricaRimandiEsterniForm(m);

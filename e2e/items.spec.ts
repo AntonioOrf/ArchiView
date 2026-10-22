@@ -35,7 +35,7 @@ test.describe('Schede (manoscritti)', () => {
     await page.locator('#form-segnatura').fill(segnatura);
     await page.locator('#btn-submit-form').click();
 
-    await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText(segnatura, { timeout: 10_000 });
 
     await page.locator('header button[data-tab="search"]').click();
     await expect(page.locator('#sidebar-search')).toBeVisible();
@@ -48,6 +48,6 @@ test.describe('Schede (manoscritti)', () => {
     const nuova = 'MS-E2E-001-BIS';
     await page.locator('#form-segnatura').fill(nuova);
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText(nuova, { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText(nuova, { timeout: 10_000 });
   });
 });

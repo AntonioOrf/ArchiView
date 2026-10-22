@@ -232,24 +232,24 @@ async function avviaApp() {
     
 
     const resizer = document.getElementById('trascrizione-resizer');
-    const leftPanel = document.getElementById('trascrizione-editor-panel');
+    const pannelloTesto = document.getElementById('trascrizione-editor-panel');
     const container = document.getElementById('trascrizione-container');
 
 
-    if (resizer && leftPanel && container) {
+    if (resizer && pannelloTesto && container) {
         window.attivaSeparatore(resizer, {
-            attuale: () => parseFloat(leftPanel.style.width) || 50,
+            attuale: () => 100 - (parseFloat(pannelloTesto.style.width) || 50),
             daPuntatore: (x) => {
                 const r = container.getBoundingClientRect();
                 return ((x - r.left) / r.width) * 100;
             },
             applica: (p) => {
-                leftPanel.style.transition = 'none';
-                leftPanel.style.width = `${p}%`;
+                pannelloTesto.style.transition = 'none';
+                pannelloTesto.style.width = `${100 - p}%`;
             },
             fine: (p) => {
-                leftPanel.style.transition = '';
-                window.ricordaLarghezzaTrascrizione(p);
+                pannelloTesto.style.transition = '';
+                window.ricordaLarghezzaTrascrizione(100 - p);
             }
         });
     }

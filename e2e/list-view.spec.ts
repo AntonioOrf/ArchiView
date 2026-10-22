@@ -42,7 +42,7 @@ test.describe('Vista Lista', () => {
     await page.evaluate(() => (window as any).confermaEliminazione());
 
     await expect(page.locator('#delete-modal')).toBeHidden();
-    await expect(page.locator('main')).not.toContainText('MS-LIST-DEL');
+    await expect(page.locator('#view-list')).not.toContainText('MS-LIST-DEL');
 
     const appData = await getAppData(page);
     expect(appData.deletedIds).toContain(id);
@@ -60,7 +60,7 @@ test.describe('Vista Lista', () => {
     await page.evaluate(() => (window as any).chiudiDeleteModal());
 
     await expect(page.locator('#delete-modal')).toBeHidden();
-    await expect(page.locator('main')).toContainText('MS-LIST-KEEP');
+    await expect(page.locator('#view-list')).toContainText('MS-LIST-KEEP');
   });
 
   test('esporta scheda scarica lo zip', async ({ page, electronApp, userDataDir }) => {

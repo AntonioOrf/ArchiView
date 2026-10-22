@@ -71,7 +71,7 @@ test.describe('Campi tipizzati', () => {
     const opzioni = await page.locator('#dyn-supporto option').allTextContents();
     expect(opzioni.length).toBe(3);
     expect(opzioni.slice(1)).toEqual(['pergamena', 'carta']);
-    await expect(page.locator('label', { hasText: 'carte' }).first()).toContainText('*');
+    await expect(page.locator('#form-dynamic-fields label', { hasText: 'carte' }).first()).toContainText('*');
   });
 
   test('3.1.3 — i valori si salvano nel loro tipo e tornano nel form', async ({ page, userDataDir }) => {

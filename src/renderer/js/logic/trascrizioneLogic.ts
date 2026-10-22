@@ -50,6 +50,23 @@ document.addEventListener('paste', (e) => {
     else if (testo) document.execCommand('insertText', false, testo);
 });
 
+const SEGNI_FILOLOGICI = {
+    lacuna: { apri: '[', chiudi: ']', vuoto: '...' },
+    espansione: { apri: '(', chiudi: ')', vuoto: '' },
+    sic: { apri: '', chiudi: ' (!)', vuoto: '' }
+};
+
+window.segnoFilologico = function(tipo) {
+    const segno = SEGNI_FILOLOGICI[tipo];
+    const editor = document.getElementById('trascrizione-editor');
+    const sel = window.getSelection();
+    if (!segno || !editor || editor.getAttribute('contenteditable') === 'false') return;
+    if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) { editor.focus(); return; }
+    const testo = sel.toString();
+    document.execCommand('insertText', false, segno.apri + (testo || segno.vuoto) + segno.chiudi);
+    if (!testo && tipo === 'espansione') sel.modify('move', 'backward', 'character');
+};
+
 window.trascrizioneHaTesto = function(html) {
     return String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
 };

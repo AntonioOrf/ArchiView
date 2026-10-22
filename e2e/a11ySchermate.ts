@@ -15,7 +15,7 @@ export async function preparaSchermateSecondarie(page: Page, app: ElectronApplic
   await page.locator('#btn-tab-add').click();
   await page.locator('#form-segnatura').fill('A11Y-VUOTA');
   await page.locator('#btn-submit-form').click();
-  await expect(page.locator('main')).toContainText('A11Y-VUOTA');
+  await expect(page.locator('#view-list')).toContainText('A11Y-VUOTA');
   // @ts-ignore
   const vuota: string = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'A11Y-VUOTA').id);
 

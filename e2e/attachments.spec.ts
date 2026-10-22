@@ -47,7 +47,7 @@ test.describe('Allegati', () => {
     await expect(page.locator('#form-allegati-new-preview')).toContainText('sample.png');
 
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-ATT-001', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('MS-ATT-001', { timeout: 10_000 });
 
     const allegatiCount = await page.evaluate(() => {
       // @ts-ignore
@@ -72,7 +72,7 @@ test.describe('Allegati', () => {
     await page.locator('#form-allegato').setInputFiles(a);
     await page.locator('#form-allegato').setInputFiles(b);
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-OMONIMI', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('MS-OMONIMI', { timeout: 10_000 });
 
     const carte = await page.evaluate(() => {
       // @ts-ignore
@@ -93,7 +93,7 @@ test.describe('Allegati', () => {
     await expect(page.locator('#form-allegati-new-preview')).toContainText('sample.pdf');
 
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-ATT-PDF', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('MS-ATT-PDF', { timeout: 10_000 });
 
     const appData = await getAppData(page);
     const rec = appData.manoscritti.find((m: any) => m.segnatura === 'MS-ATT-PDF');
@@ -107,7 +107,7 @@ test.describe('Allegati', () => {
     await page.locator('#form-segnatura').fill('MS-ATT-RIMOSSO');
     await page.locator('#form-allegato').setInputFiles(FIXTURE_PNG);
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-ATT-RIMOSSO', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('MS-ATT-RIMOSSO', { timeout: 10_000 });
 
     await page.locator('main button', { hasText: /Modifica|Edit/i }).first().click();
     await expect(page.locator('.allegato-row')).toHaveCount(1);
@@ -116,7 +116,7 @@ test.describe('Allegati', () => {
     await expect(page.locator('.allegato-row')).toHaveCount(0);
 
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-ATT-RIMOSSO', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('MS-ATT-RIMOSSO', { timeout: 10_000 });
 
     const appData = await getAppData(page);
     const rec = appData.manoscritti.find((m: any) => m.segnatura === 'MS-ATT-RIMOSSO');

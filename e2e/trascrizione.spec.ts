@@ -70,7 +70,7 @@ test.describe('Vista Trascrizione', () => {
     await page.locator('#btn-tab-add').click();
     await page.locator('#form-segnatura').fill('MS-TRASC-VUOTA');
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-TRASC-VUOTA');
+    await expect(page.locator('#view-list')).toContainText('MS-TRASC-VUOTA');
     const id = (await getAppData(page)).manoscritti.find((m: any) => m.segnatura === 'MS-TRASC-VUOTA').id;
 
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
@@ -115,6 +115,40 @@ test.describe('Vista Trascrizione', () => {
     await page.keyboard.press('Escape');
     await expect(editor).toBeFocused();
     await expect(editor).toHaveText(`aꝑx${scelto}${scelto}b`);
+  });
+
+  test('fonte a sinistra, testo a destra con numeri di riga, segni Leiden e barra di stato', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-LEIDEN', FIXTURE_PNG);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    const [fonte, testo] = await Promise.all([
+      page.locator('#trascrizione-allegato-panel').boundingBox(),
+      page.locator('#trascrizione-editor-panel').boundingBox(),
+    ]);
+    expect(fonte!.x + fonte!.width).toBeLessThanOrEqual(testo!.x);
+
+    const editor = page.locator('#trascrizione-editor');
+    const stato = page.locator('#trasc-stato-testo');
+    await editor.click();
+    await page.keyboard.type('alfa beta');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('gamma');
+    await expect(stato).toHaveText(/^(riga 2 di 2 · 3 parole|line 2 of 2 · 3 words)$/);
+    const numeri = await editor.locator('p').evaluateAll(ps => ps.map(p => getComputedStyle(p, '::before').content));
+    expect(numeri).toEqual(['counter(riga)', 'counter(riga)']);
+
+    await page.keyboard.press('Shift+Home');
+    await page.getByRole('button', { name: /^\[(lacuna|gap)\]$/ }).click();
+    await expect(editor).toBeFocused();
+    await page.getByRole('button', { name: /^sic \(!\)$/ }).click();
+    await page.keyboard.type(' d');
+    await page.getByRole('button', { name: /^\((espansione|expansion)\)$/ }).click();
+    await page.keyboard.type('omi');
+    await page.keyboard.press('End');
+    await page.getByRole('button', { name: /^\[(lacuna|gap)\]$/ }).click();
+    await expect(editor.locator('p').nth(1)).toHaveText('[gamma] (!) d(omi)[...]');
+    await expect(editor.locator('p').nth(0)).toHaveText('alfa beta');
+    expect(await page.evaluate(() => (window as any).trascrizioneNonSalvata)).toBe(true);
   });
 
   test('O4 — aperta, la vista tiene il fuoco: l app coperta non si raggiunge col Tab', async ({ page, userDataDir }) => {
@@ -415,8 +449,8 @@ test.describe('Vista Trascrizione', () => {
 
     await page.locator('#btn-filtri').click();
     await page.locator('#filtro-stato-carte').selectOption('trascritta');
-    await expect(page.locator('main')).toContainText('MS-STATO');
-    await expect(page.locator('main')).not.toContainText('MS-STATO-ALTRA');
+    await expect(page.locator('#view-list')).toContainText('MS-STATO');
+    await expect(page.locator('#view-list')).not.toContainText('MS-STATO-ALTRA');
   });
 
   test('P3 — "vita" trova "uita" nella carta 2 e il clic porta lì con la parola selezionata', async ({ page, userDataDir }) => {
@@ -540,7 +574,7 @@ test.describe('Vista Trascrizione', () => {
     await page.locator('#form-segnatura').fill('MS-CMP-DUE');
     await page.locator('#form-allegato').setInputFiles([FIXTURE_PNG, secondaPng]);
     await page.locator('#btn-submit-form').click();
-    await expect(page.locator('main')).toContainText('MS-CMP-DUE', { timeout: 10_000 });
+    await expect(page.locator('#view-list')).toContainText('MS-CMP-DUE', { timeout: 10_000 });
     await page.evaluate(() => (window as any).apriConfrontoCarte());
     const risultati = page.locator('#confronto-risultati-dx');
 
@@ -841,7 +875,7 @@ test.describe('Trascrizione: tab Scheda', () => {
     const contenitore = (await page.locator('#trascrizione-container').boundingBox())!;
     const quota = async () => {
       const ed = (await page.locator('#trascrizione-editor-panel').boundingBox())!;
-      return (ed.width / contenitore.width) * 100;
+      return 100 - (ed.width / contenitore.width) * 100;
     };
     const trascina = async (pct: number) => {
       const s = (await sep.boundingBox())!;

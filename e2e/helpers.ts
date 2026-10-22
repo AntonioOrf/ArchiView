@@ -105,7 +105,7 @@ export async function createItemViaForm(page: Page, segnatura: string): Promise<
   await expect(page.locator('#manoscritto-form')).toBeVisible();
   await page.locator('#form-segnatura').fill(segnatura);
   await page.locator('#btn-submit-form').click();
-  await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
+  await expect(page.locator('#view-list')).toContainText(segnatura, { timeout: 10_000 });
 }
 
 export async function createItemWithAttachment(
@@ -119,7 +119,7 @@ export async function createItemWithAttachment(
   await page.locator('#form-allegato').setInputFiles(fixturePath);
   await expect(page.locator('#form-allegati-new-preview')).toContainText(path.basename(fixturePath));
   await page.locator('#btn-submit-form').click();
-  await expect(page.locator('main')).toContainText(segnatura, { timeout: 10_000 });
+  await expect(page.locator('#view-list')).toContainText(segnatura, { timeout: 10_000 });
 
   return page.evaluate((seg) => {
     // @ts-ignore

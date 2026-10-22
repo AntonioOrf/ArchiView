@@ -2,116 +2,34 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('view-trascrizione')) {
             const html = `
-    <div id="view-trascrizione" class="fixed inset-0 z-sticky hidden-tab fade-in flex flex-col p-4 md:p-6 overflow-hidden" style="background-color: var(--color-bg-base);">
-        <header class="trasc-intestazione shrink-0 mb-4 flex items-center justify-between pb-4 p-3 panel-glass">
-            <div class="flex items-center gap-4">
-                <button id="btn-back-to-list-trasc" data-on-click="chiudiTrascrizione" class="btn btn-secondary btn-icon" data-i18n-title="tooltip_back" data-i18n-aria-label="tooltip_back">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </button>
-                <button id="btn-collapse-editor" data-on-mousedown="nonRubareFuoco" data-on-click="toggleFullscreenAllegato" class="btn btn-secondary btn-icon shadow-sm" data-i18n-title="tooltip_collapse" data-i18n-aria-label="tooltip_collapse">
-                    <i data-lucide="panel-left-close" class="w-5 h-5"></i>
-                </button>
-                <div>
-                    <h1 id="trascrizione-title" class="text-2xl font-bold flex items-center gap-2" style="color: var(--color-primary);"> <span data-i18n="title_transcription">Trascrizione</span></h1>
-                    <p id="trascrizione-subtitle" class="text-sm italic" style="color: var(--color-text-muted);"></p>
-                </div>
+    <div id="view-trascrizione" class="fixed inset-0 z-sticky hidden-tab fade-in flex flex-col overflow-hidden" style="background-color: var(--color-bg-base);">
+        <header class="trasc-intestazione shrink-0 flex items-center gap-3">
+            <button id="btn-back-to-list-trasc" data-on-click="chiudiTrascrizione" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_back" data-i18n-aria-label="tooltip_back">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-collapse-editor" data-on-mousedown="nonRubareFuoco" data-on-click="toggleFullscreenAllegato" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_collapse" data-i18n-aria-label="tooltip_collapse">
+                <i data-lucide="panel-right-close" class="w-5 h-5"></i>
+            </button>
+            <div class="trasc-titoli">
+                <h1 id="trascrizione-title" class="trasc-etichetta"><span data-i18n="title_transcription">Trascrizione</span></h1>
+                <p id="trascrizione-subtitle" class="trasc-titolo" translate="no"></p>
             </div>
-            
             <div class="trasc-azioni flex items-center gap-2">
-                <!-- Fase 2.5 — l'export del testo sta QUI, accanto al salvataggio: e' la
-                     vista in cui la trascrizione esiste, ed e' finendo di trascrivere che
-                     si vuole portarla in Word o in un articolo. Ambito "corrente": la
-                     scheda aperta, non la selezione della lista dietro al modale. -->
-                <!-- P5 — confronto con un'altra carta, di questa scheda o di un'altra. -->
-                <button id="btn-confronta-carte" data-on-click="apriConfrontoCarte" class="btn btn-secondary border" data-i18n-title="cmp_title" data-i18n-aria-label="cmp_title">
+                <button id="btn-confronta-carte" data-on-click="apriConfrontoCarte" class="btn btn-secondary" data-i18n-title="cmp_title" data-i18n-aria-label="cmp_title">
                     <i data-lucide="columns-2" class="w-4 h-4"></i> <span data-i18n="cmp_button">Confronta</span>
                 </button>
-                <button data-on-mousedown="nonRubareFuoco" data-on-click="apriEsportaTesto" data-args-click="[&quot;corrente&quot;]" id="btn-export-trasc" class="btn btn-secondary border" data-i18n-title="tx_title" data-i18n-aria-label="tx_title">
+                <button data-on-mousedown="nonRubareFuoco" data-on-click="apriEsportaTesto" data-args-click="[&quot;corrente&quot;]" id="btn-export-trasc" class="btn btn-secondary" data-i18n-title="tx_title" data-i18n-aria-label="tx_title">
                     <i data-lucide="file-output" class="w-4 h-4"></i> <span data-i18n="tx_export">Esporta</span>
                 </button>
-                <button data-on-mousedown="nonRubareFuoco" data-on-click="salvaTrascrizione" data-i18n-title="btn_save" class="btn btn-primary px-6 py-2 shadow-md text-lg">
+                <button data-on-mousedown="nonRubareFuoco" data-on-click="salvaTrascrizione" data-i18n-title="btn_save" class="btn btn-primary">
                     <span data-i18n="btn_save_transcription">Salva Trascrizione</span>
                 </button>
             </div>
         </header>
 
-        <div id="trascrizione-container" class="flex-1 flex flex-col lg:flex-row gap-2 overflow-hidden relative">
-            
-            <div id="trascrizione-editor-panel" style="width: 50%;" class="flex flex-col bg-white shadow-xl border border-stone-200/50 rounded-sm overflow-hidden transizione-larghezza shrink-0 min-w-[250px]">
-                <!-- PIANO-SCHEDA-AFFIANCATA — «Scheda» ospita il modulo vero (#manoscritto-form),
-                     spostato qui da attachmentsLogic.ts e rimesso in #view-add all'uscita. -->
-                <div class="trasc-schede shrink-0 flex items-center justify-between gap-2 pr-2">
-                    <span id="trasc-staccata-titolo" class="solo-staccata pl-3 font-semibold truncate" translate="no"></span>
-                    <div role="tablist" class="flex" data-i18n-aria-label="trasc_tabs">
-                        <button id="tab-trasc-testo" type="button" role="tab" aria-selected="true" aria-controls="trasc-pannello-testo" data-on-click="mostraSchedaTrascrizione" data-args-click="[&quot;testo&quot;]" class="trasc-tab">
-                            <i data-lucide="type" class="w-4 h-4"></i> <span data-i18n="trasc_tab_text">Testo</span></button>
-                        <button id="tab-trasc-scheda" type="button" role="tab" aria-selected="false" aria-controls="trasc-pannello-scheda" aria-keyshortcuts="Control+Shift+S" data-shortcut="Ctrl+Shift+S" data-on-click="mostraSchedaTrascrizione" data-args-click="[&quot;scheda&quot;]" class="trasc-tab" data-i18n-title="trasc_tab_record_title">
-                            <i data-lucide="file-text" class="w-4 h-4"></i> <span data-i18n="trasc_tab_record">Scheda</span></button>
-                    </div>
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span id="trasc-scheda-stato" class="text-xs truncate" role="status" aria-live="polite"></span>
-                        <!-- Fase 4 — finestra staccata (logic/finestraStaccata.ts). -->
-                        <button type="button" id="btn-stacca-scheda" data-on-click="staccaScheda" class="solo-principale btn btn-ghost btn-icon" data-i18n-title="detach_button" data-i18n-aria-label="detach_button" title="Stacca in una finestra"><i data-lucide="external-link" class="w-4 h-4"></i></button>
-                        <button type="button" data-on-click="riagganciaFinestra" class="solo-staccata btn btn-secondary text-sm" data-i18n="detach_reattach">Riaggancia</button>
-                    </div>
-                </div>
-                <div id="trasc-pannello-testo" role="tabpanel" aria-labelledby="tab-trasc-testo" class="flex-1 flex flex-col min-h-0">
-                <div id="trascrizione-toolbar" class="bg-stone-100 border-b border-stone-200 p-2 flex flex-wrap gap-2 items-center">
-                    <button data-on-mousedown="nonRubareFuoco" data-cmd="bold" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;bold&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_bold" data-i18n-aria-label="tooltip_bold"><i data-lucide="bold" class="w-4 h-4"></i></button>
-                    <button data-on-mousedown="nonRubareFuoco" data-cmd="italic" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;italic&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_italic" data-i18n-aria-label="tooltip_italic"><i data-lucide="italic" class="w-4 h-4"></i></button>
-                    <button data-on-mousedown="nonRubareFuoco" data-cmd="underline" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;underline&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_underline" data-i18n-aria-label="tooltip_underline"><i data-lucide="underline" class="w-4 h-4"></i></button>
-                    <div class="w-px h-6 bg-stone-300 mx-1"></div>
-                    <button data-on-mousedown="nonRubareFuoco" data-cmd="insertUnorderedList" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;insertUnorderedList&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ul" data-i18n-aria-label="tooltip_ul"><i data-lucide="list" class="w-4 h-4"></i></button>
-                    <button data-on-mousedown="nonRubareFuoco" data-cmd="insertOrderedList" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;insertOrderedList&quot;]" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_ol" data-i18n-aria-label="tooltip_ol"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
-                    <div class="w-px h-6 bg-stone-300 mx-1"></div>
-                    <button id="btn-caratteri-speciali" data-on-mousedown="nonRubareFuoco" data-on-click="toggleCaratteriSpeciali" aria-expanded="false" aria-controls="trasc-caratteri" aria-keyshortcuts="Alt+K" class="btn btn-ghost btn-icon rounded" data-i18n-title="tooltip_special_chars" data-i18n-aria-label="tooltip_special_chars"><i data-lucide="omega" class="w-4 h-4"></i></button>
+        <div id="trascrizione-container" class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
 
-                    <div class="flex-1"></div>
-
-                    <!-- Fase 2.3 — l'OCR sta nella barra dell'editor e non in quella
-                         dell'allegato: il suo risultato finisce QUI dentro, ed è accanto al
-                         testo che l'utente lo cerca. Resta un pulsante secondario, perché la
-                         bozza generata non è la trascrizione. -->
-                    <button id="btn-ocr-trasc" data-on-click="apriOcrModal" class="btn btn-secondary border" data-i18n-title="ocr_title" data-i18n-aria-label="ocr_title">
-                        <i data-lucide="scan-text" class="w-4 h-4"></i> <span data-i18n="ocr_button">Riconosci testo</span></button>
-
-                    <button id="btn-carica-allegato-trasc" data-on-click="cliccaElemento" data-args-click="[&quot;trasc-file-input&quot;]" class="btn hidden btn-secondary border" data-i18n-title="btn_add_image_pdf" data-i18n-aria-label="btn_add_image_pdf">
-                        <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
-
-                    <!-- Import IIIF dalla trascrizione: e' qui che ci si accorge che manca
-                         un fascicolo, e senza questo pulsante l'unico modo di procurarselo
-                         sarebbe creare una seconda scheda dello stesso codice. Sempre
-                         visibile, a differenza di "Aggiungi Immagine/PDF": aggiungere carte
-                         ha senso tanto su una scheda vuota quanto su una gia' popolata. -->
-                    <button id="btn-iiif-trasc" data-on-click="aggiungiCarteIiifATrascrizione" class="btn btn-secondary border" data-i18n-title="iiif_title_add" data-i18n-aria-label="iiif_title_add">
-                        <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="iiif_add_button">Aggiungi da IIIF</span></button>
-                    <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" data-on-change="caricaAllegatoTrascrizione" data-args-change="[{&quot;$&quot;:&quot;event&quot;}]">
-                </div>
-                <!-- P1 — caratteri speciali (MUFI), riempito da specialCharsPanel.ts. -->
-                <div id="trasc-caratteri" class="hidden-tab shrink-0" data-i18n-aria-label="tooltip_special_chars" role="region"></div>
-                <!-- Fase 2.3-bis — quale carta si sta trascrivendo. Compare solo con più di
-                     un allegato: con uno solo sarebbe una riga che ripete l'ovvio. -->
-                <div id="trascrizione-carta" class="hidden-tab shrink-0 px-3 py-1.5 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-900 truncate"></div>
-                <div class="trasc-editor-area flex-1 overflow-y-auto cursor-text p-6 bg-white" data-on-click="fuocoEditorDaSfondo">
-                    <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none leading-relaxed text-stone-800 select-text"></div>
-                </div>
-                </div>
-                <div id="trasc-pannello-scheda" role="tabpanel" aria-labelledby="tab-trasc-scheda" class="hidden-tab flex-1 min-h-0 overflow-y-auto p-3">
-                    <div id="trasc-scheda-staccata" class="hidden-tab riquadro-info p-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-                        <span data-i18n="detach_record_elsewhere">La scheda è aperta in un'altra finestra.</span>
-                        <button type="button" data-on-click="riportaSchedaQui" class="btn btn-secondary" data-i18n="detach_bring_back">Riporta qui</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="trascrizione-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="trascrizione-editor-panel" class="separatore-colonne lg:flex w-2 cursor-col-resize bg-stone-200 hover:bg-amber-400 active:bg-amber-500 border border-stone-300 rounded-sm items-center justify-center group transition-colors hidden z-10 shrink-0" data-i18n-title="tooltip_resize" data-i18n-aria-label="tooltip_resize" title="Trascina per ridimensionare">
-                <i data-lucide="grip-vertical" class="w-4 h-4 text-stone-400 group-hover:text-white pointer-events-none"></i>
-            </div>
-
-            <div id="trascrizione-allegato-panel" class="flex-1 bg-stone-200/50 shadow-inner border border-stone-300/50 rounded-sm overflow-hidden relative flex flex-col transizione-larghezza hidden-tab min-w-[250px]">
-                <!-- Barra delle carte: con più allegati, quale carta è in vista e come cambiarla.
-                     Stessa forma della barra del PDF, che le sta sotto quando la carta è un PDF.
-                     Il riordino sta nel form e nel modale degli allegati. -->
+            <div id="trascrizione-allegato-panel" class="trasc-fonte flex-1 overflow-hidden relative flex flex-col transizione-larghezza hidden-tab min-w-[250px]">
                 <div id="trasc-carte-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
                     <button id="btn-carta-prec" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[-1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_prev_sheet" data-i18n-aria-label="trasc_prev_sheet"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                     <input id="trasc-carta-numero" type="number" min="1" inputmode="numeric" class="w-14 px-1 py-0.5 text-center border border-stone-300 bg-white tabular-nums" data-i18n-aria-label="trasc_sheet_number" data-on-change="vaiACartaDaCampo">
@@ -119,12 +37,8 @@
                     <button id="btn-carta-succ" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_next_sheet" data-i18n-aria-label="trasc_next_sheet"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     <span id="trasc-carta-nome" class="ml-2 font-medium truncate min-w-0" translate="no"></span>
                     <button id="btn-rinomina-carta" data-on-click="rinominaCartaCorrente" class="btn btn-ghost btn-icon shrink-0" data-i18n-title="btn_rename_short" data-i18n-aria-label="btn_rename_short"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                    <!-- P2 — a che punto è questa carta; le opzioni le scrive _taAggiornaBarraCarte. -->
                     <select id="trasc-carta-stato" class="ml-auto shrink-0 px-1 py-0.5 border border-stone-300 bg-white text-xs" data-i18n-aria-label="sheet_status" data-i18n-title="sheet_status" data-on-change="impostaStatoCarta" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]"></select>
                 </div>
-                <!-- Barra del PDF: quale pagina, e la ricerca. Sta sopra la pagina e non
-                     nell'editor perché riguarda il documento; la pagina scelta qui porta con
-                     sé il testo di sinistra. Solo su un allegato PDF. -->
                 <div id="trasc-pdf-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
                     <button id="btn-pdf-pagina-prec" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaPaginaPdfRelativa" data-args-click="[-1]" class="btn btn-ghost btn-icon rounded" data-i18n-title="pdf_prev_page" data-i18n-aria-label="pdf_prev_page"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
                     <input id="trasc-pdf-pagina" type="number" min="1" inputmode="numeric" class="w-14 px-1 py-0.5 text-center border border-stone-300 rounded-sm bg-white tabular-nums" data-i18n-aria-label="pdf_page_number" data-on-change="vaiAPaginaPdfDaCampo">
@@ -139,17 +53,9 @@
                 </div>
                 <div class="flex-1 relative flex justify-center items-center overflow-hidden group">
                     <button id="btn-prev-allegato" data-on-click="cambiaAllegatoRelativo" data-args-click="[-1]" data-i18n-title="tooltip_prev" data-i18n-aria-label="tooltip_prev" class="btn btn-icon absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-                    <!-- Fase 1.2 — stesso viewport del modal (zoom/pan/rotazione/filtri):
-                         un solo componente, imageViewer.ts. Visibilità con hidden-tab, non
-                         con la utility hidden (vedi nota in imagePdfModal.ts). Mostra anche
-                         le pagine dei PDF, disegnate da pdfViewer.ts. -->
                     <div id="trasc-img-viewport" class="iv-viewport hidden-tab" tabindex="0">
                         <img id="trasc-img-preview" alt="" class="max-w-full max-h-full object-contain" />
                     </div>
-                    <!-- Import IIIF — barra della carta remota. Compare solo quando la carta
-                         in mostra arriva da un manifest e non è ancora stata scaricata:
-                         porta l'attribuzione, che è un obbligo della licenza e non un
-                         ornamento, e i due modi di materializzare (questa carta / tutte). -->
                     <div id="trasc-iiif-bar" class="hidden-tab absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 max-w-[90%] px-3 py-1.5 rounded-sm text-xs text-white shadow-lg" style="background-color: rgba(41, 37, 36, 0.82);">
                         <i data-lucide="cloud" class="w-3.5 h-3.5 shrink-0"></i>
                         <span id="trasc-iiif-attribuzione" class="truncate"></span>
@@ -167,13 +73,92 @@
                     </div>
                 </div>
             </div>
-            
+
+            <div id="trascrizione-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="trascrizione-allegato-panel" class="separatore-colonne trasc-separatore lg:flex w-2 cursor-col-resize items-center justify-center hidden z-10 shrink-0" data-i18n-title="tooltip_resize" data-i18n-aria-label="tooltip_resize" title="Trascina per ridimensionare">
+                <i data-lucide="grip-vertical" class="w-4 h-4 pointer-events-none"></i>
+            </div>
+
+            <div id="trascrizione-editor-panel" style="width: 50%;" class="trasc-testo flex flex-col overflow-hidden transizione-larghezza shrink-0 min-w-[250px]">
+                <div class="trasc-schede shrink-0 flex items-center justify-between gap-2 pr-2">
+                    <span id="trasc-staccata-titolo" class="solo-staccata pl-3 font-semibold truncate" translate="no"></span>
+                    <div role="tablist" class="flex" data-i18n-aria-label="trasc_tabs">
+                        <button id="tab-trasc-testo" type="button" role="tab" aria-selected="true" aria-controls="trasc-pannello-testo" data-on-click="mostraSchedaTrascrizione" data-args-click="[&quot;testo&quot;]" class="trasc-tab">
+                            <i data-lucide="type" class="w-4 h-4"></i> <span data-i18n="trasc_tab_text">Testo</span></button>
+                        <button id="tab-trasc-scheda" type="button" role="tab" aria-selected="false" aria-controls="trasc-pannello-scheda" aria-keyshortcuts="Control+Shift+S" data-shortcut="Ctrl+Shift+S" data-on-click="mostraSchedaTrascrizione" data-args-click="[&quot;scheda&quot;]" class="trasc-tab" data-i18n-title="trasc_tab_record_title">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> <span data-i18n="trasc_tab_record">Scheda</span></button>
+                    </div>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span id="trasc-scheda-stato" class="text-xs truncate" role="status" aria-live="polite"></span>
+                        <button type="button" id="btn-stacca-scheda" data-on-click="staccaScheda" class="solo-principale btn btn-ghost btn-icon" data-i18n-title="detach_button" data-i18n-aria-label="detach_button" title="Stacca in una finestra"><i data-lucide="external-link" class="w-4 h-4"></i></button>
+                        <button type="button" data-on-click="riagganciaFinestra" class="solo-staccata btn btn-secondary text-sm" data-i18n="detach_reattach">Riaggancia</button>
+                    </div>
+                </div>
+                <div id="trasc-pannello-testo" role="tabpanel" aria-labelledby="tab-trasc-testo" class="flex-1 flex flex-col min-h-0">
+                <div id="trascrizione-toolbar" class="trasc-barra flex flex-wrap gap-1 items-center">
+                    <button data-on-mousedown="nonRubareFuoco" data-cmd="bold" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;bold&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_bold" data-i18n-aria-label="tooltip_bold"><i data-lucide="bold" class="w-4 h-4"></i></button>
+                    <button data-on-mousedown="nonRubareFuoco" data-cmd="italic" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;italic&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_italic" data-i18n-aria-label="tooltip_italic"><i data-lucide="italic" class="w-4 h-4"></i></button>
+                    <button data-on-mousedown="nonRubareFuoco" data-cmd="underline" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;underline&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_underline" data-i18n-aria-label="tooltip_underline"><i data-lucide="underline" class="w-4 h-4"></i></button>
+                    <span class="trasc-sep" aria-hidden="true"></span>
+                    <button data-on-mousedown="nonRubareFuoco" data-cmd="insertUnorderedList" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;insertUnorderedList&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_ul" data-i18n-aria-label="tooltip_ul"><i data-lucide="list" class="w-4 h-4"></i></button>
+                    <button data-on-mousedown="nonRubareFuoco" data-cmd="insertOrderedList" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;insertOrderedList&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_ol" data-i18n-aria-label="tooltip_ol"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+                    <span class="trasc-sep" aria-hidden="true"></span>
+                    <button id="btn-caratteri-speciali" data-on-mousedown="nonRubareFuoco" data-on-click="toggleCaratteriSpeciali" aria-expanded="false" aria-controls="trasc-caratteri" aria-keyshortcuts="Alt+K" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_special_chars" data-i18n-aria-label="tooltip_special_chars"><i data-lucide="omega" class="w-4 h-4"></i></button>
+                    <span class="trasc-sep" aria-hidden="true"></span>
+                    <button type="button" data-on-mousedown="nonRubareFuoco" data-on-click="segnoFilologico" data-args-click="[&quot;lacuna&quot;]" class="btn btn-ghost trasc-segno" data-i18n-aria-label="trasc_mark_gap" aria-label="[lacuna]" data-i18n-title="trasc_mark_gap_title" title="Lacuna o integrazione: la selezione tra quadre, oppure [...]"><span class="segno-esteso" data-i18n="trasc_mark_gap">[lacuna]</span><span class="segno-breve" aria-hidden="true">[…]</span></button>
+                    <button type="button" data-on-mousedown="nonRubareFuoco" data-on-click="segnoFilologico" data-args-click="[&quot;espansione&quot;]" class="btn btn-ghost trasc-segno" data-i18n-aria-label="trasc_mark_expan" aria-label="(espansione)" data-i18n-title="trasc_mark_expan_title" title="Scioglimento di abbreviazione: la selezione tra tonde"><span class="segno-esteso" data-i18n="trasc_mark_expan">(espansione)</span><span class="segno-breve" aria-hidden="true">( )</span></button>
+                    <button type="button" data-on-mousedown="nonRubareFuoco" data-on-click="segnoFilologico" data-args-click="[&quot;sic&quot;]" class="btn btn-ghost trasc-segno" data-i18n-aria-label="trasc_mark_sic" aria-label="sic (!)" data-i18n-title="trasc_mark_sic_title" title="Sic: segnala la lezione con (!)"><span class="segno-esteso" data-i18n="trasc_mark_sic">sic (!)</span><span class="segno-breve" aria-hidden="true">(!)</span></button>
+
+                    <div class="flex-1"></div>
+
+                    <button id="btn-ocr-trasc" data-on-click="apriOcrModal" class="btn btn-secondary" data-i18n-title="ocr_title" data-i18n-aria-label="ocr_title">
+                        <i data-lucide="scan-text" class="w-4 h-4"></i> <span data-i18n="ocr_button">Riconosci testo</span></button>
+
+                    <button id="btn-carica-allegato-trasc" data-on-click="cliccaElemento" data-args-click="[&quot;trasc-file-input&quot;]" class="btn hidden btn-secondary" data-i18n-title="btn_add_image_pdf" data-i18n-aria-label="btn_add_image_pdf">
+                        <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
+
+                    <button id="btn-iiif-trasc" data-on-click="aggiungiCarteIiifATrascrizione" class="btn btn-secondary" data-i18n-title="iiif_title_add" data-i18n-aria-label="iiif_title_add">
+                        <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="iiif_add_button">Aggiungi da IIIF</span></button>
+                    <input type="file" id="trasc-file-input" class="hidden" accept="image/*,.pdf" data-on-change="caricaAllegatoTrascrizione" data-args-change="[{&quot;$&quot;:&quot;event&quot;}]">
+                </div>
+                <div id="trasc-caratteri" class="hidden-tab shrink-0" data-i18n-aria-label="tooltip_special_chars" role="region"></div>
+                <div id="trascrizione-carta" class="hidden-tab shrink-0 px-3 py-1.5 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-900 truncate"></div>
+                <div class="trasc-editor-area flex-1 overflow-y-auto cursor-text" data-on-click="fuocoEditorDaSfondo">
+                    <div id="trascrizione-editor" contenteditable="true" class="min-h-full outline-none select-text"></div>
+                </div>
+                <div id="trasc-stato-testo" class="trasc-stato shrink-0" aria-live="off"></div>
+                </div>
+                <div id="trasc-pannello-scheda" role="tabpanel" aria-labelledby="tab-trasc-scheda" class="hidden-tab flex-1 min-h-0 overflow-y-auto p-3">
+                    <div id="trasc-scheda-staccata" class="hidden-tab riquadro-info p-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+                        <span data-i18n="detach_record_elsewhere">La scheda è aperta in un'altra finestra.</span>
+                        <button type="button" data-on-click="riportaSchedaQui" class="btn btn-secondary" data-i18n="detach_bring_back">Riporta qui</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
         <input type="hidden" id="trascrizione-id">
     </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
         }
+
+        const RIGHE = ':scope > :is(p, div, h1, h2, h3, h4, h5, h6, blockquote, pre):not(.ocr-origine, .ocr-pagina), :scope > :is(ul, ol) > li';
+        const aggiornaStatoTesto = () => {
+            const editor = document.getElementById('trascrizione-editor');
+            const stato = document.getElementById('trasc-stato-testo');
+            if (!editor || !stato) return;
+            const righe = Array.from(editor.querySelectorAll(RIGHE));
+            const parole = righe.reduce((n, r) => n + (r.textContent.match(/\S+/g) || []).length, 0);
+            const sel = window.getSelection();
+            const corrente = sel && sel.rangeCount ? righe.findIndex(r => r.contains(sel.anchorNode)) : -1;
+            const testoParole = parole === 1 ? window.t('trasc_status_word', '1 parola') : window.t('trasc_status_words', '{var0} parole').replace('{var0}', String(parole));
+            const testoRiga = corrente >= 0
+                ? window.t('trasc_status_line', 'riga {var0} di {var1}').replace('{var0}', String(corrente + 1)).replace('{var1}', String(righe.length))
+                : window.t('trasc_status_lines', '{var0} righe').replace('{var0}', String(righe.length));
+            stato.textContent = testoRiga + ' · ' + testoParole;
+        };
+        window.aggiornaStatoTesto = aggiornaStatoTesto;
+        document.getElementById('trascrizione-editor')?.addEventListener('input', aggiornaStatoTesto);
 
         const updateToolbarState = () => {
             const editor = document.getElementById('trascrizione-editor');
@@ -188,6 +173,7 @@
                 }
                 btn.setAttribute('aria-pressed', active ? 'true' : 'false');
             });
+            if (inEditor) aggiornaStatoTesto();
         };
         window.updateToolbarState = updateToolbarState;
         document.addEventListener('selectionchange', updateToolbarState);
