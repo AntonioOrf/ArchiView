@@ -1,10 +1,13 @@
 # Trascrizione
 
 Il pulsante **Trascrivi** su una scheda apre l'ambiente dedicato: l'immagine (o il PDF) del
-documento su un lato, l'editor di testo sull'altro.
+documento a sinistra, l'editor di testo a destra.
 
-![L'ambiente di trascrizione: editor a sinistra, carta del documento a destra](/img/trascrizione.png){.light-only}
-![L'ambiente di trascrizione: editor a sinistra, carta del documento a destra](/img/trascrizione-scuro.png){.dark-only}
+![L'ambiente di trascrizione: carta del documento a sinistra, testo con i numeri di riga a destra](/img/trascrizione.png){.light-only}
+![L'ambiente di trascrizione: carta del documento a sinistra, testo con i numeri di riga a destra](/img/trascrizione-scuro.png){.dark-only}
+
+In alto, il selettore **Fonte | Affiancate | Testo** sceglie che cosa vedere: solo la carta, le due
+colonne, o solo il testo a tutta larghezza. Se la scheda non ha allegati si vede solo il testo.
 
 ## Una trascrizione per carta
 
@@ -34,12 +37,27 @@ subito: il file viene letto un pezzo alla volta, non caricato per intero.
 
 Ha tutti i comandi descritti in [Allegati](/guida/allegati): ingrandimento, spostamento,
 rotazione, adattamento alla pagina, e soprattutto **luminosità, contrasto e negativo** per le
-scritture difficili. `Alt+F` porta l'allegato a schermo intero.
+scritture difficili. `Alt+F` passa da «Affiancate» a «Fonte» e ritorno: la carta prende tutto lo
+spazio.
 
 ## L'editor
 
 È un editor di testo: la barra offre la formattazione necessaria a marcare il testo dove serve.
 **Salva spesso con `Ctrl+S`**: è la scorciatoia più utile del programma.
+
+Ogni riga ha il suo **numero** a margine, e in fondo una barra dice a che riga sei, quante sono e
+quante parole contiene il testo.
+
+La barra filologica applica i segni di Leiden alla selezione:
+
+| Pulsante | Con una selezione | Senza selezione |
+| --- | --- | --- |
+| **[lacuna]** | la mette tra quadre: `[sel]` | inserisce `[...]` |
+| **(espansione)** | scioglimento di abbreviazione tra tonde: `(sel)` | inserisce `()` col cursore dentro |
+| **sic (!)** | segnala la lezione: `sel (!)` | — |
+
+Incollando da Word o da una pagina web restano paragrafi, grassetto, corsivo, sottolineato ed
+elenchi; stili, colori e immagini si perdono.
 
 Il pulsante di esportazione porta il testo fuori dall'app in cinque formati: vedi
 [Esportare trascrizioni e citazioni](/esporta/testo-citazioni).
@@ -47,7 +65,7 @@ Il pulsante di esportazione porta il testo fuori dall'app in cinque formati: ved
 ## La scheda accanto al documento
 
 Sopra l'editor ci sono due tab, **Testo** e **Scheda**. «Scheda» mostra il modulo completo della
-scheda al posto del testo, con la carta sempre a destra: si compilano datazione, materia, misure
+scheda al posto del testo, con la carta sempre accanto: si compilano datazione, materia, misure
 guardando il documento. La scheda si salva da sola dopo una breve pausa, e accanto ai tab compare
 «Salvata alle…». `Ctrl+Maiusc+S` passa da un tab all'altro.
 

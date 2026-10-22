@@ -68,7 +68,7 @@ Queste sono inattive mentre scrivi in un campo di testo e mentre è aperta una f
 | Scorciatoia | Effetto |
 | --- | --- |
 | `Alt+←` / `Alt+→` | Allegato precedente / successivo |
-| `Alt+F` | Allegato a schermo intero |
+| `Alt+F` | Solo la fonte / fonte e testo affiancati |
 
 ## Visualizzatore immagini
 

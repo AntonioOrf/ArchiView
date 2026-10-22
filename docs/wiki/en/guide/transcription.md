@@ -1,10 +1,13 @@
 # Transcription
 
 The **Transcribe** button on a record opens the dedicated environment: the image (or PDF) of the
-document on one side, the text editor on the other.
+document on the left, the text editor on the right.
 
-![The transcription environment: editor on the left, document folio on the right](/img/en/trascrizione.png){.light-only}
-![The transcription environment: editor on the left, document folio on the right](/img/en/trascrizione-scuro.png){.dark-only}
+![The transcription environment: document folio on the left, text with line numbers on the right](/img/en/trascrizione.png){.light-only}
+![The transcription environment: document folio on the left, text with line numbers on the right](/img/en/trascrizione-scuro.png){.dark-only}
+
+At the top, the **Source | Side by side | Text** switch chooses what you see: only the folio, both
+columns, or only the text at full width. If the record has no attachments, only the text is shown.
 
 ## One transcription per folio
 
@@ -35,12 +38,26 @@ the file is read a piece at a time, not loaded whole.
 
 It has all the commands described in [Attachments](/en/guide/attachments): zoom, panning, rotation,
 fit to page, and above all **brightness, contrast and negative** for difficult hands. `Alt+F`
-shows the attachment full screen.
+switches between "Side by side" and "Source": the folio takes all the space.
 
 ## The editor
 
 It is a text editor: the toolbar offers the formatting needed to mark up the text where required.
 **Save often with `Ctrl+S`**: it is the most useful shortcut in the program.
+
+Every line has its **number** in the margin, and a bar at the bottom shows the current line, the
+number of lines and the word count.
+
+The philological toolbar applies Leiden signs to the selection:
+
+| Button | With a selection | Without a selection |
+| --- | --- | --- |
+| **[gap]** | puts it in square brackets: `[sel]` | inserts `[...]` |
+| **(expansion)** | expanded abbreviation in round brackets: `(sel)` | inserts `()` with the cursor inside |
+| **sic (!)** | flags the reading: `sel (!)` | — |
+
+When you paste from Word or a web page, paragraphs, bold, italic, underline and lists are kept;
+styles, colours and images are dropped.
 
 The export button takes the text out of the program in five formats: see
 [Exporting transcriptions and citations](/en/export/text-citations).
@@ -48,7 +65,7 @@ The export button takes the text out of the program in five formats: see
 ## The record next to the document
 
 Above the editor there are two tabs, **Text** and **Record**. "Record" shows the full record form
-in place of the text, with the folio always on the right: you fill in date, material and
+in place of the text, with the folio always beside it: you fill in date, material and
 dimensions while looking at the document. The record saves by itself after a short pause, and
 "Saved at…" appears next to the tabs. `Ctrl+Shift+S` switches between the two tabs.
 

@@ -68,7 +68,7 @@ These are inactive while you are typing in a text field and while a window is op
 | Shortcut | Effect |
 | --- | --- |
 | `Alt+←` / `Alt+→` | Previous / next attachment |
-| `Alt+F` | Attachment full screen |
+| `Alt+F` | Source only / source and text side by side |
 
 ## Image viewer
 
