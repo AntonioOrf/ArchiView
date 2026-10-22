@@ -1,8 +1,8 @@
 *Leggi in [Inglese](README.md)*
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/vista-griglia-dark.png">
-  <img alt="La finestra principale di ArchiView: albero delle cartelle a sinistra, schede della cartella come riquadri" src="docs/screenshots/it/vista-griglia.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/it/vista-tabella-dark.png">
+  <img alt="La finestra principale di ArchiView: albero delle cartelle a sinistra, schede della cartella in tabella" src="docs/screenshots/it/vista-tabella.png">
 </picture>
 
 # ArchiView

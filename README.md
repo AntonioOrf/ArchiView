@@ -1,8 +1,8 @@
 _Read this in [Italian](README-it.md)_
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/vista-griglia-dark.png">
-  <img alt="ArchiView main window: folder tree on the left, records of the selected folder as cards" src="docs/screenshots/en/vista-griglia.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/vista-tabella-dark.png">
+  <img alt="ArchiView main window: folder tree on the left, records of the selected folder in a table" src="docs/screenshots/en/vista-tabella.png">
 </picture>
 
 # ArchiView
