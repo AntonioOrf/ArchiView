@@ -475,6 +475,11 @@ button, .btn {
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     font-family: inherit;
 }
+select option,
+select optgroup {
+    background-color: var(--color-bg-panel);
+    color: var(--color-text-main);
+}
 .form-input:focus {
     border-color: var(--color-primary);
     outline: 2px solid var(--color-primary);
@@ -1712,7 +1717,6 @@ summary:focus:not(:focus-visible) { outline: none; }
     background-color: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
-.iv-filtro select option { color: #1c1917; background-color: #fafaf9; }
 .sidebar-dal-telefono {
     margin-left: auto;
     flex-shrink: 0;
