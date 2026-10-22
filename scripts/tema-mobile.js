@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 const RADICE = path.join(__dirname, '..');
-const CSS = path.join(RADICE, 'src', 'renderer', 'css', 'style.css');
+// ponytail: colori del telefono congelati ai token desktop di prima della nuova UI (22/10/2026); per riallinearli rimettere src/renderer/css/style.css
+const CSS = path.join(RADICE, 'scripts', 'tema-mobile-base.css');
 const USCITA = path.join(RADICE, 'mobile', 'src', 'theme', 'colori.ts');
 
 function blocco(css, selettore) {

@@ -1,0 +1,85 @@
+:root {
+    --color-primary: #1d4ed8;
+    --color-primary-hover: #1e3a8a;
+    --color-primary-light: #dbeafe;
+    --color-primary-border: #93c5fd;
+    --color-on-primary: #ffffff;
+
+    --color-bg-base: #f1f5f9;
+    --color-bg-panel: #ffffff;
+    --color-bg-panel-transparent: rgba(255, 255, 255, 0.95);
+    --color-bg-hover: #e2e8f0;
+    --color-bg-sidebar: #f8fafc;
+
+    --color-text-main: #020617;
+    --color-text-secondary: #1e293b;
+    --color-text-muted: #475569;
+    --color-text-placeholder: #5b6576;
+
+    --color-border: #64748b;
+    --color-border-light: #94a3b8;
+    --color-border-input: #64748b;
+
+    --color-danger: #b91c1c;
+    --color-danger-hover: #991b1b;
+    --color-danger-light: #fee2e2;
+    --color-on-danger: #ffffff;
+    --color-danger-border: #fecaca;
+    --color-danger-text: #b91c1c;
+
+    --color-warning: #b45309;
+    --color-warning-light: #fef3c7;
+    --color-warning-border: #f59e0b;
+
+    --color-success: #15803d;
+    --color-success-light: #f0fdf4;
+    --color-success-border: #86efac;
+    --color-info: #1d4ed8;
+    --color-info-light: #eff6ff;
+    --color-info-border: #bfdbfe;
+
+    --radius-sm: 0;
+    color-scheme: light;
+}
+
+:root.dark-theme {
+    color-scheme: dark;
+    --color-primary: #ea580c;
+    --color-primary-hover: #fb923c;
+    --color-on-primary: #0a0a0a;
+    --color-primary-light: rgba(234, 88, 12, 0.15);
+    --color-primary-border: rgba(234, 88, 12, 0.3);
+
+    --color-bg-base: #000000;
+    --color-bg-panel: #0a0a0a;
+    --color-bg-panel-transparent: rgba(10, 10, 10, 0.98);
+    --color-bg-hover: #171717;
+    --color-bg-sidebar: #000000;
+
+    --color-text-main: #fafafa;
+    --color-text-secondary: #d4d4d8;
+    --color-text-muted: #a1a1aa;
+    --color-text-placeholder: var(--color-text-muted);
+
+    --color-border: #27272a;
+    --color-border-light: #18181b;
+    --color-border-input: #71717a;
+
+    --color-danger: #ef4444;
+    --color-danger-hover: #f87171;
+    --color-danger-light: rgba(239, 68, 68, 0.15);
+    --color-on-danger: #0a0a0a;
+    --color-danger-border: rgba(239, 68, 68, 0.4);
+    --color-danger-text: #f87171;
+
+    --color-warning: #fbbf24;
+    --color-warning-light: rgba(251, 191, 36, 0.15);
+    --color-warning-border: rgba(251, 191, 36, 0.45);
+
+    --color-success: #4ade80;
+    --color-success-light: rgba(74, 222, 128, 0.12);
+    --color-success-border: rgba(74, 222, 128, 0.4);
+    --color-info: #60a5fa;
+    --color-info-light: rgba(37, 99, 235, 0.15);
+    --color-info-border: rgba(37, 99, 235, 0.4);
+}
