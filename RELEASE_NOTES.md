@@ -1,3 +1,29 @@
+## ArchiView 4.0.0 — Una nuova interfaccia
+
+Tutto il programma cambia aspetto: carta e inchiostro, caratteri pensati per la lettura, meno riquadri e più spazio al documento. I dati, gli archivi e la sincronizzazione restano gli stessi.
+
+### Novità
+
+- **Caratteri nuovi, inclusi nel programma**: IBM Plex Sans per i comandi, Source Serif 4 per i valori delle schede e i titoli, IBM Plex Mono per segnature, carte e numeri. Funzionano anche senza rete.
+- **Quattro temi ridisegnati** con la palette carta e inchiostro, chiari e scuri.
+- **Testata nuova**: percorso cliccabile della cartella, ricerca che apre la palette (Ctrl+K), azioni globali a destra. La sidebar ha il cambio archivio in alto e le sezioni Cartelle, Ricerche salvate e Tag; in fondo una barra di stato con cloud, ultimo salvataggio e conteggi.
+- **Vista tabella predefinita** con la colonna Trascrizione a pallino (trascritta, n su m, con testo, da fare) e un pannello a destra con la scheda selezionata. Chi usava già la griglia la ritrova.
+- **Scheda a sezioni** (Identificazione, Descrizione, Allegati, Tag e collegamenti) con indice a destra, titolo che segue la segnatura e barra Annulla / Salva scheda (Ctrl+S) sempre in basso.
+- **Trascrizione con la fonte a sinistra**, numeri di riga, barra Leiden per lacune, espansioni e *sic*, e un selettore Fonte / Affiancate / Testo. In fondo: riga, totale e parole.
+- **Editor del modello a due pannelli**, con l'anteprima del campo come appare nella scheda e il numero di schede che usano il modello.
+- **Impostazioni a due colonne** e tema scelto da anteprime; nella Gestione archivi compaiono gli archivi recenti.
+- **Conflitti di sincronizzazione** campo per campo, con le due versioni affiancate da cliccare.
+- **Colore di un tag dal tasto destro**, sulla sidebar, sulle schede e nel modulo.
+- Dialoghi, cronologia, import ZIP/IIIF/CSV, OCR, stampa, cestino, vocabolari, persone e luoghi, grafo, collazione e tour allineati al nuovo stile.
+
+### Correzioni
+
+- **Revisioni di Drive non scaricabili** (caricate da un altro membro o con download limitato): ora un messaggio spiega perché, invece di un errore generico.
+- Le voci delle tendine si leggono nei temi scuri; la X del benvenuto è abbastanza grande da cliccare.
+- Le barre di avanzamento e i pannelli non scattano più durante le animazioni.
+
+---
+
 ## ArchiView 3.4.1 — Più leggera e più sicura con i dati
 
 Una versione di correzioni: nessuna funzione nuova grande, molti casi in cui un dato poteva perdersi senza avviso.
