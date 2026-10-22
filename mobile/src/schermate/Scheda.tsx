@@ -93,7 +93,7 @@ export function Scheda(p: Props) {
         <TextInput
           accessibilityLabel={t('Prima carta')} value={p.cartaIniziale} onChangeText={p.onCartaIniziale} editable={p.numera}
           maxLength={ScannerLotto.LIMITI.etichetta} placeholder="1r" placeholderTextColor={c.textPlaceholder}
-          style={[tipo.corpo, { width: 72, minHeight: TOCCO, paddingHorizontal: spazio.sm, color: c.textMain, backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.borderInput, borderRadius: raggio.md, opacity: p.numera ? 1 : 0.5 }]}
+          style={[tipo.mono, { width: 72, minHeight: TOCCO, paddingHorizontal: spazio.sm, color: c.textMain, backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.borderInput, borderRadius: raggio.md, opacity: p.numera ? 1 : 0.5 }]}
         />
       </View>
       <Pulsante variante="ghost" icona={Camera} titolo={t('Foto libera, senza ritaglio')} onPress={p.onFotoLibera} style={{ marginHorizontal: spazio.md, marginTop: spazio.xs, alignSelf: 'flex-start' }} />
@@ -138,7 +138,7 @@ export function Scheda(p: Props) {
   const etichetta = ({ pg, inviata }: Cella) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.xs }}>
       {inviata && <Check size={14} color={c.primary} />}
-      <Testo numberOfLines={1} maxFontSizeMultiplier={1.5} tono={inviata || !pg.etichetta ? 'muted' : 'main'} style={{ flex: 1 }}>{inviata ? `${pg.etichetta || '—'} · ${t('inviata')}` : pg.etichetta || '—'}</Testo>
+      <Testo variante="mono" numberOfLines={1} maxFontSizeMultiplier={1.5} tono={inviata || !pg.etichetta ? 'muted' : 'main'} style={{ flex: 1, fontSize: 13 }}>{inviata ? `${pg.etichetta || '—'} · ${t('inviata')}` : pg.etichetta || '—'}</Testo>
     </View>
   );
   const griglia = (parte: Cella[], primo: number, onRiordina?: Props['onRiordina']) => (
@@ -163,7 +163,7 @@ export function Scheda(p: Props) {
           onTutte={() => sel.tutte(celle.filter(selezionabile).map(x => x.indice))} onEsci={sel.esci}
           onElimina={() => { p.onEliminaPagine(sel.scelte!.filter(i => celle[i] && selezionabile(celle[i]))); sel.esci(); }} />
       ) : (
-        <Intestazione titolo={titolo} sotto={sotto} onIndietro={p.onIndietro} azioni={p.onRinomina && p.onElimina && p.scheda.tipo === 'nuova' ? (
+        <Intestazione titolo={titolo} mono={p.scheda.tipo !== 'smistare'} sotto={sotto} onIndietro={p.onIndietro} azioni={p.onRinomina && p.onElimina && p.scheda.tipo === 'nuova' ? (
           <>
             <Pulsante variante="ghost" icona={Pencil} etichetta={t('Rinomina la scheda')} onPress={() => setSegnatura(p.scheda.tipo === 'nuova' ? p.scheda.segnatura : '')} />
             <Pulsante variante="pericoloGhost" icona={Trash2} etichetta={t('Elimina la scheda')} onPress={p.onElimina} />

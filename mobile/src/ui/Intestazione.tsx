@@ -6,9 +6,9 @@ import { spazio, useColori } from '../theme';
 import { Pulsante } from './Pulsante';
 import { Testo } from './Testo';
 
-type Props = { titolo: string; sotto?: string; onIndietro?: () => void; chiudi?: boolean; azioni?: ReactNode };
+type Props = { titolo: string; sotto?: string; onIndietro?: () => void; chiudi?: boolean; azioni?: ReactNode; mono?: boolean };
 
-export function Intestazione({ titolo, sotto, onIndietro, chiudi, azioni }: Props) {
+export function Intestazione({ titolo, sotto, onIndietro, chiudi, azioni, mono }: Props) {
   const c = useColori();
   return (
     <View style={{
@@ -18,7 +18,7 @@ export function Intestazione({ titolo, sotto, onIndietro, chiudi, azioni }: Prop
     }}>
       {onIndietro ? <Pulsante variante="ghost" icona={chiudi ? X : ArrowLeft} etichetta={chiudi ? t('Chiudi') : t('Indietro')} onPress={onIndietro} /> : <View style={{ width: spazio.sm }} />}
       <View style={{ flex: 1 }}>
-        <Testo variante="titolo" accessibilityRole="header" numberOfLines={2}>{titolo}</Testo>
+        <Testo variante={mono ? 'mono' : 'titolo'} accessibilityRole="header" numberOfLines={2} style={mono ? { fontSize: 18, fontWeight: '500' } : undefined}>{titolo}</Testo>
         {!!sotto && <Testo variante="aiuto">{sotto}</Testo>}
       </View>
       {azioni}

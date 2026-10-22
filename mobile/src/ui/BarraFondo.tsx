@@ -30,7 +30,7 @@ export function BarraFondo({ sinistra, centro, destra }: { sinistra: Voce; centr
         <v.icona size={22} color={c.textMuted} />
         {!!v.conta && (
           <View style={{ position: 'absolute', top: -6, left: 14, minWidth: 18, minHeight: 18, paddingHorizontal: 4, borderRadius: raggio.tondo, alignItems: 'center', justifyContent: 'center', backgroundColor: c.primary }}>
-            <Testo variante="aiuto" maxFontSizeMultiplier={1.5} style={{ fontSize: 11, lineHeight: 14, fontWeight: '700', color: c.onPrimary }}>{v.conta > 99 ? '99+' : String(v.conta)}</Testo>
+            <Testo variante="mono" maxFontSizeMultiplier={1.5} style={{ fontSize: 11, lineHeight: 14, fontWeight: '500', color: c.onPrimary }}>{v.conta > 99 ? '99+' : String(v.conta)}</Testo>
           </View>
         )}
       </View>

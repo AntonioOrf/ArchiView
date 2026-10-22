@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, BackHandler, Platform } from 'react-native';
+import { AppState, BackHandler, Linking, Platform } from 'react-native';
 import { attesa as avvisoInCorso, Avvisi, avviso, notizia } from './src/ui/Avviso';
 import { useIncomingShare } from 'expo-sharing';
 import { nuovoDocumento } from './src/documenti';
@@ -21,7 +21,7 @@ import { aggiornaArchivi, aggiornaElenco, archiviLocali, benvenutoFatto, elencoL
 import { alternaCartella, chiaveDestinazione, destinazioneDi, perArchivio, percorsoLeggibile, type SchedaScelta } from './src/scelta';
 import { prossimaEtichetta } from './src/etichette';
 import { Abbina } from './src/Abbina';
-import { cercaAggiornamento, installaAggiornamento } from './src/aggiornaApp';
+import { cercaAggiornamento, installaAggiornamento, noteVersione } from './src/aggiornaApp';
 import type { Nuova } from './src/aggiornamento';
 import { abbinamentoPerso, inviaLottoWifi, type Abbinamento } from './src/wifi';
 import { ScannerLotto, type Modalita, type Pagina } from './src/contratto';
@@ -259,6 +259,12 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     const a = avvisoInCorso(`ArchiScanner ${n.versione}`, p => p === null ? t('Scarico l\'aggiornamento…') : t('Scarico l\'aggiornamento… {p}%', { p }));
     try {
       await installaAggiornamento(n, a.percento);
+    } catch (e: any) {
+      avviso(t('Aggiornamento non riuscito'), e?.message || String(e), [
+        { text: t('Chiudi'), style: 'cancel' },
+        { text: t('Scarica dal browser'), onPress: () => { Linking.openURL(noteVersione(n.versione)).catch(err => console.warn('[aggiornamento] browser non aperto', err)); } },
+        { text: t('Riprova'), onPress: () => installaNuova(n) }
+      ]);
     } finally {
       a.chiudi();
     }
@@ -708,6 +714,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
         <Schermo>
           <Visore
             titolo={titoloScheda}
+            titoloMono={scheda.tipo !== 'smistare'}
             pagine={pagineVisore}
             indice={visore}
             onIndice={setVisore}

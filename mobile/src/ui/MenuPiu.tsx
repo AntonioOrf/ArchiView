@@ -18,7 +18,7 @@ export function MenuPiu({ visibile, voci, onChiudi }: { visibile: boolean; voci:
   const fondoCerchio = ALTEZZA_BARRA + margini.bottom - CERCHIO / 2;
   return (
     <Modal visible={visibile} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onChiudi}>
-      <Pressable accessibilityLabel={t('Chiudi')} onPress={onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.55)' }} />
+      <Pressable accessibilityLabel={t('Chiudi')} onPress={onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(20, 19, 18, 0.55)' }} />
       <View accessibilityViewIsModal style={{ position: 'absolute', left: 0, right: width / 2 - PALLINO / 2, bottom: fondoCerchio + CERCHIO + spazio.lg, alignItems: 'flex-end', gap: spazio.md }}>
         {voci.map(v => (
           <Pressable

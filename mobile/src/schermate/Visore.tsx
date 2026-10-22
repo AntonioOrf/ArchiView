@@ -18,6 +18,7 @@ type Azione = (i: number) => void;
 
 type Props = {
   titolo: string;
+  titoloMono?: boolean;
   pagine: PaginaVisore[];
   indice: number;
   onIndice: (i: number) => void;
@@ -76,7 +77,7 @@ export function Visore(p: Props) {
 
   return (
     <View style={{ flex: 1 }}>
-      <Intestazione titolo={p.titolo} sotto={n > 1 ? t('Pagina {i} di {n} · striscia per le altre', { i: i + 1, n }) : t('Pagina {i} di {n}', { i: i + 1, n })} onIndietro={p.onChiudi} chiudi />
+      <Intestazione titolo={p.titolo} mono={p.titoloMono} sotto={n > 1 ? t('Pagina {i} di {n} · striscia per le altre', { i: i + 1, n }) : t('Pagina {i} di {n}', { i: i + 1, n })} onIndietro={p.onChiudi} chiudi />
       {avviso && (
         <View accessibilityRole="text" accessibilityLiveRegion="polite" style={[barra, { flexDirection: 'row', alignItems: 'center', gap: spazio.sm, borderBottomWidth: 1 }]}>
           {stato === 'invio' ? <CloudUpload size={18} color={c.primary} /> : stato === 'inviata' ? <Check size={18} color={c.primary} /> : <TriangleAlert size={18} color={c.warning} />}
@@ -102,7 +103,7 @@ export function Visore(p: Props) {
               <TextInput
                 accessibilityLabel={t('Etichetta di {nome}', { nome })} value={pg.etichetta || ''} onChangeText={s => p.onEtichetta!(i, s)}
                 placeholder={t('Es. 12v')} placeholderTextColor={c.textPlaceholder} maxLength={ScannerLotto.LIMITI.etichetta} selectionColor={c.primary}
-                style={[tipo.voce, { flex: 1, minHeight: TOCCO, paddingHorizontal: spazio.md, color: c.textMain, backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.borderInput, borderRadius: raggio.md }]}
+                style={[tipo.mono, { flex: 1, minHeight: TOCCO, paddingHorizontal: spazio.md, color: c.textMain, backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.borderInput, borderRadius: raggio.md }]}
               />
             </View>
           )}

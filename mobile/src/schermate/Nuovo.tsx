@@ -40,7 +40,7 @@ export function Nuovo({ visibile, archivio, cartelle, cartellaIniziale, onChiudi
         </Schermo>
       ) : (
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <Pressable accessibilityLabel={t('Chiudi')} onPress={chiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.55)' }} />
+          <Pressable accessibilityLabel={t('Chiudi')} onPress={chiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(20, 19, 18, 0.55)' }} />
           <View accessibilityViewIsModal style={{ backgroundColor: c.bgPanel, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: spazio.md, paddingTop: spazio.sm, paddingBottom: spazio.lg + margini.bottom, gap: spazio.md }}>
             <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderLight }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.sm }}>

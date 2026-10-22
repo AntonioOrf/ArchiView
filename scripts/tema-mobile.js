@@ -4,8 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const RADICE = path.join(__dirname, '..');
-// ponytail: colori del telefono congelati ai token desktop di prima della nuova UI (22/10/2026); per riallinearli rimettere src/renderer/css/style.css
-const CSS = path.join(RADICE, 'scripts', 'tema-mobile-base.css');
+const CSS = path.join(RADICE, 'src', 'renderer', 'css', 'style.css');
 const USCITA = path.join(RADICE, 'mobile', 'src', 'theme', 'colori.ts');
 
 function blocco(css, selettore) {
@@ -33,19 +32,13 @@ function risolvi(token, base) {
 
 const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 
-const SOLO_TELEFONO = {
-  chiaro: { divisore: '#e2e8f0' },
-  scuro: {
-    'bg-base': '#1c1c1e', 'bg-panel': '#242427', 'bg-panel-transparent': 'rgba(36, 36, 39, 0.98)',
-    'bg-hover': '#2e2e32', 'bg-sidebar': '#1c1c1e', border: '#3a3a3f', 'border-light': '#323236', divisore: '#323236'
-  }
-};
+const conDivisore = (t) => ({ ...t, divisore: t['border-light'] });
 
 function genera() {
   const css = fs.readFileSync(CSS, 'utf8');
   const chiaroGrezzo = blocco(css, ':root');
-  const chiaro = { ...risolvi(chiaroGrezzo, {}), ...SOLO_TELEFONO.chiaro };
-  const scuro = { ...risolvi({ ...chiaroGrezzo, ...blocco(css, ':root.dark-theme') }, chiaro), ...SOLO_TELEFONO.scuro };
+  const chiaro = conDivisore(risolvi(chiaroGrezzo, {}));
+  const scuro = conDivisore(risolvi({ ...chiaroGrezzo, ...blocco(css, ':root.dark-theme') }, chiaro));
   const righe = (t) => Object.keys(chiaro).map(k => `    ${camel(k)}: '${t[k]}',`).join('\n');
   return `export const colori = {
   chiaro: {

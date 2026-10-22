@@ -92,7 +92,7 @@ function DaInviare({ gruppi, stato, onInviaOra, onApri, onApriPagina }: { gruppi
             <Pressable accessibilityRole="button" onPress={() => onApri(g.scelta)} style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.sm, minHeight: TOCCO - spazio.xs }}>
               {smistare ? <Inbox size={20} color={c.primaryHover} /> : <FileText size={20} color={c.primaryHover} />}
               <View style={{ flex: 1 }}>
-                <Testo variante="voce">{`${nome} · ${g.pagine}`}</Testo>
+                <Testo>{smistare ? nome : <Testo variante="mono">{nome}</Testo>}{` · ${g.pagine}`}</Testo>
                 <Testo variante="aiuto" numberOfLines={1}>{smistare ? t('Da smistare al computer') : g.riassunto || ''}</Testo>
               </View>
               <ChevronRight size={20} color={c.textMuted} />
@@ -102,7 +102,7 @@ function DaInviare({ gruppi, stato, onInviaOra, onApri, onApriPagina }: { gruppi
               {g.anteprime.map((a, i) => (
                 <Pressable key={i} accessibilityRole="button" accessibilityLabel={a.etichetta ? t('Apri {nome}', { nome: a.etichetta }) : t('Apri la pagina {n}', { n: i + 1 })} onPress={() => onApriPagina(g.scelta, i)} style={{ alignItems: 'center', gap: 2 }}>
                   <Image source={{ uri: a.uri }} style={{ width: lato, height: lato * 4 / 3, borderRadius: raggio.sm, borderWidth: 1, borderColor: c.primaryBorder, backgroundColor: c.bgPanel }} resizeMode="cover" resizeMethod="resize" accessibilityIgnoresInvertColors />
-                  <Testo variante="aiuto" numberOfLines={1} style={{ maxWidth: lato }}>{a.etichetta || '—'}</Testo>
+                  <Testo variante="mono" tono="muted" numberOfLines={1} style={{ maxWidth: lato, fontSize: 12 }}>{a.etichetta || '—'}</Testo>
                 </Pressable>
               ))}
               {altre > 0 && (
@@ -206,8 +206,8 @@ export function Archivio(p: Props) {
         >
           <Freccia size={20} color={r.conta ? c.textMuted : c.borderInput} />
           <Icona size={20} color={r.aperta ? c.primaryHover : c.textMuted} />
-          <Testo variante="voce" numberOfLines={1} style={{ flex: 1, fontWeight: r.aperta ? '600' : undefined }}>{r.nome}</Testo>
-          <Testo variante="aiuto">{r.conta ? String(r.conta) : t('vuota')}</Testo>
+          <Testo numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: r.aperta ? '600' : undefined }}>{r.nome}</Testo>
+          {r.conta ? <Testo variante="mono" tono="muted" style={{ fontSize: 13 }}>{String(r.conta)}</Testo> : <Testo variante="aiuto">{t('vuota')}</Testo>}
         </Pressable>
       );
     }
@@ -224,13 +224,15 @@ export function Archivio(p: Props) {
       >
         <FileText size={18} color={pagine ? c.primaryHover : c.textMuted} />
         <View style={{ flex: 1, gap: 1 }}>
-          <Testo variante="voce" numberOfLines={1}>{s.segnatura || s.id}</Testo>
-          {!!sotto && <Testo variante="aiuto" numberOfLines={1}>{sotto}</Testo>}
+          <Testo variante="mono" numberOfLines={1}>{s.segnatura || s.id}</Testo>
+          {!!sotto && (s.titolo
+            ? <Testo variante="voce" numberOfLines={1} style={{ fontSize: 15, color: c.textSecondary }}>{sotto}</Testo>
+            : <Testo variante="aiuto" numberOfLines={1}>{sotto}</Testo>)}
         </View>
         {!!s.daVedere && (vista ? <CircleCheck size={18} color={c.success} /> : <Eye size={18} color={c.textMuted} />)}
         {!!pagine && (
           <View style={{ minWidth: 22, minHeight: 22, paddingHorizontal: 6, borderRadius: raggio.tondo, alignItems: 'center', justifyContent: 'center', backgroundColor: c.primary }}>
-            <Testo variante="aiuto" maxFontSizeMultiplier={1.5} style={{ fontSize: 12, lineHeight: 16, fontWeight: '700', color: c.onPrimary }}>{String(pagine)}</Testo>
+            <Testo variante="mono" maxFontSizeMultiplier={1.5} style={{ fontSize: 12, lineHeight: 16, fontWeight: '500', color: c.onPrimary }}>{String(pagine)}</Testo>
           </View>
         )}
       </Pressable>

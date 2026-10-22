@@ -106,7 +106,7 @@ export function TendinaArchivi(p: Props) {
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={p.onChiudi}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <Pressable accessibilityLabel={t('Chiudi l\'elenco degli archivi')} onPress={p.onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.45)' }} />
+        <Pressable accessibilityLabel={t('Chiudi l\'elenco degli archivi')} onPress={p.onChiudi} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(20, 19, 18, 0.45)' }} />
         <View accessibilityViewIsModal style={{ maxHeight: '85%', paddingTop: margini.top, backgroundColor: c.bgPanel, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' }}>
           {elenco}
         </View>

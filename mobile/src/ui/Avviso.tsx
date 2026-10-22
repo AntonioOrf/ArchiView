@@ -77,7 +77,7 @@ function Finestra() {
     <Modal visible transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={chiudi}>
       <View style={{ flex: 1, justifyContent: 'center', padding: spazio.lg }}>
         <Pressable accessibilityLabel={t('Chiudi')} disabled={!annulla} onPress={chiudi}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.55)' }} />
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(20, 19, 18, 0.55)' }} />
         <View accessibilityViewIsModal accessibilityRole="alert"
           style={{ backgroundColor: c.bgPanel, borderRadius: raggio.lg, borderWidth: 1, borderColor: c.divisore, padding: spazio.lg, gap: spazio.md, maxHeight: height * 0.8 }}>
           <Testo variante="sezione" accessibilityRole="header">{v.titolo}</Testo>
