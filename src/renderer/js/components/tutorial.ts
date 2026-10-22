@@ -23,7 +23,6 @@ window.avviaTutorial = async function () {
         }
     }
     const isCloud = !!(window.statoCloud && window.statoCloud.vaultCloud);
-    const isAuthenticated = !!(window.driveStatus && window.driveStatus.isAuthenticated);
 
     if (typeof appData !== 'undefined' && !isTutorialWorkspace) {
         if (!appData.manoscritti) appData.manoscritti = [];
@@ -88,9 +87,11 @@ window.avviaTutorial = async function () {
                     parentPath = parentPath.substring(0, parentPath.lastIndexOf('/'));
                     window.cartelleEspanse.add(parentPath);
                 }
-                if (window.renderSidebar) window.renderSidebar();
-                if (window.renderMain) window.renderMain();
             }
+            window.selectedRecords = [testRecord.id];
+            window.lastSelectedId = testRecord.id;
+            if (window.renderSidebar) window.renderSidebar();
+            if (window.renderMain) window.renderMain();
         }
     }
 
@@ -255,99 +256,56 @@ window.avviaTutorial = async function () {
             element: '#sidebar-cloud-btn',
             popover: {
                 title: window.t('tut_cloud_integration_title', 'Condivisione e cloud'),
-                description: window.t('tut_cloud_integration_desc', 'Questo archivio è solo locale. Clicca sull\'icona Condivisione in basso a sinistra per vedere come condividerlo o farne il backup.'),
-                side: "right",
+                description: window.t('tut_cloud_integration_desc', 'Questo archivio è solo locale. Clicca sull\'icona Condivisione in alto a destra per vedere come condividerlo o farne il backup.'),
+                side: "bottom",
                 align: 'start',
                 showButtons: ['close']
             },
-            onHighlighted: (el) => attachOnce(el, 300)
-        });
-        if (isAuthenticated) {
-            steps.push({
-                element: '#cloud-modal',
-                popover: {
-                    title: window.t('tut_cloud_panel_title', 'Condividere l\'archivio'),
-                    description: window.t('tut_cloud_panel_desc', 'Da qui l\'archivio locale diventa Condiviso, per lavorare in gruppo, o Personale, con backup automatico. Chiudi la finestra per proseguire.'),
-                    side: "left",
-                    align: 'start',
-                    showButtons: []
-                },
-                onHighlighted: () => {
-                    stepAC?.abort();
-                    stepAC = new AbortController();
-                    const cloudModal = document.getElementById('cloud-modal');
-                    let cloudObs = null;
-                    const advanceNext = () => { cloudObs?.disconnect(); authObs.disconnect(); setTimeout(() => window.dInstance?.moveNext(), 300); };
-                    if (cloudModal && !cloudModal.classList.contains('hidden-tab')) {
-                        cloudObs = new MutationObserver(() => { if (cloudModal.classList.contains('hidden-tab')) advanceNext(); });
-                        cloudObs.observe(cloudModal, { attributes: true, attributeFilter: ['class'] });
-                    }
-                    const authObs = new MutationObserver((mutations) => {
-                        for (const m of mutations) {
-                            for (const node of Array.from(m.addedNodes) as HTMLElement[]) {
-                                if (node.id === 'cloud-auth-modal') {
-                                    const cancelBtn = node.querySelector('#btn-cloud-auth-no');
-                                    if (cancelBtn) cancelBtn.addEventListener('click', () => setTimeout(() => { if (window.chiudiCloudModal) window.chiudiCloudModal(); }, 350), { once: true });
-                                }
-                            }
+            onHighlighted: (el) => {
+                stepAC?.abort();
+                stepAC = new AbortController();
+                const segnale = stepAC.signal;
+                el?.addEventListener('click', () => {
+                    const inizio = Date.now();
+                    const timer = setInterval(() => {
+                        const modale = document.getElementById('share-modal');
+                        if ((modale && !modale.classList.contains('hidden-tab')) || Date.now() - inizio > 3000) {
+                            clearInterval(timer);
+                            window.dInstance?.moveNext();
                         }
-                    });
-                    authObs.observe(document.body, { childList: true });
-                    stepAC.signal.addEventListener('abort', () => { cloudObs?.disconnect(); authObs.disconnect(); });
-                },
-                onPrevClick: () => {
-                    if (window.chiudiCloudModal) window.chiudiCloudModal();
-                    setTimeout(() => window.dInstance?.movePrevious(), 150);
-                }
-            });
-        } else {
-            let cloudStepDone = false;
-            const advanceOnce = () => {
-                if (cloudStepDone) return;
-                cloudStepDone = true;
-                window.dInstance?.moveNext();
-            };
-            steps.push({
-                element: '#cloud-auth-modal .modal-window',
-                popover: {
-                    title: window.t('tut_cloud_panel_title', 'Condividere l\'archivio'),
-                    description: window.t('tut_cloud_no_auth_desc', 'Non hai ancora fatto l\'accesso a Google. Puoi farlo ora per provare le funzioni cloud, oppure proseguire la visita senza.'),
-                    side: "right",
-                    align: 'center',
-                    showButtons: ['next', 'previous'],
-                    nextBtnText: window.t('btn_login_google', 'Accedi con Google'),
-                    prevBtnText: window.t('tut_btn_prosegui', 'Prosegui'),
-                    onPrevClick: () => {
-                        const cancelBtn = document.getElementById('btn-cloud-auth-no');
-                        if (cancelBtn) cancelBtn.click();
-                        else document.getElementById('cloud-auth-modal')?.remove();
-                        advanceOnce();
-                    },
-                    onNextClick: () => {
-                        const googleBtn = document.getElementById('btn-cloud-auth-google');
-                        if (!googleBtn) { advanceOnce(); return; }
-                        googleBtn.click();
-                        const cloudModal = document.getElementById('cloud-modal');
-                        if (!cloudModal) { advanceOnce(); return; }
-                        const obs = new MutationObserver(() => {
-                            if (!cloudModal.classList.contains('hidden-tab')) {
-                                obs.disconnect();
-                                advanceOnce();
-                            }
-                        });
-                        obs.observe(cloudModal, { attributes: true, attributeFilter: ['class'] });
-                        stepAC?.signal.addEventListener('abort', () => obs.disconnect());
-                    },
-                },
-                onHighlighted: () => {
-                    stepAC?.abort();
-                    stepAC = new AbortController();
-                    cloudStepDone = false;
-                    const realCancel = document.getElementById('btn-cloud-auth-no');
-                    if (realCancel) realCancel.addEventListener('click', () => advanceOnce(), { once: true, signal: stepAC.signal });
-                }
-            });
-        }
+                    }, 50);
+                    segnale.addEventListener('abort', () => clearInterval(timer));
+                }, { once: true, signal: segnale });
+            }
+        });
+        steps.push({
+            element: '#share-modal .modal-window',
+            popover: {
+                title: window.t('tut_cloud_panel_title', 'Condividere l\'archivio'),
+                description: window.t('tut_share_local_desc', 'Da qui l\'archivio locale diventa condiviso, per lavorare in gruppo, oppure ne attivi il backup su Google Drive. Chiudi la finestra per proseguire.'),
+                side: 'left',
+                align: 'start',
+                showButtons: []
+            },
+            onHighlighted: () => {
+                stepAC?.abort();
+                stepAC = new AbortController();
+                const modale = document.getElementById('share-modal');
+                if (!modale) return;
+                if (modale.classList.contains('hidden-tab') && window.apriShareModal) window.apriShareModal();
+                const oss = new MutationObserver(() => {
+                    if (!modale.classList.contains('hidden-tab')) return;
+                    oss.disconnect();
+                    setTimeout(() => window.dInstance?.moveNext(), 300);
+                });
+                oss.observe(modale, { attributes: true, attributeFilter: ['class'] });
+                stepAC.signal.addEventListener('abort', () => oss.disconnect());
+            },
+            onPrevClick: () => {
+                if (window.chiudiShareModal) window.chiudiShareModal();
+                setTimeout(() => window.dInstance?.movePrevious(), 150);
+            }
+        });
     }
 
     steps.push({

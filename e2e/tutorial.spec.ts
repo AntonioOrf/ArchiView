@@ -128,4 +128,29 @@ test.describe('Tutorial guidato', () => {
 
     await expect(page.locator('#trascrizione-allegato-panel:not(.hidden-tab)')).toBeVisible();
   });
+test('in un archivio locale il clic su Condivisione porta il tour sulla finestra Condivisione', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Tour');
+    await seed(page, [{ segnatura: 'MS 1' }]);
+    const selettori = await selettoriDeiPassi(page);
+    const indice = selettori.indexOf('#sidebar-cloud-btn');
+    expect(indice).toBeGreaterThan(-1);
+    await page.evaluate((i) => (window as any).dInstance.moveTo(i), indice);
+    await expect(page.locator('.driver-popover')).toBeVisible();
+    await page.waitForTimeout(500);
+
+    await page.locator('#sidebar-cloud-btn').click();
+    await expect(page.locator('#share-modal')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => {
+      const el = (window as any).dInstance?.getActiveElement?.();
+      return !!(el && el.closest && el.closest('#share-modal'));
+    })).toBe(true);
+    await page.waitForTimeout(600);
+
+    await page.locator('#share-modal [data-on-click="chiudiShareModal"]').first().click();
+    await expect(page.locator('#share-modal')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => {
+      const el = (window as any).dInstance?.getActiveElement?.();
+      return el ? el.getAttribute('data-on-click') : null;
+    })).toBe('toggleVaultSwitcher');
+  });
 });
