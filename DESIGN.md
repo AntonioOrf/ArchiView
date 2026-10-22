@@ -49,11 +49,19 @@ cover: prefer a token class to a `dark:` pair.
   labels are square.
 - No decorative side stripes on cards. Coloured left bands exist only where they carry data
   (tag colours in the sidebar, own-field marker in the form).
-- Flat surfaces: panels, modals and cards have no shadow beyond a hover lift.
+- Flat surfaces: panels, modals and cards have no shadow beyond a hover lift. Modals are a
+  hairline-bordered panel on a plain scrim (no blur); the title is ink, not accent.
 
 ## Type
 
-- Serif (Georgia) for content and headings, the system sans for controls.
+- Three local typefaces (`css/fonts`, OFL), each with one job, read through `--font-sans`,
+  `--font-serif`, `--font-mono`: **IBM Plex Sans** for controls and UI text (the `body` default),
+  **Source Serif 4** for content (view titles `h1`, record values, transcription), **IBM Plex Mono**
+  for shelfmarks, normalised dates, counts and shortcuts. Junicode stays as a transcription choice
+  and as the serif fallback for medieval abbreviation glyphs.
+- Palette "paper and ink": warm neutral grounds, ink text, hairline dividers
+  (`--color-border`/`-light`), input borders at ≥ 3:1 (`--color-border-input`). Reference
+  mock-ups: Claude Design canvas linked from `PIANO-NUOVA-UI.md`.
 - Minimum **11 px** for any informative text (labels, badges, hints, metadata). 10 px only for
   numeric counters and single glyphs in fixed-size badges. No 9 px.
 - Uppercase + letter-spacing only for short status badges.
