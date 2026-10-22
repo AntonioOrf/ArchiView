@@ -2,7 +2,7 @@
   "expo": {
     "name": "ArchiScanner",
     "slug": "archiview-scanner",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "scheme": "archiview-scanner",
     "platforms": [
       "android"
