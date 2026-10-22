@@ -8,6 +8,13 @@ Dall'editor della scheda, nella sezione dedicata agli allegati. I file vengono *
 la cartella `allegati_manoscritti` della tua cartella di lavoro: se in seguito sposti o cancelli
 l'originale, la scheda continua a funzionare.
 
+Due file con lo stesso nome (per esempio `IMG_0001.jpg` da due cartelle diverse) non si
+sovrascrivono: il secondo riceve un nome libero, con `_2`, `_3` in coda.
+
+In **Impostazioni → Archivio Dati → Cartella Allegati Locale** puoi tenere gli allegati in una
+cartella diversa. La scelta vale per l'archivio aperto, non per tutti, e il backup ZIP
+dell'archivio include anche gli allegati che stanno lì.
+
 Un manoscritto già digitalizzato da una biblioteca si aggiunge senza scaricarlo: vedi
 [Importare da IIIF](/guida/iiif).
 
@@ -27,7 +34,7 @@ pagine di un PDF, che si sfogliano una alla volta (vedi [Trascrizione](/guida/tr
 | Adattare alla pagina o alla larghezza | Pulsanti del visore |
 | Allegato precedente / successivo | `Alt` + frecce sinistra/destra |
 | Pagina precedente / successiva (anche fra allegati) | `PagSu` / `PagGiù` |
-| A schermo intero | `Alt+F` |
+| Solo la fonte, nella trascrizione | `Alt+F` |
 | Adatta alla pagina / dimensione reale | `0` / `1` |
 
 Ci sono inoltre i regolatori di **luminosità**, **contrasto** e la modalità **negativo**: sono

@@ -8,6 +8,13 @@ From the record form, in the attachments section. Files are **copied** into the
 `allegati_manoscritti` folder of your working folder: if you later move or delete the original, the
 record keeps working.
 
+Two files with the same name (for example `IMG_0001.jpg` from two different folders) do not
+overwrite each other: the second gets a free name, with `_2`, `_3` at the end.
+
+In **Settings → Data Archive → Local Attachments Folder** you can keep attachments in a different
+folder. The choice applies to the open archive, not to all of them, and the archive's ZIP backup
+also includes the attachments stored there.
+
 A manuscript already digitised by a library can be added without downloading it: see
 [Importing from IIIF](/en/guide/iiif).
 
@@ -27,7 +34,7 @@ pages of a PDF, which are browsed one at a time (see [Transcription](/en/guide/t
 | Fit to page or width | Viewer buttons |
 | Previous / next attachment | `Alt` + left/right arrows |
 | Previous / next page (across attachments too) | `Page Up` / `Page Down` |
-| Full screen | `Alt+F` |
+| Source only, in transcription | `Alt+F` |
 | Fit to page / actual size | `0` / `1` |
 
 There are also **brightness** and **contrast** controls and a **negative** mode: they are meant for
