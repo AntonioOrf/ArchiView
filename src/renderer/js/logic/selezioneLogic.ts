@@ -50,6 +50,7 @@ window.selectItem = function(id, event) {
 };
 
 window.aggiornaStatoSelezione = function() {
+    if (typeof window.aggiornaBarraStato === 'function') window.aggiornaBarraStato();
     const ind = document.getElementById('selection-indicator');
     if (!ind) return;
     const n = (window.selectedRecords && window.selectedRecords.length) || 0;

@@ -7,6 +7,7 @@ type DialogResult = { canceled?: boolean; filePaths?: string[]; filePath?: strin
 
 type ArchiViewOptions = {
   seedWorkspace: string | undefined;
+  vistaIniziale: 'griglia' | 'tabella' | null;
 };
 
 type ArchiViewFixtures = {
@@ -84,6 +85,7 @@ export async function stubDialog(app: ElectronApplication, result: DialogResult)
 
 export const test = base.extend<ArchiViewFixtures & ArchiViewOptions>({
   seedWorkspace: [undefined, { option: true }],
+  vistaIniziale: ['griglia', { option: true }],
 
   userDataDir: async ({}, use) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archiview-e2e-'));
@@ -100,8 +102,16 @@ export const test = base.extend<ArchiViewFixtures & ArchiViewOptions>({
     await closeApp(app);
   },
 
-  page: async ({ electronApp, userDataDir, seedWorkspace }, use) => {
+  page: async ({ electronApp, userDataDir, seedWorkspace, vistaIniziale }, use) => {
     const page = await electronApp.firstWindow();
+    if (vistaIniziale) {
+      const imposta = (v: string) => { (window as any).vistaLista = (window as any).vistaLista || v; };
+      await page.addInitScript(imposta, vistaIniziale);
+      await page.evaluate((v) => {
+        (window as any).vistaLista = v;
+        if (typeof (window as any).renderMain === 'function' && document.getElementById('search-input')) (window as any).renderMain();
+      }, vistaIniziale);
+    }
     if (seedWorkspace) seededWorkspaces.set(page, path.join(userDataDir, 'ws', seedWorkspace));
     await use(page);
   },

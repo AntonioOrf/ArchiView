@@ -403,7 +403,7 @@ function renderFiltriAttivi(search) {
     if (window.lucide) lucide.createIcons({ nodes: [bar] });
 }
 
-window.vistaLista = window.vistaLista || 'griglia';
+window.vistaLista = window.vistaLista || 'tabella';
 
 function mostraContenitoreLista(quale) {
     const grid = document.getElementById('manoscritti-grid');
@@ -516,6 +516,107 @@ function cellaTestuale(m, campo) {
     return String(v).replace(/<[^>]*>/g, '');
 }
 
+function _haTesto(s) {
+    return String(s || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
+}
+
+function statoTrascrizione(m) {
+    const av = window.avanzamentoCarte(m);
+    if (av && av.fatte >= av.totale) return { chiave: 'fatta', testo: window.t('transcr_state_done', 'Trascritta') };
+    if (av && av.fatte > 0) return { chiave: 'parziale', testo: av.fatte + '/' + av.totale };
+    if (!av && (_haTesto(m.trascrizione) || carteDi(m).some(a => a && (_haTesto(a.trascrizione) || (Array.isArray(a.pagine) && a.pagine.some(_haTesto)))))) {
+        return { chiave: 'testo', testo: window.t('transcr_state_text', 'Con testo') };
+    }
+    return { chiave: 'dafare', testo: window.t('transcr_state_todo', 'Da fare') };
+}
+window.statoTrascrizione = statoTrascrizione;
+
+function htmlStatoTrascrizione(m) {
+    const s = statoTrascrizione(m);
+    return `<span class="stato-trascr is-${escapeHTML(s.chiave)}"><span class="stato-trascr-pallino" aria-hidden="true"></span>${escapeHTML(s.testo)}</span>`;
+}
+
+function nomeModello(tipo) {
+    if (!tipo) return window.t('model_generic', 'Documento');
+    return window.t('model_' + tipo.id) !== 'model_' + tipo.id ? window.t('model_' + tipo.id) : tipo.nome;
+}
+
+function renderPannelloScheda() {
+    const pannello = document.getElementById('pannello-scheda');
+    if (!pannello) return;
+    const sel = window.selectedRecords || [];
+    const m = window.vistaLista === 'tabella' && sel.length === 1
+        ? appData.manoscritti.find(x => String(x.id) === String(sel[0]))
+        : null;
+    const visibile = !!m && !!document.getElementById('card-' + (m && m.id));
+    pannello.classList.toggle('hidden-tab', !visibile);
+    if (!visibile) { pannello.replaceChildren(); return; }
+
+    const tipo = appData.tipiDocumento.find(t => t.id === (m.tipoDocumento || 'manoscritto'));
+    const campi: { etichetta: string; testo: string; lettura: string }[] = [];
+    const liste: { etichetta: string; voci: { k: string; v: string }[] }[] = [];
+    for (const def of window.Model.campiDellaScheda(m, tipoDiScheda(m), CONFIG_CAMPI, appData)) {
+        const v = m[def.id];
+        if (def.tipo === 'attachments' || def.id === 'segnatura') continue;
+        const etichetta = String(etichettaCampo(def.id) || def.label || def.id);
+        if (def.tipo === 'dynamic_list') {
+            const voci = (Array.isArray(v) ? v : [])
+                .map(i => ({ k: String((i && (i.k || i.ruolo)) || ''), v: String((i && (i.v || i.nome)) || '') }))
+                .filter(i => i.k || i.v);
+            if (voci.length) liste.push({ etichetta, voci });
+            continue;
+        }
+        const testo = def.tipo === 'boolean' ? (typeof v === 'boolean' ? window.testoBooleano(v) : '') : cellaTestuale(m, def.id);
+        if (!testo) continue;
+        const lettura = def.tipo === 'date' && typeof window.letturaDataBreve === 'function' ? window.letturaDataBreve(testo) : '';
+        campi.push({ etichetta, testo, lettura });
+    }
+
+    const carte = carteDi(m);
+    const allegatiTesto = carte.length === 0
+        ? window.t('attachment_none', 'Nessun allegato')
+        : carte.length === 1
+            ? window.t('attachment_count_one', '1 documento allegato')
+            : window.t('attachment_count_many', '{var0} documenti allegati').replace('{var0}', String(carte.length));
+
+    const rel = typeof window.relazioniRisolte === 'function' ? window.relazioniRisolte(m.id) : { uscenti: [], entranti: [] };
+    const collegate = rel.uscenti.concat(rel.entranti);
+    const tags = window.Model.tags(m);
+
+    pannello.innerHTML = `
+        <div class="pannello-scheda-testa">
+            <div class="pannello-scheda-modello">${escapeHTML(nomeModello(tipo))}</div>
+            <h2 id="pannello-scheda-titolo" class="pannello-scheda-titolo" translate="no">${escapeHTML(m.segnatura || window.t('untitled_record', 'Senza titolo'))}</h2>
+            <div class="pannello-scheda-azioni">
+                <button type="button" class="btn btn-primary tutorial-trascrivi-btn" ${window.azione('click', 'apriTrascrizione', String(m.id))}>${escapeHTML(window.t('btn_transcribe', 'Trascrivi'))}</button>
+                <button type="button" class="btn btn-secondary tutorial-modifica-btn" ${window.azione('click', 'editItem', String(m.id))}>${escapeHTML(window.t('btn_edit', 'Modifica'))}</button>
+                <span class="pannello-scheda-altro"></span>
+            </div>
+        </div>
+        <dl class="pannello-scheda-campi">${campi.map(c =>
+            `<dt>${escapeHTML(c.etichetta)}</dt><dd>${escapeHTML(c.testo)}${c.lettura ? ` <span class="pannello-scheda-lettura">${escapeHTML(c.lettura)}</span>` : ''}</dd>`).join('')}</dl>
+        ${liste.map(l => `<div class="pannello-scheda-blocco"><div class="pannello-scheda-etichetta">${escapeHTML(l.etichetta)}</div><div class="pannello-scheda-coppie">${l.voci.map(i =>
+            `<span>${escapeHTML(i.k)}</span><span class="pannello-scheda-valore">${escapeHTML(i.v)}</span>`).join('')}</div></div>`).join('')}
+        <div class="pannello-scheda-blocco">
+            <div class="pannello-scheda-etichetta">${escapeHTML(window.t('panel_attachments_transcription', 'Allegati e trascrizione'))}</div>
+            <div>${escapeHTML(allegatiTesto)}</div>
+            <div class="mt-1">${htmlStatoTrascrizione(m)}</div>
+        </div>
+        ${collegate.length ? `<div class="pannello-scheda-blocco"><div class="pannello-scheda-etichetta">${escapeHTML(window.t('link_panel_title', 'Schede collegate'))}</div>${collegate.map(r =>
+            `<button type="button" class="pannello-scheda-link" ${window.azione('click', 'rivelaRecordNellaGriglia', String(r.scheda.id))}><span class="font-mono" translate="no">${escapeHTML(r.scheda.segnatura || '')}</span><span>${escapeHTML(r.tipo || '')}</span></button>`).join('')}</div>` : ''}
+        ${tags.length ? `<div class="pannello-scheda-blocco pannello-scheda-tag">${tags.map(t => window.chipTagHTML(t)).join('')}</div>` : ''}
+    `;
+    const slot = pannello.querySelector('.pannello-scheda-altro');
+    if (slot && typeof window.creaBottoneOverflow === 'function') {
+        slot.appendChild(window.creaBottoneOverflow(() => window.vociMenuRecord(m.id), {
+            className: 'btn btn-ghost btn-icon',
+            label: window.t('tooltip_more_actions', 'Altre azioni')
+        }));
+    }
+    if (window.lucide) lucide.createIcons({ nodes: [pannello] });
+}
+window.renderPannelloScheda = renderPannelloScheda;
+
 function renderTabellaSchede(paginated) {
     const table = document.getElementById('manoscritti-table');
     if (!table) return;
@@ -536,6 +637,7 @@ function renderTabellaSchede(paginated) {
             <tr>
                 ${thSegnatura}
                 ${thCampi}
+                <th>${escapeHTML(window.t('th_transcription', 'Trascrizione'))}</th>
                 <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;tags&quot;]">${escapeHTML(window.t('th_tags', 'Tag'))}${indicatoreOrdinamento('tags')}</th>
                 <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;allegati&quot;]">${escapeHTML(window.t('th_attachments', 'Allegati'))}${indicatoreOrdinamento('allegati')}</th>
                 <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;lastModified&quot;]">${escapeHTML(window.t('th_modified', 'Modificato'))}${indicatoreOrdinamento('lastModified')}</th>
@@ -579,14 +681,15 @@ function renderTabellaSchede(paginated) {
 
         const celleCampi = visibili.map(c => {
             const testo = cellaTestuale(m, c);
-            return `<td class="cella-troncata" title="${escapeHTML(testo)}">${escapeHTML(testo)}</td>`;
+            return `<td class="cella-troncata cella-contenuto" title="${escapeHTML(testo)}">${escapeHTML(testo)}</td>`;
         }).join('');
 
         tr.innerHTML = `
             <td class="cella-segnatura" translate="no">${hasSelection ? (isSelected ? '● ' : '○ ') : ''}${escapeHTML(m.segnatura || '')}</td>
             ${celleCampi}
+            <td>${htmlStatoTrascrizione(m)}</td>
             <td>${tags.map(t => window.chipTagHTML(t)).join(' ')}</td>
-            <td>${allegati.length || ''}</td>
+            <td class="cella-numero">${allegati.length || ''}</td>
             <td class="cella-data">${escapeHTML(data)}</td>
         `;
         fragment.appendChild(tr);
@@ -780,6 +883,7 @@ function aggiornaControlliLista(records) {
 }
 
 let _conteggioCollegamenti: Map<string, number> | null = null;
+let _tipiMisti = false;
 
 function contaCollegamenti(schede) {
     const esistenti = new Set((schede || []).map(m => String(m.id)));
@@ -832,12 +936,8 @@ function creaCardScheda(m) {
 
     let allegatoHTML = '';
     const btnTrascriviModifica = `
-        <button ${window.azione('click', 'editItem', String((m.id) ?? ''))} class="btn btn-secondary flex-1 text-xs uppercase tracking-wider tutorial-modifica-btn">
-            <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_edit') || 'Modifica'}</span>
-        </button>
-        <button ${window.azione('click', 'apriTrascrizione', String((m.id) ?? ''))} class="btn flex-1 text-xs uppercase tracking-wider tutorial-trascrivi-btn" style="background-color: var(--color-primary-light); color: var(--color-primary-hover); border: 1px solid var(--color-primary-border);">
-            <span class="text-xs font-bold uppercase tracking-wider">${window.t('btn_transcribe') || 'Trascrivi'}</span>
-        </button>
+        <button ${window.azione('click', 'apriTrascrizione', String((m.id) ?? ''))} class="btn btn-primary tutorial-trascrivi-btn">${window.t('btn_transcribe') || 'Trascrivi'}</button>
+        <button ${window.azione('click', 'editItem', String((m.id) ?? ''))} class="btn btn-secondary tutorial-modifica-btn">${window.t('btn_edit') || 'Modifica'}</button>
     `;
 
     let btnVediPdfPiccolo = '';
@@ -849,7 +949,7 @@ function creaCardScheda(m) {
         const av = window.avanzamentoCarte(m);
         const avTesto = av ? window.t('sheet_progress', '{var0} di {var1} carte trascritte').replace('{var0}', String(av.fatte)).replace('{var1}', String(av.totale)) : '';
         const avHTML = av ? `<progress class="card-avanzamento" max="${Number(av.totale)}" value="${Number(av.fatte)}" aria-label="${escapeHTML(avTesto)}" title="${escapeHTML(avTesto)}"></progress><span class="tabular-nums" aria-hidden="true">${Number(av.fatte)}/${Number(av.totale)}</span>` : '';
-        btnVediPdfPiccolo = `<span class="text-xs text-stone-500 font-medium my-auto mr-auto flex items-center gap-1"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}${avHTML}</span>`;
+        btnVediPdfPiccolo = `<span class="card-allegati"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> ${textAllegati}${avHTML}</span>`;
         allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
     } else {
         allegatoHTML = `<div class="mt-3 flex gap-2">${btnTrascriviModifica}</div>`;
@@ -882,22 +982,21 @@ function creaCardScheda(m) {
             if (defCampo.tipo === 'dynamic_list' && Array.isArray(m[campo])) {
                 if (m[campo].length > 0) {
                     const labelStr = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
-                    infoHTML += `<div class="mt-3 mb-1"><span class="font-bold text-xs uppercase tracking-wider opacity-70 border-b border-stone-200/50 pb-1">${escapeHTML(labelStr)}</span></div>`;
+                    infoHTML += `<div class="card-campo-etichetta mt-2">${escapeHTML(labelStr)}</div>`;
                     m[campo].forEach(item => {
                         const k = item.k || item.ruolo || '';
                         const v = item.v || item.nome || '';
                         if (k || v) {
-                            infoHTML += `<p class="truncate pl-2 border-l-2 border-amber-200/50 mb-0.5"><b>${escapeHTML(k)}:</b> ${escapeHTML(v)}</p>`;
+                            infoHTML += `<p class="card-campo truncate"><span class="card-campo-etichetta">${escapeHTML(k)}</span> <span class="card-campo-valore">${escapeHTML(v)}</span></p>`;
                         }
                     });
                 }
             } else {
                 const label = window.t('field_' + campo) !== 'field_' + campo ? window.t('field_' + campo) : (conf.label || defCampo.label || campo);
-                if (campo === 'note') infoHTML += `<p class="text-stone-500 mt-2 text-xs italic line-clamp-3 leading-relaxed border-l-2 border-amber-200 pl-2" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
-                else if (campo === 'titolo') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <i>${escapeHTML(m.titolo)}</i></p>`;
-                else if (defCampo.tipo === 'boolean') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(window.testoBooleano(m[campo]))}</p>`;
-                else if (defCampo.tipo === 'url') infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> <a href="#" ${window.azione('click', 'linkEsterno', String((m[campo]) ?? ''))} class="text-amber-700 underline">${escapeHTML(m[campo])}</a></p>`;
-                else infoHTML += `<p class="truncate mt-1"><b>${escapeHTML(label)}:</b> ${escapeHTML(m[campo])}</p>`;
+                if (campo === 'note') infoHTML += `<p class="card-nota line-clamp-3" title="${escapeHTML(m.note)}">${escapeHTML(m.note)}</p>`;
+                else if (defCampo.tipo === 'boolean') infoHTML += `<p class="card-campo truncate"><span class="card-campo-etichetta">${escapeHTML(label)}</span> <span class="card-campo-valore">${escapeHTML(window.testoBooleano(m[campo]))}</span></p>`;
+                else if (defCampo.tipo === 'url') infoHTML += `<p class="card-campo truncate"><span class="card-campo-etichetta">${escapeHTML(label)}</span> <a href="#" ${window.azione('click', 'linkEsterno', String((m[campo]) ?? ''))} class="card-campo-valore underline">${escapeHTML(m[campo])}</a></p>`;
+                else infoHTML += `<p class="card-campo truncate"><span class="card-campo-etichetta">${escapeHTML(label)}</span> <span class="card-campo-valore">${escapeHTML(m[campo])}</span></p>`;
             }
         }
     });
@@ -909,7 +1008,7 @@ function creaCardScheda(m) {
             ? window.t('card_creato_modificato', "Creato da {var0} - Modificato da {var1}").replace('{var0}', String(m.creatoDa)).replace('{var1}', String(m.modificatoDa))
             : window.t('card_autore', "Autore: {var0}").replace('{var0}', String(autore));
 
-        authorBadgeHTML = `<span title="${escapeHTML(titoloMeta)}" class="flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-sm">
+        authorBadgeHTML = `<span title="${escapeHTML(titoloMeta)}" class="card-autore">
             <i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(autore)}
         </span>`;
     }
@@ -920,7 +1019,7 @@ function creaCardScheda(m) {
             day: '2-digit', month: '2-digit', year: 'numeric', 
             hour: '2-digit', minute: '2-digit' 
         });
-        dateHTML = `<div class="text-[11px] text-stone-400 font-mono mt-2.5 pt-2 border-t border-dashed border-stone-200/50 text-right">${dataFormat}</div>`;
+        dateHTML = `<span class="card-data">${dataFormat}</span>`;
     }
 
     const checkboxHTML = hasSelection ? `
@@ -940,7 +1039,7 @@ function creaCardScheda(m) {
                 <div class="card-etichette flex items-center gap-1.5 mt-0">
                     ${collegamentiHTML}
                     ${authorBadgeHTML}
-                    <span class="card-badge shrink-0">${escapeHTML(tipoDoc ? (window.t('model_' + tipoDoc.id) !== 'model_' + tipoDoc.id ? window.t('model_' + tipoDoc.id) : tipoDoc.nome) : 'Documento')}</span>
+                    ${_tipiMisti ? `<span class="card-badge shrink-0">${escapeHTML(nomeModello(tipoDoc))}</span>` : ''}
                 </div>
             </div>
             <div class="space-y-1 text-sm">
@@ -948,10 +1047,10 @@ function creaCardScheda(m) {
                 ${tagsHTML}
             </div>
             ${allegatoHTML}
-            ${dateHTML}
         </div>
-        <div class="mt-3 pt-3 border-t border-amber-100 flex justify-end items-center gap-2">
+        <div class="card-piede">
             ${btnVediPdfPiccolo}
+            ${dateHTML}
             <span class="card-overflow-slot flex"></span>
         </div>
     `;
@@ -990,6 +1089,9 @@ function renderMain(resetPage = true) {
     const counterKey = isGlobalSearch ? 'counter_documents_found' : 'counter_documents';
     const counterFallback = isGlobalSearch ? 'Documenti trovati: {var0}' : 'Documenti: {var0}';
     document.getElementById('counter-results').textContent = window.t(counterKey, counterFallback).replace('{var0}', String(filtered.length));
+    window.conteggioInVista = filtered.length;
+    if (typeof window.aggiornaBarraStato === 'function') window.aggiornaBarraStato();
+    if (typeof window.renderSezioniSidebar === 'function') window.renderSezioniSidebar();
     grid.innerHTML = '';
 
     const paginationControls = document.getElementById('pagination-controls');
@@ -1043,12 +1145,14 @@ function renderMain(resetPage = true) {
 
         if (window.vistaLista === 'tabella') {
             renderTabellaSchede(paginated);
+            renderPannelloScheda();
             return;
         }
 
         const fragment = document.createDocumentFragment();
 
         _conteggioCollegamenti = contaCollegamenti(appData.manoscritti);
+        _tipiMisti = new Set(paginated.map(m => m.tipoDocumento || 'manoscritto')).size > 1;
         try {
             for (const m of paginated) {
                 fragment.appendChild(creaCardScheda(m));
@@ -1059,6 +1163,7 @@ function renderMain(resetPage = true) {
 
         grid.appendChild(fragment);
     }
+    renderPannelloScheda();
     if (window.lucide) lucide.createIcons({ nodes: [grid] });
 }
 

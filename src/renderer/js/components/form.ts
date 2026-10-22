@@ -388,17 +388,26 @@ window.aggiornaRiscontroData = function(idControllo) {
     const testo = String(el.value || '').trim();
     if (!testo) { box.textContent = ''; box.classList.remove('non-letta'); return; }
 
-    const d = window.DataStorica.analizza(testo);
-    if (!d.riconosciuta) {
+    const l = letturaData(testo);
+    if (l.stato === 'non-letta') {
         box.textContent = window.t('date_not_read', 'Datazione non interpretata: la scheda resterà in fondo agli ordinamenti cronologici.');
         box.classList.add('non-letta');
         return;
     }
     box.classList.remove('non-letta');
-    if (d.da === null && d.a === null) {
+    if (l.stato === 'vuota') {
         box.textContent = window.t('date_none', 'Senza data.');
         return;
     }
+    box.textContent = window.t('date_read', 'Letta come: {var0} ({var1})')
+        .replace('{var0}', l.intervallo)
+        .replace('{var1}', l.qualificatore);
+};
+
+function letturaData(testo) {
+    const d = window.DataStorica.analizza(testo);
+    if (!d.riconosciuta) return { stato: 'non-letta', intervallo: '', qualificatore: '' };
+    if (d.da === null && d.a === null) return { stato: 'vuota', intervallo: '', qualificatore: '' };
     const anno = (k) => (k === null ? '…' : String(window.DataStorica.annoDi(k)));
     const intervallo = (d.da !== null && d.a !== null && window.DataStorica.annoDi(d.da) === window.DataStorica.annoDi(d.a))
         ? anno(d.da)
@@ -412,9 +421,14 @@ window.aggiornaRiscontroData = function(idControllo) {
         intervallo: window.t('date_q_range', 'intervallo'),
         secolo: window.t('date_q_century', 'secolo')
     };
-    box.textContent = window.t('date_read', 'Letta come: {var0} ({var1})')
-        .replace('{var0}', intervallo)
-        .replace('{var1}', etichette[d.qualificatore] || d.qualificatore);
+    return { stato: 'ok', intervallo, qualificatore: etichette[d.qualificatore] || d.qualificatore };
+}
+
+window.letturaDataBreve = function(testo) {
+    const s = String(testo || '').trim();
+    if (!s || !window.DataStorica) return '';
+    const l = letturaData(s);
+    return l.stato === 'ok' ? l.intervallo + ' · ' + l.qualificatore : '';
 };
 
 window.aggiungiValoreAlVolo = function(vocabolarioId, idControllo) {

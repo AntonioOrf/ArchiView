@@ -154,7 +154,7 @@
         const sotto = () => {
             const main = document.querySelector('body > div main');
             return [
-                document.querySelector('body > .skip-link'), document.querySelector('body > header'), main && main.parentElement,
+                document.querySelector('body > .skip-link'), document.querySelector('body > header'), main && main.parentElement, document.getElementById('barra-stato'),
                 document.getElementById('update-banner'), document.getElementById('tutorial-banner'),
             ].filter(Boolean) as HTMLElement[];
         };

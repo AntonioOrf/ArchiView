@@ -1,15 +1,40 @@
         <aside id="sidebar" class="w-60 md:w-72 shrink-0 panel-glass flex flex-col h-full overflow-hidden transizione-larghezza">
-            
-            <div id="sidebar-folders" role="tabpanel" aria-labelledby="btn-tab-folders" class="flex flex-col flex-1 min-h-0">
-                <div class="panel-header p-4 flex justify-between items-center shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 w-full">
-                        <i data-lucide="folder-tree" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_structure">Struttura</span>
-                        <button type="button" data-on-click="apriMenuEtichettaAlbero" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" id="btn-albero-secondario" class="btn btn-ghost btn-icon ml-auto" aria-haspopup="menu" aria-expanded="false" data-i18n-title="tree_label_title" data-i18n-aria-label="tree_label_title" title="Etichetta secondaria delle schede" aria-label="Etichetta secondaria delle schede">
-                            <i data-lucide="text-cursor-input" class="w-4 h-4"></i>
-                        </button></h2>
+
+            <div class="sidebar-archivio shrink-0">
+                <button id="btn-cambia-archivio" type="button" data-on-click="toggleVaultSwitcher" data-args-click="[{&quot;$&quot;:&quot;event&quot;}]" class="sidebar-archivio-btn" aria-haspopup="true">
+                    <span class="flex flex-col min-w-0 flex-1">
+                        <span class="sidebar-sezione-titolo" data-i18n="sidebar_archive_label">Archivio</span>
+                        <span id="current-vault-name" class="sidebar-archivio-nome truncate">...</span>
+                    </span>
+                    <i data-lucide="chevrons-up-down" class="w-4 h-4 shrink-0 sidebar-icon"></i>
+                </button>
+                <div id="vault-switcher-popover" class="hidden-tab sidebar-archivio-popover z-dropdown flex flex-col max-h-64">
+                    <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
+                    <div class="w-full h-px bg-stone-200 my-1.5"></div>
+                    <button data-on-click="gestisciArchivi" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium hover:bg-stone-100 flex items-center gap-2 transition-colors">
+                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> <span data-i18n="sidebar_manage_archives">Gestisci archivi…</span>
+                    </button>
                 </div>
-                <div id="folder-list" class="flex-1 p-3 overflow-y-auto custom-scroll space-y-1">
+            </div>
+
+            <div id="sidebar-folders" role="tabpanel" aria-labelledby="btn-tab-folders" class="flex flex-col flex-1 min-h-0 overflow-y-auto custom-scroll">
+                <div class="sidebar-sezione-testa shrink-0">
+                    <h2 class="sidebar-sezione-titolo" data-i18n="sidebar_section_folders">Cartelle</h2>
+                    <button type="button" data-on-click="apriMenuEtichettaAlbero" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" id="btn-albero-secondario" class="btn btn-ghost btn-icon btn-mini ml-auto" aria-haspopup="menu" aria-expanded="false" data-i18n-title="tree_label_title" data-i18n-aria-label="tree_label_title" title="Etichetta secondaria delle schede" aria-label="Etichetta secondaria delle schede">
+                        <i data-lucide="text-cursor-input" class="w-3.5 h-3.5"></i>
+                    </button>
                 </div>
+                <div id="folder-list" class="shrink-0 px-2 pb-2">
+                </div>
+                <section id="sidebar-ricerche" class="sidebar-sezione shrink-0 hidden-tab" aria-labelledby="sidebar-ricerche-titolo">
+                    <h2 id="sidebar-ricerche-titolo" class="sidebar-sezione-titolo sidebar-sezione-testa" data-i18n="sidebar_section_saved">Ricerche salvate</h2>
+                    <div id="sidebar-ricerche-lista" class="px-2 pb-2"></div>
+                </section>
+                <section id="sidebar-tag-rapidi" class="sidebar-sezione shrink-0 hidden-tab" aria-labelledby="sidebar-tag-rapidi-titolo">
+                    <h2 id="sidebar-tag-rapidi-titolo" class="sidebar-sezione-titolo sidebar-sezione-testa" data-i18n="sidebar_section_tags">Tag</h2>
+                    <div id="sidebar-tag-rapidi-lista" class="px-2 pb-2"></div>
+                </section>
+                <div class="flex-1 min-h-6"></div>
             </div>
 
             <div id="sidebar-search" role="tabpanel" aria-labelledby="btn-tab-search" class="hidden-tab flex flex-col flex-1 min-h-0">
@@ -83,45 +108,6 @@
                 <ul id="history-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col">
                     <li class="p-4 text-xs text-stone-400 italic text-center"><span data-i18n="sidebar_history_empty">Apri questa sezione per vedere lo storico.</span></li>
                 </ul>
-            </div>
-
-            <div class="panel-header p-2 shrink-0 mt-auto flex flex-col gap-1.5 relative" style="border-top: 1px solid var(--color-border-light); border-bottom: none;">
-                
-                <button data-on-click="toggleVaultSwitcher" data-args-click="[{&quot;$&quot;:&quot;event&quot;}]" class="btn btn-ghost w-full justify-between">
-                    <div class="flex items-center gap-2 truncate text-sm">
-                        <i data-lucide="archive" class="w-4 h-4 text-amber-700 shrink-0"></i>
-                        <span id="current-vault-name" class="font-bold truncate text-stone-800">...</span>
-                    </div>
-                    <i data-lucide="chevrons-up-down" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                </button>
-                
-                <div class="w-full h-px bg-stone-200 my-1"></div>
-
-                <div class="sidebar-azioni flex items-center justify-center gap-1 w-full">
-                    <button data-on-click="apriImpostazioni" class="btn btn-ghost flex-1 justify-center" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
-                        <i data-lucide="settings" class="w-5 h-5"></i>
-                    </button>
-                    <button id="sidebar-cloud-btn" data-on-click="seEsiste" data-args-click="[&quot;apriShareModal&quot;]" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
-                        <i data-lucide="users" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
-                    </button>
-                    <button id="btn-scansioni" data-on-click="apriScansioni" class="btn btn-ghost flex-1 justify-center" data-i18n-title="scan_title" data-i18n-aria-label="scan_title" title="Scansioni in arrivo" aria-label="Scansioni in arrivo">
-                        <i data-lucide="smartphone" class="w-5 h-5"></i>
-                    </button>
-                    <button data-on-click="seEsiste" data-args-click="[&quot;avviaTutorial&quot;]" class="btn btn-ghost flex-1 justify-center" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial">
-                        <i data-lucide="help-circle" class="w-5 h-5"></i>
-                    </button>
-                    <button data-on-click="apriIssueModal" class="btn btn-ghost flex-1 justify-center" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
-                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
-                    </button>
-                </div>
-
-                <div id="vault-switcher-popover" class="hidden-tab absolute bottom-[calc(100%+0.5rem)] left-2 w-[calc(100%-1rem)] bg-white dark:bg-stone-800 rounded-md shadow-2xl border border-stone-200 dark:border-stone-700 p-1.5 z-dropdown flex flex-col max-h-64">
-                    <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
-                    <div class="w-full h-px bg-stone-200 my-1.5"></div>
-                    <button data-on-click="gestisciArchivi" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium rounded hover:bg-stone-100 flex items-center gap-2 transition-colors">
-                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> <span data-i18n="sidebar_manage_archives">Gestisci archivi…</span>
-                    </button>
-                </div>
             </div>
 
         </aside>

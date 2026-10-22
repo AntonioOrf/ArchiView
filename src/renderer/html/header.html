@@ -1,39 +1,50 @@
-    <header class="panel-glass shrink-0 flex items-center justify-between gap-3 p-2">
+    <header class="testata shrink-0">
 
-        <nav id="sidebar-tablist" role="tablist" aria-orientation="horizontal" class="flex items-center gap-0.5 shrink-0" data-i18n-aria-label="nav_panels" aria-label="Pannelli">
+        <nav id="sidebar-tablist" role="tablist" aria-orientation="horizontal" class="testata-schede" data-i18n-aria-label="nav_panels" aria-label="Pannelli">
             <button id="btn-tab-folders" role="tab" aria-selected="false" aria-controls="sidebar-folders" tabindex="0" data-on-click="switchSidebarTab" data-args-click="[&quot;folders&quot;]" class="btn btn-ghost btn-icon" data-tab="folders" data-i18n-title="tooltip_folders" data-i18n-aria-label="tooltip_folders">
-                <i data-lucide="folder" class="w-5 h-5"></i>
+                <i data-lucide="folder" class="w-4 h-4"></i>
             </button>
 
             <button id="btn-tab-search" role="tab" aria-selected="false" aria-controls="sidebar-search" tabindex="-1" data-on-click="switchSidebarTab" data-args-click="[&quot;search&quot;]" class="btn btn-ghost btn-icon" data-tab="search" data-shortcut="Ctrl+F" data-i18n-title="tooltip_search_btn" data-i18n-aria-label="tooltip_search_btn">
-                <i data-lucide="search" class="w-5 h-5"></i>
+                <i data-lucide="search" class="w-4 h-4"></i>
             </button>
 
             <button id="btn-tab-tags" role="tab" aria-selected="false" aria-controls="sidebar-tags" tabindex="-1" data-on-click="switchSidebarTab" data-args-click="[&quot;tags&quot;]" class="btn btn-ghost btn-icon" data-tab="tags" data-i18n-title="tooltip_tags_btn" data-i18n-aria-label="tooltip_tags_btn">
-                <i data-lucide="bookmark" class="w-5 h-5"></i>
+                <i data-lucide="bookmark" class="w-4 h-4"></i>
             </button>
 
             <button id="btn-tab-source-control" role="tab" aria-selected="false" aria-controls="sidebar-source-control" tabindex="-1" data-on-click="switchSidebarTab" data-args-click="[&quot;source-control&quot;]" class="btn btn-ghost btn-icon" data-tab="source-control" data-i18n-title="tooltip_source_control" data-i18n-aria-label="tooltip_source_control">
-                <i data-lucide="git-pull-request" class="w-5 h-5"></i>
+                <i data-lucide="git-pull-request" class="w-4 h-4"></i>
             </button>
 
             <button id="btn-tab-history" role="tab" aria-selected="false" aria-controls="sidebar-history" tabindex="-1" data-on-click="switchSidebarTab" data-args-click="[&quot;history&quot;]" class="btn btn-ghost btn-icon" data-tab="history" data-i18n-title="tooltip_history" data-i18n-aria-label="tooltip_history">
-                <i data-lucide="history" class="w-5 h-5"></i>
+                <i data-lucide="history" class="w-4 h-4"></i>
             </button>
         </nav>
 
-        <div class="flex items-center justify-end gap-2 min-w-0">
+        <nav id="percorso-testata" class="testata-percorso" data-i18n-aria-label="nav_path" aria-label="Percorso"></nav>
 
-            <button id="cloud-status-btn" type="button" data-on-click="apriPopoverCloud" data-args-click="[{&quot;$&quot;:&quot;this&quot;}]" aria-haspopup="menu" aria-expanded="false"
-                    class="btn btn-ghost flex items-center gap-2 min-w-0 max-w-[240px] border border-stone-300">
-                <i id="cloud-status-icon" data-lucide="cloud" class="w-4 h-4 shrink-0"></i>
-                <span id="cloud-status-label" class="text-xs font-medium truncate"></span>
-                <i data-lucide="chevron-down" class="w-3.5 h-3.5 shrink-0 opacity-60"></i>
+        <button id="btn-cerca-testata" type="button" class="testata-cerca" data-on-click="apriCommandPalette" aria-keyshortcuts="Control+K" data-i18n-title="header_search" title="Cerca nell'archivio">
+            <i data-lucide="search" class="w-4 h-4 shrink-0"></i>
+            <span class="testata-cerca-testo" data-i18n="header_search">Cerca nell'archivio</span>
+            <kbd class="testata-kbd">Ctrl K</kbd>
+        </button>
+
+        <div class="testata-azioni">
+            <button id="btn-scansioni" type="button" data-on-click="apriScansioni" class="btn btn-ghost btn-icon" data-i18n-title="scan_title" data-i18n-aria-label="scan_title" title="Scansioni in arrivo" aria-label="Scansioni in arrivo">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
             </button>
-
-            <button id="cloud-primary-action" type="button" style="display:none" class="btn btn-secondary items-center gap-1.5 shrink-0">
-                <i id="cloud-primary-action-icon" data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i>
-                <span id="cloud-primary-action-label" class="text-xs font-medium"></span>
+            <button id="sidebar-cloud-btn" type="button" data-on-click="seEsiste" data-args-click="[&quot;apriShareModal&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_sharing" data-i18n-aria-label="tooltip_sharing">
+                <i data-lucide="users" class="w-4 h-4"></i>
+            </button>
+            <button type="button" data-on-click="seEsiste" data-args-click="[&quot;avviaTutorial&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_tutorial" data-i18n-aria-label="tooltip_tutorial">
+                <i data-lucide="help-circle" class="w-4 h-4"></i>
+            </button>
+            <button type="button" data-on-click="apriIssueModal" class="btn btn-ghost btn-icon" data-i18n-title="btn_report_issue" data-i18n-aria-label="btn_report_issue">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-impostazioni-testata" type="button" data-on-click="apriImpostazioni" class="btn btn-ghost btn-icon" data-i18n-title="modal_settings" data-i18n-aria-label="modal_settings">
+                <i data-lucide="settings" class="w-4 h-4"></i>
             </button>
         </div>
     </header>

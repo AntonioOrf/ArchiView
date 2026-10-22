@@ -18,13 +18,13 @@ test.describe('UI: impostazioni, lingua, tema', () => {
   test('il cambio lingua aggiorna il DOM', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'UI');
 
-    const struttura = page.locator('[data-i18n="title_structure"]').first();
-    await expect(struttura).toHaveText('Struttura');
+    const struttura = page.locator('[data-i18n="sidebar_section_folders"]').first();
+    await expect(struttura).toHaveText('Cartelle');
 
     await page.evaluate(() => (window as any).apriImpostazioni());
     await page.locator('#settings-language').selectOption('en');
 
-    await expect(struttura).toHaveText('Structure', { timeout: 8_000 });
+    await expect(struttura).toHaveText('Folders', { timeout: 8_000 });
   });
 
   test('il cambio tema applica la classe dark', async ({ page, userDataDir }) => {

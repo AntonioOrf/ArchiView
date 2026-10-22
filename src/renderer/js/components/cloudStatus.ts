@@ -129,6 +129,25 @@ window.aggiornaCloudStatus = function() {
     scambiaIcona('cloud-status-icon', stato.icona, stato.spin);
 };
 
+window.aggiornaBarraStato = function() {
+    const salvato = document.getElementById('stato-salvataggio');
+    if (salvato) {
+        const t = window.ultimoSalvataggio;
+        salvato.textContent = t
+            ? window.t('status_saved_at', 'Salvato alle {var0}').replace('{var0}', new Date(t).toLocaleTimeString(window.linguaAttuale || undefined, { hour: '2-digit', minute: '2-digit' }))
+            : '';
+    }
+    const conteggi = document.getElementById('stato-conteggi');
+    if (!conteggi || typeof appData === 'undefined') return;
+    const parti = [
+        window.t('status_records', '{var0} schede').replace('{var0}', String((appData.manoscritti || []).length)),
+        window.t('status_in_view', '{var0} in vista').replace('{var0}', String(window.conteggioInVista || 0))
+    ];
+    const sel = (window.selectedRecords || []).length;
+    if (sel) parti.push(window.t('status_selected', '{var0} selezionate').replace('{var0}', String(sel)));
+    conteggi.textContent = parti.join(' · ');
+};
+
 window.impostaErroreCloud = function(messaggio) {
     window.statoCloud.errore = messaggio || window.t('cloud_state_error', 'Errore di sincronizzazione');
     window.aggiornaCloudStatus();

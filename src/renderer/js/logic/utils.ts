@@ -85,7 +85,7 @@ window.salvaStatoPosizione = async function() {
         ricerca: (document.getElementById('search-input') as HTMLInputElement | null)?.value ?? '',
         tagAttivi: window.activeTags ? Array.from(window.activeTags) : [],
         sort: window.sortState ? { campo: window.sortState.campo, dir: window.sortState.dir } : null,
-        vista: window.vistaLista || 'griglia',
+        vista: window.vistaLista || 'tabella',
         colonneTabella: window.colonneTabella || {},
         alberoSecondario: window.alberoSecondario || null,
         filtriAvanzati: window.filtriAvanzati || null,

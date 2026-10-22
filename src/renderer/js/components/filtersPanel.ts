@@ -106,6 +106,7 @@ window.salvaRicercaCorrente = function(nome) {
     window.ricercheSalvate = [voce].concat((window.ricercheSalvate || []).filter(r => r.nome !== voce.nome));
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
     if (_pannello) _riempiPannello();
+    window.renderSezioniSidebar?.();
     return voce;
 };
 
@@ -141,6 +142,7 @@ window.eliminaRicercaSalvata = function(id) {
     window.ricercheSalvate = elenco.filter(r => r.id !== id);
     if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
     if (_pannello) _riempiPannello();
+    window.renderSezioniSidebar?.();
     if (typeof mostraMessaggio === 'function') {
         mostraMessaggio(window.t('msg_saved_search_deleted', 'Ricerca salvata eliminata.'), 'info', () => {
             const ora = window.ricercheSalvate || [];
@@ -149,6 +151,7 @@ window.eliminaRicercaSalvata = function(id) {
             window.ricercheSalvate = ora;
             if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
             if (_pannello) _riempiPannello();
+            window.renderSezioniSidebar?.();
         });
     }
 };

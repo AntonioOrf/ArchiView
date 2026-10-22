@@ -110,8 +110,120 @@ function calcolaFirmaSidebar() {
     return parti.join(SEP_BLOCCO);
 }
 
+function _vaiAPercorso(percorso) {
+    if (percorso) return window.vaiACartella(percorso);
+    window.cartellaAttuale = '';
+    window.azzeraFiltriRicerca();
+    if (typeof switchTab === 'function') switchTab('list');
+    renderSidebar();
+    renderMain();
+    if (typeof window.salvaStatoPosizione === 'function') window.salvaStatoPosizione();
+}
+
+function aggiornaPercorsoTestata() {
+    const nav = document.getElementById('percorso-testata');
+    if (!nav) return;
+    const cartella = window.cartellaAttuale || '';
+    const tappe = [{ nome: etichettaRadice(), percorso: '' }];
+    if (cartella) {
+        const parti = cartella.split('/');
+        parti.forEach((p, i) => tappe.push({ nome: p, percorso: parti.slice(0, i + 1).join('/') }));
+    }
+    const firma = tappe.map(t => t.percorso + SEP_CAMPO + t.nome).join(SEP_RIGA);
+    if (nav.dataset.firma === firma) return;
+    nav.dataset.firma = firma;
+    nav.replaceChildren();
+    tappe.forEach((t, i) => {
+        const ultima = i === tappe.length - 1;
+        if (i > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'testata-percorso-sep';
+            sep.setAttribute('aria-hidden', 'true');
+            sep.textContent = '/';
+            nav.appendChild(sep);
+        }
+        const el = document.createElement(ultima ? 'span' : 'button');
+        el.className = ultima ? 'testata-percorso-attuale truncate' : 'testata-percorso-tappa truncate';
+        el.textContent = t.nome;
+        el.setAttribute('translate', 'no');
+        if (ultima) el.setAttribute('aria-current', 'location');
+        else {
+            (el as HTMLButtonElement).type = 'button';
+            el.addEventListener('click', () => _vaiAPercorso(t.percorso));
+        }
+        nav.appendChild(el);
+    });
+}
+window.aggiornaPercorsoTestata = aggiornaPercorsoTestata;
+
+const TAG_RAPIDI_MAX = 12;
+
+function _rigaSezione(testo, conteggio, attiva, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sidebar-voce' + (attiva ? ' attiva' : '');
+    if (attiva !== null) btn.setAttribute('aria-pressed', attiva ? 'true' : 'false');
+    const nome = document.createElement('span');
+    nome.className = 'truncate flex-1';
+    nome.setAttribute('translate', 'no');
+    nome.textContent = testo;
+    btn.appendChild(nome);
+    if (conteggio !== null) {
+        const n = document.createElement('span');
+        n.className = 'sidebar-voce-n';
+        n.textContent = String(conteggio);
+        btn.appendChild(n);
+    }
+    btn.addEventListener('click', onClick);
+    return btn;
+}
+
+function renderSezioniSidebar() {
+    const sezRicerche = document.getElementById('sidebar-ricerche');
+    const listaRicerche = document.getElementById('sidebar-ricerche-lista');
+    if (sezRicerche && listaRicerche) {
+        const salvate = window.ricercheSalvate || [];
+        sezRicerche.classList.toggle('hidden-tab', salvate.length === 0);
+        listaRicerche.replaceChildren(...salvate.map(r => _rigaSezione(r.nome, null, null, () => window.applicaRicercaSalvata(r.id))));
+    }
+
+    const sezTag = document.getElementById('sidebar-tag-rapidi');
+    const listaTag = document.getElementById('sidebar-tag-rapidi-lista');
+    if (!sezTag || !listaTag) return;
+    const voci = window.Model.conteggiTag(appData.manoscritti || [], appData)
+        .sort((a, b) => b.conteggio - a.conteggio || a.nome.localeCompare(b.nome));
+    sezTag.classList.toggle('hidden-tab', voci.length === 0);
+    const attive = new Set(Array.from(window.activeTags || []).map(t => window.Model.chiaveTag(t)));
+    const righe = voci.slice(0, TAG_RAPIDI_MAX).map(voce => {
+        const attiva = attive.has(voce.chiave);
+        const riga = _rigaSezione(voce.nome, voce.conteggio, attiva, () => {
+            window.activeTags = window.activeTags || new Set();
+            for (const t of Array.from(window.activeTags)) {
+                if (window.Model.chiaveTag(t) === voce.chiave) window.activeTags.delete(t);
+            }
+            if (!attiva) window.activeTags.add(voce.nome);
+            renderMain();
+            if (typeof renderTagList === 'function' && !document.getElementById('sidebar-tags')?.classList.contains('hidden-tab')) renderTagList();
+        });
+        const quadro = document.createElement('span');
+        const colore = window.Model.coloreTag(appData, voce.nome);
+        quadro.className = 'sidebar-tag-quadro' + (colore ? ' tag-quadro-' + colore : '');
+        quadro.setAttribute('aria-hidden', 'true');
+        riga.prepend(quadro);
+        return riga;
+    });
+    if (voci.length > TAG_RAPIDI_MAX) {
+        righe.push(_rigaSezione(window.t('sidebar_all_tags', 'Tutti i tag'), voci.length, null, () => window.apriSidebarTab('tags')));
+    }
+    listaTag.replaceChildren(...righe);
+}
+window.renderSezioniSidebar = renderSezioniSidebar;
+
 function renderSidebar() {
     const container = document.getElementById('folder-list');
+
+    renderSezioniSidebar();
+    aggiornaPercorsoTestata();
 
     const firma = calcolaFirmaSidebar();
     if (firma === _sidebarSignature && container.childElementCount > 0) {
@@ -1022,7 +1134,7 @@ window.aggiornaListaVault = async function() {
 document.addEventListener('click', function(e) {
     const popover = document.getElementById('vault-switcher-popover');
     if (popover && !popover.classList.contains('hidden-tab')) {
-        if (!(e.target as Element).closest('#vault-switcher-popover') && !(e.target as Element).closest('.btn-ghost.w-full.justify-between')) {
+        if (!(e.target as Element).closest('#vault-switcher-popover') && !(e.target as Element).closest('#btn-cambia-archivio')) {
             popover.classList.add('hidden-tab');
         }
     }

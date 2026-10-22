@@ -27,6 +27,24 @@ test.describe('Accessibilità: contrasto del testo', () => {
 
     const schermate: { nome: string; radice: string; apri: () => Promise<void>; chiudi?: () => Promise<void> }[] = [
       { nome: 'lista', radice: 'body', apri: async () => { await openView(page, 'list'); } },
+      {
+        nome: 'tabella-pannello', radice: 'body',
+        apri: async () => {
+          await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1440, 900));
+          await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeGreaterThan(1300);
+          await openView(page, 'list');
+          await page.evaluate(() => (window as any).cambiaVistaLista('tabella'));
+          await page.evaluate(() => {
+            const w = window as any;
+            w.selectedRecords = [document.querySelector('#manoscritti-table tbody tr')!.id.replace('card-', '')];
+            w.renderMain();
+          });
+          await expect(page.locator('#pannello-scheda')).toBeVisible();
+        },
+        chiudi: async () => {
+          await page.evaluate(() => { (window as any).azzeraSelezione(); (window as any).cambiaVistaLista('griglia'); });
+        },
+      },
       { nome: 'sidebar-ricerca', radice: '#sidebar-search', apri: () => openSidebarPanel(page, 'search') },
       { nome: 'sidebar-tag', radice: '#sidebar-tags', apri: () => openSidebarPanel(page, 'tags') },
       { nome: 'sidebar-storico', radice: '#sidebar-history', apri: () => openSidebarPanel(page, 'history') },

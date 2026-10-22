@@ -1733,7 +1733,7 @@ const customEn = {
     "tut_btn_prev": "Previous",
     "tut_card_edit_desc": "The \"Edit\" button on a card opens its metadata.",
     "tut_card_edit_title": "Opening a record",
-    "tut_cloud_integration_desc": "This archive is local only. Click the Sharing icon in the bottom left to see how to share it or back it up.",
+    "tut_cloud_integration_desc": "This archive is local only. Click the Sharing icon in the top right to see how to share it or back it up.",
     "tut_cloud_integration_title": "Sharing and cloud",
     "tut_cloud_panel_desc": "From here the local archive can become Shared, for teamwork, or Personal, with automatic backup. Close the window to continue.",
     "tut_cloud_panel_title": "Sharing the archive",
@@ -1898,7 +1898,26 @@ const customEn = {
     "msg_vault_unauthorized_hint": "Access denied: this account is not authorised for the Shared Archive. Sign in with the right account or ask the owner for a new invite.",
     "msg_drive_login_required": "Google Drive sign-in required. Open the Cloud menu to sign in.",
     "diff_title_cloud": "Diff from the Cloud: {var0}",
-    "diff_title_local": "Local changes: {var0}"
+    "diff_title_local": "Local changes: {var0}",
+    "nav_path": "Path",
+    "header_search": "Search the archive",
+    "status_bar": "Status bar",
+    "status_saved_at": "Saved at {var0}",
+    "status_records": "{var0} records",
+    "status_in_view": "{var0} in view",
+    "status_selected": "{var0} selected",
+    "sidebar_archive_label": "Archive",
+    "sidebar_section_folders": "Folders",
+    "sidebar_section_saved": "Saved searches",
+    "sidebar_section_tags": "Tags",
+    "sidebar_all_tags": "All tags",
+    "transcr_state_done": "Transcribed",
+    "transcr_state_text": "Has text",
+    "transcr_state_todo": "To do",
+    "panel_attachments_transcription": "Attachments and transcription",
+    "attachment_none": "No attachments",
+    "model_generic": "Document",
+    "tut_share_local_desc": "From here the local archive becomes shared, to work as a team, or you turn on its backup to Google Drive. Close the window to continue."
 };
 
 const customIt = {
@@ -3532,7 +3551,7 @@ const customIt = {
     "tut_btn_prev": "Indietro",
     "tut_card_edit_desc": "Il pulsante \"Modifica\" su una scheda apre i suoi metadati.",
     "tut_card_edit_title": "Aprire una scheda",
-    "tut_cloud_integration_desc": "Questo archivio è solo locale. Clicca sull'icona Condivisione in basso a sinistra per vedere come condividerlo o farne il backup.",
+    "tut_cloud_integration_desc": "Questo archivio è solo locale. Clicca sull'icona Condivisione in alto a destra per vedere come condividerlo o farne il backup.",
     "tut_cloud_integration_title": "Condivisione e cloud",
     "tut_cloud_panel_desc": "Da qui l'archivio locale diventa Condiviso, per lavorare in gruppo, o Personale, con backup automatico. Chiudi la finestra per proseguire.",
     "tut_cloud_panel_title": "Condividere l'archivio",
@@ -3681,7 +3700,26 @@ const customIt = {
     "msg_vault_unauthorized_hint": "Accesso negato: questo account non è autorizzato per l'Archivio Condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario.",
     "msg_drive_login_required": "Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.",
     "diff_title_cloud": "Diff dal Cloud: {var0}",
-    "diff_title_local": "Modifiche locali: {var0}"
+    "diff_title_local": "Modifiche locali: {var0}",
+    "nav_path": "Percorso",
+    "header_search": "Cerca nell'archivio",
+    "status_bar": "Barra di stato",
+    "status_saved_at": "Salvato alle {var0}",
+    "status_records": "{var0} schede",
+    "status_in_view": "{var0} in vista",
+    "status_selected": "{var0} selezionate",
+    "sidebar_archive_label": "Archivio",
+    "sidebar_section_folders": "Cartelle",
+    "sidebar_section_saved": "Ricerche salvate",
+    "sidebar_section_tags": "Tag",
+    "sidebar_all_tags": "Tutti i tag",
+    "transcr_state_done": "Trascritta",
+    "transcr_state_text": "Con testo",
+    "transcr_state_todo": "Da fare",
+    "panel_attachments_transcription": "Allegati e trascrizione",
+    "attachment_none": "Nessun allegato",
+    "model_generic": "Documento",
+    "tut_share_local_desc": "Da qui l'archivio locale diventa condiviso, per lavorare in gruppo, oppure ne attivi il backup su Google Drive. Chiudi la finestra per proseguire."
 };
 
 window.t = function(key, fallback) {

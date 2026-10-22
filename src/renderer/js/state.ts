@@ -217,6 +217,8 @@ async function eseguiSalvataggio(pendenti = true, dopoCommit = false) {
     const payload = JSON.stringify(window.databasePerDisco(appData));
     const res = await window.apiBrowser.salvaDati(payload);
     if (res && res.success === false) throw new Error(res.error || "Salvataggio fallito");
+    window.ultimoSalvataggio = Date.now();
+    if (typeof window.aggiornaBarraStato === 'function') window.aggiornaBarraStato();
 
     if (pendenti && window.driveStatus && window.driveStatus.isAuthenticated) {
         if (typeof window.impostaModifichePendenti === 'function') {

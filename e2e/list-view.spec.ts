@@ -141,3 +141,27 @@ test.describe('Vista Lista', () => {
     expect(esito.dopo).toBe(esito.prima);
   });
 });
+
+test.describe('Vista Lista predefinita', () => {
+  test.use({ vistaIniziale: null });
+
+  test('si apre a tabella e la scheda selezionata compare nel pannello a destra', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'List');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await createItemViaForm(page, 'MS-PANNELLO');
+
+    await expect(page.locator('#manoscritti-table-wrap')).toBeVisible();
+    await expect(page.locator('#btn-vista-tabella')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#pannello-scheda')).toBeHidden();
+
+    await page.locator('#manoscritti-table tbody tr', { hasText: 'MS-PANNELLO' }).click();
+    const pannello = page.locator('#pannello-scheda');
+    await expect(pannello).toBeVisible();
+    await expect(pannello.locator('#pannello-scheda-titolo')).toHaveText('MS-PANNELLO');
+    await expect(page.locator('#stato-conteggi')).toContainText('1');
+
+    await pannello.locator('button', { hasText: /Modifica|Edit/ }).click();
+    await expect(page.locator('#view-add')).toBeVisible();
+    await expect(page.locator('#form-segnatura')).toHaveValue('MS-PANNELLO');
+  });
+});

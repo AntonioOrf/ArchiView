@@ -5,8 +5,8 @@
             const html = `
             <div id="view-list" class="fade-in h-full flex flex-col" data-on-contextmenu="seEsiste" data-args-contextmenu="[&quot;showFolderContextMenu&quot;,{&quot;$&quot;:&quot;event&quot;}]">
 
-                <div class="border-b border-stone-200 pb-4 mb-4 shrink-0">
-                    <div class="min-w-0">
+                <div id="intestazione-lista" class="intestazione-lista shrink-0">
+                    <div class="min-w-0 intestazione-lista-titolo">
                         <nav id="breadcrumb-cartella" class="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 flex-wrap mb-1 empty:hidden" aria-label="${escapeHTML(window.t('aria_percorso_cartella', "Percorso cartella"))}"></nav>
                         <h1 class="text-2xl font-bold text-amber-800 flex items-center gap-2">
                             <i id="icona-vista-corrente" data-lucide="folder-open" class="w-6 h-6"></i>
@@ -128,8 +128,11 @@
                      paginazione. Le righe portano .card-scheda e id="card-<id>" perché
                      selezione multipla, shift-range, menu contestuale e
                      rivelaRecordNellaGriglia si agganciano a quei due selettori. -->
-                <div id="manoscritti-table-wrap" class="hidden overflow-x-auto pb-6">
-                    <table id="manoscritti-table" class="tabella-schede w-full text-sm"></table>
+                <div class="lista-con-pannello">
+                    <div id="manoscritti-table-wrap" class="hidden overflow-x-auto pb-6">
+                        <table id="manoscritti-table" class="tabella-schede w-full text-sm"></table>
+                    </div>
+                    <section id="pannello-scheda" class="pannello-scheda hidden-tab" aria-labelledby="pannello-scheda-titolo"></section>
                 </div>
 
                 <div id="pagination-controls" class="hidden justify-center items-center gap-4 mt-2 mb-10">
