@@ -119,10 +119,10 @@ function _tmAggiornaBarraFusione() {
         .filter(v => _tmSelezionati.has(v.chiave));
 
     if (voci.length < 2) {
-        barra.classList.add('hidden');
+        barra.classList.add('hidden-tab');
         return;
     }
-    barra.classList.remove('hidden');
+    barra.classList.remove('hidden-tab');
     const precedente = sel.value;
     sel.innerHTML = '';
     for (const v of voci) {
@@ -147,7 +147,7 @@ window.disegnaGestioneTag = function() {
     lista.innerHTML = '';
     if (voci.length === 0) {
         const vuoto = document.createElement('div');
-        vuoto.className = 'p-6 text-xs text-stone-400 italic text-center';
+        vuoto.className = 'p-6 modello-suggerimento text-center';
         vuoto.textContent = _tmT('no_tags_found', 'Nessun tag disponibile');
         lista.appendChild(vuoto);
         _tmAggiornaBarraFusione();
@@ -180,30 +180,32 @@ window.fondiTagSelezionati = async function() {
         if (document.getElementById('tag-manager-modal')) return;
         const html = `
     <div id="tag-manager-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-lg">
+        <div class="modal-window max-w-lg max-h-[85vh]" role="dialog" aria-modal="true" aria-labelledby="tag-manager-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="tags" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="tag_manager_title">Gestione tag</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="tag-manager-titolo" data-i18n="tag_manager_title">Gestione tag</h3>
+                    <p class="modal-sottotitolo" data-i18n="tag_manager_hint">Rinomina, fusione ed eliminazione agiscono su tutte le schede dell'archivio, non solo su quelle selezionate. Ogni operazione è annullabile.</p>
+                </div>
+                <button type="button" data-on-click="chiudiGestioneTag" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="tag-merge-bar" class="barra-selezione hidden-tab">
+                <label for="tag-merge-target" class="barra-selezione-conteggio shrink-0" data-i18n="tag_merge_into">Fondi i tag scelti in:</label>
+                <select id="tag-merge-target" class="form-input flex-1 min-w-0"></select>
+                <button type="button" data-on-click="fondiTagSelezionati" class="btn btn-primary shrink-0">
+                    <span data-i18n="btn_tag_merge">Fondi</span>
+                </button>
             </div>
             <div class="modal-body">
                 <input id="tag-manager-filter" type="text" class="form-input mb-3"
-                       data-i18n-placeholder="placeholder_tags" placeholder="Filtra tag…">
+                       data-i18n-placeholder="placeholder_tags" placeholder="Filtra tag…" data-i18n-aria-label="placeholder_tags" aria-label="Filtra tag">
                 <div id="tag-manager-list" class="tag-manager-list"></div>
-                <div id="tag-merge-bar" class="tag-merge-bar hidden">
-                    <label for="tag-merge-target" class="text-xs text-stone-500 dark:text-stone-400" data-i18n="tag_merge_into">Fondi i tag scelti in:</label>
-                    <select id="tag-merge-target" class="form-input"></select>
-                    <button type="button" data-on-click="fondiTagSelezionati" class="btn btn-primary shrink-0">
-                        <span data-i18n="btn_tag_merge">Fondi</span>
-                    </button>
-                </div>
-                <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="tag_manager_hint">Rinomina, fusione ed eliminazione agiscono su tutte le schede dell'archivio, non solo su quelle selezionate. Ogni operazione è annullabile.</p>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiGestioneTag" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiGestioneTag" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>

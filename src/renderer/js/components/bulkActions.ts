@@ -226,7 +226,7 @@ function _bSelect(id, opzioni, valore) {
 
 function _bNota(testo) {
     const p = document.createElement('p');
-    p.className = 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed';
+    p.className = 'modello-suggerimento';
     p.textContent = testo;
     return p;
 }
@@ -256,6 +256,8 @@ window.apriAzioneMassa = function(azione) {
     const conferma = vecchioConferma.cloneNode(true) as HTMLButtonElement;
     vecchioConferma.parentNode.replaceChild(conferma, vecchioConferma);
     conferma.disabled = false;
+    const etichettaConferma = conferma.querySelector('span');
+    etichettaConferma.textContent = _bT('btn_apply', 'Applica');
 
     conta.textContent = records.length === 1
         ? _bT('selection_count_one', '1 scheda selezionata')
@@ -320,13 +322,13 @@ window.apriAzioneMassa = function(azione) {
         const cerca = document.createElement('input');
         cerca.type = 'text';
         cerca.id = 'bulk-cerca';
-        cerca.className = 'form-input';
+        cerca.className = 'form-input font-serif';
         corpo.appendChild(_bRiga(_bT('bulk_label_find', 'Trova'), cerca));
 
         const sostituisci = document.createElement('input');
         sostituisci.type = 'text';
         sostituisci.id = 'bulk-sostituisci';
-        sostituisci.className = 'form-input';
+        sostituisci.className = 'form-input font-serif';
         corpo.appendChild(_bRiga(_bT('bulk_label_replace', 'Sostituisci con'), sostituisci));
 
         const opzioniRiga = document.createElement('div');
@@ -337,7 +339,6 @@ window.apriAzioneMassa = function(azione) {
             const c = document.createElement('input');
             c.type = 'checkbox';
             c.id = id;
-            c.className = 'w-4 h-4 accent-amber-700';
             const s = document.createElement('span');
             s.textContent = etichetta;
             l.append(c, s);
@@ -350,7 +351,8 @@ window.apriAzioneMassa = function(azione) {
 
         const anteprima = document.createElement('p');
         anteprima.id = 'bulk-anteprima';
-        anteprima.className = 'text-sm font-medium text-stone-600 dark:text-stone-300 border-t border-stone-200 dark:border-stone-700 pt-2';
+        anteprima.className = 'bulk-anteprima';
+        anteprima.setAttribute('aria-live', 'polite');
         corpo.appendChild(anteprima);
 
         const opz = () => ({ maiuscole: chkCaso.checked, intere: chkIntere.checked });
@@ -365,6 +367,9 @@ window.apriAzioneMassa = function(azione) {
                 .replace('{var0}', String(r.schede))
                 .replace('{var1}', String(r.occorrenze));
             conferma.disabled = r.occorrenze === 0;
+            etichettaConferma.textContent = r.schede > 0
+                ? (r.schede === 1 ? _bT('bulk_replace_in_one', 'Sostituisci in 1 scheda') : _bT('bulk_replace_in_n', 'Sostituisci in {var0} schede').replace('{var0}', String(r.schede)))
+                : _bT('btn_apply', 'Applica');
         };
         [cerca, selCampo, chkCaso, chkIntere].forEach(el => {
             el.addEventListener('input', aggiornaAnteprima);
@@ -407,24 +412,26 @@ window.apriAzioneMassa = function(azione) {
         if (document.getElementById('bulk-modal')) return;
         const html = `
     <div id="bulk-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-md">
+        <div class="modal-window max-w-lg" role="dialog" aria-modal="true" aria-labelledby="bulk-title">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="list-checks" class="w-5 h-5 text-amber-700"></i>
-                    <span id="bulk-title"></span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="bulk-title"></h3>
+                    <p id="bulk-count" class="modal-sottotitolo"></p>
+                </div>
+                <button type="button" data-on-click="chiudiAzioniMassa" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <p id="bulk-count" class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3"></p>
-                <div id="bulk-body" class="flex flex-col gap-3"></div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiAzioniMassa" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_cancel">Annulla</span>
-                    </button>
-                    <button type="button" id="bulk-confirm" class="btn btn-primary">
-                        <span data-i18n="btn_apply">Applica</span>
-                    </button>
-                </div>
+                <div id="bulk-body" class="flex flex-col gap-4"></div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiAzioniMassa" data-modal-cancel class="btn btn-secondary">
+                    <span data-i18n="btn_cancel">Annulla</span>
+                </button>
+                <button type="button" id="bulk-confirm" class="btn btn-primary">
+                    <span data-i18n="btn_apply">Applica</span>
+                </button>
             </div>
         </div>
     </div>

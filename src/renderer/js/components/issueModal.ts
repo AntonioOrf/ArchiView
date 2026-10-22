@@ -3,41 +3,39 @@
         if (!document.getElementById('issue-modal')) {
             const modalHtml = `
                 <div id="issue-modal" class="modal-overlay hidden-tab">
-                    <div class="modal-window max-w-lg">
-                        <div class="modal-header shrink-0">
-                            <h3 class="modal-title">
-                                <i data-lucide="alert-circle" class="w-5 h-5 text-amber-700"></i>
-                                <span data-i18n="modal_report_issue">Segnala un problema</span>
-                            </h3>
-                            <button type="button" data-on-click="chiudiIssueModal" class="btn btn-ghost btn-icon" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <form id="issue-form" class="modal-window max-w-lg" data-on-submit="inviaIssueForm" data-args-submit="[{&quot;$&quot;:&quot;event&quot;}]">
+                        <div class="modal-header">
+                            <div class="min-w-0">
+                                <h3 class="modal-title" data-i18n="modal_report_issue">Segnala un problema</h3>
+                                <p class="modal-sottotitolo" data-i18n="issue_subtitle">La segnalazione arriva direttamente a chi sviluppa ArchiView.</p>
+                            </div>
+                            <button type="button" data-on-click="chiudiIssueModal" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </div>
-                        <div class="modal-body">
-                            <form id="issue-form" class="space-y-4" data-on-submit="inviaIssueForm" data-args-submit="[{&quot;$&quot;:&quot;event&quot;}]">
-                                <div>
-                                    <label class="form-label" data-i18n="issue_title">Titolo della segnalazione *</label>
-                                    <input type="text" id="issue-title-input" required class="form-input" data-i18n-placeholder="placeholder_issue_title" placeholder="Es. Errore durante il salvataggio o caricamento file…">
-                                </div>
-                                <div>
-                                    <label class="form-label" data-i18n="issue_type">Tipo di segnalazione</label>
-                                    <select id="issue-type-select" class="form-input">
-                                        <option value="bug" data-i18n="issue_type_bug">Bug / Errore del programma</option>
-                                        <option value="enhancement" data-i18n="issue_type_enhancement">Suggerimento / Nuova funzionalità</option>
-                                        <option value="feedback" data-i18n="issue_type_feedback">Feedback generico</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" data-i18n="issue_description">Descrizione dettagliata *</label>
-                                    <textarea id="issue-desc-input" required class="form-input min-h-[120px] resize-y" data-i18n-placeholder="placeholder_issue_desc" placeholder="Descrivi il problema, come riprodurlo, o cosa ti aspetti che accada…"></textarea>
-                                </div>
-                                <div class="modal-footer mt-4">
-                                    <button type="button" data-on-click="chiudiIssueModal" class="btn btn-ghost" data-i18n="btn_cancel">Annulla</button>
-                                    <button type="submit" class="btn btn-primary" data-i18n="btn_send_email">Invia via Email</button>
-                                </div>
-                            </form>
+                        <div class="modal-body space-y-4">
+                            <div>
+                                <label class="form-label" for="issue-type-select" data-i18n="issue_type">Tipo</label>
+                                <select id="issue-type-select" class="form-input">
+                                    <option value="bug" data-i18n="issue_type_bug">Errore del programma</option>
+                                    <option value="enhancement" data-i18n="issue_type_enhancement">Proposta</option>
+                                    <option value="feedback" data-i18n="issue_type_feedback">Altro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label" for="issue-title-input" data-i18n="issue_title">Titolo</label>
+                                <input type="text" id="issue-title-input" required class="form-input" data-i18n-placeholder="placeholder_issue_title" placeholder="Es. l'OCR si blocca sui PDF lunghi">
+                            </div>
+                            <div>
+                                <label class="form-label" for="issue-desc-input" data-i18n="issue_description">Cosa è successo</label>
+                                <textarea id="issue-desc-input" required class="form-input font-serif min-h-[120px] resize-y" data-i18n-placeholder="placeholder_issue_desc" placeholder="Cosa stavi facendo, cosa ti aspettavi, cosa è successo invece."></textarea>
+                            </div>
                         </div>
-                    </div>
+                        <div class="modal-footer modal-footer-bar">
+                            <button type="button" data-on-click="chiudiIssueModal" class="btn btn-secondary" data-i18n="btn_cancel">Annulla</button>
+                            <button type="submit" class="btn btn-primary" data-i18n="issue_send">Invia la segnalazione</button>
+                        </div>
+                    </form>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHtml);

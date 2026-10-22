@@ -99,7 +99,6 @@ function _sCheckbox(id, etichetta, spuntato) {
     input.type = 'checkbox';
     input.id = id;
     input.checked = !!spuntato;
-    input.className = 'accent-amber-700';
     const span = document.createElement('span');
     span.textContent = etichetta;
     wrap.append(input, span);
@@ -118,7 +117,7 @@ function _sInput(id, valore, placeholder) {
 
 function _sBloccoLayout(scelto) {
     const box = document.createElement('div');
-    box.className = 'flex flex-col gap-2';
+    box.className = 'flex flex-col';
     const voci = [
         { id: 'scheda', label: _sT('print_layout_card', 'Scheda singola'), desc: _sT('print_layout_card_desc', 'Una scheda per pagina, con tutti i campi, gli allegati come miniature e la trascrizione.') },
         { id: 'regesto', label: _sT('print_layout_regest', 'Regesto / inventario'), desc: _sT('print_layout_regest_desc', 'Elenco ordinato: segnatura, data e sintesi del contenuto. È il formato di un inventario a stampa.') },
@@ -126,13 +125,12 @@ function _sBloccoLayout(scelto) {
     ];
     for (const v of voci) {
         const wrap = document.createElement('label');
-        wrap.className = 'flex gap-2 items-start cursor-pointer p-2 rounded-lg border border-stone-200 dark:border-stone-700';
+        wrap.className = 'scelta-riga';
         const radio = document.createElement('input');
         radio.type = 'radio';
         radio.name = 'print-layout';
         radio.value = v.id;
         radio.id = 'print-layout-' + v.id;
-        radio.className = 'accent-amber-700 mt-1';
         radio.checked = v.id === scelto;
         radio.addEventListener('change', () => {
             window.impostazioniStampa.layout = v.id;
@@ -140,10 +138,10 @@ function _sBloccoLayout(scelto) {
         });
         const testo = document.createElement('span');
         const titolo = document.createElement('span');
-        titolo.className = 'block text-sm font-medium';
+        titolo.className = 'scelta-riga-titolo';
         titolo.textContent = v.label;
         const desc = document.createElement('span');
-        desc.className = 'block text-xs text-stone-500 dark:text-stone-400 leading-relaxed';
+        desc.className = 'scelta-riga-nota';
         desc.textContent = v.desc;
         testo.append(titolo, desc);
         wrap.append(radio, testo);
@@ -211,10 +209,6 @@ function _sRiempi() {
     opzioni.appendChild(_sRiga(_sT('print_orientation', 'Orientamento'), orientamento));
     corpo.appendChild(opzioni);
 
-    const nota = document.createElement('p');
-    nota.id = 'print-count';
-    nota.className = 'text-xs text-stone-500 dark:text-stone-400';
-    corpo.appendChild(nota);
     _sAggiornaConteggio();
 
     if (attivo) {
@@ -351,29 +345,30 @@ document.addEventListener('keydown', (e) => {
         if (document.getElementById('print-modal')) return;
         const html = `
     <div id="print-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-xl">
+        <div class="modal-window max-w-xl max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="print-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="printer" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="print_title">Stampa e PDF</span>
-                </h3>
-            </div>
-            <div class="modal-body">
-                <div id="print-body" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-1"></div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="stampaVistaCorrente" class="btn btn-ghost mr-auto" title="Stampa la lista come la vedi">
-                        <span data-i18n="print_current_view">Stampa la vista</span>
-                    </button>
-                    <button type="button" data-on-click="chiudiStampa" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                    <button type="button" id="print-now" data-on-click="stampaOra" class="btn btn-secondary">
-                        <span data-i18n="print_send">Stampa</span>
-                    </button>
-                    <button type="button" id="print-pdf" data-on-click="salvaStampaPdf" class="btn btn-primary">
-                        <span data-i18n="print_save_pdf">Salva PDF</span>
-                    </button>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="print-titolo" data-i18n="print_title">Stampa e PDF</h3>
+                    <p id="print-count" class="modal-sottotitolo" aria-live="polite"></p>
                 </div>
+                <button type="button" data-on-click="chiudiStampa" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="print-body" class="modal-body flex flex-col gap-4 custom-scroll"></div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="stampaVistaCorrente" class="btn btn-ghost mr-auto" data-i18n-title="print_current_view_hint" title="Stampa la lista come la vedi">
+                    <span data-i18n="print_current_view">Stampa la vista</span>
+                </button>
+                <button type="button" data-on-click="chiudiStampa" data-modal-cancel class="btn btn-ghost">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
+                <button type="button" id="print-pdf" data-on-click="salvaStampaPdf" class="btn btn-secondary">
+                    <span data-i18n="print_save_pdf">Salva PDF</span>
+                </button>
+                <button type="button" id="print-now" data-on-click="stampaOra" class="btn btn-primary">
+                    <span data-i18n="print_send">Stampa…</span>
+                </button>
             </div>
         </div>
     </div>

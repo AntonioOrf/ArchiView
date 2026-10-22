@@ -7,12 +7,14 @@
             <button id="btn-back-to-list-trasc" data-on-click="chiudiTrascrizione" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_back" data-i18n-aria-label="tooltip_back">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </button>
-            <button id="btn-collapse-editor" data-on-mousedown="nonRubareFuoco" data-on-click="toggleFullscreenAllegato" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_collapse" data-i18n-aria-label="tooltip_collapse">
-                <i data-lucide="panel-right-close" class="w-5 h-5"></i>
-            </button>
             <div class="trasc-titoli">
                 <h1 id="trascrizione-title" class="trasc-etichetta"><span data-i18n="title_transcription">Trascrizione</span></h1>
                 <p id="trascrizione-subtitle" class="trasc-titolo" translate="no"></p>
+            </div>
+            <div id="trasc-vista" role="group" class="doc-scheda-vista trasc-vista" data-i18n-aria-label="trasc_view">
+                <button type="button" data-vista="fonte" aria-pressed="false" aria-keyshortcuts="Alt+F" data-on-mousedown="nonRubareFuoco" data-on-click="impostaVistaTrascrizione" data-args-click="[&quot;fonte&quot;]" data-i18n-title="trasc_view_source_title"><i data-lucide="image" class="w-4 h-4"></i> <span data-i18n="trasc_view_source">Fonte</span></button>
+                <button type="button" data-vista="affiancate" aria-pressed="true" data-on-mousedown="nonRubareFuoco" data-on-click="impostaVistaTrascrizione" data-args-click="[&quot;affiancate&quot;]" data-i18n-title="trasc_view_split_title"><i data-lucide="columns-2" class="w-4 h-4"></i> <span data-i18n="trasc_view_split">Affiancate</span></button>
+                <button type="button" data-vista="testo" aria-pressed="false" data-on-mousedown="nonRubareFuoco" data-on-click="impostaVistaTrascrizione" data-args-click="[&quot;testo&quot;]" data-i18n-title="trasc_view_text_title"><i data-lucide="align-left" class="w-4 h-4"></i> <span data-i18n="trasc_view_text">Testo</span></button>
             </div>
             <div class="trasc-azioni flex items-center gap-2">
                 <button id="btn-confronta-carte" data-on-click="apriConfrontoCarte" class="btn btn-secondary" data-i18n-title="cmp_title" data-i18n-aria-label="cmp_title">
@@ -27,7 +29,7 @@
             </div>
         </header>
 
-        <div id="trascrizione-container" class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        <div id="trascrizione-container" data-vista="affiancate" class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
 
             <div id="trascrizione-allegato-panel" class="trasc-fonte flex-1 overflow-hidden relative flex flex-col hidden-tab min-w-[250px]">
                 <div id="trasc-carte-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
@@ -74,7 +76,7 @@
                 </div>
             </div>
 
-            <div id="trascrizione-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="trascrizione-allegato-panel" class="separatore-colonne trasc-separatore lg:flex w-2 cursor-col-resize items-center justify-center hidden z-10 shrink-0" data-i18n-title="tooltip_resize" data-i18n-aria-label="tooltip_resize" title="Trascina per ridimensionare">
+            <div id="trascrizione-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="trascrizione-allegato-panel" class="separatore-colonne trasc-separatore flex cursor-col-resize items-center justify-center z-10 shrink-0" data-i18n-title="tooltip_resize" data-i18n-aria-label="tooltip_resize" title="Trascina per ridimensionare">
                 <i data-lucide="grip-vertical" class="w-4 h-4 pointer-events-none"></i>
             </div>
 
@@ -89,11 +91,17 @@
                     </div>
                     <div class="flex items-center gap-2 min-w-0">
                         <span id="trasc-scheda-stato" class="text-xs truncate" role="status" aria-live="polite"></span>
-                        <button type="button" id="btn-stacca-scheda" data-on-click="staccaScheda" class="solo-principale btn btn-ghost btn-icon" data-i18n-title="detach_button" data-i18n-aria-label="detach_button" title="Stacca in una finestra"><i data-lucide="external-link" class="w-4 h-4"></i></button>
+                        <button type="button" id="btn-stacca-scheda" data-on-click="staccaScheda" class="solo-principale btn btn-ghost text-sm" data-i18n-aria-label="detach_button" aria-label="Stacca in una finestra"><i data-lucide="external-link" class="w-4 h-4"></i> <span data-i18n="detach_button">Stacca in una finestra</span></button>
                         <button type="button" data-on-click="riagganciaFinestra" class="solo-staccata btn btn-secondary text-sm" data-i18n="detach_reattach">Riaggancia</button>
                     </div>
                 </div>
                 <div id="trasc-pannello-testo" role="tabpanel" aria-labelledby="tab-trasc-testo" class="flex-1 flex flex-col min-h-0">
+                <div id="trasc-senza-fonte" class="trasc-senza-fonte shrink-0">
+                    <i data-lucide="image-off" class="w-4 h-4 shrink-0" aria-hidden="true"></i>
+                    <span data-i18n="trasc_no_source">Nessuna immagine collegata: la trascrizione occupa tutta la larghezza.</span>
+                    <button id="btn-carica-allegato-trasc" data-on-click="cliccaElemento" data-args-click="[&quot;trasc-file-input&quot;]" class="btn btn-secondary shrink-0" data-i18n-title="btn_add_image_pdf" data-i18n-aria-label="btn_add_image_pdf">
+                        <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
+                </div>
                 <div id="trascrizione-toolbar" class="trasc-barra flex flex-wrap gap-1 items-center">
                     <button data-on-mousedown="nonRubareFuoco" data-cmd="bold" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;bold&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_bold" data-i18n-aria-label="tooltip_bold"><i data-lucide="bold" class="w-4 h-4"></i></button>
                     <button data-on-mousedown="nonRubareFuoco" data-cmd="italic" aria-pressed="false" data-on-click="formatta" data-args-click="[&quot;italic&quot;]" class="btn btn-ghost btn-icon" data-i18n-title="tooltip_italic" data-i18n-aria-label="tooltip_italic"><i data-lucide="italic" class="w-4 h-4"></i></button>
@@ -112,9 +120,6 @@
 
                     <button id="btn-ocr-trasc" data-on-click="apriOcrModal" class="btn btn-secondary" data-i18n-title="ocr_title" data-i18n-aria-label="ocr_title">
                         <i data-lucide="scan-text" class="w-4 h-4"></i> <span data-i18n="ocr_button">Riconosci testo</span></button>
-
-                    <button id="btn-carica-allegato-trasc" data-on-click="cliccaElemento" data-args-click="[&quot;trasc-file-input&quot;]" class="btn hidden btn-secondary" data-i18n-title="btn_add_image_pdf" data-i18n-aria-label="btn_add_image_pdf">
-                        <i data-lucide="paperclip" class="w-4 h-4"></i> <span data-i18n="btn_add_image_pdf">Aggiungi Immagine/PDF</span></button>
 
                     <button id="btn-iiif-trasc" data-on-click="aggiungiCarteIiifATrascrizione" class="btn btn-secondary" data-i18n-title="iiif_title_add" data-i18n-aria-label="iiif_title_add">
                         <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="iiif_add_button">Aggiungi da IIIF</span></button>
@@ -135,6 +140,9 @@
                 </div>
             </div>
 
+            <button type="button" id="trasc-mostra-testo" class="trasc-mostra-testo" data-on-click="impostaVistaTrascrizione" data-args-click="[&quot;affiancate&quot;]" aria-keyshortcuts="Alt+F">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> <span data-i18n="trasc_show_text">Mostra il testo</span>
+            </button>
         </div>
         <input type="hidden" id="trascrizione-id">
     </div>

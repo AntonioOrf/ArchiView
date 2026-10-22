@@ -1040,98 +1040,89 @@ window.chiudiOmonimiAltriArchivi = function() {
     <div id="omonimi-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-xl">
             <div class="modal-header">
-                <h3 class="modal-title min-w-0">
-                    <i data-lucide="library" class="w-5 h-5 text-amber-700 shrink-0"></i>
-                    <span id="omonimi-titolo" class="truncate"></span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title"><span id="omonimi-titolo" class="truncate"></span></h3>
+                    <p class="modal-sottotitolo" data-i18n="cross_namesakes_hint">Stesso nome, non per forza la stessa persona: aprile per decidere.</p>
+                </div>
             </div>
             <div class="modal-body">
-                <p class="text-xs text-stone-500 dark:text-stone-400 mb-2" data-i18n="cross_namesakes_hint">Stesso nome, non per forza la stessa persona: aprile per decidere.</p>
                 <ul id="omonimi-lista" class="altri-archivi-elenco max-h-[55vh] overflow-y-auto custom-scroll"></ul>
-                <div class="modal-footer">
-                    <button type="button" id="omonimi-chiudi" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="omonimi-chiudi" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>
     <div id="altro-archivio-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-2xl">
             <div class="modal-header">
-                <h3 class="modal-title min-w-0">
-                    <i data-lucide="archive" class="w-5 h-5 text-amber-700 shrink-0"></i>
-                    <span class="min-w-0">
-                        <span id="altro-archivio-titolo" class="block truncate"></span>
-                        <span id="altro-archivio-sottotitolo" class="block text-xs font-normal text-stone-500 dark:text-stone-400 truncate"></span>
-                    </span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title"><span id="altro-archivio-titolo" class="truncate"></span></h3>
+                    <p id="altro-archivio-sottotitolo" class="modal-sottotitolo truncate"></p>
+                </div>
             </div>
             <div class="modal-body">
                 <div id="altro-archivio-corpo" class="max-h-[65vh] overflow-y-auto custom-scroll"></div>
-                <div class="modal-footer">
-                    <button type="button" id="altro-archivio-chiudi" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                    <button type="button" id="altro-archivio-copia" class="hidden btn btn-primary">
-                        <i data-lucide="copy-plus" class="w-4 h-4"></i>
-                        <span data-i18n="cross_copy_button">Copia in questo archivio</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="altro-archivio-chiudi" data-modal-cancel class="btn btn-secondary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
+                <button type="button" id="altro-archivio-copia" class="hidden btn btn-primary">
+                    <span data-i18n="cross_copy_button">Copia in questo archivio</span>
+                </button>
             </div>
         </div>
     </div>
     <div id="copia-archivio-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-lg">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="copy-plus" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="cross_copy_title">Copia in questo archivio</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" data-i18n="cross_copy_title">Copia in questo archivio</h3>
+                    <p id="copia-archivio-origine" class="modal-sottotitolo"></p>
+                </div>
             </div>
             <div class="modal-body">
-                <p id="copia-archivio-origine" class="text-sm text-stone-600 dark:text-stone-300 mb-3"></p>
-                <label for="copia-archivio-tipo" class="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1" data-i18n="cross_copy_type_label">Tipo di documento in questo archivio</label>
+                <label for="copia-archivio-tipo" class="form-label" data-i18n="cross_copy_type_label">Tipo di documento in questo archivio</label>
                 <select id="copia-archivio-tipo" class="form-input w-full mb-3"></select>
-                <label class="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200 mb-3 cursor-pointer">
+                <label class="flex items-center gap-2 text-sm text-stone-700 mb-3 cursor-pointer">
                     <input type="checkbox" id="copia-archivio-allegati" class="shrink-0">
                     <span id="copia-archivio-allegati-testo"></span>
                 </label>
-                <p id="copia-archivio-visibilita" class="hidden text-sm p-2 mb-3 rounded-sm copia-archivio-avviso" role="note" data-i18n="cross_copy_shared_warning">Questo archivio è condiviso: la scheda copiata sarà visibile ai suoi membri.</p>
+                <p id="copia-archivio-visibilita" class="hidden text-sm p-2 mb-3 copia-archivio-avviso" role="note" data-i18n="cross_copy_shared_warning">Questo archivio è condiviso: la scheda copiata sarà visibile ai suoi membri.</p>
                 <h4 class="altri-archivi-sottotitolo" data-i18n="cross_copy_summary">Che cosa succederà</h4>
                 <ul id="copia-archivio-riepilogo" class="copia-archivio-riepilogo"></ul>
-                <p id="copia-archivio-progresso" class="text-sm text-stone-600 dark:text-stone-300 mt-2" role="status" aria-live="polite"></p>
-                <div class="modal-footer">
-                    <button type="button" id="copia-archivio-annulla" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_cancel">Annulla</span>
-                    </button>
-                    <button type="button" id="copia-archivio-conferma" class="btn btn-primary">
-                        <span data-i18n="cross_copy_confirm">Copia</span>
-                    </button>
-                </div>
+                <p id="copia-archivio-progresso" class="modello-suggerimento mt-2" role="status" aria-live="polite"></p>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="copia-archivio-annulla" data-modal-cancel class="btn btn-ghost">
+                    <span data-i18n="btn_cancel">Annulla</span>
+                </button>
+                <button type="button" id="copia-archivio-conferma" class="btn btn-primary">
+                    <span data-i18n="cross_copy_confirm">Copia</span>
+                </button>
             </div>
         </div>
     </div>
     <div id="rimando-esterno-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-lg">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="library" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="cross_links_picker_title">Rimando a un altro archivio</span>
-                </h3>
+                <h3 class="modal-title" data-i18n="cross_links_picker_title">Rimando a un altro archivio</h3>
             </div>
             <div class="modal-body">
-                <label for="rimando-esterno-tipo" class="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1" data-i18n="cross_links_type_label">Tipo di rimando</label>
+                <label for="rimando-esterno-tipo" class="form-label" data-i18n="cross_links_type_label">Tipo di rimando</label>
                 <select id="rimando-esterno-tipo" class="form-input w-full mb-3"></select>
-                <label for="rimando-esterno-cerca" class="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1" data-i18n="cross_links_search_label">Scheda da collegare</label>
+                <label for="rimando-esterno-cerca" class="form-label" data-i18n="cross_links_search_label">Scheda da collegare</label>
                 <input type="text" id="rimando-esterno-cerca" class="form-input w-full" data-i18n-placeholder="cross_links_search_placeholder" placeholder="Segnatura, persona, luogo…">
-                <p id="rimando-esterno-stato" class="text-xs text-stone-500 dark:text-stone-400 mt-2" role="status" aria-live="polite"></p>
+                <p id="rimando-esterno-stato" class="modello-suggerimento mt-2" role="status" aria-live="polite"></p>
                 <ul id="rimando-esterno-risultati" class="altri-archivi-elenco max-h-[45vh] overflow-y-auto custom-scroll mt-1"></ul>
-                <div class="modal-footer">
-                    <button type="button" id="rimando-esterno-annulla" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_cancel">Annulla</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="rimando-esterno-annulla" data-modal-cancel class="btn btn-ghost">
+                    <span data-i18n="btn_cancel">Annulla</span>
+                </button>
             </div>
         </div>
     </div>`;

@@ -115,7 +115,7 @@ function _oRiga(etichetta, controllo) {
 
 function _oNota(testo, classe?) {
     const p = document.createElement('p');
-    p.className = classe || 'text-xs text-stone-500 dark:text-stone-400 leading-relaxed';
+    p.className = classe || 'modello-suggerimento';
     p.textContent = testo;
     return p;
 }
@@ -141,8 +141,7 @@ function _oCheckbox(id, etichetta, spuntato) {
     input.type = 'checkbox';
     input.id = id;
     input.checked = !!spuntato;
-    input.className = 'accent-amber-700';
-    const span = document.createElement('span');
+        const span = document.createElement('span');
     span.textContent = etichetta;
     wrap.append(input, span);
     return wrap;
@@ -162,7 +161,7 @@ function _oBlocccoLingue(preselezione) {
     if (installate.length === 0) {
         const avviso = _oNota(
             _oT('ocr_no_langs', 'Nessuna lingua installata: il riconoscimento ha bisogno almeno di una lingua.'),
-            'text-sm text-amber-800 dark:text-amber-300 leading-relaxed'
+            'text-sm testo-avviso leading-relaxed'
         );
         contenitore.appendChild(avviso);
     } else {
@@ -179,7 +178,7 @@ function _oBlocccoLingue(preselezione) {
 
     const gestisci = document.createElement('button');
     gestisci.type = 'button';
-    gestisci.className = 'btn btn-ghost text-xs self-start px-2 py-1';
+    gestisci.className = 'btn-collegamento self-start';
     gestisci.textContent = _oT('ocr_manage_langs', 'Gestisci lingue…');
     gestisci.onclick = () => window.apriGestioneLingueOcr();
     contenitore.appendChild(gestisci);
@@ -272,7 +271,7 @@ window.apriOcrModal = async function(recordId, indice) {
     const avanzate = document.createElement('details');
     avanzate.className = 'text-sm';
     const riassunto = document.createElement('summary');
-    riassunto.className = 'cursor-pointer text-xs text-stone-500 dark:text-stone-400';
+    riassunto.className = 'cursor-pointer text-xs text-stone-600';
     riassunto.textContent = _oT('ocr_advanced', 'Opzioni avanzate');
     avanzate.appendChild(riassunto);
     const corpoAvanzate = document.createElement('div');
@@ -298,10 +297,10 @@ window.apriOcrModal = async function(recordId, indice) {
     avanzamento.id = 'ocr-progress';
     avanzamento.className = 'hidden-tab flex flex-col gap-2';
     avanzamento.innerHTML = window.sanitizeHTML(`
-        <div class="w-full h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
+        <div class="traccia">
             <div id="ocr-progress-bar" class="h-full barra-avanzamento barra-scala"></div>
         </div>
-        <p id="ocr-progress-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
+        <p id="ocr-progress-text" class="modello-suggerimento"></p>
     `);
     corpo.appendChild(avanzamento);
 
@@ -647,7 +646,7 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
     const media = confidenze.length ? Math.round(confidenze.reduce((s, c) => s + c, 0) / confidenze.length) : 0;
 
     const riepilogo = document.createElement('p');
-    riepilogo.className = 'text-sm font-medium';
+    riepilogo.className = 'text-sm font-medium font-mono';
     riepilogo.textContent = _oT('ocr_result_summary', '{var0} caratteri riconosciuti, confidenza media {var1}%')
         .replace('{var0}', String(caratteri))
         .replace('{var1}', String(media));
@@ -656,12 +655,12 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
     if (media && media < 70) {
         box.appendChild(_oNota(
             _oT('ocr_low_confidence', 'Confidenza bassa: probabilmente la scrittura è corsiva o la scansione è poco leggibile. Il testo va riletto parola per parola.'),
-            'text-xs text-amber-800 dark:text-amber-300 leading-relaxed'
+            'text-xs testo-avviso leading-relaxed'
         ));
     }
 
     const anteprima = document.createElement('div');
-    anteprima.className = 'max-h-40 overflow-y-auto text-xs bg-stone-100 dark:bg-stone-800 p-2 rounded-sm whitespace-pre-wrap';
+    anteprima.className = 'ocr-anteprima';
     anteprima.textContent = esiti.map(e => e.risultato.piano).join('\n\n').slice(0, 1200);
     box.appendChild(anteprima);
 
@@ -691,7 +690,7 @@ function _oMostraRisultato(esiti, bozzaInserita, opzioni, pdf?) {
         box.appendChild(_oNota(cifrati
             ? _oT('ocr_pdf_encrypted', 'Alcuni PDF sono protetti e non sono stati inclusi nel PDF ricercabile.')
             : _oT('ocr_pdf_partial', 'Alcuni allegati non sono stati inclusi nel PDF ricercabile.'),
-            'text-xs text-amber-800 dark:text-amber-300 leading-relaxed'));
+            'text-xs testo-avviso leading-relaxed'));
     }
 
     if (typeof mostraMessaggio === 'function') {
@@ -845,15 +844,15 @@ async function _oRenderLingue() {
 
     for (const l of _oStato.lingue) {
         const riga = document.createElement('div');
-        riga.className = 'flex items-center justify-between gap-3 py-1.5 border-b border-stone-200 dark:border-stone-700';
+        riga.className = 'riga-filetto';
 
         const sinistra = document.createElement('div');
         sinistra.className = 'flex flex-col';
         const nome = document.createElement('span');
-        nome.className = 'text-sm';
+        nome.className = 'text-sm text-stone-800';
         nome.textContent = _oNomeLingua(l);
         const dettaglio = document.createElement('span');
-        dettaglio.className = 'text-xs text-stone-500 dark:text-stone-400';
+        dettaglio.className = 'text-xs font-mono text-stone-500';
         dettaglio.textContent = l.installata
             ? `${l.codice} — ${Math.round((l.dimensione || 0) / 1024 / 1024 * 10) / 10} MB`
             : l.codice;
@@ -861,7 +860,7 @@ async function _oRenderLingue() {
 
         const azione = document.createElement('button');
         azione.type = 'button';
-        azione.className = l.installata ? 'btn btn-ghost text-xs px-2 py-1' : 'btn btn-secondary text-xs px-2 py-1';
+        azione.className = l.installata ? 'btn btn-ghost' : 'btn btn-secondary';
         azione.textContent = l.installata ? _oT('ocr_lang_remove', 'Rimuovi') : _oT('ocr_lang_install', 'Installa');
         azione.dataset.codice = l.codice;
         azione.onclick = async () => {
@@ -887,8 +886,6 @@ async function _oRenderLingue() {
         box.appendChild(riga);
     }
 
-    box.appendChild(_oNota(_oT('ocr_langs_offline_hint',
-        'I dati si scaricano una sola volta e restano su questo computer: dopo l\'installazione il riconoscimento funziona senza connessione.')));
 }
 
 (function() {
@@ -896,90 +893,87 @@ async function _oRenderLingue() {
         if (document.getElementById('ocr-modal')) return;
         const html = `
     <div id="ocr-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-lg">
+        <div class="modal-window max-w-lg max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="ocr-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="scan-text" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="ocr_title">Riconosci testo (OCR)</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="ocr-titolo" data-i18n="ocr_title">Riconosci testo</h3>
+                    <p class="modal-sottotitolo" data-i18n="ocr_subtitle_local">Sul tuo computer, senza inviare nulla in rete. Il risultato va controllato a mano.</p>
+                    <p id="ocr-subtitle" class="modal-sottotitolo font-mono" translate="no"></p>
+                </div>
+                <button type="button" data-on-click="chiudiOcrModal" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <p id="ocr-subtitle" class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3"></p>
-                <div id="ocr-body" class="flex flex-col gap-3"></div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiOcrModal" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                    <button type="button" id="ocr-confirm" class="btn btn-primary">
-                        <span data-i18n="ocr_start">Riconosci</span>
-                    </button>
-                </div>
+                <div id="ocr-body" class="flex flex-col gap-4"></div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiOcrModal" data-modal-cancel class="btn btn-secondary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
+                <button type="button" id="ocr-confirm" class="btn btn-primary">
+                    <span data-i18n="ocr_start">Riconosci</span>
+                </button>
             </div>
         </div>
     </div>
 
     <div id="ocr-langs-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-md">
+        <div class="modal-window max-w-md max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="ocr-lingue-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="languages" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="ocr_langs_title">Lingue del riconoscimento</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="ocr-lingue-titolo" data-i18n="ocr_langs_title">Lingue del riconoscimento</h3>
+                    <p class="modal-sottotitolo" data-i18n="ocr_langs_offline_hint">I dati si scaricano una sola volta e restano su questo computer: dopo l'installazione il riconoscimento funziona senza connessione.</p>
+                </div>
             </div>
             <div class="modal-body">
-                <div id="ocr-langs-list" class="flex flex-col max-h-80 overflow-y-auto"></div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiGestioneLingueOcr" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+                <div id="ocr-langs-list" class="flex flex-col"></div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiGestioneLingueOcr" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>
 
     <div id="ocr-overwrite-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-md">
+        <div class="modal-window max-w-md" role="alertdialog" aria-labelledby="ocr-ow-titolo" aria-describedby="ocr-ow-nota">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="file-warning" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="ocr_overwrite_title">Trascrizione già presente</span>
-                </h3>
-            </div>
-            <div class="modal-body">
-                <p class="text-sm leading-relaxed" data-i18n="ocr_overwrite_desc">Alcune carte hanno già una trascrizione. La bozza dell'OCR può sostituirla o essere aggiunta in fondo. Il testo sostituito non è recuperabile.</p>
-                <div class="modal-footer">
-                    <button type="button" id="ocr-ow-cancel" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_cancel">Annulla</span>
-                    </button>
-                    <button type="button" id="ocr-ow-append" class="btn btn-secondary">
-                        <span data-i18n="ocr_overwrite_append">Aggiungi in fondo</span>
-                    </button>
-                    <button type="button" id="ocr-ow-replace" class="btn btn-primary">
-                        <span data-i18n="ocr_overwrite_replace">Sostituisci</span>
-                    </button>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="ocr-ow-titolo" data-i18n="ocr_overwrite_title">Trascrizione già presente</h3>
+                    <p class="modal-sottotitolo" id="ocr-ow-nota" data-i18n="ocr_overwrite_desc">Alcune carte hanno già una trascrizione. La bozza dell'OCR può sostituirla o essere aggiunta in fondo. Il testo sostituito non è recuperabile.</p>
                 </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="ocr-ow-cancel" data-modal-cancel class="btn btn-ghost mr-auto">
+                    <span data-i18n="btn_cancel">Annulla</span>
+                </button>
+                <button type="button" id="ocr-ow-replace" class="btn btn-secondary">
+                    <span data-i18n="ocr_overwrite_replace">Sostituisci</span>
+                </button>
+                <button type="button" id="ocr-ow-append" class="btn btn-primary">
+                    <span data-i18n="ocr_overwrite_append">Aggiungi in fondo</span>
+                </button>
             </div>
         </div>
     </div>
 
     <div id="ocr-bulk-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-md">
+        <div class="modal-window max-w-md" role="dialog" aria-modal="true" aria-labelledby="ocr-bulk-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="scan-text" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="ocr_bulk_title">OCR delle schede selezionate</span>
-                </h3>
+                <h3 class="modal-title" id="ocr-bulk-titolo" data-i18n="ocr_bulk_title">OCR delle schede selezionate</h3>
             </div>
-            <div class="modal-body">
-                <div class="w-full h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden mb-2">
+            <div class="modal-body flex flex-col gap-2">
+                <div class="traccia">
                     <div id="ocr-bulk-bar" class="h-full barra-avanzamento barra-scala"></div>
                 </div>
-                <p id="ocr-bulk-text" class="text-xs text-stone-500 dark:text-stone-400"></p>
-                <div class="modal-footer">
-                    <button type="button" id="ocr-bulk-cancel" data-on-click="annullaOcrMassa" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_cancel">Annulla</span>
-                    </button>
-                </div>
+                <p id="ocr-bulk-text" class="modello-suggerimento"></p>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="ocr-bulk-cancel" data-on-click="annullaOcrMassa" data-modal-cancel class="btn btn-secondary">
+                    <span data-i18n="btn_cancel">Annulla</span>
+                </button>
             </div>
         </div>
     </div>

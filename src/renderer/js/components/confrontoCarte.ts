@@ -228,7 +228,6 @@
         <div class="modal-window confronto-finestra">
             <div class="modal-header">
                 <h3 class="modal-title">
-                    <i data-lucide="columns-2" class="w-5 h-5 text-amber-700"></i>
                     <span data-i18n="cmp_title">Confronta carte</span>
                 </h3>
                 <label class="ml-auto flex items-center gap-2 text-xs cursor-pointer">

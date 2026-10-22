@@ -114,7 +114,7 @@ window.chiudiMenuContestuale = function(ripristinaFuoco = false, finoALivello = 
 function _costruisciMenu(elenco, livello) {
     const menu = document.createElement('div');
     menu.id = livello === 0 ? 'custom-context-menu' : 'custom-context-menu-' + livello;
-    menu.className = 'ctx-menu fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl rounded-md py-1 z-menu min-w-[190px] max-w-[280px] max-h-[85vh] overflow-y-auto custom-scroll text-sm text-stone-800 dark:text-stone-100';
+    menu.className = 'ctx-menu fixed z-menu custom-scroll';
     menu.setAttribute('role', 'menu');
     menu.dataset.livello = String(livello);
     menu.style.left = '-9999px';
@@ -123,16 +123,14 @@ function _costruisciMenu(elenco, livello) {
     for (const voce of elenco) {
         if (voce.heading) {
             const h = document.createElement('div');
-            h.className = voce.sottotitolo
-                ? 'px-4 py-1 text-xs text-red-600 dark:text-red-400 max-w-[260px] whitespace-normal'
-                : 'px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400';
+            h.className = voce.sottotitolo ? 'ctx-sottotitolo' : 'ctx-titolo';
             h.textContent = voce.label;
             menu.appendChild(h);
             continue;
         }
         if (voce.separator) {
             const hr = document.createElement('div');
-            hr.className = 'h-px bg-stone-200 dark:bg-stone-700 my-1';
+            hr.className = 'ctx-separatore';
             hr.setAttribute('role', 'separator');
             menu.appendChild(hr);
             continue;
@@ -142,12 +140,11 @@ function _costruisciMenu(elenco, livello) {
         btn.type = 'button';
         btn.setAttribute('role', 'menuitem');
         btn.tabIndex = -1;
-        btn.className = 'w-full text-left px-4 py-2 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed '
-            + (voce.danger
-                ? 'text-red-600 dark:text-red-400 hover:enabled:bg-red-50 dark:hover:enabled:bg-red-900/30 focus:enabled:bg-red-50 dark:focus:enabled:bg-red-900/30'
-                : 'hover:enabled:bg-stone-100 dark:hover:enabled:bg-stone-800 focus:enabled:bg-stone-100 dark:focus:enabled:bg-stone-800')
-            + (voce.accent ? ' font-medium text-blue-600 dark:text-blue-400' : '')
-            + (voce.accentWarn ? ' font-medium text-amber-700 dark:text-amber-400' : '');
+        btn.className = 'ctx-voce'
+            + (voce.danger ? ' is-pericolo' : '')
+            + (voce.accent ? ' is-accento' : '')
+            + (voce.accentWarn ? ' is-avviso' : '');
+        if (voce.corrente) btn.setAttribute('aria-current', 'true');
         btn.disabled = !!voce.disabled || (sottovoci !== null && sottovoci.length === 0);
         if (voce.title) btn.title = voce.title;
 
@@ -156,6 +153,12 @@ function _costruisciMenu(elenco, livello) {
             i.setAttribute('data-lucide', voce.icon);
             i.className = 'w-4 h-4 shrink-0';
             btn.appendChild(i);
+        }
+        if (voce.colore) {
+            const q = document.createElement('span');
+            q.className = 'sidebar-tag-quadro' + (voce.colore === 'neutro' ? '' : ' tag-quadro-' + voce.colore);
+            q.setAttribute('aria-hidden', 'true');
+            btn.appendChild(q);
         }
         const span = document.createElement('span');
         span.className = 'truncate';
@@ -171,6 +174,11 @@ function _costruisciMenu(elenco, livello) {
             chev.setAttribute('data-lucide', 'chevron-right');
             chev.className = 'w-4 h-4 shrink-0 ml-auto opacity-60';
             btn.appendChild(chev);
+        } else if (voce.corrente) {
+            const spunta = document.createElement('i');
+            spunta.setAttribute('data-lucide', 'check');
+            spunta.className = 'w-4 h-4 shrink-0 ml-auto';
+            btn.appendChild(spunta);
         } else if (voce.shortcut) {
             const kbd = document.createElement('kbd');
             kbd.className = 'cp-kbd ml-auto';

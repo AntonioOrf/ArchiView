@@ -295,7 +295,7 @@ test.describe('Accessibilità: effetti globali', () => {
           const testo = (n.textContent || '').trim();
           if (!/[a-zà-ù]{3,}/i.test(testo)) continue;
           const el = n.parentElement!;
-          if (el.closest('[data-i18n], [translate="no"], script, style, option, #changelog-content, .changelog-titolo')) continue;
+          if (el.closest('[data-i18n], [translate="no"], script, style, option, #changelog-content, .changelog-nome')) continue;
           const modale = finestra.closest('[id]');
           out.push(`${modale ? modale.id : '?'}: ${testo.slice(0, 60)}`);
         }

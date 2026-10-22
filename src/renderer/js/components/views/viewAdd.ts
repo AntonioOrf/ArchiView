@@ -101,6 +101,7 @@
                             <div class="form-group">
                                 <label class="form-label" for="form-tags" data-i18n="label_tags">Tag</label>
                                 <input id="form-tags" data-i18n-placeholder="placeholder_tags_input" class="form-input">
+                                <div id="form-tags-chip" class="form-tags-chip"></div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="form-relazione-target" data-i18n="label_links">Collegamenti</label>

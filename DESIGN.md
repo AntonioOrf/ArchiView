@@ -51,6 +51,17 @@ cover: prefer a token class to a `dark:` pair.
   (tag colours in the sidebar, own-field marker in the form).
 - Flat surfaces: panels, modals and cards have no shadow beyond a hover lift. Modals are a
   hairline-bordered panel on a plain scrim (no blur); the title is ink, not accent.
+- Every modal has the same frame: `.modal-header` with the title and, when useful, one line of
+  `.modal-sottotitolo` (shelfmarks and paths in mono), an optional × on the right; `.modal-body`;
+  `.modal-footer.modal-footer-bar` outside the body with the primary on the right. No icon in the
+  title, no coloured header: red is only the destructive button.
+- Lists inside modals are hairline rows (`.tag-manager-row`, `.riga-filetto`, `.cestino-riga`),
+  not boxes; option cards are `.scelta-riga` (accent tint only on the chosen one); a bulk
+  selection shows `.barra-selezione` under the header.
+- The bottom confirmation (`mostraBottomConfirm`) is an ink bar at the bottom of the window in the
+  light themes and a dark raised panel in the dark ones (no light fill in a dark theme).
+- Context menus (`.ctx-menu`) are flat panels with hairline border; headings are sentence case;
+  a menu item can carry a tag colour square and a check for the current choice.
 
 ## Type
 

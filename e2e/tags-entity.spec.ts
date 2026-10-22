@@ -187,4 +187,34 @@ test.describe('Tag come entità (3.4)', () => {
     await page.locator('#tag-manager-modal [data-modal-cancel]').click();
     await expect(page.locator('#tag-manager-modal')).toBeHidden();
   });
+
+  test('tasto destro su un tag: il menu ne cambia subito il colore, dalla sidebar, dalla scheda e dal modulo', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'TagEnt');
+    await semina(page, [{ segnatura: 'A', tags: 'pergamena' }]);
+    const colore = () => page.evaluate(() => (window as any).Model.coloreTag(appData, 'pergamena') || '');
+    const menu = page.locator('#custom-context-menu');
+
+    await page.locator('#sidebar-tag-rapidi-lista [data-tag="pergamena"]').click({ button: 'right' });
+    await expect(menu).toBeVisible();
+    await expect(menu).toContainText('pergamena');
+    await menu.getByRole('menuitem', { name: /^(Rosso|Red)/ }).click();
+    await expect(menu).toBeHidden();
+    expect(await colore()).toBe('rosso');
+    await expect(page.locator('.card-scheda [data-tag="pergamena"].tag-col-rosso')).toHaveCount(1);
+
+    await page.locator('.card-scheda [data-tag="pergamena"]').click({ button: 'right' });
+    await expect(menu).toContainText('pergamena');
+    await expect(menu.getByRole('menuitem', { name: /^(Rosso|Red)/ })).toHaveAttribute('aria-current', 'true');
+    await menu.getByRole('menuitem', { name: /^(Verde|Green)/ }).click();
+    expect(await colore()).toBe('verde');
+
+    const id = await page.evaluate(() => appData.manoscritti.find((m: any) => m.segnatura === 'A').id);
+    await page.evaluate((rid: string) => (window as any).editItem(rid), id);
+    const chip = page.locator('#form-tags-chip [data-tag="pergamena"]');
+    await expect(chip).toHaveClass(/tag-col-verde/);
+    await chip.click({ button: 'right' });
+    await menu.getByRole('menuitem', { name: /^(Nessuno|None)/ }).click();
+    expect(await colore()).toBe('');
+    await expect(chip).not.toHaveClass(/tag-col-/);
+  });
 });

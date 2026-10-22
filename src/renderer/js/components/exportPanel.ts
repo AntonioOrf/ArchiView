@@ -74,16 +74,15 @@ function _xBloccoFormati(scelto) {
         box.appendChild(titoloGruppo);
 
         const griglia = document.createElement('div');
-        griglia.className = 'flex flex-col gap-2';
+        griglia.className = 'flex flex-col';
         for (const f of _xFORMATI.filter(x => x.gruppo === gruppo)) {
             const wrap = document.createElement('label');
-            wrap.className = 'flex gap-2 items-start cursor-pointer p-2 rounded-lg border border-stone-200 dark:border-stone-700';
+            wrap.className = 'scelta-riga';
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = 'tx-format';
             radio.value = f.id;
             radio.id = 'tx-format-' + f.id;
-            radio.className = 'accent-amber-700 mt-1';
             radio.checked = f.id === scelto;
             radio.addEventListener('change', () => {
                 window.impostazioniExportTesto.formato = f.id;
@@ -91,10 +90,10 @@ function _xBloccoFormati(scelto) {
             });
             const testo = document.createElement('span');
             const titolo = document.createElement('span');
-            titolo.className = 'block text-sm font-medium';
+            titolo.className = 'scelta-riga-titolo';
             titolo.textContent = f.label;
             const desc = document.createElement('span');
-            desc.className = 'block text-xs text-stone-500 dark:text-stone-400 leading-relaxed';
+            desc.className = 'scelta-riga-nota';
             desc.textContent = _xT(f.chiave + '_desc', f.desc);
             testo.append(titolo, desc);
             wrap.append(radio, testo);
@@ -128,7 +127,7 @@ function _xRiempi() {
         input.type = 'checkbox';
         input.id = 'tx-opt-header';
         input.checked = o.intestazione;
-        input.className = 'accent-amber-700';
+
         input.addEventListener('change', () => { o.intestazione = input.checked; });
         const span = document.createElement('span');
         span.textContent = _xT('tx_opt_header', 'Intestazione con segnatura, date e archivio');
@@ -138,7 +137,7 @@ function _xRiempi() {
 
     const nota = document.createElement('p');
     nota.id = 'tx-count';
-    nota.className = 'text-xs text-stone-500 dark:text-stone-400';
+    nota.className = 'modello-suggerimento';
     corpo.appendChild(nota);
     _xAggiornaConteggio();
 }
@@ -250,23 +249,21 @@ window.esportaTesto = async function() {
         if (document.getElementById('export-text-modal')) return;
         const html = `
     <div id="export-text-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-xl">
+        <div class="modal-window max-w-xl max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="tx-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="file-output" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="tx_title">Esporta testo e citazioni</span>
-                </h3>
+                <h3 class="modal-title" id="tx-titolo" data-i18n="tx_title">Esporta testo e citazioni</h3>
+                <button type="button" data-on-click="chiudiEsportaTesto" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div id="tx-body" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-1"></div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiEsportaTesto" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                    <button type="button" id="tx-export" data-on-click="esportaTesto" class="btn btn-primary">
-                        <span data-i18n="tx_export">Esporta</span>
-                    </button>
-                </div>
+            <div id="tx-body" class="modal-body flex flex-col gap-4 custom-scroll"></div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiEsportaTesto" data-modal-cancel class="btn btn-ghost">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
+                <button type="button" id="tx-export" data-on-click="esportaTesto" class="btn btn-primary">
+                    <span data-i18n="tx_export">Esporta</span>
+                </button>
             </div>
         </div>
     </div>

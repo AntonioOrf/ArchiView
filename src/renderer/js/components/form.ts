@@ -513,13 +513,16 @@ window.aggiornaTitoloScheda = function() {
     h1.classList.toggle('is-vuoto', !segnatura);
 };
 document.addEventListener('input', (e) => {
-    if ((e.target as HTMLElement).id === 'form-segnatura') window.aggiornaTitoloScheda();
+    const id = (e.target as HTMLElement).id;
+    if (id === 'form-segnatura') window.aggiornaTitoloScheda();
+    else if (id === 'form-tags') window.aggiornaChipTagForm();
 });
 
 function resetForm() {
     window.isFormDirty = false;
     document.getElementById('form-segnatura').value = '';
     document.getElementById('form-tags').value = '';
+    window.aggiornaChipTagForm();
     document.getElementById('form-allegato').value = '';
     document.getElementById('form-id').value = '';
 

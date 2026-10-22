@@ -117,5 +117,39 @@ window.classeColoreTag = function(tag) {
 };
 
 window.chipTagHTML = function(tag) {
-    return '<span class="' + window.classeColoreTag(tag) + '">' + escapeHTML(tag) + '</span>';
+    return '<span class="' + window.classeColoreTag(tag) + '" data-tag="' + escapeHTML(tag) + '">' + escapeHTML(tag) + '</span>';
 };
+
+window.aggiornaChipTagForm = function() {
+    const box = document.getElementById('form-tags-chip');
+    const campo = document.getElementById('form-tags') as HTMLInputElement | null;
+    if (!box || !campo) return;
+    box.innerHTML = window.sanitizeHTML(window.Model.tags({ tags: campo.value }).map(t => window.chipTagHTML(t)).join(''));
+};
+
+window.apriMenuColoreTag = function(origine, tag) {
+    const attuale = window.Model.coloreTag(appData, tag) || '';
+    const voci: any[] = [{ heading: true, label: _tgT('tag_color_menu', 'Colore di «{var0}»').replace('{var0}', tag) }];
+    for (const c of [''].concat(window.Model.COLORI_TAG)) {
+        voci.push({
+            label: c ? _tgT('tag_color_' + c, c) : _tgT('tag_color_none', 'Nessuno'),
+            colore: c || 'neutro',
+            corrente: c === attuale,
+            onSelect: async () => {
+                if (!(await window.impostaColoreTagArchivio(tag, c))) return;
+                if (!document.getElementById('tag-manager-modal')?.classList.contains('hidden-tab')) window.disegnaGestioneTag();
+                if (typeof renderTagList === 'function' && !document.getElementById('sidebar-tags')?.classList.contains('hidden-tab')) renderTagList();
+                window.aggiornaChipTagForm();
+            }
+        });
+    }
+    window.apriMenuContestuale(origine, voci);
+};
+
+document.addEventListener('contextmenu', (e) => {
+    const el = (e.target as HTMLElement | null)?.closest?.('[data-tag]') as HTMLElement | null;
+    if (!el || !el.dataset.tag || typeof appData === 'undefined') return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.apriMenuColoreTag(e.clientX || e.clientY ? e : el, el.dataset.tag);
+}, true);

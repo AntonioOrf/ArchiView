@@ -80,9 +80,60 @@ test.describe('Vista Trascrizione', () => {
       page.locator('#trascrizione-editor-panel').boundingBox(),
       page.locator('#view-trascrizione').boundingBox(),
     ]);
-    expect(editor!.width).toBeGreaterThan(vista!.width * 0.9);
+    expect(editor!.width).toBeGreaterThan(Math.min(vista!.width * 0.9, 900));
+    await expect(page.locator('#trascrizione-resizer')).toBeHidden();
+    await expect(page.locator('#trasc-vista')).toBeHidden();
+    await expect(page.locator('#btn-confronta-carte')).toBeHidden();
+    await expect(page.locator('#trasc-senza-fonte')).toBeVisible();
     await expect(page.locator('#btn-carica-allegato-trasc')).toBeVisible();
     await expect(page.locator('#btn-iiif-trasc')).toBeVisible();
+  });
+
+  test('senza allegati dopo una scheda con immagine non resta la maniglia a sinistra', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const conImg = await createItemWithAttachment(page, 'MS-TRASC-PRIMA', FIXTURE_PNG);
+    await page.locator('#btn-tab-add').click();
+    await page.locator('#form-segnatura').fill('MS-TRASC-DOPO');
+    await page.locator('#btn-submit-form').click();
+    await expect(page.locator('#view-list')).toContainText('MS-TRASC-DOPO');
+    const senza = (await getAppData(page)).manoscritti.find((m: any) => m.segnatura === 'MS-TRASC-DOPO').id;
+
+    await page.evaluate((r) => (window as any).apriTrascrizione(r), conImg);
+    await page.locator('#trasc-vista button[data-vista="fonte"]').click();
+    await page.locator('#btn-back-to-list-trasc').click();
+    await page.evaluate((r) => (window as any).apriTrascrizione(r), senza);
+    await expect(page.locator('#trascrizione-resizer')).toBeHidden();
+    await expect(page.locator('#trascrizione-editor-panel')).toBeVisible();
+    await expect(page.locator('#trasc-mostra-testo')).toBeHidden();
+  });
+
+  test('il selettore vista passa tra fonte, affiancate e testo', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-TRASC-VISTA', FIXTURE_PNG);
+    await page.evaluate((r) => (window as any).apriTrascrizione(r), id);
+    const bottone = (v: string) => page.locator(`#trasc-vista button[data-vista="${v}"]`);
+    const fonte = page.locator('#trascrizione-allegato-panel');
+    const testo = page.locator('#trascrizione-editor-panel');
+
+    await expect(page.locator('#trasc-senza-fonte')).toBeHidden();
+    await expect(bottone('affiancate')).toHaveAttribute('aria-pressed', 'true');
+    await expect(fonte).toBeVisible();
+    await expect(testo).toBeVisible();
+    await expect(page.locator('#trascrizione-resizer')).toBeVisible();
+
+    await bottone('testo').click();
+    await expect(bottone('testo')).toHaveAttribute('aria-pressed', 'true');
+    await expect(fonte).toBeHidden();
+    await expect(page.locator('#trascrizione-resizer')).toBeHidden();
+    const [ed, cont] = await Promise.all([testo.boundingBox(), page.locator('#trascrizione-container').boundingBox()]);
+    expect(ed!.width).toBeGreaterThan(cont!.width * 0.9);
+
+    await bottone('fonte').click();
+    await expect(fonte).toBeVisible();
+    await expect(testo).toBeHidden();
+    await page.locator('#trasc-mostra-testo').click();
+    await expect(bottone('affiancate')).toHaveAttribute('aria-pressed', 'true');
+    await expect(testo).toBeVisible();
   });
 
   test('P1 — caratteri speciali: col mouse e da tastiera entrano al cursore', async ({ page, userDataDir }) => {
@@ -238,7 +289,7 @@ test.describe('Vista Trascrizione', () => {
     await page.evaluate((r) => (window as any).apriTrascrizione(r), id);
     const barra = page.locator('#trascrizione-toolbar');
     await expect.poll(async () => (await barra.boundingBox())!.height).toBeLessThan(60);
-    for (const sel of ['#btn-ocr-trasc', '#btn-carica-allegato-trasc', '#btn-iiif-trasc']) {
+    for (const sel of ['#btn-ocr-trasc', '#btn-iiif-trasc']) {
       await expect(page.locator(sel)).toHaveAccessibleName(/\S/);
     }
 
@@ -306,9 +357,7 @@ test.describe('Vista Trascrizione', () => {
     const id = await createItemWithAttachment(page, 'MS-TRASC-FULL', FIXTURE_PNG);
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
 
-    const isHidden = () => page.evaluate(() =>
-      document.getElementById('trascrizione-editor-panel')!.classList.contains('hidden'),
-    );
+    const isHidden = () => page.locator('#trascrizione-editor-panel').isHidden();
 
     const dispatchAltF = () => page.evaluate(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true }));
@@ -318,22 +367,6 @@ test.describe('Vista Trascrizione', () => {
     await expect.poll(isHidden).toBe(true);
 
     await dispatchAltF();
-    await expect.poll(isHidden).toBe(false);
-  });
-
-  test('#btn-collapse-editor collassa e riespande il pannello editor', async ({ page, userDataDir }) => {
-    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
-    const id = await createItemWithAttachment(page, 'MS-TRASC-COLLAPSE', FIXTURE_PNG);
-    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
-
-    const isHidden = () => page.evaluate(() =>
-      document.getElementById('trascrizione-editor-panel')!.classList.contains('hidden'),
-    );
-
-    await page.locator('#btn-collapse-editor').click();
-    await expect.poll(isHidden).toBe(true);
-
-    await page.locator('#btn-collapse-editor').click();
     await expect.poll(isHidden).toBe(false);
   });
 

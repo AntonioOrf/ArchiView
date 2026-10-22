@@ -37,7 +37,7 @@ window.disegnaVocabolari = function() {
         nome.className = 'truncate';
         nome.textContent = voc.nome;
         const conta = document.createElement('span');
-        conta.className = 'shrink-0 ml-2 text-xs tabular-nums text-stone-400';
+        conta.className = 'vocab-conteggio';
         conta.textContent = String((voc.valori || []).length);
         btn.append(nome, conta);
         lista.appendChild(btn);
@@ -51,7 +51,7 @@ window.disegnaVocabolari = function() {
     valori.innerHTML = '';
     if (!corrente) {
         const vuoto = document.createElement('div');
-        vuoto.className = 'p-6 text-xs text-stone-400 italic text-center';
+        vuoto.className = 'p-6 modello-suggerimento text-center';
         vuoto.textContent = _vpT('vocab_none', 'Nessun vocabolario. Creane uno per condividere una lista di valori con tutto il gruppo.');
         valori.appendChild(vuoto);
         return;
@@ -78,13 +78,15 @@ function _vpRigaValore(voc, valore, usi) {
     riga.className = 'vocab-valore';
 
     const nome = document.createElement('span');
-    nome.className = 'vocab-valore-nome truncate';
+    nome.className = 'vocab-valore-nome';
     nome.textContent = valore;
     riga.appendChild(nome);
 
     const conta = document.createElement('span');
-    conta.className = 'tag-manager-count tabular-nums';
-    conta.textContent = usi ? String(usi) : '';
+    conta.className = 'vocab-usi';
+    conta.textContent = usi === 0 ? _vpT('vocab_uses_none', 'nessuna scheda')
+        : usi === 1 ? _vpT('vocab_uses_one', '1 scheda')
+        : _vpT('vocab_uses_n', '{var0} schede').replace('{var0}', String(usi));
     conta.title = _vpT('vocab_used_by', 'Schede che usano questo valore');
     riga.appendChild(conta);
 
@@ -185,10 +187,10 @@ window.disegnaDuplicati = function() {
         const testa = document.createElement('div');
         testa.className = 'dup-testa';
         const seg = document.createElement('span');
-        seg.className = 'font-semibold truncate';
+        seg.className = 'dup-segnatura';
         seg.textContent = g.valore;
         const quante = document.createElement('span');
-        quante.className = 'tag-manager-count tabular-nums';
+        quante.className = 'vocab-conteggio';
         quante.textContent = String(g.schede.length);
         testa.append(seg, quante);
         box.appendChild(testa);
@@ -215,69 +217,75 @@ window.disegnaDuplicati = function() {
         if (document.getElementById('vocab-modal')) return;
         const html = `
     <div id="vocab-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-2xl">
+        <div class="modal-window max-w-4xl h-[80vh]" role="dialog" aria-modal="true" aria-labelledby="vocab-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="list-tree" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="vocab_title">Vocabolari controllati</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="vocab-titolo" data-i18n="vocab_title">Vocabolari controllati</h3>
+                    <p class="modal-sottotitolo" data-i18n="vocab_subtitle">Elenchi di valori ammessi, condivisi da tutti i modelli dell'archivio.</p>
+                </div>
+                <button type="button" data-on-click="chiudiVocabolari" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div class="vocab-griglia">
-                    <div class="vocab-colonna">
-                        <div id="vocab-list" class="vocab-elenco"></div>
-                        <div class="flex gap-2">
-                            <input id="vocab-new-name" type="text" class="form-input" data-i18n-placeholder="vocab_new" placeholder="Nuovo vocabolario">
-                            <button type="button" data-on-click="creaVocabolarioDalPannello" class="btn btn-secondary shrink-0" data-i18n-title="vocab_new" data-i18n-aria-label="vocab_new" title="Nuovo vocabolario" aria-label="Nuovo vocabolario">
-                                <i data-lucide="plus" class="w-4 h-4"></i>
+            <div class="vocab-griglia">
+                <div class="vocab-colonna vocab-colonna-elenco">
+                    <div id="vocab-list" class="vocab-elenco"></div>
+                    <div class="vocab-nuovo">
+                        <input id="vocab-new-name" type="text" class="form-input" data-i18n-placeholder="vocab_new" placeholder="Nuovo vocabolario" data-i18n-aria-label="vocab_new" aria-label="Nuovo vocabolario">
+                        <button type="button" data-on-click="creaVocabolarioDalPannello" class="btn btn-secondary btn-icon shrink-0" data-i18n-title="vocab_new" data-i18n-aria-label="vocab_new" title="Nuovo vocabolario" aria-label="Nuovo vocabolario">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="vocab-colonna vocab-colonna-valori">
+                    <div class="vocab-testa">
+                        <h4 id="vocab-current-name" class="vocab-nome"></h4>
+                        <div id="vocab-actions" class="ml-auto hidden">
+                            <button type="button" data-on-click="eliminaVocabolarioDalPannello" class="btn btn-danger-ghost" data-i18n-title="vocab_delete" title="Elimina il vocabolario">
+                                <span data-i18n="vocab_delete">Elimina il vocabolario</span>
                             </button>
                         </div>
                     </div>
-                    <div class="vocab-colonna">
-                        <div class="flex items-center gap-2">
-                            <strong id="vocab-current-name" class="truncate"></strong>
-                            <div id="vocab-actions" class="ml-auto hidden">
-                                <button type="button" data-on-click="eliminaVocabolarioDalPannello" class="btn btn-danger-ghost btn-icon" data-i18n-title="vocab_delete" title="Elimina il vocabolario">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="vocab-values" class="tag-manager-list"></div>
-                        <div class="flex gap-2">
-                            <input id="vocab-new-value" type="text" class="form-input" data-i18n-placeholder="vocab_new_value" placeholder="Nuovo valore…">
-                            <button type="button" data-on-click="aggiungiValoreDalPannello" class="btn btn-primary shrink-0">
-                                <span data-i18n="btn_add">Aggiungi</span>
-                            </button>
-                        </div>
+                    <div class="vocab-nuovo">
+                        <input id="vocab-new-value" type="text" class="form-input font-serif" data-i18n-placeholder="vocab_new_value" placeholder="Nuovo valore…" data-i18n-aria-label="vocab_new_value" aria-label="Nuovo valore">
+                        <button type="button" data-on-click="aggiungiValoreDalPannello" class="btn btn-secondary shrink-0">
+                            <span data-i18n="btn_add">Aggiungi</span>
+                        </button>
                     </div>
+                    <div id="vocab-values" class="vocab-valori"></div>
+                    <p class="modello-suggerimento" data-i18n="vocab_hint">Un vocabolario è condiviso da tutto l'archivio e viaggia con la sincronizzazione. Rinominare un valore lo aggiorna in tutte le schede; toglierlo dall'elenco non lo cancella dalle schede che lo contengono.</p>
                 </div>
-                <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="vocab_hint">Un vocabolario è condiviso da tutto l'archivio e viaggia con la sincronizzazione. Rinominare un valore lo aggiorna in tutte le schede; toglierlo dall'elenco non lo cancella dalle schede che lo contengono.</p>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiVocabolari" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="apriDuplicati" class="btn-collegamento mr-auto">
+                    <span data-i18n="dup_title">Segnature ripetute</span>
+                </button>
+                <button type="button" data-on-click="chiudiVocabolari" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>
 
     <div id="duplicati-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-lg">
+        <div class="modal-window max-w-lg max-h-[85vh]" role="dialog" aria-modal="true" aria-labelledby="duplicati-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="copy" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="dup_title">Segnature ripetute</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="duplicati-titolo" data-i18n="dup_title">Segnature ripetute</h3>
+                    <p id="duplicati-summary" class="modal-sottotitolo"></p>
+                </div>
+                <button type="button" data-on-click="chiudiDuplicati" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <p id="duplicati-summary" class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3"></p>
-                <div id="duplicati-list" class="tag-manager-list"></div>
-                <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="dup_hint">Una segnatura ripetuta non è per forza un errore: un fondo può contenerne per inventariazioni precedenti alla schedatura. L'elenco le segnala, la decisione resta a chi guarda.</p>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiDuplicati" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+                <div id="duplicati-list"></div>
+                <p class="modello-suggerimento mt-3" data-i18n="dup_hint">Una segnatura ripetuta non è per forza un errore: un fondo può contenerne per inventariazioni precedenti alla schedatura. L'elenco le segnala, la decisione resta a chi guarda.</p>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiDuplicati" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>

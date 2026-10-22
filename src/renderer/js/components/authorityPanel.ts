@@ -43,7 +43,7 @@ window.disegnaAnagrafica = function() {
     lista.innerHTML = '';
     if (voci.length === 0) {
         const vuoto = document.createElement('div');
-        vuoto.className = 'p-6 text-xs text-stone-400 italic text-center';
+        vuoto.className = 'p-6 modello-suggerimento text-center';
         vuoto.textContent = _apT('auth_none', 'Nessuna voce. Le persone e i luoghi si raccolgono dai campi marcati come tali nell\'editor del tipo documento.');
         lista.appendChild(vuoto);
         return;
@@ -179,13 +179,13 @@ window.cercaAuthorityWikidata = async function() {
         b.type = 'button';
         b.className = 'auth-candidato';
         const nome = document.createElement('span');
-        nome.className = 'font-semibold';
+        nome.className = 'font-semibold font-serif';
         nome.textContent = c.etichetta || c.id;
         const id = document.createElement('code');
         id.className = 'auth-id';
         id.textContent = c.id;
         const descr = document.createElement('span');
-        descr.className = 'block text-xs text-stone-500 dark:text-stone-400';
+        descr.className = 'block modello-suggerimento';
         descr.textContent = c.descrizione;
         b.append(nome, ' ', id, descr);
         b.onclick = () => _apScegliCandidato(c.id);
@@ -259,7 +259,7 @@ function _apRigaCollegamento(voce) {
     btn.appendChild(seg);
 
     const dove = document.createElement('span');
-    dove.className = 'ml-auto shrink-0 text-xs text-stone-400 truncate';
+    dove.className = 'ml-auto shrink-0 text-xs text-stone-500 truncate';
     dove.textContent = voce.scheda.cartella || '';
     btn.appendChild(dove);
 
@@ -280,12 +280,12 @@ window.disegnaCollegamenti = function() {
 
     const sezione = (chiave, fallback, voci) => {
         const h = document.createElement('p');
-        h.className = 'text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 mt-3 mb-1';
+        h.className = 'modello-sez mt-3 mb-1';
         h.textContent = _apT(chiave, fallback) + ' (' + voci.length + ')';
         box.appendChild(h);
         if (voci.length === 0) {
             const vuoto = document.createElement('p');
-            vuoto.className = 'text-xs text-stone-400 italic';
+            vuoto.className = 'modello-suggerimento';
             vuoto.textContent = _apT('link_none', 'Nessun collegamento.');
             box.appendChild(vuoto);
             return;
@@ -346,7 +346,7 @@ window.renderRelazioniForm = function() {
     box.innerHTML = '';
     if (relazioni.length === 0) {
         const vuoto = document.createElement('p');
-        vuoto.className = 'text-xs text-stone-400 italic';
+        vuoto.className = 'modello-suggerimento';
         vuoto.textContent = _apT('link_none', 'Nessun collegamento.');
         box.appendChild(vuoto);
     }
@@ -365,7 +365,7 @@ window.renderRelazioniForm = function() {
         seg.className = 'truncate';
         seg.textContent = altra ? (altra.segnatura || _apT('no_signature', 'Senza segnatura')) : _apT('link_missing', 'scheda non presente in questa copia');
         seg.translate = false;
-        if (!altra) seg.classList.add('italic', 'text-stone-400');
+        if (!altra) seg.classList.add('italic', 'text-stone-500');
         riga.appendChild(seg);
 
         const via = document.createElement('button');
@@ -448,43 +448,46 @@ window.caricaRelazioniForm = function(m) {
         if (document.getElementById('authority-modal')) return;
         const html = `
     <div id="relazioni-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-md">
+        <div class="modal-window max-w-lg max-h-[85vh]" role="dialog" aria-modal="true" aria-labelledby="relazioni-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="link" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="link_panel_title">Schede collegate</span>
-                    <code id="relazioni-subject" class="ml-1 truncate"></code>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="relazioni-titolo" data-i18n="link_panel_title">Schede collegate</h3>
+                    <p id="relazioni-subject" class="modal-sottotitolo font-mono truncate" translate="no"></p>
+                </div>
+                <button type="button" data-on-click="chiudiCollegamenti" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <div id="relazioni-body" class="space-y-1"></div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiCollegamenti" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                    <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCollegamenti&quot;,&quot;apriGrafo&quot;]" class="btn btn-secondary">
-                        <i data-lucide="git-fork" class="w-4 h-4"></i>
-                        <span data-i18n="graph_title">Grafo dei collegamenti</span>
-                    </button>
-                    <button type="button" id="btn-collaziona" data-on-click="collazionaCollegate" class="btn btn-secondary">
-                        <i data-lucide="git-compare" class="w-4 h-4"></i>
-                        <span data-i18n="coll_open">Collaziona</span>
-                    </button>
-                </div>
+                <div id="relazioni-body"></div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiCollegamenti" data-modal-cancel class="btn btn-ghost mr-auto">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
+                <button type="button" data-on-click="inSequenza" data-args-click="[&quot;chiudiCollegamenti&quot;,&quot;apriGrafo&quot;]" class="btn btn-secondary">
+                    <span data-i18n="graph_title">Grafo dei collegamenti</span>
+                </button>
+                <button type="button" id="btn-collaziona" data-on-click="collazionaCollegate" class="btn btn-primary">
+                    <span data-i18n="coll_open">Collaziona</span>
+                </button>
             </div>
         </div>
     </div>
 
     <div id="authority-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-lg">
-            <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="users" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="auth_title">Persone e luoghi</span>
-                </h3>
+        <div class="modal-window max-w-2xl h-[80vh]" role="dialog" aria-modal="true" aria-labelledby="authority-titolo">
+            <div class="modal-header auth-testata">
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="authority-titolo" data-i18n="auth_title">Persone e luoghi</h3>
+                    <p class="modal-sottotitolo" data-i18n="auth_subtitle">L'indice nasce dai campi delle schede marcati come persona o luogo.</p>
+                </div>
+                <button type="button" data-on-click="chiudiAnagrafica" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div id="authority-elenco">
+            <div class="modal-body flex-1 flex flex-col">
+                <div id="authority-elenco" class="flex flex-col flex-1 min-h-0">
                 <div class="auth-tabs" role="tablist">
                     <button type="button" id="authority-tab-persona" role="tab" aria-selected="true" class="auth-tab attiva" data-on-click="cambiaTipoAnagrafica" data-args-click="[&quot;persona&quot;]">
                         <span data-i18n="auth_people">Persone</span>
@@ -493,33 +496,33 @@ window.caricaRelazioniForm = function(m) {
                         <span data-i18n="auth_places">Luoghi</span>
                     </button>
                 </div>
-                <input id="authority-filter" type="text" class="form-input my-3" data-i18n-placeholder="auth_filter" placeholder="Filtra…">
-                <div id="authority-list" class="tag-manager-list"></div>
-                <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="auth_hint">L'elenco si ricava dalle schede: non è un archivio parallelo. Rinominare una voce riscrive il nome in tutte le schede che lo citano, ed è il modo di unificare due grafie della stessa persona.</p>
+                <input id="authority-filter" type="text" class="form-input my-3" data-i18n-placeholder="auth_filter" placeholder="Filtra…" data-i18n-aria-label="auth_filter" aria-label="Filtra">
+                <div id="authority-list" class="tag-manager-list auth-elenco"></div>
+                <p class="modello-suggerimento mt-3" data-i18n="auth_hint">L'elenco si ricava dalle schede: non è un archivio parallelo. Rinominare una voce riscrive il nome in tutte le schede che lo citano, ed è il modo di unificare due grafie della stessa persona.</p>
                 </div>
                 <div id="authority-collega" class="hidden-tab">
-                    <p class="text-sm mb-2"><span data-i18n="auth_link_btn">Collega a Wikidata</span>: <strong id="authority-collega-nome" translate="no"></strong></p>
+                    <p class="text-sm mb-2"><span data-i18n="auth_link_btn">Collega a Wikidata</span>: <strong id="authority-collega-nome" class="font-serif" translate="no"></strong></p>
                     <div class="flex gap-2">
                         <input id="authority-collega-q" type="search" class="form-input flex-1" data-i18n-aria-label="auth_link_query" aria-label="Nome da cercare">
                         <button type="button" data-on-click="cercaAuthorityWikidata" class="btn btn-secondary"><span data-i18n="auth_link_search">Cerca</span></button>
                     </div>
-                    <p id="authority-collega-esito" class="text-xs text-stone-500 dark:text-stone-400 my-2" aria-live="polite"></p>
+                    <p id="authority-collega-esito" class="modello-suggerimento my-2" aria-live="polite"></p>
                     <ul id="authority-collega-risultati" class="auth-candidati" role="list"></ul>
-                    <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="auth_link_hint">L'identificativo serve a distinguere gli omonimi; il numero VIAF si ricava da Wikidata. Senza rete l'archivio funziona come prima.</p>
+                    <p class="modello-suggerimento mt-3" data-i18n="auth_link_hint">L'identificativo serve a distinguere gli omonimi; il numero VIAF si ricava da Wikidata. Senza rete l'archivio funziona come prima.</p>
                     <div class="flex justify-end gap-2 mt-3">
                         <button type="button" id="authority-scollega" data-on-click="scollegaAuthority" class="btn btn-danger-ghost hidden-tab">
                             <span data-i18n="auth_link_remove">Scollega</span>
                         </button>
-                        <button type="button" data-on-click="chiudiCollegaAuthority" class="btn btn-ghost">
+                        <button type="button" data-on-click="chiudiCollegaAuthority" class="btn btn-secondary">
                             <span data-i18n="auth_link_back">Indietro</span>
                         </button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiAnagrafica" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiAnagrafica" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>

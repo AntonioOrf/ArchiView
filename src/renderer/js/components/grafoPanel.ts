@@ -369,7 +369,7 @@ function _grAggiornaDettaglio() {
     if (!m) return;
 
     const titolo = document.createElement('strong');
-    titolo.className = 'block truncate';
+    titolo.className = 'block truncate font-mono text-sm';
     titolo.textContent = m.segnatura || _grT('no_signature', 'Senza segnatura');
     titolo.translate = false;
     box.appendChild(titolo);
@@ -377,7 +377,7 @@ function _grAggiornaDettaglio() {
     const risolte = window.relazioniRisolte(id);
     const sezione = (chiave, fallback, voci) => {
         const h = document.createElement('p');
-        h.className = 'text-xs uppercase tracking-wider text-stone-500 mt-2 mb-1';
+        h.className = 'modello-sez mt-3 mb-1';
         h.textContent = _grT(chiave, fallback) + ' (' + voci.length + ')';
         box.appendChild(h);
         for (const v of voci) {
@@ -418,11 +418,13 @@ function _grAggiornaDettaglio() {
     <div id="grafo-modal" class="modal-overlay hidden-tab">
         <div class="modal-window grafo-finestra">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="git-fork" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="graph_title">Grafo dei collegamenti</span>
-                </h3>
-                <span id="grafo-riassunto" class="ml-auto text-xs text-stone-500 tabular-nums"></span>
+                <div class="min-w-0">
+                    <h3 class="modal-title" data-i18n="graph_title">Grafo dei collegamenti</h3>
+                    <p id="grafo-riassunto" class="modal-sottotitolo font-mono"></p>
+                </div>
+                <button type="button" data-on-click="chiudiGrafo" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             <div class="modal-body grafo-corpo">
                 <div class="grafo-barra">
@@ -434,16 +436,16 @@ function _grAggiornaDettaglio() {
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
                 </div>
-                <p id="grafo-avviso" class="hidden text-xs text-amber-800 dark:text-amber-300 mb-2"></p>
+                <p id="grafo-avviso" class="hidden text-xs testo-avviso mb-2"></p>
                 <div class="grafo-area">
                     <svg id="grafo-svg" class="grafo-svg" role="img" data-i18n-aria-label="graph_title" aria-label="Grafo dei collegamenti"></svg>
                     <aside id="grafo-dettaglio" class="grafo-dettaglio"></aside>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="chiudiGrafo" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="chiudiGrafo" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>

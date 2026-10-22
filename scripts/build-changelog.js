@@ -17,8 +17,8 @@ function esc(s) {
 
 function inline(testo) {
   return esc(testo)
-    .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-stone-900 dark:text-stone-100">$1</strong>')
-    .replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[0.9em]">$1</code>');
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
 function estraiVersione(md, versione) {
@@ -49,9 +49,9 @@ function corpoInHtml(corpo) {
     if (!sezione) return;
     out.push(
       '<div>' +
-      '<h4 class="font-semibold text-lg border-b border-stone-200 dark:border-stone-700 pb-2 mb-3">' + esc(sezione) + '</h4>' +
+      '<h4>' + esc(sezione) + '</h4>' +
       (voci.length
-        ? '<ul class="list-disc pl-5 space-y-2 text-sm">' + voci.map(v => '<li>' + inline(v) + '</li>').join('') + '</ul>'
+        ? '<ul>' + voci.map(v => '<li>' + inline(v) + '</li>').join('') + '</ul>'
         : '') +
       '</div>'
     );
@@ -82,7 +82,7 @@ function corpoInHtml(corpo) {
   chiudiSezione();
 
   const introHtml = intro.length
-    ? '<p class="text-sm">' + intro.map(inline).join('</p><p class="text-sm">') + '</p>'
+    ? '<p>' + intro.map(inline).join('</p><p>') + '</p>'
     : '';
 
   return { introHtml, sezioniHtml: out.join('') };

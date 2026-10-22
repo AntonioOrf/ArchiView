@@ -13,21 +13,22 @@ a, button, select, [role="button"], .cursor-pointer {
     background-color: var(--color-bg-panel, #fff) !important;
     color: var(--color-text-main, #1c1917) !important;
     border: 1px solid var(--color-border, #e7e5e4) !important;
-    border-radius: 0.5rem !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     font-family: var(--font-sans, inherit) !important;
 }
 
 .driver-popover-title {
     color: var(--color-text-main, #1c1917) !important;
+    font-family: var(--font-serif, inherit) !important;
     font-weight: 600 !important;
-    font-size: 1.125rem !important;
-    margin-bottom: 0.5rem !important;
+    font-size: 1.0625rem !important;
+    margin-bottom: 0.375rem !important;
 }
 
 .driver-popover-description {
-    color: var(--color-text-muted, #57534e) !important;
-    font-size: 0.875rem !important;
+    color: var(--color-text-secondary, #57534e) !important;
+    font-size: 0.8125rem !important;
     line-height: 1.5 !important;
 }
 
@@ -39,7 +40,7 @@ a, button, select, [role="button"], .cursor-pointer {
     background-color: var(--color-bg-base, #f5f5f4) !important;
     color: var(--color-text-main, #1c1917) !important;
     border: 1px solid var(--color-border, #d6d3d1) !important;
-    border-radius: 0.375rem !important;
+    border-radius: 0 !important;
     padding: 0.375rem 0.75rem !important;
     font-size: 0.8125rem !important;
     font-weight: 500 !important;
@@ -53,12 +54,12 @@ a, button, select, [role="button"], .cursor-pointer {
 
 .driver-popover-footer .driver-popover-next-btn {
     background-color: var(--color-primary, #d97706) !important;
-    color: white !important;
-    border-color: var(--color-primary-dark, #b45309) !important;
+    color: var(--color-on-primary, #fff) !important;
+    border-color: var(--color-primary, #d97706) !important;
 }
 
 .driver-popover-footer .driver-popover-next-btn:hover {
-    background-color: var(--color-primary-dark, #b45309) !important;
+    background-color: var(--color-primary-hover, #b45309) !important;
 }
 
 .driver-popover-arrow-side-left { border-right-color: var(--color-bg-panel, #fff) !important; }
@@ -78,6 +79,8 @@ a, button, select, [role="button"], .cursor-pointer {
 
 .driver-popover-progress-text {
     color: var(--color-text-muted, #78716c) !important;
+    font-family: var(--font-mono, inherit) !important;
+    font-size: 11px !important;
 }
 html.perf-low *,
 html.perf-low *::before,

@@ -33,7 +33,7 @@ async function renderCronologiaCloud(list) {
 
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
-            <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin testo-accento" style="border-color: currentColor; border-top-color: transparent;"></div>
             <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history…")}</span>
         </li>`;
 
@@ -293,7 +293,7 @@ function formatRelativeDate(ts) {
 async function renderHubHistoryList(list) {
     list.innerHTML = `
         <li class="p-6 text-center flex flex-col items-center gap-3">
-            <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin testo-accento" style="border-color: currentColor; border-top-color: transparent;"></div>
             <span class="text-xs text-stone-400 italic">${window.t("history_loading", "Loading history…")}</span>
         </li>`;
 
@@ -449,13 +449,13 @@ window.renderSnapshotLocali = async function(list) {
     const intestazione = document.createElement('li');
     intestazione.className = 'storico-intestazione px-3 py-2 flex items-center justify-between gap-2 sticky top-0';
     const titolo = document.createElement('span');
-    titolo.className = 'text-[11px] font-bold uppercase tracking-wider';
+    titolo.className = 'text-[11px] font-medium';
     titolo.textContent = window.t('snap_section_title', 'Snapshot locali');
     intestazione.appendChild(titolo);
     const crea = document.createElement('button');
     crea.type = 'button';
     crea.id = 'btn-snapshot-now';
-    crea.className = 'text-[11px] font-semibold text-amber-800 hover:underline transition-colors';
+    crea.className = 'btn-collegamento text-[11px]';
     crea.textContent = window.t('snap_create_now', 'Crea adesso');
     crea.title = window.t('snap_create_now_hint', 'Fotografa subito lo stato dell\'archivio');
     crea.onclick = () => window.creaSnapshotOra();

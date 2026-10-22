@@ -27,12 +27,11 @@ function _cpData(ts) {
 function _cpRiga(voce) {
     const rec = voce.record || {};
     const riga = document.createElement('div');
-    riga.className = 'tag-manager-row';
+    riga.className = 'cestino-riga';
     riga.dataset.id = String(rec.id);
 
     const sel = document.createElement('input');
     sel.type = 'checkbox';
-    sel.className = 'shrink-0';
     sel.checked = _cpSelezionati.has(String(rec.id));
     sel.setAttribute('aria-label', _cpT('trash_select', 'Seleziona questa scheda'));
     sel.onchange = () => {
@@ -42,22 +41,19 @@ function _cpRiga(voce) {
     };
     riga.appendChild(sel);
 
-    const col = document.createElement('span');
-    col.className = 'tag-manager-name truncate';
     const titolo = document.createElement('span');
+    titolo.className = 'cestino-segnatura';
     titolo.textContent = rec.segnatura || rec.titolo || _cpT('record_untitled', 'scheda senza titolo');
     titolo.translate = false;
     const dove = document.createElement('span');
-    dove.className = 'text-xs text-stone-500 dark:text-stone-400';
+    dove.className = 'cestino-dove';
     const cartella = voce.cartella || rec.cartella || '';
-    dove.textContent = '  ·  ' + (cartella || (typeof window.etichettaRadice === 'function' ? window.etichettaRadice() : _cpT('folder_root_label', 'Radice'))) +
+    dove.textContent = (cartella || (typeof window.etichettaRadice === 'function' ? window.etichettaRadice() : _cpT('folder_root_label', 'Radice'))) +
         (voce.da ? '  ·  ' + voce.da : '');
-    col.appendChild(titolo);
-    col.appendChild(dove);
-    riga.appendChild(col);
+    riga.append(titolo, dove);
 
     const quando = document.createElement('span');
-    quando.className = 'tag-manager-count tabular-nums shrink-0';
+    quando.className = 'cestino-quando';
     quando.textContent = _cpData(voce.deletedAt);
     riga.appendChild(quando);
 
@@ -87,10 +83,10 @@ function _cpAggiornaBarra() {
     const conteggio = document.getElementById('cestino-bulk-count');
     if (!barra) return;
     if (_cpSelezionati.size === 0) {
-        barra.classList.add('hidden');
+        barra.classList.add('hidden-tab');
         return;
     }
-    barra.classList.remove('hidden');
+    barra.classList.remove('hidden-tab');
     if (conteggio) {
         conteggio.textContent = _cpT('trash_selected', '{var0} selezionate').replace('{var0}', String(_cpSelezionati.size));
     }
@@ -107,7 +103,7 @@ window.disegnaCestino = async function() {
         console.error('[Cestino] Lettura fallita:', err);
         _cpVoci = [];
         const errore = document.createElement('div');
-        errore.className = 'p-6 text-xs text-red-500 italic text-center';
+        errore.className = 'p-6 text-xs testo-pericolo text-center';
         errore.textContent = _cpT('trash_read_error', 'Il cestino non è leggibile.');
         lista.appendChild(errore);
         _cpAggiornaBarra();
@@ -119,7 +115,7 @@ window.disegnaCestino = async function() {
 
     if (_cpVoci.length === 0) {
         const vuoto = document.createElement('div');
-        vuoto.className = 'p-6 text-xs text-stone-400 italic text-center';
+        vuoto.className = 'p-6 modello-suggerimento text-center';
         vuoto.textContent = _cpT('trash_empty', 'Il cestino è vuoto.');
         lista.appendChild(vuoto);
         _cpAggiornaBarra();
@@ -202,33 +198,41 @@ window.eliminaSelezionateCestino = function() {
         if (document.getElementById('cestino-modal')) return;
         const html = `
     <div id="cestino-modal" class="modal-overlay hidden-tab">
-        <div class="modal-window max-w-2xl">
+        <div class="modal-window max-w-3xl max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="cestino-titolo">
             <div class="modal-header">
-                <h3 class="modal-title">
-                    <i data-lucide="trash-2" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="trash_title">Cestino</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 class="modal-title" id="cestino-titolo" data-i18n="trash_title">Cestino</h3>
+                    <p class="modal-sottotitolo" data-i18n="trash_hint">Le schede eliminate restano qui per il tempo scelto nelle Impostazioni, poi spariscono da sole. Il cestino è di questo computer e non si sincronizza.</p>
+                </div>
+                <button type="button" data-on-click="chiudiCestino" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div id="cestino-list" class="tag-manager-list"></div>
-                <div id="cestino-bulk-bar" class="tag-merge-bar hidden">
-                    <span id="cestino-bulk-count" class="text-xs text-stone-500 dark:text-stone-400"></span>
-                    <button type="button" data-on-click="ripristinaSelezionateCestino" class="btn btn-primary shrink-0">
-                        <span data-i18n="trash_restore">Ripristina</span>
-                    </button>
-                    <button type="button" data-on-click="eliminaSelezionateCestino" class="btn btn-danger-ghost shrink-0">
-                        <span data-i18n="trash_delete_forever">Elimina definitivamente</span>
-                    </button>
+            <div id="cestino-bulk-bar" class="barra-selezione hidden-tab">
+                <span id="cestino-bulk-count" class="barra-selezione-conteggio"></span>
+                <button type="button" data-on-click="ripristinaSelezionateCestino" class="btn btn-secondary ml-auto">
+                    <span data-i18n="trash_restore">Ripristina</span>
+                </button>
+                <button type="button" data-on-click="eliminaSelezionateCestino" class="btn btn-danger-ghost">
+                    <span data-i18n="trash_delete_forever">Elimina definitivamente</span>
+                </button>
+            </div>
+            <div class="modal-body pt-1">
+                <div class="cestino-intestazione" aria-hidden="true">
+                    <span></span>
+                    <span data-i18n="trash_col_record">Scheda</span>
+                    <span data-i18n="trash_col_where">Era in</span>
+                    <span data-i18n="trash_col_when">Eliminata</span>
                 </div>
-                <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed mt-3" data-i18n="trash_hint">Le schede eliminate restano qui per 30 giorni e poi spariscono da sole. Il cestino è locale a questo computer: non viene sincronizzato e non occupa spazio nell'archivio condiviso.</p>
-                <div class="modal-footer">
-                    <button type="button" data-on-click="svuotaCestinoDaPannello" class="btn btn-danger-ghost mr-auto">
-                        <span data-i18n="trash_empty_now">Svuota il cestino</span>
-                    </button>
-                    <button type="button" data-on-click="chiudiCestino" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="btn_close">Chiudi</span>
-                    </button>
-                </div>
+                <div id="cestino-list"></div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" data-on-click="svuotaCestinoDaPannello" class="btn btn-danger-ghost mr-auto">
+                    <span data-i18n="trash_empty_now">Svuota il cestino</span>
+                </button>
+                <button type="button" data-on-click="chiudiCestino" data-modal-cancel class="btn btn-primary">
+                    <span data-i18n="btn_close">Chiudi</span>
+                </button>
             </div>
         </div>
     </div>

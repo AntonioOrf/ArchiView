@@ -210,6 +210,7 @@ function renderSezioniSidebar() {
         quadro.className = 'sidebar-tag-quadro' + (colore ? ' tag-quadro-' + colore : '');
         quadro.setAttribute('aria-hidden', 'true');
         riga.prepend(quadro);
+        riga.dataset.tag = voce.nome;
         return riga;
     });
     if (voci.length > TAG_RAPIDI_MAX) {
@@ -729,7 +730,7 @@ window.renderSourceControl = function() {
     countLabel.textContent = totalCount.toString();
 
     if (modificati.length === 0 && incoming.length === 0 && !hasIncomingUpdates) {
-        list.innerHTML = window.sanitizeHTML(`<div class="p-4 text-xs text-stone-400 italic text-center">${window.t("sidebar_no_pending", "No pending changes")}</div>`);
+        list.innerHTML = window.sanitizeHTML(`<div class="p-4 modello-suggerimento text-center">${escapeHTML(window.t("sidebar_no_pending", "No pending changes"))}</div>`);
         return;
     }
 
@@ -738,22 +739,22 @@ window.renderSourceControl = function() {
 
     if (hasIncomingUpdates && incoming.length === 0 && structural.length === 0) {
         const li = document.createElement('li');
-        li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 border-b border-stone-100 dark:border-stone-800/50 last:border-0 opacity-80 cursor-default";
+        li.className = 'sc-riga cursor-default';
         li.title = window.t("sidebar_structural_hint", "There are structural changes (e.g. folders or removals). Click Download on the top right.");
         li.innerHTML = window.sanitizeHTML(`
             <div class="flex items-center gap-2 truncate">
-                <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
-                <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">${window.t("sidebar_structural_updates", "Structural updates")}</span>
+                <span class="sc-lettera testo-info">↓</span>
+                <span class="text-sm truncate text-stone-700">${window.t("sidebar_structural_updates", "Structural updates")}</span>
             </div>
-            <div class="text-[11px] text-blue-500 font-bold shrink-0">CLOUD</div>
+            <div class="text-[11px] testo-info shrink-0">cloud</div>
         `);
         fragment.appendChild(li);
     } else if (hasIncomingUpdates && structural.length > 0) {
         const li = document.createElement('li');
-        li.className = "group flex flex-col py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 border-b border-stone-100 dark:border-stone-800/50 last:border-0";
+        li.className = 'sc-riga flex-col items-stretch';
         
         let detailsHtml = structural.map(s => `
-            <div class="text-xs text-stone-500 italic ml-6 mt-1.5 flex items-center gap-1.5">
+            <div class="text-xs text-stone-500 ml-6 mt-1.5 flex items-center gap-1.5">
                 <i data-lucide="${s.icon || 'corner-down-right'}" class="w-3.5 h-3.5 text-stone-400"></i> ${escapeHTML(String(s.label || ''))}
             </div>
         `).join('');
@@ -762,10 +763,10 @@ window.renderSourceControl = function() {
             <details class="w-full cursor-pointer group/details">
                 <summary class="flex items-center justify-between outline-none list-none select-none">
                     <div class="flex items-center gap-2 truncate">
-                        <span class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 w-4 h-4 flex items-center justify-center rounded-sm text-[10px] font-bold shrink-0">↓</span>
-                        <span class="text-sm font-medium truncate text-stone-700 dark:text-stone-300 italic">${window.t("sidebar_structural_updates", "Structural updates")}</span>
+                        <span class="sc-lettera testo-info">↓</span>
+                        <span class="text-sm truncate text-stone-700">${window.t("sidebar_structural_updates", "Structural updates")}</span>
                     </div>
-                    <div class="text-[11px] text-blue-500 font-bold shrink-0 flex items-center gap-1">CLOUD <i data-lucide="chevron-down" class="w-3 h-3 transition-transform group-open/details:rotate-180"></i></div>
+                    <div class="text-[11px] testo-info shrink-0 flex items-center gap-1">cloud <i data-lucide="chevron-down" class="w-3 h-3 transition-transform group-open/details:rotate-180"></i></div>
                 </summary>
                 <div class="mt-1 pb-1">
                     ${detailsHtml}
@@ -778,15 +779,15 @@ window.renderSourceControl = function() {
     const renderItem = (m, isIncoming) => {
         const isNew = m.lastModified === m.createdAt || (!m.createdAt && m.lastModified > loadedAt);
         let iconLetter = isNew ? 'A' : 'M';
-        let colorClass = isNew ? 'text-green-500 bg-green-50 dark:bg-green-900/20' : 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+        let colorClass = isNew ? 'testo-successo' : 'testo-avviso';
         
         if (isIncoming) {
             iconLetter = '↓';
-            colorClass = 'text-blue-500 bg-blue-50 dark:bg-blue-900/20';
+            colorClass = 'testo-info';
         }
 
         const li = document.createElement('li');
-        li.className = "group flex items-center justify-between py-1.5 px-3 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer border-b border-stone-100 dark:border-stone-800/50 last:border-0";
+        li.className = 'sc-riga group';
         
         li.title = window.t('tooltip_click_show_changes', 'Clicca per mostrare le modifiche');
         li.onclick = (e) => {
@@ -812,14 +813,14 @@ window.renderSourceControl = function() {
         leftDiv.className = "flex items-center gap-2 overflow-hidden";
         
         const badge = document.createElement('span');
-        badge.className = `shrink-0 flex items-center justify-center w-4 h-4 rounded-sm text-[10px] font-bold ${colorClass}`;
+        badge.className = 'sc-lettera ' + colorClass;
         badge.textContent = iconLetter;
         
         const textContainer = document.createElement('div');
         textContainer.className = "flex flex-col overflow-hidden";
 
         const titleSpan = document.createElement('span');
-        titleSpan.className = "truncate text-stone-700 dark:text-stone-300 group-hover:text-amber-700 transition-colors";
+        titleSpan.className = 'truncate font-mono text-xs text-stone-800';
         titleSpan.textContent = m.titolo || m.segnatura || window.t('untitled_record', 'Senza titolo');
         titleSpan.translate = false;
         
@@ -828,7 +829,7 @@ window.renderSourceControl = function() {
         titleRowContainer.appendChild(titleSpan);
 
         const actionHint = document.createElement('span');
-        actionHint.className = "text-[11px] text-amber-600 uppercase font-bold tracking-wider";
+        actionHint.className = 'text-[11px] text-stone-500';
         actionHint.textContent = window.t("sidebar_click_to_show", "Click to show changes");
         titleRowContainer.appendChild(actionHint);
         
@@ -836,7 +837,7 @@ window.renderSourceControl = function() {
         
         if (isIncoming && window.incomingAuthor) {
             const authorSpan = document.createElement('span');
-            authorSpan.className = "text-[11px] text-stone-400 truncate";
+            authorSpan.className = 'text-[11px] text-stone-500 truncate';
             authorSpan.textContent = window.t("sidebar_from", "from ") + window.incomingAuthor;
             textContainer.appendChild(authorSpan);
             li.title = window.t("sidebar_from_cloud_title", "Cloud change sent by {var0}. Do a Fetch/Download to see it.").replace("{var0}", window.incomingAuthor);
@@ -859,7 +860,7 @@ window.renderSourceControl = function() {
 
     if (incoming.length > 0) {
         const header = document.createElement('div');
-        header.className = "px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 text-[11px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800";
+        header.className = 'sidebar-striscia';
         header.textContent = window.t("sidebar_incoming_cloud", "INCOMING (CLOUD)");
         fragment.appendChild(header);
         
@@ -870,7 +871,7 @@ window.renderSourceControl = function() {
     if (modificati.length > 0) {
         if (incoming.length > 0) {
             const header = document.createElement('div');
-            header.className = "px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 text-[11px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-700 mt-2";
+            header.className = 'sidebar-striscia mt-2';
             header.textContent = window.t("sidebar_local_label", "LOCAL");
             fragment.appendChild(header);
         }
@@ -911,8 +912,9 @@ function renderTagList() {
         const btn = document.createElement('button');
         const isActive = attive.has(voce.chiave);
         const colore = window.Model.coloreTag(appData, voce.nome);
-        btn.className = `tag-filtro w-full text-left px-3 py-2 rounded-sm text-sm font-medium transition-colors flex justify-between items-center ${isActive ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-stone-50 text-stone-700 hover:bg-stone-200 border border-transparent'}`;
-        if (colore) btn.classList.add('tag-bordo-' + colore);
+        btn.className = 'sidebar-voce' + (isActive ? ' attiva' : '');
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        btn.dataset.tag = voce.nome;
         btn.onclick = () => {
             for (const t of Array.from(window.activeTags)) {
                 if (window.Model.chiaveTag(t) === voce.chiave) window.activeTags.delete(t);
@@ -922,8 +924,9 @@ function renderTagList() {
             renderTagList();
         };
         btn.innerHTML = window.sanitizeHTML(
-            `<span class="truncate">#${escapeHTML(voce.nome)}</span>` +
-            `<span class="shrink-0 ml-2 text-xs tabular-nums ${isActive ? 'text-amber-700' : 'text-stone-400'}">${voce.conteggio}</span>`
+            `<span class="sidebar-tag-quadro${colore ? ' tag-quadro-' + colore : ''}" aria-hidden="true"></span>` +
+            `<span class="truncate flex-1" translate="no">${escapeHTML(voce.nome)}</span>` +
+            `<span class="sidebar-voce-n">${voce.conteggio}</span>`
         );
         btn.setAttribute('aria-label', `#${voce.nome} (${voce.conteggio})`);
         fragment.appendChild(btn);
@@ -952,18 +955,21 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
     const vaultName = pathToRemove.split(/[\\/\\\\]/).pop();
     
     const modalHtml = `
-        <div id="vault-delete-modal" class="modal-overlay z-modal-alert flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
-            <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl">
-                <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
-                <h3 class="text-xl font-bold mb-2">${escapeHTML(window.t('modal_vault_remove_title', 'Rimuovi Archivio'))}</h3>
-                <p class="text-sm text-stone-600">
-                    ${window.t('modal_vault_remove_desc', "Vuoi solo rimuovere l'Archivio {var0} dall'elenco o eliminare definitivamente tutti i suoi file dal computer?")
-                        .replace('{var0}', '<strong>' + escapeHTML(vaultName) + '</strong>')}
-                </p>
-                <div class="flex flex-col gap-2">
-                    <button id="btn-delete-files" class="btn btn-danger w-full justify-center">${escapeHTML(window.t('btn_vault_delete_files', 'Sì, elimina anche i file'))}</button>
-                    <button id="btn-remove-list" class="btn btn-secondary w-full justify-center">${escapeHTML(window.t('btn_vault_remove_list', "Rimuovi solo dall'elenco"))}</button>
-                    <button id="btn-cancel-delete" data-modal-cancel class="btn btn-ghost w-full justify-center mt-2" data-i18n="btn_cancel">Annulla</button>
+        <div id="vault-delete-modal" class="modal-overlay z-modal-alert">
+            <div class="modal-window max-w-md" role="alertdialog" aria-labelledby="vault-delete-title" aria-describedby="vault-delete-desc">
+                <div class="modal-header">
+                    <div class="min-w-0">
+                        <h3 id="vault-delete-title" class="modal-title">${escapeHTML(window.t('modal_vault_remove_title', 'Rimuovere {var0}?').replace('{var0}', '«' + vaultName + '»'))}</h3>
+                        <p class="modal-sottotitolo font-mono break-all" translate="no">${escapeHTML(pathToRemove)}</p>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <p id="vault-delete-desc" class="text-sm text-stone-600 leading-relaxed">${escapeHTML(window.t('modal_vault_remove_desc', "Dall'elenco soltanto, e la cartella resta sul disco; oppure anche i file, e schede e allegati spariscono dal computer."))}</p>
+                </div>
+                <div class="modal-footer modal-footer-bar">
+                    <button id="btn-delete-files" class="btn btn-danger-ghost mr-auto">${escapeHTML(window.t('btn_vault_delete_files', 'Elimina anche i file'))}</button>
+                    <button id="btn-cancel-delete" data-modal-cancel class="btn btn-secondary" data-i18n="btn_cancel">Annulla</button>
+                    <button id="btn-remove-list" class="btn btn-primary">${escapeHTML(window.t('btn_vault_remove_list', "Rimuovi solo dall'elenco"))}</button>
                 </div>
             </div>
         </div>
@@ -1003,19 +1009,23 @@ window.rimuoviVaultDallaLista = async function(event, pathToRemove) {
 };
 
 window.archivioRecenteNonTrovato = function(percorso) {
-    const nome = percorso.split(/[\\/]/).pop();
     document.body.insertAdjacentHTML('beforeend', `
-        <div id="vault-missing-modal" class="modal-overlay z-modal-alert flex" style="background: rgba(0,0,0,0.5); align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
-            <div class="modal-window p-6 text-center max-w-sm bg-white rounded-lg shadow-xl" role="alertdialog" aria-labelledby="vault-missing-title">
-                <i data-lucide="folder-search" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
-                <h3 id="vault-missing-title" class="text-xl font-bold mb-2">${escapeHTML(window.t('modal_vault_missing_title', 'Archivio non trovato'))}</h3>
-                <p class="text-sm text-stone-600 mb-2">${escapeHTML(window.t('msg_archivio_recente_non_trovato', 'La cartella dell\'archivio non esiste più: forse è stata spostata o rinominata.'))}</p>
-                <p class="text-xs text-stone-500 break-all mb-4" title="${escapeHTML(percorso)}"><strong>${escapeHTML(nome)}</strong><br>${escapeHTML(percorso)}</p>
-                <p id="vault-missing-error" class="text-sm text-red-700 mb-3 hidden-tab" role="alert"></p>
-                <div class="flex flex-col gap-2">
-                    <button id="btn-vault-locate" class="btn btn-primary w-full justify-center">${escapeHTML(window.t('btn_cerca_cartella_archivio', 'Cerca cartella…'))}</button>
-                    <button id="btn-vault-missing-remove" class="btn btn-secondary w-full justify-center">${escapeHTML(window.t('btn_vault_remove_list', "Rimuovi solo dall'elenco"))}</button>
-                    <button id="btn-vault-missing-cancel" data-modal-cancel class="btn btn-ghost w-full justify-center mt-2">${escapeHTML(window.t('btn_cancel', 'Annulla'))}</button>
+        <div id="vault-missing-modal" class="modal-overlay z-modal-alert">
+            <div class="modal-window max-w-md" role="alertdialog" aria-labelledby="vault-missing-title" aria-describedby="vault-missing-desc">
+                <div class="modal-header">
+                    <div class="min-w-0">
+                        <h3 id="vault-missing-title" class="modal-title">${escapeHTML(window.t('modal_vault_missing_title', 'Archivio non trovato'))}</h3>
+                        <p class="modal-sottotitolo font-mono break-all" translate="no" title="${escapeHTML(percorso)}">${escapeHTML(percorso)}</p>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <p id="vault-missing-desc" class="text-sm text-stone-600 leading-relaxed">${escapeHTML(window.t('msg_archivio_recente_non_trovato', 'La cartella dell\'archivio non esiste più: forse è stata spostata o rinominata.'))}</p>
+                    <p id="vault-missing-error" class="text-sm testo-pericolo mt-3 hidden-tab" role="alert"></p>
+                </div>
+                <div class="modal-footer modal-footer-bar">
+                    <button id="btn-vault-missing-remove" class="btn btn-ghost mr-auto">${escapeHTML(window.t('btn_vault_remove_list', "Rimuovi solo dall'elenco"))}</button>
+                    <button id="btn-vault-missing-cancel" data-modal-cancel class="btn btn-secondary">${escapeHTML(window.t('btn_cancel', 'Annulla'))}</button>
+                    <button id="btn-vault-locate" class="btn btn-primary">${escapeHTML(window.t('btn_cerca_cartella_archivio', 'Cerca cartella…'))}</button>
                 </div>
             </div>
         </div>
@@ -1059,7 +1069,7 @@ window.aggiornaListaVault = async function() {
                     const isCurrent = path === currentPath;
                     
                     const divContainer = document.createElement('div');
-                    divContainer.className = `w-full text-left px-2 py-1.5 text-sm rounded flex items-center justify-between transition-colors ${isCurrent ? 'bg-amber-50 text-amber-900 font-semibold cursor-default' : 'text-stone-700 hover:bg-stone-100 hover:text-stone-900 cursor-pointer'}`;
+                    divContainer.className = 'archivio-voce' + (isCurrent ? ' attiva' : '');
                     
                     if (!isCurrent) {
                         divContainer.onclick = async () => {
@@ -1070,28 +1080,29 @@ window.aggiornaListaVault = async function() {
                     }
                     
                     const nameSpan = document.createElement('span');
-                    nameSpan.className = 'truncate pr-2 flex-1 flex items-center gap-1.5';
+                    nameSpan.className = 'archivio-voce-nome';
                     nameSpan.title = path;
                     
                     if (item.provider === 'hub') {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_hub', 'Hub Condiviso'))}"></i> <span>${escapeHTML(name)}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="server" class="w-4 h-4 testo-successo shrink-0" title="${escapeHTML(window.t('vault_type_hub', 'Hub Condiviso'))}"></i> <span class="truncate">${escapeHTML(name)}</span>`);
                     } else if (isShared) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Condiviso'))}"></i> <span>${escapeHTML(name)}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 testo-info shrink-0" title="${escapeHTML(window.t('vault_type_shared', 'Condiviso'))}"></i> <span class="truncate">${escapeHTML(name)}</span>`);
                     } else if (isPersonal) {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0" title="${escapeHTML(window.t('vault_type_backup', 'Backup Personale'))}"></i> <span>${escapeHTML(name)}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="cloud" class="w-4 h-4 testo-successo shrink-0" title="${escapeHTML(window.t('vault_type_backup', 'Backup Personale'))}"></i> <span class="truncate">${escapeHTML(name)}</span>`);
                     } else {
-                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Locale'))}"></i> <span>${escapeHTML(name)}</span>`);
+                        nameSpan.innerHTML = window.sanitizeHTML(`<i data-lucide="folder" class="w-4 h-4 shrink-0" title="${escapeHTML(window.t('vault_type_local', 'Locale'))}"></i> <span class="truncate">${escapeHTML(name)}</span>`);
                     }
                     
                     divContainer.appendChild(nameSpan);
 
                     if (isCurrent) {
                         const checkIcon = document.createElement('div');
-                        checkIcon.innerHTML = window.sanitizeHTML('<i data-lucide="check" class="w-4 h-4 text-amber-600 shrink-0"></i>');
+                        checkIcon.innerHTML = window.sanitizeHTML('<i data-lucide="check" class="w-4 h-4 testo-accento shrink-0"></i>');
                         divContainer.appendChild(checkIcon.firstChild);
                     } else {
                         const delBtn = document.createElement('button');
-                        delBtn.className = 'p-1 hover:bg-red-100 text-stone-400 hover:text-red-600 transition-colors shrink-0';
+                        delBtn.className = 'btn btn-ghost btn-icon btn-mini shrink-0';
+                        delBtn.setAttribute('aria-label', window.t('tooltip_remove_from_list', 'Rimuovi dalla lista') + ': ' + name);
                         delBtn.innerHTML = window.sanitizeHTML('<i data-lucide="x" class="w-3.5 h-3.5"></i>');
                         delBtn.onclick = (e) => window.rimuoviVaultDallaLista(e, path);
                         delBtn.title = window.t('tooltip_remove_from_list', 'Rimuovi dalla lista');
@@ -1114,16 +1125,16 @@ window.aggiornaListaVault = async function() {
 
             if (isCurrentHub) {
                 const hubName = (window.hubConfig && window.hubConfig.name) || vaultName;
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="server" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${escapeHTML(hubName)}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="server" class="w-4 h-4 testo-successo shrink-0"></i> <span>${escapeHTML(hubName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else if (isCurrentShared) {
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-blue-600 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 testo-info shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else if (isCurrentPersonal) {
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-600 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 testo-successo shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             } else {
-                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 text-stone-500 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
+                nameEl.innerHTML = window.sanitizeHTML(`<div class="flex items-center gap-1.5"><i data-lucide="folder" class="w-4 h-4 shrink-0"></i> <span>${escapeHTML(vaultName)}</span></div>`);
                 if (window.lucide) lucide.createIcons({ nodes: [nameEl] });
             }
             nameEl.title = currentPath;

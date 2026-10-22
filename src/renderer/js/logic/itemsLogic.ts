@@ -257,6 +257,7 @@ window.caricaSchedaNelForm = function(id) {
     (document.getElementById('form-segnatura') as HTMLInputElement).value = m.segnatura || '';
     window.aggiornaTitoloScheda();
     (document.getElementById('form-tags') as HTMLInputElement).value = m.tags || '';
+    window.aggiornaChipTagForm();
     if (typeof window.caricaRelazioniForm === 'function') window.caricaRelazioniForm(m);
     if (typeof window.caricaRimandiEsterniForm === 'function') window.caricaRimandiEsterniForm(m);
     
@@ -277,6 +278,10 @@ window.caricaSchedaNelForm = function(id) {
 
 function deleteItem(id) {
     (document.getElementById('delete-item-id') as HTMLInputElement).value = id;
+    const segnatura = appData.manoscritti.find(x => x.id === id)?.segnatura;
+    document.getElementById('delete-modal-titolo')!.textContent = segnatura
+        ? window.t('delete_item_title', 'Eliminare {var0}?').replace('{var0}', segnatura)
+        : window.t('delete_item_prompt', 'Eliminare questa scheda?');
     (document.getElementById('delete-modal') as HTMLInputElement).classList.remove('hidden-tab');
 }
 

@@ -4,25 +4,20 @@
             const html = `
     <div id="folder-modal" class="modal-overlay hidden-tab">
         <div class="modal-window max-w-md">
-            <div class="modal-header shrink-0 flex justify-between items-center">
-                <h3 class="modal-title text-stone-800 flex items-center gap-2">
-                    <i data-lucide="folder-plus" class="w-5 h-5 text-amber-700"></i>
-                    <span data-i18n="modal_new_folder">Nuova Cartella</span>
-                </h3>
-                <button type="button" data-on-click="chiudiFolderModal" class="btn btn-ghost btn-icon transition-colors" data-i18n-aria-label="btn_close" aria-label="Chiudi">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="modal_new_folder">Nuova cartella</h3>
+                <button type="button" data-on-click="chiudiFolderModal" class="btn btn-ghost btn-icon shrink-0" data-i18n-aria-label="btn_close" aria-label="Chiudi">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <label class="form-label font-medium mb-1 block" data-i18n="label_folder_name">Nome della cartella o percorso</label>
-                <input type="text" id="folder-name-input" data-i18n-placeholder="label_folder_name" class="form-input w-full focus:ring-2 focus:ring-amber-500/20 transition-colors">
-                <p class="text-xs text-stone-500 mt-2 flex items-center gap-1" data-i18n="hint_folder_name">
-                    <i data-lucide="info" class="w-3 h-3"></i> Consiglio: usa la barra ( / ) per creare automaticamente sottocartelle.
-                </p>
-                <div class="modal-footer mt-6 pt-4 border-t border-stone-100 flex justify-end gap-2">
-                    <button data-on-click="chiudiFolderModal" class="btn btn-ghost" data-i18n="btn_cancel"><span data-i18n="btn_cancel">Annulla</span></button>
-                    <button data-on-click="confermaAggiungiCartella" class="btn btn-primary shadow-sm" data-i18n="btn_create_folder">Crea Cartella</button>
-                </div>
+                <label class="form-label" for="folder-name-input" data-i18n="label_folder_name">Nome della cartella o percorso</label>
+                <input type="text" id="folder-name-input" data-i18n-placeholder="label_folder_name" class="form-input w-full" aria-describedby="folder-name-nota">
+                <p id="folder-name-nota" class="modello-suggerimento mt-1.5" data-i18n="hint_folder_name">Con la barra / crei anche le sottocartelle.</p>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button data-on-click="chiudiFolderModal" class="btn btn-secondary"><span data-i18n="btn_cancel">Annulla</span></button>
+                <button data-on-click="confermaAggiungiCartella" class="btn btn-primary"><span data-i18n="btn_create">Crea</span></button>
             </div>
         </div>
     </div>

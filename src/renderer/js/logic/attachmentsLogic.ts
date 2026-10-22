@@ -284,11 +284,9 @@ async function apriTrascrizione(id) {
     window.trascrizioneNonSalvata = false;
     
     const panelAllegato = document.getElementById('trascrizione-allegato-panel') as HTMLInputElement;
-    const resizer = document.getElementById('trascrizione-resizer');
     const editorPanel = document.getElementById('trascrizione-editor-panel');
-    const btnCarica = document.getElementById('btn-carica-allegato-trasc') as HTMLInputElement;
-    const btnCollapse = document.getElementById('btn-collapse-editor');
     const btnOcr = document.getElementById('btn-ocr-trasc');
+    const btnConfronta = document.getElementById('btn-confronta-carte');
     
     const imgPreview = document.getElementById('trasc-img-preview') as HTMLImageElement;
     const noAllegato = document.getElementById('trasc-no-allegato') as HTMLInputElement;
@@ -304,16 +302,10 @@ async function apriTrascrizione(id) {
     
     if (allegatiM.length > 0 && window.apiBrowser) {
         panelAllegato.classList.remove('hidden-tab');
-        if (resizer) resizer.classList.remove('hidden');
-        if (editorPanel) editorPanel.classList.remove('hidden');
+        window.impostaVistaTrascrizione('affiancate');
         _taApplicaLarghezza();
-        btnCarica.classList.add('hidden');
         if (btnOcr) btnOcr.classList.remove('hidden-tab');
-        if (btnCollapse) {
-            btnCollapse.classList.remove('hidden');
-            btnCollapse.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-close" class="w-5 h-5"></i>');
-            btnCollapse.title = window.t("tooltip_collapse", "Collapse Editor");
-        }
+        if (btnConfronta) btnConfronta.classList.remove('hidden-tab');
 
         window.renderBarraCarte(m.id);
         
@@ -322,15 +314,10 @@ async function apriTrascrizione(id) {
         }
     } else {
         panelAllegato.classList.add('hidden-tab');
-        if (resizer) resizer.classList.add('hidden');
-        if (editorPanel) {
-            editorPanel.style.width = '100%';
-            editorPanel.classList.remove('hidden');
-        }
-        btnCarica.classList.remove('hidden');
-        btnCarica.style.display = 'flex';
+        if (editorPanel) editorPanel.style.width = '100%';
+        window.impostaVistaTrascrizione('senza-fonte');
         if (btnOcr) btnOcr.classList.add('hidden-tab');
-        if (btnCollapse) btnCollapse.classList.add('hidden');
+        if (btnConfronta) btnConfronta.classList.add('hidden-tab');
     }
 
     switchTab('trascrizione');
@@ -988,33 +975,18 @@ window.cambiaAllegatoRelativo = function(dir) {
     }
 };
 
-window.toggleFullscreenAllegato = function() {
-    const editorPanel = document.getElementById('trascrizione-editor-panel');
-    const btnToggle = document.getElementById('btn-collapse-editor');
-    const resizer = document.getElementById('trascrizione-resizer');
-    const panelAllegato = document.getElementById('trascrizione-allegato-panel') as HTMLInputElement;
-    
-    if (!editorPanel) return;
-    if (panelAllegato && panelAllegato.classList.contains('hidden-tab')) {
-        return;
-    }
+window.impostaVistaTrascrizione = function(vista) {
+    const container = document.getElementById('trascrizione-container');
+    if (!container) return;
+    container.dataset.vista = vista;
+    document.querySelectorAll('#trasc-vista button[data-vista]').forEach((b) => {
+        b.setAttribute('aria-pressed', String((b as HTMLElement).dataset.vista === vista));
+    });
+};
 
-    if (editorPanel.classList.contains('hidden')) {
-        editorPanel.classList.remove('hidden');
-        if (resizer) resizer.classList.remove('hidden');
-        if (btnToggle) {
-            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-close" class="w-5 h-5"></i>');
-            btnToggle.title = window.t("tooltip_collapse", "Collapse Editor");
-        }
-    } else {
-        editorPanel.classList.add('hidden');
-        if (resizer) resizer.classList.add('hidden');
-        if (btnToggle) {
-            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-open" class="w-5 h-5"></i>');
-            btnToggle.title = window.t("tooltip_expand_editor", "Expand Editor");
-        }
-    }
-    if (window.lucide) lucide.createIcons();
+window.toggleFullscreenAllegato = function() {
+    const container = document.getElementById('trascrizione-container');
+    if (container && container.dataset.vista !== 'senza-fonte') window.impostaVistaTrascrizione(container.dataset.vista === 'fonte' ? 'affiancate' : 'fonte');
 };
 
 window.chiudiUnsavedModal = function() {
@@ -1047,18 +1019,6 @@ window.confermaUscitaTrascrizione = async function() {
     _taNascondiBarraPdf();
     window.PdfViewer.chiudi();
     
-    const editorPanel = document.getElementById('trascrizione-editor-panel');
-    const btnToggle = document.getElementById('btn-collapse-editor');
-    const resizer = document.getElementById('trascrizione-resizer');
-    if (editorPanel && editorPanel.classList.contains('hidden')) {
-        editorPanel.classList.remove('hidden');
-        if (resizer) resizer.classList.remove('hidden');
-        if (btnToggle) {
-            btnToggle.innerHTML = window.sanitizeHTML('<i data-lucide="panel-right-close" class="w-5 h-5"></i>');
-            btnToggle.title = window.t("tooltip_collapse", "Collapse Editor");
-        }
-    }
-
     switchTab('list');
 }
 

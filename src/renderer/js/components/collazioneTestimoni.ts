@@ -153,7 +153,6 @@
         <div class="modal-window collazione-finestra">
             <div class="modal-header">
                 <h3 class="modal-title">
-                    <i data-lucide="git-compare" class="w-5 h-5 text-amber-700"></i>
                     <span data-i18n="coll_title">Collazione</span>
                 </h3>
                 <label class="ml-auto flex items-center gap-2 text-xs cursor-pointer">
@@ -172,7 +171,7 @@
                         <legend class="sr-only" data-i18n="coll_witnesses">Testimoni</legend>
                         <div id="coll-testimoni" class="flex flex-wrap gap-3"></div>
                     </fieldset>
-                    <p id="coll-esito" class="text-xs text-stone-500 dark:text-stone-400 ml-auto" aria-live="polite"></p>
+                    <p id="coll-esito" class="modello-suggerimento ml-auto" aria-live="polite"></p>
                 </div>
                 <div id="coll-testi" class="collazione-testi"></div>
                 <h4 class="collazione-sigla" data-i18n="coll_apparatus">Apparato</h4>

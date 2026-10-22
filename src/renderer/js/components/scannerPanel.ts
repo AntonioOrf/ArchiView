@@ -635,11 +635,8 @@ window.controllaScansioniAllApertura = async function() {
         <aside class="modal-window scan-laterale" role="dialog" aria-modal="false" aria-labelledby="scan-titolo">
             <div class="modal-header scan-testa">
                 <div class="scan-testa-riga">
-                    <h3 id="scan-titolo" class="modal-title">
-                        <i data-lucide="smartphone" class="w-5 h-5"></i>
-                        <span data-i18n="scan_title">Dal telefono</span>
-                    </h3>
-                    <button type="button" id="scan-chiudi" data-on-click="chiudiScansioni" data-modal-cancel class="btn btn-ghost btn-icon" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
+                    <h3 id="scan-titolo" class="modal-title" data-i18n="scan_title">Dal telefono</h3>
+                    <button type="button" id="scan-chiudi" data-on-click="chiudiScansioni" data-modal-cancel class="btn btn-ghost btn-icon shrink-0" data-i18n-title="btn_close" data-i18n-aria-label="btn_close" title="Chiudi" aria-label="Chiudi">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -664,7 +661,7 @@ window.controllaScansioniAllApertura = async function() {
                 </section>
                 <div id="scan-wifi-box" class="scan-wifi hidden-tab">
                     <div id="scan-wifi-qr"></div>
-                    <p id="scan-wifi-info" class="text-xs leading-relaxed"></p>
+                    <p id="scan-wifi-info" class="modello-suggerimento"></p>
                 </div>
             </div>
             <div class="modal-footer-bar scan-piede">
@@ -678,24 +675,23 @@ window.controllaScansioniAllApertura = async function() {
     <div id="scan-avviso" class="modal-overlay hidden-tab" role="dialog" aria-modal="true" aria-labelledby="scan-avviso-titolo" aria-describedby="scan-avviso-testo">
         <div class="modal-window max-w-md">
             <div class="modal-header">
-                <h3 id="scan-avviso-titolo" class="modal-title">
-                    <i data-lucide="smartphone" class="w-5 h-5"></i>
-                    <span data-i18n="scan_check_title">Scansioni dal telefono</span>
-                </h3>
+                <div class="min-w-0">
+                    <h3 id="scan-avviso-titolo" class="modal-title" data-i18n="scan_check_title">Scansioni dal telefono</h3>
+                    <p id="scan-avviso-testo" class="modal-sottotitolo"></p>
+                </div>
             </div>
             <div class="modal-body">
-                <p id="scan-avviso-testo" class="text-sm leading-relaxed"></p>
                 <div id="scan-avviso-elenco" class="scan-riepilogo"></div>
                 <label class="flex items-center gap-2 text-sm">
                     <input type="checkbox" id="scan-avviso-sempre">
                     <span data-i18n="scan_check_always">Non chiedere: importa sempre da solo all'apertura</span>
                 </label>
-                <div class="modal-footer">
-                    <button type="button" id="scan-avviso-no" data-modal-cancel class="btn btn-ghost">
-                        <span data-i18n="scan_later">Più tardi</span>
-                    </button>
-                    <button type="button" id="scan-avviso-si" class="btn btn-primary"></button>
-                </div>
+            </div>
+            <div class="modal-footer modal-footer-bar">
+                <button type="button" id="scan-avviso-no" data-modal-cancel class="btn btn-secondary">
+                    <span data-i18n="scan_later">Più tardi</span>
+                </button>
+                <button type="button" id="scan-avviso-si" class="btn btn-primary"></button>
             </div>
         </div>
     </div>`;

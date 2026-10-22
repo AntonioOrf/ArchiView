@@ -496,16 +496,15 @@ function mostraErroreAccessoNegato(account: string) {
     overlay.className = 'modal-overlay z-modal-critical';
     const t = window.t;
     overlay.innerHTML = window.sanitizeHTML(`
-        <div class="modal-window max-w-md" aria-describedby="_an_desc">
+        <div class="modal-window max-w-md" role="alertdialog" aria-labelledby="_an_titolo" aria-describedby="_an_desc">
             <div class="modal-header">
-                <h2 class="modal-title">
-                    <svg class="w-5 h-5 testo-pericolo shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                    <span>${escapeHTML(t('access_denied_title', 'Accesso negato'))}</span>
-                </h2>
+                <div class="min-w-0">
+                    <h2 id="_an_titolo" class="modal-title">${escapeHTML(t('access_denied_title', 'Accesso negato'))}</h2>
+                    <p id="_an_desc" class="modal-sottotitolo"></p>
+                </div>
             </div>
             <div class="modal-body">
-                <p id="_an_desc" class="text-stone-700 leading-relaxed mb-2"></p>
-                <p class="text-sm text-stone-500">${escapeHTML(t('access_denied_hint', "Accedi con l'account Google invitato dal proprietario, oppure scegli un altro archivio."))}</p>
+                <p class="text-sm text-stone-600 leading-relaxed">${escapeHTML(t('access_denied_hint', "Accedi con l'account Google invitato dal proprietario, oppure scegli un altro archivio."))}</p>
             </div>
             <div class="modal-footer modal-footer-bar">
                 <button id="_an_btn_back" type="button" class="btn btn-secondary">${escapeHTML(t('btn_choose_other_archive', 'Scegli un altro archivio'))}</button>
@@ -520,6 +519,7 @@ function mostraErroreAccessoNegato(account: string) {
         const [prima, dopo = ''] = t('access_denied_desc', "L'account {account} non è autorizzato ad accedere a questo archivio condiviso.").split('{account}');
         const strong = document.createElement('strong');
         strong.id = '_an_account';
+        strong.className = 'font-mono font-medium';
         strong.textContent = account;
         desc.append(prima, strong, dopo);
     } else {

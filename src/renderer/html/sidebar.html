@@ -10,9 +10,9 @@
                 </button>
                 <div id="vault-switcher-popover" class="hidden-tab sidebar-archivio-popover z-dropdown flex flex-col max-h-64">
                     <div id="vault-switcher-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-0.5"></div>
-                    <div class="w-full h-px bg-stone-200 my-1.5"></div>
-                    <button data-on-click="gestisciArchivi" class="w-full text-left px-2 py-2 text-sm text-stone-700 font-medium hover:bg-stone-100 flex items-center gap-2 transition-colors">
-                        <i data-lucide="library" class="w-4 h-4 text-stone-500"></i> <span data-i18n="sidebar_manage_archives">Gestisci archivi…</span>
+                    <div class="ctx-separatore"></div>
+                    <button data-on-click="gestisciArchivi" class="ctx-voce">
+                        <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="sidebar_manage_archives">Gestisci archivi…</span>
                     </button>
                 </div>
             </div>
@@ -39,26 +39,24 @@
 
             <div id="sidebar-search" role="tabpanel" aria-labelledby="btn-tab-search" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="search" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_search">Ricerca Globale</span></h2>
-                    <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
+                    <h2 class="sidebar-pannello-titolo"><span data-i18n="title_search">Ricerca Globale</span></h2>
+                    <div class="campo-cerca">
                         <i data-lucide="search" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="search-input" data-i18n-placeholder="placeholder_search" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
+                        <input type="text" id="search-input" data-i18n-placeholder="placeholder_search" data-i18n-aria-label="placeholder_search" class="campo-cerca-input">
                     </div>
                     <label class="flex items-center gap-2 mt-2 text-xs text-stone-600 dark:text-stone-300 cursor-pointer select-none">
                         <input type="checkbox" id="search-altri-archivi" class="shrink-0">
                         <span data-i18n="cross_toggle">Cerca anche negli altri archivi</span>
                     </label>
                 </div>
-                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_suggestions">SUGGERIMENTI</div>
+                <div class="sidebar-striscia" data-i18n="title_suggestions">Suggerimenti</div>
                 <div id="search-suggestions" class="flex-1 overflow-y-auto custom-scroll">
                 </div>
             </div>
 
             <div id="sidebar-tags" role="tabpanel" aria-labelledby="btn-tab-tags" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-3">
-                        <i data-lucide="bookmark" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_tags">Filtro Tag</span>
+                    <h2 class="sidebar-pannello-titolo"><span data-i18n="title_tags">Filtro Tag</span>
                         <button type="button" data-on-click="apriAnagrafica" id="btn-anagrafica" class="btn btn-ghost btn-icon ml-auto" data-i18n-title="auth_title" data-i18n-aria-label="auth_title" title="Persone e luoghi" aria-label="Persone e luoghi">
                             <i data-lucide="users" class="w-4 h-4"></i>
                         </button>
@@ -66,27 +64,26 @@
                             <i data-lucide="settings-2" class="w-4 h-4"></i>
                         </button>
                     </h2>
-                    <div class="relative flex items-center bg-white rounded-sm px-2 border border-stone-300 focus-within:border-amber-500 transition-colors shadow-sm form-input p-0">
+                    <div class="campo-cerca">
                         <i data-lucide="bookmark" class="w-4 h-4 text-stone-400 shrink-0"></i>
-                        <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" class="w-full bg-transparent border-none outline-none text-sm p-2 text-stone-700 placeholder-stone-400" style="box-shadow: none;">
+                        <input type="text" id="global-tag-search" data-i18n-placeholder="placeholder_tags" data-i18n-aria-label="placeholder_tags" class="campo-cerca-input">
                     </div>
-                    <button data-on-click="azzeraTagAttivi" class="text-xs text-stone-500 hover:text-red-600 mt-2 underline hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
+                    <button data-on-click="azzeraTagAttivi" class="btn-collegamento mt-2 hidden" id="btn-clear-tag" data-i18n="btn_clear_tags">Rimuovi filtri tag</button>
                 </div>
-                <div class="p-2 bg-stone-100 border-b border-stone-200 text-xs font-semibold text-stone-500 shrink-0" data-i18n="title_available_tags">TAG DISPONIBILI</div>
+                <div class="sidebar-striscia" data-i18n="title_available_tags">Tag disponibili</div>
                 <div id="tag-list" class="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
                 </div>
             </div>
 
             <div id="sidebar-source-control" role="tabpanel" aria-labelledby="btn-tab-source-control" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-1">
-                        <i data-lucide="git-pull-request" class="w-5 h-5 text-amber-700"></i> <span data-i18n="title_source_control">Controllo Modifiche</span>
+                    <h2 class="sidebar-pannello-titolo"><span data-i18n="title_source_control">Controllo Modifiche</span>
                     </h2>
                     <p class="text-xs text-stone-500 dark:text-stone-400"><span data-i18n="sidebar_source_control_desc">Modifiche locali non ancora inviate al Cloud</span></p>
                 </div>
-                <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
-                    <span><span data-i18n="sidebar_pending_changes">MODIFICHE PENDENTI</span></span>
-                    <span id="source-control-count" class="bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 px-2 py-0.5 text-[10px]">0</span>
+                <div class="sidebar-striscia">
+                    <span><span data-i18n="sidebar_pending_changes">Modifiche da inviare</span></span>
+                    <span id="source-control-count" class="sidebar-voce-n">0</span>
                 </div>
                 <ul id="source-control-list" class="flex-1 overflow-y-auto custom-scroll flex flex-col">
                 </ul>
@@ -94,14 +91,13 @@
 
             <div id="sidebar-history" role="tabpanel" aria-labelledby="btn-tab-history" class="hidden-tab flex flex-col flex-1 min-h-0">
                 <div class="panel-header p-4 shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 mb-1">
-                        <i data-lucide="history" class="w-5 h-5 text-amber-700"></i> <span data-i18n="sidebar_cloud_history">Storico Cloud</span>
+                    <h2 class="sidebar-pannello-titolo"><span data-i18n="sidebar_cloud_history">Storico Cloud</span>
                     </h2>
                     <p class="text-xs text-stone-500 dark:text-stone-400"><span data-i18n="sidebar_cloud_history_desc">Versioni salvate su Google Drive</span></p>
                 </div>
-                <div class="p-2 bg-stone-100 dark:bg-stone-800/50 border-y border-stone-200 dark:border-stone-700 text-xs font-semibold flex justify-between items-center text-stone-500 dark:text-stone-400 shrink-0">
-                    <span><span data-i18n="sidebar_cloud_revisions">REVISIONI CLOUD</span></span>
-                    <button id="btn-history-refresh" data-on-click="seEsiste" data-args-click="[&quot;renderHistoryList&quot;]" class="text-amber-600 hover:text-amber-800 transition-colors" data-i18n-title="tooltip_refresh_list" data-i18n-aria-label="tooltip_refresh_list" title="Aggiorna lista">
+                <div class="sidebar-striscia">
+                    <span><span data-i18n="sidebar_cloud_revisions">Revisioni sul cloud</span></span>
+                    <button id="btn-history-refresh" data-on-click="seEsiste" data-args-click="[&quot;renderHistoryList&quot;]" class="btn btn-ghost btn-icon btn-mini" data-i18n-title="tooltip_refresh_list" data-i18n-aria-label="tooltip_refresh_list" title="Aggiorna lista">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
