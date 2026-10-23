@@ -1,6 +1,8 @@
 window.testoErroreDrive = function(e) {
     const testo = e && e.message ? e.message : String(e);
     if (testo.includes('ACCESSO_SCADUTO')) return window.t('err_drive_accesso_scaduto', "L'accesso a Google non è stato completato nel browser entro 5 minuti. Riprova.");
+    if (testo.includes('DRIVE_PIENO')) return window.t('err_drive_pieno', "Spazio Google Drive esaurito: libera spazio sul Drive e sincronizza di nuovo.");
+    if (testo.includes('BACKUP_ALTRO_ACCOUNT')) return window.t('err_backup_altro_account', "La cartella di questo backup non è sul Drive dell'account Google collegato. Torna all'account di prima, oppure collega o crea un backup su questo account.");
     return testo;
 };
 
@@ -347,6 +349,28 @@ function confermaCollegamentoArchivio(vault, cfg) {
     else if (confirm(msg)) esegui();
 }
 
+window.creaNuovoBackupDrive = function() {
+    const msg = window.t("msg_dlg_nuovo_backup_account", "Creare un nuovo backup di questo archivio sul Drive dell'account Google collegato? Dati e allegati verranno caricati da questo PC.");
+    const esegui = async () => {
+        if (typeof mostraProgressoCloud === 'function') {
+            mostraProgressoCloud(window.t("prog_conf_title", "Configurazione in corso"), window.t("prog_conf_backup", "Impostazione Backup Personale…"));
+        }
+        try {
+            await window.apiBrowser.setVaultType({ vaultType: 'backup', sharedVaultId: null, driveAutofetch: true });
+            if (window.aggiornaVisibilitaCloud) await window.aggiornaVisibilitaCloud();
+            window.chiudiCollegaArchivioDrive();
+            await window.sincronizzaGoogleDrive(true);
+            if (!window.statoCloud?.errore && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_sincronizzazione_completa", 'Sincronizzazione completata.'), "success");
+        } catch (e) {
+            if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore", "Errore: ") + window.testoErroreDrive(e), "error");
+        } finally {
+            if (typeof nascondiProgressoCloud === 'function') nascondiProgressoCloud();
+        }
+    };
+    if (typeof window.mostraBottomConfirm === 'function') window.mostraBottomConfirm(msg, esegui);
+    else if (confirm(msg)) esegui();
+};
+
 window.chiudiCollegaArchivioDrive = function() {
     document.getElementById('cloud-relink-section')?.classList.add('hidden-tab');
     if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
@@ -385,20 +409,23 @@ async function caricaDopoMerge(apiCloud, driveData, silent) {
     const newSyncTime = await apiCloud.sync(window.lastDriveModifiedTime);
     await window.registraBaseInviata(inviate, strutturaInviata);
 
+    let erroreAllegati: string | null = null;
     try {
         if (apiCloud.syncAttachments) await apiCloud.syncAttachments();
     } catch (attErr) {
         console.error("Errore sync allegati:", attErr);
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_sync_ok_attachments_failed', 'Sincronizzazione DB completata, ma errore negli allegati: ') + attErr.message, "warning");
+        erroreAllegati = window.t('msg_sync_ok_attachments_failed', 'Sincronizzazione DB completata, ma errore negli allegati: ') + window.testoErroreDrive(attErr);
+        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(erroreAllegati, "warning");
     }
 
     await registraSyncAvvenuta(typeof newSyncTime === 'number'
         ? newSyncTime
         : (driveData && driveData.driveModifiedTime) || Date.now());
     if (typeof window.impostaModifichePendenti === 'function') window.impostaModifichePendenti(false);
-    window.azzeraErroreCloud();
+    if (erroreAllegati) window.impostaErroreCloud(erroreAllegati);
+    else window.azzeraErroreCloud();
     if (window.driveStatus) window.driveStatus.isAuthenticated = true;
-    return true;
+    return erroreAllegati ? 'allegati' : true;
 }
 
 async function registraSyncAvvenuta(ora) {
@@ -434,16 +461,18 @@ async function sincronizzaDrive(silent, modo) {
     window.toggleSyncProgress(true, testi.progresso);
 
     try {
-        if (!(await scaricaUnisciCarica(apiCloud, silent))) return avvisaSyncDriveAnnullata(silent);
-        if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.ok[0], testi.ok[1]), "success");
+        const esito = await scaricaUnisciCarica(apiCloud, silent);
+        if (!esito) return avvisaSyncDriveAnnullata(silent);
+        if (esito === true && !silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.ok[0], testi.ok[1]), "success");
     } catch (e) {
         console.error(e);
         if (e.message && e.message.includes("409_CONFLICT")) {
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_conflitto_sul_cloud_un_al", "Conflitto sul Cloud: un altro utente ha salvato. Unione automatica in corso…"), "warning");
             console.warn("409_CONFLICT: auto-healing in progress…");
             try {
-                if (!(await scaricaUnisciCarica(apiCloud, silent))) return avvisaSyncDriveAnnullata(silent);
-                if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.okDopoConflitto[0], testi.okDopoConflitto[1]), "success");
+                const esito = await scaricaUnisciCarica(apiCloud, silent);
+                if (!esito) return avvisaSyncDriveAnnullata(silent);
+                if (esito === true && !silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.okDopoConflitto[0], testi.okDopoConflitto[1]), "success");
             } catch (retryErr) {
                 window.impostaErroreCloud(retryErr.message);
                 if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_la_risoluz", "Errore durante la risoluzione del conflitto: ") + retryErr.message, "error");
@@ -453,6 +482,13 @@ async function sincronizzaDrive(silent, modo) {
             window.driveStatus.unauthorizedVault = true;
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t('msg_vault_unauthorized_hint', 'Accesso negato: questo account non è autorizzato per l\'Archivio Condiviso. Accedi con l\'account corretto o richiedi un nuovo invito al proprietario.'), 'error');
             if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
+        } else if (e.message && e.message.includes('BACKUP_ALTRO_ACCOUNT')) {
+            window.impostaErroreCloud(window.testoErroreDrive(e));
+            if (!silent) {
+                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.testoErroreDrive(e), 'warning');
+                if (typeof window.apriCloudModal === 'function') await window.apriCloudModal();
+                await window.collegaArchivioEsistenteDrive();
+            }
         } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
             if (typeof window.apriCloudModal === 'function') {
                 window.apriCloudModal();
@@ -460,8 +496,8 @@ async function sincronizzaDrive(silent, modo) {
                 mostraMessaggio(window.t('msg_drive_login_required', 'Accesso a Google Drive richiesto. Apri il menu Cloud per accedere.'), "warning");
             }
         } else {
-            window.impostaErroreCloud(e.message);
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.errore[0], testi.errore[1]) + e.message, "error");
+            window.impostaErroreCloud(window.testoErroreDrive(e));
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t(testi.errore[0], testi.errore[1]) + window.testoErroreDrive(e), "error");
         }
     } finally {
         if (btn) btn.disabled = false;
@@ -507,14 +543,18 @@ async function eseguiScaricamentoDalCloud(silent = false) {
                     }
                 } catch (attErr) {
                     console.error("Errore sync allegati:", attErr);
+                    const testo = window.t('msg_sync_ok_attachments_failed', 'Sincronizzazione DB completata, ma errore negli allegati: ') + window.testoErroreDrive(attErr);
+                    window.impostaErroreCloud(testo);
+                    if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(testo, "warning");
+                    return;
                 }
             }
             window.azzeraErroreCloud();
             if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_scaricamento_completato", 'Scaricamento completato.'), "success");
         } catch (e) {
             console.error(e);
-            window.impostaErroreCloud(e.message);
-            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_lo_scarica", "Errore durante lo scaricamento: ") + e.message, "error");
+            window.impostaErroreCloud(window.testoErroreDrive(e));
+            if (!silent && typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_errore_durante_lo_scarica", "Errore durante lo scaricamento: ") + window.testoErroreDrive(e), "error");
         } finally {
             window.toggleSyncProgress(false);
             window.hasFetchedBeforeDownload = false;

@@ -128,6 +128,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'costruisciGrafo',
     'creaCartellaIniziale',
     'creaHubDaShareModal',
+    'creaNuovoBackupDrive',
     'creaVocabolarioDalPannello',
     'editItem',
     'eliminaSelezionateCestino',

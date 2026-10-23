@@ -189,7 +189,8 @@
                         <p class="text-sm text-stone-600 mt-1" data-i18n="modal_cloud_relink_desc">Scegli la cartella su Drive con cui questo archivio deve sincronizzarsi. Usalo se un altro PC lavora già su un archivio che qui non vedi.</p>
                     </div>
                     <div id="cloud-relink-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto custom-scroll"></div>
-                    <div class="flex justify-end">
+                    <div class="flex justify-between gap-2">
+                        <button type="button" data-on-click="creaNuovoBackupDrive" id="btn-cloud-new-backup" class="btn btn-secondary py-2 text-sm" data-i18n="btn_new_backup_this_account">Crea un nuovo backup su questo account</button>
                         <button type="button" data-on-click="chiudiCollegaArchivioDrive" class="btn btn-ghost py-2 text-sm" data-i18n="btn_cancel">Annulla</button>
                     </div>
                 </div>
@@ -221,6 +222,11 @@
             try {
                 await window.apiDrive.auth(true);
                 await window.aggiornaStatoDrive();
+                const cfg = window.apiBrowser.getVaultConfig ? await window.apiBrowser.getVaultConfig() : null;
+                if (cfg && cfg.vaultType === 'backup') {
+                    nascondiProgressoCloud();
+                    await window.collegaArchivioEsistenteDrive();
+                }
             } catch (e) {
                 mostraMessaggio(window.t("msg_errore", "Errore: ") + e.message, "error");
             } finally {
