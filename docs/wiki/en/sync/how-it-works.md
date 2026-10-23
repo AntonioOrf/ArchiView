@@ -65,6 +65,14 @@ Google Drive permissions cannot be transferred.
 An archive on Google Drive does not receive instant notifications: it checks for news by itself
 **every 5 minutes**.
 
+**Switching Google account.** In Advanced options, **Use another Google account** links that
+account to this archive only. For a personal backup, the list of archives on the new account's
+Drive opens next: pick one, or use **Create a new backup on this account** to upload data and
+attachments from this computer.
+
+**Drive full.** If Google Drive runs out of space, attachments are not uploaded: the cloud status
+turns red with the message "Google Drive storage is full". Free up space on Drive and sync again.
+
 New shared archives are created on the Hub only: it is faster, does not require each collaborator to
 have a Google account, and makes revoking access truly effective.
 
