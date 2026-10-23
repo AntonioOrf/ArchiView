@@ -12,7 +12,7 @@ const AVD = process.env.ARCHIVIEW_AVD || 'Medium_Phone_API_37.0';
 const SDK = process.env.ANDROID_HOME || path.join(process.env.LOCALAPPDATA || '', 'Android', 'Sdk');
 const RISORSE = path.join(SDK, 'emulator', 'resources');
 const MOBILE = path.join(__dirname, '..', 'mobile');
-const PKG = 'com.antonioorf.archiview.scanner';
+const PKG = process.env.ARCHIVIEW_MAESTRO_PKG || 'com.antonioorf.archiview.scanner';
 const POSTERS = 'poster wall\nsize 1.0 1.0\nposition 0 0 -2.2\nrotation 0 0 0\ndefault poster.png\n\n'
   + 'poster table\nsize 1 1\nposition -2.205 -0.077 3.949\nrotation -90 0 120\n';
 

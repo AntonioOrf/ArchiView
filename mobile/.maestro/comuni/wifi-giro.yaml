@@ -6,6 +6,8 @@ appId: com.antonioorf.archiview.scanner
     timeout: 180000
 - assertVisible: "Da inviare, 4 pagine, accedi per inviare"
 - tapOn: Impostazioni
+- scrollUntilVisible:
+    element: Abbina col computer
 - tapOn: Abbina col computer
 - runFlow:
     when:
@@ -17,8 +19,8 @@ appId: com.antonioorf.archiview.scanner
       visible: "(?i)(while using the app|mentre usi l'app)"
     commands:
       - tapOn: "(?i)(while using the app|mentre usi l'app)"
-- extendedWaitUntil:
-    visible: "Collegato a «Fondo Prova».*"
+- scrollUntilVisible:
+    element: "Collegato a «Fondo Prova».*"
     timeout: 60000
 - tapOn: Indietro
 - extendedWaitUntil:
