@@ -63,5 +63,23 @@ function cheFallisce(errori, valore) {
   await assert.rejects(getOrCreateFolder('ArchiView', ostile), /Id Drive non valido/);
   assert.strictEqual(query, 0, 'nessuna query con un id ostile');
   console.log('✅ Test 7: id di cartella Drive validati prima delle query.');
+
+  const { asyncPool } = require(path.join(OUT, 'ipc', 'drive', 'fileOps.js'));
+  const finiti = [];
+  const avviati = [];
+  await assert.rejects(asyncPool(3, [1, 2, 3, 4, 5, 6], async (n) => {
+    avviati.push(n);
+    if (n === 1) throw errore(403, 'storageQuotaExceeded');
+    await new Promise(r => setTimeout(r, 30));
+    finiti.push(n);
+  }), /drive 403/);
+  assert.deepStrictEqual(finiti.sort(), avviati.filter(n => n !== 1).sort(), 'al rifiuto nessun task è ancora in corso');
+  assert.ok(!avviati.includes(6), 'dopo un errore non partono altri task');
+  console.log('✅ Test 8: asyncPool rifiuta solo dopo che i task avviati sono finiti.');
+
+  const pieno = cheFallisce([errore(403, 'storageQuotaExceeded')], 'ok');
+  await assert.rejects(withDriveRetry(pieno.fn, 3, 1), /Spazio Google Drive esaurito/);
+  assert.strictEqual(pieno.chiamate(), 1);
+  console.log('✅ Test 9: Drive pieno dà un messaggio chiaro senza riprovare.');
   console.log('Tutti i test driveRetry passati con successo!');
 })().catch((e) => { console.error(e); process.exitCode = 1; });

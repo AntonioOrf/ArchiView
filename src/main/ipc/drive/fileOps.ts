@@ -20,6 +20,9 @@ async function withDriveRetry(fn: () => Promise<any>, maxRetries = 3, attesaBase
     try {
       return await fn();
     } catch (e: any) {
+      if ((e?.response?.data?.error?.errors || []).some((m: any) => m?.reason === 'storageQuotaExceeded')) {
+        throw new Error('DRIVE_PIENO: Spazio Google Drive esaurito: libera spazio sul Drive e sincronizza di nuovo.');
+      }
       if (!riprovabile(e) || attempt >= maxRetries) throw e;
       const retryAfter = Number(e?.response?.headers?.['retry-after']) * 1000;
       const backoff = attesaBaseMs * 2 ** attempt * (0.5 + Math.random());
@@ -127,15 +130,16 @@ async function makeFilePublic(fileId: string): Promise<void> {
 async function asyncPool(poolLimit: number, array: any[], iteratorFn: Function): Promise<any[]> {
   const ret: Promise<any>[] = [];
   const executing = new Set<Promise<void>>();
+  let fallito = false;
   for (const item of array) {
+    if (fallito) break;
     const p = Promise.resolve().then(() => iteratorFn(item, array));
     ret.push(p);
-    if (poolLimit <= array.length) {
-      const e: Promise<void> = p.then(() => { executing.delete(e); });
-      executing.add(e);
-      if (executing.size >= poolLimit) await Promise.race(executing);
-    }
+    const e: Promise<void> = p.then(() => { executing.delete(e); }, () => { fallito = true; executing.delete(e); });
+    executing.add(e);
+    if (executing.size >= poolLimit) await Promise.race(executing);
   }
+  await Promise.allSettled(ret);
   return Promise.all(ret);
 }
 
