@@ -13,7 +13,14 @@ function indiceSicuro(grezzo: unknown): Record<string, string[]> {
   return indice;
 }
 
-async function syncAttachmentsBidirectional(): Promise<void> {
+let syncInCorso: Promise<void> | null = null;
+
+function syncAttachmentsBidirectional(): Promise<void> {
+  if (!syncInCorso) syncInCorso = eseguiSyncAllegati().finally(() => { syncInCorso = null; });
+  return syncInCorso;
+}
+
+async function eseguiSyncAllegati(): Promise<void> {
   if (!state.workspacePath) throw new Error("Nessun workspace aperto");
   if (!loadSavedTokens()) throw new Error("Autenticazione Google Drive non effettuata.");
 
