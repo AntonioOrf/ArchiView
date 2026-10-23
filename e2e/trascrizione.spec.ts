@@ -2,10 +2,18 @@ import { test, expect } from './fixtures';
 import { createLocalWorkspace, createItemWithAttachment, getAppData } from './helpers';
 import * as path from 'path';
 import * as fs from 'fs';
+import type { ElectronApplication, Page } from '@playwright/test';
 
 const FIXTURE_PNG = path.join(__dirname, 'fixtures', 'sample.png');
 const FIXTURE_PDF = path.join(__dirname, 'fixtures', 'sample.pdf');
 const FIXTURE_PDF3 = path.join(__dirname, 'fixtures', 'multipage.pdf');
+
+async function finestraLarga(electronApp: ElectronApplication, page: Page) {
+  await electronApp.evaluate(({ BrowserWindow }) => {
+    const b = BrowserWindow.getAllWindows()[0]; b.unmaximize(); b.setSize(1280, 800);
+  });
+  await expect.poll(() => page.evaluate(() => innerWidth)).toBeGreaterThan(1100);
+}
 
 test.describe('Vista Trascrizione', () => {
   test.use({ seedWorkspace: 'Trasc' });
@@ -107,7 +115,8 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trasc-mostra-testo')).toBeHidden();
   });
 
-  test('il selettore vista passa tra fonte, affiancate e testo', async ({ page, userDataDir }) => {
+  test('il selettore vista passa tra fonte, affiancate e testo', async ({ page, electronApp, userDataDir }) => {
+    await finestraLarga(electronApp, page);
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-VISTA', FIXTURE_PNG);
     await page.evaluate((r) => (window as any).apriTrascrizione(r), id);
@@ -168,7 +177,8 @@ test.describe('Vista Trascrizione', () => {
     await expect(editor).toHaveText(`aꝑx${scelto}${scelto}b`);
   });
 
-  test('fonte a sinistra, testo a destra con numeri di riga, segni Leiden e barra di stato', async ({ page, userDataDir }) => {
+  test('fonte a sinistra, testo a destra con numeri di riga, segni Leiden e barra di stato', async ({ page, electronApp, userDataDir }) => {
+    await finestraLarga(electronApp, page);
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-LEIDEN', FIXTURE_PNG);
     await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);

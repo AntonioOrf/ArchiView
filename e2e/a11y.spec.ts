@@ -211,7 +211,8 @@ test.describe('Accessibilità e scala z-index', () => {
 
     const scansiona = (dove: string) => page.evaluate((dove) => {
       const sel = 'button, a[href], input:not([type=hidden]), select, textarea, [role=button], [role=tab], [role=menuitem], [tabindex]:not([tabindex="-1"])';
-      const tutti = Array.from(document.querySelectorAll(sel))
+      const modale = Array.from(document.querySelectorAll('.modal-overlay')).find(m => m.getClientRects().length && !m.classList.contains('hidden-tab'));
+      const tutti = Array.from((modale || document).querySelectorAll(sel))
         .filter((e: any) => e.getClientRects().length && !e.closest('[aria-hidden="true"], .hidden-tab, [inert]') && getComputedStyle(e).visibility !== 'hidden')
         .map((e: any) => ({ e, r: (e.closest('label') || e).getBoundingClientRect() as DOMRect }))
         .filter(x => x.r.width > 1 && x.r.height > 1);
