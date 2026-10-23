@@ -67,6 +67,7 @@ function classifyDriveFolderError(err: any): 'forbidden' | 'notfound' | null {
 
 const ERR_VAULT_FORBIDDEN = "ACCESSO_NEGATO_VAULT: Questo account Google non è autorizzato ad accedere all'archivio condiviso. Accedi con l'account corretto o richiedi un nuovo invito al proprietario.";
 const ERR_VAULT_NOTFOUND = "L'archivio condiviso non esiste o è stato eliminato. Richiedi un nuovo invito al proprietario.";
+const ERR_BACKUP_ALTRO_ACCOUNT = "BACKUP_ALTRO_ACCOUNT: La cartella di questo backup non è sul Drive dell'account Google collegato. Torna all'account di prima, oppure collega o crea un backup su questo account.";
 
 let logVecchiTolti: string | null = null;
 function togliLogVecchi(): void {
@@ -202,7 +203,7 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
           await driveState.drive.files.list({ pageSize: 1, spaces: 'drive' });
           let settings: any = {};
           try { settings = getActiveVaultFlags(); } catch (e) { console.error("Errore lettura settings:", e); }
-          if (state.workspacePath && settings.sharedVaultId) {
+          if (state.workspacePath && settings.isSharedVault && settings.sharedVaultId) {
             try {
               await driveState.drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
             } catch (err: any) {
@@ -442,4 +443,4 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
   return { isAuthenticated: true, user: userEmail };
 }
 
-export { driveState, writeTokenFile, readTokenFile, getGlobalTokenPath, getLocalTokenPath, logAuthEvent, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND, ERR_ACCESSO_SCADUTO, SCADENZA_BROWSER_MS, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus };
+export { driveState, writeTokenFile, readTokenFile, getGlobalTokenPath, getLocalTokenPath, logAuthEvent, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND, ERR_BACKUP_ALTRO_ACCOUNT, ERR_ACCESSO_SCADUTO, SCADENZA_BROWSER_MS, initGoogle, loadSavedTokens, authenticateDrive, logoutDrive, checkDriveStatus };

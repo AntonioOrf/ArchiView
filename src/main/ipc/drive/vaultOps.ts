@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { state, getAllSettings, saveAllSettings, getActiveVaultFlags } from '../../workspaceManager';
-import { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND } from './auth';
+import { driveState, loadSavedTokens, authenticateDrive, classifyDriveFolderError, ERR_VAULT_FORBIDDEN, ERR_VAULT_NOTFOUND, ERR_BACKUP_ALTRO_ACCOUNT } from './auth';
 const { getOrCreateFolder, uploadFile, withDriveRetry } = require('./fileOps');
 import { idDrive } from './pickerSecurity';
 
@@ -10,6 +10,9 @@ async function assertVaultFolderAccessible(vaultFolderId: string): Promise<void>
     await driveState.drive.files.get({ fileId: vaultFolderId, fields: 'id', supportsAllDrives: true });
   } catch (err: any) {
     const kind = classifyDriveFolderError(err);
+    let personale = false;
+    try { personale = !getActiveVaultFlags().isSharedVault; } catch (e) { console.error("Errore lettura settings:", e); }
+    if (kind && personale) throw new Error(ERR_BACKUP_ALTRO_ACCOUNT);
     if (kind === 'forbidden') throw new Error(ERR_VAULT_FORBIDDEN);
     if (kind === 'notfound') throw new Error(ERR_VAULT_NOTFOUND);
     throw err;
