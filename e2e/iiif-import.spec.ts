@@ -88,7 +88,7 @@ async function avviaServerIiif(): Promise<ServerIiif> {
     richieste,
     get rompiMisure() { return stato.rompiMisure; },
     set rompiMisure(v: boolean) { stato.rompiMisure = v; },
-    chiudi: () => new Promise<void>(risolvi => server.close(() => risolvi()))
+    chiudi: () => new Promise<void>(risolvi => { server.close(() => risolvi()); server.closeAllConnections(); })
   };
 }
 
