@@ -1,3 +1,12 @@
+## ArchiView 4.0.1 — Sincronizzazione Drive più affidabile
+
+### Correzioni
+
+- **Archivi grandi con Drive pieno**: la sincronizzazione degli allegati non chiude più il programma con un errore. Compare il messaggio «Spazio Google Drive esaurito» e lo stato del cloud resta in errore invece di «Sincronizzato».
+- **Usa un altro account Google**: l'account scelto resta legato all'archivio anche quando cambia la cartella su Drive, invece di tornare al primo account.
+- **Backup personale su un altro account**: dopo il cambio account compare l'elenco degli archivi sul Drive del nuovo account, con il pulsante «Crea un nuovo backup su questo account». Il messaggio non parla più di un archivio condiviso.
+- Due sincronizzazioni degli allegati non partono più insieme.
+
 ## ArchiView 4.0.0 — Una nuova interfaccia
 
 Tutto il programma cambia aspetto: carta e inchiostro, caratteri pensati per la lettura, meno riquadri e più spazio al documento. I dati, gli archivi e la sincronizzazione restano gli stessi.
