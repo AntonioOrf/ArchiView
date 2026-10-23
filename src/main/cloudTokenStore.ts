@@ -12,15 +12,29 @@ function sanitizeKey(key: string): string {
   return String(key).replace(/[^A-Za-z0-9_-]/g, '_');
 }
 
+const idArchivioPerPercorso = new Map<string, string>();
+
 function activeVaultKey(): string {
   try {
-    if (state.workspacePath) {
+    const wp = state.workspacePath;
+    if (wp) {
       const flags = getActiveVaultFlags();
-      if ((flags.isSharedVault || flags.isPersonalCloud) && flags.sharedVaultId) {
-        return sanitizeKey(flags.sharedVaultId);
+      if (flags.isSharedVault || flags.isPersonalCloud) {
+        const id = idArchivioPerPercorso.get(wp) || assicuraArchivioId(wp, getAllSettings());
+        if (!id) return flags.sharedVaultId ? sanitizeKey(flags.sharedVaultId) : 'global';
+        idArchivioPerPercorso.set(wp, id);
+        const chiave = 'a-' + sanitizeKey(id);
+        if (flags.sharedVaultId) {
+          const perArchivio = tokenPathFor('google', chiave);
+          const perCartella = tokenPathFor('google', flags.sharedVaultId);
+          if (!fs.existsSync(perArchivio) && fs.existsSync(perCartella)) fs.copyFileSync(perCartella, perArchivio);
+        }
+        return chiave;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[cloudTokenStore] Chiave token archivio non calcolabile:', e);
+  }
   return 'global';
 }
 
