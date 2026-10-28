@@ -1983,7 +1983,9 @@ summary:focus:not(:focus-visible) { outline: none; }
     flex-shrink: 0;
 }
 .form-input,
-select.btn {
+select.btn,
+#trasc-carte-bar input,
+#trasc-carte-bar select {
     border-color: var(--color-border-input) !important;
 }
 .tag-color-select {
@@ -2428,8 +2430,34 @@ label:has(> input[type="radio"]) {
 }
 
 .campo-editor-box { color: var(--color-text-main); }
-.campo-editor-box:not(.hidden) ~ #campo-editor-vuoto { display: none; }
-#campo-editor-vuoto { max-width: 26rem; margin-top: 0.25rem; }
+.campo-editor-box:not(.hidden) ~ #scheda-anteprima { display: none; }
+.scheda-anteprima { max-width: 44rem; }
+.scheda-anteprima-testa {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+.scheda-anteprima-campi:not(:empty) {
+    border: 1px solid var(--color-border-light);
+    padding: 0.25rem 1.125rem;
+}
+.scheda-anteprima-riga {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    padding: 0.625rem 0;
+    color: var(--color-text-secondary);
+}
+.scheda-anteprima-riga + .scheda-anteprima-riga { border-top: 1px solid var(--color-border-light); }
+.scheda-anteprima-etichetta { font-size: 0.8125rem; padding-top: 0.5rem; overflow-wrap: anywhere; }
+.scheda-anteprima-kv {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.375rem;
+}
 .campo-editor-testa {
     display: flex;
     align-items: baseline;

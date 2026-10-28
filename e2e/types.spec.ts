@@ -149,7 +149,7 @@ test.describe('Tipi Documento', () => {
 
     await page.evaluate(() => (window as any).apriNewTypeModal());
     await page.locator('#custom-type-name').fill('Pannelli');
-    await expect(page.locator('#campo-editor-vuoto')).toBeVisible();
+    await expect(page.locator('#scheda-anteprima')).toBeVisible();
     for (const c of ['Supporto', 'Filigrana']) {
       await page.locator('#custom-type-extra-input').fill(c);
       await page.locator('#custom-type-extra-input').press('Enter');
@@ -161,7 +161,7 @@ test.describe('Tipi Documento', () => {
     await riga.locator('.pill-nome').click();
     await expect(riga).toHaveClass(/selezionato/);
     await expect(page.locator('#campo-editor')).toBeVisible();
-    await expect(page.locator('#campo-editor-vuoto')).toBeHidden();
+    await expect(page.locator('#scheda-anteprima')).toBeHidden();
     await expect(page.locator('#campo-editor-nome')).toHaveText('Supporto');
     await expect(page.locator('#campo-editor-posizione')).toContainText('1');
 
@@ -173,6 +173,35 @@ test.describe('Tipi Documento', () => {
 
     await riga.locator('.pill-rimuovi').click();
     await expect(page.locator('#modello-campi-conto')).toHaveText('2');
+  });
+
+  test('senza campo selezionato il pannello destro mostra l\'anteprima della scheda, nell\'ordine e coi tipi dei campi', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Types');
+
+    await page.evaluate(() => (window as any).apriNewTypeModal());
+    await page.locator('#new-type-select').selectOption('fiscali');
+    const anteprima = page.locator('#scheda-anteprima');
+    await expect(anteprima).toBeVisible();
+    const nomiElenco = await page.locator('#custom-fields-list .pill-nome').allTextContents();
+    await expect(anteprima.locator('.scheda-anteprima-etichetta')).toHaveText(nomiElenco);
+    await expect(anteprima.locator('.scheda-anteprima-kv').first()).toBeVisible();
+    await expect(anteprima.locator('textarea')).toHaveCount(1);
+
+    await page.locator('#new-type-select').selectOption('custom');
+    await expect(anteprima.locator('.scheda-anteprima-etichetta')).toHaveCount(0);
+    for (const c of ['Primo', 'Secondo']) {
+      await page.locator('#custom-type-extra-input').fill(c);
+      await page.locator('#custom-type-extra-input').press('Enter');
+    }
+    await expect(anteprima.locator('.scheda-anteprima-etichetta')).toHaveText(['Primo', 'Secondo']);
+    await page.locator('.custom-field-item[data-val="Primo"] .pill-sposta').nth(1).click();
+    await expect(anteprima.locator('.scheda-anteprima-etichetta')).toHaveText(['Secondo', 'Primo']);
+
+    await page.locator('.custom-field-item[data-val="Primo"] .pill-nome').click();
+    await page.locator('#campo-editor-tipo').selectOption('textarea');
+    await page.locator('#btn-campo-editor-ok').click();
+    await expect(anteprima).toBeVisible();
+    await expect(anteprima.locator('textarea')).toHaveCount(1);
   });
 
   test('Gestisci modelli è una tabella con campi e schede di ogni modello', async ({ page, userDataDir }) => {

@@ -111,6 +111,26 @@ function _aggiornaElencoCampi() {
     document.getElementById('empty-fields-placeholder')?.classList.toggle('hidden', n > 0);
     const conto = document.getElementById('modello-campi-conto');
     if (conto) conto.textContent = String(n);
+    _disegnaAnteprimaScheda();
+}
+
+function _disegnaAnteprimaScheda() {
+    const box = document.getElementById('scheda-anteprima-campi');
+    if (!box) return;
+    const pills = Array.from(document.querySelectorAll<HTMLElement>('.custom-field-item'));
+    box.replaceChildren(...pills.map(pill => {
+        const def = definizioneDaPillola(pill);
+        const voc = def.vocabolario ? window.elencoVocabolari().find(v => v.id === def.vocabolario) : null;
+        const riga = document.createElement('div');
+        riga.className = 'scheda-anteprima-riga';
+        const etichetta = document.createElement('span');
+        etichetta.className = 'scheda-anteprima-etichetta';
+        etichetta.textContent = pill.querySelector('.pill-nome')?.textContent || def.id;
+        riga.append(etichetta, _controlloAnteprima(def.tipo, voc ? voc.valori : (def.opzioni || [])));
+        return riga;
+    }));
+    document.getElementById('scheda-anteprima-vuota')?.classList.toggle('hidden', pills.length > 0);
+    document.getElementById('scheda-anteprima-aiuto')?.classList.toggle('hidden', !document.querySelector('.custom-field-item.configurabile'));
 }
 
 function definizioneDaPillola(pill) {
@@ -171,6 +191,7 @@ function aggiungiPill(val, label, isBase, bloccato?) {
     pill.ondragend = () => {
         pill.classList.remove('in-volo');
         window._draggedPill = null;
+        _disegnaAnteprimaScheda();
     };
 
     pill.ondragover = (e) => {
@@ -248,6 +269,7 @@ function spostaPill(pill, delta, pulsante, etichetta) {
     const j = pills.indexOf(pill) + delta;
     if (j < 0 || j >= pills.length) return;
     list.insertBefore(pill, delta < 0 ? pills[j] : pills[j].nextSibling);
+    _disegnaAnteprimaScheda();
     pulsante.focus();
     if (window.annunciaA11y) {
         window.annunciaA11y(window.t('field_moved_pos', '{var0}: posizione {var1} di {var2}')
@@ -343,8 +365,22 @@ window.aggiornaEditorCampo = function() {
 };
 
 function _disegnaAnteprima(tipo: string, opzioni: string[]) {
-    const box = document.getElementById('campo-anteprima-controllo');
-    if (!box) return;
+    document.getElementById('campo-anteprima-controllo')?.replaceChildren(_controlloAnteprima(tipo, opzioni));
+}
+
+function _controlloAnteprima(tipo: string, opzioni: string[]): HTMLElement {
+    if (tipo === 'dynamic_list') {
+        const kv = document.createElement('div');
+        kv.className = 'scheda-anteprima-kv';
+        for (const [chiave, testo] of [['placeholder_key', 'Chiave'], ['placeholder_value', 'Valore']]) {
+            const input = document.createElement('input');
+            input.className = 'form-input';
+            input.placeholder = window.t(chiave, testo);
+            input.tabIndex = -1;
+            kv.appendChild(input);
+        }
+        return kv;
+    }
     let el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
     if (tipo === 'textarea') {
         el = document.createElement('textarea');
@@ -360,7 +396,7 @@ function _disegnaAnteprima(tipo: string, opzioni: string[]) {
     }
     if (tipo !== 'boolean') el.className = 'form-input' + (tipo === 'url' || tipo === 'number' ? '' : ' font-serif');
     el.tabIndex = -1;
-    box.replaceChildren(el);
+    return el;
 }
 
 window.chiudiEditorCampo = function() {
@@ -388,6 +424,7 @@ window.confermaEditorCampo = function() {
         authority: (document.getElementById('campo-editor-authority') as HTMLInputElement).value
     });
     window.chiudiEditorCampo();
+    _disegnaAnteprimaScheda();
 };
 
 async function _salvaTipi() {

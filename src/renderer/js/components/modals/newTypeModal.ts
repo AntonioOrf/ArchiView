@@ -101,7 +101,14 @@
                             <button type="button" data-on-click="confermaEditorCampo" class="btn btn-primary text-sm" id="btn-campo-editor-ok" data-i18n="btn_apply">Applica</button>
                         </div>
                     </div>
-                    <p id="campo-editor-vuoto" class="modello-suggerimento" data-i18n="type_config_empty">Scegli un campo dall'elenco per configurarne tipo, valori e regole. I campi comuni e quelli dei modelli predefiniti hanno già la loro configurazione.</p>
+                    <div id="scheda-anteprima" class="scheda-anteprima">
+                        <div class="scheda-anteprima-testa">
+                            <span class="modello-sez" data-i18n="type_form_preview">Come appare la scheda</span>
+                            <span id="scheda-anteprima-aiuto" class="modello-suggerimento" data-i18n="type_form_preview_hint">Clicca un campo aggiunto da te per configurarlo</span>
+                        </div>
+                        <div id="scheda-anteprima-campi" class="scheda-anteprima-campi" aria-hidden="true" inert></div>
+                        <p id="scheda-anteprima-vuota" class="modello-suggerimento" data-i18n="type_form_preview_empty">I campi che aggiungi compaiono qui come nella scheda.</p>
+                    </div>
                 </div>
             </div>
 
