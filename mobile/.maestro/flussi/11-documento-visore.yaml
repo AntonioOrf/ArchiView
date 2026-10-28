@@ -33,8 +33,8 @@ name: Documento - visore con filtri, ruota, ritaglia, elimina pagina; Condividi 
 - tapOn: Ritaglia
 - assertVisible: Ritaglia la pagina
 - swipe:
-    from: Angolo in alto a sinistra
-    direction: DOWN
+    start: 6%, 37%
+    end: 15%, 45%
 - tapOn:
     text: Ritaglia
     enabled: true

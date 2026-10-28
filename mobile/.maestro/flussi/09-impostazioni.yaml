@@ -16,8 +16,7 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - assertVisible:
     text: Cancella subito
     checked: true
-- tapOn: Giorni
-- eraseText: 3
+- doubleTapOn: Giorni
 - inputText: "3"
 - pressKey: Enter
 - assertVisible:

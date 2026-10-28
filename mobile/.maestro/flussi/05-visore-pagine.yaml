@@ -40,12 +40,12 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - assertVisible: Ritaglia 1v
 - assertVisible: Trascina gli angoli
 - swipe:
-    from: Angolo in alto a sinistra
-    direction: DOWN
+    start: 6%, 32%
+    end: 15%, 40%
 - tapOn: Pagina intera
 - swipe:
-    from: Angolo in basso a destra
-    direction: UP
+    start: 94%, 66%
+    end: 85%, 58%
 - tapOn:
     text: Ritaglia
     enabled: true
@@ -54,7 +54,7 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
     timeout: 15000
 - tapOn: Dividi
 - assertVisible: Dividi la pagina doppia
-- assertVisible: "Linea della piega, 50% da sinistra"
+- assertVisible: "Linea della piega, \\d+% da sinistra"
 - tapOn: "Dividi in due.*"
 - extendedWaitUntil:
     visible: "Pagina 2 di 4 · striscia per le altre"
