@@ -7,9 +7,7 @@ name: Schermate della wiki - archivio
     timeout: 180000
 - tapOn: "Cartella Notarile.*"
 - takeScreenshot: wiki/telefono-archivio
-- tapOn: "Da inviare, 4 pagine.*"
 - takeScreenshot: wiki/telefono-da-inviare
-- tapOn: "Da inviare, 4 pagine.*"
 - tapOn: "Reg\\. 41, Imbreviature.*"
 - takeScreenshot: wiki/telefono-scheda
 - tapOn: Apri 1r

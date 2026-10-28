@@ -35,5 +35,5 @@ name: F11 e F6 - unisci e separa documenti, manda un documento all'archivio
 - tapOn: Documenti, cambia archivio
 - tapOn: Fondo Prova
 - extendedWaitUntil:
-    visible: Da inviare · 2 pagine
+    visible: Invii · 1 lotto
     timeout: 20000

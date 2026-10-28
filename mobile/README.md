@@ -1,12 +1,12 @@
 # ArchiScanner
 
 App Android companion di ArchiView: scansiona documenti in archivio e li consegna al desktop,
-via Google Drive o Wi-Fi. Piano di lavoro: `PIANO-SCANNER.md` nella radice del repository.
+via Google Drive o Wi-Fi. Piano di lavoro (chiuso): `piani-archiviati/PIANO-SCANNER.md`.
 
 Flusso: **archivio** (pubblicato dal desktop, o nuovo) → **scheda** (cercata, nuova, o "Da
 smistare") → «Scansiona». Ogni «Salva» dello scanner diventa un **lotto** (la busta di
-trasferimento del [contratto](../docs/scanner/CONTRATTO.md), invisibile all'utente) e parte da
-solo col Wi-Fi; il desktop lo importa da solo nella scheda.
+trasferimento del [contratto](../docs/scanner/CONTRATTO.md), invisibile all'utente) e parte quando
+si preme Invio; il desktop lo importa da solo nella scheda.
 
 Expo SDK 57 + React Native + TypeScript. Usa moduli nativi (Google Sign-In, ML Kit, VisionCamera): **non
 gira in Expo Go**, serve una build.

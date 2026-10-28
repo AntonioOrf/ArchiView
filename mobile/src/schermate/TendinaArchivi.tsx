@@ -1,7 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react';
-import { Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, FileText, Plus } from 'lucide-react-native';
+import { Check, FileText, Plus, RefreshCw } from 'lucide-react-native';
 import { t } from '../lingua';
 import { nomeArchivioValido } from '../scelta';
 import { raggio, spazio, useColori } from '../theme';
@@ -19,13 +19,24 @@ type Props = {
   testa?: ReactNode;
   onDocumenti: () => void;
   inDocumenti?: boolean;
+  onAggiorna?: () => Promise<boolean>;
 };
 
-function Contenuto({ archivi, attuale: inUsoArchivio, onScegli, onChiudi, testa, onDocumenti, inDocumenti }: Props) {
+function Contenuto({ archivi, attuale: inUsoArchivio, onScegli, onChiudi, testa, onDocumenti, inDocumenti, onAggiorna }: Props) {
   const attuale = inDocumenti ? undefined : inUsoArchivio;
   const c = useColori();
   const [creando, setCreando] = useState(false);
   const [nome, setNome] = useState('');
+  const [aggiorno, setAggiorno] = useState(() => !!onChiudi && !!onAggiorna);
+  const [nonAggiornato, setNonAggiornato] = useState(false);
+  const fine = (ok: boolean) => { setNonAggiornato(!ok); setAggiorno(false); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (aggiorno) onAggiorna?.().then(fine); }, []);
+  const aggiorna = () => {
+    if (!onAggiorna || aggiorno) return;
+    setAggiorno(true);
+    onAggiorna().then(fine);
+  };
   const pulito = nome.trim();
   const valido = nomeArchivioValido(pulito);
   const esiste = archivi.includes(pulito);
@@ -40,7 +51,16 @@ function Contenuto({ archivi, attuale: inUsoArchivio, onScegli, onChiudi, testa,
           : <Testo variante="titolo" accessibilityRole="header" style={{ fontSize: 30, lineHeight: 38 }}>ArchiScanner</Testo>}
       </View>
       {testa}
-      <Testo variante="sezione" accessibilityRole="header" style={{ paddingHorizontal: spazio.md }}>{t('Archivi · vanno al computer')}</Testo>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: spazio.md, paddingRight: spazio.xs }}>
+        <Testo variante="sezione" accessibilityRole="header" style={{ flex: 1 }}>{t('Archivi · vanno al computer')}</Testo>
+        {onAggiorna && (
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Aggiorna l\'elenco degli archivi')} accessibilityState={{ busy: aggiorno }} disabled={aggiorno} onPress={aggiorna} hitSlop={8}
+            style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: raggio.md, backgroundColor: pressed ? c.bgHover : 'transparent' })}>
+            {aggiorno ? <ActivityIndicator color={c.textMuted} /> : <RefreshCw size={20} color={c.primaryHover} strokeWidth={2.25} />}
+          </Pressable>
+        )}
+      </View>
+      {nonAggiornato && <Testo variante="aiuto" tono="danger" style={{ paddingHorizontal: spazio.md }}>{t('Elenco degli archivi non aggiornato: riprova.')}</Testo>}
 
       {tutti.length ? (
         <Gruppo>

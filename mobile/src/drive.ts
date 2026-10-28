@@ -160,6 +160,12 @@ export async function elencaArchivi(): Promise<string[]> {
   return [...nomi].sort((a, b) => a.localeCompare(b));
 }
 
+export async function lottiSuDrive(): Promise<Set<string>> {
+  const id = await trovaCartella(PERCORSO);
+  if (!id) return new Set();
+  return new Set((await elenca(`'${id}' in parents and mimeType='${MIME_CARTELLA}' and trashed=false`)).map(f => f.name));
+}
+
 const scarica = (id: string) => chiama(t => fetch(`${API}/files/${id}?alt=media`, { headers: { Authorization: `Bearer ${t}` } }));
 
 /** ponytail: il database si scarica intero (trascrizioni comprese); se pesa troppo, un indice

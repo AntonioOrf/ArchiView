@@ -17,7 +17,7 @@ import { azzeraCartelle, type Avanzamento } from './src/drive';
 import { Dividi } from './src/Dividi';
 import { messaggioErrore } from './src/errori';
 import { aggiungiPagina, chiudiAperti, controllaSfocate, dividiPagina, elencaLotti, eliminaLotto, leggiLotti, recuperaLotto, etichettaPagina, notaPagina, nuovoLotto, pulisciInviati, rimuoviPagina, riordinaLotti, ritagliaPagina, ruotaPagina, salvaBozza, sostituisciPagina, uriAnteprima, type Bozza } from './src/lotti';
-import { aggiornaArchivi, aggiornaElenco, archiviLocali, benvenutoFatto, elencoLocale, leggiImpostazioni, lottoInInvio, reteAdatta, salvaImpostazioni, salvaSchedeNuove, schedeNuove, segnaBenvenuto, svuotaCoda, type EventoCoda, type Impostazioni as ImpostazioniApp } from './src/coda';
+import { aggiornaArchivi, aggiornaElenco, archiviLocali, benvenutoFatto, controllaArrivi, elencoLocale, leggiImpostazioni, leggiInvii, lottoInInvio, reteAdatta, salvaImpostazioni, salvaSchedeNuove, schedeNuove, segnaBenvenuto, svuotaCoda, type EventoCoda, type Impostazioni as ImpostazioniApp } from './src/coda';
 import { alternaCartella, chiaveDestinazione, destinazioneDi, perArchivio, percorsoLeggibile, type SchedaScelta } from './src/scelta';
 import { prossimaEtichetta } from './src/etichette';
 import { Abbina } from './src/Abbina';
@@ -28,13 +28,13 @@ import { ScannerLotto, type Modalita, type Pagina } from './src/contratto';
 import { File } from 'expo-file-system';
 import Nativo from './modules/nativo';
 import { Fotocamera } from './src/schermate/Fotocamera';
-import { Archivio, type SchedaInAttesa } from './src/schermate/Archivio';
+import { Archivio, type RigaInvio, type SchedaInAttesa } from './src/schermate/Archivio';
 import { Benvenuto } from './src/schermate/Benvenuto';
 import { Impostazioni } from './src/schermate/Impostazioni';
 import { Nuovo } from './src/schermate/Nuovo';
 import { Ritaglia } from './src/schermate/Ritaglia';
 import { ScegliCartella } from './src/schermate/ScegliCartella';
-import { Scheda } from './src/schermate/Scheda';
+import { Scheda, type Percorso } from './src/schermate/Scheda';
 import { Visore, type PaginaVisore } from './src/schermate/Visore';
 import { TendinaArchivi } from './src/schermate/TendinaArchivi';
 import { Attesa } from './src/ui/Attesa';
@@ -45,15 +45,18 @@ import { Schermo } from './src/ui/Schermo';
 import { SezioneDocumenti } from './src/SezioneDocumenti';
 import { copiaDocumenti, ripristinaDocumenti, statoCopia } from './src/copiaDocumenti';
 import { impostaLingua, t } from './src/lingua';
+import { daControllare } from './src/invii';
 
 const DISPOSITIVO = Platform.OS === 'android' ? `${Platform.constants.Manufacturer} ${Platform.constants.Model}` : Platform.OS;
 
-function sceltaDelLotto(b: Bozza): SchedaScelta {
+function sceltaDelLotto(b: Pick<Bozza, 'id' | 'titolo' | 'nota' | 'destinazione'>): SchedaScelta {
   const d = b.destinazione;
   if (d.tipo === 'nessuna') return { tipo: 'smistare' };
   if (d.tipo === 'esistente') return { tipo: 'esistente', id: d.schedaId, segnatura: b.titolo || d.schedaId };
   return { tipo: 'nuova', id: d.schedaId || b.id, segnatura: d.campi.segnatura || b.titolo || '', nota: b.nota, cartella: d.cartella };
 }
+
+const ORDINE_RIGA = ['caricamento', 'telefono', 'drive', 'arrivato'];
 
 const chiaveScelta = (s: SchedaScelta) => (s.tipo === 'smistare' ? '' : s.id);
 
@@ -84,7 +87,8 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const [menuPiu, setMenuPiu] = useState(false);
   const [sceltaCartella, setSceltaCartella] = useState(false);
   const [occupato, setOccupato] = useState<string | null>(null);
-  const [invio, setInvio] = useState<{ id: string } & Avanzamento | null>(null);
+  const [invio, setInvio] = useState<{ id: string; da: string } & Avanzamento | null>(null);
+  const [invii, setInvii] = useState(leggiInvii);
   const [errori, setErrori] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
   const [cartaIniziale, setCartaIniziale] = useState('1r');
@@ -100,26 +104,36 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
 
   const cambiaImpostazioni = (i: ImpostazioniApp) => { salvaImpostazioni(i); impostaLingua(i.lingua); setImpostazioni(i); };
 
-  const reteBuona = reteAdatta(rete, impostazioni.soloWifi);
+  const wifi = reteAdatta(rete, true);
+  const [elencoChiesto, setElencoChiesto] = useState<string>();
+  const ricaricaArchivi = async () => {
+    try {
+      const nomi = await aggiornaArchivi();
+      setArchivi(nomi);
+      const a = leggiImpostazioni();
+      if (a.archivio?.nuovo && nomi.includes(a.archivio.nome)) cambiaImpostazioni({ ...a, archivio: { nome: a.archivio.nome, nuovo: false } });
+      return true;
+    } catch (e) {
+      console.warn('[app] archivi non aggiornati', e);
+      return false;
+    }
+  };
+  const onAggiornaArchivi = utente && rete.isConnected ? ricaricaArchivi : undefined;
   useEffect(() => {
     if (!utente || !rete.isConnected) return;
-    (async () => {
-      try {
-        const nomi = await aggiornaArchivi();
-        setArchivi(nomi);
-        const a = leggiImpostazioni();
-        if (a.archivio?.nuovo && nomi.includes(a.archivio.nome)) cambiaImpostazioni({ ...a, archivio: { nome: a.archivio.nome, nuovo: false } });
-      } catch (e) {
-        console.warn('[app] archivi non aggiornati', e);
-      }
-      if (!archivio) return;
-      try {
-        setElenco(await aggiornaElenco(archivio.nome, reteBuona));
-      } catch (e) {
-        console.warn('[app] elenco schede non aggiornato', e);
-      }
-    })();
-  }, [utente, rete.isConnected, reteBuona, archivio?.nome]);
+    (async () => { await ricaricaArchivi(); })();
+  }, [utente, rete.isConnected]);
+  const caricaElenco = !!utente && !!rete.isConnected && elencoChiesto !== archivio?.nome;
+  useEffect(() => {
+    if (!utente || !rete.isConnected || !archivio) return;
+    const nome = archivio.nome;
+    let attuale = true;
+    aggiornaElenco(nome, wifi)
+      .then(e => { if (attuale) setElenco(e); })
+      .catch(e => console.warn('[app] elenco schede non aggiornato', e))
+      .finally(() => { if (attuale) setElencoChiesto(nome); });
+    return () => { attuale = false; };
+  }, [utente, rete.isConnected, wifi, archivio?.nome]);
 
   const ricarica = useCallback(() => {
     try {
@@ -150,9 +164,10 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   }, [ricarica]);
 
   const evento = useCallback((e: EventoCoda) => {
-    if (e.tipo === 'lotto') { setInvio({ id: e.id, ...e.avanzamento }); return; }
+    if (e.tipo === 'lotto') { setInvio(p => ({ id: e.id, ...e.avanzamento, da: p?.id === e.id ? p.da : new Date().toISOString() })); return; }
     setInvio(null);
     if (e.tipo === 'inviato') {
+      setInvii(leggiInvii());
       setErrori(({ [e.id]: _, ...resto }) => resto);
       ricarica();
       setNuove(schedeNuove());
@@ -167,15 +182,33 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     n === 1 ? t('1 pagina scansionata con {vecchio}: inviarla a {nuovo}?', { vecchio, nuovo }) : t('{n} pagine scansionate con {vecchio}: inviarle a {nuovo}?', { n, vecchio, nuovo }),
     [
       { text: t('Mantieni in attesa'), style: 'cancel' },
-      { text: t('Invia'), onPress: () => cambiaImpostazioni({ ...leggiImpostazioni(), account: nuovo }) }
+      { text: t('Invia'), onPress: () => { cambiaImpostazioni({ ...leggiImpostazioni(), account: nuovo }); inviaSeConfermato(n); } }
     ]
   );
+  const inviaSeConfermato = (n: number) => {
+    if (rete.type !== NetworkStateType.CELLULAR) return giro();
+    avviso(t('Dati mobili'), n === 1 ? t('Inviare 1 pagina coi dati mobili?') : t('Inviare {n} pagine coi dati mobili?', { n }), [
+      { text: t('Annulla'), style: 'cancel' },
+      { text: t('Invia'), onPress: () => giro() }
+    ]);
+  };
   useEffect(() => {
     if (!utente || impostazioni.account === utente.email) return;
     const n = elencaLotti().filter(l => l.stato === 'in_coda').reduce((t, l) => t + l.pagine.length, 0);
     if (impostazioni.account && n) chiediAccount(impostazioni.account, utente.email, n);
     else cambiaImpostazioni({ ...leggiImpostazioni(), account: utente.email });
   }, [utente?.email]);
+
+  const email = utente?.email;
+  const attendePc = driveOk && !!rete.isConnected && !!email && daControllare(invii, email);
+  useEffect(() => {
+    if (!attendePc || !email) return;
+    const controlla = () => controllaArrivi(email).then(setInvii).catch(e => console.warn('[app] arrivi sul computer non controllati', e));
+    controlla();
+    // ponytail: controllo ogni minuto solo con l'app aperta; se costa troppo in batteria, allungare l'intervallo.
+    const timer = setInterval(controlla, 60_000);
+    return () => clearInterval(timer);
+  }, [attendePc, email]);
 
   const inviaWifi = useCallback(async () => {
     if (!abbinamento || !reteAdatta(rete, true)) return;
@@ -209,23 +242,26 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   }, [condivise.resolvedSharedPayloads]);
 
   const copiaInCorso = useRef(false);
-  const giro = useCallback(async (forza = false) => {
+  const giro = useCallback(async () => {
     await inviaWifi();
-    if (!driveOk || !reteAdatta(rete, impostazioni.soloWifi && !forza)) return;
+    if (!utente || leggiImpostazioni().account !== utente.email || !reteAdatta(rete, false)) return;
     await svuotaCoda(DISPOSITIVO, evento);
     ricarica();
-    if (!impostazioni.copiaDocumenti || !reteAdatta(rete, true) || copiaInCorso.current) return;
+  }, [inviaWifi, utente, rete, evento, ricarica]);
+
+  const copia = useCallback(async () => {
+    if (!driveOk || !impostazioni.copiaDocumenti || !wifi || copiaInCorso.current) return;
     copiaInCorso.current = true;
     try { await copiaDocumenti(); }
-    catch (e) { console.warn('[app] copia dei Documenti non riuscita, riprovo al prossimo giro', e); }
+    catch (e) { console.warn('[app] copia dei Documenti non riuscita, riprovo più tardi', e); }
     finally { copiaInCorso.current = false; }
-  }, [inviaWifi, driveOk, rete, impostazioni.soloWifi, impostazioni.copiaDocumenti, evento, ricarica]);
+  }, [driveOk, impostazioni.copiaDocumenti, wifi]);
 
-  useEffect(() => { giro(); }, [giro]);
+  useEffect(() => { copia(); }, [copia]);
   useEffect(() => {
-    const s = AppState.addEventListener('change', st => { if (st === 'active') { ricarica(); giro(); } });
+    const s = AppState.addEventListener('change', st => { if (st === 'active') { ricarica(); copia(); } });
     return () => s.remove();
-  }, [giro, ricarica]);
+  }, [copia, ricarica]);
   useEffect(() => {
     const s = BackHandler.addEventListener('hardwareBackPress', () => {
       if (benvenuto) return false;
@@ -271,6 +307,8 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   });
 
   const delArchivio = lotti.filter(l => !l.archivio || l.archivio === archivio?.nome);
+  const tracce = invii.lotti.filter(l => !l.archivio || l.archivio === archivio?.nome).sort((a, b) => b.partitoIl.localeCompare(a.partitoIl));
+  const primoInvio = !!archivio && !invii.archivi.includes(archivio.nome) && (!!invio || tracce.some(l => !l.arrivatoIl));
   const inCoda = lotti.filter(l => l.stato === 'in_coda');
   const pagineInCoda = inCoda.reduce((n, l) => n + l.pagine.length, 0);
 
@@ -426,7 +464,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       else scarta(b);
     }
     if (__DEV__) console.log(`[scansione] ${uris.length} pagine salvate in ${Date.now() - inizio} ms`);
-    setTimeout(() => giro(), 0);
     return b;
   };
 
@@ -468,7 +505,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const recupera = () => esegui(t('Recupero'), async () => {
     for (const id of rotti) await recuperaLotto(id, archivio?.nome);
     ricarica();
-    setTimeout(() => giro(), 0);
   });
 
   const togliInviati = (inviati: Bozza[]) => avviso(t('Rimuovere le pagine inviate?'), t('Il computer le ha già: spariscono solo dal telefono.'), [
@@ -476,10 +512,9 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     { text: t('Rimuovi tutte'), style: 'destructive', onPress: () => esegui(t('Pulizia'), () => { inviati.forEach(eliminaLotto); ricarica(); }) }
   ]);
 
-  const nomeRete = !rete.isConnected ? t('offline') : rete.type === NetworkStateType.WIFI ? 'Wi-Fi' : rete.type === NetworkStateType.CELLULAR ? t('dati mobili') : t('rete');
   const motivo = !utente && !abbinamento ? t('accedi per inviare') : !rete.isConnected ? t('offline') : abbinamento ? undefined
-    : !driveOk ? t('account cambiato') : !reteAdatta(rete, impostazioni.soloWifi) ? t('aspetto il Wi-Fi') : undefined;
-  const attesa = <Attesa invio={invio} errori={inCoda.filter(l => errori[l.id]).map(l => `${l.titolo || t('Senza scheda')}: ${errori[l.id]}`)} />;
+    : !driveOk ? t('account cambiato') : undefined;
+  const attesa = (mostraInvio: boolean) => <Attesa invio={mostraInvio ? invio : null} errori={inCoda.filter(l => errori[l.id]).map(l => `${l.titolo || t('Senza scheda')}: ${errori[l.id]}`)} />;
   const quantePagine = (n: number) => (n === 1 ? t('1 pagina in attesa') : t('{n} pagine in attesa', { n }));
 
   const vaiInvio = {
@@ -491,8 +526,9 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       if (invio) return;
       if (!pagineInCoda) return avviso(t('Niente da inviare'), t('Tutte le pagine sono già partite.'));
       if ((!utente && !abbinamento) || !rete.isConnected) return avviso(quantePagine(pagineInCoda), t('Non posso inviarle ora: {motivo}.', { motivo: motivo || '' }));
-      if (utente && !driveOk && impostazioni.account) chiediAccount(impostazioni.account, utente.email, pagineInCoda);
-      giro(true);
+      if (utente && !driveOk && impostazioni.account) return chiediAccount(impostazioni.account, utente.email, pagineInCoda);
+      if (driveOk) inviaSeConfermato(pagineInCoda);
+      else giro();
     }
   };
 
@@ -504,12 +540,11 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       <Schermo>
         <Benvenuto
           dopoInvio={impostazioni.dopoInvio}
-          soloWifi={impostazioni.soloWifi}
           email={utente?.email}
           onAccedi={accedere}
-          onFine={(dopoInvio, soloWifi) => {
+          onFine={dopoInvio => {
             try {
-              cambiaImpostazioni({ ...impostazioni, dopoInvio, soloWifi });
+              cambiaImpostazioni({ ...impostazioni, dopoInvio });
               segnaBenvenuto();
             } catch (e: any) {
               avviso(t('Errore'), t('Scelte del benvenuto non salvate: {motivo}', { motivo: e?.message || String(e) }));
@@ -572,9 +607,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
           email={utente?.email}
           onAccedi={accedere}
           onEsci={() => esegui(t('Uscita'), async () => { await esci(); azzeraCartelle(); setUtente(null); })}
-          soloWifi={impostazioni.soloWifi}
-          onSoloWifi={v => cambiaImpostazioni({ ...impostazioni, soloWifi: v })}
-          nomeRete={nomeRete}
           dopoInvio={impostazioni.dopoInvio}
           onDopoInvio={d => {
             cambiaImpostazioni({ ...impostazioni, dopoInvio: d });
@@ -611,7 +643,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       <>
         <SezioneDocumenti key={arrivi} invio={vaiInvio} impostazioni={vaiImpostazioni} onCambiaArchivio={() => setTendina(true)}
           archivio={archivio ? { nome: archivio.nome, onManda: mandaDaDocumento } : undefined} />
-        {tendina && <TendinaArchivi archivi={archivi} attuale={archivio} inDocumenti onScegli={scegliArchivio} onDocumenti={() => setTendina(false)} onChiudi={() => setTendina(false)} />}
+        {tendina && <TendinaArchivi archivi={archivi} onAggiorna={onAggiornaArchivi} attuale={archivio} inDocumenti onScegli={scegliArchivio} onDocumenti={() => setTendina(false)} onChiudi={() => setTendina(false)} />}
       </>
     );
   }
@@ -621,6 +653,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       <Schermo>
         <TendinaArchivi
           archivi={archivi}
+          onAggiorna={onAggiornaArchivi}
           onScegli={scegliArchivio}
           onDocumenti={apriDocumenti}
           testa={utente ? null : <Pulsante variante="primario" icona={LogIn} titolo={t('Accedi con Google')} onPress={accedere} style={{ marginHorizontal: 16 }} />}
@@ -637,6 +670,11 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     const daInviare = suoi.filter(l => l.stato !== 'inviato');
     const inviati = suoi.filter(l => l.stato === 'inviato');
     const titoloScheda = scheda.tipo === 'smistare' ? t('Senza scheda') : scheda.segnatura || scheda.id;
+    const mioInvio = !!invio && suoi.some(l => l.id === invio.id);
+    const sueTracce = tracce.filter(l => chiaveDestinazione(l.destinazione) === k);
+    const traccia = sueTracce.find(l => !l.arrivatoIl) ?? sueTracce[0];
+    const percorso: Percorso | undefined = mioInvio && invio ? { stato: 'caricamento', partitoIl: invio.da, fatte: invio.fatte, totali: invio.totali }
+      : traccia && { stato: traccia.arrivatoIl ? 'arrivato' : 'drive', partitoIl: traccia.partitoIl, arrivatoIl: traccia.arrivatoIl };
     const cartellaCambiabile = scheda.tipo === 'nuova' && !inviati.length && !suoi.some(l => l.id === invio?.id)
       && !nuove.find(n => n.id === scheda.id)?.partita && !elenco?.schede.some(s => s.id === scheda.id);
 
@@ -701,7 +739,6 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
           if (daInviare.some(b => b.id === lottoInInvio())) throw new Error(t('Invio in corso: riprova tra poco.'));
           const { resta, tolti } = await riordinaLotti(nuove);
           setLotti(ls => ls.filter(l => !tolti.some(x => x.id === l.id)).map(l => (l.id === resta.id ? resta : l)));
-          setTimeout(() => giro(), 0);
         } catch (e) {
           for (const b of daInviare) { try { salvaBozza(b); } catch (e2) { console.warn('[app] stato del lotto non ripristinato', b.id, e2); } }
           throw e;
@@ -745,7 +782,10 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
           onApri={setVisore}
           onTogliInviate={() => togliInviati(inviati)}
           inInvio={invio?.id}
-          attesa={attesa}
+          percorso={percorso}
+          primoInvio={primoInvio}
+          suDrive={sueTracce.filter(l => !l.arrivatoIl).map(l => l.id)}
+          attesa={attesa(!mioInvio)}
           numera={auto}
           onNumera={setAuto}
           cartaIniziale={cartaIniziale}
@@ -777,17 +817,17 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     if (l.stato === 'inviato') continue;
     const s = sceltaDelLotto(l);
     const k = chiaveScelta(s);
-    const g = gruppi.get(k) ?? { scelta: s, pagine: 0, anteprime: [] };
-    if (!gruppi.has(k)) {
-      const cartella = s.tipo === 'nuova' ? s.cartella : s.tipo === 'esistente' ? elenco?.schede.find(x => x.id === s.id)?.cartella : undefined;
-      g.riassunto = s.tipo === 'smistare' ? undefined : [cartella && percorsoLeggibile(cartella), s.tipo === 'nuova' && t('creata qui')].filter(Boolean).join(' · ');
-      gruppi.set(k, g);
-    }
-    if (s.tipo === 'smistare' && !g.riassunto) g.riassunto = l.titolo || l.nota?.split('\n')[0] || undefined;
+    const g = gruppi.get(k) ?? { scelta: s, pagine: 0 };
+    gruppi.set(k, g);
     g.pagine += l.pagine.length;
-    for (const pg of l.pagine) if (g.anteprime.length < 4) g.anteprime.push({ uri: uriAnteprima(l, pg), etichetta: pg.etichetta });
   }
-  const statoInvio = invio ? t('invio {fatte}/{totali}', invio) : motivo || t('in partenza');
+  const righeInvio: RigaInvio[] = [
+    ...delArchivio.filter(l => l.stato !== 'inviato').map(l => ({
+      chiave: l.id, scelta: sceltaDelLotto(l), pagine: l.pagine.length,
+      ...(invio?.id === l.id ? { stato: 'caricamento' as const, fatte: invio.fatte, totali: invio.totali } : { stato: 'telefono' as const })
+    })),
+    ...tracce.map(l => ({ chiave: l.id, scelta: sceltaDelLotto(l), pagine: l.pagine, stato: l.arrivatoIl ? 'arrivato' as const : 'drive' as const, arrivatoIl: l.arrivatoIl }))
+  ].sort((a, b) => ORDINE_RIGA.indexOf(a.stato) - ORDINE_RIGA.indexOf(b.stato));
   const precedentiSmistare = delArchivio.filter(l => l.destinazione.tipo === 'nessuna').flatMap(l => l.pagine);
 
   return (
@@ -795,15 +835,16 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       <Archivio
         archivio={archivio}
         elenco={elenco}
+        caricando={caricaElenco}
         nuove={nuove.filter(s => s.archivio === archivio.nome)}
         inAttesa={[...gruppi.values()]}
-        statoInvio={statoInvio}
+        invii={righeInvio}
+        primoInvio={primoInvio}
         onInviaOra={vaiInvio.onPress}
         aperte={aperte}
         onAlterna={alterna}
-        attesa={attesa}
+        attesa={attesa(!righeInvio.some(r => r.stato === 'caricamento'))}
         onApri={apriScheda}
-        onApriPagina={(s, i) => { apriScheda(s); setVisore(i); }}
         onCambiaArchivio={() => setTendina(true)}
         daRecuperare={rotti.length}
         onRecupera={recupera}
@@ -814,7 +855,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
         centro={{ etichetta: t('Scansiona o crea una scheda'), icona: Plus, onPress: () => setMenuPiu(true), disabilitata: !!occupato }}
         destra={vaiImpostazioni}
       />
-      {tendina && <TendinaArchivi archivi={archivi} attuale={archivio} onScegli={scegliArchivio} onDocumenti={apriDocumenti} onChiudi={() => setTendina(false)} />}
+      {tendina && <TendinaArchivi archivi={archivi} onAggiorna={onAggiornaArchivi} attuale={archivio} onScegli={scegliArchivio} onDocumenti={apriDocumenti} onChiudi={() => setTendina(false)} />}
       <MenuPiu
         visibile={menuPiu}
         onChiudi={() => setMenuPiu(false)}

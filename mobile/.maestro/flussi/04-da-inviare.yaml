@@ -5,12 +5,9 @@ name: Da inviare, Invia ora senza account
 - extendedWaitUntil:
     visible: Fondo Prova, cambia archivio
     timeout: 180000
-- assertVisible: "Reg\\. 41 e senza scheda"
-- assertVisible: accedi per inviare
-- tapOn: Da inviare, 4 pagine, accedi per inviare
-- assertVisible: Reg. 41 · 3
-- assertVisible: Senza scheda · 1
-- assertVisible: «Carte sciolte»
+- assertVisible: Invii · 2 lotti
+- assertVisible: "Reg\\. 41, 3 pagine, Sul telefono · premi Invia ora"
+- assertVisible: "Senza scheda, 1 pagina, Sul telefono · premi Invia ora"
 - tapOn: Invia ora
 - assertVisible: 4 pagine in attesa
 - assertVisible: "Non posso inviarle ora: accedi per inviare."
@@ -18,6 +15,7 @@ name: Da inviare, Invia ora senza account
 - tapOn: Invia ora, 4 pagine in attesa, accedi per inviare
 - assertVisible: 4 pagine in attesa
 - tapOn: OK
+- tapOn: "Reg\\. 41, 3 pagine.*"
 - tapOn: Apri 1v
 - assertVisible: "Pagina 2 di 3 · striscia per le altre"
 - tapOn: Chiudi

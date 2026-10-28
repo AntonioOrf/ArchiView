@@ -5,7 +5,8 @@ name: App in inglese (PIANO-INGLESE-MOBILE) - archivio, scheda, visore, Document
 - extendedWaitUntil:
     visible: Fondo Prova, change archive
     timeout: 180000
-- assertVisible: "To send · 4 pages"
+- assertVisible: "Uploads · 2 batches"
+- assertVisible: "Reg\\. 41, 3 pages, On the phone · tap Send now"
 - assertVisible: "3 records on the computer.*"
 - takeScreenshot: esiti/schermate-en/01-archivio
 - tapOn: "Folder Notarile.*"

@@ -41,7 +41,8 @@ name: Nuova scheda con scansione, numerazione, senza scheda dal «+»
     timeout: 20000
 - assertVisible: Apri 12v
 - back
-- assertVisible: Da inviare · 6 pagine
+- assertVisible: "Invii · \\d lotti"
+- assertVisible: "Reg\\. 99, .*Sul telefono · premi Invia ora"
 - assertVisible: Cartella Vuota, 1 schede
 - tapOn: Scansiona o crea una scheda
 - tapOn: Scannerizza senza scheda, da smistare al computer

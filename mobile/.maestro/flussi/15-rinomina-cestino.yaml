@@ -17,9 +17,7 @@ name: Scheda nata qui - rinomina con pagine in attesa, cestino con conferma (M10
 - assertVisible: Busta 3 bis
 - back
 - assertVisible: "Busta 3 bis, Creata qui.*"
-- tapOn: "Da inviare, 6 pagine.*"
-- assertVisible: "Busta 3 bis · 2.*"
-- tapOn: "Da inviare, 6 pagine.*"
+- assertVisible: "Busta 3 bis, 2 pagine, Sul telefono.*"
 - tapOn: "Busta 3 bis, Creata qui.*"
 - tapOn: Elimina la scheda
 - assertVisible: Eliminare «Busta 3 bis»?
@@ -32,4 +30,4 @@ name: Scheda nata qui - rinomina con pagine in attesa, cestino con conferma (M10
     visible: Fondo Prova, cambia archivio
     timeout: 10000
 - assertNotVisible: "Busta 3 bis.*"
-- assertVisible: Da inviare · 4 pagine
+- assertVisible: Invii · 2 lotti

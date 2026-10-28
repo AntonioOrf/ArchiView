@@ -6,7 +6,7 @@ name: Archivio, albero delle cartelle e ricerca
     visible: Fondo Prova, cambia archivio
     timeout: 180000
 - assertVisible: "3 schede sul computer.*"
-- assertVisible: Da inviare · 4 pagine
+- assertVisible: Invii · 2 lotti
 - assertVisible: "Cartella Notarile.*"
 - assertVisible: Cartella Vuota, vuota
 - assertVisible: Perg. 7, Privilegio
@@ -21,10 +21,10 @@ name: Archivio, albero delle cartelle e ricerca
 - tapOn: Cerca nell'archivio
 - inputText: atti
 - assertVisible: Reg. 42, Atti sciolti
-- assertNotVisible: Da inviare · 4 pagine
+- assertNotVisible: Invii · 2 lotti
 - eraseText: 10
 - inputText: zzz
 - assertVisible: Nessuna scheda trovata.
 - eraseText: 10
 - hideKeyboard
-- assertVisible: Da inviare · 4 pagine
+- assertVisible: Invii · 2 lotti

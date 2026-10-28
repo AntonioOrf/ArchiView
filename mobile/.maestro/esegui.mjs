@@ -104,7 +104,7 @@ function documento(id, nome, n, cartella) {
 const SEMI = {
   vuoto: () => ({}),
   archivio: () => ({
-    'impostazioni.json': JSON.stringify({ soloWifi: true, dopoInvio: { modo: 'sempre', giorni: 7 }, archivio: { nome: ARCHIVIO, nuovo: false } }),
+    'impostazioni.json': JSON.stringify({ dopoInvio: { modo: 'sempre', giorni: 7 }, archivio: { nome: ARCHIVIO, nuovo: false } }),
     'archivi.json': JSON.stringify([ARCHIVIO, 'Fondo Altro']),
     'schede.json': JSON.stringify({
       formato: 'archiview-scanner/config', versione: 1, archivio: ARCHIVIO, aggiornatoIl: '2026-10-11T08:00:00+02:00',
@@ -128,7 +128,7 @@ const SEMI = {
   }),
   scadute: () => ({
     ...SEMI.archivio(),
-    'impostazioni.json': JSON.stringify({ soloWifi: true, dopoInvio: { modo: 'giorni', giorni: 1 }, archivio: { nome: ARCHIVIO, nuovo: false } }),
+    'impostazioni.json': JSON.stringify({ dopoInvio: { modo: 'giorni', giorni: 1 }, archivio: { nome: ARCHIVIO, nuovo: false } }),
     ...lotto('20261011-090000-cccc', 'inviato', { tipo: 'esistente', schedaId: 'scheda-perg7' }, [pagina(1, 'recto')], { titolo: 'Perg. 7', inviatoIl: new Date(Date.now() - 30 * 3600e3).toISOString() }),
     ...lotto('20261011-091000-eeee', 'inviato', { tipo: 'esistente', schedaId: 'scheda-reg42' }, [pagina(1, '5r')], { titolo: 'Reg. 42', inviatoIl: new Date(Date.now() - 3600e3).toISOString() })
   }),
@@ -159,7 +159,7 @@ const SEMI = {
   },
   documentiArchivio: () => ({
     ...SEMI.documenti(),
-    'impostazioni.json': JSON.stringify({ soloWifi: true, dopoInvio: { modo: 'sempre', giorni: 7 }, archivio: { nome: ARCHIVIO, nuovo: false }, documenti: true }),
+    'impostazioni.json': JSON.stringify({ dopoInvio: { modo: 'sempre', giorni: 7 }, archivio: { nome: ARCHIVIO, nuovo: false }, documenti: true }),
     'archivi.json': JSON.stringify([ARCHIVIO])
   })
 };

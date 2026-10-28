@@ -17,9 +17,6 @@ type Props = {
   email?: string;
   onAccedi: () => void;
   onEsci: () => void;
-  soloWifi: boolean;
-  onSoloWifi: (v: boolean) => void;
-  nomeRete: string;
   dopoInvio: DopoInvio;
   onDopoInvio: (d: DopoInvio) => void;
   abbinamento: { archivio: string; host: string } | null;
@@ -102,15 +99,6 @@ export function Impostazioni(p: Props) {
               <Pulsante variante="primario" icona={LogIn} titolo={t('Accedi con Google')} onPress={p.onAccedi} />
             </>
           )}
-        </Sezione>
-
-        <Sezione titolo={t('Invio')}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.md }}>
-            <Testo style={{ flex: 1 }}>{t('Invio automatico solo col Wi-Fi')}</Testo>
-            <Switch value={p.soloWifi} onValueChange={p.onSoloWifi} accessibilityLabel={t('Invio automatico solo col Wi-Fi')}
-              trackColor={{ false: c.borderInput, true: c.primary }} thumbColor={p.soloWifi ? c.onPrimary : c.textMuted} />
-          </View>
-          <Testo variante="aiuto">{t('Rete ora: {rete}. Con i dati mobili le pagine partono solo con «Invia ora».', { rete: p.nomeRete })}</Testo>
         </Sezione>
 
         <Sezione titolo={t('Dopo l\'invio')}>

@@ -12,10 +12,51 @@ import { Campo } from '../ui/Campo';
 import { ContaSpostate, Griglia, useFinestra, useMisure } from '../ui/Griglia';
 import { Intestazione } from '../ui/Intestazione';
 import { Pulsante } from '../ui/Pulsante';
+import { Avanzamento, Pallino, PrimoInvio, type StatoRiga } from '../ui/StatoInvio';
+import { quando } from '../elencoDocumenti';
+import { minuscola } from './Archivio';
 import { SegnoScelta, TestataSelezione, useSelezione } from '../ui/Selezione';
 import { Testo } from '../ui/Testo';
 
 type Cella = { b: Bozza; pg: Pagina; indice: number; inviata: boolean };
+export type Percorso = { stato: Exclude<StatoRiga, 'telefono'>; partitoIl?: string; fatte?: number; totali?: number; arrivatoIl?: string };
+
+function DovePagine({ percorso: r }: { percorso: Percorso }) {
+  const c = useColori();
+  const adesso = new Date();
+  const ora = (iso?: string) => (iso ? ` · ${minuscola(quando(iso, adesso))}` : '');
+  const corrente = r.stato === 'caricamento' ? 1 : r.stato === 'drive' ? 2 : 4;
+  const passi: { titolo: string; sotto?: ReactNode }[] = [
+    { titolo: t('Partite dal telefono') + ora(r.partitoIl) },
+    {
+      titolo: corrente === 1 ? t('In caricamento su Drive · {fatte} di {totali}', { fatte: r.fatte ?? 0, totali: r.totali ?? 0 }) : t('In caricamento su Drive'),
+      sotto: corrente === 1 && <><Avanzamento fatte={r.fatte ?? 0} totali={r.totali ?? 0} /><Testo variante="aiuto">{t('Tieni l\'app aperta finché non finisce')}</Testo></>
+    },
+    { titolo: t('Su Drive, in attesa del computer'), sotto: corrente === 2 && <Testo variante="aiuto">{t('Arriva quando il computer con ArchiView è acceso')}</Testo> },
+    { titolo: t('Arrivate sul computer') + (corrente === 4 ? ora(r.arrivatoIl) : '') }
+  ];
+  return (
+    <View accessibilityLiveRegion="polite" style={{ marginHorizontal: spazio.md, padding: spazio.md, backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.divisore, borderRadius: raggio.lg }}>
+      <Testo variante="sezione" accessibilityRole="header" style={{ marginBottom: spazio.sm }}>{t('Dove sono le pagine')}</Testo>
+      {passi.map((p, i) => {
+        const fatto = i < corrente;
+        const qui = i === corrente;
+        return (
+          <View key={i} style={{ flexDirection: 'row', gap: spazio.sm }}>
+            <View style={{ alignItems: 'center' }}>
+              <Pallino stato={fatto ? 'arrivato' : qui ? (i === 1 ? 'caricamento' : 'drive') : 'futuro'} />
+              {i < passi.length - 1 && <View style={{ width: 2, flex: 1, minHeight: spazio.md, backgroundColor: fatto ? c.successBorder : c.border }} />}
+            </View>
+            <View style={{ flex: 1, gap: spazio.xs, paddingTop: 4, paddingBottom: spazio.md }}>
+              <Testo variante="aiuto" style={{ fontWeight: '600', color: fatto ? c.success : qui ? c.primaryHover : c.textMuted }}>{p.titolo}</Testo>
+              {p.sotto}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 type Props = {
   scheda: SchedaScelta;
@@ -23,6 +64,9 @@ type Props = {
   lotti: Bozza[];
   inviati: Bozza[];
   inInvio?: string;
+  percorso?: Percorso;
+  primoInvio: boolean;
+  suDrive: string[];
   numera: boolean;
   onNumera: (v: boolean) => void;
   cartaIniziale: string;
@@ -129,6 +173,7 @@ export function Scheda(p: Props) {
       <View style={{ width: lato, height: lato * 4 / 3, backgroundColor: c.bgHover, borderWidth: evidenza ? 3 : 1, borderColor: evidenza ? c.primary : c.divisore, borderRadius: raggio.md, overflow: 'hidden', opacity: inviata || (sel.scelte && ferma) ? 0.7 : 1 }}>
         <Image source={{ uri: uriAnteprima(b, pg) }} style={{ flex: 1 }} resizeMode="cover" resizeMethod="resize" accessibilityIgnoresInvertColors />
         {ferma && <Testo variante="aiuto" numberOfLines={1} maxFontSizeMultiplier={1.5} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: c.primary, color: c.onPrimary, fontWeight: '600' }}>{t('In invio')}</Testo>}
+        {inviata && p.suDrive.includes(b.id) && <Testo variante="aiuto" numberOfLines={1} maxFontSizeMultiplier={1.5} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: c.success, color: c.onPrimary, fontWeight: '600' }}>{t('Su Drive')}</Testo>}
         {!!pg.doppia && <Testo variante="aiuto" style={{ position: 'absolute', top: 0, right: 0, paddingHorizontal: 6, backgroundColor: c.bgPanel }}>{pg.doppia.lato === 'sx' ? t('sx') : t('dx')}</Testo>}
         {sfocata && !ferma && <Testo variante="aiuto" numberOfLines={1} maxFontSizeMultiplier={1.5} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: c.warningLight, borderTopWidth: 1, borderColor: c.warningBorder, color: c.textMain, fontWeight: '600' }}>{t('Sfocata?')}</Testo>}
         {!!sel.scelte && !ferma && <SegnoScelta scelta={sel.scelta(indice)} />}
@@ -173,6 +218,8 @@ export function Scheda(p: Props) {
       <View style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: spazio.md, paddingBottom: SPORGENZA_BARRA + spazio.md }} {...finestra.scorrimento}>
           {testa}
+          {p.primoInvio && p.percorso && p.percorso.stato !== 'arrivato' && <PrimoInvio />}
+          {p.percorso && <DovePagine percorso={p.percorso} />}
           {!!daInviare.length && titoloSezione(`${t('Da inviare')} · ${conta(daInviare.length)}`,
             p.onRiordina && daInviare.length > 1 ? <Testo variante="aiuto">{t('Tieni premuta una pagina per selezionarla, poi trascinala per spostare tutte le selezionate.')}</Testo> : undefined)}
           {!!daInviare.length && griglia(celle.slice(0, daInviare.length), 0, p.onRiordina)}

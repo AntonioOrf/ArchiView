@@ -280,8 +280,8 @@ export function segnaInviato(b: Bozza, regola: DopoInvio): void {
 }
 
 export function pulisciInviati(regola: DopoInvio, ora = new Date()): void {
-  const inviati = elencaLotti().filter(l => l.stato === 'inviato');
-  for (const id of inviatiScaduti(inviati, regola, ora)) {
-    try { eliminaLotto(inviati.find(l => l.id === id)!); } catch (e) { console.warn('[lotti] inviato non eliminato', id, e); }
+  const lotti = elencaLotti();
+  for (const id of inviatiScaduti(lotti, regola, ora)) {
+    try { eliminaLotto(lotti.find(l => l.id === id)!); } catch (e) { console.warn('[lotti] inviato non eliminato', id, e); }
   }
 }

@@ -15,12 +15,12 @@ name: Tendina degli archivi, cambio archivio
 - tapOn: Fondo Altro
 - assertVisible: Fondo Altro, cambia archivio
 - assertVisible: Elenco delle schede non ancora arrivato
-- assertNotVisible: "Da inviare · .*"
+- assertNotVisible: "Invii · .*"
 - tapOn: Fondo Altro, cambia archivio
 - tapOn: Fondo Prova
 - assertVisible: Fondo Prova, cambia archivio
 - assertVisible: "3 schede sul computer.*"
-- assertVisible: Da inviare · 4 pagine
+- assertVisible: Invii · 2 lotti
 - stopApp
 - launchApp
 - extendedWaitUntil:

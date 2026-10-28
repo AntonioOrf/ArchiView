@@ -43,14 +43,26 @@ test('ritaglioValido: convesso e non troppo piccolo', () => {
 test('inviatiScaduti secondo «Dopo l\'invio»', () => {
   const ora = new Date('2026-10-11T12:00:00+02:00');
   const lotti = [
-    { id: 'vecchio', inviatoIl: '2026-10-01T12:00:00+02:00' },
-    { id: 'recente', inviatoIl: '2026-10-10T12:00:00+02:00' },
-    { id: 'senza' }
+    { id: 'vecchio', stato: 'inviato', inviatoIl: '2026-10-01T12:00:00+02:00' },
+    { id: 'recente', stato: 'inviato', inviatoIl: '2026-10-10T12:00:00+02:00' },
+    { id: 'senza', stato: 'inviato' }
   ];
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'sempre', giorni: 7 }, ora), []);
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'subito', giorni: 7 }, ora), ['vecchio', 'recente', 'senza']);
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'giorni', giorni: 7 }, ora), ['vecchio', 'senza']);
   assert.deepEqual(inviatiScaduti(lotti, { modo: 'giorni', giorni: 0 }, ora), ['vecchio', 'recente', 'senza']);
+});
+
+test('inviatiScaduti non tocca mai le pagine non inviate', () => {
+  const lontano = new Date('2099-01-01T00:00:00Z');
+  const lotti = [
+    { id: 'coda', stato: 'in_coda', inviatoIl: '2020-01-01T00:00:00Z' },
+    { id: 'aperto', stato: 'aperto' },
+    { id: 'errore', stato: 'in_coda' }
+  ];
+  for (const regola of [{ modo: 'subito', giorni: 1 }, { modo: 'giorni', giorni: 0 }, { modo: 'giorni', giorni: 1 }]) {
+    assert.deepEqual(inviatiScaduti(lotti, regola, lontano), []);
+  }
 });
 
 test('giorniRimasti', () => {

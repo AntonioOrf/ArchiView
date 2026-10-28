@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { BackHandler, Linking, ScrollView, Switch, View } from 'react-native';
+import { BackHandler, Linking, ScrollView, View } from 'react-native';
 import { avviso } from '../ui/Avviso';
 import { ArrowLeft, Check, CloudUpload, LogIn, Minus, Plus, ScanLine, ShieldCheck, Camera } from 'lucide-react-native';
 import { informativa } from '../consenso';
@@ -12,10 +12,9 @@ import { Scelta } from './Impostazioni';
 
 type Props = {
   dopoInvio: DopoInvio;
-  soloWifi: boolean;
   email?: string;
   onAccedi: () => void;
-  onFine: (dopoInvio: DopoInvio, soloWifi: boolean) => void;
+  onFine: (dopoInvio: DopoInvio) => void;
 };
 
 type Icona = ComponentType<{ size?: number; color?: string }>;
@@ -26,7 +25,6 @@ export function Benvenuto(p: Props) {
   const c = useColori();
   const [passo, setPasso] = useState(0);
   const [dopo, setDopo] = useState(p.dopoInvio);
-  const [soloWifi, setSoloWifi] = useState(p.soloWifi);
 
   useEffect(() => {
     const s = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -55,7 +53,6 @@ export function Benvenuto(p: Props) {
   const gg = quantiGiorni(dopo.giorni);
   const riepilogo: [string, string][] = [
     [t('Dopo l\'invio'), dopo.modo === 'subito' ? t('Cancella subito') : dopo.modo === 'giorni' ? t('Conserva {giorni}', { giorni: gg }) : t('Conserva sempre')],
-    [t('Invio automatico'), soloWifi ? t('Solo Wi-Fi') : t('Anche dati')],
     ['Google Drive', p.email || t('Non collegato')]
   ];
 
@@ -118,14 +115,6 @@ export function Benvenuto(p: Props) {
               </Scelta>
             </View>
             <Testo variante="aiuto">{t('Le pagine conservate restano nella scheda in sola lettura.')}</Testo>
-            <View style={pannello}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.md }}>
-                <Testo style={{ flex: 1 }}>{t('Invio automatico solo col Wi-Fi')}</Testo>
-                <Switch value={soloWifi} onValueChange={setSoloWifi} accessibilityLabel={t('Invio automatico solo col Wi-Fi')}
-                  trackColor={{ false: c.borderInput, true: c.primary }} thumbColor={soloWifi ? c.onPrimary : c.textMuted} />
-              </View>
-              <Testo variante="aiuto">{t('Con i dati mobili le pagine partono solo con «Invia ora».')}</Testo>
-            </View>
           </>
         )}
 
@@ -172,7 +161,7 @@ export function Benvenuto(p: Props) {
           </>
         ) : (
           <Pulsante variante="primario" titolo={passo === 0 ? t('Inizia') : passo === ULTIMO ? t('Vai all\'app') : t('Avanti')}
-            onPress={() => (passo === ULTIMO ? p.onFine(dopo, soloWifi) : setPasso(passo + 1))} />
+            onPress={() => (passo === ULTIMO ? p.onFine(dopo) : setPasso(passo + 1))} />
         )}
       </View>
     </View>

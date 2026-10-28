@@ -8,15 +8,7 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - tapOn: Impostazioni
 - assertVisible: Account Google
 - assertVisible: Accedi con Google
-- assertVisible:
-    text: Invio automatico solo col Wi-Fi
-    checked: true
-- tapOn:
-    text: Invio automatico solo col Wi-Fi
-    checked: true
-- assertVisible:
-    text: Invio automatico solo col Wi-Fi
-    checked: false
+- assertNotVisible: Invio automatico solo col Wi-Fi
 - assertVisible:
     text: Conserva sempre
     checked: true
@@ -48,9 +40,6 @@ name: Impostazioni - invio, dopo l'invio, copia dei Documenti, abbinamento Wi-Fi
 - assertVisible:
     text: Conserva per 3 giorni
     checked: true
-- assertVisible:
-    text: Invio automatico solo col Wi-Fi
-    checked: false
 - scrollUntilVisible:
     element: Abbina col computer
 - tapOn: Abbina col computer

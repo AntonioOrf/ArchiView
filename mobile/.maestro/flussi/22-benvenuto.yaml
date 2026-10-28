@@ -1,5 +1,5 @@
 appId: com.antonioorf.archiview.scanner
-name: Benvenuto - informativa, dopo l'invio, solo Wi-Fi, riepilogo e Impostazioni
+name: Benvenuto - informativa, dopo l'invio, riepilogo e Impostazioni
 ---
 - launchApp
 - extendedWaitUntil:
@@ -17,15 +17,11 @@ name: Benvenuto - informativa, dopo l'invio, solo Wi-Fi, riepilogo e Impostazion
 - assertVisible:
     text: Conservale per 8 giorni
     checked: true
-- tapOn:
-    text: Invio automatico solo col Wi-Fi
-    checked: true
 - tapOn: Avanti
 - assertVisible: Collega il tuo Drive
 - tapOn: Più tardi
 - assertVisible: Tutto pronto
 - assertVisible: Conserva 8 giorni
-- assertVisible: Anche dati
 - assertVisible: Non collegato
 - tapOn: Vai all'app
 - tapOn: Documenti
@@ -33,9 +29,6 @@ name: Benvenuto - informativa, dopo l'invio, solo Wi-Fi, riepilogo e Impostazion
 - assertVisible:
     text: Conserva per 8 giorni
     checked: true
-- assertVisible:
-    text: Invio automatico solo col Wi-Fi
-    checked: false
 - scrollUntilVisible:
     element: Gestisci nelle impostazioni di Android
 - assertVisible: Fotocamera consentita

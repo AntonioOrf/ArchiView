@@ -6,11 +6,10 @@ name: Bozza illeggibile - recupero delle foto in «Senza scheda» (M10.11)
     visible: Fondo Prova, cambia archivio
     timeout: 180000
 - assertVisible: 1 scansione da recuperare
-- assertVisible: Da inviare · 4 pagine
+- assertVisible: Invii · 2 lotti
 - tapOn: Recupera
 - extendedWaitUntil:
-    visible: Da inviare · 6 pagine
+    visible: Invii · 3 lotti
     timeout: 15000
 - assertNotVisible: "1 scansione da recuperare"
-- tapOn: "Da inviare, 6 pagine.*"
-- assertVisible: "Senza scheda · 3, Da smistare al computer"
+- assertVisible: "Senza scheda, 2 pagine, Sul telefono · premi Invia ora"

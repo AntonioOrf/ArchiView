@@ -16,13 +16,12 @@ name: Cartella di una scheda nata qui, titolo e nota senza scheda
 - back
 - tapOn: "Cartella Atti.*"
 - assertVisible: Busta 3, Creata qui
-- tapOn: Da inviare, 4 pagine, accedi per inviare
-- tapOn: Senza scheda · 1
+- tapOn: "Senza scheda, 1 pagina.*"
 - assertVisible: Fondo Prova · da smistare al computer
 - tapOn: Carte sciolte
 - eraseText: 20
 - inputText: Busta rossa
 - hideKeyboard
 - back
-- tapOn: Da inviare, 4 pagine, accedi per inviare
-- assertVisible: «Busta rossa»
+- tapOn: "Senza scheda, 1 pagina.*"
+- assertVisible: Busta rossa

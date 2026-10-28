@@ -76,4 +76,4 @@ name: Scheda e visore - etichetta, ruota, ritaglia, dividi, elimina
 - assertVisible: 3r
 - assertVisible: dx
 - back
-- assertVisible: Da inviare · 4 pagine
+- assertVisible: Invii · 2 lotti

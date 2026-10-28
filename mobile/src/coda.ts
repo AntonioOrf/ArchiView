@@ -1,15 +1,16 @@
 import { File, Paths } from 'expo-file-system';
 import { NetworkStateType, type NetworkState } from 'expo-network';
-import { elencaArchivi, inviaLotto, scaricaConfig, type Avanzamento } from './drive';
+import { elencaArchivi, inviaLotto, lottiSuDrive, scaricaConfig, type Avanzamento } from './drive';
+import { arrivati, daControllare, NESSUN_INVIO, recenti, registra, type Invii } from './invii';
 import { ScannerLotto, type ConfigScanner } from './contratto';
 import { elencaLotti, fileDellaPagina, manifest, segnaInviato, type Bozza } from './lotti';
 import { DOPO_INVIO_PREDEFINITO, type DopoInvio } from './pagine';
 import { leggiJson, scriviJson } from './fileJson';
 import type { Lingua } from './lingua';
 
-export type Impostazioni = { soloWifi: boolean; dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean; copiaDocumenti?: boolean; viste?: Record<string, string[]>; lingua?: Lingua };
+export type Impostazioni = { dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean; copiaDocumenti?: boolean; viste?: Record<string, string[]>; lingua?: Lingua };
 
-const IMPOSTAZIONI_PREDEFINITE: Impostazioni = { soloWifi: true, dopoInvio: DOPO_INVIO_PREDEFINITO };
+const IMPOSTAZIONI_PREDEFINITE: Impostazioni = { dopoInvio: DOPO_INVIO_PREDEFINITO };
 
 function fileImpostazioni(): File {
   return new File(Paths.document, 'impostazioni.json');
@@ -62,7 +63,7 @@ export async function aggiornaElenco(archivio: string, conDatabase = true): Prom
   const config = await scaricaConfig(archivio, conDatabase);
   const locale = elencoLocale(archivio);
   if (!config || (locale && Date.parse(locale.aggiornatoIl) > Date.parse(config.aggiornatoIl))) return locale;
-  fileElenco().write(JSON.stringify(config));
+  if (leggiImpostazioni().archivio?.nome === ScannerLotto.nomeArchivio(archivio)) fileElenco().write(JSON.stringify(config));
   return config;
 }
 
@@ -116,6 +117,35 @@ function segnaPartita(id: string): void {
   }
 }
 
+const fileInvii = () => new File(Paths.document, 'invii.json');
+
+export function leggiInvii(): Invii {
+  try {
+    const v = leggiJson(fileInvii()) as Invii | null;
+    return v && Array.isArray(v.lotti) ? recenti({ lotti: v.lotti, archivi: Array.isArray(v.archivi) ? v.archivi : [] }, new Date()) : NESSUN_INVIO;
+  } catch (e) {
+    console.warn('[coda] invii illeggibili', e);
+    return NESSUN_INVIO;
+  }
+}
+
+function tracciaInvio(b: Bozza, account: string | undefined, arrivato: boolean): void {
+  try {
+    const { id, archivio, destinazione, titolo, nota } = b;
+    scriviJson(fileInvii(), registra(leggiInvii(), { id, archivio, account, destinazione, titolo, nota, pagine: b.pagine.length }, new Date(), arrivato));
+  } catch (e) {
+    console.warn('[coda] invio non tracciato', b.id, e);
+  }
+}
+
+export async function controllaArrivi(account: string): Promise<Invii> {
+  const s = leggiInvii();
+  if (!daControllare(s, account)) return s;
+  const dopo = arrivati(s, await lottiSuDrive(), account, new Date());
+  scriviJson(fileInvii(), dopo);
+  return dopo;
+}
+
 export function reteAdatta(rete: NetworkState, soloWifi: boolean): boolean {
   if (!rete.isConnected || rete.isInternetReachable === false) return false;
   if (!soloWifi) return true;
@@ -144,7 +174,9 @@ export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) =>
       corrente = b.id;
       try {
         await invia(manifest(b, dispositivo), nome => fileDellaPagina(b, nome), a => evento({ tipo: 'lotto', id: b.id, avanzamento: a }));
-        segnaInviato(b, leggiImpostazioni().dopoInvio);
+        const imp = leggiImpostazioni();
+        segnaInviato(b, imp.dopoInvio);
+        tracciaInvio(b, imp.account, invia !== inviaLotto);
         if (b.destinazione.tipo === 'nuova' && b.destinazione.schedaId) segnaPartita(b.destinazione.schedaId);
         evento({ tipo: 'inviato', id: b.id });
       } catch (e: any) {

@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { FlatList, Image, Pressable, View } from 'react-native';
-import { ChevronDown, ChevronRight, ChevronUp, CircleCheck, CloudUpload, Eye, FileText, Folder, FolderOpen, Inbox, Search } from 'lucide-react-native';
+import { FlatList, Pressable, View } from 'react-native';
+import { ChevronDown, ChevronRight, CircleCheck, Eye, FileText, Folder, FolderOpen, Search } from 'lucide-react-native';
 import type { ConfigScanner } from '../contratto';
 import type { SchedaNuova } from '../coda';
 import { quando } from '../elencoDocumenti';
@@ -10,26 +10,28 @@ import { raggio, spazio, TOCCO, useColori } from '../theme';
 import { SPORGENZA_BARRA } from '../ui/BarraFondo';
 import { Campo } from '../ui/Campo';
 import { Pulsante } from '../ui/Pulsante';
+import { Avanzamento, Pallino, PrimoInvio, type StatoRiga } from '../ui/StatoInvio';
 import { Testo } from '../ui/Testo';
 
 const RIENTRO = 24;
-const ANTEPRIME = 4;
 const conta = (n: number) => (n === 1 ? t('1 pagina') : t('{n} pagine', { n }));
 
-export type SchedaInAttesa = { scelta: SchedaScelta; pagine: number; anteprime: { uri: string; etichetta?: string }[]; riassunto?: string };
+export type SchedaInAttesa = { scelta: SchedaScelta; pagine: number };
+export type RigaInvio = { chiave: string; scelta: SchedaScelta; pagine: number; stato: StatoRiga; fatte?: number; totali?: number; arrivatoIl?: string };
 
 type Props = {
   archivio: { nome: string; nuovo: boolean };
   elenco: ConfigScanner | null;
+  caricando: boolean;
   nuove: SchedaNuova[];
   inAttesa: SchedaInAttesa[];
-  statoInvio: string;
+  invii: RigaInvio[];
+  primoInvio: boolean;
   onInviaOra: () => void;
   aperte: string[];
   onAlterna: (percorso: string) => void;
   attesa: ReactNode;
   onApri: (s: SchedaScelta) => void;
-  onApriPagina: (s: SchedaScelta, indice: number) => void;
   onCambiaArchivio: () => void;
   daRecuperare: number;
   onRecupera: () => void;
@@ -56,66 +58,44 @@ export function NomeArchivio({ nome, aperta, onPress }: { nome: string; aperta?:
   );
 }
 
-function DaInviare({ gruppi, stato, onInviaOra, onApri, onApriPagina }: { gruppi: SchedaInAttesa[]; stato: string; onInviaOra: () => void; onApri: Props['onApri']; onApriPagina: Props['onApriPagina'] }) {
+export const minuscola = (s: string) => s.replace(/^\p{Lu}/u, x => x.toLowerCase());
+
+function testoStato(r: RigaInvio): string {
+  if (r.stato === 'telefono') return t('Sul telefono · premi Invia ora');
+  if (r.stato === 'caricamento') return t('In caricamento su Drive · {fatte} di {totali}', { fatte: r.fatte ?? 0, totali: r.totali ?? r.pagine });
+  if (r.stato === 'drive') return t('Su Drive · in attesa del computer');
+  return t('Arrivato sul computer · {quando}', { quando: minuscola(quando(r.arrivatoIl || '', new Date())) });
+}
+
+function Invii({ righe, primo, onInviaOra, onApri }: { righe: RigaInvio[]; primo: boolean; onInviaOra: () => void; onApri: Props['onApri'] }) {
   const c = useColori();
-  const [aperto, setAperto] = useState(false);
-  const totale = gruppi.reduce((n, g) => n + g.pagine, 0);
-  const nomi = gruppi.map(g => (g.scelta.tipo === 'smistare' ? t('senza scheda') : g.scelta.segnatura || g.scelta.id));
-  const Freccia = aperto ? ChevronUp : ChevronDown;
-  const lato = 54;
   return (
-    <View style={{ marginHorizontal: spazio.md, marginTop: spazio.md, backgroundColor: c.primaryLight, borderWidth: 1, borderColor: c.primaryBorder, borderRadius: raggio.lg, overflow: 'hidden' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: spazio.xs }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${t('Da inviare')}, ${conta(totale)}, ${stato}`}
-          accessibilityState={{ expanded: aperto }}
-          onPress={() => setAperto(a => !a)}
-          style={({ pressed }) => ({ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spazio.sm, minHeight: TOCCO + spazio.sm, paddingLeft: spazio.md, paddingVertical: spazio.xs, opacity: pressed ? 0.7 : 1 })}
-        >
-          <CloudUpload size={20} color={c.primaryHover} />
-          <View style={{ flex: 1 }}>
-            <Testo variante="sezione" tono="accento">{`${t('Da inviare')} · ${conta(totale)}`}</Testo>
-            {!aperto && <Testo variante="aiuto" numberOfLines={1}>{nomi.length > 2 ? t('{a}, {b} e altre {n}', { a: nomi[0], b: nomi[1], n: nomi.length - 2 }) : nomi.join(t(' e '))}</Testo>}
-            <Testo variante="aiuto">{stato}</Testo>
-          </View>
-          <Freccia size={20} color={c.primaryHover} />
-        </Pressable>
-        <Pulsante variante="ghost" titolo={t('Invia ora')} onPress={onInviaOra} />
-      </View>
-      {aperto && gruppi.map(g => {
-        const smistare = g.scelta.tipo === 'smistare';
-        const nome = g.scelta.tipo === 'smistare' ? t('Senza scheda') : g.scelta.segnatura || g.scelta.id;
-        const altre = g.pagine - g.anteprime.length;
-        return (
-          <View key={g.scelta.tipo === 'smistare' ? '' : g.scelta.id} style={{ borderTopWidth: 1, borderColor: c.primaryBorder, paddingHorizontal: spazio.md, paddingVertical: spazio.sm, gap: spazio.sm }}>
-            <Pressable accessibilityRole="button" onPress={() => onApri(g.scelta)} style={{ flexDirection: 'row', alignItems: 'center', gap: spazio.sm, minHeight: TOCCO - spazio.xs }}>
-              {smistare ? <Inbox size={20} color={c.primaryHover} /> : <FileText size={20} color={c.primaryHover} />}
-              <View style={{ flex: 1 }}>
-                <Testo>{smistare ? nome : <Testo variante="mono">{nome}</Testo>}{` · ${g.pagine}`}</Testo>
-                <Testo variante="aiuto" numberOfLines={1}>{smistare ? t('Da smistare al computer') : g.riassunto || ''}</Testo>
+    <>
+      {primo && <PrimoInvio />}
+      <View style={{ marginHorizontal: spazio.md, marginTop: spazio.md, backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.divisore, borderRadius: raggio.lg, overflow: 'hidden' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: TOCCO + spazio.sm, paddingLeft: spazio.md, paddingRight: spazio.xs }}>
+          <Testo variante="sezione" accessibilityRole="header" style={{ flex: 1 }}>{`${t('Invii')} · ${righe.length === 1 ? t('1 lotto') : t('{n} lotti', { n: righe.length })}`}</Testo>
+          {righe.some(r => r.stato === 'telefono') && <Pulsante variante="ghost" titolo={t('Invia ora')} onPress={onInviaOra} />}
+        </View>
+        {righe.map(r => {
+          const nome = r.scelta.tipo === 'smistare' ? t('Senza scheda') : r.scelta.segnatura || r.scelta.id;
+          const stato = testoStato(r);
+          const tono = r.stato === 'telefono' ? { color: c.warning } : r.stato === 'arrivato' ? { color: c.success } : r.stato === 'caricamento' ? { color: c.primaryHover } : { color: c.textMain };
+          return (
+            <Pressable key={r.chiave} accessibilityRole="button" accessibilityLabel={`${nome}, ${conta(r.pagine)}, ${stato}`} onPress={() => onApri(r.scelta)}
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spazio.sm + 2, minHeight: TOCCO + spazio.sm, paddingHorizontal: spazio.md, paddingVertical: spazio.sm, borderTopWidth: 1, borderColor: c.divisore, backgroundColor: pressed ? c.bgHover : r.stato === 'caricamento' ? c.primaryLight : c.bgPanel })}>
+              <Pallino stato={r.stato} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Testo numberOfLines={1}>{r.scelta.tipo === 'smistare' ? nome : <Testo variante="mono">{nome}</Testo>}{` · ${conta(r.pagine)}`}</Testo>
+                <Testo variante="aiuto" style={[tono, { fontWeight: '600' }]}>{stato}</Testo>
+                {r.stato === 'caricamento' && <Avanzamento fatte={r.fatte ?? 0} totali={r.totali ?? r.pagine} />}
+                {r.stato === 'drive' && <Testo variante="aiuto">{t('Arriva quando il computer con ArchiView è acceso')}</Testo>}
               </View>
-              <ChevronRight size={20} color={c.textMuted} />
             </Pressable>
-            {smistare && !!g.riassunto && <Testo numberOfLines={2} style={{ marginLeft: 28 }}>{`«${g.riassunto}»`}</Testo>}
-            <View style={{ flexDirection: 'row', gap: spazio.sm, marginLeft: 28 }}>
-              {g.anteprime.map((a, i) => (
-                <Pressable key={i} accessibilityRole="button" accessibilityLabel={a.etichetta ? t('Apri {nome}', { nome: a.etichetta }) : t('Apri la pagina {n}', { n: i + 1 })} onPress={() => onApriPagina(g.scelta, i)} style={{ alignItems: 'center', gap: 2 }}>
-                  <Image source={{ uri: a.uri }} style={{ width: lato, height: lato * 4 / 3, borderRadius: raggio.sm, borderWidth: 1, borderColor: c.primaryBorder, backgroundColor: c.bgPanel }} resizeMode="cover" resizeMethod="resize" accessibilityIgnoresInvertColors />
-                  <Testo variante="mono" tono="muted" numberOfLines={1} style={{ maxWidth: lato, fontSize: 12 }}>{a.etichetta || '—'}</Testo>
-                </Pressable>
-              ))}
-              {altre > 0 && (
-                <Pressable accessibilityRole="button" accessibilityLabel={t('Altre: {pagine}', { pagine: conta(altre) })} onPress={() => onApri(g.scelta)}
-                  style={{ width: lato, height: lato * 4 / 3, borderRadius: raggio.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bgPanel, borderWidth: 1, borderColor: c.primaryBorder }}>
-                  <Testo variante="controllo" tono="accento">{`+${altre}`}</Testo>
-                </Pressable>
-              )}
-            </View>
-          </View>
-        );
-      })}
-    </View>
+          );
+        })}
+      </View>
+    </>
   );
 }
 
@@ -142,10 +122,10 @@ export function Archivio(p: Props) {
     p.onApri(s.nuova && n ? { tipo: 'nuova', id: n.id, segnatura: n.segnatura, nota: n.nota, cartella: n.cartella } : { tipo: 'esistente', id: s.id, segnatura: s.segnatura || s.id });
   };
 
-  const aggiornato = p.elenco && quando(p.elenco.aggiornatoIl, new Date()).replace(/^\p{Lu}/u, x => x.toLowerCase());
+  const aggiornato = p.elenco && minuscola(quando(p.elenco.aggiornatoIl, new Date()));
   const stato = p.archivio.nuovo
     ? t('Archivio nuovo: il computer lo crea quando riceve le scansioni')
-    : p.elenco ? [t('{n} schede sul computer', { n: p.elenco.schede.length }), aggiornato && t('aggiornato {quando}', { quando: aggiornato })].filter(Boolean).join(' · ') : t('Elenco delle schede non ancora arrivato');
+    : p.elenco ? [t('{n} schede sul computer', { n: p.elenco.schede.length }), aggiornato && t('aggiornato {quando}', { quando: aggiornato })].filter(Boolean).join(' · ') : p.caricando ? t('Caricamento dell\'archivio…') : t('Elenco delle schede non ancora arrivato');
 
   const testa = (
     <View>
@@ -160,7 +140,7 @@ export function Archivio(p: Props) {
           <Pulsante variante="ghost" titolo={t('Recupera')} onPress={p.onRecupera} />
         </View>
       )}
-      {!q.trim() && !!p.inAttesa.length && <DaInviare gruppi={p.inAttesa} stato={p.statoInvio} onInviaOra={p.onInviaOra} onApri={p.onApri} onApriPagina={p.onApriPagina} />}
+      {!q.trim() && !!p.invii.length && <Invii righe={p.invii} primo={p.primoInvio} onInviaOra={p.onInviaOra} onApri={p.onApri} />}
       <View style={{ padding: spazio.md }}>
         <Campo placeholder={t('Cerca segnatura, titolo o cartella')} segnapostoBreve={t('Cerca')} value={q} onChangeText={setQ} accessibilityLabel={t('Cerca nell\'archivio')} style={{ paddingLeft: 42 }} />
         <View pointerEvents="none" style={{ position: 'absolute', left: spazio.md + 14, top: spazio.md + 15 }}><Search size={18} color={c.textMuted} /></View>
@@ -178,7 +158,7 @@ export function Archivio(p: Props) {
       </View>
       {!righe.length && (
         <Testo variante="aiuto" style={{ paddingHorizontal: spazio.lg }}>
-          {q.trim() || soloDaVedere ? t('Nessuna scheda trovata.') : p.elenco ? t('Archivio vuoto.') : t('L\'elenco delle schede di questo archivio non è ancora sul telefono.')}
+          {q.trim() || soloDaVedere ? t('Nessuna scheda trovata.') : p.elenco ? t('Archivio vuoto.') : p.caricando ? t('Caricamento dell\'archivio…') : t('L\'elenco delle schede di questo archivio non è ancora sul telefono.')}
         </Testo>
       )}
     </View>

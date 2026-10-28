@@ -52,7 +52,8 @@ export const DOPO_INVIO_PREDEFINITO: DopoInvio = { modo: 'subito', giorni: 7 };
 
 const GIORNO = 86_400_000;
 
-export function inviatiScaduti(inviati: { id: string; inviatoIl?: string }[], regola: DopoInvio, ora: Date): string[] {
+export function inviatiScaduti(lotti: { id: string; stato: string; inviatoIl?: string }[], regola: DopoInvio, ora: Date): string[] {
+  const inviati = lotti.filter(l => l.stato === 'inviato');
   if (regola.modo === 'sempre') return [];
   if (regola.modo === 'subito') return inviati.map(l => l.id);
   const limite = ora.getTime() - Math.max(1, regola.giorni) * GIORNO;
