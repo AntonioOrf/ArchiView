@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 26
 
       - name: npm audit (produzione)
         run: npm run security-check
@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 26
           cache: "npm"
 
       - name: Installa le dipendenze
@@ -129,7 +129,7 @@ jobs:
         if: env.ARCHIVIEW_DRIVE_REFRESH_TOKEN != ''
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 26
           cache: "npm"
 
       - name: Installa le dipendenze
