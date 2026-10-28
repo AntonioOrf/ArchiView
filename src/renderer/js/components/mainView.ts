@@ -88,7 +88,7 @@ function defCampoDi(m, campo) {
 }
 
 function valoreMancante(m, campo) {
-    if (campo === 'lastModified' || campo === 'allegati') return false;
+    if (campo === 'lastModified' || campo === 'allegati' || campo === 'trascrizione') return false;
     const v = m[campo];
     if (v === null || v === undefined || String(v).trim() === '') return true;
     if (window.DataStorica && defCampoDi(m, campo).tipo === 'date') {
@@ -105,6 +105,7 @@ function campoEDataStorica(a, b, campo) {
 function confrontaCampo(a, b, campo) {
     if (campo === 'lastModified') return (a.lastModified || 0) - (b.lastModified || 0);
     if (campo === 'allegati') return carteDi(a).length - carteDi(b).length;
+    if (campo === 'trascrizione') return chiaveTrascrizione(a) - chiaveTrascrizione(b);
     if (campoEDataStorica(a, b, campo)) {
         const ka = window.DataStorica.chiaveOrdinamento(a[campo]);
         const kb = window.DataStorica.chiaveOrdinamento(b[campo]);
@@ -531,6 +532,15 @@ function statoTrascrizione(m) {
 }
 window.statoTrascrizione = statoTrascrizione;
 
+function chiaveTrascrizione(m) {
+    const chiave = statoTrascrizione(m).chiave;
+    if (chiave === 'parziale') {
+        const av = window.avanzamentoCarte(m);
+        return av.fatte / av.totale;
+    }
+    return { dafare: 0, testo: 1, fatta: 2 }[chiave];
+}
+
 function htmlStatoTrascrizione(m) {
     const s = statoTrascrizione(m);
     return `<span class="stato-trascr is-${escapeHTML(s.chiave)}"><span class="stato-trascr-pallino" aria-hidden="true"></span>${escapeHTML(s.testo)}</span>`;
@@ -637,7 +647,7 @@ function renderTabellaSchede(paginated) {
             <tr>
                 ${thSegnatura}
                 ${thCampi}
-                <th>${escapeHTML(window.t('th_transcription', 'Trascrizione'))}</th>
+                <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;trascrizione&quot;]">${escapeHTML(window.t('th_transcription', 'Trascrizione'))}${indicatoreOrdinamento('trascrizione')}</th>
                 <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;tags&quot;]">${escapeHTML(window.t('th_tags', 'Tag'))}${indicatoreOrdinamento('tags')}</th>
                 <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;allegati&quot;]">${escapeHTML(window.t('th_attachments', 'Allegati'))}${indicatoreOrdinamento('allegati')}</th>
                 <th class="ordinabile" data-on-click="impostaOrdinamento" data-args-click="[&quot;lastModified&quot;]">${escapeHTML(window.t('th_modified', 'Modificato'))}${indicatoreOrdinamento('lastModified')}</th>
@@ -817,7 +827,8 @@ function aggiornaControlliLista(records) {
         const etichette = {
             segnatura: window.t('field_segnatura', 'Segnatura'),
             lastModified: window.t('th_modified', 'Modificato'),
-            allegati: window.t('th_attachments', 'Allegati')
+            allegati: window.t('th_attachments', 'Allegati'),
+            trascrizione: window.t('th_transcription', 'Trascrizione')
         };
         const campoAttivo = window.sortState.campo;
         const criteri = criteriOrdinamento(records);

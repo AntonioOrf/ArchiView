@@ -363,9 +363,12 @@ function _taAggiornaBarraCarte(m, index) {
     const barra = document.getElementById('trasc-carte-bar');
     if (!barra) return;
     const allegati = (m && Array.isArray(m.allegati)) ? m.allegati : [];
-    if (allegati.length < 2) {
+    if (allegati.length === 0) {
         barra.classList.add('hidden-tab');
         return;
+    }
+    for (const id of ['btn-carta-prec', 'trasc-carta-numero', 'trasc-carte-totale', 'btn-carta-succ']) {
+        document.getElementById(id)?.classList.toggle('hidden-tab', allegati.length === 1);
     }
     const i = Math.min(Math.max(0, index || 0), allegati.length - 1);
     const a = allegati[i];

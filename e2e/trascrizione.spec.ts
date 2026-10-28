@@ -496,6 +496,22 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#view-list')).not.toContainText('MS-STATO-ALTRA');
   });
 
+  test('#42 — con una sola carta lo stato si imposta e il badge diventa Trascritta', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-UNA-CARTA', FIXTURE_PNG);
+
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+    const stato = page.locator('#trasc-carta-stato');
+    await expect(stato).toBeVisible();
+    await expect(page.locator('#btn-carta-prec')).toBeHidden();
+    await expect(page.locator('#trasc-carta-numero')).toBeHidden();
+    await stato.selectOption('trascritta');
+
+    await page.evaluate(() => (window as any).chiudiTrascrizione());
+    await page.locator('#btn-vista-tabella').click();
+    await expect(page.locator('#manoscritti-table tbody .stato-trascr')).toHaveText(/Trascritta|Transcribed/);
+  });
+
   test('P3 — "vita" trova "uita" nella carta 2 e il clic porta lì con la parola selezionata', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await creaConDueAllegati(page, 'MS-PALEO');
@@ -1208,7 +1224,7 @@ test.describe('Scheda affiancata: prove M14', () => {
     expect(salvato.allegati).toHaveLength(1);
     expect(salvato.allegati[0].originalName).toBe('Carta prima');
     expect(salvato.allegati[0].trascrizione).toContain('Prima carta, non salvata');
-    await expect(page.locator('#trasc-carte-bar')).toBeHidden();
+    await expect(page.locator('#trasc-carta-numero')).toBeHidden();
     await tabTesto(page).click();
     await expect(page.locator('#trascrizione-editor')).toContainText('Prima carta, non salvata');
   });

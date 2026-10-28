@@ -110,6 +110,38 @@ test.describe('Ordinamento e vista tabella', () => {
     await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 1', 'MS 2']);
   });
 
+  test('#43 — cliccando l intestazione Trascrizione si ordina per stato, il secondo clic inverte', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
+    await page.evaluate(async () => {
+      // @ts-ignore
+      const data = appData;
+      const carta = (stato?: string) => (stato ? { tipo: 'immagine', stato } : { tipo: 'immagine' });
+      const righe: Array<[string, any[], string]> = [
+        ['MS 1', [carta('trascritta'), carta('trascritta')], ''],
+        ['MS 2', [], '<p>testo</p>'],
+        ['MS 3', [carta('trascritta'), carta(), carta()], ''],
+        ['MS 4', [], ''],
+        ['MS 5', [carta('trascritta'), carta()], ''],
+      ];
+      for (const [segnatura, allegati, trascrizione] of righe) {
+        data.manoscritti.push({
+          id: crypto.randomUUID(), cartella: '', tipoDocumento: 'manoscritto', segnatura,
+          trascrizione, tags: '', allegati, lastModified: Date.now(), creatoDa: 'Anonimo', modificatoDa: 'Anonimo',
+        });
+      }
+      await (window as any).Store.commit();
+    });
+    await page.locator('#btn-vista-tabella').click();
+
+    const th = page.locator('#manoscritti-table thead th', { hasText: /Trascrizione|Transcription/ });
+    await th.click();
+    await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 4', 'MS 3', 'MS 5', 'MS 2', 'MS 1']);
+    await expect(th).toContainText('▲');
+
+    await th.click();
+    await expect.poll(() => segnatureRenderizzate(page)).toEqual(['MS 1', 'MS 2', 'MS 5', 'MS 3', 'MS 4']);
+  });
+
   test('la riga della tabella si seleziona come una card', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Sort');
     await seedSegnature(page, [{ segnatura: 'MS 1' }, { segnatura: 'MS 2' }]);
