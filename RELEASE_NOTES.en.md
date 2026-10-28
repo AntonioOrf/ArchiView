@@ -1,8 +1,14 @@
-## ArchiView 4.0.1 — More reliable Drive sync
+## ArchiView 4.0.2 — Account switching and transcription status
+
+### New
+
+- **Switch account**: in Settings, next to the linked Google account, a button disconnects the current account from the archive after a warning and opens the browser to choose another one. The data on this computer is not touched.
+- **Account choice always shown** when signing in to Google, instead of silently reusing the last account.
+- **Transcription status with a single page**, and the table's Transcription column can be sorted by status.
+- **Record preview in the template editor**: with no field selected, the right panel shows the record as it will appear.
 
 ### Fixes
 
-- **Large archives with a full Drive**: attachment sync no longer crashes the program. A "Google Drive storage is full" message appears and the cloud status stays in error instead of "Synced".
-- **Use another Google account**: the chosen account now stays with the archive even when its Drive folder changes, instead of falling back to the first account.
-- **Personal backup on another account**: after switching account you get the list of archives on the new account's Drive, with a "Create a new backup on this account" button. The message no longer talks about a shared archive.
-- Two attachment syncs no longer run at the same time.
+- **Signing in with another account on a backup**: the new account's archives, or creating a new backup, are offered right away.
+- **Signing out of Google** also removes the token linked to the shared archive; a token rejected by Google now shows as "not connected" instead of an error.
+- Some buttons that should stay hidden no longer appear.

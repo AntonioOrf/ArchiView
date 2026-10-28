@@ -1,3 +1,18 @@
+## ArchiView 4.0.2 — Cambio account e stato della trascrizione
+
+### Novità
+
+- **Cambia account**: nelle Impostazioni, accanto all'account Google collegato, un pulsante scollega l'account attuale dall'archivio dopo un avviso e apre il browser per sceglierne un altro. I dati sul computer non vengono toccati.
+- **Scelta dell'account sempre mostrata** quando si accede a Google, invece di riusare in silenzio l'ultimo account.
+- **Stato della trascrizione anche con una sola carta**, e colonna Trascrizione della tabella ordinabile per stato.
+- **Anteprima della scheda nell'editor del modello**: senza un campo selezionato, il pannello destro mostra la scheda come apparirà.
+
+### Correzioni
+
+- **Accesso con un altro account su un backup**: compaiono subito gli archivi del nuovo account o la creazione di un nuovo backup.
+- **Uscita da Google**: viene tolto anche il token legato all'archivio condiviso; un token rifiutato da Google risulta «non connesso» invece di un errore.
+- Alcuni pulsanti che dovevano restare nascosti non compaiono più.
+
 ## ArchiView 4.0.1 — Sincronizzazione Drive più affidabile
 
 ### Correzioni
