@@ -27,7 +27,7 @@ The phone follows the same structure as the computer: **archive**, then **record
 
 1. Pick the archive and, inside it, the record (or create a new one).
 2. Scan the leaves one after another and number them.
-3. The pages go up to Google Drive as soon as the phone is on Wi-Fi.
+3. Press send: the pages go up to Google Drive, and the **Invii** (Uploads) box follows them.
 4. When you open that archive on the computer, ArchiView downloads them, checks that they
    arrived whole, and adds them to the record.
 

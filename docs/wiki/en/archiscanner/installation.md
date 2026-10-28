@@ -46,8 +46,8 @@ Documents. To update, always install over the old version.
 
 ## Uninstalling
 
-Before uninstalling, check that **To send** is empty: pages still on the phone have not reached
-the computer. Documents are lost unless you turned on the
+Before uninstalling, check that no batch in **Invii** (Uploads) is still «Sul telefono» (On the
+phone): those pages have not reached the computer. Documents are lost unless you turned on the
 [copy to Drive](/en/archiscanner/documents#copy-to-drive). Then uninstall the app like any other,
 by pressing and holding its icon. The app's access to your Drive is revoked at
 [myaccount.google.com/permissions](https://myaccount.google.com/permissions).

@@ -80,8 +80,11 @@ non compaiono comunque.
 **Una scheda creata sul computer non si vede sul telefono.** L'elenco del telefono si aggiorna
 quando il computer riceve da Drive. Apri il pannello, poi sul telefono riapri l'archivio.
 
-**Le pagine non partono.** Controlla di aver fatto l'accesso a Google. Con i dati mobili e
-l'invio solo col Wi-Fi le pagine aspettano: usa **Invia ora**.
+**Le pagine non partono.** Le pagine partono solo col pulsante d'invio o con **Invia ora**.
+Controlla anche di aver fatto l'accesso a Google.
+
+**Un archivio creato sul computer non compare nella tendina.** Apri la tendina degli archivi:
+l'elenco si aggiorna da solo, e il pulsante accanto al titolo lo ricarica.
 
 **Il computer non trova le pagine.** Devi aprire sul computer l'archivio scelto sul telefono:
 le pagine per gli altri archivi restano su Drive e compaiono in «Per altri archivi».

@@ -7,8 +7,8 @@ cartelle vuote comprese. Ogni scheda ha la segnatura e, sotto, la stessa riga se
 vedi sul computer (il notaio, l'autore, il titolo). Le cartelle che apri restano aperte alla
 volta successiva.
 
-![L'archivio sul telefono: il riquadro «Da inviare», la ricerca e l'albero delle cartelle con le schede](/img/telefono-archivio.png){.light-only .telefono}
-![L'archivio sul telefono: il riquadro «Da inviare», la ricerca e l'albero delle cartelle con le schede](/img/telefono-archivio-scuro.png){.dark-only .telefono}
+![L'archivio sul telefono: il riquadro «Invii», la ricerca e l'albero delle cartelle con le schede](/img/telefono-archivio.png){.light-only .telefono}
+![L'archivio sul telefono: il riquadro «Invii», la ricerca e l'albero delle cartelle con le schede](/img/telefono-archivio-scuro.png){.dark-only .telefono}
 
 La ricerca filtra l'albero per segnatura, titolo o cartella: restano solo le cartelle con un
 risultato, già aperte. Il pallino accanto a una scheda dice quante pagine sono ancora sul
@@ -112,21 +112,31 @@ invio, non si spostano.
 
 ## L'invio
 
-Il riquadro **Da inviare** in cima all'archivio conta le pagine ancora sul telefono. Toccato,
-le mostra raggruppate per scheda.
+Le pagine partono **solo quando lo decidi tu**: col pulsante d'invio in basso o con **Invia ora**
+nel riquadro **Invii** in cima all'archivio. Una scansione appena salvata resta sul telefono. Coi
+dati mobili l'app chiede prima una conferma, perché una giornata in archivio può fare qualche
+centinaio di megabyte.
 
-![Il riquadro «Da inviare» aperto: le pagine in attesa per scheda e quelle senza scheda](/img/telefono-da-inviare.png){.light-only .telefono}
-![Il riquadro «Da inviare» aperto: le pagine in attesa per scheda e quelle senza scheda](/img/telefono-da-inviare-scuro.png){.dark-only .telefono}
+![Il riquadro «Invii»: un lotto per riga, con lo stato di ognuno](/img/telefono-da-inviare.png){.light-only .telefono}
+![Il riquadro «Invii»: un lotto per riga, con lo stato di ognuno](/img/telefono-da-inviare-scuro.png){.dark-only .telefono}
 
-L'invio automatico parte **solo col Wi-Fi**, perché una giornata in archivio può fare qualche
-centinaio di megabyte. Con i dati mobili le pagine aspettano; se ti servono subito usa **Invia
-ora**. L'interruttore è in **Impostazioni → Invio**.
+Il riquadro **Invii** mostra una riga per lotto, con il suo stato:
 
-L'invio procede solo con l'app aperta. Se Android la chiude a metà, alla riapertura riprende
-dalle pagine che non erano ancora arrivate.
+- **Sul telefono · premi Invia ora**: non è ancora partito;
+- **In caricamento su Drive · n di m**: le pagine stanno salendo;
+- **Su Drive · in attesa del computer**: arriva quando il computer con ArchiView è acceso e
+  riceve le scansioni;
+- **Arrivato sul computer**: il computer le ha importate. La riga resta visibile per un giorno.
 
-![Le impostazioni dell'app: account Google, invio solo col Wi-Fi, cosa fare dopo l'invio, Wi-Fi diretto](/img/telefono-impostazioni.png){.light-only .telefono}
-![Le impostazioni dell'app: account Google, invio solo col Wi-Fi, cosa fare dopo l'invio, Wi-Fi diretto](/img/telefono-impostazioni-scuro.png){.dark-only .telefono}
+Nella scheda, la sezione **Dove sono le pagine** mostra gli stessi passi, e le miniature già
+partite hanno l'etichetta **Su Drive**. Al primo invio verso un archivio il computer può metterci
+qualche minuto; gli invii successivi arrivano prima.
+
+L'invio procede solo con l'app aperta. Se Android la chiude a metà, alla riapertura premi di nuovo
+l'invio: riprende dalle pagine che non erano ancora arrivate.
+
+![Le impostazioni dell'app: account Google, cosa fare dopo l'invio, Wi-Fi diretto](/img/telefono-impostazioni.png){.light-only .telefono}
+![Le impostazioni dell'app: account Google, cosa fare dopo l'invio, Wi-Fi diretto](/img/telefono-impostazioni-scuro.png){.dark-only .telefono}
 
 In **Dopo l'invio** decidi cosa resta sul telefono: le pagine si cancellano subito (la scelta
 predefinita), si conservano per un certo numero di giorni o si conservano sempre. Quelle

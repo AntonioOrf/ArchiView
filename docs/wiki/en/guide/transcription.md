@@ -20,6 +20,11 @@ every change of folio the app stores what you have just written.
 
 If the record has no attachments, you write a single transcription, as always.
 
+Next to the folio indicator, a menu sets its **status**: To transcribe, Transcribed, Reviewed,
+Doubtful. It is there even when the record has a single folio. In the table view the
+**Transcription** column sums up the folios' statuses, and a click on its header sorts the records
+from least to most advanced; a second click reverses the order.
+
 ## PDFs, one page at a time
 
 A PDF opens in the same viewer as images, with zoom, rotation and filters, and is browsed **page by

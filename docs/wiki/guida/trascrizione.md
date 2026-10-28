@@ -19,6 +19,11 @@ prima di ogni cambio di carta l'app tiene in memoria quello che hai appena scrit
 
 Se la scheda non ha allegati, si scrive su un'unica trascrizione, come da sempre.
 
+Accanto all'indicazione della carta, un menu ne fissa lo **stato**: Da trascrivere, Trascritta,
+Rivista, Dubbia. C'è anche quando la scheda ha una sola carta. Nella vista tabella la colonna
+**Trascrizione** riassume gli stati delle carte, e un clic sull'intestazione ordina le schede
+dalla meno alla più avanzata; un secondo clic inverte l'ordine.
+
 ## I PDF, una pagina alla volta
 
 Un PDF si apre nello stesso visore delle immagini, con zoom, rotazione e filtri, e si sfoglia

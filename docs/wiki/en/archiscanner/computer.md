@@ -80,8 +80,11 @@ Hub do not appear in any case.
 **A record created on the computer is missing on the phone.** The phone's list updates when the
 computer receives from Drive. Open the panel, then reopen the archive on the phone.
 
-**Pages are not leaving.** Check that you are signed in to Google. On mobile data, with
-Wi-Fi-only sending, pages wait: use **Invia ora**.
+**Pages are not leaving.** Pages leave only with the send button or with **Invia ora** (Send
+now). Also check that you are signed in to Google.
+
+**An archive created on the computer is missing from the list.** Open the archive list: it
+refreshes on its own, and the button next to its title reloads it.
 
 **The computer does not find the pages.** Open on the computer the archive chosen on the phone:
 pages for other archives stay on Drive and show up under «For other archives».

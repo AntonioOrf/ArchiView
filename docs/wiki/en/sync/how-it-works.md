@@ -65,10 +65,13 @@ Google Drive permissions cannot be transferred.
 An archive on Google Drive does not receive instant notifications: it checks for news by itself
 **every 5 minutes**.
 
-**Switching Google account.** In Advanced options, **Use another Google account** links that
-account to this archive only. For a personal backup, the list of archives on the new account's
-Drive opens next: pick one, or use **Create a new backup on this account** to upload data and
-attachments from this computer.
+**Switching Google account.** In Settings, next to the linked account, **Switch account**
+disconnects the current account from this archive, after a warning, and opens the browser to
+choose another one; **Use another Google account** in Advanced options does the same. Every
+Google sign-in shows the account choice, even when there is only one. For a personal backup, the
+list of archives on the new account's Drive opens next: pick one, or use **Create a new backup on
+this account** to upload data and attachments from this computer. The data on this computer is
+not modified.
 
 **Drive full.** If Google Drive runs out of space, attachments are not uploaded: the cloud status
 turns red with the message "Google Drive storage is full". Free up space on Drive and sync again.

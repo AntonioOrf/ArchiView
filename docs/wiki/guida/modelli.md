@@ -20,7 +20,9 @@ scegliendo i campi che servono.
 I campi compaiono nella scheda nell'ordine in cui li disponi: si trascinano, oppure si spostano
 con le frecce **Sposta a sinistra** e **Sposta a destra** accanto a ciascun campo.
 
-L'interfaccia della scheda si adatta da sola al modello scelto.
+L'interfaccia della scheda si adatta da sola al modello scelto. Nell'editor del modello, il
+pannello di destra mostra il campo selezionato; senza un campo selezionato mostra l'anteprima
+dell'intera scheda, come apparirà compilandola.
 
 ## Il tipo di un campo
 

@@ -68,10 +68,13 @@ trasferiscono.
 Un archivio su Google Drive non riceve avvisi immediati: controlla da solo se ci sono novità
 **ogni 5 minuti**.
 
-**Cambiare account Google.** Da Opzioni avanzate, **Usa un altro account Google** collega
-quell'account solo a questo archivio. Per un backup personale si apre poi l'elenco degli archivi
-presenti sul Drive del nuovo account: scegline uno, oppure usa **Crea un nuovo backup su questo
-account** per caricarvi dati e allegati da questo computer.
+**Cambiare account Google.** Nelle Impostazioni, accanto all'account collegato, **Cambia
+account** scollega l'account attuale da questo archivio, dopo un avviso, e apre il browser per
+sceglierne un altro; lo stesso fa **Usa un altro account Google** da Opzioni avanzate. Ogni
+accesso a Google mostra la scelta dell'account, anche quando ce n'è uno solo. Per un backup
+personale si apre poi l'elenco degli archivi presenti sul Drive del nuovo account: scegline uno,
+oppure usa **Crea un nuovo backup su questo account** per caricarvi dati e allegati da questo
+computer. I dati sul computer non vengono modificati.
 
 **Drive pieno.** Se lo spazio su Google Drive finisce, gli allegati non vengono caricati: lo
 stato del cloud diventa rosso con il messaggio «Spazio Google Drive esaurito». Libera spazio sul

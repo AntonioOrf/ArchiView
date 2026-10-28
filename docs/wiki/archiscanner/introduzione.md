@@ -23,7 +23,7 @@ Sul telefono si ragiona come sul computer: **archivio**, poi **scheda**, poi **p
 
 1. Scegli l'archivio e, dentro, la scheda (o creane una nuova).
 2. Scansioni le carte, una dopo l'altra, e le numeri.
-3. Le pagine partono verso Google Drive appena il telefono è sul Wi-Fi.
+3. Premi Invio: le pagine partono verso Google Drive, e il riquadro **Invii** ne segue il percorso.
 4. Quando apri quell'archivio sul computer, ArchiView le scarica, controlla che siano arrivate
    intere e le aggiunge alla scheda.
 

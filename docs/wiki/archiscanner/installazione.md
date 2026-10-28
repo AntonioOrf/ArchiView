@@ -45,8 +45,8 @@ inviate e i Documenti. Per aggiornare installa sempre sopra.
 
 ## Disinstallare
 
-Prima di disinstallare, controlla che **Da inviare** sia vuoto: le pagine ancora sul telefono
-non sono arrivate al computer. I Documenti si perdono, a meno che tu non abbia acceso la
+Prima di disinstallare, controlla che in **Invii** nessun lotto sia ancora «Sul telefono»: quelle
+pagine non sono arrivate al computer. I Documenti si perdono, a meno che tu non abbia acceso la
 [copia su Drive](/archiscanner/documenti#copia-su-drive). Poi disinstalla l'app come le altre,
 tenendo premuta l'icona. L'accesso dell'app al tuo Drive si revoca da
 [myaccount.google.com/permissions](https://myaccount.google.com/permissions).

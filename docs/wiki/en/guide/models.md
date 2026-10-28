@@ -20,7 +20,9 @@ choosing the fields you need.
 Fields appear in the record in the order you arrange them: drag them, or move them with the **Move
 left** and **Move right** arrows next to each field.
 
-The record form adapts automatically to the chosen model.
+The record form adapts automatically to the chosen model. In the model editor, the right-hand
+panel shows the selected field; with no field selected it previews the whole record, as it will
+look when you fill it in.
 
 ## The type of a field
 

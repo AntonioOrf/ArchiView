@@ -6,8 +6,8 @@ The main screen shows the folder tree, like the computer's sidebar, empty folder
 Each record shows its shelfmark and, below it, the same secondary line you see on the computer
 (the notary, the author, the title). Folders you open stay open next time.
 
-![The archive on the phone: the «Da inviare» box, the search field and the folder tree with its records](/img/telefono-archivio.png){.light-only .telefono}
-![The archive on the phone: the «Da inviare» box, the search field and the folder tree with its records](/img/telefono-archivio-scuro.png){.dark-only .telefono}
+![The archive on the phone: the «Invii» box, the search field and the folder tree with its records](/img/telefono-archivio.png){.light-only .telefono}
+![The archive on the phone: the «Invii» box, the search field and the folder tree with its records](/img/telefono-archivio-scuro.png){.dark-only .telefono}
 
 The search filters the tree by shelfmark, title or folder: only folders with a match remain,
 already open. The dot next to a record says how many of its pages are still on the phone,
@@ -111,21 +111,32 @@ sent, cannot be moved.
 
 ## Sending
 
-The **Da inviare** (To send) box at the top of the archive counts the pages still on the phone.
-Tap it to see them grouped by record.
+Pages leave **only when you decide**: with the send button at the bottom or with **Invia ora**
+(Send now) in the **Invii** (Uploads) box at the top of the archive. A scan you have just saved
+stays on the phone. On mobile data the app asks for confirmation first, because a day in the
+archive can add up to a few hundred megabytes.
 
-![The «Da inviare» box open: pages waiting, grouped by record, and those without a record](/img/telefono-da-inviare.png){.light-only .telefono}
-![The «Da inviare» box open: pages waiting, grouped by record, and those without a record](/img/telefono-da-inviare-scuro.png){.dark-only .telefono}
+![The «Invii» box: one batch per row, each with its status](/img/telefono-da-inviare.png){.light-only .telefono}
+![The «Invii» box: one batch per row, each with its status](/img/telefono-da-inviare-scuro.png){.dark-only .telefono}
 
-Automatic sending starts **only on Wi-Fi**, because a day in the archive can add up to a few
-hundred megabytes. On mobile data the pages wait; if you need them now, use **Invia ora** (Send
-now). The switch is in **Impostazioni → Invio** (Settings → Sending).
+The **Invii** box shows one row per batch, with its status:
 
-Sending only runs while the app is open. If Android closes it halfway, it picks up again from
-the pages that had not arrived yet when you reopen it.
+- **Sul telefono · premi Invia ora** (On the phone · tap Send now): not sent yet;
+- **In caricamento su Drive · n di m** (Uploading to Drive · n of m): the pages are going up;
+- **Su Drive · in attesa del computer** (On Drive · waiting for the computer): it arrives when the
+  computer with ArchiView is on and receives the scans;
+- **Arrivato sul computer** (Arrived on the computer): the computer has imported them. The row
+  stays visible for a day.
 
-![The app settings: Google account, send only on Wi-Fi, what to do after sending, direct Wi-Fi](/img/telefono-impostazioni.png){.light-only .telefono}
-![The app settings: Google account, send only on Wi-Fi, what to do after sending, direct Wi-Fi](/img/telefono-impostazioni-scuro.png){.dark-only .telefono}
+In the record, the **Dove sono le pagine** (Where the pages are) section shows the same steps, and
+thumbnails that have left carry an **On Drive** label. The first upload to an archive may take the
+computer a few minutes; later uploads arrive sooner.
+
+Sending only runs while the app is open. If Android closes it halfway, press send again after
+reopening it: it picks up from the pages that had not arrived yet.
+
+![The app settings: Google account, what to do after sending, direct Wi-Fi](/img/telefono-impostazioni.png){.light-only .telefono}
+![The app settings: Google account, what to do after sending, direct Wi-Fi](/img/telefono-impostazioni-scuro.png){.dark-only .telefono}
 
 **Dopo l'invio** (After sending) decides what stays on the phone: pages are deleted at once (the
 default), kept for a number of days, or kept for good. Kept pages appear in the record as sent,
