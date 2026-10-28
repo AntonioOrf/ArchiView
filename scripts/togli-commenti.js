@@ -218,4 +218,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { togli, stessoCodice, togliTs, togliCss, togliHtml, togliKotlin, togliCancelletto, elencoFile };
+module.exports = { ESCLUSI, ESTENSIONI, togli, stessoCodice, togliTs, togliCss, togliHtml, togliKotlin, togliCancelletto, elencoFile };

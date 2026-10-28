@@ -72,7 +72,7 @@ cover: prefer a token class to a `dark:` pair.
   and as the serif fallback for medieval abbreviation glyphs.
 - Palette "paper and ink": warm neutral grounds, ink text, hairline dividers
   (`--color-border`/`-light`), input borders at ≥ 3:1 (`--color-border-input`). Reference
-  mock-ups: Claude Design canvas linked from `PIANO-NUOVA-UI.md`.
+  mock-ups: Claude Design canvas https://claude.ai/artifact/GSaUYiaV6qfxN7HLozYW63.
 - Minimum **11 px** for any informative text (labels, badges, hints, metadata). 10 px only for
   numeric counters and single glyphs in fixed-size badges. No 9 px.
 - Uppercase + letter-spacing only for short status badges.
