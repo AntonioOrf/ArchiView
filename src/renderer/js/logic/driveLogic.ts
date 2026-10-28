@@ -187,15 +187,11 @@ async function aggiornaStatoDrive() {
 
         if (section && statusText && loginBtn && logoutBtn && syncBtn) {
             statusText.innerHTML = window.sanitizeHTML(_statoDriveHtml());
-            if (window.driveStatus.isAuthenticated) {
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-                syncBtn.classList.remove('hidden');
-            } else {
-                loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-                syncBtn.classList.add('hidden');
-            }
+            const connesso = window.driveStatus.isAuthenticated;
+            loginBtn.classList.toggle('hidden', connesso);
+            document.getElementById('btn-drive-switch')?.classList.toggle('hidden', !connesso);
+            logoutBtn.classList.toggle('hidden', !connesso);
+            syncBtn.classList.toggle('hidden', !connesso);
         }
         window.aggiornaStatoDriveHub();
     }
@@ -215,13 +211,10 @@ window.aggiornaStatoDriveHub = function() {
     if (!statusText) return;
 
     statusText.innerHTML = window.sanitizeHTML(_statoDriveHtml());
-    if (window.driveStatus && window.driveStatus.isAuthenticated) {
-        if (loginBtn) loginBtn.classList.add('hidden');
-        if (logoutBtn) logoutBtn.classList.remove('hidden');
-    } else {
-        if (loginBtn) loginBtn.classList.remove('hidden');
-        if (logoutBtn) logoutBtn.classList.add('hidden');
-    }
+    const connesso = !!window.driveStatus?.isAuthenticated;
+    loginBtn?.classList.toggle('hidden', connesso);
+    document.getElementById('btn-hub-drive-switch')?.classList.toggle('hidden', !connesso);
+    logoutBtn?.classList.toggle('hidden', !connesso);
 };
 
 window.loginCloud = async function(provider, forceLocal = false) {
@@ -246,6 +239,13 @@ window.loginCloud = async function(provider, forceLocal = false) {
 
 window.loginGoogleDrive = async function(forceLocal = false) {
     await window.loginCloud('google', forceLocal);
+};
+
+window.cambiaAccountDrive = async function() {
+    const testo = window.t('drive_switch_body', "L'account attuale ({var0}) verrà scollegato da questo archivio e si aprirà il browser per sceglierne un altro.\n\nSe la cartella dell'archivio non è sul Drive del nuovo account, ti verrà proposto di collegare un archivio esistente o di creare un nuovo backup. I dati sul computer non vengono modificati.")
+        .replace('{var0}', window.driveStatus?.user || '');
+    const ok = await window.chiediConfermaBloccante(testo, window.t('btn_drive_switch', 'Cambia account'), window.t('drive_switch_title', 'Cambiare account Google?'), 'btn-primary');
+    if (ok) await window.loginCloud('google', true);
 };
 
 window.connettiAccountCloud = async function() {

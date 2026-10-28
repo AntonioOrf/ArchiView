@@ -200,6 +200,7 @@
                             <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-hub-drive-status">...</span></div>
                             <div class="flex gap-2 mt-2">
                                 <button type="button" id="btn-hub-drive-login" class="btn btn-primary" ${window.azione('click', 'loginGoogleDrive')} data-i18n="btn_drive_login">Accedi a Drive</button>
+                                <button type="button" id="btn-hub-drive-switch" class="btn btn-secondary hidden" ${window.azione('click', 'cambiaAccountDrive')} data-i18n="btn_drive_switch">Cambia account</button>
                                 <button type="button" id="btn-hub-drive-logout" class="btn btn-danger hidden" ${window.azione('click', 'logoutGoogleDrive')} data-i18n="btn_drive_logout">Disconnetti</button>
                             </div>
                         </div>
@@ -213,6 +214,7 @@
                         <div><b data-i18n="settings_drive_status">Stato:</b> <span id="settings-drive-status">...</span></div>
                         <div class="flex gap-2 mt-2">
                             <button type="button" id="btn-drive-login" class="btn btn-primary" ${window.azione('click', 'loginGoogleDrive')} data-i18n="btn_drive_login">Accedi a Drive</button>
+                            <button type="button" id="btn-drive-switch" class="btn btn-secondary hidden" ${window.azione('click', 'cambiaAccountDrive')} data-i18n="btn_drive_switch">Cambia account</button>
                             <button type="button" id="btn-drive-logout" class="btn btn-danger hidden" ${window.azione('click', 'logoutGoogleDrive')} data-i18n="btn_drive_logout">Disconnetti</button>
                             <button type="button" id="btn-drive-sync" class="btn btn-secondary hidden" ${window.azione('click', 'sincronizzaGoogleDrive')} data-i18n="btn_drive_sync">Sincronizza Ora</button>
                         </div>

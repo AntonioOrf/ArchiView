@@ -309,24 +309,31 @@ window.mostraBottomConfirm = function(testo, onConfirmCallback, actionId = null,
     banner.classList.remove('hidden-tab');
 }
 
-window.chiediConfermaBloccante = function(testo: string, etichettaConferma: string): Promise<boolean> {
+window.chiediConfermaBloccante = function(testo: string, etichettaConferma: string, titolo?: string, classeConferma = 'btn-danger'): Promise<boolean> {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay z-modal-critical';
         overlay.innerHTML = window.sanitizeHTML(`
-            <div class="modal-window max-w-md">
-                <div class="modal-body"><p class="text-stone-700 leading-relaxed"></p></div>
+            <div class="modal-window max-w-md" role="dialog" aria-modal="true">
+                <div class="modal-body space-y-3">${titolo ? '<h3 class="font-semibold text-base"></h3>' : ''}</div>
                 <div class="modal-footer modal-footer-bar">
                     <button type="button" class="btn btn-secondary" data-modal-cancel>${escapeHTML(window.t('btn_cancel', 'Annulla'))}</button>
-                    <button type="button" class="btn btn-danger">${escapeHTML(etichettaConferma)}</button>
+                    <button type="button" class="btn ${escapeHTML(classeConferma)}" data-modal-ok>${escapeHTML(etichettaConferma)}</button>
                 </div>
             </div>`);
-        overlay.querySelector('p').textContent = testo;
+        const corpo = overlay.querySelector('.modal-body');
+        if (titolo) corpo.querySelector('h3').textContent = titolo;
+        for (const paragrafo of testo.split('\n\n')) {
+            const p = document.createElement('p');
+            p.className = 'text-stone-700 leading-relaxed';
+            p.textContent = paragrafo;
+            corpo.appendChild(p);
+        }
         const chiudi = (ok: boolean) => { overlay.remove(); resolve(ok); };
         overlay.querySelector('[data-modal-cancel]').addEventListener('click', () => chiudi(false));
-        overlay.querySelector('.btn-danger').addEventListener('click', () => chiudi(true));
+        overlay.querySelector('[data-modal-ok]').addEventListener('click', () => chiudi(true));
         document.body.appendChild(overlay);
-        (overlay.querySelector('.btn-danger') as HTMLElement).focus();
+        (overlay.querySelector('[data-modal-ok]') as HTMLElement).focus();
     });
 };
 

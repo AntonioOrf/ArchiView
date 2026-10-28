@@ -49,6 +49,7 @@ const AZIONI_CONSENTITE: ReadonlySet<string> = new Set([
     'avviaTutorialDaInvito',
     'azzeraRiordinoCampi',
     'azzeraTagAttivi',
+    'cambiaAccountDrive',
     'cambiaAccountGoogleVault',
     'cambiaAggiornamentiAutomatici',
     'cambiaAllegatoRelativo',
