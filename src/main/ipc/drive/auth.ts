@@ -415,7 +415,7 @@ async function logoutDrive(): Promise<boolean> {
   return true;
 }
 
-async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: string; unauthorizedVault?: boolean }> {
+async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: string; unauthorizedVault?: boolean; backupAltroAccount?: boolean }> {
   if (!loadSavedTokens()) return { isAuthenticated: false };
 
   let userEmail = 'Utente (Drive)';
@@ -435,6 +435,15 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
         if (classifyDriveFolderError(err) === 'forbidden') {
           logAuthEvent(`ACCESSO_NEGATO_VAULT: account ${userEmail} non autorizzato per vault ${settings.sharedVaultId}`);
           return { isAuthenticated: true, user: userEmail, unauthorizedVault: true };
+        }
+      }
+    } else if (settings.isPersonalCloud && settings.sharedVaultId) {
+      try {
+        await driveState.drive.files.get({ fileId: settings.sharedVaultId, fields: 'id', supportsAllDrives: true });
+      } catch (err: any) {
+        if (classifyDriveFolderError(err)) {
+          logAuthEvent(`BACKUP_ALTRO_ACCOUNT: cartella ${settings.sharedVaultId} non visibile all'account ${userEmail}`);
+          return { isAuthenticated: true, user: userEmail, backupAltroAccount: true };
         }
       }
     }

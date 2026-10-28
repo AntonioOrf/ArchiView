@@ -168,7 +168,8 @@ async function aggiornaStatoDrive() {
         window.driveStatus = {
             isAuthenticated: statusResult?.isAuthenticated || false,
             user: statusResult?.user || null,
-            unauthorizedVault: statusResult?.unauthorizedVault || false
+            unauthorizedVault: statusResult?.unauthorizedVault || false,
+            backupAltroAccount: statusResult?.backupAltroAccount || false
         };
 
         window.statoCloud.autenticato = window.driveStatus.isAuthenticated || !!window.hubConfig;
@@ -230,6 +231,11 @@ window.loginCloud = async function(provider, forceLocal = false) {
         try {
             await api.auth(forceLocal);
             await aggiornaStatoDrive();
+            if (window.driveStatus.backupAltroAccount) {
+                if (typeof window.chiudiImpostazioni === 'function') window.chiudiImpostazioni();
+                await proponiBackupSuQuestoAccount(window.t('err_backup_altro_account', "La cartella di questo backup non è sul Drive dell'account Google collegato. Torna all'account di prima, oppure collega o crea un backup su questo account."));
+                return;
+            }
             if (typeof mostraMessaggio === 'function') mostraMessaggio(window.t("msg_autenticazione_completata", 'Accesso effettuato.'), "success");
         } catch (e) {
             console.error(e);
@@ -324,6 +330,12 @@ window.collegaArchivioEsistenteDrive = async function() {
         list.innerHTML = window.sanitizeHTML(`<p class="text-sm text-red-600 p-4 text-center">${escapeHTML(window.testoErroreDrive(e))}</p>`);
     }
 };
+
+async function proponiBackupSuQuestoAccount(messaggio) {
+    if (typeof mostraMessaggio === 'function') mostraMessaggio(messaggio, 'warning');
+    if (typeof window.apriCloudModal === 'function') await window.apriCloudModal();
+    await window.collegaArchivioEsistenteDrive();
+}
 
 function confermaCollegamentoArchivio(vault, cfg) {
     const msg = window.t("msg_dlg_ricollega_archivio", "Collegare questo archivio alla cartella Drive \"") + (vault.name || '') +
@@ -484,11 +496,7 @@ async function sincronizzaDrive(silent, modo) {
             if (typeof window.apriCloudModal === 'function') window.apriCloudModal();
         } else if (e.message && e.message.includes('BACKUP_ALTRO_ACCOUNT')) {
             window.impostaErroreCloud(window.testoErroreDrive(e));
-            if (!silent) {
-                if (typeof mostraMessaggio === 'function') mostraMessaggio(window.testoErroreDrive(e), 'warning');
-                if (typeof window.apriCloudModal === 'function') await window.apriCloudModal();
-                await window.collegaArchivioEsistenteDrive();
-            }
+            if (!silent) await proponiBackupSuQuestoAccount(window.testoErroreDrive(e));
         } else if (e.message && (e.message.includes('Autenticazione') || e.message.includes('non effettuata') || e.message.includes('effettua l\'accesso'))) {
             if (typeof window.apriCloudModal === 'function') {
                 window.apriCloudModal();
