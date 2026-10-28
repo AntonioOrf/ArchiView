@@ -193,6 +193,16 @@ function loadSavedTokens(): boolean {
   return false;
 }
 
+function erroreDiAutenticazione(e: any): boolean {
+  const status = e?.code || e?.status || e?.response?.status;
+  return status === 401 || (typeof e?.message === 'string' && (
+    e.message.includes('invalid_grant') ||
+    e.message.includes('Token has been expired') ||
+    e.message.includes('unauthorized_client') ||
+    e.message.includes('Invalid Credentials')
+  ));
+}
+
 async function authenticateDrive(forceLocal = false): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -215,14 +225,7 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
           logAuthEvent("AUTH: token già validi, login saltato (nessun browser aperto).");
           return resolve(true);
         } catch (e: any) {
-          const status = e.code || e.status || (e.response && e.response.status);
-          const isAuthError = status === 401 || (typeof e.message === 'string' && (
-            e.message.includes('invalid_grant') ||
-            e.message.includes('Token has been expired') ||
-            e.message.includes('unauthorized_client') ||
-            e.message.includes('Invalid Credentials')
-          ));
-          if (!isAuthError) {
+          if (!erroreDiAutenticazione(e)) {
             console.warn("Errore non-auth su Drive (rete/quota), non avvio nuovo login:", e.message);
             return reject(new Error("Errore di connessione a Google Drive: " + e.message));
           }
@@ -239,22 +242,19 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
       }
 
       let needConsent = true;
-      let loginHint: string | null = null;
       try {
         const existingPath = getLocalTokenPath() || getGlobalTokenPath();
         if (existingPath) {
           const existingTok = readTokenFile(existingPath) as any;
           if (existingTok && existingTok.refresh_token) needConsent = false;
-          if (existingTok && existingTok.email) loginHint = existingTok.email;
         }
       } catch (e) {}
 
-      let promptMode = '';
-      if (forceLocal || needConsent) promptMode = 'select_account consent';
-
-      const authUrlParams: any = { access_type: 'offline', scope: SCOPES };
-      if (promptMode) authUrlParams.prompt = promptMode;
-      if (!forceLocal && loginHint) authUrlParams.login_hint = loginHint;
+      const authUrlParams: any = {
+        access_type: 'offline',
+        scope: SCOPES,
+        prompt: (forceLocal || needConsent) ? 'select_account consent' : 'select_account'
+      };
 
       const { codeVerifier, codeChallenge } = await driveState.oauth2Client.generateCodeVerifierAsync();
       const statoLogin = crypto.randomBytes(24).toString('hex');
@@ -374,9 +374,15 @@ async function authenticateDrive(forceLocal = false): Promise<any> {
 async function logoutDrive(): Promise<boolean> {
   const localTokenPath = getLocalTokenPath();
   const globalTokenPath = getGlobalTokenPath();
+  let cartellaTokenPath: string | null = null;
+  try {
+    const flags = getActiveVaultFlags();
+    if (flags.sharedVaultId) cartellaTokenPath = tokenStore.tokenPathFor('google', flags.sharedVaultId);
+  } catch (e) {}
+  const percorsi = new Set([localTokenPath, globalTokenPath, cartellaTokenPath]);
 
   try {
-    for (const p of new Set([localTokenPath, globalTokenPath])) {
+    for (const p of percorsi) {
       if (!p || !fs.existsSync(p)) continue;
       const tok = readTokenFile(p) as any;
       const toRevoke = tok && (tok.refresh_token || tok.access_token);
@@ -391,7 +397,7 @@ async function logoutDrive(): Promise<boolean> {
     logAuthEvent("LOGOUT: revoca su Google fallita (non bloccante): " + e.message);
   }
 
-  for (const p of new Set([localTokenPath, globalTokenPath])) {
+  for (const p of percorsi) {
     try {
       if (p && fs.existsSync(p)) {
         fs.unlinkSync(p);
@@ -423,6 +429,10 @@ async function checkDriveStatus(): Promise<{ isAuthenticated: boolean; user?: st
     const res = await driveState.drive.about.get({ fields: 'user' });
     userEmail = res.data.user.emailAddress;
   } catch (e: any) {
+    if (erroreDiAutenticazione(e)) {
+      logAuthEvent("STATO: token rifiutato da Google (" + e.message + "), risulta non connesso.");
+      return { isAuthenticated: false };
+    }
     console.warn("checkDriveStatus about.get fallita (scope drive.file):", e.message);
   }
 

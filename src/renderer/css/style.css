@@ -303,6 +303,7 @@ body {
     100% { transform: translateX(300%); }
 }
 .hidden-tab { display: none !important; }
+.btn.hidden { display: none; }
 .custom-scroll::-webkit-scrollbar { width: 6px; }
 .custom-scroll::-webkit-scrollbar-thumb { background-color: var(--color-border); border-radius: 10px; }
 
