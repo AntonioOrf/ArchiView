@@ -388,6 +388,11 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
     }
 
     const vivo = appData.manoscritti.find(m => String(m.id) === id);
+    const copia = vivo ? JSON.parse(JSON.stringify(vivo)) : null;
+    const cartellePrima = appData.cartelle.slice();
+    const tombstonePrima = appData.deletedIds ? appData.deletedIds.slice() : appData.deletedIds;
+    let salvato = false;
+    try {
     if (!vivo) {
         if (!datiNuova) throw new Error('scheda_non_trovata');
         appData.manoscritti.push(window.Model.creaScheda(Object.assign({}, datiNuova, {
@@ -405,8 +410,9 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
         if (vivo.allegato && vivo.allegati.length === 0) {
             vivo.allegati.push({ nome: vivo.allegato, tipo: vivo.allegatoTipo, originalName: 'Allegato' });
         }
-        vivo.allegati.push(...r.allegati);
-        const note = _scUnisciNote(vivo.note, lotto.nota, notePagine);
+        vivo.allegati.push(...r.allegati.filter(a => !vivo.allegati.some(x => x.nome === a.nome)));
+        const giaNote = (t) => !t || String(vivo.note || '').includes(t);
+        const note = _scUnisciNote(vivo.note, giaNote(lotto.nota) ? '' : lotto.nota, giaNote(notePagine) ? '' : notePagine);
         if (note !== (vivo.note || '')) vivo.note = note;
         if (!vivo.allegato) {
             vivo.allegato = r.allegati[0].nome;
@@ -417,6 +423,21 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
     }
     await window.Store.commit();
     await window.salvaTutto();
+    salvato = true;
+    } catch (err) {
+        if (!salvato) {
+            if (vivo) {
+                for (const k of Object.keys(vivo)) delete vivo[k];
+                Object.assign(vivo, copia);
+            } else {
+                const i = appData.manoscritti.findIndex(m => String(m.id) === id);
+                if (i >= 0) appData.manoscritti.splice(i, 1);
+                appData.cartelle = cartellePrima;
+                appData.deletedIds = tombstonePrima;
+            }
+        }
+        throw err;
+    }
     const t = await window.apiScanner.togli(lotto.id);
     if (!t || !t.success) console.warn('[scanner] lotto assegnato ma rimasto in arrivo:', lotto.id, t && t.error);
     _scSegnaImportate(id, lotto.pagine.length, !vivo);

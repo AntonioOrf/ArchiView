@@ -53,6 +53,15 @@ function prefissoScheda(schedaId: unknown): string {
 
 type VoceAllegato = { nome: string; tipo: 'immagine' | 'pdf'; originalName: string; hash: string };
 
+async function hashEsistente(p: string): Promise<string | null> {
+  try {
+    return await hashFile(p);
+  } catch (e: any) {
+    if (e && e.code === 'ENOENT') return null;
+    throw e;
+  }
+}
+
 async function copiaInAllegati(c: CartelleScanner, id: unknown, schedaId: unknown, cartellaAllegati: string): Promise<VoceAllegato[]> {
   const lotto = await leggiLotto(c, id);
   const prefisso = prefissoScheda(schedaId) + '_' + lotto.id + '_';
@@ -62,6 +71,10 @@ async function copiaInAllegati(c: CartelleScanner, id: unknown, schedaId: unknow
     for (const pg of lotto.pagine) {
       const nome = prefisso + pg.file;
       const dest = path.join(cartellaAllegati, nome);
+      if (await hashEsistente(dest) === pg.sha256) {
+        voci.push({ nome, tipo: 'immagine', originalName: pg.etichetta || pg.file, hash: pg.sha256 });
+        continue;
+      }
       await fsp.copyFile(path.join(cartellaLotto(c, id), pg.file), dest, fs.constants.COPYFILE_EXCL);
       copiati.push(dest);
       voci.push({ nome, tipo: 'immagine', originalName: pg.etichetta || pg.file, hash: pg.sha256 });
@@ -75,6 +88,11 @@ async function copiaInAllegati(c: CartelleScanner, id: unknown, schedaId: unknow
 
 async function unisciInPdf(c: CartelleScanner, id: unknown, schedaId: unknown, cartellaAllegati: string): Promise<VoceAllegato> {
   const lotto = await leggiLotto(c, id);
+  const nome = prefissoScheda(schedaId) + '_' + lotto.id + '.pdf';
+  const dest = path.join(cartellaAllegati, nome);
+  if (await hashEsistente(dest)) {
+    return { nome, tipo: 'pdf', originalName: lotto.titolo || lotto.id, hash: await hashFile(dest) };
+  }
   const { PDFDocument } = require('pdf-lib');
   // ponytail: il PDF si compone in memoria (pdf-lib non scrive a flusso): ~ somma delle pagine,
   // ok per lotti da qualche centinaio di MB; oltre, servirebbe un writer PDF incrementale.
@@ -86,8 +104,6 @@ async function unisciInPdf(c: CartelleScanner, id: unknown, schedaId: unknown, c
     pagina.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
   }
   if (lotto.titolo) doc.setTitle(lotto.titolo);
-  const nome = prefissoScheda(schedaId) + '_' + lotto.id + '.pdf';
-  const dest = path.join(cartellaAllegati, nome);
   await fsp.writeFile(dest, await doc.save(), { flag: 'wx' });
   try {
     return { nome, tipo: 'pdf', originalName: lotto.titolo || lotto.id, hash: await hashFile(dest) };
