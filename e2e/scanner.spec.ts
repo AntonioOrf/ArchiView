@@ -318,6 +318,31 @@ test.describe('Scanner — scansioni in arrivo', () => {
     expect(avvii[2]).toBe(avvii[0]);
   });
 
+  test('la nota del telefono arrivata mentre la scheda è aperta nel form resta dopo il salvataggio', async ({ page, userDataDir }) => {
+    const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Scanner');
+    lottoInArrivo(ws, '20261012-100000-dddd', 'Reg. 20', ['1r']);
+    await page.locator('#btn-scansioni').click();
+    await page.locator('#scanner-modal .scan-lotto').getByRole('button', { name: 'Nuova scheda' }).click();
+    await expect(page.locator('#scanner-modal')).toBeHidden();
+    const id = await page.evaluate(() => appData.manoscritti.find((m: any) => (m.segnatura || '').startsWith('Reg.')).id);
+
+    await page.evaluate((i: string) => { appData.manoscritti.find((m: any) => m.id === i).tipoDocumento = 'atti'; (window as any).editItem(i); }, id);
+    const campoNote = page.locator('#' + await page.evaluate(() => (window as any).idControlloCampo('note')));
+    await expect(campoNote).toHaveValue('legatura fragile');
+    await campoNote.fill('legatura fragile, riletta');
+
+    lottoInArrivo(ws, '20261012-110000-eeee', 'Reg. 20', ['2r'], undefined, { nota: 'dal telefono' });
+    await page.evaluate(async (i: string) => { (window as any).selectedRecords = [i]; }, id);
+    await page.locator('#btn-scansioni').click();
+    await page.locator('#scanner-modal .scan-lotto').getByRole('button', { name: /^Aggiungi a/ }).click();
+    await expect(page.locator('#scanner-modal .scan-lotto')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    await page.locator('#btn-submit-form').click();
+    await expect.poll(() => page.evaluate((i: string) => appData.manoscritti.find((m: any) => m.id === i).note, id))
+      .toBe('legatura fragile, riletta\n\ndal telefono');
+  });
+
   test('lotto da smistare senza titolo: si presenta con la nota del telefono', async ({ page, userDataDir }) => {
     const ws = await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Scanner');
     lottoInArrivo(ws, '20261011-130000-nnnn', '', ['x']);
