@@ -36,13 +36,13 @@ async function cartellaLotti(): Promise<string> {
 async function creaSorgenteDrive() {
   if (!driveState.drive) throw new Error('drive_non_autenticato');
   const idLotti = await cartellaLotti();
-  const cartelle = new Map<string, string>();
+  const cartelle = new Map<string, { usata: string; tutte: string[] }>();
   const contenuti = new Map<string, FileDrive[]>();
 
   async function fileDel(id: string): Promise<FileDrive[]> {
     const cached = contenuti.get(id);
     if (cached) return cached;
-    const idCartella = cartelle.get(id);
+    const idCartella = cartelle.get(id)?.usata;
     if (!idCartella) throw new Error('lotto_sconosciuto');
     const files = await elencaTutti(`'${idCartella}' in parents and trashed=false and mimeType!='${MIME_CARTELLA}'`, 'id, name, size');
     contenuti.set(id, files);
@@ -54,16 +54,21 @@ async function creaSorgenteDrive() {
       const sottocartelle = await elencaTutti(`'${idLotti}' in parents and mimeType='${MIME_CARTELLA}' and trashed=false`, 'id, name');
       cartelle.clear();
       contenuti.clear();
-      for (const c of sottocartelle) cartelle.set(c.name, c.id);
+      const gruppi = new Map<string, FileDrive[]>();
+      for (const c of sottocartelle) gruppi.set(c.name, [...(gruppi.get(c.name) || []), c]);
       const manifest = await elencaTutti(`name='${escapeDriveQuery('lotto.json')}' and trashed=false`, 'id, parents');
       const conManifest = new Set<string>();
       for (const m of manifest) for (const p of m.parents || []) conManifest.add(p);
-      return sottocartelle.map(c => ({ id: c.name, completo: conManifest.has(c.id) }));
+      return [...gruppi].map(([nome, gruppo]) => {
+        const conM = gruppo.find(c => conManifest.has(c.id));
+        cartelle.set(nome, { usata: (conM || gruppo[0]).id, tutte: gruppo.map(c => c.id) });
+        return { id: nome, completo: !!conM };
+      });
     },
 
     async leggiManifest(id: string, maxByte: number): Promise<string> {
       const m = (await fileDel(id)).filter(f => f.name === 'lotto.json');
-      if (m.length !== 1) throw new Error(m.length ? 'manifest_duplicato' : 'manifest_assente');
+      if (!m.length) throw new Error('manifest_assente');
       if (Number(m[0].size) > maxByte) throw new Error('manifest_troppo_grande');
       const res = await withDriveRetry(() => driveState.drive.files.get(
         { fileId: m[0].id, alt: 'media', supportsAllDrives: true },
@@ -80,13 +85,21 @@ async function creaSorgenteDrive() {
     },
 
     async rimuovi(id: string): Promise<void> {
-      const idCartella = cartelle.get(id);
-      if (!idCartella) throw new Error('lotto_sconosciuto');
-      await withDriveRetry(() => driveState.drive.files.update({
-        fileId: idCartella,
-        requestBody: { trashed: true },
-        supportsAllDrives: true
-      }));
+      const gruppo = cartelle.get(id);
+      if (!gruppo) throw new Error('lotto_sconosciuto');
+      let errore: unknown;
+      for (const fileId of gruppo.tutte) {
+        try {
+          await withDriveRetry(() => driveState.drive.files.update({
+            fileId,
+            requestBody: { trashed: true },
+            supportsAllDrives: true
+          }));
+        } catch (e) {
+          errore = errore || e;
+        }
+      }
+      if (errore) throw errore;
     }
   };
 }
