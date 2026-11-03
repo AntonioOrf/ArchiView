@@ -1,3 +1,11 @@
+## ArchiView 4.0.3 — Scansioni dal telefono più sicure
+
+### Correzioni
+
+- **Lotti fermi su Drive**: un invio dal telefono interrotto dalla rete poteva lasciare su Drive un lotto doppio che il computer rifiutava ogni volta. Ora il lotto arriva e le copie doppie vanno nel cestino.
+- **Note dal telefono**: la nota di un lotto arrivato mentre la scheda è aperta nel form, o nella finestra staccata, non si perde più quando si salva la scheda.
+- **Assegnazione interrotta**: se il salvataggio fallisce mentre si assegna un lotto a una scheda, la scheda torna com'era e l'assegnazione si può ripetere, senza l'errore «file esistente» e senza carte doppie.
+
 ## ArchiView 4.0.2 — Cambio account e stato della trascrizione
 
 ### Novità
