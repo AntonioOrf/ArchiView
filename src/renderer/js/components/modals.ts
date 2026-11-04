@@ -176,6 +176,7 @@ window.apriModalDocumenti = async function(id) {
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
             </div>
+            ${al.nota ? `<p class="doc-carta-nota" title="${escapeHTML(window.t('sheet_note', 'Nota della carta'))}"><i data-lucide="sticky-note" class="w-3.5 h-3.5"></i><span>${escapeHTML(al.nota)}</span></p>` : ''}
         `;
         fragment.appendChild(div);
     }

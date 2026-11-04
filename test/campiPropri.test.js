@@ -205,4 +205,19 @@ test('3.8.9: chi riordina e chi aggiunge un campo proprio non si ostacolano', ()
     ['attori_dinamici', 'supporto', 'A']);
 });
 
+test('3.9.1: un campo base con valore e assente dal tipo diventa campo proprio', () => {
+  const B = Object.assign({ note: { label: 'Note', type: 'textarea' } }, BASE);
+  const def = M.campiPropriConValore(scheda({ note: 'Legatura fragile' }), TIPO, 'note', B);
+  assert.deepStrictEqual(def, [{ id: 'note', tipo: 'textarea', label: 'Note' }]);
+});
+
+test('3.9.2: niente campo proprio se il valore è vuoto, se il tipo lo ha o se c\'è già', () => {
+  const B = Object.assign({ note: { label: 'Note', type: 'textarea' } }, BASE);
+  assert.deepStrictEqual(M.campiPropriConValore(scheda({ note: '  ' }), TIPO, 'note', B), []);
+  const conNote = Object.assign({}, TIPO, { campi: TIPO.campi.concat('note') });
+  assert.deepStrictEqual(M.campiPropriConValore(scheda({ note: 'x' }), conNote, 'note', B), []);
+  const gia = scheda({ note: 'x', campiPropri: [{ id: 'note', tipo: 'text', label: 'Mie note' }] });
+  assert.deepStrictEqual(M.campiPropriConValore(gia, TIPO, 'note', B).map(d => d.label), ['Mie note']);
+});
+
 console.log(`\n${passati} test superati.`);

@@ -51,7 +51,13 @@ function prefissoScheda(schedaId: unknown): string {
   return pulito;
 }
 
-type VoceAllegato = { nome: string; tipo: 'immagine' | 'pdf'; originalName: string; hash: string };
+type VoceAllegato = { nome: string; tipo: 'immagine' | 'pdf'; originalName: string; hash: string; nota?: string };
+
+function voceImmagine(nome: string, pg: { file: string; sha256: string; etichetta?: string; nota?: string }): VoceAllegato {
+  const v: VoceAllegato = { nome, tipo: 'immagine', originalName: pg.etichetta || pg.file, hash: pg.sha256 };
+  if (pg.nota) v.nota = pg.nota;
+  return v;
+}
 
 async function hashEsistente(p: string): Promise<string | null> {
   try {
@@ -72,12 +78,12 @@ async function copiaInAllegati(c: CartelleScanner, id: unknown, schedaId: unknow
       const nome = prefisso + pg.file;
       const dest = path.join(cartellaAllegati, nome);
       if (await hashEsistente(dest) === pg.sha256) {
-        voci.push({ nome, tipo: 'immagine', originalName: pg.etichetta || pg.file, hash: pg.sha256 });
+        voci.push(voceImmagine(nome, pg));
         continue;
       }
       await fsp.copyFile(path.join(cartellaLotto(c, id), pg.file), dest, fs.constants.COPYFILE_EXCL);
       copiati.push(dest);
-      voci.push({ nome, tipo: 'immagine', originalName: pg.etichetta || pg.file, hash: pg.sha256 });
+      voci.push(voceImmagine(nome, pg));
     }
     return voci;
   } catch (e) {

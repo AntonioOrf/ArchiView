@@ -256,7 +256,8 @@ window.caricaSchedaNelForm = function(id) {
     (document.getElementById('form-cartella') as HTMLInputElement).value = m.cartella || '';
     (document.getElementById('form-tipo-documento') as HTMLInputElement).value = m.tipoDocumento || 'manoscritto';
 
-    if (window.scriviCampiPropriForm) window.scriviCampiPropriForm(window.Model.campiPropri(m));
+    const tipoScheda = (appData.tipiDocumento || []).find(t => t.id === m.tipoDocumento) || null;
+    if (window.scriviCampiPropriForm) window.scriviCampiPropriForm(window.Model.campiPropriConValore(m, tipoScheda, 'note', window.CONFIG_CAMPI));
     if (window.scriviOrdineCampiForm) window.scriviOrdineCampiForm(window.Model.ordineCampi(m));
     if (window.riordinoCampiAttivo && window.chiudiRiordinoCampi) window.chiudiRiordinoCampi(true);
     if (window.azzeraMemoriaCompilazione) window.azzeraMemoriaCompilazione();

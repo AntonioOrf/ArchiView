@@ -39,6 +39,7 @@
                     <button id="btn-carta-succ" data-on-mousedown="nonRubareFuoco" data-on-click="cambiaCartaRelativa" data-args-click="[1]" class="btn btn-ghost btn-icon" data-i18n-title="trasc_next_sheet" data-i18n-aria-label="trasc_next_sheet"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     <span id="trasc-carta-nome" class="ml-2 font-medium truncate min-w-0" translate="no"></span>
                     <button id="btn-rinomina-carta" data-on-click="rinominaCartaCorrente" class="btn btn-ghost btn-icon shrink-0" data-i18n-title="btn_rename_short" data-i18n-aria-label="btn_rename_short"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                    <button id="btn-nota-carta" data-on-click="mostraNotaCarta" class="btn btn-ghost btn-icon shrink-0" aria-controls="trasc-carta-nota-box" aria-pressed="false" data-i18n-title="sheet_note" data-i18n-aria-label="sheet_note"><i data-lucide="sticky-note" class="w-3.5 h-3.5"></i></button>
                     <select id="trasc-carta-stato" class="ml-auto shrink-0 px-1 py-0.5 border border-stone-300 bg-white text-xs" data-i18n-aria-label="sheet_status" data-i18n-title="sheet_status" data-on-change="impostaStatoCarta" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]"></select>
                 </div>
                 <div id="trasc-pdf-bar" class="hidden-tab shrink-0 flex items-center gap-1 px-2 py-1 bg-stone-100 border-b border-stone-300 text-xs text-stone-700">
@@ -54,6 +55,16 @@
                     </div>
                 </div>
                 <div class="flex-1 relative flex justify-center items-center overflow-hidden group">
+                    <aside id="trasc-carta-nota-box" class="carta-nota hidden-tab" data-i18n-aria-label="sheet_note">
+                        <div class="carta-nota-testa">
+                            <i data-lucide="sticky-note" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span class="flex-1" data-i18n="sheet_note">Nota della carta</span>
+                            <button id="btn-modifica-nota-carta" type="button" data-on-click="modificaNotaCarta" class="btn btn-ghost btn-icon shrink-0" data-i18n-title="sheet_note_edit" data-i18n-aria-label="sheet_note_edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                            <button type="button" data-on-click="nascondiNotaCarta" class="btn btn-ghost btn-icon shrink-0" data-i18n-title="sheet_note_hide" data-i18n-aria-label="sheet_note_hide"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                        <p id="trasc-carta-nota-testo" class="carta-nota-testo"></p>
+                        <textarea id="trasc-carta-nota" rows="3" maxlength="2000" class="carta-nota-campo hidden-tab" data-i18n-placeholder="sheet_note_placeholder" data-i18n-aria-label="sheet_note" data-on-change="impostaNotaCarta" data-args-change="[{&quot;$&quot;:&quot;value&quot;}]"></textarea>
+                    </aside>
                     <button id="btn-prev-allegato" data-on-click="cambiaAllegatoRelativo" data-args-click="[-1]" data-i18n-title="tooltip_prev" data-i18n-aria-label="tooltip_prev" class="btn btn-icon absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 z-10 hidden" style="background-color: rgba(41, 37, 36, 0.6); color: white;"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                     <div id="trasc-img-viewport" class="iv-viewport hidden-tab" tabindex="0">
                         <img id="trasc-img-preview" alt="" class="max-w-full max-h-full object-contain" />

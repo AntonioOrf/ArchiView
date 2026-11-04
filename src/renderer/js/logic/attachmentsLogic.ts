@@ -365,6 +365,7 @@ function _taAggiornaBarraCarte(m, index) {
     const allegati = (m && Array.isArray(m.allegati)) ? m.allegati : [];
     if (allegati.length === 0) {
         barra.classList.add('hidden-tab');
+        _taAggiornaNotaCarta(null);
         return;
     }
     for (const id of ['btn-carta-prec', 'trasc-carta-numero', 'trasc-carte-totale', 'btn-carta-succ']) {
@@ -384,7 +385,58 @@ function _taAggiornaBarraCarte(m, index) {
     const stato = document.getElementById('trasc-carta-stato') as HTMLSelectElement;
     stato.replaceChildren(...[''].concat(window.STATI_CARTA).map(s => new Option(s ? window.t('stato_carta_' + s, s) : window.t('sheet_status_none', 'Nessuno stato'), s)));
     stato.value = a.stato || '';
+    _taAggiornaNotaCarta(a);
     barra.classList.remove('hidden-tab');
+}
+
+let _taNotaNascosta = '';
+
+function _taElementiNota() {
+    const box = document.getElementById('trasc-carta-nota-box');
+    const testo = document.getElementById('trasc-carta-nota-testo');
+    const campo = document.getElementById('trasc-carta-nota') as HTMLTextAreaElement | null;
+    if (!box || !testo || !campo) return null;
+    if (!campo.dataset.agganciato) {
+        campo.dataset.agganciato = '1';
+        campo.addEventListener('blur', () => { if (campo.value.trim() === (box.dataset.testo || '')) _taChiudiModificaNota(); });
+        campo.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            e.stopPropagation();
+            campo.value = box.dataset.testo || '';
+            _taChiudiModificaNota();
+        });
+    }
+    return { box, testo, campo };
+}
+
+function _taChiudiModificaNota() {
+    const el = _taElementiNota();
+    if (!el) return;
+    el.campo.classList.add('hidden-tab');
+    el.testo.classList.toggle('hidden-tab', !el.box.dataset.testo);
+    el.box.classList.toggle('hidden-tab', !el.box.dataset.testo || _taNotaNascosta === el.box.dataset.nome);
+}
+
+function _taAggiornaNotaCarta(a) {
+    const el = _taElementiNota();
+    if (!el) return;
+    const nome = a ? String(a.nome) : '';
+    const inModifica = !el.campo.classList.contains('hidden-tab');
+    if (inModifica && el.box.dataset.nome && el.box.dataset.nome !== nome && el.campo.value.trim() !== (el.box.dataset.testo || '')) {
+        window.impostaNotaCarta(el.campo.value);
+    }
+    if (el.box.dataset.nome !== nome) _taNotaNascosta = '';
+    const nota = a && typeof a.nota === 'string' ? a.nota : '';
+    el.box.dataset.nome = nome;
+    el.box.dataset.testo = nota;
+    el.testo.textContent = nota;
+    el.campo.value = nota;
+    _taChiudiModificaNota();
+    const btn = document.getElementById('btn-nota-carta');
+    if (btn) {
+        btn.setAttribute('aria-pressed', nota ? 'true' : 'false');
+        btn.classList.toggle('carta-nota-attiva', !!nota);
+    }
 }
 
 window.renderBarraCarte = function(id) {
@@ -425,6 +477,55 @@ window.rinominaCartaCorrente = function() {
         _taAggiornaBarraCarte(m, i);
         _taAggiornaEtichetta(m, i);
     });
+};
+
+window.modificaNotaCarta = function() {
+    const el = _taElementiNota();
+    if (!el) return;
+    el.campo.value = el.box.dataset.testo || '';
+    el.testo.classList.add('hidden-tab');
+    el.campo.classList.remove('hidden-tab');
+    el.box.classList.remove('hidden-tab');
+    el.campo.focus();
+};
+
+window.nascondiNotaCarta = function() {
+    const el = _taElementiNota();
+    if (!el) return;
+    _taNotaNascosta = el.box.dataset.nome || '';
+    el.campo.value = el.box.dataset.testo || '';
+    _taChiudiModificaNota();
+};
+
+window.mostraNotaCarta = function() {
+    const el = _taElementiNota();
+    if (!el) return;
+    if (!el.box.dataset.testo) { window.modificaNotaCarta(); return; }
+    const visibile = !el.box.classList.contains('hidden-tab');
+    _taNotaNascosta = visibile ? el.box.dataset.nome || '' : '';
+    _taChiudiModificaNota();
+};
+
+window.impostaNotaCarta = async function(valore) {
+    const el = _taElementiNota();
+    const nome = el ? el.box.dataset.nome : '';
+    const id = (document.getElementById('trascrizione-id') as HTMLInputElement).value;
+    const m = appData.manoscritti.find(x => x.id === id);
+    const al = m && Array.isArray(m.allegati) ? m.allegati.find(x => x && x.nome === nome) : null;
+    if (!m || !al) return;
+    const nota = String(valore || '').trim();
+    if (nota === (al.nota || '')) return;
+    if (nota) al.nota = nota;
+    else delete al.nota;
+    m.lastModified = Date.now();
+    if (el && el.box.dataset.nome === nome) _taAggiornaNotaCarta(al);
+    try {
+        await salvaTutto();
+    } catch (e) {
+        console.error('Nota della carta non salvata:', e);
+        mostraMessaggio(window.t('msg_errore_salvataggio', 'Errore nel salvataggio dei dati: ') + (e.message || e), 'error');
+    }
+    if (typeof renderMain === 'function') renderMain();
 };
 
 window.impostaStatoCarta = async function(valore) {

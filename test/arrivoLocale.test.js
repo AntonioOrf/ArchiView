@@ -25,7 +25,7 @@ function png() {
   ]);
 }
 
-function preparaArrivo(id, etichette) {
+function preparaArrivo(id, etichette, note) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'av-locale-'));
   const c = { arrivo: path.join(base, 'arrivo'), assegnati: path.join(base, 'assegnati') };
   const allegati = path.join(base, 'allegati');
@@ -38,6 +38,7 @@ function preparaArrivo(id, etichette) {
     fs.writeFileSync(path.join(dir, file), b);
     const pg = { file, sha256: sha(b), byte: b.length, modalita: 'documento' };
     if (et) pg.etichetta = et;
+    if (note && note[i]) pg.nota = note[i];
     return pg;
   });
   fs.writeFileSync(path.join(dir, 'lotto.json'), JSON.stringify({
@@ -60,6 +61,13 @@ function preparaArrivo(id, etichette) {
   }
 
   {
+    const { c, allegati } = preparaArrivo(id, ['1r', '1v'], ['macchia', '']);
+    const voci = await arrivo.copiaInAllegati(c, id, 'sch-n', allegati);
+    assert.strictEqual(voci[0].nota, 'macchia');
+    assert.ok(!('nota' in voci[1]));
+  }
+
+  {
     const { c, allegati } = preparaArrivo(id, ['1r', '']);
     const voci = await arrivo.copiaInAllegati(c, id, 'sch-1', allegati);
     assert.deepStrictEqual(voci.map(v => [v.nome, v.originalName, v.tipo]), [
@@ -70,6 +78,7 @@ function preparaArrivo(id, etichette) {
     assert.ok(fs.existsSync(path.join(allegati, voci[1].nome)));
     const ancora = await arrivo.copiaInAllegati(c, id, 'sch-1', allegati);
     assert.deepStrictEqual(ancora, voci);
+    assert.ok(voci.every(v => !('nota' in v)));
     fs.writeFileSync(path.join(allegati, voci[1].nome), 'altro');
     await assert.rejects(arrivo.copiaInAllegati(c, id, 'sch-1', allegati), e => e.code === 'EEXIST');
     assert.strictEqual(fs.readFileSync(path.join(allegati, voci[0].nome)).length, png().length);

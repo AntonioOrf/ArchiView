@@ -4023,6 +4023,49 @@ h1 {
     color: var(--color-text-main);
 }
 
+.doc-carta-nota {
+    display: flex;
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    border-top: 1px solid var(--color-warning-border);
+    background-color: var(--color-warning-light);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-text-main);
+    overflow-wrap: anywhere;
+}
+.doc-carta-nota > i, .doc-carta-nota > svg { flex-shrink: 0; margin-top: 2px; color: var(--color-warning); }
+
+.carta-nota {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 20;
+    width: min(18rem, calc(100% - 1.5rem));
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--color-warning-border);
+    background: linear-gradient(var(--color-warning-light), var(--color-warning-light)), var(--color-bg-panel);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: var(--color-text-main);
+    font-size: 13px;
+}
+.carta-nota-testa { display: flex; align-items: center; gap: 0.25rem; font-size: 12px; font-weight: 600; color: var(--color-warning); }
+.carta-nota-testo { margin: 0; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow-y: auto; }
+.carta-nota-campo {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.25rem 0.375rem;
+    border: 1px solid var(--color-border-input);
+    background-color: var(--color-bg-panel);
+    color: var(--color-text-main);
+    font: inherit;
+    resize: vertical;
+}
+.carta-nota-attiva { color: var(--color-warning); background-color: var(--color-warning-light); }
+
 .scelta-riga {
     display: flex;
     align-items: flex-start;

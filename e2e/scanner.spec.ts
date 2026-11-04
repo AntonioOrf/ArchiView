@@ -58,8 +58,10 @@ test.describe('Scanner — scansioni in arrivo', () => {
     await lotto.getByRole('button', { name: 'Nuova scheda' }).click();
     await expect(modal).toBeHidden();
     const nuova = await page.evaluate(() => appData.manoscritti.find((m: any) => (m.segnatura || '').startsWith('Reg.')));
-    expect(nuova.note).toBe('legatura fragile\n\n1v: rifilata');
+    expect(nuova.note).toBe('legatura fragile');
+    expect(nuova.campiPropri.map((d: any) => d.id)).toEqual(['note']);
     expect(nuova.allegati.map((a: any) => a.originalName)).toEqual(['1r', '1v']);
+    expect(nuova.allegati.map((a: any) => a.nota)).toEqual([undefined, 'rifilata']);
     expect(fs.existsSync(primo)).toBe(false);
     const fileCarta = await page.evaluate((nome: string) => (window as any).apiBrowser.getAllegatoPath(nome), nuova.allegati[0].nome);
     expect(fs.existsSync(fileCarta)).toBe(true);
@@ -78,7 +80,8 @@ test.describe('Scanner — scansioni in arrivo', () => {
     await expect(modal.locator('.scan-lotto')).toHaveCount(0);
     const dopo = await page.evaluate((id: string) => appData.manoscritti.find((m: any) => m.id === id), nuova.id);
     expect(dopo.allegati.map((a: any) => a.tipo)).toEqual(['immagine', 'immagine', 'pdf']);
-    expect(dopo.note).toBe('legatura fragile\n\n1v: rifilata\n\ncucitura rotta\n\np. 3: macchia');
+    expect(dopo.note).toBe('legatura fragile\n\ncucitura rotta');
+    expect(dopo.allegati[2].nota).toBe('p. 3: macchia');
     expect(fs.existsSync(path.join(ws, '.archiview', 'scanner', 'assegnati', '20261009-110000-bbbb'))).toBe(true);
   });
 

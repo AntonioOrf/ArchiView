@@ -376,9 +376,10 @@ function _scScheda(lotto) {
 }
 
 async function _scApplica(lotto, id, comePdf, datiNuova) {
-    const notePagine = _scNotePagine(lotto);
     const r = await window.apiScanner.assegna(lotto.id, id, { pdf: !!comePdf });
     if (!r || !r.success) throw new Error(r && r.error);
+    const notePagine = _scNotePagine(lotto);
+    if (notePagine && r.allegati.length === 1 && r.allegati[0].tipo === 'pdf') r.allegati[0].nota = notePagine;
 
     let username = 'Anonimo';
     try {
@@ -397,12 +398,13 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
         if (!datiNuova) throw new Error('scheda_non_trovata');
         appData.manoscritti.push(window.Model.creaScheda(Object.assign({}, datiNuova, {
             id,
-            note: _scUnisciNote(datiNuova.note, notePagine),
+            note: datiNuova.note || '',
             allegati: r.allegati,
             allegato: r.allegati[0].nome,
             allegatoTipo: r.allegati[0].tipo,
             creatoDa: username
         })));
+        _scMostraNote(appData.manoscritti[appData.manoscritti.length - 1]);
         window.Store.togliTombstone([id]);
         if (datiNuova.cartella && !appData.cartelle.includes(datiNuova.cartella)) appData.cartelle.push(datiNuova.cartella);
     } else {
@@ -412,8 +414,9 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
         }
         vivo.allegati.push(...r.allegati.filter(a => !vivo.allegati.some(x => x.nome === a.nome)));
         const giaNote = (t) => !t || String(vivo.note || '').includes(t);
-        const note = _scUnisciNote(vivo.note, giaNote(lotto.nota) ? '' : lotto.nota, giaNote(notePagine) ? '' : notePagine);
+        const note = _scUnisciNote(vivo.note, giaNote(lotto.nota) ? '' : lotto.nota);
         if (note !== (vivo.note || '')) vivo.note = note;
+        _scMostraNote(vivo);
         if (!vivo.allegato) {
             vivo.allegato = r.allegati[0].nome;
             vivo.allegatoTipo = r.allegati[0].tipo;
@@ -446,6 +449,12 @@ async function _scApplica(lotto, id, comePdf, datiNuova) {
 
 function _scNotePagine(lotto) {
     return lotto.pagine.map((pg, i) => pg.nota ? `${pg.etichetta || 'p. ' + (i + 1)}: ${pg.nota}` : '').filter(Boolean).join('\n');
+}
+
+function _scMostraNote(m) {
+    if (!m) return;
+    const tipo = (appData.tipiDocumento || []).find(t => t.id === m.tipoDocumento) || null;
+    window.Model.scriviCampiPropri(m, window.Model.campiPropriConValore(m, tipo, 'note', window.CONFIG_CAMPI), tipo);
 }
 
 function _scUnisciNote(...testi) {

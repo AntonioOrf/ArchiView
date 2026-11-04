@@ -8,6 +8,7 @@ type AVAllegato = {
   trascrizione?: string;
   pagine?: string[];
   stato?: 'daTrascrivere' | 'trascritta' | 'rivista' | 'dubbio';
+  nota?: string;
   annotazioni?: AVAnnotazione[];
   remoto?: true;
   iiif?: {
@@ -207,6 +208,17 @@ function avCampiPropri(scheda: any): AVCampoDef[] {
     fuori.push(def);
   }
   return fuori;
+}
+
+function avCampiPropriConValore(scheda: any, tipo: any, id: string, baseConf?: any): AVCampoDef[] {
+  const propri = avCampiPropri(scheda);
+  const v = scheda ? scheda[id] : undefined;
+  const pieno = typeof v === 'string' ? v.trim() !== '' : Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null;
+  const delTipo = !!(tipo && Array.isArray(tipo.campi) && tipo.campi.some((c: any) => String(c && c.id ? c.id : c) === id));
+  if (!pieno || delTipo || propri.some(d => d.id === id)) return propri;
+  const base = baseConf && baseConf[id];
+  propri.push({ id, tipo: base && avTipoCampoValido(base.type) ? base.type : 'text', label: base && base.label ? String(base.label) : id });
+  return propri;
 }
 
 function avScriviCampiPropri(scheda: any, definizioni: any[], tipo?: any): any {
@@ -1690,6 +1702,7 @@ const ArchiViewModel = {
   ordineCampi: avOrdineCampi,
   scriviOrdineCampi: avScriviOrdineCampi,
   campiPropri: avCampiPropri,
+  campiPropriConValore: avCampiPropriConValore,
   annotazioni: avAnnotazioni,
   testoAnnotazioni: avTestoAnnotazioni,
   scriviCampiPropri: avScriviCampiPropri,

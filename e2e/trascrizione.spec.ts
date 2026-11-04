@@ -314,6 +314,38 @@ test.describe('Vista Trascrizione', () => {
     await expect(page.locator('#trascrizione-resizer')).toBeHidden();
   });
 
+  test('la nota della carta si legge sopra l immagine, si nasconde, si modifica e compare in galleria', async ({ page, userDataDir }) => {
+    await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
+    const id = await createItemWithAttachment(page, 'MS-NOTA-CARTA', FIXTURE_PNG);
+    await page.evaluate(async (recId) => {
+      appData.manoscritti.find((m: any) => m.id === recId).allegati[0].nota = 'Macchia sul margine';
+      await (window as any).Store.commit();
+    }, id);
+    await page.evaluate((recId) => (window as any).apriTrascrizione(recId), id);
+
+    const box = page.locator('#trasc-carta-nota-box');
+    const btn = page.locator('#btn-nota-carta');
+    await expect(box).toBeVisible();
+    await expect(page.locator('#trasc-carta-nota-testo')).toHaveText('Macchia sul margine');
+    await expect(btn).toHaveAttribute('aria-pressed', 'true');
+
+    await box.getByRole('button', { name: 'Nascondi la nota' }).click();
+    await expect(box).toBeHidden();
+    await btn.click();
+    await expect(box).toBeVisible();
+
+    await box.getByRole('button', { name: 'Modifica la nota' }).click();
+    const campo = page.locator('#trasc-carta-nota');
+    await expect(campo).toBeFocused();
+    await campo.fill('Rifilata in alto');
+    await campo.blur();
+    await expect(page.locator('#trasc-carta-nota-testo')).toHaveText('Rifilata in alto');
+    expect(await page.evaluate((recId) => appData.manoscritti.find((m: any) => m.id === recId).allegati[0].nota, id)).toBe('Rifilata in alto');
+
+    await page.evaluate((recId) => (window as any).apriModalDocumenti(recId), id);
+    await expect(page.locator('#docs-modal .doc-carta-nota')).toHaveText('Rifilata in alto');
+  });
+
   test('la freccia dell allegato raggiunta col Tab è visibile anche senza mouse', async ({ page, userDataDir }) => {
     await createLocalWorkspace(page, path.join(userDataDir, 'ws'), 'Trasc');
     const id = await createItemWithAttachment(page, 'MS-TRASC-TAB', FIXTURE_PNG);
