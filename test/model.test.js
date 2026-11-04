@@ -304,4 +304,12 @@ const Model = require('../out/shared/model');
   assert.deepStrictEqual(dinuovo.applicate, [], 'idempotente');
 }
 
-console.log('model: 20 gruppi di test OK');
+{
+  const esito = Model.migraDatabase({ cartelle: [], manoscritti: [], tipiDocumento: [] });
+  assert.strictEqual(esito.futuro, false);
+  Model.applicaModelliPredefiniti(esito.db);
+  assert.deepStrictEqual(esito.db.tipiDocumento.map(t => t.id), Model.MODELLI_PREDEFINITI.map(m => m.id));
+  assert.ok(esito.db.tipiDocumento.some(t => t.id === 'imbreviature'));
+}
+
+console.log('model: 21 gruppi di test OK');

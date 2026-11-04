@@ -98,6 +98,17 @@ async function joinByInviteCode(inviteCode: string, basePath: string, name: stri
   return true;
 }
 
+async function cartellaMia(folderId: string): Promise<boolean> {
+  try {
+    if (!driveState.drive) await authenticateDrive();
+    const r = await driveState.drive.files.get({ fileId: folderId, fields: 'ownedByMe', supportsAllDrives: true });
+    return r.data.ownedByMe === true;
+  } catch (e: any) {
+    console.warn('[drive] proprietà della cartella non verificata, la tratto come condivisa:', e?.message || e);
+    return false;
+  }
+}
+
 async function joinByFolderId(vaultId: string, vaultName: string, basePath: string, invito: any): Promise<boolean> {
   if (vaultId && !idDriveValido(vaultId)) throw new Error("Id Drive non valido");
   const name = vaultName || "Vault_Condiviso";
@@ -107,8 +118,10 @@ async function joinByFolderId(vaultId: string, vaultName: string, basePath: stri
   }
   fs.mkdirSync(newPath, { recursive: true });
 
+  const mio = vaultId ? await cartellaMia(vaultId) : false;
   const settingsToSave: any = {
-    isSharedVault: true,
+    isSharedVault: !mio,
+    isPersonalCloud: mio,
     sharedVaultId: vaultId,
     driveAutofetch: invito ? !!invito.driveAutofetch : true
   };
