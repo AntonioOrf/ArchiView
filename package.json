@@ -132,6 +132,8 @@
   },
   "overrides": {
     "esbuild": "^0.28.1",
-    "google-auth-library": "10.6.2"
+    "google-auth-library": "10.6.2",
+    "minimatch@^9": "^11.0.4",
+    "minimatch@^10": "^11.0.4"
   }
 }
