@@ -529,6 +529,7 @@ function resetForm() {
     const allegatiInput = document.getElementById('form-allegati');
     if (allegatiInput) allegatiInput.value = '[]';
     window.allegatiBaseForm = null;
+    window.noteBaseForm = null;
     if (window.aggiornaDocumentoScheda) window.aggiornaDocumentoScheda();
 
     if (typeof window.caricaRelazioniForm === 'function') window.caricaRelazioniForm(null);

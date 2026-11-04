@@ -67,7 +67,7 @@
         if (_staccata) await window.apiFinestre.messaggio('svuota');
     };
 
-    async function salvaDallaStaccata({ id, patch, allegatiPrima }) {
+    async function salvaDallaStaccata({ id, patch, allegatiPrima, notePrima }: any) {
         const vivo = trova(id);
         if (!vivo) throw new Error('scheda non trovata');
         if (String((document.getElementById('trascrizione-id') as HTMLInputElement)?.value) === String(id) && window.salvaEditorTrascrizioneInMemoria) {
@@ -75,6 +75,9 @@
         }
         if (Array.isArray(patch.allegati) && Array.isArray(allegatiPrima)) {
             patch.allegati = window.Model.fondiAllegati(allegatiPrima, patch.allegati, vivo.allegati || []).allegati;
+        }
+        if (typeof patch.note === 'string' && typeof notePrima === 'string') {
+            patch.note = window.Model.fondiNote(notePrima, patch.note, vivo.note);
         }
         await window.Store.updateManoscritto(id, patch);
         const salvato = trova(id);
@@ -204,7 +207,8 @@
         window.Store.updateManoscritto = async (id, patch) => {
             const i = appData.manoscritti.findIndex(x => String(x.id) === String(id));
             const prima = i >= 0 ? appData.manoscritti[i].allegati : null;
-            const salvato = await api.richiesta('salva', { id, patch, allegatiPrima: clona(prima) || null });
+            const notePrima = i >= 0 ? (appData.manoscritti[i].note || '') : null;
+            const salvato = await api.richiesta('salva', { id, patch, allegatiPrima: clona(prima) || null, notePrima });
             if (i >= 0 && salvato) appData.manoscritti[i] = salvato;
         };
         const inoltra = (op, args) => api.richiesta('archivio', { op, args })

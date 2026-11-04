@@ -68,7 +68,12 @@ function preparaArrivo(id, etichette) {
     ]);
     assert.strictEqual(voci[0].hash, sha(png()));
     assert.ok(fs.existsSync(path.join(allegati, voci[1].nome)));
+    const ancora = await arrivo.copiaInAllegati(c, id, 'sch-1', allegati);
+    assert.deepStrictEqual(ancora, voci);
+    fs.writeFileSync(path.join(allegati, voci[1].nome), 'altro');
     await assert.rejects(arrivo.copiaInAllegati(c, id, 'sch-1', allegati), e => e.code === 'EEXIST');
+    assert.strictEqual(fs.readFileSync(path.join(allegati, voci[0].nome)).length, png().length);
+    assert.strictEqual(fs.readFileSync(path.join(allegati, voci[1].nome), 'utf8'), 'altro');
     const v2 = await arrivo.copiaInAllegati(c, id, '..\\..\\x', allegati);
     assert.ok(v2.every(v => !v.nome.includes('\\') && !v.nome.includes('/')));
   }
@@ -97,6 +102,7 @@ function preparaArrivo(id, etichette) {
     assert.strictEqual(v.hash, sha(byte));
     const { PDFDocument } = require('pdf-lib');
     assert.strictEqual((await PDFDocument.load(byte)).getPageCount(), 3);
+    assert.deepStrictEqual(await arrivo.unisciInPdf(c, id, 'sch-3', allegati), v);
   }
 
   {

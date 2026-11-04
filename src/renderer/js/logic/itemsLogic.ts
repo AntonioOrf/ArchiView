@@ -130,6 +130,12 @@ async function salvaSchedaDalForm(automatico) {
 
     const mVecchio = idCorrente ? appData.manoscritti.find(x => x.id === idCorrente) : null;
 
+    if (mVecchio && typeof window.noteBaseForm === 'string' && Object.prototype.hasOwnProperty.call(dynamicData, 'note')) {
+        dynamicData.note = window.Model.fondiNote(window.noteBaseForm, dynamicData.note, mVecchio.note);
+        const campoNote = document.getElementById(window.idControlloCampo('note')) as HTMLInputElement | null;
+        if (campoNote) campoNote.value = dynamicData.note;
+    }
+
     if (mVecchio && Array.isArray(window.allegatiBaseForm)) {
         const vivi = mVecchio.allegati || (mVecchio.allegato ? [{ nome: mVecchio.allegato, tipo: mVecchio.allegatoTipo }] : []);
         allegatiCorrenti = window.Model.fondiAllegati(window.allegatiBaseForm, allegatiCorrenti, vivi).allegati;
@@ -217,6 +223,8 @@ async function salvaSchedaDalForm(automatico) {
     // perde finché la scheda resta nel tab. Da rivedere se serve: avvisare una volta per valore.
     if (!automatico) avvisaDuplicati(definizioni, dynamicData, documentoId, newData.segnatura);
 
+    if (idCorrente && salvato) window.noteBaseForm = salvato.note || '';
+
     if (automatico && salvato) {
         const allegatiSalvati = JSON.parse(JSON.stringify(salvato.allegati || []));
         window.allegatiBaseForm = allegatiSalvati;
@@ -269,6 +277,7 @@ window.caricaSchedaNelForm = function(id) {
     }
     (document.getElementById('form-allegati') as HTMLInputElement).value = JSON.stringify(allegatiList);
     window.allegatiBaseForm = JSON.parse(JSON.stringify(allegatiList));
+    window.noteBaseForm = m.note || '';
     if(window.renderAllegatiForm) window.renderAllegatiForm(allegatiList);
 
     window.popolaCampiDinamici(window.campiDefinitiDelForm(), m);

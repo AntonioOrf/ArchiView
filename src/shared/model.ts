@@ -1282,6 +1282,19 @@ function avFondiAllegati(base: any, locale: any, esterno: any): { allegati: any[
   return { allegati, conflitto };
 }
 
+function avFondiNote(base: any, mia: any, viva: any): string {
+  const s = (x: any) => (x === undefined || x === null ? '' : String(x));
+  const b = s(base), m = s(mia), v = s(viva);
+  if (v === b) return m;
+  if (m === b) return v;
+  if (v.startsWith(b)) {
+    const aggiunta = v.slice(b.length);
+    if (m.includes(aggiunta.trim())) return m;
+    return m && !/^\s/.test(aggiunta) ? m + '\n\n' + aggiunta : m + aggiunta;
+  }
+  return m;
+}
+
 function avTrascrizioneDerivata(m: any): boolean {
   return !!m && Array.isArray(m.allegati) && m.allegati.some((a: any) => a && typeof a.trascrizione === 'string');
 }
@@ -1747,6 +1760,7 @@ const ArchiViewModel = {
   fondiDatabase: avFondiDatabase,
   recordValidi: avRecordValidi,
   fondiAllegati: avFondiAllegati,
+  fondiNote: avFondiNote,
   trascrizioneDerivata: avTrascrizioneDerivata,
   fondiCampiPropri: avFondiCampiPropri,
   SNAPSHOT_RECENTI: AV_SNAPSHOT_RECENTI,
