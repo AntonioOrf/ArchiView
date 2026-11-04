@@ -57,7 +57,7 @@ const TESTA_JPEG = 1024 * 1024;
 function misureDi(uri: string): ReturnType<typeof misureJpeg> {
   const fh = new File(uri).open();
   try {
-    return misureJpeg(fh.readBytes(Math.min(TESTA_JPEG, fh.size ?? TESTA_JPEG)));
+    return misureJpeg(fh.readBytesSync(Math.min(TESTA_JPEG, fh.size ?? TESTA_JPEG)));
   } finally {
     fh.close();
   }

@@ -94,7 +94,7 @@ export function leggiCartelle(): string[] {
 }
 
 export function salvaCartelle(cartelle: string[]): void {
-  fileCartelle().write(JSON.stringify([...new Set(cartelle)]));
+  fileCartelle().writeSync(JSON.stringify([...new Set(cartelle)]));
 }
 
 export async function nuovoDocumento(nome: string, cartella: string, uris: string[], sposta = false): Promise<Documento | null> {
@@ -135,7 +135,7 @@ export async function riconosci(d: Documento, file: string): Promise<Documento> 
   if (!p) throw new Error('pagina_assente');
   if (ocrAggiornato(p) && fileDoc(d, fileOcr(file)).exists) return d;
   const { testo, parole } = daRisultato(await recognizeText(uriUscita(d, p)));
-  fileDoc(d, fileOcr(file)).write(JSON.stringify({ v: p.v, parole }));
+  fileDoc(d, fileOcr(file)).writeSync(JSON.stringify({ v: p.v, parole }));
   const ocr: OcrPagina = p.ocr?.corretto ? { ...p.ocr, v: p.v } : { v: p.v, testo };
   return salvaDocumento({ ...d, pagine: d.pagine.map(x => (x.file === file ? { ...x, ocr } : x)) });
 }
@@ -214,7 +214,7 @@ export async function dividiDocumento(d: Documento, da: number, nome: string): P
 export function eliminaDocumento(d: Documento): void {
   const c = cartellaDoc(d.id);
   if (c.exists) c.delete();
-  try { fileEliminati().write(JSON.stringify([...new Set([...eliminati(), d.id])])); }
+  try { fileEliminati().writeSync(JSON.stringify([...new Set([...eliminati(), d.id])])); }
   catch (e) { console.warn('[documenti] eliminazione non registrata per la copia', d.id, e); }
 }
 
@@ -236,6 +236,6 @@ export function eliminati(): string[] {
 export function eliminatiCopiati(ids: string[]): void {
   const restano = eliminati().filter(x => !ids.includes(x));
   const f = fileEliminati();
-  if (restano.length) f.write(JSON.stringify(restano));
+  if (restano.length) f.writeSync(JSON.stringify(restano));
   else if (f.exists) f.delete();
 }

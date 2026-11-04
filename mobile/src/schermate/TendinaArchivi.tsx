@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, FileText, Plus, RefreshCw } from 'lucide-react-native';
 import { t } from '../lingua';
@@ -115,7 +115,7 @@ function Contenuto({ archivi, attuale: inUsoArchivio, onScegli, onChiudi, testa,
 export function TendinaArchivi(p: Props) {
   const c = useColori();
   const margini = useSafeAreaInsets();
-  const scorri = useRef<ScrollView>(null);
+  const scorri = useRef<ScrollViewInstance>(null);
   const inFondo = () => { if (Keyboard.isVisible()) scorri.current?.scrollToEnd(); };
   const elenco = <ScrollView ref={scorri} keyboardShouldPersistTaps="handled" onLayout={inFondo} onContentSizeChange={inFondo}><Contenuto {...p} /></ScrollView>;
   if (!p.onChiudi) {

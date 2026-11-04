@@ -4,7 +4,7 @@ const tmpDi = (f: File) => new File(f.parentDirectory, `${f.name}.tmp`);
 
 export function scriviJson(f: File, dati: unknown, spazi?: number): void {
   const tmp = tmpDi(f);
-  tmp.write(JSON.stringify(dati, null, spazi));
+  tmp.writeSync(JSON.stringify(dati, null, spazi));
   tmp.moveSync(f, { overwrite: true });
 }
 

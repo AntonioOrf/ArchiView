@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type LegacyPanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Copy, TextSelect, X } from 'lucide-react-native';
@@ -18,7 +18,7 @@ const MANIGLIA = 22;
 
 type Props = { uri: string; etichetta: string; onScorri: (verso: 1 | -1) => void; parole?: Parola[] | null; onCopia?: (testo: string) => void; onRiconosci?: () => void };
 
-function Maniglia({ punto, vista, scala, x, y, inizio, colore, gesto }: { punto: { x: number; y: number }; vista: { w: number; h: number }; scala: SharedValue<number>; x: SharedValue<number>; y: SharedValue<number>; inizio: boolean; colore: string; gesto: PanGesture }) {
+function Maniglia({ punto, vista, scala, x, y, inizio, colore, gesto }: { punto: { x: number; y: number }; vista: { w: number; h: number }; scala: SharedValue<number>; x: SharedValue<number>; y: SharedValue<number>; inizio: boolean; colore: string; gesto: LegacyPanGesture }) {
   const stile = useAnimatedStyle(() => ({
     transform: [
       { translateX: vista.w / 2 + (punto.x - vista.w / 2) * scala.get() + x.get() - (inizio ? MANIGLIA : 0) },

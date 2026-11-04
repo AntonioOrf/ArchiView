@@ -8,7 +8,7 @@ smistare") → «Scansiona». Ogni «Salva» dello scanner diventa un **lotto** 
 trasferimento del [contratto](../docs/scanner/CONTRATTO.md), invisibile all'utente) e parte quando
 si preme Invio; il desktop lo importa da solo nella scheda.
 
-Expo SDK 57 + React Native + TypeScript. Usa moduli nativi (Google Sign-In, ML Kit, VisionCamera): **non
+Expo SDK 58 + React Native + TypeScript. Usa moduli nativi (Google Sign-In, ML Kit, VisionCamera): **non
 gira in Expo Go**, serve una build.
 
 ## Comandi

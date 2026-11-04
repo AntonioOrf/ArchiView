@@ -14,7 +14,7 @@ search, filters, text recognition (OCR), PDF or JPEG export, optional copy to Dr
 
 The app follows the phone's language (Italian, otherwise English); Settings › Language changes it.
 
-Expo SDK 57 + React Native + TypeScript. It uses native modules (Google Sign-In, ML Kit,
+Expo SDK 58 + React Native + TypeScript. It uses native modules (Google Sign-In, ML Kit,
 VisionCamera): **it does not run in Expo Go**, it needs a build.
 
 ## Commands

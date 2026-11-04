@@ -1,4 +1,4 @@
-import { requireNativeModule } from 'expo-modules-core';
+import { requireNativeModule } from 'expo';
 
 type Nativo = {
   raddrizza(sorgente: string, angoli: number[], latoMassimo: number, qualita: number): Promise<{ uri: string; width: number; height: number }>;

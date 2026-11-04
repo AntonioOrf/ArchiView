@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Pressable, TextInput, View, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Copy, X } from 'lucide-react-native';
 import { t } from '../lingua';
@@ -23,7 +23,7 @@ export function TestoPagina(p: Props) {
   const c = useColori();
   const margini = useSafeAreaInsets();
   const [valore, setValore] = useState(p.testo ?? '');
-  const campo = useRef<TextInput>(null);
+  const campo = useRef<TextInputInstance>(null);
   useEffect(() => { setValore(p.testo ?? ''); }, [p.testo]);
   useEffect(() => { if (p.testo !== null) setTimeout(() => campo.current?.setSelection(0, 0), 0); }, [p.testo]);
   const salva = () => { if (p.testo !== null && valore !== p.testo) p.onCorreggi(valore); };

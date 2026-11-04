@@ -71,7 +71,7 @@ export async function condividi(d: Documento, formato: Formato, ricercabile = fa
   const dir = uscita();
   if (formato === 'pdf') {
     const f = new File(dir, `${nomeFile(d.nome)}.pdf`);
-    f.write(await pdfDi(d, ricercabile));
+    f.writeSync(await pdfDi(d, ricercabile));
     return Sharing.shareAsync(f.uri, { mimeType: 'application/pdf', dialogTitle: d.nome });
   }
   if (d.pagine.length !== 1) throw new Error(t('Si condivide una sola immagine per volta: usa il PDF o «Salva»'));
@@ -98,7 +98,7 @@ export const annullato = (e: any) => e?.code === 'ERR_PICKER_CANCELLED' || /canc
 
 export async function scegliCartella(): Promise<Directory> {
   const dir = await Directory.pickDirectoryAsync();
-  fileSalva().write(JSON.stringify({ cartella: dir.uri }));
+  fileSalva().writeSync(JSON.stringify({ cartella: dir.uri }));
   return dir;
 }
 
@@ -107,14 +107,14 @@ export async function salva(d: Documento, formato: Formato, ricercabile = false)
     if (formato === 'pdf') {
       const bytes = await pdfDi(d, ricercabile);
       const f = dir.createFile(`${nomeFile(d.nome)}.pdf`, 'application/pdf');
-      f.write(bytes);
+      f.writeSync(bytes);
       return [f.name];
     }
     const nomi = nomiImmagini(d.nome, d.pagine.length);
     const fatti: string[] = [];
     for (const [i, p] of d.pagine.entries()) {
       const f = dir.createFile(nomi[i], 'image/jpeg');
-      f.write(await new File(uriUscita(d, p)).bytes());
+      f.writeSync(await new File(uriUscita(d, p)).bytes());
       fatti.push(f.name);
     }
     return fatti;
