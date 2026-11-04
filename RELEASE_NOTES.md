@@ -1,3 +1,10 @@
+## ArchiView 4.0.5 — Note delle scansioni
+
+### Correzioni
+
+- **Note delle carte dal telefono**: la nota scritta su una pagina in ArchiScanner arriva su quella carta. Si legge in un riquadro sopra l'immagine nella trascrizione, si modifica o si nasconde, e compare come didascalia nella galleria dei documenti.
+- **Nota della scheda visibile**: la nota mandata dal telefono compare nel modulo anche nei tipi senza campo Note, come le Imbreviature notarili, comprese le schede importate prima.
+
 ## ArchiView 4.0.4 — Archivi creati sul telefono
 
 ### Novità
