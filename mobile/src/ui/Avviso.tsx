@@ -20,8 +20,8 @@ export function avviso(titolo: string, messaggio?: string, pulsanti?: AlertButto
   cambia([...coda, { titolo, messaggio, pulsanti: pulsanti?.length ? pulsanti : [{ text: 'OK' }] }]);
 }
 
-export function attesa(titolo: string, messaggio: (p: number | null) => string) {
-  const v: Voce = { titolo, messaggio: messaggio(null), pulsanti: [], percento: null };
+export function attesa(titolo: string, messaggio: (p: number | null) => string, pulsanti: AlertButton[] = []) {
+  const v: Voce = { titolo, messaggio: messaggio(null), pulsanti, percento: null };
   cambia([v, ...coda]);
   return {
     percento: (p: number | null) => {

@@ -38,3 +38,22 @@ export function recenti(s: Invii, ora: Date): Invii {
 }
 
 export const daControllare = (s: Invii, account: string) => s.lotti.some(l => !l.arrivatoIl && l.account === account);
+
+export type Giro = { totali: number; base: number; corrente: number; pagine: Record<string, number>; inviati: number; inviate: number; errore?: string };
+export type PassoGiro =
+  | { tipo: 'lotto'; id: string; avanzamento: { fatte: number; totali: number } }
+  | { tipo: 'inviato'; id: string }
+  | { tipo: 'errore'; id: string; messaggio: string };
+
+export function inizioGiro(lotti: { id: string; pagine: number }[]): Giro {
+  return { totali: lotti.reduce((n, l) => n + l.pagine, 0), base: 0, corrente: 0, pagine: Object.fromEntries(lotti.map(l => [l.id, l.pagine])), inviati: 0, inviate: 0 };
+}
+
+export function passoGiro(g: Giro, e: PassoGiro): Giro {
+  if (e.tipo === 'lotto') return { ...g, corrente: e.avanzamento.fatte };
+  const pagine = g.pagine[e.id] ?? 0;
+  if (e.tipo === 'inviato') return { ...g, base: g.base + pagine, corrente: 0, inviati: g.inviati + 1, inviate: g.inviate + pagine };
+  return { ...g, base: g.base + pagine, corrente: 0, errore: g.errore ?? e.messaggio };
+}
+
+export const fatteGiro = (g: Giro) => Math.min(g.totali, g.base + g.corrente);

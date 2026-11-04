@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, BackHandler, Linking, Platform } from 'react-native';
+import { AppState, BackHandler, Linking, PermissionsAndroid, Platform } from 'react-native';
 import { attesa as avvisoInCorso, Avvisi, avviso, notizia } from './src/ui/Avviso';
 import { useIncomingShare } from 'expo-sharing';
 import { nuovoDocumento } from './src/documenti';
@@ -17,8 +17,8 @@ import { azzeraCartelle, type Avanzamento } from './src/drive';
 import { Dividi } from './src/Dividi';
 import { messaggioErrore } from './src/errori';
 import { aggiungiPagina, chiudiAperti, controllaSfocate, dividiPagina, elencaLotti, eliminaLotto, leggiLotti, recuperaLotto, etichettaPagina, notaPagina, nuovoLotto, pulisciInviati, rimuoviPagina, riordinaLotti, ritagliaPagina, ruotaPagina, salvaBozza, sostituisciPagina, uriAnteprima, type Bozza } from './src/lotti';
-import { aggiornaArchivi, aggiornaElenco, archiviLocali, benvenutoFatto, controllaArrivi, elencoLocale, leggiImpostazioni, leggiInvii, lottoInInvio, reteAdatta, salvaImpostazioni, salvaSchedeNuove, schedeNuove, segnaBenvenuto, svuotaCoda, type EventoCoda, type Impostazioni as ImpostazioniApp } from './src/coda';
-import { alternaCartella, chiaveDestinazione, destinazioneDi, perArchivio, percorsoLeggibile, type SchedaScelta } from './src/scelta';
+import { aggiornaArchivi, aggiornaElenco, archiviCreati, archiviLocali, benvenutoFatto, controllaArrivi, elencoLocale, leggiImpostazioni, leggiInvii, lottoInInvio, reteAdatta, salvaImpostazioni, salvaSchedeNuove, schedeNuove, segnaArchivioCreato, segnaBenvenuto, svuotaCoda, type EventoCoda, type Impostazioni as ImpostazioniApp } from './src/coda';
+import { alternaCartella, chiaveDestinazione, destinazioneDi, perArchivio, percorsoLeggibile, portatoreNota, type SchedaScelta } from './src/scelta';
 import { prossimaEtichetta } from './src/etichette';
 import { Abbina } from './src/Abbina';
 import { cercaAggiornamento, installaAggiornamento, noteVersione } from './src/aggiornaApp';
@@ -45,7 +45,7 @@ import { Schermo } from './src/ui/Schermo';
 import { SezioneDocumenti } from './src/SezioneDocumenti';
 import { copiaDocumenti, ripristinaDocumenti, statoCopia } from './src/copiaDocumenti';
 import { impostaLingua, t } from './src/lingua';
-import { daControllare } from './src/invii';
+import { daControllare, fatteGiro, inizioGiro, passoGiro } from './src/invii';
 
 const DISPOSITIVO = Platform.OS === 'android' ? `${Platform.constants.Manufacturer} ${Platform.constants.Model}` : Platform.OS;
 
@@ -108,10 +108,10 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const [elencoChiesto, setElencoChiesto] = useState<string>();
   const ricaricaArchivi = async () => {
     try {
-      const nomi = await aggiornaArchivi();
-      setArchivi(nomi);
+      const { tutti, suDrive } = await aggiornaArchivi();
+      setArchivi(tutti);
       const a = leggiImpostazioni();
-      if (a.archivio?.nuovo && nomi.includes(a.archivio.nome)) cambiaImpostazioni({ ...a, archivio: { nome: a.archivio.nome, nuovo: false } });
+      if (a.archivio?.nuovo && suDrive.includes(a.archivio.nome)) cambiaImpostazioni({ ...a, archivio: { nome: a.archivio.nome, nuovo: false } });
       return true;
     } catch (e) {
       console.warn('[app] archivi non aggiornati', e);
@@ -129,7 +129,16 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     const nome = archivio.nome;
     let attuale = true;
     aggiornaElenco(nome, wifi)
-      .then(e => { if (attuale) setElenco(e); })
+      .then(e => {
+        if (!attuale) return;
+        setElenco(e);
+        const i = leggiImpostazioni();
+        const proprie = i.cartelleNuove?.[nome];
+        if (!e || !proprie?.length) return;
+        const note = new Set([...e.cartelle, ...e.schede.map(s => s.cartella)]);
+        const restano = proprie.filter(c => !note.has(c));
+        if (restano.length !== proprie.length) cambiaImpostazioni({ ...i, cartelleNuove: { ...i.cartelleNuove, [nome]: restano } });
+      })
       .catch(e => console.warn('[app] elenco schede non aggiornato', e))
       .finally(() => { if (attuale) setElencoChiesto(nome); });
     return () => { attuale = false; };
@@ -163,7 +172,10 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     });
   }, [ricarica]);
 
+  const osservaInvio = useRef<((e: EventoCoda) => void) | null>(null);
+  const giroSeguito = useRef(false);
   const evento = useCallback((e: EventoCoda) => {
+    osservaInvio.current?.(e);
     if (e.tipo === 'lotto') { setInvio(p => ({ id: e.id, ...e.avanzamento, da: p?.id === e.id ? p.da : new Date().toISOString() })); return; }
     setInvio(null);
     if (e.tipo === 'inviato') {
@@ -241,12 +253,54 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     });
   }, [condivise.resolvedSharedPayloads]);
 
+  const seguiGiro = async () => {
+    let g = inizioGiro(elencaLotti().filter(l => l.stato === 'in_coda').map(l => ({ id: l.id, pagine: l.pagine.length })));
+    if (!g.totali || giroSeguito.current) return () => {};
+    giroSeguito.current = true;
+    if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+      try {
+        const p = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS;
+        if (!await PermissionsAndroid.check(p)) await PermissionsAndroid.request(p);
+      } catch (e) { console.warn('[app] permesso delle notifiche non chiesto', e); }
+    }
+    const testo = () => t('Invio in corso · {fatte} di {totali}', { fatte: fatteGiro(g), totali: g.totali });
+    const popup = avvisoInCorso(t('Invio in corso'), testo, [{ text: t('Continua in sottofondo'), style: 'cancel' }]);
+    const nativo = (fn: () => void) => { try { fn(); } catch (e) { console.warn('[app] notifica dell’invio', e); } };
+    nativo(() => Nativo.avviaInvio(t('Invio in corso'), testo(), t('Invii'), t('Esito degli invii')));
+    osservaInvio.current = e => {
+      g = passoGiro(g, e);
+      popup.percento((100 * fatteGiro(g)) / g.totali);
+      nativo(() => Nativo.aggiornaInvio(t('Invio in corso'), testo(), fatteGiro(g), g.totali));
+    };
+    return () => {
+      osservaInvio.current = null;
+      giroSeguito.current = false;
+      popup.chiudi();
+      const inviate = g.inviate === 1 ? t('1 pagina inviata') : t('{n} pagine inviate', { n: g.inviate });
+      if (g.errore) {
+        const motivo = messaggioErrore(g.errore);
+        nativo(() => Nativo.fermaInvio(t('Invio fallito'), g.inviate ? `${inviate} · ${motivo}` : motivo, false));
+        notizia(t('Invio fallito: {motivo}', { motivo }), true);
+      } else if (g.inviati) {
+        nativo(() => Nativo.fermaInvio(t('Invio completato'), inviate, true));
+        notizia(`${t('Invio completato')} · ${inviate}`);
+      } else {
+        nativo(() => Nativo.fermaInvio(null, null, true));
+      }
+    };
+  };
+
   const copiaInCorso = useRef(false);
   const giro = useCallback(async () => {
-    await inviaWifi();
-    if (!utente || leggiImpostazioni().account !== utente.email || !reteAdatta(rete, false)) return;
-    await svuotaCoda(DISPOSITIVO, evento);
-    ricarica();
+    const fine = await seguiGiro();
+    try {
+      await inviaWifi();
+      if (!utente || leggiImpostazioni().account !== utente.email || !reteAdatta(rete, false)) return;
+      await svuotaCoda(DISPOSITIVO, evento);
+      ricarica();
+    } finally {
+      fine();
+    }
   }, [inviaWifi, utente, rete, evento, ricarica]);
 
   const copia = useCallback(async () => {
@@ -312,8 +366,15 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
   const inCoda = lotti.filter(l => l.stato === 'in_coda');
   const pagineInCoda = inCoda.reduce((n, l) => n + l.pagine.length, 0);
 
-  const scegliArchivio = (nome: string, nuovo: boolean) => {
+  const scegliArchivio = (nome: string, creato: boolean) => {
+    if (creato) {
+      nome = ScannerLotto.nomeArchivio(nome);
+      try { segnaArchivioCreato(nome); } catch (e) { console.warn('[app] archivio creato non registrato', nome, e); }
+      setArchivi(archiviLocali());
+    }
+    const nuovo = creato || archiviCreati().includes(nome);
     cambiaImpostazioni({ ...impostazioni, archivio: { nome, nuovo }, documenti: false });
+    if (creato && utente && rete.isConnected) ricaricaArchivi();
     setElenco(elencoLocale(nome));
     setTendina(false);
     setScheda(null);
@@ -338,7 +399,12 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     cambiaImpostazioni({ ...impostazioni, aperte: { ...impostazioni.aperte, [archivio.nome]: alternaCartella(aperte, percorso) } });
   };
   const cartellaCorrente = aperte[aperte.length - 1] || '';
-  const cartelleArchivio = [...(elenco?.cartelle || []), ...(elenco?.schede || []).map(s => s.cartella), ...nuove.filter(n => n.archivio === archivio?.nome).map(n => n.cartella || '')];
+  const cartelleNuove = (archivio && impostazioni.cartelleNuove?.[archivio.nome]) || [];
+  const nuovaCartella = (percorso: string) => {
+    if (!archivio || cartelleNuove.includes(percorso)) return;
+    cambiaImpostazioni({ ...impostazioni, cartelleNuove: { ...impostazioni.cartelleNuove, [archivio.nome]: [...cartelleNuove, percorso] } });
+  };
+  const cartelleArchivio = [...cartelleNuove, ...(elenco?.cartelle || []), ...(elenco?.schede || []).map(s => s.cartella), ...nuove.filter(n => n.archivio === archivio?.nome).map(n => n.cartella || '')];
 
   const apriScheda = (s: SchedaScelta) => {
     if (s.tipo === 'smistare') {
@@ -363,20 +429,28 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
     }
   };
 
-  const aggiornaSchedaNuova = (s: Extract<SchedaScelta, { tipo: 'nuova' }>, m: { segnatura?: string; cartella?: string }) => esegui(t('Scheda'), () => {
+  const lottiNonInviati = (id: string) => elencaLotti().filter(l => l.destinazione.tipo === 'nuova' && l.destinazione.schedaId === id && l.stato !== 'inviato');
+
+  const aggiornaSchedaNuova = (s: Extract<SchedaScelta, { tipo: 'nuova' }>, m: { segnatura?: string; cartella?: string; nota?: string }) => esegui(t('Scheda'), () => {
     const segnatura = m.segnatura ?? s.segnatura;
     const cartella = m.cartella !== undefined ? m.cartella || undefined : s.cartella;
-    const tutte = schedeNuove().map(n => (n.id === s.id ? { ...n, segnatura, cartella } : n));
+    const nota = m.nota !== undefined ? m.nota.trim() || undefined : schedeNuove().find(n => n.id === s.id)?.nota;
+    const tutte = schedeNuove().map(n => (n.id === s.id ? { ...n, segnatura, cartella, nota } : n));
     salvaSchedeNuove(tutte);
     setNuove(tutte);
-    for (const l of lotti) {
+    const inViaggio = lottoInInvio() ?? invio?.id;
+    const nonInviati = lottiNonInviati(s.id);
+    const note = portatoreNota(nonInviati, inViaggio, nota);
+    for (const l of nonInviati) {
       const d = l.destinazione;
-      if (d.tipo !== 'nuova' || d.schedaId !== s.id || l.stato === 'inviato' || l.id === invio?.id) continue;
+      if (d.tipo !== 'nuova' || l.id === inViaggio) continue;
       const { cartella: _vecchia, ...resto } = d;
       const destinazione = { ...resto, ...(cartella ? { cartella } : {}), campi: { ...d.campi, segnatura } };
-      aggiorna(salvaBozza({ ...l, titolo: segnatura, destinazione }));
+      const { nota: _n, ...senzaNota } = l;
+      const notaLotto = note.get(l.id);
+      aggiorna(salvaBozza({ ...senzaNota, titolo: segnatura, destinazione, ...(notaLotto ? { nota: notaLotto } : {}) }));
     }
-    setScheda({ ...s, segnatura, cartella });
+    setScheda({ ...s, segnatura, cartella, nota });
   });
 
   const togliSchedaNuova = (id: string) => {
@@ -423,11 +497,14 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
 
   const salvaPagine = async (s: SchedaScelta, uris: string[], modalita: Modalita, precedenti: Pagina[]) => {
     if (!archivio) return;
+    const notaNuova = s.tipo === 'nuova'
+      ? portatoreNota([...lottiNonInviati(s.id), { id: '' }], lottoInInvio() ?? invio?.id, schedeNuove().find(n => n.id === s.id)?.nota).get('')
+      : undefined;
     let b = nuovoLotto(destinazioneDi(s), {
       archivio: archivio.nome,
       archivioNuovo: archivio.nuovo || undefined,
       titolo: (s.tipo === 'smistare' ? titoloSmistare.trim() : s.segnatura) || undefined,
-      nota: s.tipo === 'nuova' ? s.nota : s.tipo === 'smistare' ? notaSmistare.trim() || undefined : undefined
+      nota: s.tipo === 'nuova' ? notaNuova : s.tipo === 'smistare' ? notaSmistare.trim() || undefined : undefined
     });
     if (s.tipo === 'smistare') { setTitoloSmistare(''); setNotaSmistare(''); }
     b = await riempiLotto(b, uris, modalita, x => (modalita === 'grezza' ? undefined : etichettaNuova([...precedenti, ...x.pagine])), true);
@@ -691,7 +768,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       return (
         <Schermo>
           <ScegliCartella titolo={t('Cartella di «{nome}»', { nome: titoloScheda })} sotto={archivio.nome} cartelle={cartelleArchivio} attuale={scheda.cartella || ''}
-            onScegli={v => { setSceltaCartella(false); aggiornaSchedaNuova(scheda, { cartella: v }); }} onIndietro={() => setSceltaCartella(false)} />
+            onScegli={v => { setSceltaCartella(false); aggiornaSchedaNuova(scheda, { cartella: v }); }} onIndietro={() => setSceltaCartella(false)} onNuova={nuovaCartella} />
           <StatusBar style="auto" />
         </Schermo>
       );
@@ -798,7 +875,9 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
           onFotoLibera={() => esegui(t('Foto libera'), async () => { if (await prontoAScansionare()) setFotoLibera(true); })}
           onEliminaPagine={eliminaPagine}
           onRiordina={suoi.some(l => l.id === invio?.id) ? undefined : riordinaPagine}
-          onRinomina={cartellaCambiabile && scheda.tipo === 'nuova' ? v => aggiornaSchedaNuova(scheda, { segnatura: v }) : undefined}
+          rinominabile={cartellaCambiabile}
+          notaScheda={scheda.tipo === 'nuova' ? { testo: nuove.find(n => n.id === scheda.id)?.nota || '', partita: !cartellaCambiabile } : undefined}
+          onModifica={scheda.tipo === 'nuova' ? m => aggiornaSchedaNuova(scheda, m) : undefined}
           onElimina={cartellaCambiabile && scheda.tipo === 'nuova' ? () => eliminaSchedaNuova(scheda, precedenti.length) : undefined}
           onIndietro={() => setScheda(null)}
         />
@@ -835,6 +914,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
       <Archivio
         archivio={archivio}
         elenco={elenco}
+        cartelleNuove={cartelleNuove}
         caricando={caricaElenco}
         nuove={nuove.filter(s => s.archivio === archivio.nome)}
         inAttesa={[...gruppi.values()]}
@@ -871,6 +951,7 @@ function Principale({ riapriImpostazioni, onLingua }: { riapriImpostazioni: bool
         cartellaIniziale={cartellaCorrente}
         onChiudi={() => setFoglioNuovo(false)}
         onNuova={(segnatura, nota, cartella) => { const s = nuovaScheda(segnatura, nota, cartella); if (s) scansiona(s, [], true); }}
+        onNuovaCartella={nuovaCartella}
       />
       <StatusBar style="auto" />
     </Schermo>

@@ -114,13 +114,13 @@ async function caricaPagina(locale: File, nome: string, cartellaId: string, byte
   return Number(JSON.parse(r.body).size);
 }
 
-async function caricaManifest(lotto: Lotto, cartellaId: string): Promise<void> {
+async function caricaJson(nome: string, contenuto: unknown, cartellaId: string): Promise<void> {
   const confine = 'archiview-' + Math.random().toString(36).slice(2);
   const corpo =
     `--${confine}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-    JSON.stringify({ name: ScannerLotto.NOME_MANIFEST, parents: [cartellaId], mimeType: 'application/json' }) +
+    JSON.stringify({ name: nome, parents: [cartellaId], mimeType: 'application/json' }) +
     `\r\n--${confine}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-    JSON.stringify(lotto, null, 2) +
+    JSON.stringify(contenuto, null, 2) +
     `\r\n--${confine}--`;
   await chiama(t => fetch(`${UPLOAD}/files?uploadType=multipart&fields=id`, {
     method: 'POST',
@@ -158,6 +158,13 @@ const nomeDi = (f: FileDrive) => ScannerLotto.nomeArchivio(f.name.endsWith('.jso
 export async function elencaArchivi(): Promise<string[]> {
   const nomi = new Set([...(await fileArchivi()), ...(await cartelleVault())].map(nomeDi));
   return [...nomi].sort((a, b) => a.localeCompare(b));
+}
+
+export async function creaDatabase(archivio: string): Promise<void> {
+  const radice = await cartella(PERCORSO[0], null);
+  const vault = await cartella(archivio + SUFFISSO_VAULT, radice);
+  if ((await elenca(`name='database_manoscritti.json' and '${vault}' in parents and trashed=false`)).length) return;
+  await caricaJson('database_manoscritti.json', { cartelle: [], manoscritti: [], tipiDocumento: [] }, vault);
 }
 
 export async function lottiSuDrive(): Promise<Set<string>> {
@@ -218,7 +225,7 @@ async function inviaValidato(pulito: Lotto, fileDi: (nome: string) => File, avan
     fatte++;
     avanzamento?.({ fatte, totali: pulito.pagine.length });
   }
-  await caricaManifest(pulito, idCartella);
+  await caricaJson(ScannerLotto.NOME_MANIFEST, pulito, idCartella);
 }
 
 const PERCORSO_DOC = [PERCORSO[0], 'Documenti telefono'];

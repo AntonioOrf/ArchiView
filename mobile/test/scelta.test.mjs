@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { alternaCartella, chiaveDestinazione, configDaDatabase, destinazioneDi, nomeArchivioValido, perArchivio, righeAlbero, tutteLeCartelle } from '../src/scelta.ts';
+import { alternaCartella, chiaveDestinazione, configDaDatabase, destinazioneDi, nomeArchivioValido, perArchivio, righeAlbero, portatoreNota, tutteLeCartelle, unisciArchivi } from '../src/scelta.ts';
 
 const ScannerLotto = createRequire(import.meta.url)('../../src/shared/scannerLotto.ts');
 
@@ -114,4 +114,19 @@ test("Wi-Fi: solo i lotti dell'archivio abbinato, nome normalizzato; senza archi
   assert.ok(passa({}));
   assert.equal(passa({ archivio: 'Podestà' }), false);
   assert.equal(passa({ archivio: 'notai' }), false);
+});
+
+test('archivi: quelli creati sul telefono restano finché non compaiono su Drive', () => {
+  assert.deepEqual(unisciArchivi(['Notai', 'Podestà'], ['Zecca', 'Notai', 'Zecca']), { tutti: ['Notai', 'Podestà', 'Zecca'], creati: ['Zecca'] });
+  assert.deepEqual(unisciArchivi([], ['Zecca']), { tutti: ['Zecca'], creati: ['Zecca'] });
+  assert.deepEqual(unisciArchivi(['Zecca'], ['Zecca']), { tutti: ['Zecca'], creati: [] });
+});
+
+test('nota di una scheda nuova: viaggia su un solo lotto', () => {
+  const lotti = [{ id: 'a', nota: 'vecchia' }, { id: 'b', nota: 'vecchia' }, { id: 'c' }];
+  assert.deepEqual([...portatoreNota(lotti, undefined, 'nuova')], [['a', 'nuova'], ['b', undefined], ['c', undefined]]);
+  assert.deepEqual([...portatoreNota(lotti, 'a', 'nuova')], [['b', 'nuova'], ['c', undefined]]);
+  assert.deepEqual([...portatoreNota([{ id: 'a', nota: 'x' }, { id: 'b' }], 'a', 'x')], [['b', undefined]], 'il lotto in viaggio la porta già');
+  assert.deepEqual([...portatoreNota(lotti, undefined, '  ')], [['a', undefined], ['b', undefined], ['c', undefined]]);
+  assert.equal(portatoreNota([{ id: 'vecchio', nota: 'x' }, { id: '' }], undefined, 'x').get(''), undefined, 'secondo invio: il lotto nuovo non la ripete');
 });

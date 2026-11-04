@@ -1,14 +1,15 @@
 import { File, Paths } from 'expo-file-system';
 import { NetworkStateType, type NetworkState } from 'expo-network';
-import { elencaArchivi, inviaLotto, lottiSuDrive, scaricaConfig, type Avanzamento } from './drive';
+import { creaDatabase, elencaArchivi, inviaLotto, lottiSuDrive, scaricaConfig, type Avanzamento } from './drive';
 import { arrivati, daControllare, NESSUN_INVIO, recenti, registra, type Invii } from './invii';
 import { ScannerLotto, type ConfigScanner } from './contratto';
 import { elencaLotti, fileDellaPagina, manifest, segnaInviato, type Bozza } from './lotti';
 import { DOPO_INVIO_PREDEFINITO, type DopoInvio } from './pagine';
 import { leggiJson, scriviJson } from './fileJson';
 import type { Lingua } from './lingua';
+import { unisciArchivi } from './scelta';
 
-export type Impostazioni = { dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean; copiaDocumenti?: boolean; viste?: Record<string, string[]>; lingua?: Lingua };
+export type Impostazioni = { dopoInvio: DopoInvio; archivio?: { nome: string; nuovo: boolean }; aperte?: Record<string, string[]>; account?: string; documenti?: boolean; copiaDocumenti?: boolean; viste?: Record<string, string[]>; lingua?: Lingua; cartelleNuove?: Record<string, string[]> };
 
 const IMPOSTAZIONI_PREDEFINITE: Impostazioni = { dopoInvio: DOPO_INVIO_PREDEFINITO };
 
@@ -43,18 +44,30 @@ export function segnaBenvenuto(): void {
   scriviJson(fileBenvenuto(), { data: new Date().toISOString() });
 }
 
-function fileElenco(): File {
-  return new File(Paths.document, 'schede.json');
+const fileElenco = (archivio: string) => new File(Paths.document, `schede-${encodeURIComponent(archivio)}.json`);
+const fileElencoVecchio = () => new File(Paths.document, 'schede.json');
+
+function leggiElenco(f: File, archivio: string): ConfigScanner | null {
+  if (!f.exists) return null;
+  const esito = ScannerLotto.validaConfig(JSON.parse(f.textSync()));
+  return esito.ok && ScannerLotto.nomeArchivio(esito.config.archivio) === archivio ? esito.config : null;
 }
 
 export function elencoLocale(archivio?: string): ConfigScanner | null {
+  if (!archivio) return null;
+  const nome = ScannerLotto.nomeArchivio(archivio);
   try {
-    const f = fileElenco();
-    if (!archivio || !f.exists) return null;
-    const esito = ScannerLotto.validaConfig(JSON.parse(f.textSync()));
-    return esito.ok && ScannerLotto.nomeArchivio(esito.config.archivio) === ScannerLotto.nomeArchivio(archivio) ? esito.config : null;
+    const f = fileElenco(nome);
+    if (f.exists) return leggiElenco(f, nome);
+    const vecchio = fileElencoVecchio();
+    const migrato = leggiElenco(vecchio, nome);
+    if (migrato) {
+      scriviJson(f, migrato);
+      vecchio.delete();
+    }
+    return migrato;
   } catch (e) {
-    console.warn('[coda] elenco schede locale illeggibile', e);
+    console.warn('[coda] elenco schede locale illeggibile', nome, e);
     return null;
   }
 }
@@ -63,7 +76,11 @@ export async function aggiornaElenco(archivio: string, conDatabase = true): Prom
   const config = await scaricaConfig(archivio, conDatabase);
   const locale = elencoLocale(archivio);
   if (!config || (locale && Date.parse(locale.aggiornatoIl) > Date.parse(config.aggiornatoIl))) return locale;
-  if (leggiImpostazioni().archivio?.nome === ScannerLotto.nomeArchivio(archivio)) fileElenco().write(JSON.stringify(config));
+  try {
+    scriviJson(fileElenco(ScannerLotto.nomeArchivio(archivio)), config);
+  } catch (e) {
+    console.warn('[coda] copia locale dell’elenco non salvata', archivio, e);
+  }
   return config;
 }
 
@@ -71,21 +88,45 @@ function fileArchivi(): File {
   return new File(Paths.document, 'archivi.json');
 }
 
-export function archiviLocali(): string[] {
+const fileCreati = () => new File(Paths.document, 'archivi-creati.json');
+
+function leggiNomi(f: File): string[] {
   try {
-    const f = fileArchivi();
-    const nomi = f.exists ? JSON.parse(f.textSync()) : [];
+    const nomi = leggiJson(f);
     return Array.isArray(nomi) ? nomi.filter(n => typeof n === 'string') : [];
   } catch (e) {
-    console.warn('[coda] elenco archivi locale illeggibile', e);
+    console.warn('[coda] elenco di archivi illeggibile', f.uri, e);
     return [];
   }
 }
 
-export async function aggiornaArchivi(): Promise<string[]> {
-  const nomi = await elencaArchivi();
-  fileArchivi().write(JSON.stringify(nomi));
-  return nomi;
+export const archiviCreati = () => leggiNomi(fileCreati());
+
+export function segnaArchivioCreato(archivio: string): void {
+  const nome = ScannerLotto.nomeArchivio(archivio);
+  const creati = archiviCreati();
+  if (!creati.includes(nome)) scriviJson(fileCreati(), [...creati, nome]);
+}
+
+export function archiviLocali(): string[] {
+  return unisciArchivi(leggiNomi(fileArchivi()), archiviCreati()).tutti;
+}
+
+export async function aggiornaArchivi(): Promise<{ tutti: string[]; suDrive: string[] }> {
+  const suDrive = await elencaArchivi();
+  for (const nome of archiviCreati()) {
+    if (suDrive.includes(nome)) continue;
+    try {
+      await creaDatabase(nome);
+      suDrive.push(nome);
+    } catch (e) {
+      console.warn('[coda] database su Drive non creato, riprovo al prossimo collegamento', nome, e);
+    }
+  }
+  const { tutti, creati } = unisciArchivi(suDrive, archiviCreati());
+  scriviJson(fileCreati(), creati);
+  scriviJson(fileArchivi(), tutti);
+  return { tutti, suDrive };
 }
 
 export type SchedaNuova = { archivio: string; id: string; segnatura: string; nota?: string; cartella?: string; partita?: true };
@@ -108,10 +149,13 @@ export function salvaSchedeNuove(s: SchedaNuova[]): void {
   scriviJson(fileSchedeNuove(), s);
 }
 
-function segnaPartita(id: string): void {
+function segnaPartita(id: string, notaInviata: string | undefined): void {
   try {
     const tutte = schedeNuove();
-    if (tutte.some(s => s.id === id && !s.partita)) salvaSchedeNuove(tutte.map(s => (s.id === id ? { ...s, partita: true as const } : s)));
+    const portata = (s: SchedaNuova) => !!notaInviata && s.nota === notaInviata;
+    if (tutte.some(s => s.id === id && (!s.partita || portata(s)))) {
+      salvaSchedeNuove(tutte.map(s => (s.id !== id ? s : { ...s, partita: true as const, nota: portata(s) ? undefined : s.nota })));
+    }
   } catch (e) {
     console.warn('[coda] scheda nuova non segnata come partita', id, e);
   }
@@ -177,7 +221,7 @@ export async function svuotaCoda(dispositivo: string, evento: (e: EventoCoda) =>
         const imp = leggiImpostazioni();
         segnaInviato(b, imp.dopoInvio);
         tracciaInvio(b, imp.account, invia !== inviaLotto);
-        if (b.destinazione.tipo === 'nuova' && b.destinazione.schedaId) segnaPartita(b.destinazione.schedaId);
+        if (b.destinazione.tipo === 'nuova' && b.destinazione.schedaId) segnaPartita(b.destinazione.schedaId, b.nota);
         evento({ tipo: 'inviato', id: b.id });
       } catch (e: any) {
         console.error('[coda] invio fallito', b.id, e);

@@ -18,9 +18,10 @@ type Props = {
   cartellaIniziale: string;
   onChiudi: () => void;
   onNuova: (segnatura: string, nota: string, cartella: string) => void;
+  onNuovaCartella: (percorso: string) => void;
 };
 
-export function Nuovo({ visibile, archivio, cartelle, cartellaIniziale, onChiudi, onNuova }: Props) {
+export function Nuovo({ visibile, archivio, cartelle, cartellaIniziale, onChiudi, onNuova, onNuovaCartella }: Props) {
   const c = useColori();
   const margini = useSafeAreaInsets();
   const [segnatura, setSegnatura] = useState('');
@@ -36,7 +37,7 @@ export function Nuovo({ visibile, archivio, cartelle, cartellaIniziale, onChiudi
       {scegli ? (
         <Schermo>
           <ScegliCartella titolo={segnatura.trim() ? t('Cartella di «{nome}»', { nome: segnatura.trim() }) : t('Cartella della scheda')} sotto={archivio} cartelle={cartelle} attuale={cartella}
-            onScegli={v => { setCartella(v); setScegli(false); }} onIndietro={() => setScegli(false)} />
+            onScegli={v => { setCartella(v); setScegli(false); }} onIndietro={() => setScegli(false)} onNuova={onNuovaCartella} />
         </Schermo>
       ) : (
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end' }}>

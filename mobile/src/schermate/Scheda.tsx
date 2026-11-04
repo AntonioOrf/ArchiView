@@ -30,7 +30,7 @@ function DovePagine({ percorso: r }: { percorso: Percorso }) {
     { titolo: t('Partite dal telefono') + ora(r.partitoIl) },
     {
       titolo: corrente === 1 ? t('In caricamento su Drive · {fatte} di {totali}', { fatte: r.fatte ?? 0, totali: r.totali ?? 0 }) : t('In caricamento su Drive'),
-      sotto: corrente === 1 && <><Avanzamento fatte={r.fatte ?? 0} totali={r.totali ?? 0} /><Testo variante="aiuto">{t('Tieni l\'app aperta finché non finisce')}</Testo></>
+      sotto: corrente === 1 && <Avanzamento fatte={r.fatte ?? 0} totali={r.totali ?? 0} />
     },
     { titolo: t('Su Drive, in attesa del computer'), sotto: corrente === 2 && <Testo variante="aiuto">{t('Arriva quando il computer con ArchiView è acceso')}</Testo> },
     { titolo: t('Arrivate sul computer') + (corrente === 4 ? ora(r.arrivatoIl) : '') }
@@ -81,7 +81,9 @@ type Props = {
   onApri: (indice: number) => void;
   onTogliInviate: () => void;
   onCambiaCartella?: () => void;
-  onRinomina?: (segnatura: string) => void;
+  rinominabile?: boolean;
+  notaScheda?: { testo: string; partita: boolean };
+  onModifica?: (m: { segnatura?: string; nota?: string }) => void;
   onElimina?: () => void;
   onFotoLibera: () => void;
   onEliminaPagine: (indici: number[]) => void;
@@ -99,7 +101,7 @@ export function Scheda(p: Props) {
   const sotto = p.archivio + (p.scheda.tipo === 'nuova' ? ` · ${t('creata qui')}` : p.scheda.tipo === 'smistare' ? ` · ${t('da smistare al computer')}` : '');
   const cartella = p.scheda.tipo === 'nuova' ? p.scheda.cartella || '' : null;
   const conta = (n: number) => (n === 1 ? t('1 pagina') : t('{n} pagine', { n }));
-  const [segnatura, setSegnatura] = useState<string | null>(null);
+  const [modifica, setModifica] = useState<{ segnatura: string; nota: string } | null>(null);
   const sel = useSelezione();
   const selezionabile = (x: Cella) => p.inInvio !== x.b.id;
 
@@ -108,12 +110,25 @@ export function Scheda(p: Props) {
   const testa = (
     <View>
       {p.attesa}
-      {segnatura !== null && p.onRinomina && (
+      {modifica !== null && (
         <View style={{ paddingHorizontal: spazio.md, paddingTop: spazio.md, gap: spazio.sm }}>
-          <Campo etichetta={t('Segnatura')} value={segnatura} onChangeText={setSegnatura} maxLength={200} autoFocus selectTextOnFocus />
+          {p.rinominabile && <Campo etichetta={t('Segnatura')} value={modifica.segnatura} onChangeText={v => setModifica({ ...modifica, segnatura: v })} maxLength={200} autoFocus selectTextOnFocus />}
+          {p.notaScheda && (
+            <Campo etichetta={p.notaScheda?.partita ? t('Nota da aggiungere') : t('Nota')} value={modifica.nota} onChangeText={v => setModifica({ ...modifica, nota: v })}
+              placeholder={p.notaScheda?.partita ? t('Si aggiunge alla nota sul computer') : t('Cosa sono queste pagine')} multiline maxLength={ScannerLotto.LIMITI.nota} autoFocus={!p.rinominabile} />
+          )}
           <View style={{ flexDirection: 'row', gap: spazio.sm }}>
-            <Pulsante variante="primario" titolo={t('Rinomina')} disabilitato={!segnatura.trim()} style={{ flex: 1 }} onPress={() => { p.onRinomina!(segnatura.trim()); setSegnatura(null); }} />
-            <Pulsante variante="ghost" titolo={t('Annulla')} onPress={() => setSegnatura(null)} />
+            <Pulsante variante="primario" titolo={t('Salva')} disabilitato={!!p.rinominabile && !modifica.segnatura.trim()} style={{ flex: 1 }} onPress={() => {
+              const segnatura = modifica.segnatura.trim();
+              const nota = modifica.nota.trim();
+              const m = {
+                ...(p.rinominabile && p.scheda.tipo === 'nuova' && segnatura !== p.scheda.segnatura ? { segnatura } : {}),
+                ...(p.notaScheda && nota !== p.notaScheda.testo ? { nota } : {})
+              };
+              if (Object.keys(m).length) p.onModifica?.(m);
+              setModifica(null);
+            }} />
+            <Pulsante variante="ghost" titolo={t('Annulla')} onPress={() => setModifica(null)} />
           </View>
         </View>
       )}
@@ -208,10 +223,10 @@ export function Scheda(p: Props) {
           onTutte={() => sel.tutte(celle.filter(selezionabile).map(x => x.indice))} onEsci={sel.esci}
           onElimina={() => { p.onEliminaPagine(sel.scelte!.filter(i => celle[i] && selezionabile(celle[i]))); sel.esci(); }} />
       ) : (
-        <Intestazione titolo={titolo} mono={p.scheda.tipo !== 'smistare'} sotto={sotto} onIndietro={p.onIndietro} azioni={p.onRinomina && p.onElimina && p.scheda.tipo === 'nuova' ? (
+        <Intestazione titolo={titolo} mono={p.scheda.tipo !== 'smistare'} sotto={sotto} onIndietro={p.onIndietro} azioni={p.onModifica && p.scheda.tipo === 'nuova' ? (
           <>
-            <Pulsante variante="ghost" icona={Pencil} etichetta={t('Rinomina la scheda')} onPress={() => setSegnatura(p.scheda.tipo === 'nuova' ? p.scheda.segnatura : '')} />
-            <Pulsante variante="pericoloGhost" icona={Trash2} etichetta={t('Elimina la scheda')} onPress={p.onElimina} />
+            <Pulsante variante="ghost" icona={Pencil} etichetta={p.rinominabile ? t('Modifica la scheda') : t('Aggiungi una nota')} onPress={() => setModifica({ segnatura: p.scheda.tipo === 'nuova' ? p.scheda.segnatura : '', nota: p.notaScheda?.testo || '' })} />
+            {p.onElimina && <Pulsante variante="pericoloGhost" icona={Trash2} etichetta={t('Elimina la scheda')} onPress={p.onElimina} />}
           </>
         ) : undefined} />
       )}

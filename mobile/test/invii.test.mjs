@@ -37,3 +37,17 @@ test('recenti: gli arrivati spariscono dopo un giorno, quelli in attesa restano'
   assert.deepEqual(recenti(s, domani).lotti.map(l => l.id), ['L2']);
   assert.equal(recenti(s, ora).lotti.length, 2);
 });
+
+test('giro d\'invio: avanzamento sulla coda intera, esito', async () => {
+  const { inizioGiro, passoGiro, fatteGiro } = await import('../src/invii.ts');
+  let g = inizioGiro([{ id: 'a', pagine: 3 }, { id: 'b', pagine: 2 }]);
+  assert.equal(g.totali, 5);
+  g = passoGiro(g, { tipo: 'lotto', id: 'a', avanzamento: { fatte: 2, totali: 3 } });
+  assert.equal(fatteGiro(g), 2);
+  g = passoGiro(g, { tipo: 'inviato', id: 'a' });
+  assert.equal(fatteGiro(g), 3);
+  g = passoGiro(g, { tipo: 'lotto', id: 'b', avanzamento: { fatte: 1, totali: 2 } });
+  assert.equal(fatteGiro(g), 4);
+  g = passoGiro(g, { tipo: 'errore', id: 'b', messaggio: 'rete' });
+  assert.deepEqual([fatteGiro(g), g.inviati, g.inviate, g.errore], [5, 1, 3, 'rete']);
+});

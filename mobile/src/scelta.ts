@@ -45,6 +45,23 @@ function titoloDi(m: any): string {
 
 export const SUFFISSO_VAULT = '_ArchiView';
 
+export function portatoreNota(nonInviati: { id: string; nota?: string }[], inViaggio: string | undefined, nota: string | undefined): Map<string, string | undefined> {
+  const viaggio = nonInviati.find(l => l.id === inViaggio);
+  let resta = nota?.trim() && viaggio?.nota !== nota ? nota : undefined;
+  const out = new Map<string, string | undefined>();
+  for (const l of nonInviati) {
+    if (l.id === inViaggio) continue;
+    out.set(l.id, resta);
+    resta = undefined;
+  }
+  return out;
+}
+
+export function unisciArchivi(suDrive: string[], creati: string[]): { tutti: string[]; creati: string[] } {
+  const restano = [...new Set(creati.filter(n => !suDrive.includes(n)))];
+  return { tutti: [...new Set([...suDrive, ...restano])].sort((a, b) => a.localeCompare(b)), creati: restano };
+}
+
 export function configDaDatabase(archivio: string, db: any, aggiornatoIl: string, daVedere: (tags: unknown) => boolean = () => false) {
   const manoscritti: any[] = db && Array.isArray(db.manoscritti) ? db.manoscritti : [];
   const testo = (v: unknown) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, 500) : '');

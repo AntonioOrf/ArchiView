@@ -22,6 +22,7 @@ export type RigaInvio = { chiave: string; scelta: SchedaScelta; pagine: number; 
 type Props = {
   archivio: { nome: string; nuovo: boolean };
   elenco: ConfigScanner | null;
+  cartelleNuove: string[];
   caricando: boolean;
   nuove: SchedaNuova[];
   inAttesa: SchedaInAttesa[];
@@ -114,7 +115,7 @@ export function Archivio(p: Props) {
   const viste = useMemo(() => new Set(p.viste), [p.viste]);
   const daVedere = useMemo(() => schede.filter(s => s.daVedere), [schede]);
   const mancanti = daVedere.filter(s => !viste.has(s.id)).length;
-  const righe = useMemo(() => righeAlbero(schede, p.elenco?.cartelle || [], aperte, q, soloDaVedere && !!daVedere.length), [schede, p.elenco, aperte, q, soloDaVedere, daVedere.length]);
+  const righe = useMemo(() => righeAlbero(schede, [...new Set([...(p.elenco?.cartelle || []), ...p.cartelleNuove])], aperte, q, soloDaVedere && !!daVedere.length), [schede, p.elenco, p.cartelleNuove, aperte, q, soloDaVedere, daVedere.length]);
   const inAttesa = useMemo(() => new Map(p.inAttesa.map(g => [g.scelta.tipo === 'smistare' ? '' : g.scelta.id, g.pagine])), [p.inAttesa]);
 
   const apri = (s: SchedaAlbero) => {

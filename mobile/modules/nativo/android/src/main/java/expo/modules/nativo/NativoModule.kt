@@ -1,5 +1,7 @@
 package expo.modules.nativo
 
+import android.app.NotificationManager
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -7,6 +9,8 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.media.ExifInterface
 import android.net.Uri
+import android.os.Build
+import android.util.Log
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
@@ -31,6 +35,37 @@ class NativoModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("Nativo")
+
+    Function("avviaInvio") { titolo: String, testo: String, canaleInvio: String, canaleEsito: String ->
+      val ctx = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+      Notifiche.canali(ctx, canaleInvio, canaleEsito)
+      ctx.getSystemService(NotificationManager::class.java)?.cancel(Notifiche.ID_ESITO)
+      InvioService.preparaAvvio()
+      val i = Intent(ctx, InvioService::class.java).putExtra("titolo", titolo).putExtra("testo", testo)
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i) else ctx.startService(i)
+      } catch (e: Exception) {
+        Log.w("Nativo", "servizio d'invio non avviato", e)
+        ctx.getSystemService(NotificationManager::class.java)?.notify(Notifiche.ID_INVIO, Notifiche.avanzamento(ctx, titolo, testo, 0, 0))
+      }
+      Unit
+    }
+
+    Function("aggiornaInvio") { titolo: String, testo: String, fatte: Int, totali: Int ->
+      val ctx = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+      ctx.getSystemService(NotificationManager::class.java)?.notify(Notifiche.ID_INVIO, Notifiche.avanzamento(ctx, titolo, testo, fatte, totali))
+      Unit
+    }
+
+    Function("fermaInvio") { titolo: String?, testo: String?, ok: Boolean ->
+      val ctx = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+      InvioService.ferma()
+      ctx.getSystemService(NotificationManager::class.java)?.let { nm ->
+        nm.cancel(Notifiche.ID_INVIO)
+        if (titolo != null) nm.notify(Notifiche.ID_ESITO, Notifiche.esito(ctx, titolo, testo ?: "", ok))
+      }
+      Unit
+    }
 
     AsyncFunction("impronta") { uri: String ->
       val f = File(percorso(uri))
