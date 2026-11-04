@@ -1,3 +1,9 @@
+## ArchiView 4.0.4 — Archivi creati sul telefono
+
+### Novità
+
+- **Archivi creati con ArchiScanner**: un archivio nuovo creato sul telefono compare subito su Drive e si apre sul computer da «Unisciti a un Archivio Condiviso» → «Sfoglia Google Drive…». Se la cartella è tua, l'archivio diventa un Backup personale e non un Archivio condiviso.
+
 ## ArchiView 4.0.3 — Scansioni dal telefono più sicure
 
 ### Correzioni
